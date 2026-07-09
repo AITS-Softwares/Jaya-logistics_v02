@@ -98,6 +98,8 @@ function OrdersTable({ rows }) {
     { key: "orderType", label: "Order Type" },
     { key: "pinCode", label: "Pin Code" },
     { key: "state", label: "State" },
+    { key: "fromState", label: "From State" }, // ✅ ADDED
+    { key: "localStatus", label: "Local/Not Local" }, // ✅ ADDED
     { key: "district", label: "District" },
     { key: "from", label: "From" },
     { key: "to", label: "To" },
@@ -111,6 +113,21 @@ function OrdersTable({ rows }) {
     { key: "loadingCharges", label: "Loading Charges" },
     { key: "otherCharges", label: "Other Charges" },
   ];
+
+  // Helper to render local status badge
+  const renderLocalStatus = (row) => {
+    if (row.fromState && row.state) {
+      const isLocal = row.fromState.trim().toUpperCase() === row.state.trim().toUpperCase();
+      return (
+        <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${
+          isLocal ? 'bg-green-100 text-green-800 border border-green-300' : 'bg-red-100 text-red-800 border border-red-300'
+        }`}>
+          {isLocal ? '✅ Local' : '❌ Not Local'}
+        </span>
+      );
+    }
+    return <span className="text-xs text-gray-400">-</span>;
+  };
 
   return (
     <div className="overflow-auto rounded-xl border border-yellow-300 max-h-[500px] overflow-y-auto">
@@ -137,6 +154,8 @@ function OrdersTable({ rows }) {
                 <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.orderType || '-'}</td>
                 <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.pinCode || '-'}</td>
                 <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.state || '-'}</td>
+                <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.fromState || '-'}</td> {/* ✅ ADDED */}
+                <td className="border border-yellow-300 px-2 py-2 text-center">{renderLocalStatus(row)}</td> {/* ✅ ADDED */}
                 <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.district || '-'}</td>
                 <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.from || '-'}</td>
                 <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.to || '-'}</td>

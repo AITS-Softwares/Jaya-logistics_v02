@@ -160,6 +160,7 @@ function defaultOrderRow() {
     pinCode: "",
     from: null,
     fromName: "",
+    fromState: "", // ✅ ADD THIS
     to: null,
     toName: "",
     taluka: "",
@@ -176,6 +177,8 @@ function defaultOrderRow() {
     cancellationCharges: "",
     loadingCharges: "",
     otherCharges: "",
+    localStatus: "unknown", // ✅ ADD THIS
+    localStatusLabel: "Unknown" // ✅ ADD THIS
   };
 }
 
@@ -449,26 +452,27 @@ function MultiSelectOrderPanelDropdown({ selectedPanels = [], onSelect, placehol
   Orders Table Component (Read-only with all charge fields)
 ========================= */
 function OrdersTable({ rows }) {
-  const columns = [
-    { key: "orderNo", label: "Order No", minWidth: "120px" },
-    { key: "partyName", label: "Party Name", minWidth: "150px" },
-    { key: "plantCode", label: "Plant Code", minWidth: "100px" },
-    { key: "plantName", label: "Plant Name", minWidth: "120px" },
-    { key: "orderType", label: "Order Type", minWidth: "100px" },
-    { key: "pinCode", label: "Pin Code", minWidth: "100px" },
-    { key: "from", label: "From", minWidth: "120px" },
-    { key: "to", label: "To", minWidth: "120px" },
-    { key: "taluka", label: "Taluka", minWidth: "120px" },
-    { key: "district", label: "District", minWidth: "100px" },
-    { key: "state", label: "State", minWidth: "100px" },
-    { key: "country", label: "Country", minWidth: "100px" },
-    { key: "weight", label: "Weight", minWidth: "80px" },
-    { key: "status", label: "Status", minWidth: "100px" },
-    { key: "collectionCharges", label: "Collection Charges", minWidth: "120px" },
-    { key: "cancellationCharges", label: "Cancellation Charges", minWidth: "130px" },
-    { key: "loadingCharges", label: "Loading Charges", minWidth: "120px" },
-    { key: "otherCharges", label: "Other Charges", minWidth: "110px" },
-  ];
+ const columns = [
+  { key: "orderNo", label: "Order No", minWidth: "120px" },
+  { key: "partyName", label: "Party Name", minWidth: "150px" },
+  { key: "plantCode", label: "Plant Code", minWidth: "100px" },
+  { key: "plantName", label: "Plant Name", minWidth: "120px" },
+  { key: "orderType", label: "Order Type", minWidth: "100px" },
+  { key: "pinCode", label: "Pin Code", minWidth: "100px" },
+  { key: "from", label: "From", minWidth: "120px" },
+  { key: "to", label: "To", minWidth: "120px" },
+  { key: "taluka", label: "Taluka", minWidth: "120px" },
+  { key: "district", label: "District", minWidth: "100px" },
+  { key: "state", label: "State", minWidth: "100px" },
+  { key: "localStatus", label: "Local/Not Local", minWidth: "120px" }, // ✅ ADD THIS
+  { key: "country", label: "Country", minWidth: "100px" },
+  { key: "weight", label: "Weight", minWidth: "80px" },
+  { key: "status", label: "Status", minWidth: "100px" },
+  { key: "collectionCharges", label: "Collection Charges", minWidth: "120px" },
+  { key: "cancellationCharges", label: "Cancellation Charges", minWidth: "130px" },
+  { key: "loadingCharges", label: "Loading Charges", minWidth: "120px" },
+  { key: "otherCharges", label: "Other Charges", minWidth: "110px" },
+];
 
   if (!rows || rows.length === 0) {
     return (
@@ -503,6 +507,19 @@ function OrdersTable({ rows }) {
               <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.toName || row.to || '-'}</td>
               <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.talukaName || row.taluka || '-'}</td>
               <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.districtName || row.district || '-'}</td>
+              <td className="border border-yellow-300 px-2 py-2 text-center">
+  {row.fromState && row.stateName ? (
+    <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${
+      row.fromState.trim().toUpperCase() === row.stateName.trim().toUpperCase()
+        ? 'bg-green-100 text-green-800 border border-green-300'
+        : 'bg-red-100 text-red-800 border border-red-300'
+    }`}>
+      {row.fromState.trim().toUpperCase() === row.stateName.trim().toUpperCase() ? '✅ Local' : '❌ Not Local'}
+    </span>
+  ) : (
+    <span className="text-xs text-gray-400">-</span>
+  )}
+</td>
               <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.stateName || row.state || '-'}</td>
               <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.countryName || row.country || '-'}</td>
               <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.weight || '0'}</td>

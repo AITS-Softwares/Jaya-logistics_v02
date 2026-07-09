@@ -235,6 +235,7 @@ function defaultOrderRow() {
     pinCode: "",
     from: null,
     fromName: "",
+    fromState: "", // ✅ ADD THIS
     to: null,
     toName: "",
     taluka: "",
@@ -251,6 +252,8 @@ function defaultOrderRow() {
     cancellationCharges: "",
     loadingCharges: "",
     otherCharges: "",
+    localStatus: "unknown", // ✅ ADD THIS
+    localStatusLabel: "Unknown" // ✅ ADD THIS
   };
 }
 
@@ -1275,19 +1278,22 @@ export default function EditVehicleNegotiation() {
       }
 
       if (vn.orders && vn.orders.length > 0) {
-        const processedOrders = vn.orders.map(order => ({
-          ...order,
-          _id: order._id || uid(),
-          weight: order.weight?.toString() || "",
-          collectionCharges: order.collectionCharges?.toString() || "",
-          cancellationCharges: order.cancellationCharges || "",
-          loadingCharges: order.loadingCharges || "",
-          otherCharges: order.otherCharges?.toString() || "",
-        }));
-        setOrders(processedOrders);
-      } else {
-        setOrders([defaultOrderRow()]);
-      }
+  const processedOrders = vn.orders.map(order => ({
+    ...order,
+    _id: order._id || uid(),
+    weight: order.weight?.toString() || "",
+    collectionCharges: order.collectionCharges?.toString() || "",
+    cancellationCharges: order.cancellationCharges || "",
+    loadingCharges: order.loadingCharges || "",
+    otherCharges: order.otherCharges?.toString() || "",
+    fromState: order.fromState || '', // ✅ ADD THIS
+    localStatus: order.localStatus || 'unknown', // ✅ ADD THIS
+    localStatusLabel: order.localStatusLabel || 'Unknown' // ✅ ADD THIS
+  }));
+  setOrders(processedOrders);
+} else {
+  setOrders([defaultOrderRow()]);
+}
 
       if (vn.selectedOrderPanels && vn.selectedOrderPanels.length > 0) {
         const fullPanels = [];
@@ -1545,6 +1551,7 @@ export default function EditVehicleNegotiation() {
             pinCode: row.pinCode || "",
             from: row.from || null,
             fromName: row.fromName || "",
+            fromState: row.fromState || "", 
             to: row.to || null,
             toName: row.toName || "",
             taluka: row.taluka || "",
@@ -1561,6 +1568,8 @@ export default function EditVehicleNegotiation() {
             cancellationCharges: fullPanel.cancellationCharges?.toString() || "",
             loadingCharges: fullPanel.loadingCharges?.toString() || "",
             otherCharges: fullPanel.otherCharges?.toString() || "",
+                    localStatus: row.localStatus || "unknown", // ✅ ADD THIS
+        localStatusLabel: row.localStatusLabel || "Unknown" 
           };
         });
         
@@ -1827,6 +1836,7 @@ export default function EditVehicleNegotiation() {
           pinCode: order.pinCode,
           from: order.from || null,
           fromName: order.fromName,
+            fromState: order.fromState || '', 
           to: order.to || null,
           toName: order.toName,
           taluka: order.taluka,
@@ -1842,7 +1852,9 @@ export default function EditVehicleNegotiation() {
           collectionCharges: num(order.collectionCharges) || 0,
           cancellationCharges: order.cancellationCharges || 'Nil',
           loadingCharges: order.loadingCharges || 'Nil',
-          otherCharges: num(order.otherCharges) || 0
+          otherCharges: num(order.otherCharges) || 0,
+            localStatus: order.localStatus || 'unknown', // ✅ ADD THIS
+  localStatusLabel: order.localStatusLabel || 'Unknown' 
         })),
         totalWeight,
         negotiation: {
@@ -1945,25 +1957,26 @@ export default function EditVehicleNegotiation() {
   }, [orders, header.date, header.vnnNo, approval.approvalStatus, approval.memoStatus]);
 
   const ordersColumns = [
-    { key: "orderNo", label: "Order No" },
-    { key: "partyName", label: "Party Name" },
-    { key: "plantCode", label: "Plant Code *" },
-    { key: "plantName", label: "Plant Name" },
-    { key: "orderType", label: "Order Type" },
-    { key: "pinCode", label: "Pin Code" },
-    { key: "from", label: "From" },
-    { key: "to", label: "To" },
-    { key: "taluka", label: "Taluka" },
-    { key: "district", label: "District" },
-    { key: "state", label: "State" },
-    { key: "country", label: "Country" },
-    { key: "weight", label: "Weight" },
-    { key: "status", label: "Status" },
-    { key: "collectionCharges", label: "Collection Charges" },
-    { key: "cancellationCharges", label: "Cancellation Charges" },
-    { key: "loadingCharges", label: "Loading Charges" },
-    { key: "otherCharges", label: "Other Charges" },
-  ];
+  { key: "orderNo", label: "Order No" },
+  { key: "partyName", label: "Party Name" },
+  { key: "plantCode", label: "Plant Code *" },
+  { key: "plantName", label: "Plant Name" },
+  { key: "orderType", label: "Order Type" },
+  { key: "pinCode", label: "Pin Code" },
+  { key: "from", label: "From" },
+  { key: "to", label: "To" },
+  { key: "taluka", label: "Taluka" },
+  { key: "district", label: "District" },
+  { key: "state", label: "State" },
+  { key: "localStatus", label: "Local/Not Local" }, // ✅ ADD THIS
+  { key: "country", label: "Country" },
+  { key: "weight", label: "Weight" },
+  { key: "status", label: "Status" },
+  { key: "collectionCharges", label: "Collection Charges" },
+  { key: "cancellationCharges", label: "Cancellation Charges" },
+  { key: "loadingCharges", label: "Loading Charges" },
+  { key: "otherCharges", label: "Other Charges" },
+];
 
   const vendorColumns = [
     { key: "vendorName", label: "Supplier Name" },
@@ -2111,6 +2124,20 @@ export default function EditVehicleNegotiation() {
                       placeholder="State"
                     />
                   </td>
+                  {/* Local Status - ADD THIS */}
+<td className="border border-yellow-300 px-2 py-2 text-center">
+  {row.fromState && row.stateName ? (
+    <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${
+      row.fromState.trim().toUpperCase() === row.stateName.trim().toUpperCase()
+        ? 'bg-green-100 text-green-800 border border-green-300'
+        : 'bg-red-100 text-red-800 border border-red-300'
+    }`}>
+      {row.fromState.trim().toUpperCase() === row.stateName.trim().toUpperCase() ? '✅ Local' : '❌ Not Local'}
+    </span>
+  ) : (
+    <span className="text-xs text-gray-400">-</span>
+  )}
+</td>
                   <td className="border border-yellow-300 px-2 py-2">
                     <input
                       value={row.countryName || row.country || ""}
@@ -2687,6 +2714,17 @@ export default function EditVehicleNegotiation() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
 
 //"use client";
 //

@@ -13,14 +13,45 @@ function num(value) {
 }
 
 // Role-based access check
+// ✅ Role-based access for vehicle negotiation management
 function isAuthorized(user) {
-  return (
-    user?.type === "company" ||
-    user?.role === "Admin" ||
-    user?.permissions?.includes("pod_panel")
-  );
-}
+  if (!user) return false;
 
+  // ✅ Company users have full access
+  if (user.type === "company") return true;
+
+  // ✅ Check for specific roles
+  const allowedRoles = [
+    "admin",
+    "sales manager",
+    "purchase manager",
+    "inventory manager",
+    "accounts manager",
+    "hr manager",
+    "support executive",
+    "production head",
+    "project manager"
+  ];
+
+  // Handle both single role and roles array
+  const userRoles = Array.isArray(user.roles) 
+    ? user.roles 
+    : (user.role ? [user.role] : []);
+
+  const hasAllowedRole = userRoles.some(role =>
+    allowedRoles.includes(role.trim().toLowerCase())
+  );
+
+  if (hasAllowedRole) return true;
+
+  // ✅ Check for specific permission (if your system uses permissions)
+  if (Array.isArray(user.permissions) && 
+      user.permissions.includes("vehicle_negotiation")) {
+    return true;
+  }
+
+  return false;
+}
 async function validateUser(req) {
   const token = getTokenFromHeader(req);
   if (!token) return { error: "Token missing", status: 401 };
@@ -134,7 +165,8 @@ export async function GET(req) {
         .sort({ createdAt: -1 })
         .lean();
 
-      const tableData = pods.map(pod => ({
+   // In GET route - table format response
+const tableData = pods.map(pod => ({
   _id: pod._id,
   podNo: pod.podNo,
   date: pod.createdAt ? new Date(pod.createdAt).toLocaleDateString('en-IN') : '',
@@ -145,6 +177,7 @@ export async function GET(req) {
   orderType: pod.purchaseOrders?.[0]?.orderType || '',
   pinCode: pod.purchaseOrders?.[0]?.pinCode || '',
   state: pod.purchaseOrders?.[0]?.state || '',
+  fromState: pod.purchaseOrders?.[0]?.fromState || '', // ✅ ADDED
   district: pod.purchaseOrders?.[0]?.district || '',
   from: pod.purchaseOrders?.[0]?.from || '',
   to: pod.purchaseOrders?.[0]?.to || '',
@@ -152,7 +185,7 @@ export async function GET(req) {
   unloading: pod.podStatus || 'Pending',
   podUpload: pod.lrEntries?.[0]?.podUpload === 'UPLOADED' ? 'Completed' : 'Pending',
   podReceived: pod.lrEntries?.[0]?.podReceived || 'Pending',
-  inPersonParsal: pod.lrEntries?.[0]?.inPersonParsal || '', // ADD THIS LINE
+  inPersonParsal: pod.lrEntries?.[0]?.inPersonParsal || '',
   vendorName: pod.vendorFinancial?.vendorName || '',
   vendorCode: pod.vendorFinancial?.vendorCode || '',
   vehicleNo: '',
@@ -208,20 +241,27 @@ export async function POST(req) {
     const podNo = await getNextPODNumber(user.companyId);
 
     // Process data
-    const purchaseOrders = (body.purchaseOrders || []).map(order => ({
-      orderNo: order.orderNo || '',
-      partyName: order.partyName || '',
-      branch: order.branch || '',
-      plantCode: order.plantCode || '',
-      orderType: order.orderType || '',
-      pinCode: order.pinCode || '',
-      state: order.state || '',
-      district: order.district || '',
-      from: order.from || '',
-      to: order.to || '',
-      locationRate: order.locationRate || '',
-      weight: num(order.weight)
-    }));
+ // In POST route - purchaseOrders mapping
+const purchaseOrders = (body.purchaseOrders || []).map(order => ({
+  orderNo: order.orderNo || '',
+  partyName: order.partyName || '',
+  branch: order.branch || '',
+  plantCode: order.plantCode || '',
+  orderType: order.orderType || '',
+  pinCode: order.pinCode || '',
+  state: order.state || '',
+  stateName: order.stateName || order.state || '', // ✅ ADDED
+  fromState: order.fromState || '', // ✅ ADDED
+  district: order.district || '',
+  from: order.from || '',
+  fromName: order.fromName || order.from || '', // ✅ ADDED
+  to: order.to || '',
+  toName: order.toName || order.to || '', // ✅ ADDED
+  locationRate: order.locationRate || '',
+  weight: num(order.weight),
+  localStatus: order.localStatus || 'unknown', // ✅ ADDED
+  localStatusLabel: order.localStatusLabel || 'Unknown' // ✅ ADDED
+}));
 
    const lrEntries = (body.lrEntries || []).map(lr => ({
   _id: lr._id,
@@ -417,22 +457,29 @@ export async function PUT(req) {
     }
 
     // Update purchase orders
-    if (body.purchaseOrders) {
-      pod.purchaseOrders = body.purchaseOrders.map(order => ({
-        orderNo: order.orderNo || '',
-        partyName: order.partyName || '',
-        branch: order.branch || '',
-        plantCode: order.plantCode || '',
-        orderType: order.orderType || '',
-        pinCode: order.pinCode || '',
-        state: order.state || '',
-        district: order.district || '',
-        from: order.from || '',
-        to: order.to || '',
-        locationRate: order.locationRate || '',
-        weight: num(order.weight)
-      }));
-    }
+   // In PUT route - purchaseOrders mapping
+if (body.purchaseOrders) {
+  pod.purchaseOrders = body.purchaseOrders.map(order => ({
+    orderNo: order.orderNo || '',
+    partyName: order.partyName || '',
+    branch: order.branch || '',
+    plantCode: order.plantCode || '',
+    orderType: order.orderType || '',
+    pinCode: order.pinCode || '',
+    state: order.state || '',
+    stateName: order.stateName || order.state || '', // ✅ ADDED
+    fromState: order.fromState || '', // ✅ ADDED
+    district: order.district || '',
+    from: order.from || '',
+    fromName: order.fromName || order.from || '', // ✅ ADDED
+    to: order.to || '',
+    toName: order.toName || order.to || '', // ✅ ADDED
+    locationRate: order.locationRate || '',
+    weight: num(order.weight),
+    localStatus: order.localStatus || 'unknown', // ✅ ADDED
+    localStatusLabel: order.localStatusLabel || 'Unknown' // ✅ ADDED
+  }));
+}
 
     // Update LR entries
 if (body.lrEntries) {

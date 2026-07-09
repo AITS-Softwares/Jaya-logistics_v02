@@ -24,12 +24,44 @@ function isValidObjectId(id) {
 }
 
 // Role-based access check
+// ✅ Role-based access for vehicle negotiation management
 function isAuthorized(user) {
-  return (
-    user?.type === "company" ||
-    user?.role === "Admin" ||
-    user?.permissions?.includes("vehicle_negotiation")
+  if (!user) return false;
+
+  // ✅ Company users have full access
+  if (user.type === "company") return true;
+
+  // ✅ Check for specific roles
+  const allowedRoles = [
+    "admin",
+    "sales manager",
+    "purchase manager",
+    "inventory manager",
+    "accounts manager",
+    "hr manager",
+    "support executive",
+    "production head",
+    "project manager"
+  ];
+
+  // Handle both single role and roles array
+  const userRoles = Array.isArray(user.roles) 
+    ? user.roles 
+    : (user.role ? [user.role] : []);
+
+  const hasAllowedRole = userRoles.some(role =>
+    allowedRoles.includes(role.trim().toLowerCase())
   );
+
+  if (hasAllowedRole) return true;
+
+  // ✅ Check for specific permission (if your system uses permissions)
+  if (Array.isArray(user.permissions) && 
+      user.permissions.includes("vehicle_negotiation")) {
+    return true;
+  }
+
+  return false;
 }
 
 async function validateUser(req) {
@@ -254,6 +286,7 @@ export async function POST(req) {
       pinCode: order.pinCode || '',
       from: order.from && isValidObjectId(order.from) ? order.from : null,
       fromName: order.fromName || '',
+       fromState: order.fromState || '', 
       to: order.to && isValidObjectId(order.to) ? order.to : null,
       toName: order.toName || '',
       taluka: order.taluka || '',
@@ -264,6 +297,8 @@ export async function POST(req) {
       stateName: order.stateName || '',
       district: order.district || '',
       districtName: order.districtName || '',
+        localStatus: order.localStatus || 'unknown',
+  localStatusLabel: order.localStatusLabel || 'Unknown',
       weight: Number(order.weight) || 0,
       status: order.status || 'Open',
       collectionCharges: Number(order.collectionCharges) || 0,
@@ -487,6 +522,7 @@ if (!validDeliveryValues.includes(delivery)) {
         pinCode: order.pinCode || '',
         from: order.from && isValidObjectId(order.from) ? order.from : null,
         fromName: order.fromName || '',
+        fromState: order.fromState || '',
         to: order.to && isValidObjectId(order.to) ? order.to : null,
         toName: order.toName || '',
         taluka: order.taluka || '',
@@ -497,6 +533,8 @@ if (!validDeliveryValues.includes(delivery)) {
         stateName: order.stateName || '',
         district: order.district || '',
         districtName: order.districtName || '',
+           localStatus: order.localStatus || 'unknown',
+    localStatusLabel: order.localStatusLabel || 'Unknown',
         weight: Number(order.weight) || 0,
         status: order.status || 'Open',
         collectionCharges: Number(order.collectionCharges) || 0,

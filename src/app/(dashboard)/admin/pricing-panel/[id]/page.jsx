@@ -2127,6 +2127,8 @@
 //    </div>
 //  );
 //}
+
+
 "use client";
 
 import { useMemo, useState, useEffect, useRef, useCallback } from "react";
@@ -2449,6 +2451,7 @@ function defaultOrderRow() {
     pinCode: "",
     from: "",
     fromName: "",
+    fromState: "", // ✅ ADD THIS
     to: "",
     toName: "",
     taluka: "",
@@ -2472,9 +2475,10 @@ function defaultOrderRow() {
     cancellationCharges: "",
     loadingCharges: "",
     otherCharges: "",
+    localStatus: "unknown", // ✅ ADD THIS
+    localStatusLabel: "Unknown" // ✅ ADD THIS
   };
 }
-
 /* =========================
   UI COMPONENTS
 ========================= */
@@ -3200,30 +3204,30 @@ function OrdersTable({
   onFetchDistricts,
   onFetchTalukas
 }) {
-  const columns = [
-    { key: "orderNo", label: "Order No *", width: "100px" },
-    { key: "partyName", label: "Party Name", width: "130px" },
-    { key: "plantCode", label: "Plant Code", width: "90px" },
-    { key: "plantName", label: "Plant Name *Auto", width: "110px", readOnly: true },
-    { key: "plantCodeValue", label: "Plant Code Value *Auto", width: "110px", readOnly: true },
-    { key: "orderType", label: "Order Type", width: "90px" },
-    { key: "pinCode", label: "Pin Code", width: "90px" },
-    { key: "from", label: "From", width: "100px" },
-    { key: "to", label: "To", width: "100px" },
-    { key: "state", label: "State", width: "100px" },
-    { key: "district", label: "District", width: "100px" },
-    { key: "taluka", label: "Taluka", width: "100px" },
-    { key: "priceList", label: "Price List", width: "160px" },
-    { key: "locationRate", label: "Location Rate", width: "140px" },
-    { key: "weight", label: "Weight", type: "number", width: "70px" },
-    { key: "rate", label: "Rate (₹)", type: "number", width: "80px", readOnly: true },
-    { key: "totalAmount", label: "Total Amount", type: "number", width: "90px", readOnly: true },
-    { key: "collectionCharges", label: "Collection Charges", type: "number", width: "110px" },
-    { key: "cancellationCharges", label: "Cancellation Charges", width: "120px" },
-    { key: "loadingCharges", label: "Loading Charges", width: "110px" },
-    { key: "otherCharges", label: "Other Charges", type: "number", width: "100px" },
-  ];
-
+ const columns = [
+  { key: "orderNo", label: "Order No *", width: "100px" },
+  { key: "partyName", label: "Party Name", width: "130px" },
+  { key: "plantCode", label: "Plant Code", width: "90px" },
+  { key: "plantName", label: "Plant Name *Auto", width: "110px", readOnly: true },
+  { key: "plantCodeValue", label: "Plant Code Value *Auto", width: "110px", readOnly: true },
+  { key: "orderType", label: "Order Type", width: "90px" },
+  { key: "pinCode", label: "Pin Code", width: "90px" },
+  { key: "from", label: "From", width: "100px" },
+  { key: "to", label: "To", width: "100px" },
+  { key: "state", label: "State", width: "100px" },
+  { key: "district", label: "District", width: "100px" },
+  { key: "taluka", label: "Taluka", width: "100px" },
+  { key: "localStatus", label: "Local/Not Local", width: "110px" }, // ✅ ADD THIS
+  { key: "priceList", label: "Price List", width: "160px" },
+  { key: "locationRate", label: "Location Rate", width: "140px" },
+  { key: "weight", label: "Weight", type: "number", width: "70px" },
+  { key: "rate", label: "Rate (₹)", type: "number", width: "80px", readOnly: true },
+  { key: "totalAmount", label: "Total Amount", type: "number", width: "90px", readOnly: true },
+  { key: "collectionCharges", label: "Collection Charges", type: "number", width: "110px" },
+  { key: "cancellationCharges", label: "Cancellation Charges", width: "120px" },
+  { key: "loadingCharges", label: "Loading Charges", width: "110px" },
+  { key: "otherCharges", label: "Other Charges", type: "number", width: "100px" },
+];
   const isReadOnlyMode = !!selectedVehicleNegotiation;
 
   const handleStateChange = async (rowId, stateId, stateName) => {
@@ -3505,7 +3509,20 @@ function OrdersTable({
                     ))}
                   </select>
                 </td>
-
+{/* Local Status */}
+<td className="border border-yellow-300 px-1 py-1 text-center">
+  {row.fromState && row.stateName ? (
+    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${
+      row.fromState.trim().toUpperCase() === row.stateName.trim().toUpperCase()
+        ? 'bg-green-100 text-green-800 border border-green-300'
+        : 'bg-red-100 text-red-800 border border-red-300'
+    }`}>
+      {row.fromState.trim().toUpperCase() === row.stateName.trim().toUpperCase() ? '✅ Local' : '❌ Not Local'}
+    </span>
+  ) : (
+    <span className="text-xs text-gray-400">-</span>
+  )}
+</td>
                 <td className="border border-yellow-300 px-1 py-1">
                   <PriceListDropdown
                     rateMasters={rateMasters}
@@ -3743,29 +3760,32 @@ export default function EditPricingPanel() {
       });
 
       if (panel.orders && panel.orders.length > 0) {
-        const processedOrders = panel.orders.map(order => ({
-          ...order,
-          _id: order._id || uid(),
-          weight: order.weight?.toString() || "",
-          rate: order.rate?.toString() || "",
-          locationRate: order.locationRate || "",
-          taluka: order.taluka || "",
-          talukaName: order.talukaName || order.taluka || "",
-          talukaId: order.talukaId || "",
-          districtId: order.districtId || "",
-          stateId: order.stateId || "",
-          vehicleNegotiationId: order.vehicleNegotiationId || "",
-          priceList: order.priceList || "",
-          selectedRateMaster: null,
-          collectionCharges: order.collectionCharges?.toString() || "",
-          cancellationCharges: order.cancellationCharges || "",
-          loadingCharges: order.loadingCharges || "",
-          otherCharges: order.otherCharges?.toString() || "",
-        }));
-        setOrders(processedOrders);
-      } else {
-        setOrders([defaultOrderRow()]);
-      }
+  const processedOrders = panel.orders.map(order => ({
+    ...order,
+    _id: order._id || uid(),
+    weight: order.weight?.toString() || "",
+    rate: order.rate?.toString() || "",
+    locationRate: order.locationRate || "",
+    taluka: order.taluka || "",
+    talukaName: order.talukaName || order.taluka || "",
+    talukaId: order.talukaId || "",
+    districtId: order.districtId || "",
+    stateId: order.stateId || "",
+    vehicleNegotiationId: order.vehicleNegotiationId || "",
+    priceList: order.priceList || "",
+    selectedRateMaster: null,
+    collectionCharges: order.collectionCharges?.toString() || "",
+    cancellationCharges: order.cancellationCharges || "",
+    loadingCharges: order.loadingCharges || "",
+    otherCharges: order.otherCharges?.toString() || "",
+    fromState: order.fromState || '', // ✅ ADD THIS
+    localStatus: order.localStatus || 'unknown', // ✅ ADD THIS
+    localStatusLabel: order.localStatusLabel || 'Unknown' // ✅ ADD THIS
+  }));
+  setOrders(processedOrders);
+} else {
+  setOrders([defaultOrderRow()]);
+}
 
       if (panel.rateApproval) {
         setRateApproval({
@@ -3837,77 +3857,79 @@ export default function EditPricingPanel() {
       console.error('Error fetching plants:', error.message);
     }
   };
+const handleSelectVehicleNegotiation = async (fullVN) => {
+  setSelectedVehicleNegotiation(fullVN);
+  setCurrentVnn(fullVN.vnnNo);
 
-  const handleSelectVehicleNegotiation = async (fullVN) => {
-    setSelectedVehicleNegotiation(fullVN);
-    setCurrentVnn(fullVN.vnnNo);
+  setHeader(prev => ({
+    ...prev,
+    branch: fullVN.branch || "",
+    branchName: fullVN.branchName || "",
+    branchCode: fullVN.branchCode || "",
+    delivery: fullVN.delivery || "Normal",
+    date: fullVN.date ? new Date(fullVN.date).toISOString().split('T')[0] : prev.date,
+    partyName: fullVN.customerName || fullVN.partyName || "",
+    customerId: fullVN.customerId || ""
+  }));
 
-    setHeader(prev => ({
-      ...prev,
-      branch: fullVN.branch || "",
-      branchName: fullVN.branchName || "",
-      branchCode: fullVN.branchCode || "",
-      delivery: fullVN.delivery || "Normal",
-      date: fullVN.date ? new Date(fullVN.date).toISOString().split('T')[0] : prev.date,
-      partyName: fullVN.customerName || fullVN.partyName || "",
-      customerId: fullVN.customerId || ""
+  setBilling(prev => ({
+    ...prev,
+    collectionCharges: fullVN.collectionCharges || 0,
+    cancellationCharges: fullVN.cancellationCharges || "Nil",
+    loadingCharges: fullVN.loadingCharges || "Nil",
+    otherCharges: fullVN.otherCharges || 0,
+    loadingPoints: prev.loadingPoints || fullVN.loadingPoints || "",
+    dropPoints: prev.dropPoints || fullVN.dropPoints || ""
+  }));
+
+  if (fullVN.orders && fullVN.orders.length > 0) {
+    const newOrders = fullVN.orders.map(order => ({
+      _id: uid(),
+      orderNo: order.orderNo,
+      vehicleNegotiationId: fullVN._id,
+      vnnNumber: fullVN.vnnNo,
+      partyName: order.partyName || fullVN.customerName || "",
+      customerId: order.customerId || fullVN.customerId,
+      customerCode: order.customerCode || "",
+      contactPerson: order.contactPerson || fullVN.contactPerson || "",
+      plantCode: order.plantCode,
+      plantName: order.plantName || "",
+      plantCodeValue: order.plantCodeValue || "",
+      orderType: order.orderType || "Sales",
+      pinCode: order.pinCode || "",
+      from: order.from,
+      fromName: order.fromName || "",
+      fromState: order.fromState || "", // ✅ ADD THIS
+      to: order.to,
+      toName: order.toName || "",
+      taluka: order.taluka || "",
+      talukaName: order.talukaName || order.taluka || "",
+      talukaId: order.talukaId || "",
+      district: order.district,
+      districtName: order.districtName || "",
+      districtId: order.districtId || "",
+      state: order.state,
+      stateName: order.stateName || "",
+      stateId: order.stateId || "",
+      country: order.country,
+      countryName: order.countryName || "",
+      locationRate: "",
+      priceList: "",
+      selectedRateMaster: null,
+      weight: order.weight || "",
+      rate: "",
+      totalAmount: 0,
+      collectionCharges: "",
+      cancellationCharges: "",
+      loadingCharges: "",
+      otherCharges: "",
+      localStatus: order.localStatus || "unknown", // ✅ ADD THIS
+      localStatusLabel: order.localStatusLabel || "Unknown" // ✅ ADD THIS
     }));
-
-    setBilling(prev => ({
-      ...prev,
-      collectionCharges: fullVN.collectionCharges || 0,
-      cancellationCharges: fullVN.cancellationCharges || "Nil",
-      loadingCharges: fullVN.loadingCharges || "Nil",
-      otherCharges: fullVN.otherCharges || 0,
-      loadingPoints: prev.loadingPoints || fullVN.loadingPoints || "",
-      dropPoints: prev.dropPoints || fullVN.dropPoints || ""
-    }));
-
-    if (fullVN.orders && fullVN.orders.length > 0) {
-      const newOrders = fullVN.orders.map(order => ({
-        _id: uid(),
-        orderNo: order.orderNo,
-        vehicleNegotiationId: fullVN._id,
-        vnnNumber: fullVN.vnnNo,
-        partyName: order.partyName || fullVN.customerName || "",
-        customerId: order.customerId || fullVN.customerId,
-        customerCode: order.customerCode || "",
-        contactPerson: order.contactPerson || fullVN.contactPerson || "",
-        plantCode: order.plantCode,
-        plantName: order.plantName || "",
-        plantCodeValue: order.plantCodeValue || "",
-        orderType: order.orderType || "Sales",
-        pinCode: order.pinCode || "",
-        from: order.from,
-        fromName: order.fromName || "",
-        to: order.to,
-        toName: order.toName || "",
-        taluka: order.taluka || "",
-        talukaName: order.talukaName || order.taluka || "",
-        talukaId: order.talukaId || "",
-        district: order.district,
-        districtName: order.districtName || "",
-        districtId: order.districtId || "",
-        state: order.state,
-        stateName: order.stateName || "",
-        stateId: order.stateId || "",
-        country: order.country,
-        countryName: order.countryName || "",
-        locationRate: "",
-        priceList: "",
-        selectedRateMaster: null,
-        weight: order.weight || "",
-        rate: "",
-        totalAmount: 0,
-        collectionCharges: "",
-        cancellationCharges: "",
-        loadingCharges: "",
-        otherCharges: "",
-      }));
-      
-      setOrders(newOrders);
-    }
-  };
+    
+    setOrders(newOrders);
+  }
+};
 
   const updateOrder = (id, key, value) => {
     setOrders((prev) => prev.map((r) => (r._id === id ? { ...r, [key]: value } : r)));

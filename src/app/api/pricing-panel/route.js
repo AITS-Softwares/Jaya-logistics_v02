@@ -7,14 +7,45 @@ import { getNextPricingSerialNumber } from "./PricingCounter";
 import mongoose from 'mongoose';
 
 // ✅ Role-based access check
+// ✅ Role-based access for vehicle negotiation management
 function isAuthorized(user) {
-  return (
-    user?.type === "company" ||
-    user?.role === "Admin" ||
-    user?.permissions?.includes("pricing_panel")
-  );
-}
+  if (!user) return false;
 
+  // ✅ Company users have full access
+  if (user.type === "company") return true;
+
+  // ✅ Check for specific roles
+  const allowedRoles = [
+    "admin",
+    "sales manager",
+    "purchase manager",
+    "inventory manager",
+    "accounts manager",
+    "hr manager",
+    "support executive",
+    "production head",
+    "project manager"
+  ];
+
+  // Handle both single role and roles array
+  const userRoles = Array.isArray(user.roles) 
+    ? user.roles 
+    : (user.role ? [user.role] : []);
+
+  const hasAllowedRole = userRoles.some(role =>
+    allowedRoles.includes(role.trim().toLowerCase())
+  );
+
+  if (hasAllowedRole) return true;
+
+  // ✅ Check for specific permission (if your system uses permissions)
+  if (Array.isArray(user.permissions) && 
+      user.permissions.includes("vehicle_negotiation")) {
+    return true;
+  }
+
+  return false;
+}
 async function validateUser(req) {
   const token = getTokenFromHeader(req);
   if (!token) return { error: "Token missing", status: 401 };
@@ -114,40 +145,43 @@ export async function POST(req) {
         const district = body.districts?.find(d => d._id === order.districtId);
         const taluka = body.talukas?.find(t => t._id === order.talukaId);
         
-        orders.push({
-          orderNo: order.orderNo,
-          vehicleNegotiationId: vehicleNegotiationId,
-          partyName: order.partyName || body.header?.partyName || '',
-          customerId: order.customerId || body.header?.customerId || null,
-          customerCode: order.customerCode || '',
-          contactPerson: order.contactPerson || '',
-          plantCode: order.plantCode || null,
-          plantName: order.plantName || (plant ? `${plant.name} (${plant.code})` : ''),
-          plantCodeValue: order.plantCodeValue || '',
-          orderType: order.orderType || 'Sales',
-          pinCode: order.pinCode || '',
-          country: order.country || '',
-          countryName: country?.name || order.countryName || '',
-          state: order.state || '',
-          stateName: state ? state.name : order.stateName || '',
-          stateId: order.stateId || null,
-          district: order.district || '',
-          districtName: district ? district.name : order.districtName || '',
-          districtId: order.districtId || null,
-          // TALUKA FIELDS - Properly mapped
-          taluka: order.taluka || '',
-          talukaName: taluka ? taluka.name : (order.talukaName || order.taluka || ''),
-          talukaId: order.talukaId || null,
-          from: order.from || null,
-          fromName: fromBranch ? fromBranch.name : order.fromName || '',
-          to: order.to || null,
-          toName: toBranch ? toBranch.name : order.toName || '',
-          locationRate: order.locationRate || '',  // Store as string, not number
-          priceList: order.priceList || '',
-          weight: parseFloat(order.weight) || 0,
-          rate: parseFloat(order.rate) || 0,
-          totalAmount: (parseFloat(order.weight) || 0) * (parseFloat(order.rate) || 0)
-        });
+      // In POST /api/pricing-panel - update orders processing
+orders.push({
+  orderNo: order.orderNo,
+  vehicleNegotiationId: vehicleNegotiationId,
+  partyName: order.partyName || body.header?.partyName || '',
+  customerId: order.customerId || body.header?.customerId || null,
+  customerCode: order.customerCode || '',
+  contactPerson: order.contactPerson || '',
+  plantCode: order.plantCode || null,
+  plantName: order.plantName || (plant ? `${plant.name} (${plant.code})` : ''),
+  plantCodeValue: order.plantCodeValue || '',
+  orderType: order.orderType || 'Sales',
+  pinCode: order.pinCode || '',
+  country: order.country || '',
+  countryName: country?.name || order.countryName || '',
+  state: order.state || '',
+  stateName: state ? state.name : order.stateName || '',
+  stateId: order.stateId || null,
+  district: order.district || '',
+  districtName: district ? district.name : order.districtName || '',
+  districtId: order.districtId || null,
+  taluka: order.taluka || '',
+  talukaName: taluka ? taluka.name : (order.talukaName || order.taluka || ''),
+  talukaId: order.talukaId || null,
+  from: order.from || null,
+  fromName: fromBranch ? fromBranch.name : order.fromName || '',
+  fromState: order.fromState || '', // ✅ ADD THIS
+  to: order.to || null,
+  toName: toBranch ? toBranch.name : order.toName || '',
+  locationRate: order.locationRate || '',
+  priceList: order.priceList || '',
+  weight: parseFloat(order.weight) || 0,
+  rate: parseFloat(order.rate) || 0,
+  totalAmount: (parseFloat(order.weight) || 0) * (parseFloat(order.rate) || 0),
+  localStatus: order.localStatus || 'unknown', // ✅ ADD THIS
+  localStatusLabel: order.localStatusLabel || 'Unknown' // ✅ ADD THIS
+});
       }
     }
     
@@ -365,47 +399,50 @@ export async function PUT(req) {
     }
 
     // Update orders - WITH COMPLETE TALUKA FIELDS
-    if (body.orders) {
-      const processedOrders = body.orders.map(order => ({
-        _id: order._id && mongoose.Types.ObjectId.isValid(order._id) 
-          ? new mongoose.Types.ObjectId(order._id) 
-          : new mongoose.Types.ObjectId(),
-        orderNo: order.orderNo || '',
-        vehicleNegotiationId: order.vehicleNegotiationId || null,
-        partyName: order.partyName || '',
-        customerId: order.customerId || null,
-        customerCode: order.customerCode || '',
-        contactPerson: order.contactPerson || '',
-        plantCode: order.plantCode || null,
-        plantName: order.plantName || '',
-        plantCodeValue: order.plantCodeValue || '',
-        orderType: order.orderType || 'Sales',
-        pinCode: order.pinCode || '',
-        country: order.country || '',
-        countryName: order.countryName || '',
-        state: order.state || '',
-        stateName: order.stateName || '',
-        stateId: order.stateId || null,
-        district: order.district || '',
-        districtName: order.districtName || '',
-        districtId: order.districtId || null,
-        // TALUKA FIELDS - Properly mapped
-        taluka: order.taluka || '',
-        talukaName: order.talukaName || order.taluka || '',
-        talukaId: order.talukaId || null,
-        from: order.from || null,
-        fromName: order.fromName || '',
-        to: order.to || null,
-        toName: order.toName || '',
-       locationRate: order.locationRate || '',  // Store as string
-        priceList: order.priceList || '',
-        weight: parseFloat(order.weight) || 0,
-        rate: parseFloat(order.rate) || 0,
-        totalAmount: (parseFloat(order.weight) || 0) * (parseFloat(order.rate) || 0)
-      }));
-      
-      pricingPanel.orders = processedOrders;
-    }
+   // In PUT /api/pricing-panel - update orders processing
+if (body.orders) {
+  const processedOrders = body.orders.map(order => ({
+    _id: order._id && mongoose.Types.ObjectId.isValid(order._id) 
+      ? new mongoose.Types.ObjectId(order._id) 
+      : new mongoose.Types.ObjectId(),
+    orderNo: order.orderNo || '',
+    vehicleNegotiationId: order.vehicleNegotiationId || null,
+    partyName: order.partyName || '',
+    customerId: order.customerId || null,
+    customerCode: order.customerCode || '',
+    contactPerson: order.contactPerson || '',
+    plantCode: order.plantCode || null,
+    plantName: order.plantName || '',
+    plantCodeValue: order.plantCodeValue || '',
+    orderType: order.orderType || 'Sales',
+    pinCode: order.pinCode || '',
+    country: order.country || '',
+    countryName: order.countryName || '',
+    state: order.state || '',
+    stateName: order.stateName || '',
+    stateId: order.stateId || null,
+    district: order.district || '',
+    districtName: order.districtName || '',
+    districtId: order.districtId || null,
+    taluka: order.taluka || '',
+    talukaName: order.talukaName || order.taluka || '',
+    talukaId: order.talukaId || null,
+    from: order.from || null,
+    fromName: order.fromName || '',
+    fromState: order.fromState || '', // ✅ ADD THIS
+    to: order.to || null,
+    toName: order.toName || '',
+    locationRate: order.locationRate || '',
+    priceList: order.priceList || '',
+    weight: parseFloat(order.weight) || 0,
+    rate: parseFloat(order.rate) || 0,
+    totalAmount: (parseFloat(order.weight) || 0) * (parseFloat(order.rate) || 0),
+    localStatus: order.localStatus || 'unknown', // ✅ ADD THIS
+    localStatusLabel: order.localStatusLabel || 'Unknown' // ✅ ADD THIS
+  }));
+  
+  pricingPanel.orders = processedOrders;
+}
 
     // Update rate approval
     if (body.rateApproval) {

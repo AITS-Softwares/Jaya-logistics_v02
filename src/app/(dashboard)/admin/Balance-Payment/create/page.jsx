@@ -201,23 +201,29 @@ export default function CreateBalancePayment() {
   const [bankVendorCode, setBankVendorCode] = useState("");
   const [paymentStatus, setPaymentStatus] = useState("Pending");
 
-  const defaultOrderRow = () => ({
-    _id: uid(),
-    orderNo: "",
-    partyName: "",
-    plantCode: "",
-    orderType: "",
-    pinCode: "",
-    state: "",
-    district: "",
-    from: "",
-    to: "",
-    locationRate: "",
-    priceList: "",
-    weight: "",
-    rate: "",
-    totalAmount: ""
-  });
+const defaultOrderRow = () => ({
+  _id: uid(),
+  orderNo: "",
+  partyName: "",
+  plantCode: "",
+  orderType: "",
+  pinCode: "",
+  state: "",
+  stateName: "", // ✅ ADD THIS
+  fromState: "", // ✅ ADD THIS
+  district: "",
+  from: "",
+  fromName: "", // ✅ ADD THIS
+  to: "",
+  toName: "", // ✅ ADD THIS
+  locationRate: "",
+  priceList: "",
+  weight: "",
+  rate: "",
+  totalAmount: "",
+  localStatus: "unknown", // ✅ ADD THIS
+  localStatusLabel: "Unknown" // ✅ ADD THIS
+});
 
   useEffect(() => {
     fetchAutoPaymentNumber();
@@ -240,131 +246,138 @@ export default function CreateBalancePayment() {
   };
 
   // Handle POD Selection - Load data from POD directly
-  const handlePODSelect = async (pod) => {
-    setLoadingData(true);
-    setPodNo(pod.podNo);
-    setPurchaseNo(pod.purchaseNo);
+ // Handle POD Selection - Load data from POD directly
+const handlePODSelect = async (pod) => {
+  setLoadingData(true);
+  setPodNo(pod.podNo);
+  setPurchaseNo(pod.purchaseNo);
+  
+  try {
+    const token = localStorage.getItem('token');
     
-    try {
-      const token = localStorage.getItem('token');
+    // Fetch full POD data
+    const podRes = await fetch(`/api/pod-panel?podNo=${pod.podNo}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const podData = await podRes.json();
+    
+    console.log("📦 Full POD Data:", podData);
+    
+    if (podData.success && podData.data) {
+      const pd = podData.data;
       
-      // Fetch full POD data
-      const podRes = await fetch(`/api/pod-panel?podNo=${pod.podNo}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const podData = await podRes.json();
+      // Extract data from POD structure
+      const headerData = pd.header || {};
+      const vendorFinancial = pd.vendorFinancial || {};
+      const purchaseOrders = pd.purchaseOrders || [];
+      const firstOrder = purchaseOrders[0] || {};
+      const podStatusSection = pd.podStatusSection || {};
       
-      console.log("📦 Full POD Data:", podData);
+      // Basic Info
+      setBranch(headerData.branch || headerData.branchName || "");
+      setDate(headerData.date ? new Date(headerData.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
+      setVendorName(vendorFinancial.vendorName || pod.vendorName || "");
+      setPurchaseNo(pd.purchaseNo || pod.purchaseNo || "");
       
-      if (podData.success && podData.data) {
-        const pd = podData.data;
-        
-        // Extract data from POD structure
-        const headerData = pd.header || {};
-        const vendorFinancial = pd.vendorFinancial || {};
-        const purchaseOrders = pd.purchaseOrders || [];
-        const firstOrder = purchaseOrders[0] || {};
-        const podStatusSection = pd.podStatusSection || {};
-        
-        // Basic Info
-        setBranch(headerData.branch || headerData.branchName || "");
-        setDate(headerData.date ? new Date(headerData.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
-        setVendorName(vendorFinancial.vendorName || pod.vendorName || "");
-        setPurchaseNo(pd.purchaseNo || pod.purchaseNo || "");
-        
-        // Purchase Details
-        setVendorStatus(vendorFinancial.vendorStatus || "Active");
-        setVendorCode(vendorFinancial.vendorCode || "");
-        setVendorNamePayment(vendorFinancial.vendorName || pod.vendorName || "");
-        setVehicleNo(firstOrder.vehicleNo || vendorFinancial.vehicleNo || "");
-        setPurchaseType(pd.purchaseType || "Loading & Unloading");
-        setRateType(pd.rateType || "Per MT");
-        setRate(vendorFinancial.rate?.toString() || firstOrder.rate?.toString() || "");
-        setWeight(firstOrder.weight?.toString() || vendorFinancial.weight?.toString() || "");
-        
-        // Financial Values from Vendor Financial
-        const totalAmount = vendorFinancial.total || vendorFinancial.amount || 0;
-        const advanceAmount = vendorFinancial.advance || 0;
-        const totalAdditionsValue = vendorFinancial.totalAdditions || 0;
-        const totalDeductionsValue = vendorFinancial.totalDeductions || 0;
-        const poDeductionValue = vendorFinancial.poDeduction || 0;
-        const podDeductionValue = vendorFinancial.podDeduction || 0;
-        const finalBalanceValue = vendorFinancial.finalBalance || (totalAmount - advanceAmount - poDeductionValue - podDeductionValue);
-        const dueDateValue = podStatusSection.dueDate || "";
-        
-        setAmount(totalAmount.toString());
-        setAdvance(advanceAmount.toString());
-        setTotalAddition(totalAdditionsValue.toString());
-        setTotalDeduction(totalDeductionsValue.toString());
-        setPoAddition("0");
-        setPoDeduction(poDeductionValue.toString());
-        setPodDeduction(podDeductionValue.toString());
-        setFinalBalance(finalBalanceValue.toString());
-        setDueDate(dueDateValue);
-        
-        const calculatedBalance = totalAmount - advanceAmount;
-        setBalance(calculatedBalance.toFixed(2));
-        setFinalAmount(finalBalanceValue.toString());
-        
-        // Set Order Rows from purchaseOrders
-        if (purchaseOrders.length > 0) {
-          const mappedOrders = purchaseOrders.map(order => ({
-            _id: uid(),
-            orderNo: order.orderNo || "",
-            partyName: order.partyName || "",
-            plantCode: order.plantCode || "",
-            orderType: order.orderType || "Sales",
-            pinCode: order.pinCode || "",
-            state: order.state || "",
-            district: order.district || "",
-            from: order.from || "",
-            to: order.to || "",
-            locationRate: order.locationRate || "",
-            priceList: order.priceList || "",
-            weight: order.weight?.toString() || "0",
-            rate: order.rate?.toString() || "0",
-            totalAmount: order.totalAmount?.toString() || ((order.weight || 0) * (order.rate || 0)).toString()
-          }));
-          setOrderRows(mappedOrders);
-        }
-        
-        // Set Payment Details from Advance Payment if available
-        let paymentDetailsAdv = {};
-        let vendorDetailsAdv = {};
-        
-        try {
-          const advanceRes = await fetch(`/api/Advance-Payment?purchaseNo=${pd.purchaseNo || pod.purchaseNo}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          const advanceData = await advanceRes.json();
-          
-          if (advanceData && advanceData.success && advanceData.data) {
-            const advPayment = advanceData.data;
-            paymentDetailsAdv = advPayment.paymentDetails || {};
-            vendorDetailsAdv = advPayment.vendorDetails || {};
-          }
-        } catch (err) {
-          console.log("No advance payment found");
-        }
-        
-        setVendorNameDebit(paymentDetailsAdv.vendorNameDebit || vendorFinancial.vendorName || "");
-        setAccountNoCredit(paymentDetailsAdv.accountNoCredit || vendorDetailsAdv.accountNo || "");
-        setTransactionId(paymentDetailsAdv.transactionId || vendorDetailsAdv.transactionId || "");
-        setBankVendorCode(paymentDetailsAdv.bankVendorCode || vendorDetailsAdv.vendorCode || vendorFinancial.vendorCode || "");
-        setRemarks(paymentDetailsAdv.remarks || "Balance Payment");
-        
-        alert(`✅ Loaded POD: ${pd.podNo || pod.podNo}\n✅ Purchase: ${pd.purchaseNo || pod.purchaseNo}\n💰 Total Amount: ₹${totalAmount.toLocaleString()}\n💵 Advance: ₹${advanceAmount.toLocaleString()}\n📊 Balance: ₹${calculatedBalance.toLocaleString()}\n📉 PO Deduction: ₹${poDeductionValue.toLocaleString()}\n🏦 POD Deduction: ₹${podDeductionValue.toLocaleString()}\n💎 Final Balance: ₹${finalBalanceValue.toLocaleString()}\n📅 Due Date: ${dueDateValue || 'N/A'}`);
-        
-      } else {
-        alert(`⚠️ POD data not found for POD No: ${pod.podNo}`);
+      // Purchase Details
+      setVendorStatus(vendorFinancial.vendorStatus || "Active");
+      setVendorCode(vendorFinancial.vendorCode || "");
+      setVendorNamePayment(vendorFinancial.vendorName || pod.vendorName || "");
+      setVehicleNo(firstOrder.vehicleNo || vendorFinancial.vehicleNo || "");
+      setPurchaseType(pd.purchaseType || "Loading & Unloading");
+      setRateType(pd.rateType || "Per MT");
+      setRate(vendorFinancial.rate?.toString() || firstOrder.rate?.toString() || "");
+      setWeight(firstOrder.weight?.toString() || vendorFinancial.weight?.toString() || "");
+      
+      // Financial Values from Vendor Financial
+      const totalAmount = vendorFinancial.total || vendorFinancial.amount || 0;
+      const advanceAmount = vendorFinancial.advance || 0;
+      const totalAdditionsValue = vendorFinancial.totalAdditions || 0;
+      const totalDeductionsValue = vendorFinancial.totalDeductions || 0;
+      const poDeductionValue = vendorFinancial.poDeduction || 0;
+      const podDeductionValue = vendorFinancial.podDeduction || 0;
+      const finalBalanceValue = vendorFinancial.finalBalance || (totalAmount - advanceAmount - poDeductionValue - podDeductionValue);
+      const dueDateValue = podStatusSection.dueDate || "";
+      
+      setAmount(totalAmount.toString());
+      setAdvance(advanceAmount.toString());
+      setTotalAddition(totalAdditionsValue.toString());
+      setTotalDeduction(totalDeductionsValue.toString());
+      setPoAddition("0");
+      setPoDeduction(poDeductionValue.toString());
+      setPodDeduction(podDeductionValue.toString());
+      setFinalBalance(finalBalanceValue.toString());
+      setDueDate(dueDateValue);
+      
+      const calculatedBalance = totalAmount - advanceAmount;
+      setBalance(calculatedBalance.toFixed(2));
+      setFinalAmount(finalBalanceValue.toString());
+      
+      // Set Order Rows from purchaseOrders - UPDATED with fromState
+      if (purchaseOrders.length > 0) {
+        const mappedOrders = purchaseOrders.map(order => ({
+          _id: uid(),
+          orderNo: order.orderNo || "",
+          partyName: order.partyName || "",
+          plantCode: order.plantCode || "",
+          orderType: order.orderType || "Sales",
+          pinCode: order.pinCode || "",
+          state: order.state || "",
+          stateName: order.stateName || order.state || "", // ✅ ADDED
+          fromState: order.fromState || "", // ✅ ADDED
+          district: order.district || "",
+          from: order.from || "",
+          fromName: order.fromName || order.from || "", // ✅ ADDED
+          to: order.to || "",
+          toName: order.toName || order.to || "", // ✅ ADDED
+          locationRate: order.locationRate || "",
+          priceList: order.priceList || "",
+          weight: order.weight?.toString() || "0",
+          rate: order.rate?.toString() || "0",
+          totalAmount: order.totalAmount?.toString() || ((order.weight || 0) * (order.rate || 0)).toString(),
+          localStatus: order.localStatus || "unknown", // ✅ ADDED
+          localStatusLabel: order.localStatusLabel || "Unknown" // ✅ ADDED
+        }));
+        setOrderRows(mappedOrders);
       }
-    } catch (error) {
-      console.error('Error loading POD data:', error);
-      alert('Failed to load POD details');
-    } finally {
-      setLoadingData(false);
+      
+      // Set Payment Details from Advance Payment if available
+      let paymentDetailsAdv = {};
+      let vendorDetailsAdv = {};
+      
+      try {
+        const advanceRes = await fetch(`/api/Advance-Payment?purchaseNo=${pd.purchaseNo || pod.purchaseNo}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const advanceData = await advanceRes.json();
+        
+        if (advanceData && advanceData.success && advanceData.data) {
+          const advPayment = advanceData.data;
+          paymentDetailsAdv = advPayment.paymentDetails || {};
+          vendorDetailsAdv = advPayment.vendorDetails || {};
+        }
+      } catch (err) {
+        console.log("No advance payment found");
+      }
+      
+      setVendorNameDebit(paymentDetailsAdv.vendorNameDebit || vendorFinancial.vendorName || "");
+      setAccountNoCredit(paymentDetailsAdv.accountNoCredit || vendorDetailsAdv.accountNo || "");
+      setTransactionId(paymentDetailsAdv.transactionId || vendorDetailsAdv.transactionId || "");
+      setBankVendorCode(paymentDetailsAdv.bankVendorCode || vendorDetailsAdv.vendorCode || vendorFinancial.vendorCode || "");
+      setRemarks(paymentDetailsAdv.remarks || "Balance Payment");
+      
+      alert(`✅ Loaded POD: ${pd.podNo || pod.podNo}\n✅ Purchase: ${pd.purchaseNo || pod.purchaseNo}\n💰 Total Amount: ₹${totalAmount.toLocaleString()}\n💵 Advance: ₹${advanceAmount.toLocaleString()}\n📊 Balance: ₹${calculatedBalance.toLocaleString()}\n📉 PO Deduction: ₹${poDeductionValue.toLocaleString()}\n🏦 POD Deduction: ₹${podDeductionValue.toLocaleString()}\n💎 Final Balance: ₹${finalBalanceValue.toLocaleString()}\n📅 Due Date: ${dueDateValue || 'N/A'}`);
+      
+    } else {
+      alert(`⚠️ POD data not found for POD No: ${pod.podNo}`);
     }
-  };
+  } catch (error) {
+    console.error('Error loading POD data:', error);
+    alert('Failed to load POD details');
+  } finally {
+    setLoadingData(false);
+  }
+};
 
   // Recalculate final balance when related fields change
   useEffect(() => {
@@ -593,48 +606,68 @@ export default function CreateBalancePayment() {
         <Card title="Order Details">
           <div className="overflow-auto rounded-xl border border-slate-200">
             <table className="min-w-max w-full text-sm">
-              <thead className="bg-slate-100">
-                <tr>
-                  <th className="border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">Order No</th>
-                  <th className="border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">Party Name</th>
-                  <th className="border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">Plant Code</th>
-                  <th className="border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">Order Type</th>
-                  <th className="border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">Pin Code</th>
-                  <th className="border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">State</th>
-                  <th className="border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">District</th>
-                  <th className="border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">From</th>
-                  <th className="border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">To</th>
-                  <th className="border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">Location Rate</th>
-                  
-                  <th className="border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">Weight</th>
-                  <th className="border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">Rate</th>
-                  <th className="border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">Total Amount</th>
-                  <th className="border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {orderRows.map((row) => (
-                  <tr key={row._id} className="hover:bg-slate-50">
-                    <td className="border border-slate-200 px-2 py-1"><input type="text" value={row.orderNo} readOnly className="w-full px-2 py-1 border rounded bg-gray-100" /></td>
-                    <td className="border border-slate-200 px-2 py-1"><input type="text" value={row.partyName} readOnly className="w-full px-2 py-1 border rounded bg-gray-100" /></td>
-                    <td className="border border-slate-200 px-2 py-1"><input type="text" value={row.plantCode} readOnly className="w-full px-2 py-1 border rounded bg-gray-100" /></td>
-                    <td className="border border-slate-200 px-2 py-1"><input type="text" value={row.orderType} readOnly className="w-full px-2 py-1 border rounded bg-gray-100" /></td>
-                    <td className="border border-slate-200 px-2 py-1"><input type="text" value={row.pinCode} readOnly className="w-full px-2 py-1 border rounded bg-gray-100" /></td>
-                    <td className="border border-slate-200 px-2 py-1"><input type="text" value={row.state} readOnly className="w-full px-2 py-1 border rounded bg-gray-100" /></td>
-                    <td className="border border-slate-200 px-2 py-1"><input type="text" value={row.district} readOnly className="w-full px-2 py-1 border rounded bg-gray-100" /></td>
-                    <td className="border border-slate-200 px-2 py-1"><input type="text" value={row.from} readOnly className="w-full px-2 py-1 border rounded bg-gray-100" /></td>
-                    <td className="border border-slate-200 px-2 py-1"><input type="text" value={row.to} readOnly className="w-full px-2 py-1 border rounded bg-gray-100" /></td>
-                    <td className="border border-slate-200 px-2 py-1"><input type="text" value={row.locationRate} readOnly className="w-full px-2 py-1 border rounded bg-gray-100" /></td>
-  
-                    <td className="border border-slate-200 px-2 py-1"><input type="number" value={row.weight} readOnly className="w-20 px-2 py-1 border rounded bg-gray-100" /></td>
-                    <td className="border border-slate-200 px-2 py-1"><input type="number" value={row.rate} readOnly className="w-20 px-2 py-1 border rounded bg-gray-100" /></td>
-                    <td className="border border-slate-200 px-2 py-1"><input type="number" value={row.totalAmount} readOnly className="w-24 px-2 py-1 bg-gray-100 rounded font-bold text-emerald-700" /></td>
-                    <td className="border border-slate-200 px-2 py-1 text-center">
-                      <button onClick={() => removeOrderRow(row._id)} className="text-red-600 hover:text-red-800">✕</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
+             <thead className="bg-slate-100">
+  <tr>
+    <th className="border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">Order No</th>
+    <th className="border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">Party Name</th>
+    <th className="border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">Plant Code</th>
+    <th className="border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">Order Type</th>
+    <th className="border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">Pin Code</th>
+    <th className="border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">State</th>
+    <th className="border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">From State</th> {/* ✅ ADDED */}
+    <th className="border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">Local/Not Local</th> {/* ✅ ADDED */}
+    <th className="border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">District</th>
+    <th className="border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">From</th>
+    <th className="border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">To</th>
+    <th className="border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">Location Rate</th>
+    <th className="border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">Weight</th>
+    <th className="border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">Rate</th>
+    <th className="border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">Total Amount</th>
+    <th className="border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">Actions</th>
+  </tr>
+</thead>
+            <tbody>
+  {orderRows.map((row) => {
+    // Determine local status
+    const isLocal = row.fromState && row.state && 
+      row.fromState.trim().toUpperCase() === row.state.trim().toUpperCase();
+    
+    return (
+      <tr key={row._id} className="hover:bg-slate-50">
+        <td className="border border-slate-200 px-2 py-1"><input type="text" value={row.orderNo} readOnly className="w-full px-2 py-1 border rounded bg-gray-100" /></td>
+        <td className="border border-slate-200 px-2 py-1"><input type="text" value={row.partyName} readOnly className="w-full px-2 py-1 border rounded bg-gray-100" /></td>
+        <td className="border border-slate-200 px-2 py-1"><input type="text" value={row.plantCode} readOnly className="w-full px-2 py-1 border rounded bg-gray-100" /></td>
+        <td className="border border-slate-200 px-2 py-1"><input type="text" value={row.orderType} readOnly className="w-full px-2 py-1 border rounded bg-gray-100" /></td>
+        <td className="border border-slate-200 px-2 py-1"><input type="text" value={row.pinCode} readOnly className="w-full px-2 py-1 border rounded bg-gray-100" /></td>
+        <td className="border border-slate-200 px-2 py-1"><input type="text" value={row.state} readOnly className="w-full px-2 py-1 border rounded bg-gray-100" /></td>
+        <td className="border border-slate-200 px-2 py-1"><input type="text" value={row.fromState} readOnly className="w-full px-2 py-1 border rounded bg-gray-100" /></td> {/* ✅ ADDED */}
+        <td className="border border-slate-200 px-2 py-1 text-center">
+          {row.fromState && row.state ? (
+            <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${
+              isLocal
+                ? 'bg-green-100 text-green-800 border border-green-300'
+                : 'bg-red-100 text-red-800 border border-red-300'
+            }`}>
+              {isLocal ? '✅ Local' : '❌ Not Local'}
+            </span>
+          ) : (
+            <span className="text-xs text-gray-400">-</span>
+          )}
+        </td> {/* ✅ ADDED */}
+        <td className="border border-slate-200 px-2 py-1"><input type="text" value={row.district} readOnly className="w-full px-2 py-1 border rounded bg-gray-100" /></td>
+        <td className="border border-slate-200 px-2 py-1"><input type="text" value={row.from} readOnly className="w-full px-2 py-1 border rounded bg-gray-100" /></td>
+        <td className="border border-slate-200 px-2 py-1"><input type="text" value={row.to} readOnly className="w-full px-2 py-1 border rounded bg-gray-100" /></td>
+        <td className="border border-slate-200 px-2 py-1"><input type="text" value={row.locationRate} readOnly className="w-full px-2 py-1 border rounded bg-gray-100" /></td>
+        <td className="border border-slate-200 px-2 py-1"><input type="number" value={row.weight} readOnly className="w-20 px-2 py-1 border rounded bg-gray-100" /></td>
+        <td className="border border-slate-200 px-2 py-1"><input type="number" value={row.rate} readOnly className="w-20 px-2 py-1 border rounded bg-gray-100" /></td>
+        <td className="border border-slate-200 px-2 py-1"><input type="number" value={row.totalAmount} readOnly className="w-24 px-2 py-1 bg-gray-100 rounded font-bold text-emerald-700" /></td>
+        <td className="border border-slate-200 px-2 py-1 text-center">
+          <button onClick={() => removeOrderRow(row._id)} className="text-red-600 hover:text-red-800">✕</button>
+        </td>
+      </tr>
+    );
+  })}
+</tbody>
               <tfoot className="bg-slate-100">
                 <tr>
                   <td colSpan="14" className="border border-slate-200 px-3 py-2 text-right font-bold">Total Order Amount:</td>

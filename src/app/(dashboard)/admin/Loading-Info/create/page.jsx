@@ -307,6 +307,7 @@ function defaultOrderRow() {
     stateName: "",
     from: "",
     fromName: "",
+    fromState: "", // ✅ ADD THIS
     to: "",
     toName: "",
     weight: "",
@@ -314,6 +315,8 @@ function defaultOrderRow() {
     cancellationCharges: "",
     loadingCharges: "",
     otherCharges: "",
+    localStatus: "unknown", // ✅ ADD THIS
+    localStatusLabel: "Unknown" // ✅ ADD THIS
   };
 }
 
@@ -1709,6 +1712,7 @@ export default function CreateLoadingInfoPanel() {
             stateName: order.stateName || order.state || "",
             from: order.fromName || order.from || "",
             fromName: order.fromName || order.from || "",
+               fromState: order.fromState || "", // ✅ ADD THIS
             to: order.toName || order.to || "",
             toName: order.toName || order.to || "",
             weight: order.weight?.toString() || "",
@@ -1716,6 +1720,8 @@ export default function CreateLoadingInfoPanel() {
             cancellationCharges: order.cancellationCharges || "",
             loadingCharges: order.loadingCharges || "",
             otherCharges: order.otherCharges?.toString() || "",
+              localStatus: order.localStatus || "unknown", // ✅ ADD THIS
+      localStatusLabel: order.localStatusLabel || "Unknown" 
           }));
           setOrderRows(newOrderRows);
         }
@@ -2472,15 +2478,19 @@ export default function CreateLoadingInfoPanel() {
           districtName: order.districtName || order.district,
           state: order.state || order.stateName,
           stateName: order.stateName || order.state,
+          
           from: order.from || order.fromName,
           fromName: order.fromName || order.from,
+          fromState: order.fromState || '',
           to: order.to || order.toName,
           toName: order.toName || order.to,
           weight: num(order.weight),
           collectionCharges: num(order.collectionCharges) || 0,
           cancellationCharges: order.cancellationCharges || 'Nil',
           loadingCharges: order.loadingCharges || 'Nil',
-          otherCharges: num(order.otherCharges) || 0
+          otherCharges: num(order.otherCharges) || 0,
+           localStatus: order.localStatus || 'unknown', // ✅ ADD THIS
+    localStatusLabel: order.localStatusLabel || 'Unknown' 
         })),
         packData: formattedPackData,
         deductionRows,
@@ -2846,7 +2856,7 @@ export default function CreateLoadingInfoPanel() {
         {/* Vehicle Slip Upload - Top section */}
         <div className="mb-4">
           <div className="bg-white p-4 rounded-xl border-2 border-dashed border-slate-300">
-            <label className="text-xs font-bold text-slate-600">Vehicle Slip</label>
+            <label className="text-xs font-bold text-slate-600">Empty Vehicle Slip</label>
             <p className="text-xs text-slate-400 mb-1">Upload vehicle slip (Image/PDF)</p>
             <button 
               onClick={handleVehicleSlipSelect}
@@ -3047,7 +3057,87 @@ export default function CreateLoadingInfoPanel() {
             </div>
           </div>
         </Card>
+{/* Vehicle GPS Tracking Card */}
+        <div className="mt-4">
+          <Card title="Vehicle GPS Tracking & Driver Photo">
+            <div className="grid grid-cols-12 gap-4">
+              <div className="col-span-12 md:col-span-6">
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-200 h-full">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
+                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-sm font-bold text-slate-800">Live Vehicle Tracking</h3>
+                  </div>
+                  <p className="text-xs text-slate-600 mb-3">Track vehicle location in real-time via API integration</p>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="text"
+                      placeholder="Driver Mobile Number"
+                      value={gpsTracking.driverMobileNumber}
+                      onChange={(e) => setGpsTracking({ ...gpsTracking, driverMobileNumber: e.target.value })}
+                      className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500"
+                    />
+                    <button 
+                      onClick={handleActivateTracking}
+                      className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700 whitespace-nowrap"
+                    >
+                      {gpsTracking.isTrackingActive ? 'Tracking Active' : 'Activate Tracking'}
+                    </button>
+                  </div>
+                  <div className="mt-3 text-xs text-slate-500">
+                    <span className="font-bold">API Status:</span> {gpsTracking.isTrackingActive ? 'Active' : 'Ready'}
+                    {gpsTracking.isTrackingActive && (
+                      <span className="ml-3 text-green-600">
+                        ✓ Tracking active for: {gpsTracking.driverMobileNumber}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
 
+              <div className="col-span-12 md:col-span-6">
+                <div className="bg-blue-50 p-4 rounded-xl border border-blue-200 h-full">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-800">Driver Photo Capture</h3>
+                      <p className="text-xs text-slate-600 mt-1">Click to open camera and capture driver photo</p>
+                      <p className="text-xs text-green-600 mt-1">📸 Photo capture will auto-fill Arrival Date & Time</p>
+                    </div>
+                    <button
+                      onClick={startCamera}
+                      className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700 transition flex items-center gap-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      Open Camera
+                    </button>
+                  </div>
+                  {vehicleFiles.photo.length > 0 && (
+                    <div className="mt-3">
+                      <p className="text-xs font-bold text-slate-600 mb-2">Captured Photos:</p>
+                      {vehicleFiles.photo.map((file, idx) => (
+                        <FileUploadItem 
+                          key={idx} 
+                          file={file} 
+                          index={idx}
+                          onRemove={() => removeFile('vehicle', 'photo', idx)}
+                          label="Driver Photo"
+                          isCameraPhoto={true}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </Card>
+        </div>
         {/* Billing Type / Charges Card */}
         <div className="mt-4">
           <Card title="Billing Type / Charges">
@@ -3130,26 +3220,27 @@ export default function CreateLoadingInfoPanel() {
           >
             <div className="overflow-auto rounded-xl border border-yellow-300 max-h-[500px]">
               <table className="min-w-max w-full text-sm">
-                <thead className="sticky top-0 bg-yellow-400 z-10">
-                  <tr>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[100px]">Order</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[150px]">Party Name</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[150px]">Plant</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[100px]">Order Type</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[100px]">Pin Code</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[120px]">From</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[120px]">To</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[100px]">Taluka</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[100px]">District</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[100px]">State</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[80px]">Weight (MT)</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[120px]">Collection Charges</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[130px]">Cancellation Charges</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[120px]">Loading Charges</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[120px]">Other Charges</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[80px]">Actions</th>
-                  </tr>
-                </thead>
+             <thead className="sticky top-0 bg-yellow-400 z-10">
+  <tr>
+    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[100px]">Order</th>
+    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[150px]">Party Name</th>
+    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[150px]">Plant</th>
+    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[100px]">Order Type</th>
+    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[100px]">Pin Code</th>
+    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[120px]">From</th>
+    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[120px]">To</th>
+    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[100px]">Taluka</th>
+    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[100px]">District</th>
+    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[100px]">State</th>
+    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[110px]">Local/Not Local</th> {/* ✅ ADD THIS */}
+    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[80px]">Weight (MT)</th>
+    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[120px]">Collection Charges</th>
+    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[130px]">Cancellation Charges</th>
+    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[120px]">Loading Charges</th>
+    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[120px]">Other Charges</th>
+    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[80px]">Actions</th>
+  </tr>
+</thead>
                 <tbody>
                   {orderRows.map((row) => (
                     <tr key={row._id} className="hover:bg-yellow-50 even:bg-slate-50">
@@ -3284,6 +3375,19 @@ export default function CreateLoadingInfoPanel() {
                           placeholder="State"
                         />
                       </td>
+                      <td className="border border-yellow-300 px-2 py-2 text-center">
+  {row.fromState && row.stateName ? (
+    <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${
+      row.fromState.trim().toUpperCase() === row.stateName.trim().toUpperCase()
+        ? 'bg-green-100 text-green-800 border border-green-300'
+        : 'bg-red-100 text-red-800 border border-red-300'
+    }`}>
+      {row.fromState.trim().toUpperCase() === row.stateName.trim().toUpperCase() ? '✅ Local' : '❌ Not Local'}
+    </span>
+  ) : (
+    <span className="text-xs text-gray-400">-</span>
+  )}
+</td>
                       <td className="border border-yellow-300 px-2 py-2">
                         <input
                           type="number"
@@ -3413,7 +3517,7 @@ export default function CreateLoadingInfoPanel() {
     </div>
 
     <div className="mt-3 pt-2 border-t border-slate-200">
-      <label className="text-xs font-bold text-slate-600">Or Search by Owner Name</label>
+      {/* <label className="text-xs font-bold text-slate-600">Or Search by Owner Name</label>
       <OwnerSearchDropdown
         onSelect={(owner) => {
           if (owner) {
@@ -3446,7 +3550,7 @@ export default function CreateLoadingInfoPanel() {
           }
         }}
         placeholder="Search by owner name, vehicle number, or RC number..."
-      />
+      /> */}
     </div>
 
     <button
@@ -3825,7 +3929,7 @@ export default function CreateLoadingInfoPanel() {
                           ))}
                         </div>
 
-                        <div>
+                        {/* <div>
                           <label className="text-xs font-bold text-slate-600">Driver Photo</label>
                           <button 
                             onClick={() => handleFileSelect('vehicle', 'photo')}
@@ -3842,7 +3946,7 @@ export default function CreateLoadingInfoPanel() {
                               label="Photo"
                             />
                           ))}
-                        </div>
+                        </div> */}
 
                         <div className="pt-3 border-t border-slate-200">
                           <label className="flex items-center gap-2 cursor-pointer">
@@ -4140,7 +4244,7 @@ export default function CreateLoadingInfoPanel() {
         </div>
 
         {/* VL Panel Card */}
-        <div className="mt-4">
+        {/* <div className="mt-4">
           <Card title="VL - PANEL (Vehicle Loading Pictures)">
             <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
               <div className="mb-3 flex justify-between items-center">
@@ -4392,8 +4496,284 @@ export default function CreateLoadingInfoPanel() {
               )}
             </div>
           </Card>
+        </div> */}
+{/* VL Panel Card */}
+<div className="mt-4">
+  <Card title="VL - PANEL (Vehicle Loading Pictures)">
+    <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+      <div className="mb-3 flex justify-between items-center">
+        <div>
+          <h3 className="text-sm font-bold text-slate-800">Vehicle Loading Pictures (VL)</h3>
+          <p className="text-xs text-slate-500 mt-1">
+            Minimum 5 photos required • Maximum 25 photos allowed • Current: {getTotalVlPhotosCount()} / 25
+          </p>
+          <p className="text-xs text-blue-500 mt-1">
+            Active Fields: {vlFields.length} • Max Fields: 15
+          </p>
         </div>
+        <div className="flex gap-2">
+          {vlFields.length < 15 && getTotalVlPhotosCount() < 25 && (
+            <button
+              onClick={handleAddMoreVlField}
+              className="rounded-lg bg-green-600 px-4 py-2 text-xs font-bold text-white hover:bg-green-700 transition flex items-center gap-1"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Add Field VL-{vlFields.length + 1}
+            </button>
+          )}
+          {getTotalVlPhotosCount() < 5 && (
+            <div className="text-xs text-red-500 font-medium flex items-center">
+              ⚠️ Need {5 - getTotalVlPhotosCount()} more photo(s)
+            </div>
+          )}
+        </div>
+      </div>
+      
+      <div className="grid grid-cols-12 gap-4">
+        {vlFields.map((fieldNum) => {
+          const currentCount = vlFiles[`vl${fieldNum}`]?.length || 0;
+          const totalCount = getTotalVlPhotosCount();
+          const isMaxReached = totalCount >= 25;
+          const isDisabled = isMaxReached && currentCount === 0;
+          
+          return (
+            <div key={fieldNum} className="col-span-12 lg:col-span-6">
+              <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="text-sm font-bold text-slate-800">
+                    VL(stack)-{fieldNum}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xs px-2 py-1 rounded-full ${currentCount > 0 ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
+                      {currentCount} / 25 photos
+                    </span>
+                    {fieldNum > 5 && (
+                      <button
+                        onClick={() => handleRemoveVlField(fieldNum)}
+                        className="text-red-500 hover:text-red-700 p-1"
+                        title="Remove this field"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                </div>
+                
+                <button 
+                  onClick={() => handleFileSelect('vl', `vl${fieldNum}`)}
+                  disabled={isDisabled}
+                  className={`w-full rounded-lg py-2.5 text-sm font-bold border transition-all ${
+                    currentCount > 0 
+                      ? 'bg-green-50 text-green-700 border-green-300 hover:bg-green-100' 
+                      : isDisabled 
+                        ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                        : 'bg-blue-50 text-blue-700 border-blue-300 hover:bg-blue-100'
+                  }`}
+                  title={isDisabled ? "Maximum 25 photos reached" : `Upload VL(stack)-${fieldNum} photos`}
+                >
+                  {currentCount > 0 
+                    ? `📸 + Add More Photos (${currentCount} uploaded)` 
+                    : isDisabled 
+                      ? 'Max Reached' 
+                      : '+ Select Photos'}
+                </button>
 
+                {currentCount > 0 && (
+                  <div className="mt-2">
+                    <div className="w-full bg-slate-200 rounded-full h-1.5">
+                      <div 
+                        className="bg-green-500 h-1.5 rounded-full transition-all"
+                        style={{ width: `${(currentCount / 25) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {vlFiles[`vl${fieldNum}`] && vlFiles[`vl${fieldNum}`].length > 0 && (
+                  <div className="mt-3 space-y-2 max-h-96 overflow-y-auto">
+                    <div className="text-xs font-bold text-slate-600 mb-2">Uploaded Photos:</div>
+                    {vlFiles[`vl${fieldNum}`].map((file, fileIdx) => {
+                      // Calculate total when width, height, and nose are all filled
+                      const width = parseFloat(vlPhotoDetails[`vl${fieldNum}_${fileIdx}_width`]) || 0;
+                      const height = parseFloat(vlPhotoDetails[`vl${fieldNum}_${fileIdx}_height`]) || 0;
+                      const nose = parseFloat(vlPhotoDetails[`vl${fieldNum}_${fileIdx}_nose`]) || 0;
+                      const total = (width * height) + nose;
+                      
+                      return (
+                        <div key={fileIdx} className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                          <FileUploadItem 
+                            file={file} 
+                            index={fileIdx}
+                            onRemove={() => removeFile('vl', `vl${fieldNum}`, fileIdx)}
+                            label={`VL(stack)-${fieldNum}`}
+                          />
+                          
+                          <div className="grid grid-cols-4 gap-2 mt-2">
+                            <div>
+                              <label className="text-xs font-bold text-slate-600">Width (ft)</label>
+                              <input
+                                type="number"
+                                step="0.01"
+                                value={vlPhotoDetails[`vl${fieldNum}_${fileIdx}_width`] || ""}
+                                onChange={(e) => {
+                                  const newValue = e.target.value;
+                                  setVlPhotoDetails(prev => ({
+                                    ...prev,
+                                    [`vl${fieldNum}_${fileIdx}_width`]: newValue
+                                  }));
+                                }}
+                                className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs outline-none focus:border-emerald-500"
+                                placeholder="Width in ft"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-xs font-bold text-slate-600">Height (ft)</label>
+                              <input
+                                type="number"
+                                step="0.01"
+                                value={vlPhotoDetails[`vl${fieldNum}_${fileIdx}_height`] || ""}
+                                onChange={(e) => {
+                                  const newValue = e.target.value;
+                                  setVlPhotoDetails(prev => ({
+                                    ...prev,
+                                    [`vl${fieldNum}_${fileIdx}_height`]: newValue
+                                  }));
+                                }}
+                                className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs outline-none focus:border-emerald-500"
+                                placeholder="Height in ft"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-xs font-bold text-slate-600">Nose (ft)</label>
+                              <input
+                                type="number"
+                                step="0.01"
+                                value={vlPhotoDetails[`vl${fieldNum}_${fileIdx}_nose`] || ""}
+                                onChange={(e) => {
+                                  const newValue = e.target.value;
+                                  setVlPhotoDetails(prev => ({
+                                    ...prev,
+                                    [`vl${fieldNum}_${fileIdx}_nose`]: newValue
+                                  }));
+                                }}
+                                className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs outline-none focus:border-emerald-500"
+                                placeholder="Nose in ft"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-xs font-bold text-slate-600">Total</label>
+                              <div className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-xs font-bold text-emerald-600">
+                                {total > 0 ? total.toFixed(2) : '-'}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="mt-4">
+        <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-xs font-bold text-purple-700 mb-1">Video - VL</div>
+              <p className="text-xs text-slate-500">Upload video of vehicle loading (Optional)</p>
+            </div>
+            <button 
+              onClick={() => handleFileSelect('vl', 'videoVl', true)}
+              className={`rounded-lg px-4 py-2 text-xs font-bold border hover:bg-opacity-80 ${
+                vlFiles.videoVl && vlFiles.videoVl.length > 0
+                  ? 'bg-green-50 text-green-700 border-green-300' 
+                  : 'bg-purple-100 text-purple-700 border-purple-300 hover:bg-purple-200'
+              }`}
+            >
+              {vlFiles.videoVl && vlFiles.videoVl.length > 0 
+                ? `✓ ${vlFiles.videoVl.length} video(s)` 
+                : '+ Upload Video'}
+            </button>
+          </div>
+          {vlFiles.videoVl && vlFiles.videoVl.map((file, idx) => (
+            <FileUploadItem 
+              key={idx} 
+              file={file} 
+              index={idx}
+              onRemove={() => removeFile('vl', 'videoVl', idx)}
+              label="Video"
+            />
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-4">
+        <div className="flex justify-between text-xs text-slate-600 mb-1">
+          <span>Total Upload Progress</span>
+          <span className="font-bold">{getTotalVlPhotosCount()} / 25 photos</span>
+        </div>
+        <div className="w-full bg-slate-200 rounded-full h-2.5">
+          <div 
+            className={`h-2.5 rounded-full transition-all duration-300 ${
+              getTotalVlPhotosCount() >= 5 
+                ? 'bg-green-500' 
+                : 'bg-yellow-500'
+            }`}
+            style={{ 
+              width: `${Math.min(100, (getTotalVlPhotosCount() / 25) * 100)}%` 
+            }}
+          />
+        </div>
+        <div className="flex justify-between text-xs mt-1">
+          <span className="text-red-500">⚠️ Minimum: 5 photos</span>
+          <span className="text-green-500">✓ Maximum: 25 photos</span>
+        </div>
+      </div>
+
+      <div className="mt-4 flex items-center gap-3">
+        <span className="text-xs font-bold text-slate-600">Vehicle - Loading Approval:</span>
+        <span className={`text-sm px-3 py-1 rounded-full ${getStatusBadge(vlUploads.approval)}`}>
+          {vlUploads.approval || 'Not Set'}
+        </span>
+      </div>
+      <div className="mt-2 flex items-center gap-3">
+        <span className="text-xs font-bold text-slate-600">Loading Status:</span>
+        <span className={`text-sm px-3 py-1 rounded-full ${getStatusBadge(vlUploads.loadingStatus)}`}>
+          {vlUploads.loadingStatus || 'Not Set'}
+        </span>
+      </div>
+      
+      {getTotalVlPhotosCount() > 0 && getTotalVlPhotosCount() < 5 && (
+        <div className="mt-3 p-3 bg-red-50 rounded-lg border border-red-200">
+          <p className="text-xs text-red-600 flex items-center gap-2">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            ⚠️ Please upload at least {5 - getTotalVlPhotosCount()} more photo(s). Minimum 5 photos required.
+          </p>
+        </div>
+      )}
+      
+      {getTotalVlPhotosCount() >= 5 && (
+        <div className="mt-3 p-3 bg-green-50 rounded-lg border border-green-200">
+          <p className="text-xs text-green-600 flex items-center gap-2">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            ✅ Great! You have uploaded {getTotalVlPhotosCount()} photo(s). Minimum requirement satisfied.
+          </p>
+        </div>
+      )}
+    </div>
+  </Card>
+</div>
         {/* VOT Panel Card */}
         <div className="mt-4">
           <Card title="VOT - PANEL (Vehicle Outer Tarpaulin Pictures)">
@@ -4456,276 +4836,196 @@ export default function CreateLoadingInfoPanel() {
             </div>
           </Card>
         </div>
-
-        {/* Loaded Vehicle Weighment & Charges Card */}
-        <div className="mt-4">
-          <Card title="Loaded Vehicle Weighment & Charges">
-            <div className="grid grid-cols-12 gap-4">
-              <div className="col-span-12 md:col-span-6">
-                <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-200">
-                  <h3 className="text-sm font-bold text-slate-800 mb-3">Weighment & Approval</h3>
-                  
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-slate-600">Loaded Vehicle - Weigh Slip:</span>
-                      <button 
-                        onClick={() => handleFileSelect('weighment', 'weighSlip')}
-                        className={`rounded-lg px-4 py-2 text-xs font-bold border hover:bg-opacity-80 ${
-                          weighmentFiles.weighSlip.length > 0 
-                            ? 'bg-green-50 text-green-700 border-green-200' 
-                            : 'bg-blue-50 text-blue-700 border-blue-200'
-                        }`}
-                      >
-                        {weighmentFiles.weighSlip.length > 0 ? `✓ ${weighmentFiles.weighSlip.length} file(s)` : 'Select'}
-                      </button>
-                    </div>
-                    {weighmentFiles.weighSlip.map((file, idx) => (
-                      <FileUploadItem 
-                        key={idx} 
-                        file={file} 
-                        index={idx}
-                        onRemove={() => removeFile('weighment', 'weighSlip', idx)}
-                        label="Weigh Slip"
-                      />
-                    ))}
-                    
-                    <div className="flex items-center gap-3">
-                      <span className="text-xs font-bold text-slate-600">Approval:</span>
-                      <span className={`text-sm px-3 py-1 rounded-full ${getStatusBadge(loadedWeighment.approval)}`}>
-                        {loadedWeighment.approval || 'Not Set'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-4">
-                  <div className="bg-orange-50 p-4 rounded-xl border border-orange-200">
-                    <label className="text-xs font-bold text-orange-700">Detention Days</label>
-                    <input
-                      type="number"
-                      value={detentionDays}
-                      onChange={(e) => setDetentionDays(e.target.value)}
-                      className="mt-1 w-full rounded-lg border border-orange-200 bg-white px-3 py-2 text-sm outline-none focus:border-orange-500"
-                      placeholder="Enter number of detention days"
-                      min="0"
-                    />
-                    <p className="text-xs text-orange-600 mt-1">Number of days vehicle is detained</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="col-span-12 md:col-span-6">
-                <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                  <div className="flex justify-between items-center mb-3">
-                    <h3 className="text-sm font-bold text-slate-800">Loading Charges & Expenses</h3>
-                    <div className="bg-orange-100 text-orange-800 text-xs px-3 py-1 rounded-full font-medium">
-                      Deduct at Office
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-slate-700">Loading Charges:</span>
-                      <input
-                        type="number"
-                        value={loadedWeighment.loadingCharges}
-                        onChange={(e) => setLoadedWeighment({ ...loadedWeighment, loadingCharges: e.target.value })}
-                        className="w-32 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-right focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
-                        placeholder="0"
-                      />
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-slate-700">Loading Staff Munshiyana:</span>
-                      <input
-                        type="number"
-                        value={loadedWeighment.loadingStaffMunshiyana}
-                        onChange={(e) => setLoadedWeighment({ ...loadedWeighment, loadingStaffMunshiyana: e.target.value })}
-                        className="w-32 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-right focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
-                        placeholder="0"
-                      />
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-slate-700">Other Expenses:</span>
-                      <input
-                        type="number"
-                        value={loadedWeighment.otherExpenses}
-                        onChange={(e) => setLoadedWeighment({ ...loadedWeighment, otherExpenses: e.target.value })}
-                        className="w-32 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-right focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
-                        placeholder="0"
-                      />
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-slate-700">Vehicle - Floor Tarpaulin:</span>
-                      <input
-                        type="number"
-                        value={loadedWeighment.vehicleFloorTarpaulin}
-                        onChange={(e) => setLoadedWeighment({ ...loadedWeighment, vehicleFloorTarpaulin: e.target.value })}
-                        className="w-32 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-right focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
-                        placeholder="0"
-                      />
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-slate-700">Vehicle - Outer Tarpaulin:</span>
-                      <input
-                        type="number"
-                        value={loadedWeighment.vehicleOuterTarpaulin}
-                        onChange={(e) => setLoadedWeighment({ ...loadedWeighment, vehicleOuterTarpaulin: e.target.value })}
-                        className="w-32 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-right focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
-                        placeholder="0"
-                      />
-                    </div>
-                    <div className="flex justify-between items-center pt-2 border-t border-slate-200 mt-2">
-                      <span className="text-sm font-bold text-slate-800">Total (to be deducted at office):</span>
-                      <span className="font-bold text-orange-700 text-lg">
-                        ₹{calculateTotalCharges().toLocaleString()}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
+{/* Loaded Vehicle Weighment & Charges Card */}
+<div className="mt-4">
+  <Card title="Loaded Vehicle Weighment & Charges">
+    <div className="grid grid-cols-12 gap-4">
+      <div className="col-span-12 md:col-span-6">
+        <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-200 h-full">
+          <h3 className="text-sm font-bold text-slate-800 mb-3">Weighment & Approval</h3>
+          
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-600">Loaded Vehicle - Weigh Slip:</span>
+              <button 
+                onClick={() => handleFileSelect('weighment', 'weighSlip')}
+                className={`rounded-lg px-4 py-2 text-xs font-bold border hover:bg-opacity-80 ${
+                  weighmentFiles.weighSlip.length > 0 
+                    ? 'bg-green-50 text-green-700 border-green-200' 
+                    : 'bg-blue-50 text-blue-700 border-blue-200'
+                }`}
+              >
+                {weighmentFiles.weighSlip.length > 0 ? `✓ ${weighmentFiles.weighSlip.length} file(s)` : 'Select'}
+              </button>
             </div>
-
-            {/* Arrival Details */}
-            <div className="mt-4">
-              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                <h3 className="text-sm font-bold text-slate-800 mb-3">Arrival Details</h3>
-                <div className="grid grid-cols-12 gap-4">
-                  <div className="col-span-12 md:col-span-3">
-                    <div className="bg-slate-50 p-3 rounded-lg">
-                      <label className="text-xs font-bold text-slate-600">Arrival Date</label>
-                      <input
-                        type="date"
-                        value={arrivalDetails.date}
-                        onChange={(e) => setArrivalDetails({ ...arrivalDetails, date: e.target.value })}
-                        className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500"
-                      />
-                      <p className="text-xs text-green-600 mt-1">Auto-filled from camera capture</p>
-                    </div>
-                  </div>
-                  <div className="col-span-12 md:col-span-3">
-                    <div className="bg-slate-50 p-3 rounded-lg">
-                      <label className="text-xs font-bold text-slate-600">Arrival Time</label>
-                      <input
-                        type="time"
-                        value={arrivalDetails.time}
-                        onChange={(e) => setArrivalDetails({ ...arrivalDetails, time: e.target.value })}
-                        className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500"
-                        placeholder="HH:MM"
-                      />
-                      <p className="text-xs text-green-600 mt-1">Auto-filled from camera capture</p>
-                    </div>
-                  </div>
-                  <div className="col-span-12 md:col-span-3">
-                    <div className="bg-orange-50 p-3 rounded-lg border border-orange-200">
-                      <label className="text-xs font-bold text-orange-700">Out Date</label>
-                      <input
-                        type="date"
-                        value={arrivalDetails.outDate || ""}
-                        onChange={(e) => setArrivalDetails({ ...arrivalDetails, outDate: e.target.value })}
-                        className="mt-1 w-full rounded-lg border border-orange-200 bg-white px-3 py-2 text-sm outline-none focus:border-orange-500"
-                      />
-                      <p className="text-xs text-orange-600 mt-1">Auto-filled when generating LR</p>
-                    </div>
-                  </div>
-                  <div className="col-span-12 md:col-span-3">
-                    <div className="bg-orange-50 p-3 rounded-lg border border-orange-200">
-                      <label className="text-xs font-bold text-orange-700">Out Time</label>
-                      <input
-                        type="time"
-                        value={arrivalDetails.outTime}
-                        onChange={(e) => setArrivalDetails({ ...arrivalDetails, outTime: e.target.value })}
-                        className="mt-1 w-full rounded-lg border border-orange-200 bg-white px-3 py-2 text-sm outline-none focus:border-orange-500"
-                        placeholder="HH:MM"
-                      />
-                      <p className="text-xs text-orange-600 mt-1">Auto-filled when generating LR</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
+            {weighmentFiles.weighSlip.map((file, idx) => (
+              <FileUploadItem 
+                key={idx} 
+                file={file} 
+                index={idx}
+                onRemove={() => removeFile('weighment', 'weighSlip', idx)}
+                label="Weigh Slip"
+              />
+            ))}
+            
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-bold text-slate-600">Approval:</span>
+              <span className={`text-sm px-3 py-1 rounded-full ${getStatusBadge(loadedWeighment.approval)}`}>
+                {loadedWeighment.approval || 'Not Set'}
+              </span>
             </div>
-          </Card>
+          </div>
         </div>
-
-        {/* Vehicle GPS Tracking Card */}
+        
         <div className="mt-4">
-          <Card title="Vehicle GPS Tracking & Driver Photo">
-            <div className="grid grid-cols-12 gap-4">
-              <div className="col-span-12 md:col-span-6">
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-200 h-full">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
-                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                    </div>
-                    <h3 className="text-sm font-bold text-slate-800">Live Vehicle Tracking</h3>
-                  </div>
-                  <p className="text-xs text-slate-600 mb-3">Track vehicle location in real-time via API integration</p>
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="text"
-                      placeholder="Driver Mobile Number"
-                      value={gpsTracking.driverMobileNumber}
-                      onChange={(e) => setGpsTracking({ ...gpsTracking, driverMobileNumber: e.target.value })}
-                      className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500"
-                    />
-                    <button 
-                      onClick={handleActivateTracking}
-                      className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700 whitespace-nowrap"
-                    >
-                      {gpsTracking.isTrackingActive ? 'Tracking Active' : 'Activate Tracking'}
-                    </button>
-                  </div>
-                  <div className="mt-3 text-xs text-slate-500">
-                    <span className="font-bold">API Status:</span> {gpsTracking.isTrackingActive ? 'Active' : 'Ready'}
-                    {gpsTracking.isTrackingActive && (
-                      <span className="ml-3 text-green-600">
-                        ✓ Tracking active for: {gpsTracking.driverMobileNumber}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="col-span-12 md:col-span-6">
-                <div className="bg-blue-50 p-4 rounded-xl border border-blue-200 h-full">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-sm font-bold text-slate-800">Driver Photo Capture</h3>
-                      <p className="text-xs text-slate-600 mt-1">Click to open camera and capture driver photo</p>
-                      <p className="text-xs text-green-600 mt-1">📸 Photo capture will auto-fill Arrival Date & Time</p>
-                    </div>
-                    <button
-                      onClick={startCamera}
-                      className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700 transition flex items-center gap-2"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                      Open Camera
-                    </button>
-                  </div>
-                  {vehicleFiles.photo.length > 0 && (
-                    <div className="mt-3">
-                      <p className="text-xs font-bold text-slate-600 mb-2">Captured Photos:</p>
-                      {vehicleFiles.photo.map((file, idx) => (
-                        <FileUploadItem 
-                          key={idx} 
-                          file={file} 
-                          index={idx}
-                          onRemove={() => removeFile('vehicle', 'photo', idx)}
-                          label="Driver Photo"
-                          isCameraPhoto={true}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </Card>
+          {/* <div className="bg-orange-50 p-4 rounded-xl border border-orange-200">
+            <label className="text-xs font-bold text-orange-700">Detention Days</label>
+            <input
+              type="number"
+              value={detentionDays}
+              onChange={(e) => setDetentionDays(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-orange-200 bg-white px-3 py-2 text-sm outline-none focus:border-orange-500"
+              placeholder="Enter number of detention days"
+              min="0"
+            />
+            <p className="text-xs text-orange-600 mt-1">Number of days vehicle is detained</p>
+          </div> */}
         </div>
+      </div>
+
+      <div className="col-span-12 md:col-span-6">
+        <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 h-full">
+          <div className="flex justify-between items-center mb-3">
+            <h3 className="text-sm font-bold text-slate-800">Loading Charges & Expenses</h3>
+            <div className="bg-orange-100 text-orange-800 text-xs px-3 py-1 rounded-full font-medium">
+              Deduct at Office
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-slate-700">Loading Charges:</span>
+              <input
+                type="number"
+                value={loadedWeighment.loadingCharges}
+                onChange={(e) => setLoadedWeighment({ ...loadedWeighment, loadingCharges: e.target.value })}
+                className="w-32 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-right focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                placeholder="0"
+              />
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-slate-700">Loading Staff Munshiyana:</span>
+              <input
+                type="number"
+                value={loadedWeighment.loadingStaffMunshiyana}
+                onChange={(e) => setLoadedWeighment({ ...loadedWeighment, loadingStaffMunshiyana: e.target.value })}
+                className="w-32 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-right focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                placeholder="0"
+              />
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-slate-700">Other Expenses:</span>
+              <input
+                type="number"
+                value={loadedWeighment.otherExpenses}
+                onChange={(e) => setLoadedWeighment({ ...loadedWeighment, otherExpenses: e.target.value })}
+                className="w-32 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-right focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                placeholder="0"
+              />
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-slate-700">Vehicle - Floor Tarpaulin:</span>
+              <input
+                type="number"
+                value={loadedWeighment.vehicleFloorTarpaulin}
+                onChange={(e) => setLoadedWeighment({ ...loadedWeighment, vehicleFloorTarpaulin: e.target.value })}
+                className="w-32 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-right focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                placeholder="0"
+              />
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-slate-700">Vehicle - Outer Tarpaulin:</span>
+              <input
+                type="number"
+                value={loadedWeighment.vehicleOuterTarpaulin}
+                onChange={(e) => setLoadedWeighment({ ...loadedWeighment, vehicleOuterTarpaulin: e.target.value })}
+                className="w-32 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-right focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                placeholder="0"
+              />
+            </div>
+            <div className="flex justify-between items-center pt-2 border-t border-slate-200 mt-2">
+              <span className="text-sm font-bold text-slate-800">Total (to be deducted at office):</span>
+              <span className="font-bold text-orange-700 text-lg">
+                ₹{calculateTotalCharges().toLocaleString()}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {/* Arrival Details */}
+    <div className="mt-4">
+      <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+        <h3 className="text-sm font-bold text-slate-800 mb-3">Arrival Details</h3>
+        <div className="grid grid-cols-12 gap-4">
+          <div className="col-span-12 md:col-span-3">
+            <div className="bg-slate-50 p-3 rounded-lg">
+              <label className="text-xs font-bold text-slate-600">Arrival Date</label>
+              <input
+                type="date"
+                value={arrivalDetails.date}
+                onChange={(e) => setArrivalDetails({ ...arrivalDetails, date: e.target.value })}
+                className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500"
+              />
+              <p className="text-xs text-green-600 mt-1">Auto-filled from camera capture</p>
+            </div>
+          </div>
+          <div className="col-span-12 md:col-span-3">
+            <div className="bg-slate-50 p-3 rounded-lg">
+              <label className="text-xs font-bold text-slate-600">Arrival Time</label>
+              <input
+                type="time"
+                value={arrivalDetails.time}
+                onChange={(e) => setArrivalDetails({ ...arrivalDetails, time: e.target.value })}
+                className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500"
+                placeholder="HH:MM"
+              />
+              <p className="text-xs text-green-600 mt-1">Auto-filled from camera capture</p>
+            </div>
+          </div>
+          <div className="col-span-12 md:col-span-3">
+            <div className="bg-orange-50 p-3 rounded-lg border border-orange-200">
+              <label className="text-xs font-bold text-orange-700">Out Date</label>
+              <input
+                type="date"
+                value={arrivalDetails.outDate || ""}
+                onChange={(e) => setArrivalDetails({ ...arrivalDetails, outDate: e.target.value })}
+                className="mt-1 w-full rounded-lg border border-orange-200 bg-white px-3 py-2 text-sm outline-none focus:border-orange-500"
+              />
+              <p className="text-xs text-orange-600 mt-1">Auto-filled when generating LR</p>
+            </div>
+          </div>
+          <div className="col-span-12 md:col-span-3">
+            <div className="bg-orange-50 p-3 rounded-lg border border-orange-200">
+              <label className="text-xs font-bold text-orange-700">Out Time</label>
+              <input
+                type="time"
+                value={arrivalDetails.outTime}
+                onChange={(e) => setArrivalDetails({ ...arrivalDetails, outTime: e.target.value })}
+                className="mt-1 w-full rounded-lg border border-orange-200 bg-white px-3 py-2 text-sm outline-none focus:border-orange-500"
+                placeholder="HH:MM"
+              />
+              <p className="text-xs text-orange-600 mt-1">Auto-filled when generating LR</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </Card>
+</div>
+
+        
 
         {/* Documents & Consignment Note Card */}
         <div className="mt-4">

@@ -64,82 +64,93 @@ const pricingPanelSchema = new mongoose.Schema({
   },
   
   // Orders Data - Now linked to Vehicle Negotiation
-  orders: [{
-    _id: {
-      type: mongoose.Schema.Types.ObjectId,
-      default: () => new mongoose.Types.ObjectId()
-    },
-    orderNo: String,
-    vehicleNegotiationId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'VehicleNegotiation'
-    },
-    partyName: String,
-    customerId: mongoose.Schema.Types.ObjectId,
-    customerCode: String,
-    contactPerson: String,
-    plantCode: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Plant'
-    },
-    plantName: String,
-    plantCodeValue: String,
-    orderType: {
-      type: String,
-      enum: ['Sales', 'STO Order', 'Export', 'Import'],
-      default: 'Sales'
-    },
-    pinCode: String,
-    country: String,
-    countryName: String,
-    state: String,
-    stateName: String,
-    stateId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'State'
-    },
-    district: String,
-    districtName: String,
-    districtId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'District'
-    },
-    // TALUKA FIELDS - ADDED
-    taluka: String,
-    talukaName: String,
-    talukaId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Taluka'
-    },
-    from: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Branch'
-    },
-    fromName: String,
-    to: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Branch'
-    },
-    toName: String,
-    // In the orders array schema
-locationRate: {
-  type: String,  // Changed from Number to String
-  default: ''
-},
-    priceList: String,
-    weight: {
-      type: Number,
-      default: 0
-    },
-    rate: {
-      type: Number,
-      default: 0
-    },
-    totalAmount: {
-      type: Number,
-      default: 0
-    }
-  }],
+ // In /models/PricingPanel.js - update orders array
+orders: [{
+  _id: {
+    type: mongoose.Schema.Types.ObjectId,
+    default: () => new mongoose.Types.ObjectId()
+  },
+  orderNo: String,
+  vehicleNegotiationId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'VehicleNegotiation'
+  },
+  partyName: String,
+  customerId: mongoose.Schema.Types.ObjectId,
+  customerCode: String,
+  contactPerson: String,
+  plantCode: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Plant'
+  },
+  plantName: String,
+  plantCodeValue: String,
+  orderType: {
+    type: String,
+    enum: ['Sales', 'STO Order', 'Export', 'Import'],
+    default: 'Sales'
+  },
+  pinCode: String,
+  country: String,
+  countryName: String,
+  state: String,
+  stateName: String,
+  stateId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'State'
+  },
+  district: String,
+  districtName: String,
+  districtId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'District'
+  },
+  taluka: String,
+  talukaName: String,
+  talukaId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Taluka'
+  },
+  from: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Branch'
+  },
+  fromName: String,
+  fromState: { type: String, default: '' }, // ✅ ADD THIS
+  to: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Branch'
+  },
+  toName: String,
+  locationRate: {
+    type: String,
+    default: ''
+  },
+  priceList: String,
+  weight: {
+    type: Number,
+    default: 0
+  },
+  rate: {
+    type: Number,
+    default: 0
+  },
+  totalAmount: {
+    type: Number,
+    default: 0
+  },
+  // ✅ ADD LOCAL STATUS FIELDS
+  localStatus: {
+    type: String,
+    enum: ['local', 'not-local', 'unknown'],
+    default: 'unknown'
+  },
+  localStatusLabel: {
+    type: String,
+    enum: ['Local', 'Not Local', 'Unknown'],
+    default: 'Unknown'
+  }
+}],
   
   // Totals
   totalWeight: {
@@ -159,11 +170,12 @@ locationRate: {
       default: 'Contract Rates'
     },
     uploadFile: String,
+    
     approvalStatus: {
-      type: String,
-      enum: ['Pending', 'Approved', 'Rejected', 'Completed'],
-      default: 'Pending'
-    }
+  type: String,
+  enum: ['Pending', 'Pending from Team', 'Pending from Client', 'Approved', 'Rejected', 'Completed'],
+  default: 'Pending'
+}
   },
   
   // Report Data

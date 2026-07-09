@@ -10,8 +10,44 @@ function num(v) {
   return Number.isFinite(n) ? n : 0;
 }
 
+// ✅ Role-based access for vehicle negotiation management
 function isAuthorized(user) {
-  return user?.type === "company" || user?.role === "Admin" || user?.permissions?.includes("balance_payment");
+  if (!user) return false;
+
+  // ✅ Company users have full access
+  if (user.type === "company") return true;
+
+  // ✅ Check for specific roles
+  const allowedRoles = [
+    "admin",
+    "sales manager",
+    "purchase manager",
+    "inventory manager",
+    "accounts manager",
+    "hr manager",
+    "support executive",
+    "production head",
+    "project manager"
+  ];
+
+  // Handle both single role and roles array
+  const userRoles = Array.isArray(user.roles) 
+    ? user.roles 
+    : (user.role ? [user.role] : []);
+
+  const hasAllowedRole = userRoles.some(role =>
+    allowedRoles.includes(role.trim().toLowerCase())
+  );
+
+  if (hasAllowedRole) return true;
+
+  // ✅ Check for specific permission (if your system uses permissions)
+  if (Array.isArray(user.permissions) && 
+      user.permissions.includes("vehicle_negotiation")) {
+    return true;
+  }
+
+  return false;
 }
 
 async function validateUser(req) {
@@ -239,25 +275,32 @@ export async function PUT(req) {
     payment.podNo = body.podNo || payment.podNo;
     payment.purchaseNo = body.purchaseNo || payment.purchaseNo;
     
-    if (body.orderRows) {
-      payment.orderRows = body.orderRows.map(row => ({
-        _id: row._id,
-        orderNo: row.orderNo || '',
-        partyName: row.partyName || '',
-        plantCode: row.plantCode || '',
-        orderType: row.orderType || '',
-        pinCode: row.pinCode || '',
-        state: row.state || '',
-        district: row.district || '',
-        from: row.from || '',
-        to: row.to || '',
-        locationRate: row.locationRate || '',
-        priceList: row.priceList || '',
-        weight: row.weight || '0',
-        rate: row.rate || '0',
-        totalAmount: row.totalAmount || '0'
-      }));
-    }
+  // In PUT route
+if (body.orderRows) {
+  payment.orderRows = body.orderRows.map(row => ({
+    _id: row._id,
+    orderNo: row.orderNo || '',
+    partyName: row.partyName || '',
+    plantCode: row.plantCode || '',
+    orderType: row.orderType || '',
+    pinCode: row.pinCode || '',
+    state: row.state || '',
+    stateName: row.stateName || row.state || '', // ✅ ADDED
+    fromState: row.fromState || '', // ✅ ADDED
+    district: row.district || '',
+    from: row.from || '',
+    fromName: row.fromName || row.from || '', // ✅ ADDED
+    to: row.to || '',
+    toName: row.toName || row.to || '', // ✅ ADDED
+    locationRate: row.locationRate || '',
+    priceList: row.priceList || '',
+    weight: row.weight || '0',
+    rate: row.rate || '0',
+    totalAmount: row.totalAmount || '0',
+    localStatus: row.localStatus || 'unknown', // ✅ ADDED
+    localStatusLabel: row.localStatusLabel || 'Unknown' // ✅ ADDED
+  }));
+}
     
     payment.vendorStatus = body.vendorStatus || payment.vendorStatus;
     payment.vendorCode = body.vendorCode || payment.vendorCode;

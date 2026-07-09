@@ -438,12 +438,10 @@ export default function Layout({ children }) {
                 <Item href="/admin/vehicles"               icon={<HiTruck />}             label="Vehicles"                     onClick={closeSidebar} isActive={isActive("/admin/vehicels")} />
 				<Item href="/admin/owners"               icon={<HiTruck />}             label="Vehicles-owner"                     onClick={closeSidebar} isActive={isActive("/admin/owners")} />
 								<Item href="/admin/plants"               icon={<HiTruck />}             label="plants"                     onClick={closeSidebar} isActive={isActive("/admin/plants")} />
-                <Item href="/admin/rate-master/create"   icon={<HiCurrencyRupee />}     label="Rate-Location-Master-create"         onClick={closeSidebar} isActive={isActive("admin/rate-master/create")} />
+                <Item href="/admin/rate-master/create"   icon={<HiCurrencyRupee />}     label="Rate-File-creation"         onClick={closeSidebar} isActive={isActive("admin/rate-master/create")} />
 			
  <Item href="/admin/UOM"   icon={<HiCurrencyRupee />}     label="UOM"         onClick={closeSidebar} isActive={isActive("/admin/UOM")} />
  <Item href="/admin/sku-sizes"   icon={<HiCurrencyRupee />}     label="sku-sizes"         onClick={closeSidebar} isActive={isActive("/admin/sku-sizes")} />
- <Item href="/admin/purchase-type"   icon={<HiCurrencyRupee />}     label="purchase-type"         onClick={closeSidebar} isActive={isActive("/admin/purchase-type")} />
- 
 
 
               </Section>
@@ -457,10 +455,9 @@ export default function Layout({ children }) {
                   <Item href="/admin/Purchase-Panel" icon={<HiShoppingCart />} label="Purchase Panel" onClick={closeSidebar} isActive={isActive("/admin/Purchase-Panel")} />
                   <Item href="/admin/Consignment-Note" icon={<HiDocumentText />} label="Consignment Note" onClick={closeSidebar} isActive={isActive("/admin/Consignment-Note")} />
                   <Item href="/admin/Advance-Payment" icon={<HiCash />} label="Advance Payment" onClick={closeSidebar} isActive={isActive("/admin/Advance-Payment")} />
-				    <Item href="/admin/ProofofDelivery" icon={<HiCash />} label="Proof Of Delivery" onClick={closeSidebar} isActive={isActive("/admin/ProofofDelivery")} />
+				    <Item href="/admin/ProofofDelivery" icon={<HiCash />} label="Proof Of Delivery" onClick={closeSidebar} isActive={isActive("/admin/ProofOfDelivery")} />
 					 <Item href="/admin/Balance-Payment" icon={<HiCash />} label="Balance-Payment" onClick={closeSidebar} isActive={isActive("/admin/Balance-Payment")} />
 					 <Item href="/admin/Billing" icon={<HiCash />} label="Billing" onClick={closeSidebar} isActive={isActive("/admin/Billing")} />
-           			 <Item href="/admin/reports/order-full-report" icon={<HiCash />} label="order-full-report" onClick={closeSidebar} isActive={isActive("/admin/reports/order-full-report")} />
                 </Submenu>
 
                 <Submenu isOpen={!!openSubmenus["tvPurchase"]} onToggle={() => toggleSubmenu("tvPurchase")} icon={<GiStockpiles />} label="Purchase">

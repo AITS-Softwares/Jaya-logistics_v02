@@ -335,6 +335,8 @@
 //  mongoose.model('VehicleNegotiation', vehicleNegotiationSchema);
 //
 //export default VehicleNegotiation;
+
+
 import mongoose from 'mongoose';
 
 const vehicleNegotiationSchema = new mongoose.Schema({
@@ -441,6 +443,7 @@ delivery: {
       ref: 'Branch'
     },
     fromName: String,
+      fromState: { type: String, default: '' },
     to: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Branch'
@@ -460,6 +463,8 @@ delivery: {
     stateName: String,
     district: String,
     districtName: String,
+    localStatus: { type: String, enum: ['local', 'not-local', 'unknown'], default: 'unknown' },
+  localStatusLabel: { type: String, enum: ['Local', 'Not Local', 'Unknown'], default: 'Unknown' },
     weight: {
       type: Number,
       default: 0

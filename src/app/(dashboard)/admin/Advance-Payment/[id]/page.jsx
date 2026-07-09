@@ -66,9 +66,13 @@ function defaultOrderRow() {
     orderType: "",
     pinCode: "",
     state: "",
+    stateName: "", // ✅ ADD THIS
+    fromState: "", // ✅ ADD THIS
     district: "",
     from: "",
+    fromName: "", // ✅ ADD THIS
     to: "",
+    toName: "", // ✅ ADD THIS
     locationRate: "",
     priceList: "",
     weight: "",
@@ -78,6 +82,8 @@ function defaultOrderRow() {
     cancellationCharges: "Nil",
     loadingCharges: "Nil",
     otherCharges: "0",
+    localStatus: "unknown", // ✅ ADD THIS
+    localStatusLabel: "Unknown" // ✅ ADD THIS
   };
 }
 
@@ -267,33 +273,40 @@ export default function EditAdvancePayment() {
       }
 
       // Set order rows with all fields
-      if (payment.orderRows && payment.orderRows.length > 0) {
-        const processedRows = payment.orderRows.map(row => ({
-          _id: row._id || uid(),
-          orderNo: row.orderNo || "",
-          partyName: row.partyName || "",
-          plantCode: row.plantCode || "",
-          plantName: row.plantName || "",
-          orderType: row.orderType || "",
-          pinCode: row.pinCode || "",
-          state: row.state || "",
-          district: row.district || "",
-          from: row.from || "",
-          to: row.to || "",
-          locationRate: row.locationRate?.toString() || "",
-          priceList: row.priceList || "",
-          weight: row.weight?.toString() || "",
-          rate: row.rate?.toString() || "",
-          totalAmount: row.totalAmount?.toString() || "",
-          collectionCharges: row.collectionCharges?.toString() || "0",
-          cancellationCharges: row.cancellationCharges || "Nil",
-          loadingCharges: row.loadingCharges || "Nil",
-          otherCharges: row.otherCharges?.toString() || "0",
-        }));
-        setOrderRows(processedRows);
-      } else {
-        setOrderRows([defaultOrderRow()]);
-      }
+     // In fetchPaymentData function, update the orderRows processing:
+if (payment.orderRows && payment.orderRows.length > 0) {
+  const processedRows = payment.orderRows.map(row => ({
+    _id: row._id || uid(),
+    orderNo: row.orderNo || "",
+    partyName: row.partyName || "",
+    plantCode: row.plantCode || "",
+    plantName: row.plantName || "",
+    orderType: row.orderType || "",
+    pinCode: row.pinCode || "",
+    state: row.state || "",
+    stateName: row.stateName || row.state || "", // ✅ ADD THIS
+    fromState: row.fromState || "", // ✅ ADD THIS
+    district: row.district || "",
+    from: row.from || "",
+    fromName: row.fromName || row.from || "", // ✅ ADD THIS
+    to: row.to || "",
+    toName: row.toName || row.to || "", // ✅ ADD THIS
+    locationRate: row.locationRate?.toString() || "",
+    priceList: row.priceList || "",
+    weight: row.weight?.toString() || "",
+    rate: row.rate?.toString() || "",
+    totalAmount: row.totalAmount?.toString() || "",
+    collectionCharges: row.collectionCharges?.toString() || "0",
+    cancellationCharges: row.cancellationCharges || "Nil",
+    loadingCharges: row.loadingCharges || "Nil",
+    otherCharges: row.otherCharges?.toString() || "0",
+    localStatus: row.localStatus || "unknown", // ✅ ADD THIS
+    localStatusLabel: row.localStatusLabel || "Unknown" // ✅ ADD THIS
+  }));
+  setOrderRows(processedRows);
+} else {
+  setOrderRows([defaultOrderRow()]);
+}
 
       // Set vendor details
       if (payment.vendorDetails) {
@@ -818,87 +831,105 @@ export default function EditAdvancePayment() {
           <Card title="Order Details (Read Only)">
             <div className="overflow-auto rounded-xl border border-yellow-300 max-h-[500px] overflow-y-auto">
               <table className="min-w-max w-full text-sm">
-                <thead className="sticky top-0 bg-yellow-400 z-10">
-                  <tr>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[120px]">Order No</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[150px]">Party Name</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[120px]">Plant</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[100px]">Order Type</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[100px]">Pin Code</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[120px]">State</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[120px]">District</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[120px]">From</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[120px]">To</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[100px]">Location Rate</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[100px]">Price List</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[80px]">Weight (MT)</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[80px]">Rate (₹)</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[100px]">Total Amount</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[130px]">Collection Charges</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[140px]">Cancellation Charges</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[130px]">Loading Charges</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[130px]">Other Charges</th>
-                  </tr>
-                </thead>
+              <thead className="sticky top-0 bg-yellow-400 z-10">
+  <tr>
+    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[120px]">Order No</th>
+    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[150px]">Party Name</th>
+    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[120px]">Plant</th>
+    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[100px]">Order Type</th>
+    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[100px]">Pin Code</th>
+    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[120px]">State</th>
+    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[120px]">From State</th> {/* ✅ ADDED */}
+    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[110px]">Local/Not Local</th> {/* ✅ ADDED */}
+    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[120px]">District</th>
+    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[120px]">From</th>
+    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[120px]">To</th>
+    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[100px]">Location Rate</th>
+    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[100px]">Price List</th>
+    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[80px]">Weight (MT)</th>
+    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[80px]">Rate (₹)</th>
+    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[100px]">Total Amount</th>
+    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[130px]">Collection Charges</th>
+    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[140px]">Cancellation Charges</th>
+    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[130px]">Loading Charges</th>
+    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[130px]">Other Charges</th>
+  </tr>
+</thead>
                 <tbody>
-                  {orderRows.map((row) => (
-                    <tr key={row._id} className="hover:bg-yellow-50 even:bg-slate-50">
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <input type="text" value={row.orderNo || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Order No" />
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <input type="text" value={row.partyName || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Party Name" />
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <input type="text" value={row.plantName || row.plantCode || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Plant" />
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <input type="text" value={row.orderType || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Order Type" />
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <input type="text" value={row.pinCode || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Pin Code" />
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <input type="text" value={row.state || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="State" />
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <input type="text" value={row.district || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="District" />
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <input type="text" value={row.from || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="From" />
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <input type="text" value={row.to || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="To" />
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <input type="text" value={row.locationRate || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Location Rate" />
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <input type="text" value={row.priceList || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Price List" />
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <input type="number" value={row.weight || ""} readOnly className="w-20 rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="0" />
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <input type="number" value={row.rate || ""} readOnly className="w-20 rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="0" />
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <input type="number" value={row.totalAmount || ""} readOnly className="w-24 rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm font-bold text-emerald-700 cursor-not-allowed" placeholder="Auto" />
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <input type="number" value={row.collectionCharges || "0"} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Collection Charges" />
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <input type="text" value={row.cancellationCharges || "Nil"} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Cancellation Charges" />
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <input type="text" value={row.loadingCharges || "Nil"} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Loading Charges" />
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <input type="number" value={row.otherCharges || "0"} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Other Charges" />
-                      </td>
-                    </tr>
-                  ))}
+                 {orderRows.map((row) => (
+  <tr key={row._id} className="hover:bg-yellow-50 even:bg-slate-50">
+    <td className="border border-yellow-300 px-2 py-2">
+      <input type="text" value={row.orderNo || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Order No" />
+    </td>
+    <td className="border border-yellow-300 px-2 py-2">
+      <input type="text" value={row.partyName || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Party Name" />
+    </td>
+    <td className="border border-yellow-300 px-2 py-2">
+      <input type="text" value={row.plantName || row.plantCode || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Plant" />
+    </td>
+    <td className="border border-yellow-300 px-2 py-2">
+      <input type="text" value={row.orderType || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Order Type" />
+    </td>
+    <td className="border border-yellow-300 px-2 py-2">
+      <input type="text" value={row.pinCode || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Pin Code" />
+    </td>
+    <td className="border border-yellow-300 px-2 py-2">
+      <input type="text" value={row.state || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="State" />
+    </td>
+    <td className="border border-yellow-300 px-2 py-2">
+      <input type="text" value={row.fromState || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="From State" />
+    </td> {/* ✅ ADDED */}
+    <td className="border border-yellow-300 px-2 py-2 text-center">
+      {row.fromState && row.state ? (
+        <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${
+          row.fromState.trim().toUpperCase() === row.state.trim().toUpperCase()
+            ? 'bg-green-100 text-green-800 border border-green-300'
+            : 'bg-red-100 text-red-800 border border-red-300'
+        }`}>
+          {row.fromState.trim().toUpperCase() === row.state.trim().toUpperCase() ? '✅ Local' : '❌ Not Local'}
+        </span>
+      ) : (
+        <span className="text-xs text-gray-400">-</span>
+      )}
+    </td> {/* ✅ ADDED */}
+    <td className="border border-yellow-300 px-2 py-2">
+      <input type="text" value={row.district || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="District" />
+    </td>
+    <td className="border border-yellow-300 px-2 py-2">
+      <input type="text" value={row.from || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="From" />
+    </td>
+    <td className="border border-yellow-300 px-2 py-2">
+      <input type="text" value={row.to || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="To" />
+    </td>
+    <td className="border border-yellow-300 px-2 py-2">
+      <input type="text" value={row.locationRate || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Location Rate" />
+    </td>
+    <td className="border border-yellow-300 px-2 py-2">
+      <input type="text" value={row.priceList || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Price List" />
+    </td>
+    <td className="border border-yellow-300 px-2 py-2">
+      <input type="number" value={row.weight || ""} readOnly className="w-20 rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="0" />
+    </td>
+    <td className="border border-yellow-300 px-2 py-2">
+      <input type="number" value={row.rate || ""} readOnly className="w-20 rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="0" />
+    </td>
+    <td className="border border-yellow-300 px-2 py-2">
+      <input type="number" value={row.totalAmount || ""} readOnly className="w-24 rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm font-bold text-emerald-700 cursor-not-allowed" placeholder="Auto" />
+    </td>
+    <td className="border border-yellow-300 px-2 py-2">
+      <input type="number" value={row.collectionCharges || "0"} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Collection Charges" />
+    </td>
+    <td className="border border-yellow-300 px-2 py-2">
+      <input type="text" value={row.cancellationCharges || "Nil"} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Cancellation Charges" />
+    </td>
+    <td className="border border-yellow-300 px-2 py-2">
+      <input type="text" value={row.loadingCharges || "Nil"} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Loading Charges" />
+    </td>
+    <td className="border border-yellow-300 px-2 py-2">
+      <input type="number" value={row.otherCharges || "0"} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Other Charges" />
+    </td>
+  </tr>
+))}
                 </tbody>
                 <tfoot className="bg-yellow-100">
                   <tr>

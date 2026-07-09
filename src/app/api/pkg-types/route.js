@@ -4,12 +4,44 @@ import PkgType from "./schema";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 
 // Role-based access check
+// ✅ Role-based access for vehicle negotiation management
 function isAuthorized(user) {
-  return (
-    user?.type === "company" ||
-    user?.role === "Admin" ||
-    user?.permissions?.includes("pkg-type")
+  if (!user) return false;
+
+  // ✅ Company users have full access
+  if (user.type === "company") return true;
+
+  // ✅ Check for specific roles
+  const allowedRoles = [
+    "admin",
+    "sales manager",
+    "purchase manager",
+    "inventory manager",
+    "accounts manager",
+    "hr manager",
+    "support executive",
+    "production head",
+    "project manager"
+  ];
+
+  // Handle both single role and roles array
+  const userRoles = Array.isArray(user.roles) 
+    ? user.roles 
+    : (user.role ? [user.role] : []);
+
+  const hasAllowedRole = userRoles.some(role =>
+    allowedRoles.includes(role.trim().toLowerCase())
   );
+
+  if (hasAllowedRole) return true;
+
+  // ✅ Check for specific permission (if your system uses permissions)
+  if (Array.isArray(user.permissions) && 
+      user.permissions.includes("vehicle_negotiation")) {
+    return true;
+  }
+
+  return false;
 }
 
 async function validateUser(req) {

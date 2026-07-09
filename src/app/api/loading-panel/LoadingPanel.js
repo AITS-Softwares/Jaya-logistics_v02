@@ -47,34 +47,73 @@ const loadingPanelSchema = new mongoose.Schema({
   otherCharges: String,
   
   // Orders with Taluka, District, State fields
-  orderRows: [{
-    _id: {
-      type: mongoose.Schema.Types.ObjectId,
-      default: () => new mongoose.Types.ObjectId()
-    },
-    orderNo: String,
-    partyName: String,
-    plantCode: String,
-    plantName: String,
-    orderType: String,
-    pinCode: String,
-    taluka: String,
-    talukaName: String,
-    district: String,
-    districtName: String,
-    state: String,
-    stateName: String,
-    from: String,
-    fromName: String,
-    to: String,
-    toName: String,
-    weight: Number,
-    collectionCharges: Number,
-    cancellationCharges: String,
-    loadingCharges: String,
-    otherCharges: Number
-  }],
-  
+  // orderRows: [{
+  //   _id: {
+  //     type: mongoose.Schema.Types.ObjectId,
+  //     default: () => new mongoose.Types.ObjectId()
+  //   },
+  //   orderNo: String,
+  //   partyName: String,
+  //   plantCode: String,
+  //   plantName: String,
+  //   orderType: String,
+  //   pinCode: String,
+  //   taluka: String,
+  //   talukaName: String,
+  //   district: String,
+  //   districtName: String,
+  //   state: String,
+  //   stateName: String,
+  //   from: String,
+  //   fromName: String,
+  //   to: String,
+  //   toName: String,
+  //   weight: Number,
+  //   collectionCharges: Number,
+  //   cancellationCharges: String,
+  //   loadingCharges: String,
+  //   otherCharges: Number
+  // }],
+  // In /models/LoadingPanel.js - update orderRows section
+orderRows: [{
+  _id: {
+    type: mongoose.Schema.Types.ObjectId,
+    default: () => new mongoose.Types.ObjectId()
+  },
+  orderNo: String,
+  partyName: String,
+  plantCode: String,
+  plantName: String,
+  orderType: String,
+  pinCode: String,
+  taluka: String,
+  talukaName: String,
+  district: String,
+  districtName: String,
+  state: String,
+  stateName: String,
+  from: String,
+  fromName: String,
+  fromState: { type: String, default: '' }, // ✅ ADD THIS
+  to: String,
+  toName: String,
+  weight: Number,
+  collectionCharges: Number,
+  cancellationCharges: String,
+  loadingCharges: String,
+  otherCharges: Number,
+  // ✅ ADD LOCAL STATUS FIELDS
+  localStatus: {
+    type: String,
+    enum: ['local', 'not-local', 'unknown'],
+    default: 'unknown'
+  },
+  localStatusLabel: {
+    type: String,
+    enum: ['Local', 'Not Local', 'Unknown'],
+    default: 'Unknown'
+  }
+}],
   // Vehicle & Driver with Owner Aadhar
   vehicleInfo: {
     vehicleNo: {
@@ -141,7 +180,8 @@ const loadingPanelSchema = new mongoose.Schema({
     of: {
       height: { type: Number, default: 0 },
       width: { type: Number, default: 0 },
-      nose: { type: Number, default: 0 }
+      nose: { type: Number, default: 0 },
+       total: { type: Number, default: 0 } 
     },
     default: () => new Map()
   },

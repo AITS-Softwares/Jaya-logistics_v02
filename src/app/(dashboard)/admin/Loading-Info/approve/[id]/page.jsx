@@ -314,6 +314,7 @@ function OrdersTable({ rows }) {
               <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[120px]">Taluka</th>
               <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[120px]">District</th>
               <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[100px]">State</th>
+              <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[110px]">Local/Not Local</th> {/* ✅ ADD THIS */}
               <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[100px]">Weight (MT)</th>
               <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[130px]">Collection Charges</th>
               <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[140px]">Cancellation Charges</th>
@@ -334,6 +335,20 @@ function OrdersTable({ rows }) {
                 <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.talukaName || row.taluka || '-'}</td>
                 <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.districtName || row.district || '-'}</td>
                 <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.stateName || row.state || '-'}</td>
+                {/* ✅ ADD THIS NEW COLUMN */}
+                <td className="border border-yellow-300 px-2 py-2 text-center">
+                  {row.fromState && row.stateName ? (
+                    <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${
+                      row.fromState.trim().toUpperCase() === row.stateName.trim().toUpperCase()
+                        ? 'bg-green-100 text-green-800 border border-green-300'
+                        : 'bg-red-100 text-red-800 border border-red-300'
+                    }`}>
+                      {row.fromState.trim().toUpperCase() === row.stateName.trim().toUpperCase() ? '✅ Local' : '❌ Not Local'}
+                    </span>
+                  ) : (
+                    <span className="text-xs text-gray-400">-</span>
+                  )}
+                </td>
                 <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.weight || '0'}</td>
                 <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.collectionCharges || '0'}</td>
                 <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.cancellationCharges || '0'}</td>
@@ -597,9 +612,16 @@ export default function ApproveLoadingPanel() {
       });
 
       // Set order rows
-      if (panel.orderRows && panel.orderRows.length > 0) {
-        setOrderRows(panel.orderRows);
-      }
+    // Set order rows
+if (panel.orderRows && panel.orderRows.length > 0) {handleApprove
+  const processedRows = panel.orderRows.map(row => ({
+    ...row,
+    fromState: row.fromState || '', // ✅ ADD THIS
+    localStatus: row.localStatus || 'unknown', // ✅ ADD THIS
+    localStatusLabel: row.localStatusLabel || 'Unknown' // ✅ ADD THIS
+  }));
+  setOrderRows(processedRows);
+}
 
       // Set vehicle info
       if (panel.vehicleInfo) {
@@ -848,103 +870,110 @@ export default function ApproveLoadingPanel() {
     }
   };
 
-  const handleApprove = async () => {
-    setSaving(true);
-    try {
-      const token = localStorage.getItem('token');
-      
-      // Fetch current data
-      const fetchRes = await fetch(`/api/loading-panel?id=${panelId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      
-      const fetchData = await fetchRes.json();
-      
-      if (!fetchData.success) {
-        throw new Error('Failed to fetch loading panel data');
-      }
-      
-      const currentData = fetchData.data;
-      
-      // Update only the editable sections
-      const updatedData = {
-        ...currentData,
-        vbpUploads: {
-          ...currentData.vbpUploads,
-          approval: vbpUploads.approval,
-          remark: vbpUploads.remark,
-        },
-        vftUploads: {
-          ...currentData.vftUploads,
-          approval: vftUploads.approval,
-        },
-        votUploads: {
-          ...currentData.votUploads,
-          approval: votUploads.approval,
-        },
-        vlUploads: {
-          ...currentData.vlUploads,
-          approval: vlUploads.approval,
-          loadingStatus: vlUploads.loadingStatus,
-        },
-        loadedWeighment: {
-          ...currentData.loadedWeighment,
-          approval: loadedWeighment.approval,
-          loadingCharges: num(loadedWeighment.loadingCharges),
-          loadingStaffMunshiyana: num(loadedWeighment.loadingStaffMunshiyana),
-          otherExpenses: num(loadedWeighment.otherExpenses),
-          vehicleFloorTarpaulin: num(loadedWeighment.vehicleFloorTarpaulin),
-          vehicleOuterTarpaulin: num(loadedWeighment.vehicleOuterTarpaulin),
-        },
-        gpsTracking: {
-          ...currentData.gpsTracking,
-          driverMobileNumber: gpsTracking.driverMobileNumber,
-          isTrackingActive: gpsTracking.isTrackingActive,
-        },
-        arrivalDetails: {
-          date: arrivalDetails.date ? new Date(arrivalDetails.date) : currentData.arrivalDetails?.date,
-          time: arrivalDetails.time,
-          outDate: arrivalDetails.outDate ? new Date(arrivalDetails.outDate) : currentData.arrivalDetails?.outDate,
-          outTime: arrivalDetails.outTime,
-        },
-        detentionDays,
-        hasHelper,
-        helperInfo: {
-          name: helperInfo.name,
-          mobileNo: helperInfo.mobileNo,
-          photo: helperInfo.photo,
-          aadharPhoto: helperInfo.aadharPhoto
-        }
-      };
-      
-      // Send update
-      const res = await fetch('/api/loading-panel', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          id: panelId,
-          ...updatedData
-        }),
-      });
-
-      const data = await res.json();
-
-      if (data.success) {
-        alert(`✅ Loading Panel approved/updated successfully!`);
-        router.push('/admin/Loading-Info');
-      } else {
-        alert(data.message || 'Failed to update approval');
-      }
-    } catch (error) {
-      console.error('Error updating approval:', error);
-      alert(`❌ Error: ${error.message}`);
-    } finally {
-      setSaving(false);
+ const handleApprove = async () => {
+  setSaving(true);
+  try {
+    const token = localStorage.getItem('token');
+    
+    // Fetch current data
+    const fetchRes = await fetch(`/api/loading-panel?id=${panelId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    
+    const fetchData = await fetchRes.json();
+    
+    if (!fetchData.success) {
+      throw new Error('Failed to fetch loading panel data');
     }
-  };
+    
+    const currentData = fetchData.data;
+    
+    // Update only the editable sections
+    const updatedData = {
+      ...currentData,
+      // Include orderRows with the fields
+      orderRows: currentData.orderRows ? currentData.orderRows.map(row => ({
+        ...row,
+        fromState: row.fromState || '', // ✅ ADD THIS
+        localStatus: row.localStatus || 'unknown', // ✅ ADD THIS
+        localStatusLabel: row.localStatusLabel || 'Unknown' // ✅ ADD THIS
+      })) : [],
+      vbpUploads: {
+        ...currentData.vbpUploads,
+        approval: vbpUploads.approval,
+        remark: vbpUploads.remark,
+      },
+      vftUploads: {
+        ...currentData.vftUploads,
+        approval: vftUploads.approval,
+      },
+      votUploads: {
+        ...currentData.votUploads,
+        approval: votUploads.approval,
+      },
+      vlUploads: {
+        ...currentData.vlUploads,
+        approval: vlUploads.approval,
+        loadingStatus: vlUploads.loadingStatus,
+      },
+      loadedWeighment: {
+        ...currentData.loadedWeighment,
+        approval: loadedWeighment.approval,
+        loadingCharges: num(loadedWeighment.loadingCharges),
+        loadingStaffMunshiyana: num(loadedWeighment.loadingStaffMunshiyana),
+        otherExpenses: num(loadedWeighment.otherExpenses),
+        vehicleFloorTarpaulin: num(loadedWeighment.vehicleFloorTarpaulin),
+        vehicleOuterTarpaulin: num(loadedWeighment.vehicleOuterTarpaulin),
+      },
+      gpsTracking: {
+        ...currentData.gpsTracking,
+        driverMobileNumber: gpsTracking.driverMobileNumber,
+        isTrackingActive: gpsTracking.isTrackingActive,
+      },
+      arrivalDetails: {
+        date: arrivalDetails.date ? new Date(arrivalDetails.date) : currentData.arrivalDetails?.date,
+        time: arrivalDetails.time,
+        outDate: arrivalDetails.outDate ? new Date(arrivalDetails.outDate) : currentData.arrivalDetails?.outDate,
+        outTime: arrivalDetails.outTime,
+      },
+      detentionDays,
+      hasHelper,
+      helperInfo: {
+        name: helperInfo.name,
+        mobileNo: helperInfo.mobileNo,
+        photo: helperInfo.photo,
+        aadharPhoto: helperInfo.aadharPhoto
+      }
+    };
+    
+    // Send update
+    const res = await fetch('/api/loading-panel', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        id: panelId,
+        ...updatedData
+      }),
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      alert(`✅ Loading Panel approved/updated successfully!`);
+      router.push('/admin/Loading-Info');
+    } else {
+      alert(data.message || 'Failed to update approval');
+    }
+  } catch (error) {
+    console.error('Error updating approval:', error);
+    alert(`❌ Error: ${error.message}`);
+  } finally {
+    setSaving(false);
+  }
+};
 
   const getTotalVlPhotosCount = () => {
     let total = 0;
@@ -1361,7 +1390,7 @@ export default function ApproveLoadingPanel() {
         </div>
 
         {/* VL Panel - EDITABLE with progress info */}
-        <div className="mt-4">
+        {/* <div className="mt-4">
           <Card title="VL - PANEL (Vehicle Loading Pictures) - Editable">
             <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
               <div className="mb-3">
@@ -1394,8 +1423,108 @@ export default function ApproveLoadingPanel() {
               />
             </div>
           </Card>
+        </div> */}
+{/* VL Panel - EDITABLE with progress info */}
+<div className="mt-4">
+  <Card title="VL - PANEL (Vehicle Loading Pictures) - Editable">
+    <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+      <div className="mb-3">
+        <p className="text-xs text-slate-500">
+          Total Photos: {getTotalVlPhotosCount()} 
+        </p>
+      </div>
+      
+      <div className="flex items-center gap-3 mb-3">
+        <span className="text-xs font-bold text-slate-600">Approval:</span>
+        <EditableSelect
+          value={vlUploads.approval}
+          onChange={(v) => setVlUploads({ ...vlUploads, approval: v })}
+          options={APPROVAL_STATUS}
+        />
+      </div>
+      <div className="flex items-center gap-3 mb-4">
+        <span className="text-xs font-bold text-slate-600">Loading Status:</span>
+        <EditableSelect
+          value={vlUploads.loadingStatus}
+          onChange={(v) => setVlUploads({ ...vlUploads, loadingStatus: v })}
+          options={LOADING_STATUS}
+        />
+      </div>
+      
+      {/* VL Photos with Width, Height, Nose, Total */}
+      {Object.keys(existingFiles.vl).length > 0 ? (
+        <div className="space-y-6">
+          {Object.entries(existingFiles.vl).map(([key, fileList]) => {
+            // Skip video key
+            if (key === 'videoVl') return null;
+            
+            return fileList.map((file, idx) => {
+              // Get dimensions from vlPhotoDetails
+              const fileKey = `${key}_${idx}`;
+              const width = parseFloat(vlPhotoDetails[`${fileKey}_width`]) || 0;
+              const height = parseFloat(vlPhotoDetails[`${fileKey}_height`]) || 0;
+              const nose = parseFloat(vlPhotoDetails[`${fileKey}_nose`]) || 0;
+              const total = (width * height) + nose;
+              
+              return (
+                <div key={`${key}-${idx}`} className="bg-white p-4 rounded-lg border border-slate-200">
+                  <div className="text-xs font-bold text-slate-700 mb-2">{key.toUpperCase()} - Photo {idx + 1}</div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <FileDisplayItem file={file} label={key} />
+                    </div>
+                    <div className="grid grid-cols-4 gap-2">
+                      <div>
+                        <label className="text-xs font-bold text-slate-600">Width (ft)</label>
+                        <div className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-xs">
+                          {width > 0 ? width.toFixed(2) : '-'}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-slate-600">Height (ft)</label>
+                        <div className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-xs">
+                          {height > 0 ? height.toFixed(2) : '-'}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-slate-600">Nose (ft)</label>
+                        <div className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-xs">
+                          {nose > 0 ? nose.toFixed(2) : '-'}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-slate-600">Total</label>
+                        <div className="mt-1 w-full rounded-lg border border-slate-200 bg-emerald-50 px-2 py-1.5 text-xs font-bold text-emerald-700">
+                          {total > 0 ? total.toFixed(2) : '-'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            });
+          })}
         </div>
-
+      ) : (
+        <div className="text-center py-8 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+          <p className="text-sm text-gray-500">No VL images uploaded</p>
+        </div>
+      )}
+      
+      {/* Video VL */}
+      {existingFiles.vl?.videoVl && existingFiles.vl.videoVl.length > 0 && (
+        <div className="mt-4">
+          <h4 className="text-xs font-bold text-slate-600 mb-2">Video VL:</h4>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            {existingFiles.vl.videoVl.map((file, idx) => (
+              <FileDisplayItem key={`video-${idx}`} file={file} label="Video VL" />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  </Card>
+</div>
         {/* Loaded Vehicle Weighment & Charges - EDITABLE */}
         <div className="mt-4">
           <Card title="Loaded Vehicle Weighment & Charges - Editable">

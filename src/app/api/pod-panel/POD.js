@@ -33,6 +33,7 @@ const lrEntrySchema = new mongoose.Schema({
 }, { _id: false });
 
 // Order Schema
+// Order Schema - UPDATED
 const orderSchema = new mongoose.Schema({
   orderNo: { type: String, default: '' },
   partyName: { type: String, default: '' },
@@ -41,11 +42,17 @@ const orderSchema = new mongoose.Schema({
   orderType: { type: String, default: '' },
   pinCode: { type: String, default: '' },
   state: { type: String, default: '' },
+  stateName: { type: String, default: '' }, // ✅ ADDED
+  fromState: { type: String, default: '' }, // ✅ ADDED
   district: { type: String, default: '' },
   from: { type: String, default: '' },
+  fromName: { type: String, default: '' }, // ✅ ADDED
   to: { type: String, default: '' },
+  toName: { type: String, default: '' }, // ✅ ADDED
   locationRate: { type: String, default: '' },
-  weight: { type: Number, default: 0 }
+  weight: { type: Number, default: 0 },
+  localStatus: { type: String, enum: ['local', 'not-local', 'unknown'], default: 'unknown' }, // ✅ ADDED
+  localStatusLabel: { type: String, enum: ['Local', 'Not Local', 'Unknown'], default: 'Unknown' } // ✅ ADDED
 }, { _id: false });
 
 const podSchema = new mongoose.Schema({

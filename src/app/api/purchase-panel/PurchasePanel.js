@@ -296,30 +296,46 @@ const purchasePanelSchema = new mongoose.Schema({
   },
 
   // Order Rows (matches frontend orderRows)
-  orderRows: [{
-    _id: { type: mongoose.Schema.Types.ObjectId, default: () => new mongoose.Types.ObjectId() },
-    orderNo: { type: String },
-    partyName: { type: String },
-    plantCode: { type: String },
-    plantName: { type: String },
-    orderType: { type: String, enum: ['Sales', 'STO Order', 'Export', 'Import'], default: 'Sales' },
-    pinCode: { type: String },
-    taluka: { type: String },
-    district: { type: String },
-    state: { type: String },
-    country: { type: String },
-    from: { type: String },
-    to: { type: String },
-    locationRate: { type: String, default: '' },
-    priceList: { type: String, default: '' },
-    weight: { type: Number, default: 0 },
-    rate: { type: Number, default: 0 },
-    totalAmount: { type: Number, default: 0 },
-    collectionCharges: { type: String, default: '0' },
-    cancellationCharges: { type: String, default: 'Nil' },
-    loadingCharges: { type: String, default: 'Nil' },
-    otherCharges: { type: String, default: '0' }
-  }],
+// PurchasePanel.js - Update orderRows section
+orderRows: [{
+  _id: { type: mongoose.Schema.Types.ObjectId, default: () => new mongoose.Types.ObjectId() },
+  orderNo: { type: String },
+  partyName: { type: String },
+  plantCode: { type: String },
+  plantName: { type: String },
+  orderType: { type: String, enum: ['Sales', 'STO Order', 'Export', 'Import'], default: 'Sales' },
+  pinCode: { type: String },
+  taluka: { type: String },
+  district: { type: String },
+  state: { type: String },
+  stateName: { type: String }, // ✅ ADD THIS - for state name
+  country: { type: String },
+  from: { type: String },
+  fromName: { type: String }, // ✅ ADD THIS - for from name
+  fromState: { type: String, default: '' }, // ✅ ADD THIS
+  to: { type: String },
+  toName: { type: String }, // ✅ ADD THIS - for to name
+  locationRate: { type: String, default: '' },
+  priceList: { type: String, default: '' },
+  weight: { type: Number, default: 0 },
+  rate: { type: Number, default: 0 },
+  totalAmount: { type: Number, default: 0 },
+  collectionCharges: { type: String, default: '0' },
+  cancellationCharges: { type: String, default: 'Nil' },
+  loadingCharges: { type: String, default: 'Nil' },
+  otherCharges: { type: String, default: '0' },
+  // ✅ ADD LOCAL STATUS FIELDS
+  localStatus: {
+    type: String,
+    enum: ['local', 'not-local', 'unknown'],
+    default: 'unknown'
+  },
+  localStatusLabel: {
+    type: String,
+    enum: ['Local', 'Not Local', 'Unknown'],
+    default: 'Unknown'
+  }
+}],
 
   // Purchase Details
   purchaseDetails: {

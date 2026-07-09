@@ -92,19 +92,22 @@ export default function ApprovePOD() {
   ];
 
   // Order Columns
-  const orderColumns = [
-    { key: "orderNo", label: "Order", minWidth: "120px" },
-    { key: "partyName", label: "Party Name", minWidth: "150px" },
-    { key: "branch", label: "Branch / Plant Code", minWidth: "150px" },
-    { key: "orderType", label: "Order Type", minWidth: "100px" },
-    { key: "pinCode", label: "Pin Code", minWidth: "100px" },
-    { key: "state", label: "State", minWidth: "120px" },
-    { key: "district", label: "District", minWidth: "120px" },
-    { key: "from", label: "From", minWidth: "120px" },
-    { key: "to", label: "To", minWidth: "120px" },
-    { key: "locationRate", label: "Location Rate", minWidth: "100px" },
-    { key: "weight", label: "Weight", minWidth: "80px" }
-  ];
+ // Order Columns - UPDATED with fromState and Local/Not Local
+const orderColumns = [
+  { key: "orderNo", label: "Order", minWidth: "120px" },
+  { key: "partyName", label: "Party Name", minWidth: "150px" },
+  { key: "branch", label: "Branch / Plant Code", minWidth: "150px" },
+  { key: "orderType", label: "Order Type", minWidth: "100px" },
+  { key: "pinCode", label: "Pin Code", minWidth: "100px" },
+  { key: "state", label: "State", minWidth: "120px" },
+  { key: "fromState", label: "From State", minWidth: "120px" }, // ✅ ADDED
+  { key: "localStatus", label: "Local/Not Local", minWidth: "130px" }, // ✅ ADDED
+  { key: "district", label: "District", minWidth: "120px" },
+  { key: "from", label: "From", minWidth: "120px" },
+  { key: "to", label: "To", minWidth: "120px" },
+  { key: "locationRate", label: "Location Rate", minWidth: "100px" },
+  { key: "weight", label: "Weight", minWidth: "80px" }
+];
 
   // Fetch POD data
   useEffect(() => {
@@ -641,28 +644,48 @@ export default function ApprovePOD() {
                 </tr>
               </thead>
               <tbody>
-                {purchaseOrders.length > 0 ? purchaseOrders.map((order, idx) => (
-                  <tr key={idx} className="hover:bg-yellow-50 even:bg-slate-50">
-                    <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.orderNo || '-'}</td>
-                    <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.partyName || '-'}</td>
-                    <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.branch || order.plantCode || '-'}</td>
-                    <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.orderType || '-'}</td>
-                    <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.pinCode || '-'}</td>
-                    <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.state || '-'}</td>
-                    <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.district || '-'}</td>
-                    <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.from || '-'}</td>
-                    <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.to || '-'}</td>
-                    <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.locationRate || '-'}</td>
-                    <td className="border border-yellow-300 px-2 py-2 text-slate-700 text-right">{order.weight || 0}</td>
-                  </tr>
-                )) : (
-                  <tr>
-                    <td colSpan={orderColumns.length} className="border border-yellow-300 px-4 py-8 text-center text-slate-400">
-                      No orders found
-                    </td>
-                  </tr>
-                )}
-              </tbody>
+  {purchaseOrders.length > 0 ? purchaseOrders.map((order, idx) => {
+    // Determine local status
+    const isLocal = order.fromState && order.state && 
+      order.fromState.trim().toUpperCase() === order.state.trim().toUpperCase();
+    
+    return (
+      <tr key={idx} className="hover:bg-yellow-50 even:bg-slate-50">
+        <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.orderNo || '-'}</td>
+        <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.partyName || '-'}</td>
+        <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.branch || order.plantCode || '-'}</td>
+        <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.orderType || '-'}</td>
+        <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.pinCode || '-'}</td>
+        <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.state || '-'}</td>
+        <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.fromState || '-'}</td> {/* ✅ ADDED */}
+        <td className="border border-yellow-300 px-2 py-2 text-center">
+          {order.fromState && order.state ? (
+            <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${
+              isLocal
+                ? 'bg-green-100 text-green-800 border border-green-300'
+                : 'bg-red-100 text-red-800 border border-red-300'
+            }`}>
+              {isLocal ? '✅ Local' : '❌ Not Local'}
+            </span>
+          ) : (
+            <span className="text-xs text-gray-400">-</span>
+          )}
+        </td> {/* ✅ ADDED */}
+        <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.district || '-'}</td>
+        <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.from || '-'}</td>
+        <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.to || '-'}</td>
+        <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.locationRate || '-'}</td>
+        <td className="border border-yellow-300 px-2 py-2 text-slate-700 text-right">{order.weight || 0}</td>
+      </tr>
+    );
+  }) : (
+    <tr>
+      <td colSpan={orderColumns.length} className="border border-yellow-300 px-4 py-8 text-center text-slate-400">
+        No orders found
+      </td>
+    </tr>
+  )}
+</tbody>
             </table>
           </div>
         </Card>

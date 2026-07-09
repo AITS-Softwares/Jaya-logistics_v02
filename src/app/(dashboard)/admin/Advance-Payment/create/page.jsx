@@ -184,6 +184,144 @@ function useVendors() {
 /* =========================
   PURCHASE DROPDOWN COMPONENT (EDITABLE)
 ========================= */
+// function PurchaseDropdown({ 
+//   onSelect,
+//   placeholder = "Search purchase..."
+// }) {
+//   const [searchQuery, setSearchQuery] = useState("");
+//   const [showDropdown, setShowDropdown] = useState(false);
+//   const [purchaseList, setPurchaseList] = useState([]);
+//   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
+//   const inputRef = useRef(null);
+//   const dropdownRef = useRef(null);
+//   const purchaseHook = usePurchasePanel();
+
+//   useEffect(() => {
+//     setPurchaseList(purchaseHook.purchases);
+//   }, [purchaseHook.purchases]);
+
+//   const handleSearch = (query) => {
+//     setSearchQuery(query);
+//     if (!showDropdown) setShowDropdown(true);
+//   };
+
+//   const handleSelectPurchase = async (purchase) => {
+//     setSearchQuery(purchase.purchaseNo);
+//     setShowDropdown(false);
+    
+//     try {
+//       const token = localStorage.getItem('token');
+//       const res = await fetch(`/api/purchase-panel?purchaseNo=${encodeURIComponent(purchase.purchaseNo)}`, {
+//         headers: { Authorization: `Bearer ${token}` },
+//       });
+      
+//       if (res.ok) {
+//         const data = await res.json();
+//         if (data.success && data.data) onSelect(data.data);
+//       }
+//     } catch (error) {
+//       console.error('Error fetching purchase details:', error);
+//     }
+//   };
+
+//   const handleInputFocus = () => {
+//     if (inputRef.current) {
+//       const rect = inputRef.current.getBoundingClientRect();
+//       setDropdownPosition({
+//         top: rect.bottom + window.scrollY,
+//         left: rect.left + window.scrollX,
+//         width: rect.width
+//       });
+//     }
+//     setShowDropdown(true);
+//     if (purchaseList.length === 0 && purchaseHook.purchases.length === 0) purchaseHook.fetchPurchases();
+//   };
+
+//   const handleInputBlur = () => {
+//     setTimeout(() => {
+//       if (dropdownRef.current && !dropdownRef.current.contains(document.activeElement)) setShowDropdown(false);
+//     }, 200);
+//   };
+
+//   useEffect(() => {
+//     const handleScroll = () => {
+//       if (showDropdown && inputRef.current) {
+//         const rect = inputRef.current.getBoundingClientRect();
+//         setDropdownPosition({
+//           top: rect.bottom + window.scrollY,
+//           left: rect.left + window.scrollX,
+//           width: rect.width
+//         });
+//       }
+//     };
+//     window.addEventListener('scroll', handleScroll, true);
+//     window.addEventListener('resize', handleScroll);
+//     return () => {
+//       window.removeEventListener('scroll', handleScroll, true);
+//       window.removeEventListener('resize', handleScroll);
+//     };
+//   }, [showDropdown]);
+
+//   const filteredList = useMemo(() => {
+//     if (!searchQuery.trim()) return purchaseList;
+//     return purchaseList.filter(p =>
+//       p.purchaseNo?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+//       p.vendorName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+//       p.vehicleNo?.toLowerCase().includes(searchQuery.toLowerCase())
+//     );
+//   }, [purchaseList, searchQuery]);
+
+//   return (
+//     <div className="relative w-full">
+//       <input
+//         ref={inputRef}
+//         type="text"
+//         value={searchQuery}
+//         onChange={(e) => handleSearch(e.target.value)}
+//         onFocus={handleInputFocus}
+//         onBlur={handleInputBlur}
+//         className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+//         placeholder={placeholder}
+//         autoComplete="off"
+//       />
+//       {showDropdown && (
+//         <div 
+//           ref={dropdownRef}
+//           style={{ position: 'fixed', top: dropdownPosition.top, left: dropdownPosition.left, width: dropdownPosition.width, zIndex: 9999, maxHeight: '400px' }}
+//           className="bg-white border border-slate-200 rounded-xl shadow-lg overflow-y-auto"
+//         >
+//           {purchaseHook.loading ? (
+//             <div className="p-4 text-center text-sm text-slate-500">
+//               <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-emerald-500 mx-auto mb-2"></div>
+//               Loading purchases...
+//             </div>
+//           ) : filteredList.length > 0 ? (
+//             <div className="divide-y divide-slate-100">
+//               {filteredList.map((p) => (
+//                 <div key={p._id} onMouseDown={() => handleSelectPurchase(p)} className="p-3 hover:bg-emerald-50 cursor-pointer">
+//                   <div className="font-medium text-slate-800">{p.purchaseNo}</div>
+//                   <div className="text-xs text-slate-500 mt-1">
+//                     Vendor: {p.vendorName || 'N/A'} | Vehicle: {p.vehicleNo || 'N/A'} | Amount: ₹{num(p.amount).toLocaleString()}
+//                   </div>
+//                   <div className="text-xs text-slate-400 mt-1">
+//                     Balance: ₹{num(p.balance).toLocaleString()} | Status: {p.status || 'Pending'}
+//                   </div>
+//                 </div>
+//               ))}
+//             </div>
+//           ) : (
+//             <div className="p-4 text-center text-sm text-slate-500">
+//               {searchQuery.trim() ? `No purchases found for "${searchQuery}"` : "No purchases available"}
+//             </div>
+//           )}
+//         </div>
+//       )}
+//     </div>
+//   );
+// }
+/* =========================
+  PURCHASE DROPDOWN COMPONENT (GRID VIEW - MULTIPLE CARDS PER ROW)
+========================= */
 function PurchaseDropdown({ 
   onSelect,
   placeholder = "Search purchase..."
@@ -280,38 +418,129 @@ function PurchaseDropdown({
         onChange={(e) => handleSearch(e.target.value)}
         onFocus={handleInputFocus}
         onBlur={handleInputBlur}
-        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-base outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
         placeholder={placeholder}
         autoComplete="off"
       />
       {showDropdown && (
         <div 
           ref={dropdownRef}
-          style={{ position: 'fixed', top: dropdownPosition.top, left: dropdownPosition.left, width: dropdownPosition.width, zIndex: 9999, maxHeight: '400px' }}
-          className="bg-white border border-slate-200 rounded-xl shadow-lg overflow-y-auto"
+          style={{ 
+            position: 'fixed', 
+            top: dropdownPosition.top, 
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: '95%',
+            maxWidth: '1400px',
+            zIndex: 9999, 
+            maxHeight: '80vh',
+            minWidth: '600px'
+          }}
+          className="bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden"
         >
           {purchaseHook.loading ? (
-            <div className="p-4 text-center text-sm text-slate-500">
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-emerald-500 mx-auto mb-2"></div>
+            <div className="p-8 text-center text-sm text-slate-500">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500 mx-auto mb-3"></div>
               Loading purchases...
             </div>
           ) : filteredList.length > 0 ? (
-            <div className="divide-y divide-slate-100">
-              {filteredList.map((p) => (
-                <div key={p._id} onMouseDown={() => handleSelectPurchase(p)} className="p-3 hover:bg-emerald-50 cursor-pointer">
-                  <div className="font-medium text-slate-800">{p.purchaseNo}</div>
-                  <div className="text-xs text-slate-500 mt-1">
-                    Vendor: {p.vendorName || 'N/A'} | Vehicle: {p.vehicleNo || 'N/A'} | Amount: ₹{num(p.amount).toLocaleString()}
-                  </div>
-                  <div className="text-xs text-slate-400 mt-1">
-                    Balance: ₹{num(p.balance).toLocaleString()} | Status: {p.status || 'Pending'}
-                  </div>
+            <div className="flex flex-col h-full">
+              {/* Header with count */}
+              <div className="bg-gradient-to-r from-emerald-50 to-emerald-100 px-6 py-3 border-b border-emerald-200 flex justify-between items-center flex-shrink-0">
+                <div className="flex items-center gap-4">
+                  <span className="text-sm font-bold text-emerald-800">
+                    📊 Found {filteredList.length} purchase{filteredList.length > 1 ? 'es' : ''}
+                  </span>
+                  <span className="text-xs text-emerald-600 bg-white px-3 py-1 rounded-full">
+                    {searchQuery ? `Search: "${searchQuery}"` : 'Showing all'}
+                  </span>
                 </div>
-              ))}
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-slate-500">Click any card to select</span>
+                  <button
+                    onClick={() => setShowDropdown(false)}
+                    className="text-xs text-slate-400 hover:text-slate-600"
+                  >
+                    ✕ Close
+                  </button>
+                </div>
+              </div>
+              
+              {/* Grid Layout - Multiple Cards Per Row */}
+              <div className="overflow-auto flex-1 p-4" style={{ maxHeight: 'calc(80vh - 60px)' }}>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {filteredList.map((p) => (
+                    <div 
+                      key={p._id} 
+                      onMouseDown={() => handleSelectPurchase(p)}
+                      className="bg-white border border-slate-200 rounded-xl hover:border-emerald-400 hover:shadow-lg cursor-pointer transition-all duration-200 overflow-hidden"
+                    >
+                      {/* Card Content */}
+                      <div className="p-4">
+                        {/* ROW 1: Purchase No + Status */}
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-bold text-emerald-700 text-sm">{p.purchaseNo}</span>
+                          <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${
+                            (p.status || '').toLowerCase() === 'completed' ? 'bg-green-100 text-green-800' :
+                            (p.status || '').toLowerCase() === 'paid' ? 'bg-blue-100 text-blue-800' :
+                            'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {p.status || 'Pending'}
+                          </span>
+                        </div>
+                        
+                        {/* ROW 2: Vendor Name */}
+                        <div className="text-sm text-slate-700 mb-1 truncate">
+                          <span className="text-xs text-slate-500">Vendor: </span>
+                          {p.vendorName || 'N/A'}
+                        </div>
+                        
+                        {/* ROW 3: Vehicle No */}
+                        <div className="text-sm text-slate-700 mb-2 truncate">
+                          <span className="text-xs text-slate-500">Vehicle: </span>
+                          {p.vehicleNo || 'N/A'}
+                        </div>
+                        
+                        {/* ROW 4: Amount + Balance */}
+                        <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                          <div>
+                            <div className="text-xs text-slate-500">Amount</div>
+                            <div className="font-bold text-purple-700 text-sm">₹{num(p.amount).toLocaleString()}</div>
+                          </div>
+                          <div>
+                            <div className="text-xs text-slate-500">Balance</div>
+                            <div className="font-bold text-blue-700 text-sm">₹{num(p.balance).toLocaleString()}</div>
+                          </div>
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSelectPurchase(p);
+                            }}
+                            className="px-3 py-1 bg-emerald-600 text-white rounded-lg text-xs hover:bg-emerald-700 font-bold"
+                          >
+                            Select
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Footer */}
+              <div className="bg-slate-50 px-6 py-2 border-t border-slate-200 text-xs text-slate-500 flex justify-between items-center flex-shrink-0">
+                <span>Total: {filteredList.length} purchases</span>
+                <span>Showing {filteredList.length} of {purchaseList.length} total purchases</span>
+                <span>Click card or Select button to load</span>
+              </div>
             </div>
           ) : (
-            <div className="p-4 text-center text-sm text-slate-500">
-              {searchQuery.trim() ? `No purchases found for "${searchQuery}"` : "No purchases available"}
+            <div className="p-8 text-center text-sm text-slate-500">
+              <svg className="w-16 h-16 text-slate-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <p className="font-medium">{searchQuery.trim() ? `No purchases found for "${searchQuery}"` : "No purchases available"}</p>
+              <p className="text-xs text-slate-400 mt-1">Try searching with different keywords</p>
             </div>
           )}
         </div>
@@ -319,7 +548,6 @@ function PurchaseDropdown({
     </div>
   );
 }
-
 /** =========================
  * DEFAULT EMPTY ROWS
  ========================= */
@@ -333,9 +561,13 @@ function defaultOrderRow() {
     orderType: "",
     pinCode: "",
     state: "",
+    stateName: "", // ✅ ADD THIS
+    fromState: "", // ✅ ADD THIS
     district: "",
     from: "",
+    fromName: "", // ✅ ADD THIS
     to: "",
+    toName: "", // ✅ ADD THIS
     locationRate: "",
     priceList: "",
     weight: "",
@@ -345,6 +577,8 @@ function defaultOrderRow() {
     cancellationCharges: "Nil",
     loadingCharges: "Nil",
     otherCharges: "0",
+    localStatus: "unknown", // ✅ ADD THIS
+    localStatusLabel: "Unknown" // ✅ ADD THIS
   };
 }
 
@@ -530,32 +764,37 @@ export default function CreateAdvancePayment() {
       otherCharges: purchaseData.billing?.otherCharges?.toString() || "0",
     });
 
-    if (purchaseData.orderRows && purchaseData.orderRows.length > 0) {
-      const newOrderRows = purchaseData.orderRows.map(row => ({
-        _id: uid(),
-        orderNo: row.orderNo || "",
-        partyName: row.partyName || "",
-        plantCode: row.plantCode || "",
-        plantName: row.plantName || "",
-        orderType: row.orderType || "",
-        pinCode: row.pinCode || "",
-        state: row.state || "",
-        district: row.district || "",
-        from: row.from || "",
-        to: row.to || "",
-        locationRate: row.locationRate?.toString() || "",
-        priceList: row.priceList || "",
-        weight: row.weight?.toString() || "",
-        rate: row.rate?.toString() || "",
-        totalAmount: row.totalAmount?.toString() || "",
-        collectionCharges: row.collectionCharges?.toString() || "0",
-        cancellationCharges: row.cancellationCharges || "Nil",
-        loadingCharges: row.loadingCharges || "Nil",
-        otherCharges: row.otherCharges?.toString() || "0",
-      }));
-      setOrderRows(newOrderRows);
-    }
-
+  if (purchaseData.orderRows && purchaseData.orderRows.length > 0) {
+  const newOrderRows = purchaseData.orderRows.map(row => ({
+    _id: uid(),
+    orderNo: row.orderNo || "",
+    partyName: row.partyName || "",
+    plantCode: row.plantCode || "",
+    plantName: row.plantName || "",
+    orderType: row.orderType || "",
+    pinCode: row.pinCode || "",
+    state: row.state || "",
+    stateName: row.stateName || row.state || "", // ✅ ADD THIS
+    fromState: row.fromState || "", // ✅ ADD THIS
+    district: row.district || "",
+    from: row.from || "",
+    fromName: row.fromName || row.from || "", // ✅ ADD THIS
+    to: row.to || "",
+    toName: row.toName || row.to || "", // ✅ ADD THIS
+    locationRate: row.locationRate?.toString() || "",
+    priceList: row.priceList || "",
+    weight: row.weight?.toString() || "",
+    rate: row.rate?.toString() || "",
+    totalAmount: row.totalAmount?.toString() || "",
+    collectionCharges: row.collectionCharges?.toString() || "0",
+    cancellationCharges: row.cancellationCharges || "Nil",
+    loadingCharges: row.loadingCharges || "Nil",
+    otherCharges: row.otherCharges?.toString() || "0",
+    localStatus: row.localStatus || "unknown", // ✅ ADD THIS
+    localStatusLabel: row.localStatusLabel || "Unknown" // ✅ ADD THIS
+  }));
+  setOrderRows(newOrderRows);
+}
     // Set Purchase Terms (READ ONLY - auto-filled from purchase)
     if (purchaseData.purchaseDetails) {
       const pd = purchaseData.purchaseDetails;
@@ -950,10 +1189,10 @@ export default function CreateAdvancePayment() {
               <label className="text-xs font-bold text-slate-600">Purchase No</label>
               <input type="text" value={header.purchaseNo} readOnly className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm outline-none cursor-not-allowed" />
             </div>
-            <div className="col-span-12 md:col-span-2">
+            {/* <div className="col-span-12 md:col-span-2">
               <label className="text-xs font-bold text-slate-600">Pricing Serial No</label>
               <input type="text" value={header.pricingSerialNo} readOnly className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm outline-none cursor-not-allowed" />
-            </div>
+            </div> */}
             <div className="col-span-12 md:col-span-2">
               <label className="text-xs font-bold text-slate-600">Branch *</label>
               <input type="text" value={`${header.branchName} (${header.branchCode})`} readOnly className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm outline-none cursor-not-allowed" />
@@ -996,51 +1235,67 @@ export default function CreateAdvancePayment() {
           <Card title="Order Details (Read Only)">
             <div className="overflow-auto rounded-xl border border-yellow-300 max-h-[500px] overflow-y-auto">
               <table className="min-w-max w-full text-sm">
-                <thead className="sticky top-0 bg-yellow-400 z-10">
-                  <tr>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[120px]">Order No</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[150px]">Party Name</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[120px]">Plant</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[100px]">Order Type</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[100px]">Pin Code</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[120px]">State</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[120px]">District</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[120px]">From</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[120px]">To</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[100px]">Location Rate</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[100px]">Price List</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[80px]">Weight</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[80px]">Rate</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[100px]">Total Amount</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[130px]">Collection Charges</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[140px]">Cancellation Charges</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[130px]">Loading Charges</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[130px]">Other Charges</th>
-                  </tr>
-                </thead>
+              <thead className="sticky top-0 bg-yellow-400 z-10">
+  <tr>
+    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[120px]">Order No</th>
+    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[150px]">Party Name</th>
+    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[120px]">Plant</th>
+    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[100px]">Order Type</th>
+    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[100px]">Pin Code</th>
+    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[120px]">State</th>
+    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[120px]">From State</th> {/* ✅ ADDED */}
+    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[110px]">Local/Not Local</th> {/* ✅ ADDED */}
+    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[120px]">District</th>
+    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[120px]">From</th>
+    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[120px]">To</th>
+    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[100px]">Location Rate</th>
+    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[100px]">Price List</th>
+    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[80px]">Weight</th>
+    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[80px]">Rate</th>
+    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[100px]">Total Amount</th>
+    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[130px]">Collection Charges</th>
+    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[140px]">Cancellation Charges</th>
+    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[130px]">Loading Charges</th>
+    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[130px]">Other Charges</th>
+  </tr>
+</thead>
                 <tbody>
-                  {orderRows.map((row) => (
-                    <tr key={row._id} className="hover:bg-yellow-50 even:bg-slate-50">
-                      <td className="border border-yellow-300 px-2 py-2"><input type="text" value={row.orderNo || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Order No" /></td>
-                      <td className="border border-yellow-300 px-2 py-2"><input type="text" value={row.partyName || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Party Name" /></td>
-                      <td className="border border-yellow-300 px-2 py-2"><input type="text" value={row.plantName || row.plantCode || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Plant" /></td>
-                      <td className="border border-yellow-300 px-2 py-2"><input type="text" value={row.orderType || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Order Type" /></td>
-                      <td className="border border-yellow-300 px-2 py-2"><input type="text" value={row.pinCode || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Pin Code" /></td>
-                      <td className="border border-yellow-300 px-2 py-2"><input type="text" value={row.state || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="State" /></td>
-                      <td className="border border-yellow-300 px-2 py-2"><input type="text" value={row.district || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="District" /></td>
-                      <td className="border border-yellow-300 px-2 py-2"><input type="text" value={row.from || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="From" /></td>
-                      <td className="border border-yellow-300 px-2 py-2"><input type="text" value={row.to || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="To" /></td>
-                      <td className="border border-yellow-300 px-2 py-2"><input type="text" value={row.locationRate || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Location Rate" /></td>
-                      <td className="border border-yellow-300 px-2 py-2"><input type="text" value={row.priceList || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Price List" /></td>
-                      <td className="border border-yellow-300 px-2 py-2"><input type="number" value={row.weight || ""} readOnly className="w-20 rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="0" /></td>
-                      <td className="border border-yellow-300 px-2 py-2"><input type="number" value={row.rate || ""} readOnly className="w-20 rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="0" /></td>
-                      <td className="border border-yellow-300 px-2 py-2"><input type="number" value={row.totalAmount || ""} readOnly className="w-24 rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm font-bold text-emerald-700 cursor-not-allowed" placeholder="Auto" /></td>
-                      <td className="border border-yellow-300 px-2 py-2"><input type="number" value={row.collectionCharges || "0"} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Collection Charges" /></td>
-                      <td className="border border-yellow-300 px-2 py-2"><input type="text" value={row.cancellationCharges || "Nil"} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Cancellation Charges" /></td>
-                      <td className="border border-yellow-300 px-2 py-2"><input type="text" value={row.loadingCharges || "Nil"} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Loading Charges" /></td>
-                      <td className="border border-yellow-300 px-2 py-2"><input type="number" value={row.otherCharges || "0"} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Other Charges" /></td>
-                    </tr>
-                  ))}
+                 {orderRows.map((row) => (
+  <tr key={row._id} className="hover:bg-yellow-50 even:bg-slate-50">
+    <td className="border border-yellow-300 px-2 py-2"><input type="text" value={row.orderNo || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Order No" /></td>
+    <td className="border border-yellow-300 px-2 py-2"><input type="text" value={row.partyName || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Party Name" /></td>
+    <td className="border border-yellow-300 px-2 py-2"><input type="text" value={row.plantName || row.plantCode || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Plant" /></td>
+    <td className="border border-yellow-300 px-2 py-2"><input type="text" value={row.orderType || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Order Type" /></td>
+    <td className="border border-yellow-300 px-2 py-2"><input type="text" value={row.pinCode || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Pin Code" /></td>
+    <td className="border border-yellow-300 px-2 py-2"><input type="text" value={row.state || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="State" /></td>
+    <td className="border border-yellow-300 px-2 py-2"><input type="text" value={row.fromState || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="From State" /></td> {/* ✅ ADDED */}
+    <td className="border border-yellow-300 px-2 py-2 text-center">
+      {row.fromState && row.state ? (
+        <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${
+          row.fromState.trim().toUpperCase() === row.state.trim().toUpperCase()
+            ? 'bg-green-100 text-green-800 border border-green-300'
+            : 'bg-red-100 text-red-800 border border-red-300'
+        }`}>
+          {row.fromState.trim().toUpperCase() === row.state.trim().toUpperCase() ? '✅ Local' : '❌ Not Local'}
+        </span>
+      ) : (
+        <span className="text-xs text-gray-400">-</span>
+      )}
+    </td> {/* ✅ ADDED */}
+    <td className="border border-yellow-300 px-2 py-2"><input type="text" value={row.district || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="District" /></td>
+    <td className="border border-yellow-300 px-2 py-2"><input type="text" value={row.from || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="From" /></td>
+    <td className="border border-yellow-300 px-2 py-2"><input type="text" value={row.to || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="To" /></td>
+    <td className="border border-yellow-300 px-2 py-2"><input type="text" value={row.locationRate || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Location Rate" /></td>
+    <td className="border border-yellow-300 px-2 py-2"><input type="text" value={row.priceList || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Price List" /></td>
+    <td className="border border-yellow-300 px-2 py-2"><input type="number" value={row.weight || ""} readOnly className="w-20 rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="0" /></td>
+    <td className="border border-yellow-300 px-2 py-2"><input type="number" value={row.rate || ""} readOnly className="w-20 rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="0" /></td>
+    <td className="border border-yellow-300 px-2 py-2"><input type="number" value={row.totalAmount || ""} readOnly className="w-24 rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm font-bold text-emerald-700 cursor-not-allowed" placeholder="Auto" /></td>
+    <td className="border border-yellow-300 px-2 py-2"><input type="number" value={row.collectionCharges || "0"} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Collection Charges" /></td>
+    <td className="border border-yellow-300 px-2 py-2"><input type="text" value={row.cancellationCharges || "Nil"} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Cancellation Charges" /></td>
+    <td className="border border-yellow-300 px-2 py-2"><input type="text" value={row.loadingCharges || "Nil"} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Loading Charges" /></td>
+    <td className="border border-yellow-300 px-2 py-2"><input type="number" value={row.otherCharges || "0"} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Other Charges" /></td>
+  </tr>
+))}
                 </tbody>
                 <tfoot className="bg-yellow-100">
                   <tr><td colSpan="13" className="border border-yellow-300 px-3 py-2 text-right font-bold">Total Order Amount:</td><td className="border border-yellow-300 px-3 py-2 font-bold text-emerald-800" colSpan="5">₹{calculateTotalOrderAmount().toLocaleString()}</td></tr>
