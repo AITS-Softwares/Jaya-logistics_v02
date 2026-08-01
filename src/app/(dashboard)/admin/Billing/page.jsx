@@ -95,7 +95,7 @@
 // }
 
 // function OrderTypeSelector({ value, onChange, label = "Order Type" }) {
-//   const types = ["Sales", "STO Order", "Export", "Import", "Purchase", "Return"];
+//   const types = ["NA", "Sales", "STO Order", "Export", "Import", "Purchase", "Return"];
 
 //   return (
 //     <div>
@@ -105,10 +105,9 @@
 //         onChange={(e) => onChange(e.target.value)}
 //         className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
 //       >
-//         <option value="">All Order Types</option>
 //         {types.map((type) => (
 //           <option key={type} value={type}>
-//             {type}
+//             {type === "NA" ? "All Order Types" : type}
 //           </option>
 //         ))}
 //       </select>
@@ -496,7 +495,7 @@
 //     clientCity: "",
 //     productCategories: "",
 //     plantId: "",
-//     orderType: "Sales",
+//     orderType: "NA",
 //     startDate: "",
 //     endDate: "",
 //   });
@@ -529,6 +528,8 @@
 //     setLoading(true);
 //     try {
 //       const token = localStorage.getItem("token");
+//       // Convert "NA" to empty string for API
+//       const orderTypeValue = filters.orderType === "NA" ? "" : filters.orderType;
 //       const payload = {
 //         type: "product-wise",
 //         branchId: filters.branchId,
@@ -538,7 +539,7 @@
 //         productCategories: filters.productCategories,
 //         plantId: filters.plantId,
 //         plantCode: plants.find((p) => p._id === filters.plantId)?.code || "",
-//         orderType: filters.orderType,
+//         orderType: orderTypeValue,
 //         startDate: filters.startDate,
 //         endDate: filters.endDate,
 //         excludeLRs: generatedLRs,
@@ -615,7 +616,7 @@
 //         branchName: branches.find((b) => b._id === filters.branchId)?.name || "N/A",
 //         startDate: filters.startDate,
 //         endDate: filters.endDate,
-//         orderType: filters.orderType,
+//         orderType: filters.orderType === "NA" ? "All Types" : filters.orderType,
 //         productCategories: filters.productCategories,
 //       },
 //       data: selected,
@@ -802,7 +803,7 @@
 //     clientStateCode: "",
 //     clientAddress: "",
 //     clientCity: "",
-//     orderType: "Sales",
+//     orderType: "NA",
 //     startDate: "",
 //     endDate: "",
 //   });
@@ -829,13 +830,15 @@
 //     setLoading(true);
 //     try {
 //       const token = localStorage.getItem("token");
+//       // Convert "NA" to empty string for API
+//       const orderTypeValue = filters.orderType === "NA" ? "" : filters.orderType;
 //       const payload = {
 //         type: "general",
 //         branchId: filters.branchId,
 //         branchName: branches.find((b) => b._id === filters.branchId)?.name || "",
 //         clientId: filters.clientId,
 //         clientName: filters.clientName,
-//         orderType: filters.orderType,
+//         orderType: orderTypeValue,
 //         startDate: filters.startDate,
 //         endDate: filters.endDate,
 //         excludeLRs: generatedLRs,
@@ -917,7 +920,7 @@
 //         branchName: branches.find((b) => b._id === filters.branchId)?.name || "N/A",
 //         startDate: filters.startDate,
 //         endDate: filters.endDate,
-//         orderType: filters.orderType,
+//         orderType: filters.orderType === "NA" ? "All Types" : filters.orderType,
 //       },
 //       data: selected,
 //       summary: selectedSummary,
@@ -1866,14 +1869,6 @@
 //                   TOTAL
 //                 </td>
 //                 <td className="px-3 py-2 border text-right">₹ {summary.totalAmount.toFixed(2)}</td>
-//                 </tr>
-//                             </tfoot>
-//             <tfoot className="bg-emerald-100 font-bold">
-//               <tr>
-//                 <td colSpan="8" className="px-3 py-2 border text-right">
-//                   TOTAL
-//                 </td>
-//                 <td className="px-3 py-2 border text-right">₹ {summary.totalAmount.toFixed(2)}</td>
 //               </tr>
 //             </tfoot>
 //           </table>
@@ -1980,10 +1975,13 @@
 //     </div>
 //   );
 // }
+
 "use client";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { usePermission } from "../hooks/usePermission";
+import Link from "next/link";
 
 function Card({ title, children, className = "" }) {
   return (
@@ -2456,7 +2454,7 @@ async function getGeneratedLRNumbers() {
 }
 
 // ==================== PRODUCT WISE BILLING COMPONENT ====================
-function ProductWiseBillingComponent({ branches, clients, plants, loadingBranches, loadingClients, loadingPlants }) {
+function ProductWiseBillingComponent({ branches, clients, plants, loadingBranches, loadingClients, loadingPlants, canGenerate }) {
   const [loading, setLoading] = useState(false);
   const [billData, setBillData] = useState([]);
   const [summary, setSummary] = useState({ totalWeight: 0, totalAmount: 0, totalRecords: 0 });
@@ -2509,7 +2507,6 @@ function ProductWiseBillingComponent({ branches, clients, plants, loadingBranche
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
-      // Convert "NA" to empty string for API
       const orderTypeValue = filters.orderType === "NA" ? "" : filters.orderType;
       const payload = {
         type: "product-wise",
@@ -2577,6 +2574,10 @@ function ProductWiseBillingComponent({ branches, clients, plants, loadingBranche
   };
 
   const handleGenerateReport = async () => {
+    if (!canGenerate) {
+      alert("You don't have permission to generate bills");
+      return;
+    }
     const selected = getSelectedData();
     if (selected.length === 0) {
       alert("Please select at least one record to generate report");
@@ -2644,9 +2645,6 @@ function ProductWiseBillingComponent({ branches, clients, plants, loadingBranche
           <PlantCodeSelector value={filters.plantId} onChange={(val) => setFilters((prev) => ({ ...prev, plantId: val }))} plants={plants} loading={loadingPlants} />
         </div>
         <div className="col-span-12 md:col-span-2">
-          <MonthSelector value={""} onChange={() => {}} />
-        </div>
-        <div className="col-span-12 md:col-span-2">
           <OrderTypeSelector value={filters.orderType} onChange={(val) => setFilters((prev) => ({ ...prev, orderType: val }))} />
         </div>
         <div className="col-span-12 md:col-span-2">
@@ -2676,13 +2674,13 @@ function ProductWiseBillingComponent({ branches, clients, plants, loadingBranche
         </div>
       )}
 
-      {billData.length > 0 && (
+      {billData.length > 0 && canGenerate && (
         <div className="mt-4">
           <button
             onClick={handleGenerateReport}
             disabled={generating || selectedCount === 0}
             className={`bg-emerald-600 text-white px-6 py-2 rounded-xl text-sm font-bold hover:bg-emerald-700 transition ${
-              generating || selectedCount === 0 ? "opacity-50 cursor-not-allowed" : ""
+            generating || selectedCount === 0 ? "opacity-50 cursor-not-allowed" : ""
             }`}
           >
             {generating ? "Generating..." : `📄 Generate Bill (${selectedCount} Selected)`}
@@ -2701,14 +2699,16 @@ function ProductWiseBillingComponent({ branches, clients, plants, loadingBranche
         <div className="mt-6 overflow-x-auto">
           <div className="mb-2 flex justify-between">
             <span>✅ {summary.totalRecords} records</span>
-            <span className="text-blue-600">Selected: {selectedCount}</span>
+            {canGenerate && <span className="text-blue-600">Selected: {selectedCount}</span>}
           </div>
           <table className="min-w-full border">
             <thead className="bg-emerald-50">
               <tr>
-                <th className="px-3 py-2 border w-10">
-                  <input type="checkbox" checked={selectAll} onChange={handleSelectAll} />
-                </th>
+                {canGenerate && (
+                  <th className="px-3 py-2 border w-10">
+                    <input type="checkbox" checked={selectAll} onChange={handleSelectAll} />
+                  </th>
+                )}
                 <th className="px-3 py-2 border">S.No</th>
                 <th className="px-3 py-2 border">Date</th>
                 <th className="px-3 py-2 border">LR No</th>
@@ -2723,10 +2723,12 @@ function ProductWiseBillingComponent({ branches, clients, plants, loadingBranche
             </thead>
             <tbody>
               {billData.map((item, idx) => (
-                <tr key={idx} className={selectedRows[idx] ? "bg-blue-50" : ""}>
-                  <td className="px-3 py-2 border text-center">
-                    <input type="checkbox" checked={!!selectedRows[idx]} onChange={() => handleSelectRow(idx)} />
-                  </td>
+                <tr key={idx} className={selectedRows[idx] && canGenerate ? "bg-blue-50" : ""}>
+                  {canGenerate && (
+                    <td className="px-3 py-2 border text-center">
+                      <input type="checkbox" checked={!!selectedRows[idx]} onChange={() => handleSelectRow(idx)} />
+                    </td>
+                  )}
                   <td className="px-3 py-2 border">{idx + 1}</td>
                   <td className="px-3 py-2 border">{safeFormatDate(item.date)}</td>
                   <td className="px-3 py-2 border font-medium text-emerald-700">{item.lrNo || "-"}</td>
@@ -2742,9 +2744,7 @@ function ProductWiseBillingComponent({ branches, clients, plants, loadingBranche
             </tbody>
             <tfoot className="bg-emerald-100 font-bold">
               <tr>
-                <td colSpan="8" className="px-3 py-2 border text-right">
-                  TOTAL
-                </td>
+                <td colSpan={canGenerate ? 8 : 7} className="px-3 py-2 border text-right">TOTAL</td>
                 <td className="px-3 py-2 border text-right">{summary.totalWeight.toFixed(2)}</td>
                 <td className="px-3 py-2 border text-right"></td>
                 <td className="px-3 py-2 border text-right">₹ {summary.totalAmount.toFixed(2)}</td>
@@ -2766,7 +2766,7 @@ function ProductWiseBillingComponent({ branches, clients, plants, loadingBranche
 }
 
 // ==================== GENERAL BILLING COMPONENT ====================
-function GeneralBillingComponent({ branches, clients, loadingBranches, loadingClients }) {
+function GeneralBillingComponent({ branches, clients, loadingBranches, loadingClients, canGenerate }) {
   const [loading, setLoading] = useState(false);
   const [billData, setBillData] = useState([]);
   const [summary, setSummary] = useState({ totalWeight: 0, totalAmount: 0, totalRecords: 0 });
@@ -2811,7 +2811,6 @@ function GeneralBillingComponent({ branches, clients, loadingBranches, loadingCl
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
-      // Convert "NA" to empty string for API
       const orderTypeValue = filters.orderType === "NA" ? "" : filters.orderType;
       const payload = {
         type: "general",
@@ -2884,6 +2883,10 @@ function GeneralBillingComponent({ branches, clients, loadingBranches, loadingCl
   };
 
   const handleGenerateReport = async () => {
+    if (!canGenerate) {
+      alert("You don't have permission to generate bills");
+      return;
+    }
     const selected = getSelectedData();
     if (selected.length === 0) return alert("Please select at least one record to generate report");
     setGenerating(true);
@@ -2927,9 +2930,6 @@ function GeneralBillingComponent({ branches, clients, loadingBranches, loadingCl
           <BranchSelector value={filters.branchId} onChange={(val) => setFilters((prev) => ({ ...prev, branchId: val }))} branches={branches} loading={loadingBranches} />
         </div>
         <div className="col-span-12 md:col-span-2">
-          <MonthSelector value={""} onChange={() => {}} />
-        </div>
-        <div className="col-span-12 md:col-span-2">
           <OrderTypeSelector value={filters.orderType} onChange={(val) => setFilters((prev) => ({ ...prev, orderType: val }))} />
         </div>
         <div className="col-span-12 md:col-span-2">
@@ -2959,13 +2959,13 @@ function GeneralBillingComponent({ branches, clients, loadingBranches, loadingCl
         </div>
       )}
 
-      {billData.length > 0 && (
+      {billData.length > 0 && canGenerate && (
         <div className="mt-4">
           <button
             onClick={handleGenerateReport}
             disabled={generating || selectedCount === 0}
             className={`bg-emerald-600 text-white px-6 py-2 rounded-xl text-sm font-bold hover:bg-emerald-700 transition ${
-              generating || selectedCount === 0 ? "opacity-50 cursor-not-allowed" : ""
+            generating || selectedCount === 0 ? "opacity-50 cursor-not-allowed" : ""
             }`}
           >
             {generating ? "Generating..." : `📄 Generate Bill (${selectedCount} Selected)`}
@@ -2984,14 +2984,16 @@ function GeneralBillingComponent({ branches, clients, loadingBranches, loadingCl
         <div className="mt-6 overflow-x-auto">
           <div className="mb-2 flex justify-between">
             <span>✅ {summary.totalRecords} records</span>
-            <span className="text-blue-600">Selected: {selectedCount}</span>
+            {canGenerate && <span className="text-blue-600">Selected: {selectedCount}</span>}
           </div>
           <table className="min-w-full border">
             <thead className="bg-emerald-50">
               <tr>
-                <th className="px-3 py-2 border w-10">
-                  <input type="checkbox" checked={selectAll} onChange={handleSelectAll} />
-                </th>
+                {canGenerate && (
+                  <th className="px-3 py-2 border w-10">
+                    <input type="checkbox" checked={selectAll} onChange={handleSelectAll} />
+                  </th>
+                )}
                 <th className="px-3 py-2 border">S.No</th>
                 <th className="px-3 py-2 border">Date</th>
                 <th className="px-3 py-2 border">LR No</th>
@@ -3006,10 +3008,12 @@ function GeneralBillingComponent({ branches, clients, loadingBranches, loadingCl
             </thead>
             <tbody>
               {billData.map((item, idx) => (
-                <tr key={idx} className={selectedRows[idx] ? "bg-blue-50" : ""}>
-                  <td className="px-3 py-2 border text-center">
-                    <input type="checkbox" checked={!!selectedRows[idx]} onChange={() => handleSelectRow(idx)} />
-                  </td>
+                <tr key={idx} className={selectedRows[idx] && canGenerate ? "bg-blue-50" : ""}>
+                  {canGenerate && (
+                    <td className="px-3 py-2 border text-center">
+                      <input type="checkbox" checked={!!selectedRows[idx]} onChange={() => handleSelectRow(idx)} />
+                    </td>
+                  )}
                   <td className="px-3 py-2 border">{idx + 1}</td>
                   <td className="px-3 py-2 border">{safeFormatDate(item.date)}</td>
                   <td className="px-3 py-2 border font-medium text-emerald-700">{item.lrNo || "-"}</td>
@@ -3025,9 +3029,7 @@ function GeneralBillingComponent({ branches, clients, loadingBranches, loadingCl
             </tbody>
             <tfoot className="bg-emerald-100 font-bold">
               <tr>
-                <td colSpan="8" className="px-3 py-2 border text-right">
-                  TOTAL
-                </td>
+                <td colSpan={canGenerate ? 8 : 7} className="px-3 py-2 border text-right">TOTAL</td>
                 <td className="px-3 py-2 border text-right">{summary.totalWeight.toFixed(2)}</td>
                 <td className="px-3 py-2 border text-right"></td>
                 <td className="px-3 py-2 border text-right">₹ {summary.totalAmount.toFixed(2)}</td>
@@ -3048,7 +3050,7 @@ function GeneralBillingComponent({ branches, clients, loadingBranches, loadingCl
 }
 
 // ==================== DETENTION BILLING COMPONENT ====================
-function DetentionBillingComponent({ branches, clients, loadingBranches, loadingClients }) {
+function DetentionBillingComponent({ branches, clients, loadingBranches, loadingClients, canGenerate }) {
   const [loading, setLoading] = useState(false);
   const [billData, setBillData] = useState([]);
   const [summary, setSummary] = useState({ totalAmount: 0, totalRecords: 0 });
@@ -3162,6 +3164,10 @@ function DetentionBillingComponent({ branches, clients, loadingBranches, loading
   };
 
   const handleGenerateReport = async () => {
+    if (!canGenerate) {
+      alert("You don't have permission to generate bills");
+      return;
+    }
     const selected = getSelectedData();
     if (selected.length === 0) return alert("Please select at least one record to generate report");
     setGenerating(true);
@@ -3215,9 +3221,6 @@ function DetentionBillingComponent({ branches, clients, loadingBranches, loading
           />
         </div>
         <div className="col-span-12 md:col-span-2">
-          <MonthSelector value={""} onChange={() => {}} />
-        </div>
-        <div className="col-span-12 md:col-span-2">
           <input
             type="date"
             value={filters.startDate}
@@ -3237,13 +3240,13 @@ function DetentionBillingComponent({ branches, clients, loadingBranches, loading
         </div>
       </div>
 
-      {billData.length > 0 && (
+      {billData.length > 0 && canGenerate && (
         <div className="mt-4">
           <button
             onClick={handleGenerateReport}
             disabled={generating || selectedCount === 0}
             className={`bg-emerald-600 text-white px-6 py-2 rounded-xl text-sm font-bold hover:bg-emerald-700 transition ${
-              generating || selectedCount === 0 ? "opacity-50 cursor-not-allowed" : ""
+            generating || selectedCount === 0 ? "opacity-50 cursor-not-allowed" : ""
             }`}
           >
             {generating ? "Generating..." : `📄 Generate Bill (${selectedCount} Selected)`}
@@ -3262,14 +3265,16 @@ function DetentionBillingComponent({ branches, clients, loadingBranches, loading
         <div className="mt-6 overflow-x-auto">
           <div className="mb-2 flex justify-between">
             <span>✅ {summary.totalRecords} records</span>
-            <span className="text-blue-600">Selected: {selectedCount}</span>
+            {canGenerate && <span className="text-blue-600">Selected: {selectedCount}</span>}
           </div>
           <table className="min-w-full border">
             <thead className="bg-emerald-50">
               <tr>
-                <th className="px-3 py-2 border w-10">
-                  <input type="checkbox" checked={selectAll} onChange={handleSelectAll} />
-                </th>
+                {canGenerate && (
+                  <th className="px-3 py-2 border w-10">
+                    <input type="checkbox" checked={selectAll} onChange={handleSelectAll} />
+                  </th>
+                )}
                 <th className="px-3 py-2 border">S.No</th>
                 <th className="px-3 py-2 border">Date</th>
                 <th className="px-3 py-2 border">LR No</th>
@@ -3282,10 +3287,12 @@ function DetentionBillingComponent({ branches, clients, loadingBranches, loading
             </thead>
             <tbody>
               {billData.map((item, idx) => (
-                <tr key={idx} className={selectedRows[idx] ? "bg-blue-50" : ""}>
-                  <td className="px-3 py-2 border text-center">
-                    <input type="checkbox" checked={!!selectedRows[idx]} onChange={() => handleSelectRow(idx)} />
-                  </td>
+                <tr key={idx} className={selectedRows[idx] && canGenerate ? "bg-blue-50" : ""}>
+                  {canGenerate && (
+                    <td className="px-3 py-2 border text-center">
+                      <input type="checkbox" checked={!!selectedRows[idx]} onChange={() => handleSelectRow(idx)} />
+                    </td>
+                  )}
                   <td className="px-3 py-2 border">{idx + 1}</td>
                   <td className="px-3 py-2 border">{safeFormatDate(item.date)}</td>
                   <td className="px-3 py-2 border font-medium text-emerald-700">{item.lrNo || "-"}</td>
@@ -3299,9 +3306,7 @@ function DetentionBillingComponent({ branches, clients, loadingBranches, loading
             </tbody>
             <tfoot className="bg-emerald-100 font-bold">
               <tr>
-                <td colSpan="8" className="px-3 py-2 border text-right">
-                  TOTAL
-                </td>
+                <td colSpan={canGenerate ? 7 : 6} className="px-3 py-2 border text-right">TOTAL</td>
                 <td className="px-3 py-2 border text-right">₹ {summary.totalAmount.toFixed(2)}</td>
               </tr>
             </tfoot>
@@ -3320,7 +3325,7 @@ function DetentionBillingComponent({ branches, clients, loadingBranches, loading
 }
 
 // ==================== CANCELLATION BILLING COMPONENT ====================
-function CancellationBillingComponent({ branches, clients, loadingBranches, loadingClients }) {
+function CancellationBillingComponent({ branches, clients, loadingBranches, loadingClients, canGenerate }) {
   const [loading, setLoading] = useState(false);
   const [billData, setBillData] = useState([]);
   const [summary, setSummary] = useState({ totalAmount: 0, totalRecords: 0 });
@@ -3434,6 +3439,10 @@ function CancellationBillingComponent({ branches, clients, loadingBranches, load
   };
 
   const handleGenerateReport = async () => {
+    if (!canGenerate) {
+      alert("You don't have permission to generate bills");
+      return;
+    }
     const selected = getSelectedData();
     if (selected.length === 0) return alert("Please select at least one record to generate report");
     setGenerating(true);
@@ -3487,9 +3496,6 @@ function CancellationBillingComponent({ branches, clients, loadingBranches, load
           />
         </div>
         <div className="col-span-12 md:col-span-2">
-          <MonthSelector value={""} onChange={() => {}} />
-        </div>
-        <div className="col-span-12 md:col-span-2">
           <input
             type="date"
             value={filters.startDate}
@@ -3509,13 +3515,13 @@ function CancellationBillingComponent({ branches, clients, loadingBranches, load
         </div>
       </div>
 
-      {billData.length > 0 && (
+      {billData.length > 0 && canGenerate && (
         <div className="mt-4">
           <button
             onClick={handleGenerateReport}
             disabled={generating || selectedCount === 0}
             className={`bg-emerald-600 text-white px-6 py-2 rounded-xl text-sm font-bold hover:bg-emerald-700 transition ${
-              generating || selectedCount === 0 ? "opacity-50 cursor-not-allowed" : ""
+            generating || selectedCount === 0 ? "opacity-50 cursor-not-allowed" : ""
             }`}
           >
             {generating ? "Generating..." : `📄 Generate Bill (${selectedCount} Selected)`}
@@ -3534,14 +3540,16 @@ function CancellationBillingComponent({ branches, clients, loadingBranches, load
         <div className="mt-6 overflow-x-auto">
           <div className="mb-2 flex justify-between">
             <span>✅ {summary.totalRecords} records</span>
-            <span className="text-blue-600">Selected: {selectedCount}</span>
+            {canGenerate && <span className="text-blue-600">Selected: {selectedCount}</span>}
           </div>
           <table className="min-w-full border">
             <thead className="bg-emerald-50">
               <tr>
-                <th className="px-3 py-2 border w-10">
-                  <input type="checkbox" checked={selectAll} onChange={handleSelectAll} />
-                </th>
+                {canGenerate && (
+                  <th className="px-3 py-2 border w-10">
+                    <input type="checkbox" checked={selectAll} onChange={handleSelectAll} />
+                  </th>
+                )}
                 <th className="px-3 py-2 border">S.No</th>
                 <th className="px-3 py-2 border">Date</th>
                 <th className="px-3 py-2 border">LR No</th>
@@ -3554,10 +3562,12 @@ function CancellationBillingComponent({ branches, clients, loadingBranches, load
             </thead>
             <tbody>
               {billData.map((item, idx) => (
-                <tr key={idx} className={selectedRows[idx] ? "bg-blue-50" : ""}>
-                  <td className="px-3 py-2 border text-center">
-                    <input type="checkbox" checked={!!selectedRows[idx]} onChange={() => handleSelectRow(idx)} />
-                  </td>
+                <tr key={idx} className={selectedRows[idx] && canGenerate ? "bg-blue-50" : ""}>
+                  {canGenerate && (
+                    <td className="px-3 py-2 border text-center">
+                      <input type="checkbox" checked={!!selectedRows[idx]} onChange={() => handleSelectRow(idx)} />
+                    </td>
+                  )}
                   <td className="px-3 py-2 border">{idx + 1}</td>
                   <td className="px-3 py-2 border">{safeFormatDate(item.date)}</td>
                   <td className="px-3 py-2 border font-medium text-emerald-700">{item.lrNo || "-"}</td>
@@ -3571,9 +3581,7 @@ function CancellationBillingComponent({ branches, clients, loadingBranches, load
             </tbody>
             <tfoot className="bg-emerald-100 font-bold">
               <tr>
-                <td colSpan="8" className="px-3 py-2 border text-right">
-                  TOTAL
-                </td>
+                <td colSpan={canGenerate ? 7 : 6} className="px-3 py-2 border text-right">TOTAL</td>
                 <td className="px-3 py-2 border text-right">₹ {summary.totalAmount.toFixed(2)}</td>
               </tr>
             </tfoot>
@@ -3592,7 +3600,7 @@ function CancellationBillingComponent({ branches, clients, loadingBranches, load
 }
 
 // ==================== OTHER BILLING COMPONENT ====================
-function OtherBillingComponent({ branches, clients, loadingBranches, loadingClients }) {
+function OtherBillingComponent({ branches, clients, loadingBranches, loadingClients, canGenerate }) {
   const [loading, setLoading] = useState(false);
   const [billData, setBillData] = useState([]);
   const [summary, setSummary] = useState({ totalAmount: 0, totalRecords: 0 });
@@ -3706,6 +3714,10 @@ function OtherBillingComponent({ branches, clients, loadingBranches, loadingClie
   };
 
   const handleGenerateReport = async () => {
+    if (!canGenerate) {
+      alert("You don't have permission to generate bills");
+      return;
+    }
     const selected = getSelectedData();
     if (selected.length === 0) return alert("Please select at least one record to generate report");
     setGenerating(true);
@@ -3762,9 +3774,6 @@ function OtherBillingComponent({ branches, clients, loadingBranches, loadingClie
           </select>
         </div>
         <div className="col-span-12 md:col-span-2">
-          <MonthSelector value={""} onChange={() => {}} />
-        </div>
-        <div className="col-span-12 md:col-span-2">
           <input
             type="date"
             value={filters.startDate}
@@ -3784,13 +3793,13 @@ function OtherBillingComponent({ branches, clients, loadingBranches, loadingClie
         </div>
       </div>
 
-      {billData.length > 0 && (
+      {billData.length > 0 && canGenerate && (
         <div className="mt-4">
           <button
             onClick={handleGenerateReport}
             disabled={generating || selectedCount === 0}
             className={`bg-emerald-600 text-white px-6 py-2 rounded-xl text-sm font-bold hover:bg-emerald-700 transition ${
-              generating || selectedCount === 0 ? "opacity-50 cursor-not-allowed" : ""
+            generating || selectedCount === 0 ? "opacity-50 cursor-not-allowed" : ""
             }`}
           >
             {generating ? "Generating..." : `📄 Generate Bill (${selectedCount} Selected)`}
@@ -3809,14 +3818,16 @@ function OtherBillingComponent({ branches, clients, loadingBranches, loadingClie
         <div className="mt-6 overflow-x-auto">
           <div className="mb-2 flex justify-between">
             <span>✅ {summary.totalRecords} records</span>
-            <span className="text-blue-600">Selected: {selectedCount}</span>
+            {canGenerate && <span className="text-blue-600">Selected: {selectedCount}</span>}
           </div>
           <table className="min-w-full border">
             <thead className="bg-emerald-50">
               <tr>
-                <th className="px-3 py-2 border w-10">
-                  <input type="checkbox" checked={selectAll} onChange={handleSelectAll} />
-                </th>
+                {canGenerate && (
+                  <th className="px-3 py-2 border w-10">
+                    <input type="checkbox" checked={selectAll} onChange={handleSelectAll} />
+                  </th>
+                )}
                 <th className="px-3 py-2 border">S.No</th>
                 <th className="px-3 py-2 border">Date</th>
                 <th className="px-3 py-2 border">LR No</th>
@@ -3829,10 +3840,12 @@ function OtherBillingComponent({ branches, clients, loadingBranches, loadingClie
             </thead>
             <tbody>
               {billData.map((item, idx) => (
-                <tr key={idx} className={selectedRows[idx] ? "bg-blue-50" : ""}>
-                  <td className="px-3 py-2 border text-center">
-                    <input type="checkbox" checked={!!selectedRows[idx]} onChange={() => handleSelectRow(idx)} />
-                  </td>
+                <tr key={idx} className={selectedRows[idx] && canGenerate ? "bg-blue-50" : ""}>
+                  {canGenerate && (
+                    <td className="px-3 py-2 border text-center">
+                      <input type="checkbox" checked={!!selectedRows[idx]} onChange={() => handleSelectRow(idx)} />
+                    </td>
+                  )}
                   <td className="px-3 py-2 border">{idx + 1}</td>
                   <td className="px-3 py-2 border">{safeFormatDate(item.date)}</td>
                   <td className="px-3 py-2 border font-medium text-emerald-700">{item.lrNo || "-"}</td>
@@ -3846,9 +3859,7 @@ function OtherBillingComponent({ branches, clients, loadingBranches, loadingClie
             </tbody>
             <tfoot className="bg-emerald-100 font-bold">
               <tr>
-                <td colSpan="8" className="px-3 py-2 border text-right">
-                  TOTAL
-                </td>
+                <td colSpan={canGenerate ? 7 : 6} className="px-3 py-2 border text-right">TOTAL</td>
                 <td className="px-3 py-2 border text-right">₹ {summary.totalAmount.toFixed(2)}</td>
               </tr>
             </tfoot>
@@ -3869,6 +3880,7 @@ function OtherBillingComponent({ branches, clients, loadingBranches, loadingClie
 // ==================== MAIN BILLING PAGE ====================
 export default function BillingPage() {
   const router = useRouter();
+  const { canView, canCreate, loading: permissionLoading } = usePermission();
   const [loadingBranches, setLoadingBranches] = useState(false);
   const [loadingClients, setLoadingClients] = useState(false);
   const [loadingPlants, setLoadingPlants] = useState(false);
@@ -3876,51 +3888,172 @@ export default function BillingPage() {
   const [branches, setBranches] = useState([]);
   const [clients, setClients] = useState([]);
   const [plants, setPlants] = useState([]);
-  
-  const fetchBranches = async () => {
-    setLoadingBranches(true);
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('/api/branches', { headers: { Authorization: `Bearer ${token}` } });
-      const data = await res.json();
-      if (data.success && Array.isArray(data.data)) setBranches(data.data);
-    } catch (error) { console.error(error); } finally { setLoadingBranches(false); }
-  };
-  
-  const fetchClients = async () => {
-    setLoadingClients(true);
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('/api/customers', { headers: { Authorization: `Bearer ${token}` } });
-      const data = await res.json();
-      if (data.success && Array.isArray(data.data)) setClients(data.data);
-    } catch (error) { console.error(error); } finally { setLoadingClients(false); }
-  };
-  
-  const fetchPlants = async () => {
-    setLoadingPlants(true);
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('/api/plants', { headers: { Authorization: `Bearer ${token}` } });
-      const data = await res.json();
-      if (data.success && Array.isArray(data.data)) setPlants(data.data);
-    } catch (error) { console.error(error); } finally { setLoadingPlants(false); }
-  };
-  
-  useEffect(() => { fetchBranches(); fetchClients(); fetchPlants(); }, []);
-  
+
+  const MODULE_NAME = 'Billing';
+
+ // Find the fetchClients function and update it
+const fetchClients = async () => {
+  setLoadingClients(true);
+  try {
+    const token = localStorage.getItem('token');
+    console.log('🔍 Fetching clients...');
+    const res = await fetch('/api/customers', { 
+      headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      } 
+    });
+    const data = await res.json();
+    console.log('📊 Clients response:', JSON.stringify(data, null, 2));
+    
+    if (data.success && Array.isArray(data.data)) {
+      console.log('✅ Number of clients found:', data.data.length);
+      if (data.data.length > 0) {
+        console.log('📋 First client:', data.data[0]);
+        console.log('📋 Client field names:', Object.keys(data.data[0]));
+      }
+      setClients(data.data);
+    } else if (Array.isArray(data)) {
+      console.log('✅ Number of clients found (array):', data.length);
+      if (data.length > 0) {
+        console.log('📋 First client:', data[0]);
+      }
+      setClients(data);
+    } else {
+      console.warn('⚠️ No clients found');
+      setClients([]);
+    }
+  } catch (error) { 
+    console.error('❌ Error fetching clients:', error); 
+    setClients([]);
+  } finally { 
+    setLoadingClients(false); 
+  }
+};
+
+// Also update fetchBranches
+const fetchBranches = async () => {
+  setLoadingBranches(true);
+  try {
+    const token = localStorage.getItem('token');
+    console.log('🔍 Fetching branches...');
+    const res = await fetch('/api/branches', { 
+      headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      } 
+    });
+    const data = await res.json();
+    console.log('📊 Branches response:', data);
+    
+    if (data.success && Array.isArray(data.data)) {
+      console.log('✅ Number of branches found:', data.data.length);
+      if (data.data.length > 0) {
+        console.log('📋 First branch:', data.data[0]);
+      }
+      setBranches(data.data);
+    } else {
+      console.warn('⚠️ No branches found');
+      setBranches([]);
+    }
+  } catch (error) { 
+    console.error('❌ Error fetching branches:', error); 
+    setBranches([]);
+  } finally { 
+    setLoadingBranches(false); 
+  }
+};
+
+// Also update fetchPlants
+const fetchPlants = async () => {
+  setLoadingPlants(true);
+  try {
+    const token = localStorage.getItem('token');
+    console.log('🔍 Fetching plants...');
+    const res = await fetch('/api/plants', { 
+      headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      } 
+    });
+    const data = await res.json();
+    console.log('📊 Plants response:', data);
+    
+    if (data.success && Array.isArray(data.data)) {
+      console.log('✅ Number of plants found:', data.data.length);
+      if (data.data.length > 0) {
+        console.log('📋 First plant:', data.data[0]);
+      }
+      setPlants(data.data);
+    } else {
+      console.warn('⚠️ No plants found');
+      setPlants([]);
+    }
+  } catch (error) { 
+    console.error('❌ Error fetching plants:', error); 
+    setPlants([]);
+  } finally { 
+    setLoadingPlants(false); 
+  }
+};
+
+  useEffect(() => { 
+    fetchBranches(); 
+    fetchClients(); 
+    fetchPlants(); 
+  }, []);
+
+  const canGenerate = canCreate && canView;
+
+  if (permissionLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500 mx-auto"></div>
+          <p className="mt-4 text-slate-600">Loading permissions...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!canView) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center max-w-md p-8 bg-white rounded-xl shadow-lg">
+          <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h2>
+          <p className="text-gray-600 mb-6">
+            You don't have permission to access Billing.
+            Please contact your administrator.
+          </p>
+          <Link
+            href="/admin"
+            className="inline-block px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+          >
+            Return to Dashboard
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   const renderSelectedBillingCard = () => {
     switch(selectedBillingType) {
       case "product-wise": 
-        return <ProductWiseBillingComponent branches={branches} clients={clients} plants={plants} loadingBranches={loadingBranches} loadingClients={loadingClients} loadingPlants={loadingPlants} />;
+        return <ProductWiseBillingComponent branches={branches} clients={clients} plants={plants} loadingBranches={loadingBranches} loadingClients={loadingClients} loadingPlants={loadingPlants} canGenerate={canGenerate} />;
       case "general": 
-        return <GeneralBillingComponent branches={branches} clients={clients} loadingBranches={loadingBranches} loadingClients={loadingClients} />;
+        return <GeneralBillingComponent branches={branches} clients={clients} loadingBranches={loadingBranches} loadingClients={loadingClients} canGenerate={canGenerate} />;
       case "detention": 
-        return <DetentionBillingComponent branches={branches} clients={clients} loadingBranches={loadingBranches} loadingClients={loadingClients} />;
+        return <DetentionBillingComponent branches={branches} clients={clients} loadingBranches={loadingBranches} loadingClients={loadingClients} canGenerate={canGenerate} />;
       case "cancellation": 
-        return <CancellationBillingComponent branches={branches} clients={clients} loadingBranches={loadingBranches} loadingClients={loadingClients} />;
+        return <CancellationBillingComponent branches={branches} clients={clients} loadingBranches={loadingBranches} loadingClients={loadingClients} canGenerate={canGenerate} />;
       case "other": 
-        return <OtherBillingComponent branches={branches} clients={clients} loadingBranches={loadingBranches} loadingClients={loadingClients} />;
+        return <OtherBillingComponent branches={branches} clients={clients} loadingBranches={loadingBranches} loadingClients={loadingClients} canGenerate={canGenerate} />;
       default: 
         return (
           <div className="text-center py-12 bg-white rounded-2xl border border-slate-200">
@@ -3933,7 +4066,7 @@ export default function BillingPage() {
         );
     }
   };
-  
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white">
       <div className="sticky top-0 z-40 border-b bg-white/80 backdrop-blur">

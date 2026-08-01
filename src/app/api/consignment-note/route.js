@@ -629,6 +629,7 @@
 //     }, { status: 500 });
 //   }
 // }
+
 import { NextResponse } from "next/server";
 import connectDb from "@/lib/db";
 import ConsignmentNote from "./ConsignmentNote";
@@ -636,78 +637,94 @@ import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import { getNextLRNumber } from "./ConsignmentCounter";
 import mongoose from 'mongoose';
 
-// Helper function to convert to number
+// ── PERMISSION FUNCTIONS ──
+
+function isAuthorized(user) {
+  if (!user) return false;
+  
+  // Company admins have full access
+  if (user.type === "company") return true;
+  
+  // Admin role has full access
+  if (user.roles && user.roles.includes("Admin")) return true;
+  
+  // Check module-based permissions for "Consignment Note"
+  const modules = user.modules || {};
+  const moduleData = modules["Consignment Note"];
+  
+  if (!moduleData || !moduleData.selected) return false;
+  
+  return true;
+}
+
+function hasPermission(user, action) {
+  if (!user) return false;
+  if (user.type === "company") return true;
+  if (user.roles && user.roles.includes("Admin")) return true;
+  
+  const modules = user.modules || {};
+  const moduleData = modules["Consignment Note"];
+  
+  if (!moduleData || !moduleData.selected) return false;
+  
+  const permissions = moduleData.permissions || {};
+  return permissions[action] === true;
+}
+
+async function validateUser(req, requiredAction = null) {
+  const token = getTokenFromHeader(req);
+  if (!token) return { error: "Authentication required. Please login.", status: 401 };
+
+  try {
+    const user = verifyJWT(token);
+    if (!user) return { error: "Invalid or expired token. Please login again.", status: 401 };
+    
+    if (!isAuthorized(user)) {
+      return { 
+        error: "Access denied. You don't have permission to access Consignment Notes.", 
+        status: 403 
+      };
+    }
+    
+    if (requiredAction && !hasPermission(user, requiredAction)) {
+      return { 
+        error: `Permission denied: ${requiredAction} action not allowed for Consignment Notes.`, 
+        status: 403 
+      };
+    }
+    
+    return { user, error: null, status: 200 };
+  } catch (err) {
+    console.error("JWT Verification Failed:", err?.message || err);
+    return { error: "Authentication failed. Please login again.", status: 401 };
+  }
+}
+
+// ── HELPER FUNCTIONS ──
+
 function num(value) {
   if (value === null || value === undefined || value === '') return 0;
   const n = Number(value);
   return Number.isFinite(n) ? n : 0;
 }
 
-// ✅ Role-based access check
-// ✅ Role-based access for vehicle negotiation management
-function isAuthorized(user) {
-  if (!user) return false;
-
-  // ✅ Company users have full access
-  if (user.type === "company") return true;
-
-  // ✅ Check for specific roles
-  const allowedRoles = [
-    "admin",
-    "sales manager",
-    "purchase manager",
-    "inventory manager",
-    "accounts manager",
-    "hr manager",
-    "support executive",
-    "production head",
-    "project manager"
-  ];
-
-  // Handle both single role and roles array
-  const userRoles = Array.isArray(user.roles) 
-    ? user.roles 
-    : (user.role ? [user.role] : []);
-
-  const hasAllowedRole = userRoles.some(role =>
-    allowedRoles.includes(role.trim().toLowerCase())
-  );
-
-  if (hasAllowedRole) return true;
-
-  // ✅ Check for specific permission (if your system uses permissions)
-  if (Array.isArray(user.permissions) && 
-      user.permissions.includes("vehicle_negotiation")) {
-    return true;
-  }
-
-  return false;
-}
-
-async function validateUser(req) {
-  const token = getTokenFromHeader(req);
-  if (!token) return { error: "Token missing", status: 401 };
-
-  try {
-    const user = await verifyJWT(token);
-    if (!user) return { error: "Invalid token", status: 401 };
-    if (!isAuthorized(user)) return { error: "Unauthorized", status: 403 };
-    return { user, error: null, status: 200 };
-  } catch (err) {
-    console.error("JWT Verification Failed:", err?.message || err);
-    return { error: "Invalid token", status: 401 };
-  }
+function isValidObjectId(id) {
+  return id && mongoose.Types.ObjectId.isValid(id);
 }
 
 /* ========================================
-   GET /api/consignment-note
+   GET /api/consignment-note - Requires 'view' permission
 ======================================== */
 export async function GET(req) {
   try {
     await connectDb();
-    const { user, error, status } = await validateUser(req);
+    const { user, error, status } = await validateUser(req, 'view');
     if (error) {
-      return NextResponse.json({ success: false, message: error }, { status });
+      return NextResponse.json({ 
+        success: false, 
+        message: error,
+        code: status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN'
+      }, { status });
     }
 
     const url = new URL(req.url);
@@ -721,7 +738,7 @@ export async function GET(req) {
 
     // ============ CASE 1: GET SINGLE BY ID ============
     if (id) {
-      if (!mongoose.Types.ObjectId.isValid(id)) {
+      if (!isValidObjectId(id)) {
         return NextResponse.json({ 
           success: false, 
           message: "Invalid consignment note ID format" 
@@ -776,11 +793,6 @@ export async function GET(req) {
           { lrNo: { $regex: search, $options: 'i' } },
           { loadingInfoNo: { $regex: search, $options: 'i' } },
           { vnnNo: { $regex: search, $options: 'i' } },
-          { lcStatus: { $regex: search, $options: 'i' } },
-          { lrType: { $regex: search, $options: 'i' } },
-          { vehicleReach: { $regex: search, $options: 'i' } },
-          { verification: { $regex: search, $options: 'i' } },
-          { remarks: { $regex: search, $options: 'i' } },
           { 'header.partyName': { $regex: search, $options: 'i' } },
           { 'header.orderNo': { $regex: search, $options: 'i' } },
           { 'header.vendorName': { $regex: search, $options: 'i' } },
@@ -823,13 +835,7 @@ export async function GET(req) {
         vehicleNo: note.header?.vehicleNo || 'N/A',
         totalWeight: note.totalWeight || 0,
         unit: note.header?.unit || 'MT',
-        status: note.header?.status || 'Pending',
-        lcStatus: note.lcStatus || note.header?.lcStatus || 'Not LC',
-        lrType: note.lrType || note.header?.lrType || 'Normal',
-        vehicleReach: note.vehicleReach || note.header?.vehicleReach || 'Not Reach',
-        verification: note.verification || note.header?.verification || 'Not Verified',
-        vehicleUnloadedDate: note.vehicleUnloadedDate || note.header?.vehicleUnloadedDate || '',
-        remarks: note.remarks || note.header?.remarks || ''
+        status: note.header?.status || 'Pending'
       }));
 
       return NextResponse.json({
@@ -843,7 +849,7 @@ export async function GET(req) {
     const notes = await ConsignmentNote.find({ 
       companyId: user.companyId 
     })
-    .select('lrNo loadingInfoNo vnnNo lcStatus lrType vehicleReach verification vehicleUnloadedDate remarks header.partyName header.orderNo header.status')
+    .select('lrNo loadingInfoNo vnnNo header.partyName header.orderNo header.status')
     .sort({ createdAt: -1 })
     .lean();
 
@@ -862,14 +868,18 @@ export async function GET(req) {
 }
 
 /* ========================================
-   POST /api/consignment-note - Create New
+   POST /api/consignment-note - Requires 'create' permission
 ======================================== */
 export async function POST(req) {
   try {
     await connectDb();
-    const { user, error, status } = await validateUser(req);
+    const { user, error, status } = await validateUser(req, 'create');
     if (error) {
-      return NextResponse.json({ success: false, message: error }, { status });
+      return NextResponse.json({ 
+        success: false, 
+        message: error,
+        code: status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN'
+      }, { status });
     }
 
     const body = await req.json();
@@ -948,26 +958,12 @@ export async function POST(req) {
       }))
     };
 
-    // Get values from body or header
-    const lcStatus = body.lcStatus || body.header?.lcStatus || 'Not LC';
-    const lrType = body.lrType || body.header?.lrType || 'Normal';
-    const vehicleReach = body.vehicleReach || body.header?.vehicleReach || 'Not Reach';
-    const verification = body.verification || body.header?.verification || 'Not Verified';
-    const vehicleUnloadedDate = body.vehicleUnloadedDate || body.header?.vehicleUnloadedDate || '';
-    const remarks = body.remarks || body.header?.remarks || '';
-
     // Create consignment note
     const consignmentNote = new ConsignmentNote({
       lrNo,
       vnnNo: body.vnnNo || '',
       vehicleNegotiationRef: body.vehicleNegotiationRef || null,
       loadingInfoNo: body.loadingInfoNo || '',
-      lcStatus: lcStatus,
-      lrType: lrType,
-      vehicleReach: vehicleReach,
-      verification: verification,
-      vehicleUnloadedDate: vehicleUnloadedDate,
-      remarks: remarks,
       header: {
         orderNo: body.header?.orderNo || '',
         partyName: body.header?.partyName || '',
@@ -978,7 +974,6 @@ export async function POST(req) {
         vendorCode: body.header?.vendorCode || '',
         vendorName: body.header?.vendorName || '',
         from: body.header?.from || '',
-        fromState: body.header?.fromState || '',
         to: body.header?.to || '',
         taluka: body.header?.taluka || '',
         district: body.header?.district || '',
@@ -988,13 +983,7 @@ export async function POST(req) {
         lrNo: body.header?.lrNo || lrNo,
         lrDate: body.header?.lrDate || '',
         unit: body.header?.unit || 'MT',
-        status: body.header?.status || 'Pending',
-        lcStatus: lcStatus,
-        lrType: lrType,
-        vehicleReach: vehicleReach,
-        verification: verification,
-        vehicleUnloadedDate: vehicleUnloadedDate,
-        remarks: remarks
+        status: body.header?.status || 'Pending'
       },
       consignor: {
         name: body.consignor?.name || '',
@@ -1032,11 +1021,7 @@ export async function POST(req) {
       data: {
         _id: consignmentNote._id,
         lrNo: consignmentNote.lrNo,
-        loadingInfoNo: consignmentNote.loadingInfoNo,
-        lcStatus: consignmentNote.lcStatus,
-        lrType: consignmentNote.lrType,
-        vehicleReach: consignmentNote.vehicleReach,
-        verification: consignmentNote.verification
+        loadingInfoNo: consignmentNote.loadingInfoNo
       }
     }, { status: 201 });
 
@@ -1066,14 +1051,18 @@ export async function POST(req) {
 }
 
 /* ========================================
-   PUT /api/consignment-note - Update
+   PUT /api/consignment-note - Requires 'edit' permission
 ======================================== */
 export async function PUT(req) {
   try {
     await connectDb();
-    const { user, error, status } = await validateUser(req);
+    const { user, error, status } = await validateUser(req, 'edit');
     if (error) {
-      return NextResponse.json({ success: false, message: error }, { status });
+      return NextResponse.json({ 
+        success: false, 
+        message: error,
+        code: status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN'
+      }, { status });
     }
 
     const body = await req.json();
@@ -1086,7 +1075,7 @@ export async function PUT(req) {
       }, { status: 400 });
     }
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
+    if (!isValidObjectId(id)) {
       return NextResponse.json({ 
         success: false, 
         message: "Invalid consignment note ID format" 
@@ -1103,37 +1092,6 @@ export async function PUT(req) {
         success: false, 
         message: "Consignment note not found" 
       }, { status: 404 });
-    }
-
-    // Update all fields
-    if (body.lcStatus !== undefined) {
-      note.lcStatus = body.lcStatus;
-      if (note.header) note.header.lcStatus = body.lcStatus;
-    }
-    
-    if (body.lrType !== undefined) {
-      note.lrType = body.lrType;
-      if (note.header) note.header.lrType = body.lrType;
-    }
-    
-    if (body.vehicleReach !== undefined) {
-      note.vehicleReach = body.vehicleReach;
-      if (note.header) note.header.vehicleReach = body.vehicleReach;
-    }
-    
-    if (body.verification !== undefined) {
-      note.verification = body.verification;
-      if (note.header) note.header.verification = body.verification;
-    }
-    
-    if (body.vehicleUnloadedDate !== undefined) {
-      note.vehicleUnloadedDate = body.vehicleUnloadedDate;
-      if (note.header) note.header.vehicleUnloadedDate = body.vehicleUnloadedDate;
-    }
-    
-    if (body.remarks !== undefined) {
-      note.remarks = body.remarks;
-      if (note.header) note.header.remarks = body.remarks;
     }
 
     // Check if loadingInfoNo is being changed and if new one is already used
@@ -1262,13 +1220,7 @@ export async function PUT(req) {
       data: {
         _id: note._id,
         lrNo: note.lrNo,
-        loadingInfoNo: note.loadingInfoNo,
-        lcStatus: note.lcStatus,
-        lrType: note.lrType,
-        vehicleReach: note.vehicleReach,
-        verification: note.verification,
-        vehicleUnloadedDate: note.vehicleUnloadedDate,
-        remarks: note.remarks
+        loadingInfoNo: note.loadingInfoNo
       }
     }, { status: 200 });
 
@@ -1291,14 +1243,18 @@ export async function PUT(req) {
 }
 
 /* ========================================
-   DELETE /api/consignment-note - Delete
+   DELETE /api/consignment-note - Requires 'delete' permission
 ======================================== */
 export async function DELETE(req) {
   try {
     await connectDb();
-    const { user, error, status } = await validateUser(req);
+    const { user, error, status } = await validateUser(req, 'delete');
     if (error) {
-      return NextResponse.json({ success: false, message: error }, { status });
+      return NextResponse.json({ 
+        success: false, 
+        message: error,
+        code: status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN'
+      }, { status });
     }
 
     const url = new URL(req.url);
@@ -1311,7 +1267,7 @@ export async function DELETE(req) {
       }, { status: 400 });
     }
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
+    if (!isValidObjectId(id)) {
       return NextResponse.json({ 
         success: false, 
         message: "Invalid consignment note ID format" 
@@ -1361,6 +1317,90 @@ export async function DELETE(req) {
     return NextResponse.json({ 
       success: false, 
       message: error.message || "Failed to delete consignment note"
+    }, { status: 500 });
+  }
+}
+
+/* ========================================
+   PATCH /api/consignment-note - Requires 'approve' permission
+   Handles: approve, reject, complete
+======================================== */
+export async function PATCH(req) {
+  try {
+    await connectDb();
+    const { user, error, status } = await validateUser(req, 'approve');
+    if (error) {
+      return NextResponse.json({ 
+        success: false, 
+        message: error,
+        code: status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN'
+      }, { status });
+    }
+
+    const body = await req.json();
+    const { id, action } = body;
+    
+    if (!id || !isValidObjectId(id)) {
+      return NextResponse.json({ 
+        success: false, 
+        message: "Valid ID is required" 
+      }, { status: 400 });
+    }
+
+    console.log(`📝 Updating consignment note status: ${id} - ${action}`);
+    
+    const note = await ConsignmentNote.findOne({
+      _id: id,
+      companyId: user.companyId
+    });
+
+    if (!note) {
+      return NextResponse.json({ 
+        success: false, 
+        message: "Consignment note not found" 
+      }, { status: 404 });
+    }
+
+    const allowedActions = ['approve', 'reject', 'complete'];
+    if (!allowedActions.includes(action)) {
+      return NextResponse.json({ 
+        success: false, 
+        message: "Invalid action. Allowed: approve, reject, complete" 
+      }, { status: 400 });
+    }
+
+    const statusMap = {
+      'approve': 'Approved',
+      'reject': 'Rejected',
+      'complete': 'Completed'
+    };
+
+    // Update status
+    note.header.status = statusMap[action];
+    note.updatedAt = Date.now();
+    
+    // Also update the overall status if you have a top-level status field
+    if (note.status) {
+      note.status = statusMap[action];
+    }
+    
+    await note.save();
+
+    return NextResponse.json({ 
+      success: true, 
+      message: `Consignment note ${action}d successfully`,
+      data: {
+        _id: note._id,
+        lrNo: note.lrNo,
+        status: note.header.status
+      }
+    }, { status: 200 });
+
+  } catch (error) {
+    console.error("❌ PATCH /consignment-note error:", error);
+    return NextResponse.json({ 
+      success: false, 
+      message: error.message || "Failed to update consignment note status"
     }, { status: 500 });
   }
 }
