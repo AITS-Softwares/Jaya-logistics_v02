@@ -1,4 +1,6 @@
 
+
+
 // "use client";
 
 // import { useMemo, useState, useEffect, useRef, useCallback } from "react";
@@ -2614,7 +2616,6 @@
 //   );
 // }
 
-
 "use client";
 
 import { useMemo, useState, useEffect, useRef, useCallback } from "react";
@@ -2878,6 +2879,7 @@ export default function EditOrderPanel() {
    * STATE FOR API DATA
    ========================= */
   const [branches, setBranches] = useState([]);
+  const [subCompanies, setSubCompanies] = useState([]);
   const [locations, setLocations] = useState([]); 
   const [countries, setCountries] = useState([]);
   const [states, setStates] = useState([]);
@@ -2924,6 +2926,9 @@ export default function EditOrderPanel() {
     branch: null,
     branchName: "",
     branchCode: "",
+    subCompanyId: "",
+    subCompanyName: "",
+    subCompanyCode: "",
     delivery: "Normal",
     date: new Date().toISOString().split('T')[0],
     partyName: "",
@@ -2959,6 +2964,21 @@ export default function EditOrderPanel() {
       }
     } catch (error) {
       console.error('Error fetching branches:', error.message);
+    }
+  };
+
+  const fetchSubCompanies = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/subcompanies', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (data.success && Array.isArray(data.data)) {
+        setSubCompanies(data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching sub-companies:', error.message);
     }
   };
 
@@ -3142,6 +3162,7 @@ export default function EditOrderPanel() {
     if (orderId) {
       fetchOrderData();
       fetchBranches();
+      fetchSubCompanies();
       fetchCountries();
       fetchPlants();
       fetchLocations();
@@ -3176,6 +3197,9 @@ export default function EditOrderPanel() {
         branch: order.branch || null,
         branchName: order.branchName || "",
         branchCode: order.branchCode || "",
+        subCompanyId: order.subCompanyId || "",
+        subCompanyName: order.subCompanyName || "",
+        subCompanyCode: order.subCompanyCode || "",
         delivery: order.delivery || "Normal",
         date: order.date ? new Date(order.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
         partyName: order.partyName || order.customerName || "",
@@ -3588,6 +3612,9 @@ export default function EditOrderPanel() {
         branch: top.branch,
         branchName: top.branchName,
         branchCode: top.branchCode,
+        subCompanyId: top.subCompanyId || null,
+        subCompanyName: top.subCompanyName || '',
+        subCompanyCode: top.subCompanyCode || '',
         delivery: top.delivery,
         date: top.date,
         customerId: selectedCustomer?._id || null,
@@ -3810,6 +3837,32 @@ export default function EditOrderPanel() {
                 </button>
               </div>
             </div>
+
+            {/* Sub-Company Dropdown */}
+            <div className="col-span-12 md:col-span-4">
+              <label className="text-xs font-bold text-slate-600">Sub-Company</label>
+              <select
+                value={top.subCompanyId || ''}
+                onChange={(e) => {
+                  const subCompanyId = e.target.value;
+                  const selected = subCompanies.find(sc => sc._id === subCompanyId);
+                  setTop(prev => ({
+                    ...prev,
+                    subCompanyId: subCompanyId,
+                    subCompanyName: selected?.name || '',
+                    subCompanyCode: selected?.code || ''
+                  }));
+                }}
+                className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+              >
+                <option value="">Select Sub-Company</option>
+                {subCompanies.map((sc) => (
+                  <option key={sc._id} value={sc._id}>
+                    {sc.name} ({sc.code})
+                  </option>
+                ))}
+              </select>
+            </div>
             
             <Select
               col="col-span-12 md:col-span-4"
@@ -3976,7 +4029,7 @@ export default function EditOrderPanel() {
 }
 
 // ========================
-// COMPONENTS
+// COMPONENTS (same as before)
 // ========================
 
 function Card({ title, right, children }) {
@@ -4199,6 +4252,8 @@ function SearchableDropdown({
     </div>
   );
 }
+
+// [Note: PlantGridTable, TableSearchableDropdown, and PackTypeTable components remain the same as in the original code]
 
 function PlantGridTable({ 
   rows, 

@@ -1,3 +1,5 @@
+
+
 // import { NextResponse } from "next/server";
 // import connectDb from "@/lib/db";
 // import VehicleNegotiation from "./VehicleNegotiation";
@@ -23,45 +25,91 @@
 //   return id && mongoose.Types.ObjectId.isValid(id);
 // }
 
-// // Role-based access check
+// // ── PERMISSION FUNCTIONS ──
+
 // function isAuthorized(user) {
-//   return (
-//     user?.type === "company" ||
-//     user?.role === "Admin" ||
-//     user?.permissions?.includes("vehicle_negotiation")
-//   );
+//   if (!user) return false;
+  
+//   // Company admins have full access
+//   if (user.type === "company") return true;
+  
+//   // Admin role has full access
+//   if (user.roles && user.roles.includes("Admin")) return true;
+  
+//   // Check module-based permissions for "Vehicle Negotiation"
+//   const modules = user.modules || {};
+//   const moduleData = modules["Vehicle Negotiation"];
+  
+//   if (!moduleData || !moduleData.selected) return false;
+  
+//   return true;
 // }
 
-// async function validateUser(req) {
+// function hasPermission(user, action) {
+//   if (!user) return false;
+//   if (user.type === "company") return true;
+//   if (user.roles && user.roles.includes("Admin")) return true;
+  
+//   const modules = user.modules || {};
+//   const moduleData = modules["Vehicle Negotiation"];
+  
+//   if (!moduleData || !moduleData.selected) return false;
+  
+//   const permissions = moduleData.permissions || {};
+//   return permissions[action] === true;
+// }
+
+// async function validateUser(req, requiredAction = null) {
 //   const token = getTokenFromHeader(req);
-//   if (!token) return { error: "Token missing", status: 401 };
+//   if (!token) return { error: "Authentication required. Please login.", status: 401 };
 
 //   try {
-//     const user = await verifyJWT(token);
-//     if (!user) return { error: "Invalid token", status: 401 };
-//     if (!isAuthorized(user)) return { error: "Unauthorized", status: 403 };
+//     const user = verifyJWT(token);
+//     if (!user) return { error: "Invalid or expired token. Please login again.", status: 401 };
+    
+//     // Check if user is authorized at all
+//     if (!isAuthorized(user)) {
+//       return { 
+//         error: "Access denied. You don't have permission to access Vehicle Negotiation.", 
+//         status: 403 
+//       };
+//     }
+    
+//     // If specific action is required, check it
+//     if (requiredAction && !hasPermission(user, requiredAction)) {
+//       return { 
+//         error: `Permission denied: ${requiredAction} action not allowed for Vehicle Negotiation.`, 
+//         status: 403 
+//       };
+//     }
+    
 //     return { user, error: null, status: 200 };
 //   } catch (err) {
 //     console.error("JWT Verification Failed:", err?.message || err);
-//     return { error: "Invalid token", status: 401 };
+//     return { error: "Authentication failed. Please login again.", status: 401 };
 //   }
 // }
 
 // /* ========================================
-//    GET /api/vehicle-negotiation - Get All Vehicle Negotiations
+//    GET /api/vehicle-negotiation - Requires 'view' permission
 // ======================================== */
 // export async function GET(req) {
 //   try {
 //     await connectDb();
-//     const { user, error, status } = await validateUser(req);
+//     const { user, error, status } = await validateUser(req, 'view');
 //     if (error) {
-//       return NextResponse.json({ success: false, message: error }, { status });
+//       return NextResponse.json({ success: false, message: error, code: status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN' }, { status });
 //     }
 
 //     const url = new URL(req.url);
 //     const id = url.searchParams.get("id");
 //     const vnnNo = url.searchParams.get("vnnNo");
 //     const format = url.searchParams.get("format");
+//     const search = url.searchParams.get("search");
+//     const approvalStatus = url.searchParams.get("approvalStatus");
+//     const memoStatus = url.searchParams.get("memoStatus");
+//     const fromDate = url.searchParams.get("fromDate");
+//     const toDate = url.searchParams.get("toDate");
     
 //     // CASE 1: GET BY VNN NUMBER
 //     if (vnnNo) {
@@ -114,13 +162,44 @@
 //       }, { status: 200 });
 //     }
     
-//     // CASE 3: TABLE FORMAT
+//     // CASE 3: TABLE FORMAT with filters
 //     if (format === 'table') {
 //       console.log("📋 Fetching table format data");
       
-//       const vehicleNegotiations = await VehicleNegotiation.find({
-//         companyId: user.companyId
-//       })
+//       // Build query
+//       let query = { companyId: user.companyId };
+      
+//       // Apply search filter
+//       if (search) {
+//         query.$or = [
+//           { vnnNo: { $regex: search, $options: 'i' } },
+//           { customerName: { $regex: search, $options: 'i' } },
+//           { 'approval.vendorName': { $regex: search, $options: 'i' } },
+//           { branchName: { $regex: search, $options: 'i' } }
+//         ];
+//       }
+      
+//       // Apply approval status filter
+//       if (approvalStatus) {
+//         query['approval.approvalStatus'] = approvalStatus;
+//       }
+      
+//       // Apply memo status filter
+//       if (memoStatus) {
+//         query['approval.memoStatus'] = memoStatus;
+//       }
+      
+//       // Apply date range filters
+//       if (fromDate) {
+//         query.date = { $gte: new Date(fromDate) };
+//       }
+//       if (toDate) {
+//         const endDate = new Date(toDate);
+//         endDate.setHours(23, 59, 59, 999);
+//         query.date = { ...query.date, $lte: endDate };
+//       }
+      
+//       const vehicleNegotiations = await VehicleNegotiation.find(query)
 //         .sort({ date: -1, createdAt: -1 })
 //         .lean();
 
@@ -216,14 +295,14 @@
 // }
 
 // /* ========================================
-//    POST /api/vehicle-negotiation - Create New
+//    POST /api/vehicle-negotiation - Requires 'create' permission
 // ======================================== */
 // export async function POST(req) {
 //   try {
 //     await connectDb();
-//     const { user, error, status } = await validateUser(req);
+//     const { user, error, status } = await validateUser(req, 'create');
 //     if (error) {
-//       return NextResponse.json({ success: false, message: error }, { status });
+//       return NextResponse.json({ success: false, message: error, code: status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN' }, { status });
 //     }
 
 //     const body = await req.json();
@@ -385,14 +464,14 @@
 // }
 
 // /* ========================================
-//    PUT /api/vehicle-negotiation - Update
+//    PUT /api/vehicle-negotiation - Requires 'edit' permission
 // ======================================== */
 // export async function PUT(req) {
 //   try {
 //     await connectDb();
-//     const { user, error, status } = await validateUser(req);
+//     const { user, error, status } = await validateUser(req, 'edit');
 //     if (error) {
-//       return NextResponse.json({ success: false, message: error }, { status });
+//       return NextResponse.json({ success: false, message: error, code: status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN' }, { status });
 //     }
 
 //     const body = await req.json();
@@ -436,12 +515,11 @@
 //       vehicleNegotiation.branchName = body.header.branchName || vehicleNegotiation.branchName || '';
 //       vehicleNegotiation.branchCode = body.header.branchCode || vehicleNegotiation.branchCode || '';
       
-//      // Find this section in your PUT handler:
-// const validDeliveryValues = ['Urgent', 'Normal', 'Express', 'Scheduled'];  // ✅ UPDATE this line
-// let delivery = body.header.delivery || vehicleNegotiation.delivery || 'Normal';
-// if (!validDeliveryValues.includes(delivery)) {
-//   delivery = 'Normal';
-// }
+//       const validDeliveryValues = ['Urgent', 'Normal', 'Express', 'Scheduled'];
+//       let delivery = body.header.delivery || vehicleNegotiation.delivery || 'Normal';
+//       if (!validDeliveryValues.includes(delivery)) {
+//         delivery = 'Normal';
+//       }
 //       vehicleNegotiation.delivery = delivery;
       
 //       vehicleNegotiation.date = body.header.date ? new Date(body.header.date) : vehicleNegotiation.date;
@@ -624,14 +702,14 @@
 // }
 
 // /* ========================================
-//    DELETE /api/vehicle-negotiation - Delete
+//    DELETE /api/vehicle-negotiation - Requires 'delete' permission
 // ======================================== */
 // export async function DELETE(req) {
 //   try {
 //     await connectDb();
-//     const { user, error, status } = await validateUser(req);
+//     const { user, error, status } = await validateUser(req, 'delete');
 //     if (error) {
-//       return NextResponse.json({ success: false, message: error }, { status });
+//       return NextResponse.json({ success: false, message: error, code: status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN' }, { status });
 //     }
 
 //     const url = new URL(req.url);
@@ -678,6 +756,196 @@
 //     }, { status: 500 });
 //   }
 // }
+
+// /* ========================================
+//    PATCH /api/vehicle-negotiation - Requires 'approve' permission
+// ======================================== */
+// export async function PATCH(req) {
+//   try {
+//     await connectDb();
+//     const { user, error, status } = await validateUser(req, 'approve');
+//     if (error) {
+//       return NextResponse.json({ success: false, message: error, code: status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN' }, { status });
+//     }
+
+//     const body = await req.json();
+//     const { id, action } = body;
+    
+//     if (!id) {
+//       return NextResponse.json({ 
+//         success: false, 
+//         message: "Vehicle negotiation ID is required" 
+//       }, { status: 400 });
+//     }
+
+//     console.log(`📝 Updating vehicle negotiation status: ${id} - Action: ${action}`);
+    
+//     if (!mongoose.Types.ObjectId.isValid(id)) {
+//       return NextResponse.json({ 
+//         success: false, 
+//         message: "Invalid vehicle negotiation ID format" 
+//       }, { status: 400 });
+//     }
+    
+//     const vehicleNegotiation = await VehicleNegotiation.findOne({
+//       _id: id,
+//       companyId: user.companyId
+//     });
+
+//     if (!vehicleNegotiation) {
+//       return NextResponse.json({ 
+//         success: false, 
+//         message: "Vehicle negotiation not found" 
+//       }, { status: 404 });
+//     }
+
+//     // Handle approve action
+//     if (action === 'approve') {
+//       // Update approval status
+//       vehicleNegotiation.approval.approvalStatus = 'Approved';
+//       vehicleNegotiation.panelStatus = 'Approved';
+      
+//       // You can also update other fields if needed
+//       // For example, if you want to allow updating vendor details during approval:
+//       if (body.vendorName) vehicleNegotiation.approval.vendorName = body.vendorName;
+//       if (body.vendorCode) vehicleNegotiation.approval.vendorCode = body.vendorCode;
+//       if (body.finalPerMT !== undefined) vehicleNegotiation.approval.finalPerMT = Number(body.finalPerMT);
+//       if (body.finalFix !== undefined) vehicleNegotiation.approval.finalFix = Number(body.finalFix);
+//       if (body.vehicleNo) vehicleNegotiation.approval.vehicleNo = body.vehicleNo;
+//       if (body.mobile) vehicleNegotiation.approval.mobile = body.mobile;
+//       if (body.purchaseType) vehicleNegotiation.approval.purchaseType = body.purchaseType;
+//       if (body.paymentTerms) vehicleNegotiation.approval.paymentTerms = body.paymentTerms;
+//       if (body.remarks) vehicleNegotiation.approval.remarks = body.remarks;
+//       if (body.memoStatus) vehicleNegotiation.approval.memoStatus = body.memoStatus;
+      
+//       await vehicleNegotiation.save();
+
+//       return NextResponse.json({ 
+//         success: true, 
+//         message: "Vehicle negotiation approved successfully",
+//         data: {
+//           _id: vehicleNegotiation._id,
+//           vnnNo: vehicleNegotiation.vnnNo,
+//           approvalStatus: vehicleNegotiation.approval.approvalStatus,
+//           panelStatus: vehicleNegotiation.panelStatus
+//         }
+//       }, { status: 200 });
+//     }
+    
+//     // Handle reject action
+//     else if (action === 'reject') {
+//       vehicleNegotiation.approval.approvalStatus = 'Reject';
+//       vehicleNegotiation.panelStatus = 'Rejected';
+      
+//       if (body.remarks) vehicleNegotiation.approval.remarks = body.remarks;
+      
+//       await vehicleNegotiation.save();
+
+//       return NextResponse.json({ 
+//         success: true, 
+//         message: "Vehicle negotiation rejected successfully",
+//         data: {
+//           _id: vehicleNegotiation._id,
+//           vnnNo: vehicleNegotiation.vnnNo,
+//           approvalStatus: vehicleNegotiation.approval.approvalStatus,
+//           panelStatus: vehicleNegotiation.panelStatus
+//         }
+//       }, { status: 200 });
+//     }
+    
+//     // Handle update-approval action (for editing approval details without changing status)
+//     else if (action === 'update-approval') {
+//       const currentApproval = vehicleNegotiation.approval || {};
+      
+//       // Update only the fields that are provided
+//       if (body.vendorName !== undefined) vehicleNegotiation.approval.vendorName = body.vendorName;
+//       if (body.vendorCode !== undefined) vehicleNegotiation.approval.vendorCode = body.vendorCode;
+//       if (body.vendorStatus !== undefined) vehicleNegotiation.approval.vendorStatus = body.vendorStatus;
+//       if (body.rateType !== undefined) vehicleNegotiation.approval.rateType = body.rateType;
+//       if (body.finalPerMT !== undefined) vehicleNegotiation.approval.finalPerMT = Number(body.finalPerMT);
+//       if (body.finalFix !== undefined) vehicleNegotiation.approval.finalFix = Number(body.finalFix);
+//       if (body.vehicleNo !== undefined) vehicleNegotiation.approval.vehicleNo = body.vehicleNo;
+//       if (body.vehicleId !== undefined) vehicleNegotiation.approval.vehicleId = body.vehicleId;
+//       if (body.vehicleData !== undefined) vehicleNegotiation.approval.vehicleData = body.vehicleData;
+//       if (body.mobile !== undefined) vehicleNegotiation.approval.mobile = body.mobile;
+//       if (body.purchaseType !== undefined) vehicleNegotiation.approval.purchaseType = body.purchaseType;
+//       if (body.paymentTerms !== undefined) vehicleNegotiation.approval.paymentTerms = body.paymentTerms;
+//       if (body.remarks !== undefined) vehicleNegotiation.approval.remarks = body.remarks;
+//       if (body.memoStatus !== undefined) vehicleNegotiation.approval.memoStatus = body.memoStatus;
+//       if (body.memoFile !== undefined) vehicleNegotiation.approval.memoFile = body.memoFile;
+      
+//       // Keep existing approval status
+//       if (body.approvalStatus === undefined) {
+//         vehicleNegotiation.approval.approvalStatus = currentApproval.approvalStatus || 'Pending';
+//       } else {
+//         vehicleNegotiation.approval.approvalStatus = body.approvalStatus;
+//       }
+      
+//       await vehicleNegotiation.save();
+
+//       return NextResponse.json({ 
+//         success: true, 
+//         message: "Approval details updated successfully",
+//         data: {
+//           _id: vehicleNegotiation._id,
+//           vnnNo: vehicleNegotiation.vnnNo,
+//           approvalStatus: vehicleNegotiation.approval.approvalStatus
+//         }
+//       }, { status: 200 });
+//     }
+    
+//     // Handle approve-with-update action (approve and update details)
+//     else if (action === 'approve-with-update') {
+//       // Update all fields
+//       if (body.vendorName !== undefined) vehicleNegotiation.approval.vendorName = body.vendorName;
+//       if (body.vendorCode !== undefined) vehicleNegotiation.approval.vendorCode = body.vendorCode;
+//       if (body.vendorStatus !== undefined) vehicleNegotiation.approval.vendorStatus = body.vendorStatus;
+//       if (body.rateType !== undefined) vehicleNegotiation.approval.rateType = body.rateType;
+//       if (body.finalPerMT !== undefined) vehicleNegotiation.approval.finalPerMT = Number(body.finalPerMT);
+//       if (body.finalFix !== undefined) vehicleNegotiation.approval.finalFix = Number(body.finalFix);
+//       if (body.vehicleNo !== undefined) vehicleNegotiation.approval.vehicleNo = body.vehicleNo;
+//       if (body.mobile !== undefined) vehicleNegotiation.approval.mobile = body.mobile;
+//       if (body.purchaseType !== undefined) vehicleNegotiation.approval.purchaseType = body.purchaseType;
+//       if (body.paymentTerms !== undefined) vehicleNegotiation.approval.paymentTerms = body.paymentTerms;
+//       if (body.remarks !== undefined) vehicleNegotiation.approval.remarks = body.remarks;
+//       if (body.memoStatus !== undefined) vehicleNegotiation.approval.memoStatus = body.memoStatus;
+//       if (body.memoFile !== undefined) vehicleNegotiation.approval.memoFile = body.memoFile;
+      
+//       // Set status to Approved
+//       vehicleNegotiation.approval.approvalStatus = 'Approved';
+//       vehicleNegotiation.panelStatus = 'Approved';
+      
+//       await vehicleNegotiation.save();
+
+//       return NextResponse.json({ 
+//         success: true, 
+//         message: "Vehicle negotiation approved with updates",
+//         data: {
+//           _id: vehicleNegotiation._id,
+//           vnnNo: vehicleNegotiation.vnnNo,
+//           approvalStatus: vehicleNegotiation.approval.approvalStatus
+//         }
+//       }, { status: 200 });
+//     }
+    
+//     else {
+//       return NextResponse.json({ 
+//         success: false, 
+//         message: "Invalid action. Allowed: approve, reject, update-approval, approve-with-update" 
+//       }, { status: 400 });
+//     }
+
+//   } catch (error) {
+//     console.error("❌ PATCH /vehicle-negotiation error:", error);
+//     return NextResponse.json({ 
+//       success: false, 
+//       message: error.message || "Failed to update vehicle negotiation status"
+//     }, { status: 500 });
+//   }
+// }
+
+
+
 
 import { NextResponse } from "next/server";
 import connectDb from "@/lib/db";
@@ -854,7 +1122,9 @@ export async function GET(req) {
           { vnnNo: { $regex: search, $options: 'i' } },
           { customerName: { $regex: search, $options: 'i' } },
           { 'approval.vendorName': { $regex: search, $options: 'i' } },
-          { branchName: { $regex: search, $options: 'i' } }
+          { branchName: { $regex: search, $options: 'i' } },
+          { subCompanyName: { $regex: search, $options: 'i' } },
+          { subCompanyCode: { $regex: search, $options: 'i' } }
         ];
       }
       
@@ -911,7 +1181,9 @@ export async function GET(req) {
               memo: vn.approval?.memoStatus || 'Pending',
               vnId: vn._id.toString(),
               orderId: order._id ? order._id.toString() : null,
-              branchName: vn.branchName || ''
+              branchName: vn.branchName || '',
+              subCompanyName: order.subCompanyName || vn.subCompanyName || '',
+              subCompanyCode: order.subCompanyCode || vn.subCompanyCode || ''
             });
           });
         } else {
@@ -937,7 +1209,9 @@ export async function GET(req) {
             memo: vn.approval?.memoStatus || 'Pending',
             vnId: vn._id.toString(),
             orderId: null,
-            branchName: vn.branchName || ''
+            branchName: vn.branchName || '',
+            subCompanyName: vn.subCompanyName || '',
+            subCompanyCode: vn.subCompanyCode || ''
           });
         }
       });
@@ -997,7 +1271,7 @@ export async function POST(req) {
       vnnNo = await getNextVehicleNegotiationNumber(user.companyId);
     }
 
-    // Process orders with proper null handling for ObjectId fields
+    // Process orders with proper null handling for ObjectId fields and sub-company
     const processedOrders = (body.orders || []).map(order => ({
       orderNo: order.orderNo || '',
       orderPanelId: order.orderPanelId || '',
@@ -1012,6 +1286,7 @@ export async function POST(req) {
       pinCode: order.pinCode || '',
       from: order.from && isValidObjectId(order.from) ? order.from : null,
       fromName: order.fromName || '',
+      fromState: order.fromState || '',
       to: order.to && isValidObjectId(order.to) ? order.to : null,
       toName: order.toName || '',
       taluka: order.taluka || '',
@@ -1027,7 +1302,13 @@ export async function POST(req) {
       collectionCharges: Number(order.collectionCharges) || 0,
       cancellationCharges: order.cancellationCharges || 'Nil',
       loadingCharges: order.loadingCharges || 'Nil',
-      otherCharges: Number(order.otherCharges) || 0
+      otherCharges: Number(order.otherCharges) || 0,
+      localStatus: order.localStatus || 'unknown',
+      localStatusLabel: order.localStatusLabel || 'Unknown',
+      // Sub-company fields for each order
+      subCompanyId: order.subCompanyId && isValidObjectId(order.subCompanyId) ? order.subCompanyId : null,
+      subCompanyName: order.subCompanyName || '',
+      subCompanyCode: order.subCompanyCode || ''
     }));
 
     // Calculate total weight
@@ -1040,10 +1321,13 @@ export async function POST(req) {
       delivery = 'Normal';
     }
 
-    // Process selected order panels
+    // Process selected order panels with sub-company
     const selectedOrderPanels = (body.selectedOrderPanels || []).map(panel => ({
       _id: panel._id || '',
-      orderPanelNo: panel.orderPanelNo || ''
+      orderPanelNo: panel.orderPanelNo || '',
+      subCompanyId: panel.subCompanyId || null,
+      subCompanyName: panel.subCompanyName || '',
+      subCompanyCode: panel.subCompanyCode || ''
     }));
 
     // Process vendors with purchase type
@@ -1054,12 +1338,16 @@ export async function POST(req) {
       marketRate: Number(v.marketRate) || 0
     }));
 
-    // Create new vehicle negotiation
+    // Create new vehicle negotiation with sub-company
     const newVehicleNegotiation = new VehicleNegotiation({
       vnnNo,
       branch: body.header?.branch && isValidObjectId(body.header?.branch) ? body.header?.branch : null,
       branchName: body.header?.branchName || '',
       branchCode: body.header?.branchCode || '',
+      // Sub-company header fields
+      subCompanyId: body.header?.subCompanyId && isValidObjectId(body.header?.subCompanyId) ? body.header?.subCompanyId : null,
+      subCompanyName: body.header?.subCompanyName || '',
+      subCompanyCode: body.header?.subCompanyCode || '',
       delivery: delivery,
       date: body.header?.date ? new Date(body.header.date) : new Date(),
       customerId: body.header?.customerId && isValidObjectId(body.header?.customerId) ? body.header?.customerId : null,
@@ -1186,13 +1474,20 @@ export async function PUT(req) {
       }, { status: 404 });
     }
 
-    // Update header fields
+    // Update header fields including sub-company
     if (body.header) {
       vehicleNegotiation.branch = body.header.branch && isValidObjectId(body.header.branch) 
         ? body.header.branch 
         : (vehicleNegotiation.branch || null);
       vehicleNegotiation.branchName = body.header.branchName || vehicleNegotiation.branchName || '';
       vehicleNegotiation.branchCode = body.header.branchCode || vehicleNegotiation.branchCode || '';
+      
+      // Update sub-company fields
+      vehicleNegotiation.subCompanyId = body.header.subCompanyId && isValidObjectId(body.header.subCompanyId) 
+        ? body.header.subCompanyId 
+        : (vehicleNegotiation.subCompanyId || null);
+      vehicleNegotiation.subCompanyName = body.header.subCompanyName || vehicleNegotiation.subCompanyName || '';
+      vehicleNegotiation.subCompanyCode = body.header.subCompanyCode || vehicleNegotiation.subCompanyCode || '';
       
       const validDeliveryValues = ['Urgent', 'Normal', 'Express', 'Scheduled'];
       let delivery = body.header.delivery || vehicleNegotiation.delivery || 'Normal';
@@ -1217,15 +1512,18 @@ export async function PUT(req) {
       vehicleNegotiation.otherCharges = body.header.otherCharges || vehicleNegotiation.otherCharges || 'Nil';
     }
 
-    // Update selected order panels
+    // Update selected order panels with sub-company
     if (body.selectedOrderPanels) {
       vehicleNegotiation.selectedOrderPanels = body.selectedOrderPanels.map(panel => ({
         _id: panel._id || '',
-        orderPanelNo: panel.orderPanelNo || ''
+        orderPanelNo: panel.orderPanelNo || '',
+        subCompanyId: panel.subCompanyId || null,
+        subCompanyName: panel.subCompanyName || '',
+        subCompanyCode: panel.subCompanyCode || ''
       }));
     }
 
-    // Update orders
+    // Update orders with sub-company
     if (body.orders) {
       const processedOrders = body.orders.map(order => ({
         _id: order._id && isValidObjectId(order._id) 
@@ -1244,6 +1542,7 @@ export async function PUT(req) {
         pinCode: order.pinCode || '',
         from: order.from && isValidObjectId(order.from) ? order.from : null,
         fromName: order.fromName || '',
+        fromState: order.fromState || '',
         to: order.to && isValidObjectId(order.to) ? order.to : null,
         toName: order.toName || '',
         taluka: order.taluka || '',
@@ -1259,7 +1558,13 @@ export async function PUT(req) {
         collectionCharges: Number(order.collectionCharges) || 0,
         cancellationCharges: order.cancellationCharges || 'Nil',
         loadingCharges: order.loadingCharges || 'Nil',
-        otherCharges: Number(order.otherCharges) || 0
+        otherCharges: Number(order.otherCharges) || 0,
+        localStatus: order.localStatus || 'unknown',
+        localStatusLabel: order.localStatusLabel || 'Unknown',
+        // Sub-company fields for each order
+        subCompanyId: order.subCompanyId && isValidObjectId(order.subCompanyId) ? order.subCompanyId : null,
+        subCompanyName: order.subCompanyName || '',
+        subCompanyCode: order.subCompanyCode || ''
       }));
       
       vehicleNegotiation.orders = processedOrders;

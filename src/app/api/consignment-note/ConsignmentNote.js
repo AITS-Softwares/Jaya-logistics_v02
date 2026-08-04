@@ -347,7 +347,20 @@ const consignmentNoteSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
-  
+    subCompanyId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'SubCompany',
+    required: false
+  },
+  subCompanyName: {
+    type: String,
+    default: ''
+  },
+  subCompanyCode: {
+    type: String,
+    default: ''
+  },
+
   // Header Information
   header: {
     orderNo: { type: String, default: '' },

@@ -2184,6 +2184,13 @@ export default function Layout({ children }) {
                   onClick={closeSidebar} 
                   isActive={isActive("/admin/WarehouseDetailsForm")}
                 />
+                <Item 
+                  href="/admin/subcompanies" 
+                  icon={<HiOutlineLibrary />} 
+                  label="sub companies" 
+                  onClick={closeSidebar} 
+                  isActive={isActive("/admin/subcompanies")}
+                />
               </Section>
 
               <Section 

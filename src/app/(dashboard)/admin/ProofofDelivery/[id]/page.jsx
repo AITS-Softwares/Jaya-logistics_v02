@@ -1,4 +1,5 @@
 
+
 // "use client";
 
 // import { useState, useEffect } from "react";
@@ -114,7 +115,7 @@
 //   // ==================== REMARKS ====================
 //   const [remarks, setRemarks] = useState("");
 
-//   // Order Columns
+//   // Order Columns - UPDATED with fromState and Local/Not Local
 //   const orderColumns = [
 //     { key: "orderNo", label: "Order", minWidth: "120px" },
 //     { key: "partyName", label: "Party Name", minWidth: "150px" },
@@ -122,6 +123,8 @@
 //     { key: "orderType", label: "Order Type", minWidth: "100px" },
 //     { key: "pinCode", label: "Pin Code", minWidth: "100px" },
 //     { key: "state", label: "State", minWidth: "120px" },
+//     { key: "fromState", label: "From State", minWidth: "120px" }, // ✅ ADDED
+//     { key: "localStatus", label: "Local/Not Local", minWidth: "130px" }, // ✅ ADDED
 //     { key: "district", label: "District", minWidth: "120px" },
 //     { key: "from", label: "From", minWidth: "120px" },
 //     { key: "to", label: "To", minWidth: "120px" },
@@ -363,7 +366,7 @@
 //     }
 //   };
 
-//   // Fetch existing POD data
+//   // Fetch existing POD data - UPDATED with fromState
 //   const fetchPODData = async () => {
 //     setLoading(true);
 //     try {
@@ -395,9 +398,18 @@
 //           });
 //         }
         
-//         // Set purchase orders
+//         // Set purchase orders - preserve fromState
 //         if (pod.purchaseOrders) {
-//           setPurchaseOrders(pod.purchaseOrders);
+//           const ordersWithState = pod.purchaseOrders.map(order => ({
+//             ...order,
+//             stateName: order.stateName || order.state,
+//             fromState: order.fromState || '',
+//             fromName: order.fromName || order.from,
+//             toName: order.toName || order.to,
+//             localStatus: order.localStatus || 'unknown',
+//             localStatusLabel: order.localStatusLabel || 'Unknown'
+//           }));
+//           setPurchaseOrders(ordersWithState);
 //         }
         
 //         // Set LR entries
@@ -457,7 +469,7 @@
 //     }
 //   };
 
-//   // Handle Purchase Selection (Change Purchase)
+//   // Handle Purchase Selection (Change Purchase) - UPDATED with fromState
 //   const handlePurchaseSelect = async (purchaseNo) => {
 //     setHeader({ ...header, purchaseNo });
 //     setLoading(true);
@@ -473,7 +485,7 @@
 //         const purchase = data.data;
 //         setSelectedPurchase(purchase);
         
-//         // Extract orders from purchase
+//         // Extract orders from purchase - UPDATED with fromState
 //         const orderNumbers = [];
 //         if (purchase.orderRows && purchase.orderRows.length > 0) {
 //           const mappedOrders = purchase.orderRows.map(row => ({
@@ -484,11 +496,17 @@
 //             orderType: row.orderType,
 //             pinCode: row.pinCode,
 //             state: row.state,
+//             stateName: row.stateName || row.state, // ✅ ADDED
+//             fromState: row.fromState || '', // ✅ ADDED
 //             district: row.district,
 //             from: row.from,
+//             fromName: row.fromName || row.from, // ✅ ADDED
 //             to: row.to,
+//             toName: row.toName || row.to, // ✅ ADDED
 //             locationRate: row.locationRate,
-//             weight: row.weight
+//             weight: row.weight,
+//             localStatus: row.localStatus || 'unknown', // ✅ ADDED
+//             localStatusLabel: row.localStatusLabel || 'Unknown' // ✅ ADDED
 //           }));
 //           setPurchaseOrders(mappedOrders);
           
@@ -677,7 +695,7 @@
 //           delivery: header.delivery
 //         },
 //         billing,
-//         purchaseOrders,
+//         purchaseOrders, // Includes fromState and localStatus
 //         lrEntries,
 //         products,
 //         vendorFinancial: {
@@ -782,7 +800,7 @@
 //       {/* Main Content */}
 //       <div className="mx-auto max-w-full p-4">
         
-//         {/* ==================== PURCHASE SELECTION with Enhanced Dropdown ==================== */}
+//         {/* ==================== PURCHASE SELECTION ==================== */}
 //         <Card title="Select Purchase Order">
 //           <div className="grid grid-cols-12 gap-4">
 //             <div className="col-span-12 md:col-span-6">
@@ -795,32 +813,15 @@
 //               >
 //                 <option value="">Select Purchase No</option>
 //                 {purchases.map(p => {
-//                   // Get vehicle number from purchase
 //                   const vehicleNo = p.vehicleNo || p.purchaseDetails?.vehicleNo || '';
-                  
-//                   // Get from/to locations from purchase
 //                   const fromLoc = p.fromLocation || p.orderRows?.[0]?.from || '';
 //                   const toLoc = p.toLocation || p.orderRows?.[0]?.to || '';
-                  
-//                   // Get LR code from purchase
 //                   const lrCode = p.lrCode || p.consignmentNo || '';
                   
-//                   // Build display text with icons
 //                   let displayText = `${p.purchaseNo} - ${p.vendorName || p.purchaseDetails?.vendorName || 'Unknown'}`;
-                  
-//                   if (vehicleNo) {
-//                     displayText += ` | 🚛 ${vehicleNo}`;
-//                   }
-                  
-//                   if (fromLoc && toLoc) {
-//                     const shortFrom = fromLoc.length > 15 ? fromLoc.substring(0, 12) + '...' : fromLoc;
-//                     const shortTo = toLoc.length > 15 ? toLoc.substring(0, 12) + '...' : toLoc;
-//                     displayText += ` | 📍 ${shortFrom} → ${shortTo}`;
-//                   }
-                  
-//                   if (lrCode) {
-//                     displayText += ` | 📋 ${lrCode}`;
-//                   }
+//                   if (vehicleNo) displayText += ` | 🚛 ${vehicleNo}`;
+//                   if (fromLoc && toLoc) displayText += ` | 📍 ${fromLoc} → ${toLoc}`;
+//                   if (lrCode) displayText += ` | 📋 ${lrCode}`;
                   
 //                   return (
 //                     <option key={p._id} value={p.purchaseNo} title={displayText}>
@@ -834,7 +835,6 @@
 //               </p>
 //             </div>
             
-//             {/* Enhanced Selected Purchase Details Card */}
 //             {selectedPurchase && (
 //               <div className="col-span-12 md:col-span-6">
 //                 <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-3 rounded-xl border border-blue-200">
@@ -970,7 +970,7 @@
 //           </div>
 //         </Card>
 
-//         {/* ==================== ORDERS TABLE (Readonly) ==================== */}
+//         {/* ==================== ORDERS TABLE WITH FROMSTATE AND LOCAL/NOT LOCAL ==================== */}
 //         <Card title="Orders (Auto-filled from Purchase Panel)">
 //           <div className="overflow-auto rounded-xl border border-yellow-300 max-h-[400px]">
 //             <table className="min-w-max w-full text-sm">
@@ -988,21 +988,41 @@
 //                 </tr>
 //               </thead>
 //               <tbody>
-//                 {purchaseOrders.length > 0 ? purchaseOrders.map((order, idx) => (
-//                   <tr key={idx} className="hover:bg-yellow-50 even:bg-slate-50">
-//                     <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.orderNo || '-'}</td>
-//                     <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.partyName || '-'}</td>
-//                     <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.branch || order.plantCode || '-'}</td>
-//                     <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.orderType || '-'}</td>
-//                     <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.pinCode || '-'}</td>
-//                     <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.state || '-'}</td>
-//                     <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.district || '-'}</td>
-//                     <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.from || '-'}</td>
-//                     <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.to || '-'}</td>
-//                     <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.locationRate || '-'}</td>
-//                     <td className="border border-yellow-300 px-2 py-2 text-slate-700 text-right">{order.weight || 0}</td>
-//                   </tr>
-//                 )) : (
+//                 {purchaseOrders.length > 0 ? purchaseOrders.map((order, idx) => {
+//                   // Determine local status
+//                   const isLocal = order.fromState && order.state && 
+//                     order.fromState.trim().toUpperCase() === order.state.trim().toUpperCase();
+                  
+//                   return (
+//                     <tr key={idx} className="hover:bg-yellow-50 even:bg-slate-50">
+//                       <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.orderNo || '-'}</td>
+//                       <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.partyName || '-'}</td>
+//                       <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.branch || order.plantCode || '-'}</td>
+//                       <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.orderType || '-'}</td>
+//                       <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.pinCode || '-'}</td>
+//                       <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.state || '-'}</td>
+//                       <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.fromState || '-'}</td> {/* ✅ ADDED */}
+//                       <td className="border border-yellow-300 px-2 py-2 text-center">
+//                         {order.fromState && order.state ? (
+//                           <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${
+//                             isLocal
+//                               ? 'bg-green-100 text-green-800 border border-green-300'
+//                               : 'bg-red-100 text-red-800 border border-red-300'
+//                           }`}>
+//                             {isLocal ? '✅ Local' : '❌ Not Local'}
+//                           </span>
+//                         ) : (
+//                           <span className="text-xs text-gray-400">-</span>
+//                         )}
+//                       </td> {/* ✅ ADDED */}
+//                       <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.district || '-'}</td>
+//                       <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.from || '-'}</td>
+//                       <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.to || '-'}</td>
+//                       <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.locationRate || '-'}</td>
+//                       <td className="border border-yellow-300 px-2 py-2 text-slate-700 text-right">{order.weight || 0}</td>
+//                     </tr>
+//                   );
+//                 }) : (
 //                   <tr>
 //                     <td colSpan={orderColumns.length} className="border border-yellow-300 px-4 py-8 text-center text-slate-400">
 //                       Select a purchase to load orders
@@ -1082,7 +1102,7 @@
 //                     />
 //                   </div>
                   
-//                   {/* NEW FIELD: In Person / Parsal */}
+//                   {/* In Person / Parsal */}
 //                   <div className="col-span-12 md:col-span-3">
 //                     <label className="text-xs font-bold text-slate-600">In Person / Parsal *</label>
 //                     <select
@@ -1138,7 +1158,6 @@
 //                     <p className="text-xs text-slate-400 mt-1">Upload PDF or Image (Max 5MB)</p>
 //                   </div>
                   
-//                   {/* POD Received - ALWAYS READONLY */}
 //                   <div className="col-span-12 md:col-span-2">
 //                     <label className="text-xs font-bold text-slate-600">POD Received</label>
 //                     <select 
@@ -1156,7 +1175,7 @@
 //                   </div>
 //                 </div>
 
-//                 {/* ==================== PRODUCTS TABLE WITH EDITABLE FIELDS ==================== */}
+//                 {/* ==================== PRODUCTS TABLE ==================== */}
 //                 <div className="mt-4">
 //                   <div className="text-sm font-extrabold text-slate-900 mb-2">Products for LR: {lr.lrNo || 'Not Selected'}</div>
 //                   <div className="overflow-auto rounded-xl border border-yellow-300">
@@ -1503,12 +1522,22 @@ export default function EditPOD() {
   const [loadingLR, setLoadingLR] = useState(false);
   const [suppliers, setSuppliers] = useState([]);
   
+  // ==================== COMPANY INFO STATE ====================
+  const [companyInfo, setCompanyInfo] = useState({
+    companyName: '',
+    companyCode: '',
+    subCompanyId: '',
+    subCompanyName: '',
+    subCompanyCode: ''
+  });
+  
   // ==================== HEADER STATE ====================
   const [header, setHeader] = useState({
     podNo: "",
     purchaseNo: "",
     pricingSerialNo: "",
     branch: "",
+    branchCode: "",
     date: new Date().toISOString().split('T')[0],
     delivery: "Normal"
   });
@@ -1563,8 +1592,8 @@ export default function EditPOD() {
     { key: "orderType", label: "Order Type", minWidth: "100px" },
     { key: "pinCode", label: "Pin Code", minWidth: "100px" },
     { key: "state", label: "State", minWidth: "120px" },
-    { key: "fromState", label: "From State", minWidth: "120px" }, // ✅ ADDED
-    { key: "localStatus", label: "Local/Not Local", minWidth: "130px" }, // ✅ ADDED
+    { key: "fromState", label: "From State", minWidth: "120px" },
+    { key: "localStatus", label: "Local/Not Local", minWidth: "130px" },
     { key: "district", label: "District", minWidth: "120px" },
     { key: "from", label: "From", minWidth: "120px" },
     { key: "to", label: "To", minWidth: "120px" },
@@ -1806,7 +1835,7 @@ export default function EditPOD() {
     }
   };
 
-  // Fetch existing POD data - UPDATED with fromState
+  // ==================== UPDATED: Fetch existing POD data with Company Info ====================
   const fetchPODData = async () => {
     setLoading(true);
     try {
@@ -1819,12 +1848,24 @@ export default function EditPOD() {
       if (data.success && data.data) {
         const pod = data.data;
         
-        // Set header
+        console.log('📋 Loaded POD Data:', pod);
+        
+        // ✅ Set Company Info
+        setCompanyInfo({
+          companyName: pod.companyName || pod.header?.companyName || '',
+          companyCode: pod.companyCode || pod.header?.companyCode || '',
+          subCompanyId: pod.subCompanyId || pod.header?.subCompanyId || null,
+          subCompanyName: pod.subCompanyName || pod.header?.subCompanyName || '',
+          subCompanyCode: pod.subCompanyCode || pod.header?.subCompanyCode || ''
+        });
+        
+        // Set header with branch code
         setHeader({
           podNo: pod.podNo || "",
           purchaseNo: pod.purchaseNo || "",
           pricingSerialNo: pod.pricingSerialNo || "",
-          branch: pod.header?.branch || "",
+          branch: pod.header?.branch || pod.branch || "",
+          branchCode: pod.header?.branchCode || pod.branchCode || "",
           date: pod.header?.date ? new Date(pod.header.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
           delivery: pod.header?.delivery || "Normal"
         });
@@ -1909,7 +1950,7 @@ export default function EditPOD() {
     }
   };
 
-  // Handle Purchase Selection (Change Purchase) - UPDATED with fromState
+  // ==================== UPDATED: Handle Purchase Selection with Company Info ====================
   const handlePurchaseSelect = async (purchaseNo) => {
     setHeader({ ...header, purchaseNo });
     setLoading(true);
@@ -1925,6 +1966,24 @@ export default function EditPOD() {
         const purchase = data.data;
         setSelectedPurchase(purchase);
         
+        // ✅ Extract company information from purchase
+        const companyName = purchase.companyName || purchase.header?.companyName || '';
+        const companyCode = purchase.companyCode || purchase.header?.companyCode || '';
+        const subCompanyId = purchase.subCompanyId || purchase.header?.subCompanyId || null;
+        const subCompanyName = purchase.subCompanyName || purchase.header?.subCompanyName || '';
+        const subCompanyCode = purchase.subCompanyCode || purchase.header?.subCompanyCode || '';
+        
+        console.log('🏢 Company Info from Purchase:', { companyName, companyCode, subCompanyName, subCompanyCode });
+        
+        // ✅ Update company info
+        setCompanyInfo({
+          companyName,
+          companyCode,
+          subCompanyId,
+          subCompanyName,
+          subCompanyCode
+        });
+        
         // Extract orders from purchase - UPDATED with fromState
         const orderNumbers = [];
         if (purchase.orderRows && purchase.orderRows.length > 0) {
@@ -1936,17 +1995,17 @@ export default function EditPOD() {
             orderType: row.orderType,
             pinCode: row.pinCode,
             state: row.state,
-            stateName: row.stateName || row.state, // ✅ ADDED
-            fromState: row.fromState || '', // ✅ ADDED
+            stateName: row.stateName || row.state,
+            fromState: row.fromState || '',
             district: row.district,
             from: row.from,
-            fromName: row.fromName || row.from, // ✅ ADDED
+            fromName: row.fromName || row.from,
             to: row.to,
-            toName: row.toName || row.to, // ✅ ADDED
+            toName: row.toName || row.to,
             locationRate: row.locationRate,
             weight: row.weight,
-            localStatus: row.localStatus || 'unknown', // ✅ ADDED
-            localStatusLabel: row.localStatusLabel || 'Unknown' // ✅ ADDED
+            localStatus: row.localStatus || 'unknown',
+            localStatusLabel: row.localStatusLabel || 'Unknown'
           }));
           setPurchaseOrders(mappedOrders);
           
@@ -1955,12 +2014,13 @@ export default function EditPOD() {
           });
         }
         
-        // Update header (keep existing POD No)
+        // Update header with company info
         setHeader({
           ...header,
           purchaseNo: purchase.purchaseNo,
           pricingSerialNo: purchase.pricingSerialNo || '',
           branch: purchase.header?.branchName || purchase.branchName || '',
+          branchCode: purchase.header?.branchCode || purchase.branchCode || '',
           date: purchase.header?.date ? new Date(purchase.header.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
           delivery: purchase.header?.delivery || 'Normal'
         });
@@ -2014,7 +2074,7 @@ export default function EditPOD() {
         // Filter LRs
         filterLRsByPurchaseOrders(orderNumbers);
         
-        alert(`✅ Loaded Purchase: ${purchase.purchaseNo}\n📋 Orders found: ${orderNumbers.join(', ') || 'None'}`);
+        alert(`✅ Loaded Purchase: ${purchase.purchaseNo}\n📋 Orders found: ${orderNumbers.join(', ') || 'None'}\n🏢 Company: ${companyName || 'N/A'}`);
       }
     } catch (error) {
       console.error('Error loading purchase:', error);
@@ -2112,7 +2172,7 @@ export default function EditPOD() {
     return total - advance - totalPodDeduction;
   };
 
-  // Handle Update
+  // ==================== UPDATED: Handle Update with Company Info ====================
   const handleUpdate = async () => {
     if (!header.purchaseNo) {
       alert("Please select a Purchase No");
@@ -2126,13 +2186,24 @@ export default function EditPOD() {
       
       const payload = {
         id: podId,
+        // ✅ Company info at root level
+        companyName: companyInfo.companyName,
+        companyCode: companyInfo.companyCode,
+        subCompanyId: companyInfo.subCompanyId,
+        subCompanyName: companyInfo.subCompanyName,
+        subCompanyCode: companyInfo.subCompanyCode,
         header: {
           podNo: header.podNo,
           purchaseNo: header.purchaseNo,
           pricingSerialNo: header.pricingSerialNo,
           branch: header.branch,
+          branchCode: header.branchCode,
           date: header.date,
-          delivery: header.delivery
+          delivery: header.delivery,
+          companyName: companyInfo.companyName,
+          companyCode: companyInfo.companyCode,
+          subCompanyName: companyInfo.subCompanyName,
+          subCompanyCode: companyInfo.subCompanyCode
         },
         billing,
         purchaseOrders, // Includes fromState and localStatus
@@ -2162,6 +2233,8 @@ export default function EditPOD() {
         pricingSerialNo: header.pricingSerialNo
       };
 
+      console.log('📤 Updating POD with company info:', payload);
+
       const res = await fetch('/api/pod-panel', {
         method: 'PUT',
         headers: {
@@ -2174,8 +2247,8 @@ export default function EditPOD() {
       const data = await res.json();
 
       if (data.success) {
-        alert(`✅ POD updated successfully!`);
-        router.push('/admin/ProofOfDelivery');
+        alert(`✅ POD updated successfully!\nCompany: ${companyInfo.companyName || 'N/A'}`);
+        router.push('/admin/ProofofDelivery');
       } else {
         alert(data.message || 'Failed to update POD');
       }
@@ -2211,7 +2284,7 @@ export default function EditPOD() {
           <div>
             <div className="flex items-center gap-3">
               <button
-                onClick={() => router.push('/admin/ProofOfDelivery')}
+                onClick={() => router.push('/admin/ProofofDelivery')}
                 className="text-yellow-600 hover:text-yellow-800 font-medium text-sm flex items-center gap-1"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2221,6 +2294,16 @@ export default function EditPOD() {
               </button>
               <div className="text-lg font-extrabold text-slate-900">Edit POD: {header.podNo}</div>
             </div>
+            {/* ✅ Display Company Info in Top Bar */}
+            {companyInfo.companyName && (
+              <div className="text-xs text-blue-600 mt-0.5 flex items-center gap-2">
+                <span className="font-medium">🏢 {companyInfo.companyName}</span>
+                {companyInfo.companyCode && <span>({companyInfo.companyCode})</span>}
+                {companyInfo.subCompanyName && (
+                  <span className="text-emerald-600">| Sub: {companyInfo.subCompanyName}</span>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-3">
@@ -2257,8 +2340,10 @@ export default function EditPOD() {
                   const fromLoc = p.fromLocation || p.orderRows?.[0]?.from || '';
                   const toLoc = p.toLocation || p.orderRows?.[0]?.to || '';
                   const lrCode = p.lrCode || p.consignmentNo || '';
+                  const companyName = p.companyName || p.header?.companyName || '';
                   
                   let displayText = `${p.purchaseNo} - ${p.vendorName || p.purchaseDetails?.vendorName || 'Unknown'}`;
+                  if (companyName) displayText += ` | 🏢 ${companyName}`;
                   if (vehicleNo) displayText += ` | 🚛 ${vehicleNo}`;
                   if (fromLoc && toLoc) displayText += ` | 📍 ${fromLoc} → ${toLoc}`;
                   if (lrCode) displayText += ` | 📋 ${lrCode}`;
@@ -2292,6 +2377,19 @@ export default function EditPOD() {
                       <span className="text-slate-500">Vehicle No:</span>
                       <span className="font-medium text-slate-800 ml-1">🚛 {selectedPurchase.purchaseDetails?.vehicleNo || '-'}</span>
                     </div>
+                    {/* ✅ Company Info in Selected Purchase */}
+                    {companyInfo.companyName && (
+                      <div className="col-span-12 md:col-span-6">
+                        <span className="text-slate-500">Company:</span>
+                        <span className="font-medium text-blue-700 ml-1">🏢 {companyInfo.companyName}</span>
+                      </div>
+                    )}
+                    {companyInfo.subCompanyName && (
+                      <div className="col-span-12 md:col-span-6">
+                        <span className="text-slate-500">Sub-Company:</span>
+                        <span className="font-medium text-emerald-700 ml-1">{companyInfo.subCompanyName}</span>
+                      </div>
+                    )}
                     <div className="col-span-12 md:col-span-6">
                       <span className="text-slate-500">From → To:</span>
                       <span className="font-medium text-slate-800 ml-1">
@@ -2319,6 +2417,33 @@ export default function EditPOD() {
               </div>
             )}
           </div>
+        </Card>
+
+        {/* ==================== COMPANY INFORMATION CARD (NEW) ==================== */}
+        <Card title="Company Information">
+          <div className="grid grid-cols-12 gap-3">
+          
+            <div className="col-span-12 md:col-span-3">
+              <label className="text-xs font-bold text-slate-600">Sub-Company Name</label>
+              <input 
+                type="text" 
+                value={companyInfo.subCompanyName || '-'} 
+                readOnly 
+                className="mt-1 w-full rounded-xl border border-slate-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700" 
+              />
+            </div>
+            <div className="col-span-12 md:col-span-2">
+              <label className="text-xs font-bold text-slate-600">Sub-Company Code</label>
+              <input 
+                type="text" 
+                value={companyInfo.subCompanyCode || '-'} 
+                readOnly 
+                className="mt-1 w-full rounded-xl border border-slate-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700" 
+              />
+            </div>
+           
+          </div>
+          <p className="text-xs text-slate-400 mt-2">Company information is auto-loaded from the selected purchase</p>
         </Card>
 
         {/* ==================== HEADER INFORMATION ==================== */}
@@ -2362,6 +2487,15 @@ export default function EditPOD() {
               />
             </div>
             <div className="col-span-12 md:col-span-2">
+              <label className="text-xs font-bold text-slate-600">Branch Code</label>
+              <input 
+                type="text" 
+                value={header.branchCode} 
+                readOnly
+                className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm cursor-not-allowed" 
+              />
+            </div>
+            <div className="col-span-12 md:col-span-1">
               <label className="text-xs font-bold text-slate-600">Date</label>
               <input 
                 type="date" 
@@ -2370,7 +2504,7 @@ export default function EditPOD() {
                 className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm cursor-not-allowed" 
               />
             </div>
-            <div className="col-span-12 md:col-span-2">
+            <div className="col-span-12 md:col-span-1">
               <label className="text-xs font-bold text-slate-600">Delivery</label>
               <input 
                 type="text" 
@@ -2441,7 +2575,7 @@ export default function EditPOD() {
                       <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.orderType || '-'}</td>
                       <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.pinCode || '-'}</td>
                       <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.state || '-'}</td>
-                      <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.fromState || '-'}</td> {/* ✅ ADDED */}
+                      <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.fromState || '-'}</td>
                       <td className="border border-yellow-300 px-2 py-2 text-center">
                         {order.fromState && order.state ? (
                           <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${
@@ -2454,7 +2588,7 @@ export default function EditPOD() {
                         ) : (
                           <span className="text-xs text-gray-400">-</span>
                         )}
-                      </td> {/* ✅ ADDED */}
+                      </td>
                       <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.district || '-'}</td>
                       <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.from || '-'}</td>
                       <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.to || '-'}</td>

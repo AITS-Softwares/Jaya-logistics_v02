@@ -1,3 +1,4 @@
+
 // "use client";
 
 // import { useState, useEffect } from "react";
@@ -94,18 +95,18 @@
 //   // ==================== SINGLE PRODUCTS TABLE (Readonly) ====================
 //   const [products, setProducts] = useState([]);
 
-//  // ==================== VENDOR & FINANCIAL ====================
-// const [vendorFinancial, setVendorFinancial] = useState({
-//   vendorName: "",
-//   vendorCode: "",
-//   total: 0,
-//   advance: 0,
-//   balance: 0,
-//   poDeduction: 0,
-//   podDeduction: 0,
-//   finalBalance: 0,
-//   dueDays: 0
-// });
+//   // ==================== VENDOR & FINANCIAL ====================
+//   const [vendorFinancial, setVendorFinancial] = useState({
+//     vendorName: "",
+//     vendorCode: "",
+//     total: 0,
+//     advance: 0,
+//     balance: 0,
+//     poDeduction: 0,
+//     podDeduction: 0,
+//     finalBalance: 0,
+//     dueDays: 0
+//   });
 
 //   // ==================== POD STATUS SECTION ====================
 //   const [podStatusSection, setPodStatusSection] = useState({
@@ -120,23 +121,22 @@
 //   // ==================== REMARKS ====================
 //   const [remarks, setRemarks] = useState("");
 
-//   // Order Columns (Like Purchase Panel)
-//  // Order Columns (Like Purchase Panel) - UPDATED
-// const orderColumns = [
-//   { key: "orderNo", label: "Order", minWidth: "120px" },
-//   { key: "partyName", label: "Party Name", minWidth: "150px" },
-//   { key: "branch", label: "Branch / Plant Code", minWidth: "150px" },
-//   { key: "orderType", label: "Order Type", minWidth: "100px" },
-//   { key: "pinCode", label: "Pin Code", minWidth: "100px" },
-//   { key: "state", label: "State", minWidth: "120px" },
-//   { key: "fromState", label: "From State", minWidth: "120px" }, // ✅ ADDED
-//   { key: "localStatus", label: "Local/Not Local", minWidth: "130px" }, // ✅ ADDED
-//   { key: "district", label: "District", minWidth: "120px" },
-//   { key: "from", label: "From", minWidth: "120px" },
-//   { key: "to", label: "To", minWidth: "120px" },
-//   { key: "locationRate", label: "Location Rate", minWidth: "100px" },
-//   { key: "weight", label: "Weight", minWidth: "80px" }
-// ];
+//   // Order Columns (Like Purchase Panel) - UPDATED with fromState and Local/Not Local
+//   const orderColumns = [
+//     { key: "orderNo", label: "Order", minWidth: "120px" },
+//     { key: "partyName", label: "Party Name", minWidth: "150px" },
+//     { key: "branch", label: "Branch / Plant Code", minWidth: "150px" },
+//     { key: "orderType", label: "Order Type", minWidth: "100px" },
+//     { key: "pinCode", label: "Pin Code", minWidth: "100px" },
+//     { key: "state", label: "State", minWidth: "120px" },
+//     { key: "fromState", label: "From State", minWidth: "120px" }, // ✅ ADDED
+//     { key: "localStatus", label: "Local/Not Local", minWidth: "130px" }, // ✅ ADDED
+//     { key: "district", label: "District", minWidth: "120px" },
+//     { key: "from", label: "From", minWidth: "120px" },
+//     { key: "to", label: "To", minWidth: "120px" },
+//     { key: "locationRate", label: "Location Rate", minWidth: "100px" },
+//     { key: "weight", label: "Weight", minWidth: "80px" }
+//   ];
 
 //   // Product Columns (Readonly) - 11 columns including Delivery Status, Deduction, Value
 //   const productColumns = [
@@ -403,174 +403,180 @@
 //     }
 //   };
 
-//  // Handle Purchase Selection
-// const handlePurchaseSelect = async (purchaseNo) => {
-//   setHeader({ ...header, purchaseNo });
-//   setLoading(true);
-  
-//   try {
-//     const token = localStorage.getItem('token');
-//     const res = await fetch(`/api/purchase-panel?purchaseNo=${purchaseNo}`, {
-//       headers: { Authorization: `Bearer ${token}` },
-//     });
-//     const data = await res.json();
+//   // Handle Purchase Selection - UPDATED with fromState
+//   const handlePurchaseSelect = async (purchaseNo) => {
+//     setHeader({ ...header, purchaseNo });
+//     setLoading(true);
     
-//     if (data.success && data.data) {
-//       const purchase = data.data;
-      
-//       // Extract from/to from orderRows
-//       let fromLocation = '';
-//       let toLocation = '';
-//       let lrCode = purchase.lrCode || purchase.consignmentNo || '';
-      
-//       if (purchase.orderRows && purchase.orderRows.length > 0) {
-//         fromLocation = purchase.orderRows[0]?.from || '';
-//         toLocation = purchase.orderRows[0]?.to || '';
-//       }
-      
-//       // Get vehicle number from various locations
-//       const vehicleNo = purchase.purchaseDetails?.vehicleNo || 
-//                         purchase.vehicleNo || 
-//                         purchase.header?.vehicleNo || '';
-      
-//       const enhancedPurchase = {
-//         ...purchase,
-//         vehicleNo,
-//         fromLocation,
-//         toLocation,
-//         lrCode
-//       };
-      
-//       setSelectedPurchase(enhancedPurchase);
-      
-//       console.log('🚛 Purchase Details:', {
-//         purchaseNo: purchase.purchaseNo,
-//         vendorName: purchase.purchaseDetails?.vendorName,
-//         vehicleNo,
-//         fromLocation,
-//         toLocation,
-//         lrCode
+//     try {
+//       const token = localStorage.getItem('token');
+//       const res = await fetch(`/api/purchase-panel?purchaseNo=${purchaseNo}`, {
+//         headers: { Authorization: `Bearer ${token}` },
 //       });
+//       const data = await res.json();
       
-//       // Extract orders from purchase
-//       const orderNumbers = [];
-//       if (purchase.orderRows && purchase.orderRows.length > 0) {
-//         const mappedOrders = purchase.orderRows.map(row => ({
-//           orderNo: row.orderNo,
-//           partyName: row.partyName,
-//           branch: row.plantName,
-//           plantCode: row.plantCode,
-//           orderType: row.orderType,
-//           pinCode: row.pinCode,
-//           state: row.state,
-//           district: row.district,
-//           from: row.from || fromLocation,
-//           to: row.to || toLocation,
-//           locationRate: row.locationRate,
-//           weight: row.weight
-//         }));
-//         setPurchaseOrders(mappedOrders);
+//       if (data.success && data.data) {
+//         const purchase = data.data;
         
-//         mappedOrders.forEach(order => {
-//           if (order.orderNo) orderNumbers.push(order.orderNo);
+//         // Extract from/to from orderRows
+//         let fromLocation = '';
+//         let toLocation = '';
+//         let lrCode = purchase.lrCode || purchase.consignmentNo || '';
+        
+//         if (purchase.orderRows && purchase.orderRows.length > 0) {
+//           fromLocation = purchase.orderRows[0]?.from || '';
+//           toLocation = purchase.orderRows[0]?.to || '';
+//         }
+        
+//         // Get vehicle number from various locations
+//         const vehicleNo = purchase.purchaseDetails?.vehicleNo || 
+//                           purchase.vehicleNo || 
+//                           purchase.header?.vehicleNo || '';
+        
+//         const enhancedPurchase = {
+//           ...purchase,
+//           vehicleNo,
+//           fromLocation,
+//           toLocation,
+//           lrCode
+//         };
+        
+//         setSelectedPurchase(enhancedPurchase);
+        
+//         console.log('🚛 Purchase Details:', {
+//           purchaseNo: purchase.purchaseNo,
+//           vendorName: purchase.purchaseDetails?.vendorName,
+//           vehicleNo,
+//           fromLocation,
+//           toLocation,
+//           lrCode
 //         });
-//       }
-      
-//       // Auto-fill header
-//       setHeader({
-//         ...header,
-//         purchaseNo: purchase.purchaseNo,
-//         pricingSerialNo: purchase.pricingSerialNo || '',
-//         branch: purchase.header?.branchName || purchase.branchName || '',
-//         date: purchase.header?.date ? new Date(purchase.header.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-//         delivery: purchase.header?.delivery || 'Normal'
-//       });
-      
-//       // Auto-fill billing
-//       const orderCount = purchase.orderRows?.length || 0;
-//       setBilling({
-//         billingType: orderCount === 1 ? "Single - Order" : "Multi - Order",
-//         noOfLoadingPoints: purchase.billing?.noOfLoadingPoints || '',
-//         noOfDroppingPoint: purchase.billing?.noOfDroppingPoint || ''
-//       });
-      
-//       // Get vendor code from purchase
-//       const vendorCode = purchase.purchaseDetails?.vendorCode || '';
-//       const vendorName = purchase.purchaseDetails?.vendorName || '';
-      
-//       // Get due days from supplier
-//       const dueDays = getDueDaysFromSupplier(vendorCode);
-      
-//       // Get PO Deduction from purchase
-//       const poDeductionFromPurchase = 
-//         purchase.purchaseDetails?.poDeduction || 
-//         purchase.poDeduction || 
-//         purchase.totalDeductions || 
-//         0;
-      
-//       // Auto-fill vendor
-//       setVendorFinancial(prev => ({
-//         ...prev,
-//         vendorName: vendorName,
-//         vendorCode: vendorCode,
-//         advance: num(purchase.purchaseDetails?.advance) || 0,
-//         total: purchase.purchaseAmountFromVNN || purchase.purchaseDetails?.amount || 0,
-//         dueDays: dueDays,
-//         poDeduction: num(poDeductionFromPurchase)
-//       }));
-      
-//       // Calculate balance
-//       const totalAmt = purchase.purchaseAmountFromVNN || purchase.purchaseDetails?.amount || 0;
-//       const advanceAmt = num(purchase.purchaseDetails?.advance) || 0;
-//       setVendorFinancial(prev => ({
-//         ...prev,
-//         balance: totalAmt - advanceAmt
-//       }));
-      
-//       // Create LR entries for each order
-//       if (orderNumbers.length > 0) {
-//         const newLrEntries = orderNumbers.map((orderNo, index) => ({
-//           _id: uid(),
-//           lrNo: "",
-//           lrDate: "",
-//           orderNo: orderNo,
-//           delivery: "COURIER",
-//           inPersonParsal: "",
-//           docketNo: "",
-//           podDate: "",
-//           podUpload: "",
-//           podReceived: "Pending"
+        
+//         // Extract orders from purchase - UPDATED with fromState
+//         const orderNumbers = [];
+//         if (purchase.orderRows && purchase.orderRows.length > 0) {
+//           const mappedOrders = purchase.orderRows.map(row => ({
+//             orderNo: row.orderNo,
+//             partyName: row.partyName,
+//             branch: row.plantName,
+//             plantCode: row.plantCode,
+//             orderType: row.orderType,
+//             pinCode: row.pinCode,
+//             state: row.state,
+//             stateName: row.stateName || row.state, // ✅ ADDED
+//             fromState: row.fromState || '', // ✅ ADDED
+//             district: row.district,
+//             from: row.from || fromLocation,
+//             fromName: row.fromName || row.from, // ✅ ADDED
+//             to: row.to || toLocation,
+//             toName: row.toName || row.to, // ✅ ADDED
+//             locationRate: row.locationRate,
+//             weight: row.weight,
+//             localStatus: row.localStatus || 'unknown', // ✅ ADDED
+//             localStatusLabel: row.localStatusLabel || 'Unknown' // ✅ ADDED
+//           }));
+//           setPurchaseOrders(mappedOrders);
+          
+//           mappedOrders.forEach(order => {
+//             if (order.orderNo) orderNumbers.push(order.orderNo);
+//           });
+//         }
+        
+//         // Auto-fill header
+//         setHeader({
+//           ...header,
+//           purchaseNo: purchase.purchaseNo,
+//           pricingSerialNo: purchase.pricingSerialNo || '',
+//           branch: purchase.header?.branchName || purchase.branchName || '',
+//           date: purchase.header?.date ? new Date(purchase.header.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+//           delivery: purchase.header?.delivery || 'Normal'
+//         });
+        
+//         // Auto-fill billing
+//         const orderCount = purchase.orderRows?.length || 0;
+//         setBilling({
+//           billingType: orderCount === 1 ? "Single - Order" : "Multi - Order",
+//           noOfLoadingPoints: purchase.billing?.noOfLoadingPoints || '',
+//           noOfDroppingPoint: purchase.billing?.noOfDroppingPoint || ''
+//         });
+        
+//         // Get vendor code from purchase
+//         const vendorCode = purchase.purchaseDetails?.vendorCode || '';
+//         const vendorName = purchase.purchaseDetails?.vendorName || '';
+        
+//         // Get due days from supplier
+//         const dueDays = getDueDaysFromSupplier(vendorCode);
+        
+//         // Get PO Deduction from purchase
+//         const poDeductionFromPurchase = 
+//           purchase.purchaseDetails?.poDeduction || 
+//           purchase.poDeduction || 
+//           purchase.totalDeductions || 
+//           0;
+        
+//         // Auto-fill vendor
+//         setVendorFinancial(prev => ({
+//           ...prev,
+//           vendorName: vendorName,
+//           vendorCode: vendorCode,
+//           advance: num(purchase.purchaseDetails?.advance) || 0,
+//           total: purchase.purchaseAmountFromVNN || purchase.purchaseDetails?.amount || 0,
+//           dueDays: dueDays,
+//           poDeduction: num(poDeductionFromPurchase)
 //         }));
-//         setLrEntries(newLrEntries);
-//       }
-      
-//       // Fetch all consignment notes first time
-//       if (allConsignmentNotes.length === 0) {
-//         await fetchAllConsignmentNotes();
-//       } else {
-//         filterLRsByPurchaseOrders(orderNumbers);
-//       }
-      
-//       // Show detailed alert with all info
-//       const vehicleMsg = vehicleNo ? `\n🚛 Vehicle: ${vehicleNo}` : '';
-//       const routeMsg = (fromLocation && toLocation) ? `\n📍 Route: ${fromLocation} → ${toLocation}` : '';
-//       const lrMsg = lrCode ? `\n📋 LR Code: ${lrCode}` : '';
-//       const dueDaysMsg = dueDays > 0 ? `\n📅 Due Days: ${dueDays} days` : '';
-//       const poDeductionMsg = poDeductionFromPurchase > 0 ? `\n💰 PO Deduction: ₹${poDeductionFromPurchase}` : '';
-      
-//       alert(`✅ Loaded Purchase: ${purchase.purchaseNo}
+        
+//         // Calculate balance
+//         const totalAmt = purchase.purchaseAmountFromVNN || purchase.purchaseDetails?.amount || 0;
+//         const advanceAmt = num(purchase.purchaseDetails?.advance) || 0;
+//         setVendorFinancial(prev => ({
+//           ...prev,
+//           balance: totalAmt - advanceAmt
+//         }));
+        
+//         // Create LR entries for each order
+//         if (orderNumbers.length > 0) {
+//           const newLrEntries = orderNumbers.map((orderNo, index) => ({
+//             _id: uid(),
+//             lrNo: "",
+//             lrDate: "",
+//             orderNo: orderNo,
+//             delivery: "COURIER",
+//             inPersonParsal: "",
+//             docketNo: "",
+//             podDate: "",
+//             podUpload: "",
+//             podReceived: "Pending"
+//           }));
+//           setLrEntries(newLrEntries);
+//         }
+        
+//         // Fetch all consignment notes first time
+//         if (allConsignmentNotes.length === 0) {
+//           await fetchAllConsignmentNotes();
+//         } else {
+//           filterLRsByPurchaseOrders(orderNumbers);
+//         }
+        
+//         // Show detailed alert with all info
+//         const vehicleMsg = vehicleNo ? `\n🚛 Vehicle: ${vehicleNo}` : '';
+//         const routeMsg = (fromLocation && toLocation) ? `\n📍 Route: ${fromLocation} → ${toLocation}` : '';
+//         const lrMsg = lrCode ? `\n📋 LR Code: ${lrCode}` : '';
+//         const dueDaysMsg = dueDays > 0 ? `\n📅 Due Days: ${dueDays} days` : '';
+//         const poDeductionMsg = poDeductionFromPurchase > 0 ? `\n💰 PO Deduction: ₹${poDeductionFromPurchase}` : '';
+        
+//         alert(`✅ Loaded Purchase: ${purchase.purchaseNo}
 // 📦 Customer: ${vendorName}
 // ${vehicleMsg}${routeMsg}${lrMsg}
 // 📋 Orders found: ${orderNumbers.join(', ') || 'None'}${dueDaysMsg}${poDeductionMsg}
 // 🏷️ Vendor Code: ${vendorCode || 'N/A'}`);
+//       }
+//     } catch (error) {
+//       console.error('Error loading purchase:', error);
+//       alert('Failed to load purchase details');
+//     } finally {
+//       setLoading(false);
 //     }
-//   } catch (error) {
-//     console.error('Error loading purchase:', error);
-//     alert('Failed to load purchase details');
-//   } finally {
-//     setLoading(false);
-//   }
-// };
+//   };
 
 //   // Filter LRs when allConsignmentNotes or purchaseOrders change
 //   useEffect(() => {
@@ -668,85 +674,85 @@
 //     setProducts(prev => prev.map(p => p._id === id ? { ...p, [key]: value } : p));
 //   };
 
-// // Calculations
-// const calculateTotalActualWt = () => {
-//   return products.reduce((sum, p) => sum + num(p.actualWt), 0);
-// };
+//   // Calculations
+//   const calculateTotalActualWt = () => {
+//     return products.reduce((sum, p) => sum + num(p.actualWt), 0);
+//   };
 
-// const calculateTotalQuantity = () => {
-//   return products.reduce((sum, p) => sum + num(p.totalPkgs), 0);
-// };
+//   const calculateTotalQuantity = () => {
+//     return products.reduce((sum, p) => sum + num(p.totalPkgs), 0);
+//   };
 
-// const calculateTotalPODDeduction = () => {
-//   return num(vendorFinancial.poDeduction) + num(vendorFinancial.podDeduction);
-// };
+//   const calculateTotalPODDeduction = () => {
+//     return num(vendorFinancial.poDeduction) + num(vendorFinancial.podDeduction);
+//   };
 
-// const calculateFinalBalance = () => {
-//   const total = vendorFinancial.total;
-//   const advance = vendorFinancial.advance;
-//   const totalPodDeduction = calculateTotalPODDeduction();
-//   return total - advance - totalPodDeduction;
-// };
+//   const calculateFinalBalance = () => {
+//     const total = vendorFinancial.total;
+//     const advance = vendorFinancial.advance;
+//     const totalPodDeduction = calculateTotalPODDeduction();
+//     return total - advance - totalPodDeduction;
+//   };
 
-//  // Save Function
-// const handleSave = async () => {
-//   if (!header.purchaseNo) {
-//     alert("Please select a Purchase No");
-//     return;
-//   }
-
-//   setSaving(true);
-
-//   try {
-//     const token = localStorage.getItem('token');
-    
-//     const payload = {
-//       header,
-//       billing,
-//       purchaseOrders,
-//       lrEntries,
-//       products,
-//       vendorFinancial: {
-//         vendorName: vendorFinancial.vendorName,
-//         vendorCode: vendorFinancial.vendorCode,
-//         total: calculateTotalActualWt() || vendorFinancial.total,
-//         advance: vendorFinancial.advance,
-//         balance: vendorFinancial.total - vendorFinancial.advance,
-//         poDeduction: vendorFinancial.poDeduction,
-//         podDeduction: vendorFinancial.podDeduction,
-//         finalBalance: calculateFinalBalance(),
-//         dueDays: vendorFinancial.dueDays
-//       },
-//       podStatusSection,
-//       remarks,
-//       purchaseNo: header.purchaseNo,
-//       pricingSerialNo: header.pricingSerialNo
-//     };
-
-//     const res = await fetch('/api/pod-panel', {
-//       method: 'POST',
-//       headers: {
-//         'Content-Type': 'application/json',
-//         Authorization: `Bearer ${token}`,
-//       },
-//       body: JSON.stringify(payload),
-//     });
-
-//     const data = await res.json();
-
-//     if (data.success) {
-//       alert(`✅ POD created successfully!\nPOD No: ${data.data?.podNo}`);
-//       router.push('/admin/ProofOfDelivery');
-//     } else {
-//       alert(data.message || 'Failed to create POD');
+//   // Save Function
+//   const handleSave = async () => {
+//     if (!header.purchaseNo) {
+//       alert("Please select a Purchase No");
+//       return;
 //     }
-//   } catch (error) {
-//     console.error('Error saving POD:', error);
-//     alert(`❌ Error: ${error.message}`);
-//   } finally {
-//     setSaving(false);
-//   }
-// };
+
+//     setSaving(true);
+
+//     try {
+//       const token = localStorage.getItem('token');
+      
+//       const payload = {
+//         header,
+//         billing,
+//         purchaseOrders,
+//         lrEntries,
+//         products,
+//         vendorFinancial: {
+//           vendorName: vendorFinancial.vendorName,
+//           vendorCode: vendorFinancial.vendorCode,
+//           total: calculateTotalActualWt() || vendorFinancial.total,
+//           advance: vendorFinancial.advance,
+//           balance: vendorFinancial.total - vendorFinancial.advance,
+//           poDeduction: vendorFinancial.poDeduction,
+//           podDeduction: vendorFinancial.podDeduction,
+//           finalBalance: calculateFinalBalance(),
+//           dueDays: vendorFinancial.dueDays
+//         },
+//         podStatusSection,
+//         remarks,
+//         purchaseNo: header.purchaseNo,
+//         pricingSerialNo: header.pricingSerialNo
+//       };
+
+//       const res = await fetch('/api/pod-panel', {
+//         method: 'POST',
+//         headers: {
+//           'Content-Type': 'application/json',
+//           Authorization: `Bearer ${token}`,
+//         },
+//         body: JSON.stringify(payload),
+//       });
+
+//       const data = await res.json();
+
+//       if (data.success) {
+//         alert(`✅ POD created successfully!\nPOD No: ${data.data?.podNo}`);
+//         router.push('/admin/ProofOfDelivery');
+//       } else {
+//         alert(data.message || 'Failed to create POD');
+//       }
+//     } catch (error) {
+//       console.error('Error saving POD:', error);
+//       alert(`❌ Error: ${error.message}`);
+//     } finally {
+//       setSaving(false);
+//     }
+//   };
 
 //   return (
 //     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white">
@@ -946,7 +952,7 @@
 //           </div>
 //         </Card>
 
-//         {/* ==================== ORDERS TABLE (Scrollable) ==================== */}
+//         {/* ==================== ORDERS TABLE (Scrollable) - UPDATED with fromState and Local/Not Local ==================== */}
 //         <Card title="Orders (Auto-filled from Purchase Panel)">
 //           <div className="overflow-auto rounded-xl border border-yellow-300 max-h-[400px]">
 //             <table className="min-w-max w-full text-sm">
@@ -964,21 +970,41 @@
 //                 </tr>
 //               </thead>
 //               <tbody>
-//                 {purchaseOrders.length > 0 ? purchaseOrders.map((order, idx) => (
-//                   <tr key={idx} className="hover:bg-yellow-50 even:bg-slate-50">
-//                     <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.orderNo || '-'}</td>
-//                     <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.partyName || '-'}</td>
-//                     <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.branch || order.plantCode || '-'}</td>
-//                     <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.orderType || '-'}</td>
-//                     <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.pinCode || '-'}</td>
-//                     <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.state || '-'}</td>
-//                     <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.district || '-'}</td>
-//                     <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.from || '-'}</td>
-//                     <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.to || '-'}</td>
-//                     <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.locationRate || '-'}</td>
-//                     <td className="border border-yellow-300 px-2 py-2 text-slate-700 text-right">{order.weight || 0}</td>
-//                   </tr>
-//                 )) : (
+//                 {purchaseOrders.length > 0 ? purchaseOrders.map((order, idx) => {
+//                   // Determine local status
+//                   const isLocal = order.fromState && order.state && 
+//                     order.fromState.trim().toUpperCase() === order.state.trim().toUpperCase();
+                  
+//                   return (
+//                     <tr key={idx} className="hover:bg-yellow-50 even:bg-slate-50">
+//                       <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.orderNo || '-'}</td>
+//                       <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.partyName || '-'}</td>
+//                       <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.branch || order.plantCode || '-'}</td>
+//                       <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.orderType || '-'}</td>
+//                       <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.pinCode || '-'}</td>
+//                       <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.state || '-'}</td>
+//                       <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.fromState || '-'}</td> {/* ✅ ADDED */}
+//                       <td className="border border-yellow-300 px-2 py-2 text-center">
+//                         {order.fromState && order.state ? (
+//                           <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${
+//                             isLocal
+//                               ? 'bg-green-100 text-green-800 border border-green-300'
+//                               : 'bg-red-100 text-red-800 border border-red-300'
+//                           }`}>
+//                             {isLocal ? '✅ Local' : '❌ Not Local'}
+//                           </span>
+//                         ) : (
+//                           <span className="text-xs text-gray-400">-</span>
+//                         )}
+//                       </td> {/* ✅ ADDED */}
+//                       <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.district || '-'}</td>
+//                       <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.from || '-'}</td>
+//                       <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.to || '-'}</td>
+//                       <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.locationRate || '-'}</td>
+//                       <td className="border border-yellow-300 px-2 py-2 text-slate-700 text-right">{order.weight || 0}</td>
+//                     </tr>
+//                   );
+//                 }) : (
 //                   <tr>
 //                     <td colSpan={orderColumns.length} className="border border-yellow-300 px-4 py-8 text-center text-slate-400">
 //                       Select a purchase to load orders
@@ -1058,7 +1084,7 @@
 //                     />
 //                   </div>
                   
-//                   {/* NEW FIELD: In Person / Parsal */}
+//                   {/* In Person / Parsal */}
 //                   <div className="col-span-12 md:col-span-3">
 //                     <label className="text-xs font-bold text-slate-600">In Person / Parsal *</label>
 //                     <select
@@ -1074,7 +1100,7 @@
 //                     <p className="text-xs text-slate-400 mt-1">Select delivery type</p>
 //                   </div>
                   
-//                   {/* Docket No field - moved after In Person/Parsal */}
+//                   {/* Docket No field */}
 //                   <div className="col-span-12 md:col-span-3">
 //                     <label className="text-xs font-bold text-slate-600">Docket No</label>
 //                     <input 
@@ -1135,18 +1161,18 @@
 //                     </p>
 //                   </div>
                   
-//              <div className="col-span-12 md:col-span-2">
-//   <label className="text-xs font-bold text-slate-600">POD Received</label>
-//   <input 
-//     type="text"
-//     value={lr.podUpload === 'UPLOADED' ? 'Received' : lr.podReceived}
-//     readOnly
-//     className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm cursor-not-allowed"
-//   />
-//   {lr.podUpload === 'UPLOADED' && (
-//     <p className="text-xs text-green-600 mt-1">✓ Auto-set to Received after upload</p>
-//   )}
-// </div>
+//                   <div className="col-span-12 md:col-span-2">
+//                     <label className="text-xs font-bold text-slate-600">POD Received</label>
+//                     <input 
+//                       type="text"
+//                       value={lr.podUpload === 'UPLOADED' ? 'Received' : lr.podReceived}
+//                       readOnly
+//                       className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm cursor-not-allowed"
+//                     />
+//                     {lr.podUpload === 'UPLOADED' && (
+//                       <p className="text-xs text-green-600 mt-1">✓ Auto-set to Received after upload</p>
+//                     )}
+//                   </div>
 //                 </div>
 
 //                 {/* ==================== PRODUCTS TABLE ==================== */}
@@ -1208,16 +1234,16 @@
 //                                 className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-yellow-500"
 //                                 placeholder="2000"
 //                               />
-//                              </td>
-//                            </tr>
+//                             </td>
+//                           </tr>
 //                         )) : (
 //                           <tr>
 //                             <td colSpan={productColumns.length} className="border border-yellow-300 px-4 py-8 text-center text-slate-400">
 //                               {lr.lrNo ? 
 //                                 `No products found for LR ${lr.lrNo}` : 
 //                                 `Select an LR No for Order ${lr.orderNo || 'this order'} to load products`}
-//                              </td>
-//                            </tr>
+//                             </td>
+//                           </tr>
 //                         )}
 //                       </tbody>
 //                       {lrProducts.length > 0 && (
@@ -1226,7 +1252,7 @@
 //                             <td colSpan="7" className="border border-yellow-300 px-3 py-2 text-right font-bold">Total Actual WT for this LR:</td>
 //                             <td className="border border-yellow-300 px-3 py-2 font-bold text-blue-700">
 //                               {lrProducts.reduce((sum, p) => sum + num(p.actualWt), 0)} MT
-//                              </td>
+//                             </td>
 //                             <td colSpan="3" className="border border-yellow-300 px-3 py-2"></td>
 //                           </tr>
 //                         </tfoot>
@@ -1409,7 +1435,13 @@
 //             </div>
 //           </div>
 //           <div className="col-span-12 md:col-span-3">
-        
+//             <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-4 rounded-xl border border-purple-200">
+//               <div className="text-xs text-slate-500">Total POD Deduction</div>
+//               <div className="text-2xl font-bold text-purple-700">
+//                 ₹{(vendorFinancial.poDeduction + vendorFinancial.podDeduction).toLocaleString()}
+//               </div>
+//               <p className="text-xs text-slate-400 mt-1">PO + POD Deduction</p>
+//             </div>
 //           </div>
 //           <div className="col-span-12 md:col-span-3">
 //             <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-4 rounded-xl border border-purple-200">
@@ -1426,6 +1458,7 @@
 //     </div>
 //   );
 // }
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -1440,7 +1473,6 @@ function num(v) {
   return Number.isFinite(n) ? n : 0;
 }
 
-// Helper function to add days to a date
 function addDays(dateString, days) {
   if (!dateString || !days) return "";
   const date = new Date(dateString);
@@ -1448,7 +1480,6 @@ function addDays(dateString, days) {
   return date.toISOString().split('T')[0];
 }
 
-// Helper function to format date for display
 function formatDate(dateString) {
   if (!dateString) return "";
   const date = new Date(dateString);
@@ -1458,7 +1489,6 @@ function formatDate(dateString) {
   return `${day}-${month}-${year}`;
 }
 
-// Helper function to get latest POD Date from LR entries
 function getLatestPodDate(lrEntries) {
   if (!lrEntries || lrEntries.length === 0) return "";
   
@@ -1472,7 +1502,6 @@ function getLatestPodDate(lrEntries) {
   return latestDate.toISOString().split('T')[0];
 }
 
-// Reusable Card Component
 function Card({ title, right, children }) {
   return (
     <div className="rounded-2xl border border-slate-200 bg-white shadow-sm mb-4">
@@ -1496,12 +1525,22 @@ export default function CreatePOD() {
   const [loadingLR, setLoadingLR] = useState(false);
   const [suppliers, setSuppliers] = useState([]);
   
+  // ==================== COMPANY STATE ====================
+  const [companyInfo, setCompanyInfo] = useState({
+    companyName: '',
+    companyCode: '',
+    subCompanyId: '',
+    subCompanyName: '',
+    subCompanyCode: ''
+  });
+  
   // ==================== HEADER STATE ====================
   const [header, setHeader] = useState({
     podNo: "",
     purchaseNo: "",
     pricingSerialNo: "",
     branch: "",
+    branchCode: "",
     date: new Date().toISOString().split('T')[0],
     delivery: "Normal"
   });
@@ -1548,7 +1587,6 @@ export default function CreatePOD() {
   // ==================== REMARKS ====================
   const [remarks, setRemarks] = useState("");
 
-  // Order Columns (Like Purchase Panel) - UPDATED with fromState and Local/Not Local
   const orderColumns = [
     { key: "orderNo", label: "Order", minWidth: "120px" },
     { key: "partyName", label: "Party Name", minWidth: "150px" },
@@ -1556,8 +1594,8 @@ export default function CreatePOD() {
     { key: "orderType", label: "Order Type", minWidth: "100px" },
     { key: "pinCode", label: "Pin Code", minWidth: "100px" },
     { key: "state", label: "State", minWidth: "120px" },
-    { key: "fromState", label: "From State", minWidth: "120px" }, // ✅ ADDED
-    { key: "localStatus", label: "Local/Not Local", minWidth: "130px" }, // ✅ ADDED
+    { key: "fromState", label: "From State", minWidth: "120px" },
+    { key: "localStatus", label: "Local/Not Local", minWidth: "130px" },
     { key: "district", label: "District", minWidth: "120px" },
     { key: "from", label: "From", minWidth: "120px" },
     { key: "to", label: "To", minWidth: "120px" },
@@ -1565,7 +1603,6 @@ export default function CreatePOD() {
     { key: "weight", label: "Weight", minWidth: "80px" }
   ];
 
-  // Product Columns (Readonly) - 11 columns including Delivery Status, Deduction, Value
   const productColumns = [
     { key: "productName", label: "Product name", minWidth: "150px" },
     { key: "totalPkgs", label: "TOTAL PKGS", minWidth: "100px" },
@@ -1594,9 +1631,7 @@ export default function CreatePOD() {
       });
       const data = await res.json();
       if (data.success) {
-        // Enhanced purchases with derived fields
         const enhancedPurchases = (data.data || []).map(purchase => {
-          // Extract from/to from orderRows if available
           let fromLocation = '';
           let toLocation = '';
           let lrCode = purchase.lrCode || purchase.consignmentNo || '';
@@ -1620,7 +1655,6 @@ export default function CreatePOD() {
     }
   };
 
-  // Fetch Suppliers to get dueDays
   const fetchSuppliers = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -1636,26 +1670,22 @@ export default function CreatePOD() {
     }
   };
 
-  // Get Due Days from supplier by vendor code
   const getDueDaysFromSupplier = (vendorCode) => {
     if (!vendorCode || suppliers.length === 0) return 0;
     const supplier = suppliers.find(s => s.supplierCode === vendorCode);
     return supplier?.dueDays || 0;
   };
 
-  // NEW: Calculate Due Date based on Last POD Date + Due Days
   const calculateDueDate = (lastPodDate, dueDays) => {
     if (!lastPodDate || !dueDays) return "";
     return addDays(lastPodDate, dueDays);
   };
 
-  // NEW: Calculate Payment Date based on Due Date + 3 days
   const calculatePaymentDate = (dueDate) => {
     if (!dueDate) return "";
     return addDays(dueDate, 3);
   };
 
-  // NEW: Update Last POD Date and recalculate Due Date & Payment Date
   const updateLastPodDateAndRecalculate = (newLastPodDate) => {
     setPodStatusSection(prev => ({ ...prev, lastPodDate: newLastPodDate }));
     
@@ -1670,7 +1700,6 @@ export default function CreatePOD() {
     }
   };
 
-  // NEW: Auto update Last POD Date from LR entries
   const autoUpdateLastPodDate = (lrEntriesList) => {
     const latestPodDate = getLatestPodDate(lrEntriesList);
     if (latestPodDate && latestPodDate !== podStatusSection.lastPodDate) {
@@ -1679,7 +1708,6 @@ export default function CreatePOD() {
     }
   };
 
-  // Fetch ALL Consignment Notes (LR) for comparison
   const fetchAllConsignmentNotes = async () => {
     setLoadingLR(true);
     try {
@@ -1699,7 +1727,6 @@ export default function CreatePOD() {
     }
   };
 
-  // Filter LRs based on Purchase Order Numbers
   const filterLRsByPurchaseOrders = (purchaseOrderNumbers) => {
     if (!purchaseOrderNumbers || purchaseOrderNumbers.length === 0) {
       setFilteredLRs([]);
@@ -1715,7 +1742,6 @@ export default function CreatePOD() {
     return matchedLRs;
   };
 
-  // Fetch LR Details and Products from Consignment Note
   const fetchLRDetails = async (lrNo, lrId) => {
     try {
       const token = localStorage.getItem('token');
@@ -1731,12 +1757,10 @@ export default function CreatePOD() {
         console.log('📦 LR Data:', lrData);
         console.log('📦 Pack Data:', lrData.packData);
         
-        // Clear existing products for this LR
         setProducts(prev => prev.filter(p => p.lrRefId !== lrId));
         
         const allProducts = [];
         
-        // Helper function to add product
         const addProduct = (item, sourceType) => {
           if (item && item.productName && item.productName.trim() !== '') {
             allProducts.push({
@@ -1759,40 +1783,29 @@ export default function CreatePOD() {
           }
         };
         
-        // Get Palletization Data
         if (lrData.packData?.PALLETIZATION && lrData.packData.PALLETIZATION.length > 0) {
-          console.log('📦 Palletization products:', lrData.packData.PALLETIZATION);
           lrData.packData.PALLETIZATION.forEach(item => addProduct(item, 'PALLETIZATION'));
         }
         
-        // Get Uniform Data
         if (lrData.packData?.['UNIFORM - BAGS/BOXES'] && lrData.packData['UNIFORM - BAGS/BOXES'].length > 0) {
-          console.log('📦 Uniform products:', lrData.packData['UNIFORM - BAGS/BOXES']);
           lrData.packData['UNIFORM - BAGS/BOXES'].forEach(item => addProduct(item, 'UNIFORM'));
         }
         
-        // Get Loose Cargo Data
         if (lrData.packData?.['LOOSE - CARGO'] && lrData.packData['LOOSE - CARGO'].length > 0) {
-          console.log('📦 Loose Cargo products:', lrData.packData['LOOSE - CARGO']);
           lrData.packData['LOOSE - CARGO'].forEach(item => addProduct(item, 'LOOSE_CARGO'));
         }
         
-        // Get Non-Uniform Data
         if (lrData.packData?.['NON-UNIFORM - GENERAL CARGO'] && lrData.packData['NON-UNIFORM - GENERAL CARGO'].length > 0) {
-          console.log('📦 Non-Uniform products:', lrData.packData['NON-UNIFORM - GENERAL CARGO']);
           lrData.packData['NON-UNIFORM - GENERAL CARGO'].forEach(item => addProduct(item, 'NON_UNIFORM'));
         }
         
-        // Also check for productRows (alternative structure)
         if (lrData.productRows && lrData.productRows.length > 0) {
-          console.log('📦 Product Rows:', lrData.productRows);
           lrData.productRows.forEach(item => addProduct(item, 'PRODUCT_ROWS'));
         }
         
         console.log('📦 Total products collected:', allProducts.length);
         setProducts(prev => [...prev, ...allProducts]);
         
-        // Update LR entry with order details and POD Date
         const podDateFromLR = lrData.lrDetails?.podDate || lrData.podDate || '';
         
         setLrEntries(prev => prev.map(lr => 
@@ -1805,7 +1818,6 @@ export default function CreatePOD() {
           } : lr
         ));
         
-        // After updating LR entries, recalculate Last POD Date
         setTimeout(() => {
           const updatedLrEntries = [...lrEntries];
           const updatedIndex = updatedLrEntries.findIndex(lr => lr._id === lrId);
@@ -1830,7 +1842,7 @@ export default function CreatePOD() {
     }
   };
 
-  // Handle Purchase Selection - UPDATED with fromState
+  // ==================== UPDATED: Handle Purchase Selection ====================
   const handlePurchaseSelect = async (purchaseNo) => {
     setHeader({ ...header, purchaseNo });
     setLoading(true);
@@ -1845,7 +1857,32 @@ export default function CreatePOD() {
       if (data.success && data.data) {
         const purchase = data.data;
         
-        // Extract from/to from orderRows
+        console.log('🚛 Purchase Data:', purchase);
+        
+        // ✅ Extract company information from purchase
+        const companyName = purchase.companyName || purchase.header?.companyName || '';
+        const companyCode = purchase.companyCode || purchase.header?.companyCode || '';
+        const subCompanyId = purchase.subCompanyId || purchase.header?.subCompanyId || null;
+        const subCompanyName = purchase.subCompanyName || purchase.header?.subCompanyName || '';
+        const subCompanyCode = purchase.subCompanyCode || purchase.header?.subCompanyCode || '';
+        
+        console.log('🏢 Company Info extracted:', { 
+          companyName, 
+          companyCode, 
+          subCompanyId, 
+          subCompanyName, 
+          subCompanyCode 
+        });
+        
+        // ✅ Set company info
+        setCompanyInfo({
+          companyName: companyName || '',
+          companyCode: companyCode || '',
+          subCompanyId: subCompanyId || null,
+          subCompanyName: subCompanyName || '',
+          subCompanyCode: subCompanyCode || ''
+        });
+        
         let fromLocation = '';
         let toLocation = '';
         let lrCode = purchase.lrCode || purchase.consignmentNo || '';
@@ -1855,7 +1892,6 @@ export default function CreatePOD() {
           toLocation = purchase.orderRows[0]?.to || '';
         }
         
-        // Get vehicle number from various locations
         const vehicleNo = purchase.purchaseDetails?.vehicleNo || 
                           purchase.vehicleNo || 
                           purchase.header?.vehicleNo || '';
@@ -1870,16 +1906,6 @@ export default function CreatePOD() {
         
         setSelectedPurchase(enhancedPurchase);
         
-        console.log('🚛 Purchase Details:', {
-          purchaseNo: purchase.purchaseNo,
-          vendorName: purchase.purchaseDetails?.vendorName,
-          vehicleNo,
-          fromLocation,
-          toLocation,
-          lrCode
-        });
-        
-        // Extract orders from purchase - UPDATED with fromState
         const orderNumbers = [];
         if (purchase.orderRows && purchase.orderRows.length > 0) {
           const mappedOrders = purchase.orderRows.map(row => ({
@@ -1890,17 +1916,17 @@ export default function CreatePOD() {
             orderType: row.orderType,
             pinCode: row.pinCode,
             state: row.state,
-            stateName: row.stateName || row.state, // ✅ ADDED
-            fromState: row.fromState || '', // ✅ ADDED
+            stateName: row.stateName || row.state,
+            fromState: row.fromState || '',
             district: row.district,
             from: row.from || fromLocation,
-            fromName: row.fromName || row.from, // ✅ ADDED
+            fromName: row.fromName || row.from,
             to: row.to || toLocation,
-            toName: row.toName || row.to, // ✅ ADDED
+            toName: row.toName || row.to,
             locationRate: row.locationRate,
             weight: row.weight,
-            localStatus: row.localStatus || 'unknown', // ✅ ADDED
-            localStatusLabel: row.localStatusLabel || 'Unknown' // ✅ ADDED
+            localStatus: row.localStatus || 'unknown',
+            localStatusLabel: row.localStatusLabel || 'Unknown'
           }));
           setPurchaseOrders(mappedOrders);
           
@@ -1909,17 +1935,17 @@ export default function CreatePOD() {
           });
         }
         
-        // Auto-fill header
+        // ✅ Auto-fill header with company info
         setHeader({
           ...header,
           purchaseNo: purchase.purchaseNo,
           pricingSerialNo: purchase.pricingSerialNo || '',
           branch: purchase.header?.branchName || purchase.branchName || '',
+          branchCode: purchase.header?.branchCode || purchase.branchCode || '',
           date: purchase.header?.date ? new Date(purchase.header.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
           delivery: purchase.header?.delivery || 'Normal'
         });
         
-        // Auto-fill billing
         const orderCount = purchase.orderRows?.length || 0;
         setBilling({
           billingType: orderCount === 1 ? "Single - Order" : "Multi - Order",
@@ -1927,21 +1953,15 @@ export default function CreatePOD() {
           noOfDroppingPoint: purchase.billing?.noOfDroppingPoint || ''
         });
         
-        // Get vendor code from purchase
         const vendorCode = purchase.purchaseDetails?.vendorCode || '';
         const vendorName = purchase.purchaseDetails?.vendorName || '';
-        
-        // Get due days from supplier
         const dueDays = getDueDaysFromSupplier(vendorCode);
-        
-        // Get PO Deduction from purchase
         const poDeductionFromPurchase = 
           purchase.purchaseDetails?.poDeduction || 
           purchase.poDeduction || 
           purchase.totalDeductions || 
           0;
         
-        // Auto-fill vendor
         setVendorFinancial(prev => ({
           ...prev,
           vendorName: vendorName,
@@ -1952,7 +1972,6 @@ export default function CreatePOD() {
           poDeduction: num(poDeductionFromPurchase)
         }));
         
-        // Calculate balance
         const totalAmt = purchase.purchaseAmountFromVNN || purchase.purchaseDetails?.amount || 0;
         const advanceAmt = num(purchase.purchaseDetails?.advance) || 0;
         setVendorFinancial(prev => ({
@@ -1960,7 +1979,6 @@ export default function CreatePOD() {
           balance: totalAmt - advanceAmt
         }));
         
-        // Create LR entries for each order
         if (orderNumbers.length > 0) {
           const newLrEntries = orderNumbers.map((orderNo, index) => ({
             _id: uid(),
@@ -1977,24 +1995,23 @@ export default function CreatePOD() {
           setLrEntries(newLrEntries);
         }
         
-        // Fetch all consignment notes first time
         if (allConsignmentNotes.length === 0) {
           await fetchAllConsignmentNotes();
         } else {
           filterLRsByPurchaseOrders(orderNumbers);
         }
         
-        // Show detailed alert with all info
         const vehicleMsg = vehicleNo ? `\n🚛 Vehicle: ${vehicleNo}` : '';
         const routeMsg = (fromLocation && toLocation) ? `\n📍 Route: ${fromLocation} → ${toLocation}` : '';
         const lrMsg = lrCode ? `\n📋 LR Code: ${lrCode}` : '';
         const dueDaysMsg = dueDays > 0 ? `\n📅 Due Days: ${dueDays} days` : '';
-        const poDeductionMsg = poDeductionFromPurchase > 0 ? `\n💰 PO Deduction: ₹${poDeductionFromPurchase}` : '';
+        const companyMsg = companyName ? `\n🏢 Company: ${companyName}` : '';
+        const subCompanyMsg = subCompanyName ? `\n🏢 Sub-Company: ${subCompanyName}` : '';
         
         alert(`✅ Loaded Purchase: ${purchase.purchaseNo}
 📦 Customer: ${vendorName}
-${vehicleMsg}${routeMsg}${lrMsg}
-📋 Orders found: ${orderNumbers.join(', ') || 'None'}${dueDaysMsg}${poDeductionMsg}
+${companyMsg}${subCompanyMsg}${vehicleMsg}${routeMsg}${lrMsg}
+📋 Orders found: ${orderNumbers.join(', ') || 'None'}${dueDaysMsg}
 🏷️ Vendor Code: ${vendorCode || 'N/A'}`);
       }
     } catch (error) {
@@ -2005,7 +2022,6 @@ ${vehicleMsg}${routeMsg}${lrMsg}
     }
   };
 
-  // Filter LRs when allConsignmentNotes or purchaseOrders change
   useEffect(() => {
     if (allConsignmentNotes.length > 0 && purchaseOrders.length > 0) {
       const orderNumbers = purchaseOrders.map(order => order.orderNo);
@@ -2013,12 +2029,10 @@ ${vehicleMsg}${routeMsg}${lrMsg}
     }
   }, [allConsignmentNotes, purchaseOrders]);
 
-  // Get available LRs for a specific order
   const getAvailableLRsForOrder = (orderNo) => {
     return filteredLRs.filter(lr => lr.orderNo === orderNo);
   };
 
-  // Handle LR Selection for a specific order
   const handleLRSelect = async (lrId, selectedLRNo, orderNo) => {
     const selectedLR = filteredLRs.find(c => c.lrNo === selectedLRNo && c.orderNo === orderNo);
     
@@ -2035,11 +2049,9 @@ ${vehicleMsg}${routeMsg}${lrMsg}
     }
   };
 
-  // Update LR entry
   const updateLREntry = (id, key, value) => {
     setLrEntries(prev => {
       const updated = prev.map(lr => lr._id === id ? { ...lr, [key]: value } : lr);
-      // Auto update Last POD Date when podDate changes
       if (key === 'podDate') {
         setTimeout(() => autoUpdateLastPodDate(updated), 0);
       }
@@ -2047,7 +2059,6 @@ ${vehicleMsg}${routeMsg}${lrMsg}
     });
   };
 
-  // Handle POD Upload
   const handlePodUpload = async (e, lrId) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -2063,29 +2074,16 @@ ${vehicleMsg}${routeMsg}${lrMsg}
       return;
     }
     
-    // Show uploading status
     updateLREntry(lrId, 'podUpload', 'UPLOADING');
     
-    // Simulate file upload (replace with actual upload logic)
     const formData = new FormData();
     formData.append('file', file);
     formData.append('lrId', lrId);
     
     try {
-      // Uncomment for actual API call
-      // const token = localStorage.getItem('token');
-      // const res = await fetch('/api/upload-pod', {
-      //   method: 'POST',
-      //   headers: { Authorization: `Bearer ${token}` },
-      //   body: formData
-      // });
-      // const data = await res.json();
-      
-      // For demo: simulate successful upload
       setTimeout(() => {
-        // Update LR entry with upload status AND set POD Received to "Received"
         updateLREntry(lrId, 'podUpload', 'UPLOADED');
-        updateLREntry(lrId, 'podReceived', 'Received'); // Auto-set to Received
+        updateLREntry(lrId, 'podReceived', 'Received');
         alert(`✅ POD uploaded successfully for LR`);
       }, 1000);
       
@@ -2096,12 +2094,10 @@ ${vehicleMsg}${routeMsg}${lrMsg}
     }
   };
 
-  // Update Product fields (Delivery Status, Deduction, Value are editable)
   const updateProduct = (id, key, value) => {
     setProducts(prev => prev.map(p => p._id === id ? { ...p, [key]: value } : p));
   };
 
-  // Calculations
   const calculateTotalActualWt = () => {
     return products.reduce((sum, p) => sum + num(p.actualWt), 0);
   };
@@ -2121,7 +2117,7 @@ ${vehicleMsg}${routeMsg}${lrMsg}
     return total - advance - totalPodDeduction;
   };
 
-  // Save Function
+  // ==================== UPDATED: Handle Save with Company Info ====================
   const handleSave = async () => {
     if (!header.purchaseNo) {
       alert("Please select a Purchase No");
@@ -2134,7 +2130,20 @@ ${vehicleMsg}${routeMsg}${lrMsg}
       const token = localStorage.getItem('token');
       
       const payload = {
-        header,
+        header: {
+          podNo: header.podNo,
+          purchaseNo: header.purchaseNo,
+          pricingSerialNo: header.pricingSerialNo,
+          branch: header.branch,
+          branchCode: header.branchCode || '',
+          date: header.date,
+          delivery: header.delivery,
+          // ✅ Add company info to header
+          companyName: companyInfo.companyName || '',
+          companyCode: companyInfo.companyCode || '',
+          subCompanyName: companyInfo.subCompanyName || '',
+          subCompanyCode: companyInfo.subCompanyCode || ''
+        },
         billing,
         purchaseOrders,
         lrEntries,
@@ -2153,8 +2162,16 @@ ${vehicleMsg}${routeMsg}${lrMsg}
         podStatusSection,
         remarks,
         purchaseNo: header.purchaseNo,
-        pricingSerialNo: header.pricingSerialNo
+        pricingSerialNo: header.pricingSerialNo,
+        // ✅ Company info at root level (CRITICAL for backend to save)
+        companyName: companyInfo.companyName || '',
+        companyCode: companyInfo.companyCode || '',
+        subCompanyId: companyInfo.subCompanyId || null,
+        subCompanyName: companyInfo.subCompanyName || '',
+        subCompanyCode: companyInfo.subCompanyCode || ''
       };
+
+      console.log('📤 Saving POD with company info:', JSON.stringify(payload, null, 2));
 
       const res = await fetch('/api/pod-panel', {
         method: 'POST',
@@ -2168,8 +2185,8 @@ ${vehicleMsg}${routeMsg}${lrMsg}
       const data = await res.json();
 
       if (data.success) {
-        alert(`✅ POD created successfully!\nPOD No: ${data.data?.podNo}`);
-        router.push('/admin/ProofOfDelivery');
+        alert(`✅ POD created successfully!\nPOD No: ${data.data?.podNo}\nCompany: ${data.data?.companyName || 'N/A'}\nSub-Company: ${data.data?.subCompanyName || 'N/A'}`);
+        router.push('/admin/ProofofDelivery');
       } else {
         alert(data.message || 'Failed to create POD');
       }
@@ -2189,7 +2206,7 @@ ${vehicleMsg}${routeMsg}${lrMsg}
           <div>
             <div className="flex items-center gap-3">
               <button
-                onClick={() => router.push('/admin/ProofOfDelivery')}
+                onClick={() => router.push('/admin/ProofofDelivery')}
                 className="text-yellow-600 hover:text-yellow-800 font-medium text-sm flex items-center gap-1"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2199,6 +2216,19 @@ ${vehicleMsg}${routeMsg}${lrMsg}
               </button>
               <div className="text-lg font-extrabold text-slate-900">Create Proof of Delivery (POD)</div>
             </div>
+            {/* ✅ Display Company Info in Top Bar */}
+            {companyInfo.companyName && (
+              <div className="text-xs text-blue-600 mt-0.5 flex items-center gap-2 flex-wrap">
+                <span className="font-medium">🏢 {companyInfo.companyName}</span>
+                {companyInfo.companyCode && <span>({companyInfo.companyCode})</span>}
+                {companyInfo.subCompanyName && (
+                  <span className="text-emerald-600">| Sub: {companyInfo.subCompanyName}</span>
+                )}
+                {companyInfo.subCompanyCode && (
+                  <span className="text-emerald-600">({companyInfo.subCompanyCode})</span>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-3">
@@ -2218,7 +2248,7 @@ ${vehicleMsg}${routeMsg}${lrMsg}
       {/* Main Content */}
       <div className="mx-auto max-w-full p-4">
         
-        {/* ==================== PURCHASE SELECTION with Enhanced Dropdown ==================== */}
+        {/* ==================== PURCHASE SELECTION ==================== */}
         <Card title="Select Purchase Order">
           <div className="grid grid-cols-12 gap-4">
             <div className="col-span-12 md:col-span-6">
@@ -2231,18 +2261,16 @@ ${vehicleMsg}${routeMsg}${lrMsg}
               >
                 <option value="">Select Purchase No</option>
                 {purchases.map(p => {
-                  // Get vehicle number from purchase
                   const vehicleNo = p.vehicleNo || p.purchaseDetails?.vehicleNo || '';
-                  
-                  // Get from/to locations from purchase (already enhanced in fetchPurchases)
                   const fromLoc = p.fromLocation || p.orderRows?.[0]?.from || '';
                   const toLoc = p.toLocation || p.orderRows?.[0]?.to || '';
-                  
-                  // Get LR code from purchase
                   const lrCode = p.lrCode || p.consignmentNo || '';
                   
-                  // Build display text with icons
                   let displayText = `${p.purchaseNo} - ${p.vendorName || p.purchaseDetails?.vendorName || 'Unknown'}`;
+                  
+                  if (p.companyName) {
+                    displayText += ` | 🏢 ${p.companyName}`;
+                  }
                   
                   if (vehicleNo) {
                     displayText += ` | 🚛 ${vehicleNo}`;
@@ -2270,7 +2298,7 @@ ${vehicleMsg}${routeMsg}${lrMsg}
               </p>
             </div>
             
-            {/* Enhanced Selected Purchase Details Card */}
+            {/* Selected Purchase Details Card with Company Info */}
             {selectedPurchase && (
               <div className="col-span-12 md:col-span-6">
                 <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-3 rounded-xl border border-blue-200">
@@ -2288,6 +2316,19 @@ ${vehicleMsg}${routeMsg}${lrMsg}
                       <span className="text-slate-500">Vehicle No:</span>
                       <span className="font-medium text-slate-800 ml-1">🚛 {selectedPurchase.vehicleNo || selectedPurchase.purchaseDetails?.vehicleNo || '-'}</span>
                     </div>
+                    {/* ✅ Company Info in Selected Purchase */}
+                    {companyInfo.companyName && (
+                      <div className="col-span-12 md:col-span-6">
+                        <span className="text-slate-500">Company:</span>
+                        <span className="font-medium text-blue-700 ml-1">🏢 {companyInfo.companyName}</span>
+                      </div>
+                    )}
+                    {companyInfo.subCompanyName && (
+                      <div className="col-span-12 md:col-span-6">
+                        <span className="text-slate-500">Sub-Company:</span>
+                        <span className="font-medium text-emerald-700 ml-1">{companyInfo.subCompanyName}</span>
+                      </div>
+                    )}
                     <div className="col-span-12 md:col-span-6">
                       <span className="text-slate-500">From → To:</span>
                       <span className="font-medium text-slate-800 ml-1">
@@ -2321,7 +2362,7 @@ ${vehicleMsg}${routeMsg}${lrMsg}
           </div>
         </Card>
 
-        {/* ==================== HEADER INFORMATION (Readonly) ==================== */}
+        {/* ==================== HEADER INFORMATION ==================== */}
         <Card title="POD Information">
           <div className="grid grid-cols-12 gap-3">
             <div className="col-span-12 md:col-span-2">
@@ -2341,17 +2382,45 @@ ${vehicleMsg}${routeMsg}${lrMsg}
               <input type="text" value={header.branch} readOnly className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm" />
             </div>
             <div className="col-span-12 md:col-span-2">
-              <label className="text-xs font-bold text-slate-600">Date</label>
-              <input type="date" value={header.date} readOnly className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm cursor-not-allowed" />
+              <label className="text-xs font-bold text-slate-600">Branch Code</label>
+              <input type="text" value={header.branchCode} readOnly className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm" />
             </div>
             <div className="col-span-12 md:col-span-2">
-              <label className="text-xs font-bold text-slate-600">Delivery</label>
-              <input type="text" value={header.delivery} readOnly className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm cursor-not-allowed" />
+              <label className="text-xs font-bold text-slate-600">Date</label>
+              <input type="date" value={header.date} readOnly className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm cursor-not-allowed" />
             </div>
           </div>
         </Card>
 
-        {/* ==================== BILLING TYPE / CHARGES (Readonly) ==================== */}
+        {/* ==================== COMPANY INFORMATION CARD ==================== */}
+        <Card title="Company Information">
+          <div className="grid grid-cols-12 gap-3">
+          
+           
+            <div className="col-span-12 md:col-span-3">
+              <label className="text-xs font-bold text-slate-600">Sub-Company Name</label>
+              <input 
+                type="text" 
+                value={companyInfo.subCompanyName || '-'} 
+                readOnly 
+                className="mt-1 w-full rounded-xl border border-slate-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700" 
+              />
+            </div>
+            <div className="col-span-12 md:col-span-2">
+              <label className="text-xs font-bold text-slate-600">Sub-Company Code</label>
+              <input 
+                type="text" 
+                value={companyInfo.subCompanyCode || '-'} 
+                readOnly 
+                className="mt-1 w-full rounded-xl border border-slate-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700" 
+              />
+            </div>
+            
+          </div>
+          <p className="text-xs text-slate-400 mt-2">Company information is auto-loaded from the selected purchase</p>
+        </Card>
+
+        {/* ==================== BILLING TYPE / CHARGES ==================== */}
         <Card title="Billing Type / Charges">
           <div className="overflow-auto rounded-xl border border-yellow-300">
             <table className="min-w-full w-full text-sm">
@@ -2379,7 +2448,7 @@ ${vehicleMsg}${routeMsg}${lrMsg}
           </div>
         </Card>
 
-        {/* ==================== ORDERS TABLE (Scrollable) - UPDATED with fromState and Local/Not Local ==================== */}
+        {/* ==================== ORDERS TABLE ==================== */}
         <Card title="Orders (Auto-filled from Purchase Panel)">
           <div className="overflow-auto rounded-xl border border-yellow-300 max-h-[400px]">
             <table className="min-w-max w-full text-sm">
@@ -2398,7 +2467,6 @@ ${vehicleMsg}${routeMsg}${lrMsg}
               </thead>
               <tbody>
                 {purchaseOrders.length > 0 ? purchaseOrders.map((order, idx) => {
-                  // Determine local status
                   const isLocal = order.fromState && order.state && 
                     order.fromState.trim().toUpperCase() === order.state.trim().toUpperCase();
                   
@@ -2410,7 +2478,7 @@ ${vehicleMsg}${routeMsg}${lrMsg}
                       <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.orderType || '-'}</td>
                       <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.pinCode || '-'}</td>
                       <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.state || '-'}</td>
-                      <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.fromState || '-'}</td> {/* ✅ ADDED */}
+                      <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.fromState || '-'}</td>
                       <td className="border border-yellow-300 px-2 py-2 text-center">
                         {order.fromState && order.state ? (
                           <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${
@@ -2423,7 +2491,7 @@ ${vehicleMsg}${routeMsg}${lrMsg}
                         ) : (
                           <span className="text-xs text-gray-400">-</span>
                         )}
-                      </td> {/* ✅ ADDED */}
+                      </td>
                       <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.district || '-'}</td>
                       <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.from || '-'}</td>
                       <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.to || '-'}</td>
@@ -2443,7 +2511,7 @@ ${vehicleMsg}${routeMsg}${lrMsg}
           </div>
         </Card>
 
-        {/* ==================== LR DETAILS SECTION - One per Order ==================== */}
+        {/* ==================== LR DETAILS SECTION ==================== */}
         <div className="mt-4">
           <div className="text-sm font-extrabold text-slate-900 mb-2">LR Details (One per Order)</div>
         </div>
@@ -2511,7 +2579,6 @@ ${vehicleMsg}${routeMsg}${lrMsg}
                     />
                   </div>
                   
-                  {/* In Person / Parsal */}
                   <div className="col-span-12 md:col-span-3">
                     <label className="text-xs font-bold text-slate-600">In Person / Parsal *</label>
                     <select
@@ -2527,7 +2594,6 @@ ${vehicleMsg}${routeMsg}${lrMsg}
                     <p className="text-xs text-slate-400 mt-1">Select delivery type</p>
                   </div>
                   
-                  {/* Docket No field */}
                   <div className="col-span-12 md:col-span-3">
                     <label className="text-xs font-bold text-slate-600">Docket No</label>
                     <input 
@@ -2602,7 +2668,7 @@ ${vehicleMsg}${routeMsg}${lrMsg}
                   </div>
                 </div>
 
-                {/* ==================== PRODUCTS TABLE ==================== */}
+                {/* PRODUCTS TABLE */}
                 <div className="mt-4">
                   <div className="text-sm font-extrabold text-slate-900 mb-2">Products for LR: {lr.lrNo || 'Not Selected'}</div>
                   <div className="overflow-auto rounded-xl border border-yellow-300">
@@ -2720,7 +2786,7 @@ ${vehicleMsg}${routeMsg}${lrMsg}
               <input type="text" value={`₹${(vendorFinancial.total - vendorFinancial.advance).toLocaleString()}`} readOnly className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm" />
             </div>
             <div className="col-span-12 md:col-span-2">
-              <label className="text-xs font-bold text-slate-600">PO - Deduction (from Purchase)</label>
+              <label className="text-xs font-bold text-slate-600">PO - Deduction</label>
               <input 
                 type="text" 
                 value={`₹${vendorFinancial.poDeduction.toLocaleString()}`} 
@@ -2740,7 +2806,6 @@ ${vehicleMsg}${routeMsg}${lrMsg}
               />
             </div>
             
-            {/* Total POD Deduction */}
             <div className="col-span-12 md:col-span-3">
               <label className="text-xs font-bold text-slate-600">Total POD Deduction</label>
               <input 
@@ -2752,7 +2817,6 @@ ${vehicleMsg}${routeMsg}${lrMsg}
               <p className="text-xs text-slate-400 mt-1">PO Deduction + POD Deduction</p>
             </div>
             
-            {/* Final Balance */}
             <div className="col-span-12 md:col-span-4">
               <label className="text-xs font-bold text-slate-600">Final Balance</label>
               <input 
@@ -2766,7 +2830,7 @@ ${vehicleMsg}${routeMsg}${lrMsg}
           </div>
         </Card>
         
-        {/* ==================== POD STATUS SECTION with Auto Date Calculations ==================== */}
+        {/* ==================== POD STATUS SECTION ==================== */}
         <Card title="POD Status & Payment">
           <div className="grid grid-cols-12 gap-4">
             <div className="col-span-12 md:col-span-3">

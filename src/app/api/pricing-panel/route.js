@@ -1,4 +1,6 @@
-// // /app/api/pricing-panel/route.js
+
+
+
 // import { NextResponse } from "next/server";
 // import connectDb from "@/lib/db";
 // import PricingPanel from "./PricingPanel";
@@ -6,51 +8,325 @@
 // import { getNextPricingSerialNumber } from "./PricingCounter";
 // import mongoose from 'mongoose';
 
-// // ✅ Role-based access check
-// // ✅ More flexible authorization
+// // ── PERMISSION FUNCTIONS ──
+
 // function isAuthorized(user) {
 //   if (!user) return false;
-//   // 1. Company admins
+  
+//   // Company admins have full access
 //   if (user.type === "company") return true;
-//   // 2. Admin role (case-insensitive)
-//   if (Array.isArray(user.roles) && user.roles.some(r => r.toLowerCase() === "admin")) return true;
-//   // 3. Explicit permission (if you have a permissions array)
-//   if (Array.isArray(user.permissions) && user.permissions.includes("pricing_panel")) return true;
-//   // 4. Module‑based access – user has "Order Panel" module selected
-//   if (user.modules && user.modules["Pricing Panel"] && user.modules["Pricing Panel"].selected === true) return true;
-//   return false;
+  
+//   // Admin role has full access
+//   if (user.roles && user.roles.includes("Admin")) return true;
+  
+//   // Check module-based permissions for "Pricing Panel"
+//   const modules = user.modules || {};
+//   const moduleData = modules["Pricing Panel"];
+  
+//   if (!moduleData || !moduleData.selected) return false;
+  
+//   return true;
 // }
 
-// // ✅ Validate user from JWT token
-// async function validateUser(req) {
+// function hasPermission(user, action) {
+//   if (!user) return false;
+//   if (user.type === "company") return true;
+//   if (user.roles && user.roles.includes("Admin")) return true;
+  
+//   const modules = user.modules || {};
+//   const moduleData = modules["Pricing Panel"];
+  
+//   if (!moduleData || !moduleData.selected) return false;
+  
+//   const permissions = moduleData.permissions || {};
+//   return permissions[action] === true;
+// }
+
+// async function validateUser(req, requiredAction = null) {
 //   const token = getTokenFromHeader(req);
-//   if (!token) return { error: "Token missing", status: 401 };
+//   if (!token) return { error: "Authentication required. Please login.", status: 401 };
 
 //   try {
-//     const user = verifyJWT(token);  // this decodes and verifies
-//     if (!user) return { error: "Invalid token", status: 401 };
-//     if (!isAuthorized(user)) return { error: "Unauthorized", status: 403 };
+//     const user = verifyJWT(token);
+//     if (!user) return { error: "Invalid or expired token. Please login again.", status: 401 };
+    
+//     if (!isAuthorized(user)) {
+//       return { 
+//         error: "Access denied. You don't have permission to access Pricing Panel.", 
+//         status: 403 
+//       };
+//     }
+    
+//     if (requiredAction && !hasPermission(user, requiredAction)) {
+//       return { 
+//         error: `Permission denied: ${requiredAction} action not allowed for Pricing Panel.`, 
+//         status: 403 
+//       };
+//     }
+    
 //     return { user, error: null, status: 200 };
 //   } catch (err) {
 //     console.error("JWT Verification Failed:", err?.message || err);
-//     return { error: "Invalid token", status: 401 };
+//     return { error: "Authentication failed. Please login again.", status: 401 };
+//   }
+// }
+
+// // ── HELPER FUNCTIONS ──
+
+// function isValidObjectId(id) {
+//   return id && mongoose.Types.ObjectId.isValid(id);
+// }
+
+// function formatDateDDMMYYYY(date) {
+//   if (!date) return '';
+//   const d = new Date(date);
+//   if (isNaN(d.getTime())) return '';
+  
+//   const day = String(d.getDate()).padStart(2, '0');
+//   const month = String(d.getMonth() + 1).padStart(2, '0');
+//   const year = d.getFullYear();
+  
+//   return `${day}/${month}/${year}`;
+// }
+
+// /* ========================================
+//    GET /api/pricing-panel - Requires 'view' permission
+// ======================================== */
+// export async function GET(req) {
+//   await connectDb();
+//   const { user, error, status } = await validateUser(req, 'view');
+//   if (error) {
+//     return NextResponse.json({ 
+//       success: false, 
+//       message: error,
+//       code: status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN'
+//     }, { status });
+//   }
+
+//   try {
+//     const url = new URL(req.url);
+//     const id = url.searchParams.get("id");
+//     const format = url.searchParams.get("format");
+//     const search = url.searchParams.get("search");
+//     const pricingStatus = url.searchParams.get("pricingStatus");
+//     const approvalStatus = url.searchParams.get("approvalStatus");
+//     const fromDate = url.searchParams.get("fromDate");
+//     const toDate = url.searchParams.get("toDate");
+    
+//     // ============ CASE 1: GET SINGLE PRICING PANEL BY ID ============
+//     if (id) {
+//       console.log(`📄 Fetching pricing panel by ID: ${id}`);
+      
+//       if (!isValidObjectId(id)) {
+//         return NextResponse.json({ 
+//           success: false, 
+//           message: "Invalid pricing panel ID format" 
+//         }, { status: 400 });
+//       }
+      
+//       const pricingPanel = await PricingPanel.findOne({
+//         _id: id,
+//         companyId: user.companyId
+//       }).lean();
+
+//       if (!pricingPanel) {
+//         return NextResponse.json({ 
+//           success: false, 
+//           message: "Pricing panel not found" 
+//         }, { status: 404 });
+//       }
+
+//       return NextResponse.json({ 
+//         success: true, 
+//         data: pricingPanel 
+//       }, { status: 200 });
+//     }
+    
+//     // ============ CASE 2: TABLE FORMAT FOR REPORT ============
+//     if (format === 'table') {
+//       console.log("📋 Fetching pricing panels for table report");
+      
+//       let query = { 
+//         companyId: user.companyId,
+//         status: 'Active'
+//       };
+
+//       // Apply search filter
+//       if (search) {
+//         query.$or = [
+//           { pricingSerialNo: { $regex: search, $options: 'i' } },
+//           { partyName: { $regex: search, $options: 'i' } },
+//           { branchName: { $regex: search, $options: 'i' } }
+//         ];
+//       }
+      
+//       // Apply approval status filter
+//       if (approvalStatus) {
+//         query['rateApproval.approvalStatus'] = approvalStatus;
+//       }
+      
+//       // Apply date range filters
+//       if (fromDate) {
+//         query.date = { $gte: new Date(fromDate) };
+//       }
+//       if (toDate) {
+//         const endDate = new Date(toDate);
+//         endDate.setHours(23, 59, 59, 999);
+//         query.date = { ...query.date, $lte: endDate };
+//       }
+
+//       const pricingPanels = await PricingPanel.find(query)
+//         .sort({ date: -1, createdAt: -1 })
+//         .lean();
+
+//       console.log(`Found ${pricingPanels.length} pricing panels`);
+
+//       const tableData = [];
+      
+//       for (const panel of pricingPanels) {
+//         const formattedDate = panel.date ? formatDateDDMMYYYY(panel.date) : '';
+        
+//         if (panel.orders && panel.orders.length > 0) {
+//           for (const order of panel.orders) {
+//             const reportRow = panel.reportRows?.find(r => r.order === order.orderNo);
+            
+//             let vnnNumber = '-';
+//             if (order.vehicleNegotiationId) {
+//               try {
+//                 const VehicleNegotiation = mongoose.models.VehicleNegotiation;
+//                 if (VehicleNegotiation) {
+//                   const vn = await VehicleNegotiation.findById(order.vehicleNegotiationId).select('vnnNo').lean();
+//                   vnnNumber = vn?.vnnNo || '-';
+//                 }
+//               } catch (err) {
+//                 console.error('Error fetching VNN:', err);
+//               }
+//             }
+            
+//             tableData.push({
+//               panelId: panel._id.toString(),
+//               date: formattedDate,
+//               pricingSerialNo: panel.pricingSerialNo || '',
+//               vnn: vnnNumber,
+//               orderNo: order.orderNo || '',
+//               partyName: order.partyName || panel.partyName || '',
+//               plantCode: order.plantName || '',
+//               orderType: order.orderType || '',
+//               pinCode: order.pinCode || '',
+//               taluka: order.talukaName || order.taluka || '-',
+//               state: order.stateName || '',
+//               district: order.districtName || '',
+//               from: order.fromName || '',
+//               to: order.toName || '',
+//               weight: order.weight || 0,
+//               pricing: reportRow?.pricing || panel.reportRows?.[0]?.pricing || 'Pending',
+//               approval: panel.rateApproval?.approvalStatus || 'Pending',
+//               branchName: panel.branchName || ''
+//             });
+//           }
+//         } else {
+//           tableData.push({
+//             panelId: panel._id.toString(),
+//             date: formattedDate,
+//             pricingSerialNo: panel.pricingSerialNo || '',
+//             vnn: '-',
+//             orderNo: '',
+//             partyName: panel.partyName || '',
+//             plantCode: '',
+//             orderType: '',
+//             pinCode: '',
+//             taluka: '-',
+//             state: '',
+//             district: '',
+//             from: '',
+//             to: '',
+//             weight: 0,
+//             pricing: panel.reportRows?.[0]?.pricing || 'Pending',
+//             approval: panel.rateApproval?.approvalStatus || 'Pending',
+//             branchName: panel.branchName || ''
+//           });
+//         }
+//       }
+
+//       return NextResponse.json({
+//         success: true,
+//         data: tableData,
+//         total: tableData.length,
+//         message: `Found ${tableData.length} order records`
+//       }, { status: 200 });
+//     }
+    
+//     // ============ CASE 3: GET LIST OF PRICING PANELS ============
+//     console.log("📋 Fetching pricing panel list");
+    
+//     const pricingPanels = await PricingPanel.find({ 
+//       companyId: user.companyId,
+//       status: 'Active'
+//     })
+//     .select('pricingSerialNo date branchName partyName totalWeight totalAmount rateApproval.approvalStatus orders')
+//     .sort({ createdAt: -1 })
+//     .lean();
+
+//     const formattedPanels = pricingPanels.map(panel => {
+//       const vnns = new Set();
+//       if (panel.orders && panel.orders.length > 0) {
+//         panel.orders.forEach(order => {
+//           if (order.vehicleNegotiationId) {
+//             vnns.add(order.vehicleNegotiationId.toString().slice(-6));
+//           }
+//         });
+//       }
+
+//       return {
+//         _id: panel._id,
+//         pricingSerialNo: panel.pricingSerialNo,
+//         date: panel.date ? new Date(panel.date).toISOString().split('T')[0] : '',
+//         branchName: panel.branchName || 'N/A',
+//         partyName: panel.partyName || 'N/A',
+//         totalWeight: panel.totalWeight || 0,
+//         totalAmount: panel.totalAmount || 0,
+//         approvalStatus: panel.rateApproval?.approvalStatus || 'Pending',
+//         vnnCount: vnns.size,
+//         vnnList: Array.from(vnns)
+//       };
+//     });
+
+//     return NextResponse.json({
+//       success: true,
+//       data: formattedPanels,
+//       total: formattedPanels.length
+//     }, { status: 200 });
+
+//   } catch (error) {
+//     console.error("❌ GET /pricing-panel error:", error);
+//     return NextResponse.json({ 
+//       success: false, 
+//       message: "Failed to fetch pricing panels",
+//       error: error.message 
+//     }, { status: 500 });
 //   }
 // }
 
 // /* ========================================
-//    POST /api/pricing-panel - Create New Pricing Panel
+//    POST /api/pricing-panel - Requires 'create' permission
 // ======================================== */
 // export async function POST(req) {
 //   await connectDb();
-//   const { user, error, status } = await validateUser(req);
-//   if (error) return NextResponse.json({ success: false, message: error }, { status });
+//   const { user, error, status } = await validateUser(req, 'create');
+//   if (error) {
+//     return NextResponse.json({ 
+//       success: false, 
+//       message: error,
+//       code: status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN'
+//     }, { status });
+//   }
 
 //   try {
 //     const body = await req.json();
     
 //     console.log("📝 Creating new pricing panel");
     
-//     // ✅ Generate Pricing Serial Number
+//     // Generate Pricing Serial Number
 //     let pricingSerialNo = await getNextPricingSerialNumber(user.companyId);
     
 //     // Check if Pricing Serial Number already exists
@@ -59,7 +335,7 @@
 //       pricingSerialNo = await getNextPricingSerialNumber(user.companyId);
 //     }
 
-//     // ✅ Handle branch - it could be an ID string or an object from frontend
+//     // Handle branch - it could be an ID string or an object from frontend
 //     let branchId = null;
 //     let branchName = '';
 //     let branchCode = '';
@@ -81,12 +357,7 @@
 //       }
 //     }
 
-//     // ✅ Helper function to validate ObjectId
-//     function isValidObjectId(id) {
-//       return id && mongoose.Types.ObjectId.isValid(id);
-//     }
-
-//     // ✅ Validate and process orders from the 'orders' array
+//     // Validate and process orders from the 'orders' array
 //     const orders = [];
     
 //     if (body.orders && Array.isArray(body.orders)) {
@@ -98,7 +369,7 @@
 //           continue;
 //         }
         
-//         // ✅ Handle vehicleNegotiationId properly
+//         // Handle vehicleNegotiationId properly
 //         let vehicleNegotiationId = null;
 //         if (order.vehicleNegotiationId) {
 //           if (typeof order.vehicleNegotiationId === 'object' && order.vehicleNegotiationId !== null) {
@@ -141,7 +412,6 @@
 //           district: order.district || '',
 //           districtName: district ? district.name : order.districtName || '',
 //           districtId: order.districtId || null,
-//           // TALUKA FIELDS - Properly mapped
 //           taluka: order.taluka || '',
 //           talukaName: taluka ? taluka.name : (order.talukaName || order.taluka || ''),
 //           talukaId: order.talukaId || null,
@@ -149,7 +419,7 @@
 //           fromName: fromBranch ? fromBranch.name : order.fromName || '',
 //           to: order.to || null,
 //           toName: toBranch ? toBranch.name : order.toName || '',
-//           locationRate: order.locationRate || '',  // Store as string, not number
+//           locationRate: order.locationRate || '',
 //           priceList: order.priceList || '',
 //           weight: parseFloat(order.weight) || 0,
 //           rate: parseFloat(order.rate) || 0,
@@ -158,7 +428,7 @@
 //       }
 //     }
     
-//     // ✅ Check if we have at least one valid order
+//     // Check if we have at least one valid order
 //     if (orders.length === 0) {
 //       return NextResponse.json({ 
 //         success: false, 
@@ -166,11 +436,11 @@
 //       }, { status: 400 });
 //     }
 
-//     // ✅ Calculate totals
+//     // Calculate totals
 //     const totalAmount = orders.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
 //     const totalWeight = orders.reduce((sum, order) => sum + (order.weight || 0), 0);
 
-//     // ✅ Handle customerId
+//     // Handle customerId
 //     let customerId = null;
 //     if (body.header?.customerId) {
 //       if (typeof body.header.customerId === 'object' && body.header.customerId !== null && body.header.customerId._id) {
@@ -182,7 +452,7 @@
 //       }
 //     }
 
-//     // ✅ Create pricing report rows - WITH TALUKA
+//     // Create pricing report rows
 //     const reportRows = orders.map(order => ({
 //       date: body.header?.date ? new Date(body.header.date) : new Date(),
 //       pricingSerialNo: pricingSerialNo,
@@ -201,7 +471,7 @@
 //       approval: body.rateApproval?.approvalStatus || 'Pending'
 //     }));
 
-//     // ✅ Handle billing charges - convert to appropriate types
+//     // Handle billing charges - convert to appropriate types
 //     const cancellationCharges = typeof body.billing?.cancellationCharges === 'number' 
 //       ? body.billing.cancellationCharges.toString() 
 //       : (body.billing?.cancellationCharges || 'Nil');
@@ -214,7 +484,7 @@
 //       ? body.billing.otherCharges.toString()
 //       : (body.billing?.otherCharges || 'Nil');
 
-//     // ✅ Create new pricing panel document
+//     // Create new pricing panel document
 //     const newPricingPanel = new PricingPanel({
 //       pricingSerialNo,
 //       branch: branchId,
@@ -293,12 +563,18 @@
 // }
 
 // /* ========================================
-//    PUT /api/pricing-panel - Update Pricing Panel
+//    PUT /api/pricing-panel - Requires 'edit' permission
 // ======================================== */
 // export async function PUT(req) {
 //   await connectDb();
-//   const { user, error, status } = await validateUser(req);
-//   if (error) return NextResponse.json({ success: false, message: error }, { status });
+//   const { user, error, status } = await validateUser(req, 'edit');
+//   if (error) {
+//     return NextResponse.json({ 
+//       success: false, 
+//       message: error,
+//       code: status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN'
+//     }, { status });
+//   }
 
 //   try {
 //     const body = await req.json();
@@ -314,7 +590,7 @@
 //     console.log(`📝 Updating pricing panel: ${id}`);
     
 //     // Validate ID format
-//     if (!mongoose.Types.ObjectId.isValid(id)) {
+//     if (!isValidObjectId(id)) {
 //       return NextResponse.json({ 
 //         success: false, 
 //         message: "Invalid pricing panel ID format" 
@@ -371,10 +647,10 @@
 //       }
 //     }
 
-//     // Update orders - WITH COMPLETE TALUKA FIELDS
+//     // Update orders with complete fields
 //     if (body.orders) {
 //       const processedOrders = body.orders.map(order => ({
-//         _id: order._id && mongoose.Types.ObjectId.isValid(order._id) 
+//         _id: order._id && isValidObjectId(order._id) 
 //           ? new mongoose.Types.ObjectId(order._id) 
 //           : new mongoose.Types.ObjectId(),
 //         orderNo: order.orderNo || '',
@@ -396,7 +672,6 @@
 //         district: order.district || '',
 //         districtName: order.districtName || '',
 //         districtId: order.districtId || null,
-//         // TALUKA FIELDS - Properly mapped
 //         taluka: order.taluka || '',
 //         talukaName: order.talukaName || order.taluka || '',
 //         talukaId: order.talukaId || null,
@@ -404,7 +679,7 @@
 //         fromName: order.fromName || '',
 //         to: order.to || null,
 //         toName: order.toName || '',
-//        locationRate: order.locationRate || '',  // Store as string
+//         locationRate: order.locationRate || '',
 //         priceList: order.priceList || '',
 //         weight: parseFloat(order.weight) || 0,
 //         rate: parseFloat(order.rate) || 0,
@@ -412,6 +687,8 @@
 //       }));
       
 //       pricingPanel.orders = processedOrders;
+//       pricingPanel.totalWeight = processedOrders.reduce((sum, order) => sum + (order.weight || 0), 0);
+//       pricingPanel.totalAmount = processedOrders.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
 //     }
 
 //     // Update rate approval
@@ -456,243 +733,16 @@
 // }
 
 // /* ========================================
-//    GET /api/pricing-panel - Get Pricing Panels
-// ======================================== */
-// export async function GET(req) {
-//   await connectDb();
-//   const { user, error, status } = await validateUser(req);
-//   if (error) {
-//     return NextResponse.json({ 
-//       success: false, 
-//       message: error 
-//     }, { status });
-//   }
-
-//   try {
-//     const url = new URL(req.url);
-//     const id = url.searchParams.get("id");
-//     const format = url.searchParams.get("format");
-    
-//     // ============ CASE 1: GET SINGLE PRICING PANEL BY ID ============
-//     if (id) {
-//       console.log(`📄 Fetching pricing panel by ID: ${id}`);
-      
-//       if (!mongoose.Types.ObjectId.isValid(id)) {
-//         return NextResponse.json({ 
-//           success: false, 
-//           message: "Invalid pricing panel ID format" 
-//         }, { status: 400 });
-//       }
-      
-//       const pricingPanel = await PricingPanel.findOne({
-//         _id: id,
-//         companyId: user.companyId
-//       }).lean();
-
-//       if (!pricingPanel) {
-//         return NextResponse.json({ 
-//           success: false, 
-//           message: "Pricing panel not found" 
-//         }, { status: 404 });
-//       }
-
-//       return NextResponse.json({ 
-//         success: true, 
-//         data: pricingPanel 
-//       }, { status: 200 });
-//     }
-    
-//     // ============ CASE 2: TABLE FORMAT FOR REPORT ============
-//     if (format === 'table') {
-//       console.log("📋 Fetching pricing panels for table report");
-      
-//       let query = { 
-//         companyId: user.companyId,
-//         status: 'Active'
-//       };
-
-//       // Apply filters from query params
-//       if (url.searchParams.get("search")) {
-//         const search = url.searchParams.get("search");
-//         query.$or = [
-//           { pricingSerialNo: { $regex: search, $options: 'i' } },
-//           { partyName: { $regex: search, $options: 'i' } },
-//           { branchName: { $regex: search, $options: 'i' } }
-//         ];
-//       }
-      
-//       if (url.searchParams.get("pricingStatus")) {
-//         // This would need to be handled in reportRows
-//       }
-      
-//       if (url.searchParams.get("approvalStatus")) {
-//         query['rateApproval.approvalStatus'] = url.searchParams.get("approvalStatus");
-//       }
-      
-//       if (url.searchParams.get("fromDate")) {
-//         query.date = { $gte: new Date(url.searchParams.get("fromDate")) };
-//       }
-      
-//       if (url.searchParams.get("toDate")) {
-//         query.date = { ...query.date, $lte: new Date(url.searchParams.get("toDate")) };
-//       }
-
-//       const pricingPanels = await PricingPanel.find(query)
-//         .sort({ date: -1, createdAt: -1 })
-//         .lean();
-
-//       console.log(`Found ${pricingPanels.length} pricing panels`);
-
-//       const formatDateDDMMYYYY = (date) => {
-//         if (!date) return '';
-//         const d = new Date(date);
-//         if (isNaN(d.getTime())) return '';
-//         const day = String(d.getDate()).padStart(2, '0');
-//         const month = String(d.getMonth() + 1).padStart(2, '0');
-//         const year = d.getFullYear();
-//         return `${day}/${month}/${year}`;
-//       };
-
-//       const getVNNNumber = async (vehicleNegotiationId) => {
-//         if (!vehicleNegotiationId) return null;
-//         try {
-//           const VehicleNegotiation = mongoose.models.VehicleNegotiation;
-//           if (VehicleNegotiation) {
-//             const vn = await VehicleNegotiation.findById(vehicleNegotiationId).select('vnnNo').lean();
-//             return vn?.vnnNo || null;
-//           }
-//         } catch (err) {
-//           console.error('Error fetching VNN:', err);
-//         }
-//         return null;
-//       };
-
-//       const tableData = [];
-      
-//       for (const panel of pricingPanels) {
-//         const formattedDate = panel.date ? formatDateDDMMYYYY(panel.date) : '';
-        
-//         if (panel.orders && panel.orders.length > 0) {
-//           for (const order of panel.orders) {
-//             const reportRow = panel.reportRows?.find(r => r.order === order.orderNo);
-            
-//             let vnnNumber = null;
-//             if (order.vehicleNegotiationId) {
-//               vnnNumber = await getVNNNumber(order.vehicleNegotiationId);
-//             }
-            
-//             tableData.push({
-//               panelId: panel._id.toString(),
-//               date: formattedDate,
-//               pricingSerialNo: panel.pricingSerialNo || '',
-//               vnn: vnnNumber || '-',
-//               orderNo: order.orderNo || '',
-//               partyName: order.partyName || panel.partyName || '',
-//               plantCode: order.plantName || '',
-//               orderType: order.orderType || '',
-//               pinCode: order.pinCode || '',
-//               taluka: order.talukaName || order.taluka || '-',
-//               state: order.stateName || '',
-//               district: order.districtName || '',
-//               from: order.fromName || '',
-//               to: order.toName || '',
-//               weight: order.weight || 0,
-//               pricing: reportRow?.pricing || panel.reportRows?.[0]?.pricing || 'Pending',
-//               approval: panel.rateApproval?.approvalStatus || 'Pending',
-//               branchName: panel.branchName || ''
-//             });
-//           }
-//         } else {
-//           tableData.push({
-//             panelId: panel._id.toString(),
-//             date: formattedDate,
-//             pricingSerialNo: panel.pricingSerialNo || '',
-//             vnn: '-',
-//             orderNo: '',
-//             partyName: panel.partyName || '',
-//             plantCode: '',
-//             orderType: '',
-//             pinCode: '',
-//             taluka: '-',
-//             state: '',
-//             district: '',
-//             from: '',
-//             to: '',
-//             weight: 0,
-//             pricing: panel.reportRows?.[0]?.pricing || 'Pending',
-//             approval: panel.rateApproval?.approvalStatus || 'Pending',
-//             branchName: panel.branchName || ''
-//           });
-//         }
-//       }
-
-//       return NextResponse.json({
-//         success: true,
-//         data: tableData,
-//         message: `Found ${tableData.length} order records`
-//       }, { status: 200 });
-//     }
-    
-//     // ============ CASE 3: GET LIST OF PRICING PANELS ============
-//     console.log("📋 Fetching pricing panel list");
-    
-//     const pricingPanels = await PricingPanel.find({ 
-//       companyId: user.companyId,
-//       status: 'Active'
-//     })
-//     .select('pricingSerialNo date branchName partyName totalWeight totalAmount rateApproval.approvalStatus orders')
-//     .sort({ createdAt: -1 })
-//     .lean();
-
-//     const formattedPanels = pricingPanels.map(panel => {
-//       const vnns = new Set();
-//       if (panel.orders && panel.orders.length > 0) {
-//         panel.orders.forEach(order => {
-//           if (order.vehicleNegotiationId) {
-//             vnns.add(order.vehicleNegotiationId.toString().slice(-6));
-//           }
-//         });
-//       }
-
-//       return {
-//         _id: panel._id,
-//         pricingSerialNo: panel.pricingSerialNo,
-//         date: panel.date ? new Date(panel.date).toISOString().split('T')[0] : '',
-//         branchName: panel.branchName || 'N/A',
-//         partyName: panel.partyName || 'N/A',
-//         totalWeight: panel.totalWeight || 0,
-//         totalAmount: panel.totalAmount || 0,
-//         approvalStatus: panel.rateApproval?.approvalStatus || 'Pending',
-//         vnnCount: vnns.size,
-//         vnnList: Array.from(vnns)
-//       };
-//     });
-
-//     return NextResponse.json({
-//       success: true,
-//       data: formattedPanels
-//     }, { status: 200 });
-
-//   } catch (error) {
-//     console.error("❌ GET /pricing-panel error:", error);
-//     return NextResponse.json({ 
-//       success: false, 
-//       message: "Failed to fetch pricing panels",
-//       error: error.message 
-//     }, { status: 500 });
-//   }
-// }
-
-// /* ========================================
-//    DELETE /api/pricing-panel - Delete Pricing Panel
+//    DELETE /api/pricing-panel - Requires 'delete' permission
 // ======================================== */
 // export async function DELETE(req) {
 //   await connectDb();
-//   const { user, error, status } = await validateUser(req);
+//   const { user, error, status } = await validateUser(req, 'delete');
 //   if (error) {
 //     return NextResponse.json({ 
 //       success: false, 
-//       message: error 
+//       message: error,
+//       code: status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN'
 //     }, { status });
 //   }
 
@@ -709,7 +759,7 @@
 
 //     console.log(`🗑️ Deleting pricing panel: ${id}`);
     
-//     if (!mongoose.Types.ObjectId.isValid(id)) {
+//     if (!isValidObjectId(id)) {
 //       return NextResponse.json({ 
 //         success: false, 
 //         message: "Invalid pricing panel ID format" 
@@ -763,10 +813,157 @@
 //     }, { status: 500 });
 //   }
 // }
-// /app/api/pricing-panel/route.js
+// /* ========================================
+//    PATCH /api/pricing-panel - Requires 'approve' permission
+//    Handles: approve, reject, complete, update-approval, approve-with-update
+// ======================================== */
+// export async function PATCH(req) {
+//   await connectDb();
+//   const { user, error, status } = await validateUser(req, 'approve');
+//   if (error) {
+//     return NextResponse.json({ 
+//       success: false, 
+//       message: error,
+//       code: status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN'
+//     }, { status });
+//   }
 
+//   try {
+//     const body = await req.json();
+//     const { id, action, approvalData } = body;
+    
+//     if (!id) {
+//       return NextResponse.json({ 
+//         success: false, 
+//         message: "Pricing panel ID is required" 
+//       }, { status: 400 });
+//     }
 
+//     console.log(`📝 Updating pricing panel: ${id} - Action: ${action}`);
+    
+//     if (!isValidObjectId(id)) {
+//       return NextResponse.json({ 
+//         success: false, 
+//         message: "Invalid pricing panel ID format" 
+//       }, { status: 400 });
+//     }
+    
+//     const pricingPanel = await PricingPanel.findOne({
+//       _id: id,
+//       companyId: user.companyId
+//     });
 
+//     if (!pricingPanel) {
+//       return NextResponse.json({ 
+//         success: false, 
+//         message: "Pricing panel not found" 
+//       }, { status: 404 });
+//     }
+
+//     // Handle different actions
+//     switch(action) {
+//       case 'approve':
+//         // Simple approve - only update status
+//         pricingPanel.rateApproval.approvalStatus = 'Approved';
+//         pricingPanel.panelStatus = 'Approved';
+//         break;
+        
+//       case 'reject':
+//         // Simple reject - only update status
+//         pricingPanel.rateApproval.approvalStatus = 'Rejected';
+//         pricingPanel.panelStatus = 'Rejected';
+//         break;
+        
+//       case 'complete':
+//         // Complete - update status and report rows
+//         pricingPanel.rateApproval.approvalStatus = 'Completed';
+//         pricingPanel.panelStatus = 'Completed';
+//         // Update report rows pricing status
+//         if (pricingPanel.reportRows) {
+//           pricingPanel.reportRows.forEach(row => {
+//             row.pricing = 'Completed';
+//           });
+//         }
+//         break;
+        
+//       case 'update-approval':
+//         // Update approval details without changing status
+//         if (approvalData) {
+//           const currentApproval = pricingPanel.rateApproval || {};
+          
+//           // Update only the fields that are provided
+//           if (approvalData.approvalType !== undefined) {
+//             pricingPanel.rateApproval.approvalType = approvalData.approvalType;
+//           }
+//           if (approvalData.uploadFile !== undefined) {
+//             pricingPanel.rateApproval.uploadFile = approvalData.uploadFile;
+//           }
+//           if (approvalData.remarks !== undefined) {
+//             pricingPanel.rateApproval.remarks = approvalData.remarks;
+//           }
+//           // Keep existing approvalStatus if not changing
+//           if (approvalData.approvalStatus !== undefined) {
+//             pricingPanel.rateApproval.approvalStatus = approvalData.approvalStatus;
+//           }
+//         }
+//         break;
+        
+//       case 'approve-with-update':
+//         // Approve AND update approval details
+//         if (approvalData) {
+//           if (approvalData.approvalType !== undefined) {
+//             pricingPanel.rateApproval.approvalType = approvalData.approvalType;
+//           }
+//           if (approvalData.uploadFile !== undefined) {
+//             pricingPanel.rateApproval.uploadFile = approvalData.uploadFile;
+//           }
+//           if (approvalData.remarks !== undefined) {
+//             pricingPanel.rateApproval.remarks = approvalData.remarks;
+//           }
+//         }
+//         // Set status to Approved
+//         pricingPanel.rateApproval.approvalStatus = 'Approved';
+//         pricingPanel.panelStatus = 'Approved';
+//         break;
+        
+//       default:
+//         return NextResponse.json({ 
+//           success: false, 
+//           message: "Invalid action. Allowed: approve, reject, complete, update-approval, approve-with-update" 
+//         }, { status: 400 });
+//     }
+
+//     await pricingPanel.save();
+
+//     // Return appropriate success message
+//     let successMessage = `Pricing panel ${action}d successfully`;
+//     if (action === 'update-approval') {
+//       successMessage = 'Approval details updated successfully';
+//     } else if (action === 'approve-with-update') {
+//       successMessage = 'Pricing panel approved with updates';
+//     }
+
+//     return NextResponse.json({ 
+//       success: true, 
+//       message: successMessage,
+//       data: {
+//         _id: pricingPanel._id,
+//         pricingSerialNo: pricingPanel.pricingSerialNo,
+//         approvalStatus: pricingPanel.rateApproval.approvalStatus,
+//         panelStatus: pricingPanel.panelStatus
+//       }
+//     }, { status: 200 });
+
+//   } catch (error) {
+//     console.error("❌ PATCH /pricing-panel error:", error);
+//     return NextResponse.json({ 
+//       success: false, 
+//       message: error.message || "Failed to update pricing panel"
+//     }, { status: 500 });
+//   }
+// }
+
+// app/api/pricing-panel/route.js
 import { NextResponse } from "next/server";
 import connectDb from "@/lib/db";
 import PricingPanel from "./PricingPanel";
@@ -779,13 +976,9 @@ import mongoose from 'mongoose';
 function isAuthorized(user) {
   if (!user) return false;
   
-  // Company admins have full access
   if (user.type === "company") return true;
-  
-  // Admin role has full access
   if (user.roles && user.roles.includes("Admin")) return true;
   
-  // Check module-based permissions for "Pricing Panel"
   const modules = user.modules || {};
   const moduleData = modules["Pricing Panel"];
   
@@ -879,7 +1072,6 @@ export async function GET(req) {
     const fromDate = url.searchParams.get("fromDate");
     const toDate = url.searchParams.get("toDate");
     
-    // ============ CASE 1: GET SINGLE PRICING PANEL BY ID ============
     if (id) {
       console.log(`📄 Fetching pricing panel by ID: ${id}`);
       
@@ -908,7 +1100,6 @@ export async function GET(req) {
       }, { status: 200 });
     }
     
-    // ============ CASE 2: TABLE FORMAT FOR REPORT ============
     if (format === 'table') {
       console.log("📋 Fetching pricing panels for table report");
       
@@ -917,21 +1108,20 @@ export async function GET(req) {
         status: 'Active'
       };
 
-      // Apply search filter
       if (search) {
         query.$or = [
           { pricingSerialNo: { $regex: search, $options: 'i' } },
           { partyName: { $regex: search, $options: 'i' } },
-          { branchName: { $regex: search, $options: 'i' } }
+          { branchName: { $regex: search, $options: 'i' } },
+          { subCompanyName: { $regex: search, $options: 'i' } },
+          { subCompanyCode: { $regex: search, $options: 'i' } }
         ];
       }
       
-      // Apply approval status filter
       if (approvalStatus) {
         query['rateApproval.approvalStatus'] = approvalStatus;
       }
       
-      // Apply date range filters
       if (fromDate) {
         query.date = { $gte: new Date(fromDate) };
       }
@@ -987,7 +1177,9 @@ export async function GET(req) {
               weight: order.weight || 0,
               pricing: reportRow?.pricing || panel.reportRows?.[0]?.pricing || 'Pending',
               approval: panel.rateApproval?.approvalStatus || 'Pending',
-              branchName: panel.branchName || ''
+              branchName: panel.branchName || '',
+              subCompanyName: order.subCompanyName || panel.subCompanyName || '',
+              subCompanyCode: order.subCompanyCode || panel.subCompanyCode || ''
             });
           }
         } else {
@@ -1009,7 +1201,9 @@ export async function GET(req) {
             weight: 0,
             pricing: panel.reportRows?.[0]?.pricing || 'Pending',
             approval: panel.rateApproval?.approvalStatus || 'Pending',
-            branchName: panel.branchName || ''
+            branchName: panel.branchName || '',
+            subCompanyName: panel.subCompanyName || '',
+            subCompanyCode: panel.subCompanyCode || ''
           });
         }
       }
@@ -1022,14 +1216,13 @@ export async function GET(req) {
       }, { status: 200 });
     }
     
-    // ============ CASE 3: GET LIST OF PRICING PANELS ============
     console.log("📋 Fetching pricing panel list");
     
     const pricingPanels = await PricingPanel.find({ 
       companyId: user.companyId,
       status: 'Active'
     })
-    .select('pricingSerialNo date branchName partyName totalWeight totalAmount rateApproval.approvalStatus orders')
+    .select('pricingSerialNo date branchName partyName subCompanyName subCompanyCode totalWeight totalAmount rateApproval.approvalStatus orders')
     .sort({ createdAt: -1 })
     .lean();
 
@@ -1049,6 +1242,8 @@ export async function GET(req) {
         date: panel.date ? new Date(panel.date).toISOString().split('T')[0] : '',
         branchName: panel.branchName || 'N/A',
         partyName: panel.partyName || 'N/A',
+        subCompanyName: panel.subCompanyName || '',
+        subCompanyCode: panel.subCompanyCode || '',
         totalWeight: panel.totalWeight || 0,
         totalAmount: panel.totalAmount || 0,
         approvalStatus: panel.rateApproval?.approvalStatus || 'Pending',
@@ -1092,16 +1287,14 @@ export async function POST(req) {
     
     console.log("📝 Creating new pricing panel");
     
-    // Generate Pricing Serial Number
     let pricingSerialNo = await getNextPricingSerialNumber(user.companyId);
     
-    // Check if Pricing Serial Number already exists
     const existing = await PricingPanel.findOne({ pricingSerialNo, companyId: user.companyId });
     if (existing) {
       pricingSerialNo = await getNextPricingSerialNumber(user.companyId);
     }
 
-    // Handle branch - it could be an ID string or an object from frontend
+    // Handle branch
     let branchId = null;
     let branchName = '';
     let branchCode = '';
@@ -1123,7 +1316,24 @@ export async function POST(req) {
       }
     }
 
-    // Validate and process orders from the 'orders' array
+    // Handle sub-company
+    let subCompanyId = null;
+    let subCompanyName = '';
+    let subCompanyCode = '';
+    
+    if (body.header?.subCompanyId) {
+      if (typeof body.header.subCompanyId === 'object' && body.header.subCompanyId !== null) {
+        subCompanyId = body.header.subCompanyId._id || null;
+        subCompanyName = body.header.subCompanyId.name || body.header.subCompanyName || '';
+        subCompanyCode = body.header.subCompanyId.code || body.header.subCompanyCode || '';
+      } else {
+        subCompanyId = body.header.subCompanyId;
+        subCompanyName = body.header.subCompanyName || '';
+        subCompanyCode = body.header.subCompanyCode || '';
+      }
+    }
+
+    // Process orders
     const orders = [];
     
     if (body.orders && Array.isArray(body.orders)) {
@@ -1135,7 +1345,6 @@ export async function POST(req) {
           continue;
         }
         
-        // Handle vehicleNegotiationId properly
         let vehicleNegotiationId = null;
         if (order.vehicleNegotiationId) {
           if (typeof order.vehicleNegotiationId === 'object' && order.vehicleNegotiationId !== null) {
@@ -1149,7 +1358,6 @@ export async function POST(req) {
           }
         }
         
-        // Find related data from reference arrays
         const fromBranch = body.branches?.find(b => b._id === order.from);
         const toBranch = body.branches?.find(b => b._id === order.to);
         const plant = body.plants?.find(p => p._id === order.plantCode);
@@ -1157,6 +1365,21 @@ export async function POST(req) {
         const state = body.states?.find(s => s._id === order.stateId);
         const district = body.districts?.find(d => d._id === order.districtId);
         const taluka = body.talukas?.find(t => t._id === order.talukaId);
+        
+        // Get sub-company from order or fallback to header
+        let orderSubCompanyId = null;
+        let orderSubCompanyName = '';
+        let orderSubCompanyCode = '';
+        
+        if (order.subCompanyId) {
+          orderSubCompanyId = order.subCompanyId;
+          orderSubCompanyName = order.subCompanyName || '';
+          orderSubCompanyCode = order.subCompanyCode || '';
+        } else if (subCompanyId) {
+          orderSubCompanyId = subCompanyId;
+          orderSubCompanyName = subCompanyName;
+          orderSubCompanyCode = subCompanyCode;
+        }
         
         orders.push({
           orderNo: order.orderNo,
@@ -1183,18 +1406,23 @@ export async function POST(req) {
           talukaId: order.talukaId || null,
           from: order.from || null,
           fromName: fromBranch ? fromBranch.name : order.fromName || '',
+          fromState: order.fromState || '',
           to: order.to || null,
           toName: toBranch ? toBranch.name : order.toName || '',
           locationRate: order.locationRate || '',
           priceList: order.priceList || '',
           weight: parseFloat(order.weight) || 0,
           rate: parseFloat(order.rate) || 0,
-          totalAmount: (parseFloat(order.weight) || 0) * (parseFloat(order.rate) || 0)
+          totalAmount: (parseFloat(order.weight) || 0) * (parseFloat(order.rate) || 0),
+          subCompanyId: orderSubCompanyId,
+          subCompanyName: orderSubCompanyName,
+          subCompanyCode: orderSubCompanyCode,
+          localStatus: order.localStatus || 'unknown',
+          localStatusLabel: order.localStatusLabel || 'Unknown'
         });
       }
     }
     
-    // Check if we have at least one valid order
     if (orders.length === 0) {
       return NextResponse.json({ 
         success: false, 
@@ -1202,11 +1430,9 @@ export async function POST(req) {
       }, { status: 400 });
     }
 
-    // Calculate totals
     const totalAmount = orders.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
     const totalWeight = orders.reduce((sum, order) => sum + (order.weight || 0), 0);
 
-    // Handle customerId
     let customerId = null;
     if (body.header?.customerId) {
       if (typeof body.header.customerId === 'object' && body.header.customerId !== null && body.header.customerId._id) {
@@ -1218,7 +1444,6 @@ export async function POST(req) {
       }
     }
 
-    // Create pricing report rows
     const reportRows = orders.map(order => ({
       date: body.header?.date ? new Date(body.header.date) : new Date(),
       pricingSerialNo: pricingSerialNo,
@@ -1234,10 +1459,11 @@ export async function POST(req) {
       to: order.toName || '-',
       weight: order.weight || 0,
       pricing: 'Pending',
-      approval: body.rateApproval?.approvalStatus || 'Pending'
+      approval: body.rateApproval?.approvalStatus || 'Pending',
+      subCompanyName: order.subCompanyName || subCompanyName || '',
+      subCompanyCode: order.subCompanyCode || subCompanyCode || ''
     }));
 
-    // Handle billing charges - convert to appropriate types
     const cancellationCharges = typeof body.billing?.cancellationCharges === 'number' 
       ? body.billing.cancellationCharges.toString() 
       : (body.billing?.cancellationCharges || 'Nil');
@@ -1250,18 +1476,20 @@ export async function POST(req) {
       ? body.billing.otherCharges.toString()
       : (body.billing?.otherCharges || 'Nil');
 
-    // Create new pricing panel document
     const newPricingPanel = new PricingPanel({
-      pricingSerialNo,
-      branch: branchId,
-      branchName: branchName || body.header?.branchName || '',
-      branchCode: branchCode || body.header?.branchCode || '',
-      delivery: body.header?.delivery || 'Normal',
+  pricingSerialNo,
+  branch: branchId,
+  branchName: branchName || body.header?.branchName || '',
+  branchCode: branchCode || body.header?.branchCode || '',
+  // ✅ ADD SUB-COMPANY TO HEADER
+  subCompanyId: subCompanyId,
+  subCompanyName: subCompanyName || body.header?.subCompanyName || '',
+  subCompanyCode: subCompanyCode || body.header?.subCompanyCode || '',
+  delivery: body.header?.delivery || 'Normal',
       date: body.header?.date ? new Date(body.header.date) : new Date(),
       customerId,
       partyName: body.header?.partyName || '',
       
-      // Billing Information
       billingType: body.billing?.billingType || 'Multi - Order',
       loadingPoints: parseInt(body.billing?.loadingPoints) || 1,
       dropPoints: parseInt(body.billing?.dropPoints) || 1,
@@ -1270,22 +1498,18 @@ export async function POST(req) {
       loadingCharges: loadingCharges,
       otherCharges: otherCharges,
       
-      // Orders
       orders: orders,
       totalWeight,
       totalAmount,
       
-      // Rate Approval
       rateApproval: {
         approvalType: body.rateApproval?.approvalType || 'Contract Rates',
         uploadFile: body.rateApproval?.uploadFileName || '',
         approvalStatus: body.rateApproval?.approvalStatus || 'Pending'
       },
       
-      // Report Data
       reportRows,
       
-      // Company & User Tracking
       companyId: user.companyId,
       createdBy: user.id,
       panelStatus: 'Draft',
@@ -1355,7 +1579,6 @@ export async function PUT(req) {
 
     console.log(`📝 Updating pricing panel: ${id}`);
     
-    // Validate ID format
     if (!isValidObjectId(id)) {
       return NextResponse.json({ 
         success: false, 
@@ -1363,7 +1586,6 @@ export async function PUT(req) {
       }, { status: 400 });
     }
     
-    // Find the pricing panel
     const pricingPanel = await PricingPanel.findOne({
       _id: id,
       companyId: user.companyId
@@ -1381,6 +1603,14 @@ export async function PUT(req) {
       pricingPanel.branch = body.header.branch || pricingPanel.branch;
       pricingPanel.branchName = body.header.branchName || pricingPanel.branchName;
       pricingPanel.branchCode = body.header.branchCode || pricingPanel.branchCode;
+      
+      // Update sub-company
+      if (body.header.subCompanyId !== undefined) {
+        pricingPanel.subCompanyId = body.header.subCompanyId || null;
+        pricingPanel.subCompanyName = body.header.subCompanyName || '';
+        pricingPanel.subCompanyCode = body.header.subCompanyCode || '';
+      }
+      
       pricingPanel.delivery = body.header.delivery || pricingPanel.delivery;
       pricingPanel.date = body.header.date ? new Date(body.header.date) : pricingPanel.date;
       pricingPanel.customerId = body.header.customerId || pricingPanel.customerId;
@@ -1413,7 +1643,7 @@ export async function PUT(req) {
       }
     }
 
-    // Update orders with complete fields
+    // Update orders
     if (body.orders) {
       const processedOrders = body.orders.map(order => ({
         _id: order._id && isValidObjectId(order._id) 
@@ -1443,13 +1673,19 @@ export async function PUT(req) {
         talukaId: order.talukaId || null,
         from: order.from || null,
         fromName: order.fromName || '',
+        fromState: order.fromState || '',
         to: order.to || null,
         toName: order.toName || '',
         locationRate: order.locationRate || '',
         priceList: order.priceList || '',
         weight: parseFloat(order.weight) || 0,
         rate: parseFloat(order.rate) || 0,
-        totalAmount: (parseFloat(order.weight) || 0) * (parseFloat(order.rate) || 0)
+        totalAmount: (parseFloat(order.weight) || 0) * (parseFloat(order.rate) || 0),
+        subCompanyId: order.subCompanyId || pricingPanel.subCompanyId || null,
+        subCompanyName: order.subCompanyName || pricingPanel.subCompanyName || '',
+        subCompanyCode: order.subCompanyCode || pricingPanel.subCompanyCode || '',
+        localStatus: order.localStatus || 'unknown',
+        localStatusLabel: order.localStatusLabel || 'Unknown'
       }));
       
       pricingPanel.orders = processedOrders;
@@ -1466,7 +1702,6 @@ export async function PUT(req) {
       };
     }
 
-    // Save the updated pricing panel (this will trigger pre-save hooks)
     await pricingPanel.save();
 
     console.log(`✅ Pricing panel updated successfully: ${id}`);
@@ -1579,9 +1814,9 @@ export async function DELETE(req) {
     }, { status: 500 });
   }
 }
+
 /* ========================================
    PATCH /api/pricing-panel - Requires 'approve' permission
-   Handles: approve, reject, complete, update-approval, approve-with-update
 ======================================== */
 export async function PATCH(req) {
   await connectDb();
@@ -1626,25 +1861,20 @@ export async function PATCH(req) {
       }, { status: 404 });
     }
 
-    // Handle different actions
     switch(action) {
       case 'approve':
-        // Simple approve - only update status
         pricingPanel.rateApproval.approvalStatus = 'Approved';
         pricingPanel.panelStatus = 'Approved';
         break;
         
       case 'reject':
-        // Simple reject - only update status
         pricingPanel.rateApproval.approvalStatus = 'Rejected';
         pricingPanel.panelStatus = 'Rejected';
         break;
         
       case 'complete':
-        // Complete - update status and report rows
         pricingPanel.rateApproval.approvalStatus = 'Completed';
         pricingPanel.panelStatus = 'Completed';
-        // Update report rows pricing status
         if (pricingPanel.reportRows) {
           pricingPanel.reportRows.forEach(row => {
             row.pricing = 'Completed';
@@ -1653,11 +1883,9 @@ export async function PATCH(req) {
         break;
         
       case 'update-approval':
-        // Update approval details without changing status
         if (approvalData) {
           const currentApproval = pricingPanel.rateApproval || {};
           
-          // Update only the fields that are provided
           if (approvalData.approvalType !== undefined) {
             pricingPanel.rateApproval.approvalType = approvalData.approvalType;
           }
@@ -1667,7 +1895,6 @@ export async function PATCH(req) {
           if (approvalData.remarks !== undefined) {
             pricingPanel.rateApproval.remarks = approvalData.remarks;
           }
-          // Keep existing approvalStatus if not changing
           if (approvalData.approvalStatus !== undefined) {
             pricingPanel.rateApproval.approvalStatus = approvalData.approvalStatus;
           }
@@ -1675,7 +1902,6 @@ export async function PATCH(req) {
         break;
         
       case 'approve-with-update':
-        // Approve AND update approval details
         if (approvalData) {
           if (approvalData.approvalType !== undefined) {
             pricingPanel.rateApproval.approvalType = approvalData.approvalType;
@@ -1687,7 +1913,6 @@ export async function PATCH(req) {
             pricingPanel.rateApproval.remarks = approvalData.remarks;
           }
         }
-        // Set status to Approved
         pricingPanel.rateApproval.approvalStatus = 'Approved';
         pricingPanel.panelStatus = 'Approved';
         break;
@@ -1701,7 +1926,6 @@ export async function PATCH(req) {
 
     await pricingPanel.save();
 
-    // Return appropriate success message
     let successMessage = `Pricing panel ${action}d successfully`;
     if (action === 'update-approval') {
       successMessage = 'Approval details updated successfully';

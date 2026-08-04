@@ -1,3 +1,5 @@
+       
+
 // "use client";
 
 // import { useMemo, useState, useEffect, useRef } from "react";
@@ -25,6 +27,10 @@
 // const SKU_SIZE_OPTIONS = ["20 Kgs", "10 Kgs", "1 Kgs", "100 Ltr", "200 Kgs", "1 Ltr", "20"];
 // const BOE_INVOICE_OPTIONS = ["As Per Invoice", "As Per Bill Of Entry", "NA"];
 // const STATUS_OPTIONS = ["Pending", "Approved", "Rejected", "Completed", "Draft"];
+// const LC_STATUS_OPTIONS = ["LC", "Not LC"];
+// const LR_TYPE_OPTIONS = ["Export", "Import", "Normal"];
+// const VEHICLE_REACH_OPTIONS = ["Reach", "Not Reach"];
+// const VERIFICATION_OPTIONS = ["Verified", "Not Verified"];
 
 // function uid() {
 //   return Math.random().toString(36).slice(2, 10);
@@ -182,6 +188,7 @@
 //     vendorCode: "",
 //     vendorName: "",
 //     from: "",
+//     fromState: "",
 //     to: "",
 //     taluka: "",
 //     district: "",
@@ -191,7 +198,13 @@
 //     lrNo: generateLRNo(),
 //     lrDate: getCurrentDateFormatted(),
 //     unit: "MT",
-//     status: "Pending"
+//     status: "Pending",
+//     lcStatus: "Not LC",
+//     lrType: "Normal",
+//     vehicleReach: "Not Reach",
+//     verification: "Not Verified",
+//     vehicleUnloadedDate: "",
+//     remarks: ""
 //   });
 
 //   /** =========================
@@ -457,6 +470,7 @@
 //         vendorCode: note.header?.vendorCode || "",
 //         vendorName: note.header?.vendorName || "",
 //         from: note.header?.from || "",
+//         fromState: note.header?.fromState || "",
 //         to: note.header?.to || "",
 //         taluka: note.header?.taluka || "",
 //         district: note.header?.district || "",
@@ -466,7 +480,13 @@
 //         lrNo: note.lrNo || generateLRNo(),
 //         lrDate: note.header?.lrDate || getCurrentDateFormatted(),
 //         unit: note.header?.unit || "MT",
-//         status: note.header?.status || "Pending"
+//         status: note.header?.status || "Pending",
+//         lcStatus: note.lcStatus || note.header?.lcStatus || "Not LC",
+//         lrType: note.lrType || note.header?.lrType || "Normal",
+//         vehicleReach: note.vehicleReach || note.header?.vehicleReach || "Not Reach",
+//         verification: note.verification || note.header?.verification || "Not Verified",
+//         vehicleUnloadedDate: note.vehicleUnloadedDate || note.header?.vehicleUnloadedDate || "",
+//         remarks: note.remarks || note.header?.remarks || ""
 //       });
 
 //       // Set consignor
@@ -623,6 +643,7 @@
 //       }
       
 //       let fromLocation = fullOrder.from || order.from || '';
+//       let fromState = '';
 //       let toLocation = fullOrder.to || order.to || '';
 //       let taluka = fullOrder.taluka || order.taluka || '';
 //       let district = fullOrder.district || order.district || '';
@@ -631,6 +652,7 @@
 //       if (fullOrder.plantRows && fullOrder.plantRows.length > 0) {
 //         const firstRow = fullOrder.plantRows[0];
 //         fromLocation = firstRow.fromName || firstRow.from || fromLocation;
+//         fromState = firstRow.fromState || '';
 //         toLocation = firstRow.toName || firstRow.to || toLocation;
 //         taluka = firstRow.talukaName || firstRow.taluka || taluka;
 //         district = firstRow.districtName || firstRow.district || district;
@@ -648,6 +670,7 @@
 //           plantCode: plantCode,
 //           plantName: plantName,
 //           from: fromLocation,
+//           fromState: fromState,
 //           to: toLocation,
 //           taluka: taluka,
 //           district: district,
@@ -665,6 +688,7 @@
 //           plantCode: plantCode,
 //           plantName: plantName,
 //           from: fromLocation,
+//           fromState: fromState,
 //           to: toLocation,
 //           taluka: taluka,
 //           district: district,
@@ -996,6 +1020,12 @@
 //         consignee,
 //         invoice,
 //         ewaybill,
+//         lcStatus: header.lcStatus,
+//         lrType: header.lrType,
+//         vehicleReach: header.vehicleReach,
+//         verification: header.verification,
+//         vehicleUnloadedDate: header.vehicleUnloadedDate,
+//         remarks: header.remarks,
 //         packData: {
 //           PALLETIZATION: palletizationRows,
 //           'UNIFORM - BAGS/BOXES': uniformRows,
@@ -1088,6 +1118,10 @@
 //             </div>
 //             <div className="text-xs text-slate-500 mt-0.5 flex items-center gap-2 flex-wrap">
 //               <span>Status: {header.status}</span>
+//               <span>|</span>
+//               <span>LC: {header.lcStatus}</span>
+//               <span>|</span>
+//               <span>LR Type: {header.lrType}</span>
 //               {isReadOnly && (
 //                 <span className="text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full text-xs">
 //                   🔒 Read Only Mode - Data loaded from Order
@@ -1150,7 +1184,6 @@
 //                   onBlur={handleOrderInputBlur}
 //                   className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 pr-8"
 //                   placeholder="Search order no..."
-               
 //                 />
 //                 {ordersLoading && (
 //                   <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
@@ -1263,6 +1296,70 @@
 //                 readOnly
 //                 className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm outline-none cursor-not-allowed"
 //               />
+//             </div>
+
+//             {/* LC/Not LC Dropdown */}
+//             <div className="col-span-12 md:col-span-2">
+//               <label className="text-xs font-bold text-slate-600">LC / Not LC</label>
+//               <select
+//                 value={header.lcStatus}
+//                 onChange={(e) => setHeader({ ...header, lcStatus: e.target.value })}
+//                 disabled={isReadOnly}
+//                 className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 ${isReadOnly ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
+//               >
+//                 {LC_STATUS_OPTIONS.map((opt) => (
+//                   <option key={opt} value={opt}>{opt}</option>
+//                 ))}
+//               </select>
+//               <div className="text-xs text-slate-400 mt-1">Letter of Credit status</div>
+//             </div>
+
+//             {/* LR Type Dropdown */}
+//             <div className="col-span-12 md:col-span-2">
+//               <label className="text-xs font-bold text-slate-600">LR Type</label>
+//               <select
+//                 value={header.lrType}
+//                 onChange={(e) => setHeader({ ...header, lrType: e.target.value })}
+//                 disabled={isReadOnly}
+//                 className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 ${isReadOnly ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
+//               >
+//                 {LR_TYPE_OPTIONS.map((opt) => (
+//                   <option key={opt} value={opt}>{opt}</option>
+//                 ))}
+//               </select>
+//               <div className="text-xs text-slate-400 mt-1">Export / Import / Normal</div>
+//             </div>
+
+//             {/* Vehicle Reach Dropdown */}
+//             <div className="col-span-12 md:col-span-2">
+//               <label className="text-xs font-bold text-slate-600">Vehicle Reach</label>
+//               <select
+//                 value={header.vehicleReach}
+//                 onChange={(e) => setHeader({ ...header, vehicleReach: e.target.value })}
+//                 disabled={isReadOnly}
+//                 className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 ${isReadOnly ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
+//               >
+//                 {VEHICLE_REACH_OPTIONS.map((opt) => (
+//                   <option key={opt} value={opt}>{opt}</option>
+//                 ))}
+//               </select>
+//               <div className="text-xs text-slate-400 mt-1">Vehicle reached or not</div>
+//             </div>
+
+//             {/* Verification Dropdown */}
+//             <div className="col-span-12 md:col-span-2">
+//               <label className="text-xs font-bold text-slate-600">Verification</label>
+//               <select
+//                 value={header.verification}
+//                 onChange={(e) => setHeader({ ...header, verification: e.target.value })}
+//                 disabled={isReadOnly}
+//                 className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 ${isReadOnly ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
+//               >
+//                 {VERIFICATION_OPTIONS.map((opt) => (
+//                   <option key={opt} value={opt}>{opt}</option>
+//                 ))}
+//               </select>
+//               <div className="text-xs text-slate-400 mt-1">Verified or not</div>
 //             </div>
 
 //             <div className="col-span-12 md:col-span-2">
@@ -1701,7 +1798,6 @@
 //                 <select
 //                   value={invoice.boeInvoice}
 //                   onChange={(e) => setInvoice({ ...invoice, boeInvoice: e.target.value })}
-                  
 //                   className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 `}
 //                 >
 //                   {BOE_INVOICE_OPTIONS.map((opt) => (
@@ -1716,7 +1812,6 @@
 //                   type="text"
 //                   value={invoice.boeInvoiceNo}
 //                   onChange={(e) => setInvoice({ ...invoice, boeInvoiceNo: e.target.value })}
-                  
 //                   className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 `}
 //                   placeholder="DC20004623"
 //                 />
@@ -1728,7 +1823,6 @@
 //                   type="text"
 //                   value={invoice.boeInvoiceDate}
 //                   onChange={(e) => setInvoice({ ...invoice, boeInvoiceDate: e.target.value })}
-                
 //                   className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 `}
 //                   placeholder="DD.MM.YYYY"
 //                 />
@@ -1740,7 +1834,6 @@
 //                   type="text"
 //                   value={invoice.invoiceValue}
 //                   onChange={(e) => setInvoice({ ...invoice, invoiceValue: e.target.value })}
-                  
 //                   className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 `}
 //                   placeholder="1589233"
 //                 />
@@ -1759,7 +1852,6 @@
 //                   type="text"
 //                   value={ewaybill.ewaybillNo}
 //                   onChange={(e) => setEwaybill({ ...ewaybill, ewaybillNo: e.target.value })}
-                 
 //                   className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 `}
 //                   placeholder="5641 3563 6264"
 //                 />
@@ -1771,7 +1863,6 @@
 //                   type="text"
 //                   value={ewaybill.expiryDate}
 //                   onChange={(e) => setEwaybill({ ...ewaybill, expiryDate: e.target.value })}
-                  
 //                   className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 `}
 //                   placeholder="DD.MM.YYYY"
 //                 />
@@ -1783,7 +1874,6 @@
 //                   type="text"
 //                   value={ewaybill.containerNo}
 //                   onChange={(e) => setEwaybill({ ...ewaybill, containerNo: e.target.value })}
-                 
 //                   className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 `}
 //                   placeholder="TEU8753185M"
 //                 />
@@ -1868,7 +1958,7 @@
 //                           <option value="">Select</option>
 //                           {PKGS_TYPE_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
 //                         </select>
-//                        </td>
+//                       </td>
 //                       <td className="border border-yellow-300 px-2 py-2">
 //                         <select
 //                           value={row.uom}
@@ -1878,7 +1968,7 @@
 //                         >
 //                           {UOM_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
 //                         </select>
-//                        </td>
+//                       </td>
 //                       <td className="border border-yellow-300 px-2 py-2">
 //                         <select
 //                           value={row.skuSize}
@@ -1889,7 +1979,7 @@
 //                           <option value="">Select</option>
 //                           {SKU_SIZE_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
 //                         </select>
-//                        </td>
+//                       </td>
 //                       <td className="border border-yellow-300 px-2 py-2">
 //                         <input
 //                           type="text"
@@ -1898,7 +1988,7 @@
 //                           readOnly={isReadOnly}
 //                           className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
 //                         />
-//                        </td>
+//                       </td>
 //                       <td className="border border-yellow-300 px-2 py-2">
 //                         <select
 //                           value={row.productName}
@@ -1909,7 +1999,7 @@
 //                           <option value="">Select</option>
 //                           {PRODUCT_NAME_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
 //                         </select>
-//                        </td>
+//                       </td>
 //                       <td className="border border-yellow-300 px-2 py-2">
 //                         <input
 //                           type="text"
@@ -1918,7 +2008,7 @@
 //                           readOnly={isReadOnly}
 //                           className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
 //                         />
-//                        </td>
+//                       </td>
 //                       <td className="border border-yellow-300 px-2 py-2">
 //                         <input
 //                           type="text"
@@ -1927,7 +2017,7 @@
 //                           readOnly={isReadOnly}
 //                           className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
 //                         />
-//                        </td>
+//                       </td>
 //                       <td className="border border-yellow-300 px-2 py-2">
 //                         <input
 //                           type="text"
@@ -1936,7 +2026,7 @@
 //                           readOnly={isReadOnly}
 //                           className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
 //                         />
-//                        </td>
+//                       </td>
 //                       <td className="border border-yellow-300 px-2 py-2">
 //                         <select
 //                           value={row.wtUom}
@@ -1946,7 +2036,7 @@
 //                         >
 //                           {UOM_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
 //                         </select>
-//                        </td>
+//                       </td>
 //                       {!isReadOnly && (
 //                         <td className="border border-yellow-300 px-2 py-2 text-center">
 //                           {palletizationRows.length > 1 && (
@@ -2010,7 +2100,7 @@
 //                           readOnly={isReadOnly}
 //                           className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
 //                         />
-//                        </td>
+//                       </td>
 //                       <td className="border border-yellow-300 px-2 py-2">
 //                         <select
 //                           value={row.pkgsType}
@@ -2021,7 +2111,7 @@
 //                           <option value="">Select</option>
 //                           {PKGS_TYPE_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
 //                         </select>
-//                        </td>
+//                       </td>
 //                       <td className="border border-yellow-300 px-2 py-2">
 //                         <select
 //                           value={row.uom}
@@ -2031,7 +2121,7 @@
 //                         >
 //                           {UOM_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
 //                         </select>
-//                        </td>
+//                       </td>
 //                       <td className="border border-yellow-300 px-2 py-2">
 //                         <select
 //                           value={row.skuSize}
@@ -2042,7 +2132,7 @@
 //                           <option value="">Select</option>
 //                           {SKU_SIZE_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
 //                         </select>
-//                        </td>
+//                       </td>
 //                       <td className="border border-yellow-300 px-2 py-2">
 //                         <input
 //                           type="text"
@@ -2051,7 +2141,7 @@
 //                           readOnly={isReadOnly}
 //                           className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
 //                         />
-//                        </td>
+//                       </td>
 //                       <td className="border border-yellow-300 px-2 py-2">
 //                         <select
 //                           value={row.productName}
@@ -2062,7 +2152,7 @@
 //                           <option value="">Select</option>
 //                           {PRODUCT_NAME_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
 //                         </select>
-//                        </td>
+//                       </td>
 //                       <td className="border border-yellow-300 px-2 py-2">
 //                         <input
 //                           type="text"
@@ -2071,7 +2161,7 @@
 //                           readOnly={isReadOnly}
 //                           className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
 //                         />
-//                        </td>
+//                       </td>
 //                       <td className="border border-yellow-300 px-2 py-2">
 //                         <input
 //                           type="text"
@@ -2080,7 +2170,7 @@
 //                           readOnly={isReadOnly}
 //                           className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
 //                         />
-//                        </td>
+//                       </td>
 //                       <td className="border border-yellow-300 px-2 py-2">
 //                         <input
 //                           type="text"
@@ -2089,7 +2179,7 @@
 //                           readOnly={isReadOnly}
 //                           className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
 //                         />
-//                        </td>
+//                       </td>
 //                       <td className="border border-yellow-300 px-2 py-2">
 //                         <select
 //                           value={row.wtUom}
@@ -2099,7 +2189,7 @@
 //                         >
 //                           {UOM_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
 //                         </select>
-//                        </td>
+//                       </td>
 //                       {!isReadOnly && (
 //                         <td className="border border-yellow-300 px-2 py-2 text-center">
 //                           {uniformRows.length > 1 && (
@@ -2158,7 +2248,7 @@
 //                         >
 //                           {UOM_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
 //                         </select>
-//                        </td>
+//                       </td>
 //                       <td className="border border-yellow-300 px-2 py-2">
 //                         <select
 //                           value={row.productName}
@@ -2169,7 +2259,7 @@
 //                           <option value="">Select</option>
 //                           {PRODUCT_NAME_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
 //                         </select>
-//                        </td>
+//                       </td>
 //                       <td className="border border-yellow-300 px-2 py-2">
 //                         <input
 //                           type="text"
@@ -2178,7 +2268,7 @@
 //                           readOnly={isReadOnly}
 //                           className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
 //                         />
-//                        </td>
+//                       </td>
 //                       <td className="border border-yellow-300 px-2 py-2">
 //                         <input
 //                           type="text"
@@ -2187,7 +2277,7 @@
 //                           readOnly={isReadOnly}
 //                           className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
 //                         />
-//                        </td>
+//                       </td>
 //                       {!isReadOnly && (
 //                         <td className="border border-yellow-300 px-2 py-2 text-center">
 //                           {looseCargoRows.length > 1 && (
@@ -2249,7 +2339,7 @@
 //                           readOnly={isReadOnly}
 //                           className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
 //                         />
-//                        </td>
+//                       </td>
 //                       <td className="border border-yellow-300 px-2 py-2">
 //                         <select
 //                           value={row.productName}
@@ -2260,7 +2350,7 @@
 //                           <option value="">Select</option>
 //                           {PRODUCT_NAME_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
 //                         </select>
-//                        </td>
+//                       </td>
 //                       <td className="border border-yellow-300 px-2 py-2">
 //                         <select
 //                           value={row.uom}
@@ -2270,7 +2360,7 @@
 //                         >
 //                           {UOM_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
 //                         </select>
-//                        </td>
+//                       </td>
 //                       <td className="border border-yellow-300 px-2 py-2">
 //                         <input
 //                           type="text"
@@ -2279,7 +2369,7 @@
 //                           readOnly={isReadOnly}
 //                           className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
 //                         />
-//                        </td>
+//                       </td>
 //                       <td className="border border-yellow-300 px-2 py-2">
 //                         <input
 //                           type="text"
@@ -2288,7 +2378,7 @@
 //                           readOnly={isReadOnly}
 //                           className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
 //                         />
-//                        </td>
+//                       </td>
 //                       <td className="border border-yellow-300 px-2 py-2">
 //                         <input
 //                           type="text"
@@ -2297,7 +2387,7 @@
 //                           readOnly={isReadOnly}
 //                           className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
 //                         />
-//                        </td>
+//                       </td>
 //                       <td className="border border-yellow-300 px-2 py-2">
 //                         <input
 //                           type="text"
@@ -2306,7 +2396,7 @@
 //                           readOnly={isReadOnly}
 //                           className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
 //                         />
-//                        </td>
+//                       </td>
 //                       <td className="border border-yellow-300 px-2 py-2">
 //                         <input
 //                           type="text"
@@ -2315,7 +2405,7 @@
 //                           readOnly={isReadOnly}
 //                           className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
 //                         />
-//                        </td>
+//                       </td>
 //                       {!isReadOnly && (
 //                         <td className="border border-yellow-300 px-2 py-2 text-center">
 //                           {nonUniformRows.length > 1 && (
@@ -2336,11 +2426,43 @@
 //           </Card>
 //         </div>
 
+//         {/* ===== Vehicle Unloaded Date & Remarks Section ===== */}
+//         <div className="mt-4">
+//           <Card title="Vehicle Unloaded & Remarks">
+//             <div className="grid grid-cols-12 gap-4">
+//               <div className="col-span-12 md:col-span-4">
+//                 <label className="text-xs font-bold text-slate-600">Vehicle Unloaded Date</label>
+//                 <input
+//                   type="date"
+//                   value={header.vehicleUnloadedDate}
+//                   onChange={(e) => setHeader({ ...header, vehicleUnloadedDate: e.target.value })}
+//                   readOnly={isReadOnly}
+//                   className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 ${isReadOnly ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
+//                 />
+//                 <div className="text-xs text-slate-400 mt-1">Date when vehicle was unloaded</div>
+//               </div>
+              
+//               <div className="col-span-12 md:col-span-8">
+//                 <label className="text-xs font-bold text-slate-600">Remarks / Notes</label>
+//                 <textarea
+//                   value={header.remarks}
+//                   onChange={(e) => setHeader({ ...header, remarks: e.target.value })}
+//                   readOnly={isReadOnly}
+//                   rows={3}
+//                   className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 ${isReadOnly ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
+//                   placeholder="Enter any additional remarks or notes..."
+//                 />
+//                 <div className="text-xs text-slate-400 mt-1">Optional: Add any special instructions or notes</div>
+//               </div>
+//             </div>
+//           </Card>
+//         </div>
+
 //         {/* ===== Summary Card ===== */}
 //         <div className="mt-4">
 //           <Card title="Summary">
 //             <div className="grid grid-cols-12 gap-4">
-//               <div className="col-span-12 md:col-span-4">
+//               <div className="col-span-12 md:col-span-3">
 //                 <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-200">
 //                   <h3 className="text-sm font-bold text-slate-800 mb-3">Order Summary</h3>
 //                   <div className="space-y-2">
@@ -2353,6 +2475,16 @@
 //                       <span className="font-bold text-blue-800">{header.partyName || 'N/A'}</span>
 //                     </div>
 //                     <div className="flex justify-between">
+//                       <span className="text-sm text-slate-600">LC Status:</span>
+//                       <span className={`font-bold ${header.lcStatus === 'LC' ? 'text-green-600' : 'text-orange-600'}`}>
+//                         {header.lcStatus || 'N/A'}
+//                       </span>
+//                     </div>
+//                     <div className="flex justify-between">
+//                       <span className="text-sm text-slate-600">LR Type:</span>
+//                       <span className="font-bold text-blue-800">{header.lrType || 'Normal'}</span>
+//                     </div>
+//                     <div className="flex justify-between">
 //                       <span className="text-sm text-slate-600">From - To:</span>
 //                       <span className="font-bold text-blue-800">{header.from || 'N/A'} → {header.to || 'N/A'}</span>
 //                     </div>
@@ -2360,7 +2492,7 @@
 //                 </div>
 //               </div>
 
-//               <div className="col-span-12 md:col-span-4">
+//               <div className="col-span-12 md:col-span-3">
 //                 <div className="bg-gradient-to-br from-amber-50 to-yellow-50 p-4 rounded-xl border border-amber-200">
 //                   <h3 className="text-sm font-bold text-slate-800 mb-3">Vehicle Summary</h3>
 //                   <div className="space-y-2">
@@ -2368,6 +2500,18 @@
 //                       <span className="text-sm text-slate-600">Vehicle No:</span>
 //                       <span className={`font-bold ${header.vehicleNo && header.vehicleNo !== 'N/A' ? 'text-green-700' : 'text-amber-800'}`}>
 //                         {header.vehicleNo || 'N/A'}
+//                       </span>
+//                     </div>
+//                     <div className="flex justify-between">
+//                       <span className="text-sm text-slate-600">Vehicle Reach:</span>
+//                       <span className={`font-bold ${header.vehicleReach === 'Reach' ? 'text-green-600' : 'text-red-600'}`}>
+//                         {header.vehicleReach || 'N/A'}
+//                       </span>
+//                     </div>
+//                     <div className="flex justify-between">
+//                       <span className="text-sm text-slate-600">Verification:</span>
+//                       <span className={`font-bold ${header.verification === 'Verified' ? 'text-green-600' : 'text-red-600'}`}>
+//                         {header.verification || 'N/A'}
 //                       </span>
 //                     </div>
 //                     <div className="flex justify-between">
@@ -2386,13 +2530,44 @@
 //                 </div>
 //               </div>
 
-//               <div className="col-span-12 md:col-span-4">
+//               <div className="col-span-12 md:col-span-3">
 //                 <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-4 rounded-xl border border-purple-200">
 //                   <h3 className="text-sm font-bold text-slate-800 mb-3">Weight Summary</h3>
 //                   <div className="space-y-2">
 //                     <div className="flex justify-between">
 //                       <span className="text-sm text-slate-600">Total Weight:</span>
 //                       <span className="text-xl font-bold text-purple-800">{calculateTotalActualWt().toFixed(2)} {header.unit}</span>
+//                     </div>
+//                     <div className="flex justify-between">
+//                       <span className="text-sm text-slate-600">Vehicle Unloaded:</span>
+//                       <span className="font-bold text-purple-800">{header.vehicleUnloadedDate || 'N/A'}</span>
+//                     </div>
+//                   </div>
+//                 </div>
+//               </div>
+
+//               <div className="col-span-12 md:col-span-3">
+//                 <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-4 rounded-xl border border-green-200">
+//                   <h3 className="text-sm font-bold text-slate-800 mb-3">Status</h3>
+//                   <div className="space-y-2">
+//                     <div className="flex justify-between">
+//                       <span className="text-sm text-slate-600">LR No:</span>
+//                       <span className="font-bold text-green-800">{header.lrNo}</span>
+//                     </div>
+//                     <div className="flex justify-between">
+//                       <span className="text-sm text-slate-600">Date:</span>
+//                       <span className="font-bold text-green-800">{header.lrDate}</span>
+//                     </div>
+//                     <div className="flex justify-between">
+//                       <span className="text-sm text-slate-600">Status:</span>
+//                       <span className={`font-bold px-2 py-0.5 rounded-full text-xs ${
+//                         header.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+//                         header.status === 'Approved' ? 'bg-green-100 text-green-800' :
+//                         header.status === 'Completed' ? 'bg-blue-100 text-blue-800' :
+//                         'bg-red-100 text-red-800'
+//                       }`}>
+//                         {header.status}
+//                       </span>
 //                     </div>
 //                   </div>
 //                 </div>
@@ -2420,6 +2595,7 @@
 //     </div>
 //   );
 // }
+
 "use client";
 
 import { useMemo, useState, useEffect, useRef } from "react";
@@ -2551,6 +2727,12 @@ export default function EditConsignmentNote() {
   const orderDropdownRef = useRef(null);
 
   /** =========================
+   * SUB-COMPANY STATE
+   ========================= */
+  const [subCompanies, setSubCompanies] = useState([]);
+  const [subCompaniesLoading, setSubCompaniesLoading] = useState(false);
+
+  /** =========================
    * CUSTOMER DROPDOWN STATES
    ========================= */
   const [showConsignorDropdown, setShowConsignorDropdown] = useState(false);
@@ -2579,7 +2761,7 @@ export default function EditConsignmentNote() {
   const [fetchingVehicleData, setFetchingVehicleData] = useState(false);
 
   /** =========================
-   * HEADER STATE
+   * HEADER STATE - ADDED SUB-COMPANY
    ========================= */
   const generateLRNo = () => {
     const date = new Date();
@@ -2624,7 +2806,11 @@ export default function EditConsignmentNote() {
     vehicleReach: "Not Reach",
     verification: "Not Verified",
     vehicleUnloadedDate: "",
-    remarks: ""
+    remarks: "",
+    // ✅ ADD SUB-COMPANY FIELDS
+    subCompanyId: "",
+    subCompanyName: "",
+    subCompanyCode: ""
   });
 
   /** =========================
@@ -2670,6 +2856,42 @@ export default function EditConsignmentNote() {
   const [uniformRows, setUniformRows] = useState([defaultUniformRow()]);
   const [looseCargoRows, setLooseCargoRows] = useState([defaultLooseCargoRow()]);
   const [nonUniformRows, setNonUniformRows] = useState([defaultNonUniformRow()]);
+
+  /** =========================
+   * FETCH SUB-COMPANIES
+   ========================= */
+  const fetchSubCompanies = async () => {
+    setSubCompaniesLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.warn('No token found');
+        setSubCompanies([]);
+        return;
+      }
+      
+      const res = await fetch('/api/subcompanies', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      if (!res.ok) {
+        throw new Error(`API returned ${res.status}`);
+      }
+      
+      const data = await res.json();
+      
+      if (data.success && Array.isArray(data.data)) {
+        setSubCompanies(data.data);
+      } else {
+        setSubCompanies([]);
+      }
+    } catch (error) {
+      console.error('Error fetching sub-companies:', error);
+      setSubCompanies([]);
+    } finally {
+      setSubCompaniesLoading(false);
+    }
+  };
 
   /** =========================
    * FETCH ORDERS FROM API
@@ -2879,7 +3101,12 @@ export default function EditConsignmentNote() {
       const note = data.data;
       console.log("📦 Consignment Note Data:", note);
       
-      // Set header data
+      // ✅ Set sub-company from note
+      const subCompanyId = note.subCompanyId || note.header?.subCompanyId || '';
+      const subCompanyName = note.subCompanyName || note.header?.subCompanyName || '';
+      const subCompanyCode = note.subCompanyCode || note.header?.subCompanyCode || '';
+      
+      // Set header data with sub-company
       setHeader({
         orderNo: note.header?.orderNo || "",
         partyName: note.header?.partyName || "",
@@ -2906,7 +3133,11 @@ export default function EditConsignmentNote() {
         vehicleReach: note.vehicleReach || note.header?.vehicleReach || "Not Reach",
         verification: note.verification || note.header?.verification || "Not Verified",
         vehicleUnloadedDate: note.vehicleUnloadedDate || note.header?.vehicleUnloadedDate || "",
-        remarks: note.remarks || note.header?.remarks || ""
+        remarks: note.remarks || note.header?.remarks || "",
+        // ✅ Set sub-company
+        subCompanyId: subCompanyId,
+        subCompanyName: subCompanyName,
+        subCompanyCode: subCompanyCode
       });
 
       // Set consignor
@@ -3003,6 +3234,7 @@ export default function EditConsignmentNote() {
   useEffect(() => {
     fetchOrders();
     fetchCustomers();
+    fetchSubCompanies();
     if (noteId) {
       fetchConsignmentNote();
     }
@@ -3079,6 +3311,11 @@ export default function EditConsignmentNote() {
         state = firstRow.stateName || firstRow.state || state;
       }
       
+      // ✅ Get sub-company from order
+      const subCompanyName = fullOrder.subCompanyName || '';
+      const subCompanyCode = fullOrder.subCompanyCode || '';
+      const subCompanyId = fullOrder.subCompanyId || '';
+      
       // Fetch vehicle negotiation data for this order
       const vehicleData = await fetchVehicleNegotiationByOrder(orderNo);
       
@@ -3099,6 +3336,10 @@ export default function EditConsignmentNote() {
           vendorName: vehicleData.approval.vendorName || prev.vendorName,
           vehicleNo: vehicleData.approval.vehicleNo || prev.vehicleNo,
           partyNo: vehicleData.approval.mobile || prev.partyNo,
+          // ✅ Set sub-company
+          subCompanyId: subCompanyId || prev.subCompanyId,
+          subCompanyName: subCompanyName || prev.subCompanyName,
+          subCompanyCode: subCompanyCode || prev.subCompanyCode
         }));
       } else {
         setHeader(prev => ({
@@ -3113,6 +3354,10 @@ export default function EditConsignmentNote() {
           taluka: taluka,
           district: district,
           state: state,
+          // ✅ Set sub-company
+          subCompanyId: subCompanyId || prev.subCompanyId,
+          subCompanyName: subCompanyName || prev.subCompanyName,
+          subCompanyCode: subCompanyCode || prev.subCompanyCode
         }));
       }
       
@@ -3191,7 +3436,8 @@ export default function EditConsignmentNote() {
         }
       }
       
-      alert(`✅ Order ${orderNo} loaded successfully! Data is now read-only.`);
+      const subCompanyInfo = subCompanyName ? `\n🏢 Sub-Company: ${subCompanyName} (${subCompanyCode})` : '';
+      alert(`✅ Order ${orderNo} loaded successfully!${subCompanyInfo}\nData is now read-only.`);
       
     } catch (error) {
       console.error('Error fetching order details:', error);
@@ -3412,7 +3658,7 @@ export default function EditConsignmentNote() {
   };
 
   /** =========================
-   * HANDLE UPDATE
+   * HANDLE UPDATE - INCLUDING SUB-COMPANY
    ========================= */
   const handleUpdate = async () => {
     if (!header.partyName) {
@@ -3435,7 +3681,13 @@ export default function EditConsignmentNote() {
       
       const payload = {
         id: noteId,
-        header,
+        header: {
+          ...header,
+          // ✅ Include sub-company in header
+          subCompanyId: header.subCompanyId || '',
+          subCompanyName: header.subCompanyName || '',
+          subCompanyCode: header.subCompanyCode || ''
+        },
         consignor,
         consignee,
         invoice,
@@ -3446,6 +3698,10 @@ export default function EditConsignmentNote() {
         verification: header.verification,
         vehicleUnloadedDate: header.vehicleUnloadedDate,
         remarks: header.remarks,
+        // ✅ Add sub-company at root level
+        subCompanyId: header.subCompanyId || '',
+        subCompanyName: header.subCompanyName || '',
+        subCompanyCode: header.subCompanyCode || '',
         packData: {
           PALLETIZATION: palletizationRows,
           'UNIFORM - BAGS/BOXES': uniformRows,
@@ -3455,7 +3711,7 @@ export default function EditConsignmentNote() {
         totalWeight: calculateTotalActualWt(),
       };
 
-      console.log("Updating consignment note:", payload);
+      console.log("Updating consignment note with sub-company:", payload);
 
       const res = await fetch('/api/consignment-note', {
         method: 'PUT',
@@ -3473,7 +3729,8 @@ export default function EditConsignmentNote() {
 
       const data = await res.json();
       
-      alert(`✅ Consignment Note updated successfully!\nLR No: ${header.lrNo}`);
+      const subCompanyMsg = header.subCompanyName ? `\n🏢 Sub-Company: ${header.subCompanyName}` : '';
+      alert(`✅ Consignment Note updated successfully!\nLR No: ${header.lrNo}${subCompanyMsg}`);
       
       router.push('/admin/Consignment-Note');
       
@@ -3542,6 +3799,12 @@ export default function EditConsignmentNote() {
               <span>LC: {header.lcStatus}</span>
               <span>|</span>
               <span>LR Type: {header.lrType}</span>
+              {header.subCompanyName && (
+                <>
+                  <span>|</span>
+                  <span className="text-blue-600 font-medium">🏢 {header.subCompanyName}</span>
+                </>
+              )}
               {isReadOnly && (
                 <span className="text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full text-xs">
                   🔒 Read Only Mode - Data loaded from Order
@@ -3634,6 +3897,11 @@ export default function EditConsignmentNote() {
                         <div className="text-xs text-slate-400">
                           From: {order.from || 'N/A'} → To: {order.to || 'N/A'}
                         </div>
+                        {order.subCompanyName && (
+                          <div className="text-xs text-blue-600 mt-0.5">
+                            🏢 {order.subCompanyName}
+                          </div>
+                        )}
                       </div>
                     ))
                   ) : (
@@ -3647,6 +3915,45 @@ export default function EditConsignmentNote() {
                 </div>
               )}
               <div className="text-xs text-slate-400 mt-1">Search and select order to auto-fill details (Read Only after selection)</div>
+            </div>
+
+            {/* ===== SUB-COMPANY DROPDOWN ===== */}
+            <div className="col-span-12 md:col-span-4">
+              <label className="text-xs font-bold text-slate-600">Sub-Company</label>
+              {isReadOnly || header.subCompanyName ? (
+                <div className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm text-slate-700">
+                  {header.subCompanyName ? `${header.subCompanyName} (${header.subCompanyCode})` : 'Auto-filled from order'}
+                  {header.subCompanyName && (
+                    <span className="text-xs text-green-600 ml-2">✓ Auto-filled</span>
+                  )}
+                </div>
+              ) : (
+                <select
+                  value={header.subCompanyId || ''}
+                  onChange={(e) => {
+                    const subCompanyId = e.target.value;
+                    const selected = subCompanies.find(sc => sc._id === subCompanyId);
+                    setHeader(prev => ({
+                      ...prev,
+                      subCompanyId: subCompanyId,
+                      subCompanyName: selected?.name || '',
+                      subCompanyCode: selected?.code || ''
+                    }));
+                  }}
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200"
+                >
+                  <option value="">Select Sub-Company</option>
+                  {subCompanies.map((sc) => (
+                    <option key={sc._id} value={sc._id}>
+                      {sc.name} ({sc.code})
+                    </option>
+                  ))}
+                </select>
+              )}
+              {header.subCompanyName && (
+                <div className="text-xs text-green-600 mt-0.5">✓ Selected: {header.subCompanyName} ({header.subCompanyCode})</div>
+              )}
+              <div className="text-xs text-slate-400 mt-1">Select sub-company or auto-filled from order</div>
             </div>
           </div>
         </Card>
@@ -3696,6 +4003,7 @@ export default function EditConsignmentNote() {
         {/* ===== Party Information ===== */}
         <Card title="Party Information">
           <div className="grid grid-cols-12 gap-4">
+            {/* All existing party fields... */}
             <div className="col-span-12 md:col-span-3">
               <label className="text-xs font-bold text-slate-600">Party Name *</label>
               <input
@@ -4303,7 +4611,6 @@ export default function EditConsignmentNote() {
         </div>
 
         {/* ===== Product Details - All 4 Pack Types ===== */}
-        
         {/* PALLETIZATION Section */}
         <div className="mt-4">
           <Card 
@@ -4908,6 +5215,12 @@ export default function EditConsignmentNote() {
                       <span className="text-sm text-slate-600">From - To:</span>
                       <span className="font-bold text-blue-800">{header.from || 'N/A'} → {header.to || 'N/A'}</span>
                     </div>
+                    {header.subCompanyName && (
+                      <div className="flex justify-between">
+                        <span className="text-sm text-slate-600">Sub-Company:</span>
+                        <span className="font-bold text-blue-800">{header.subCompanyName}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

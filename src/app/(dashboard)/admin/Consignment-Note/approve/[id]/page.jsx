@@ -1,3 +1,5 @@
+
+
 // "use client";
 
 // import { useState, useEffect } from "react";
@@ -13,6 +15,10 @@
 // const UOM_OPTIONS = ["KG", "LTR", "TON", "M3", "PCS", "Kgs", "Ltr", "MT"];
 // const BOE_INVOICE_OPTIONS = ["As Per Invoice", "As Per Bill Of Entry", "NA"];
 // const STATUS_OPTIONS = ["Pending", "Approved", "Rejected", "Completed", "Draft"];
+// const LC_STATUS_OPTIONS = ["LC", "Not LC"];
+// const LR_TYPE_OPTIONS = ["Export", "Import", "Normal"];
+// const VEHICLE_REACH_OPTIONS = ["Reach", "Not Reach"];
+// const VERIFICATION_OPTIONS = ["Verified", "Not Verified"];
 
 // function num(v) {
 //   const n = Number(v);
@@ -263,6 +269,7 @@
 //     vendorCode: "",
 //     vendorName: "",
 //     from: "",
+//     fromState: "",
 //     to: "",
 //     taluka: "",
 //     district: "",
@@ -272,7 +279,13 @@
 //     lrNo: "",
 //     lrDate: "",
 //     unit: "MT",
-//     status: "Pending"
+//     status: "Pending",
+//     lcStatus: "Not LC",
+//     lrType: "Normal",
+//     vehicleReach: "Not Reach",
+//     verification: "Not Verified",
+//     vehicleUnloadedDate: "",
+//     remarks: ""
 //   });
 
 //   const [consignor, setConsignor] = useState({
@@ -357,6 +370,7 @@
 //         vendorCode: note.header?.vendorCode || "",
 //         vendorName: note.header?.vendorName || "",
 //         from: note.header?.from || "",
+//         fromState: note.header?.fromState || "",
 //         to: note.header?.to || "",
 //         taluka: note.header?.taluka || "",
 //         district: note.header?.district || "",
@@ -366,7 +380,13 @@
 //         lrNo: note.lrNo || "",
 //         lrDate: note.header?.lrDate || "",
 //         unit: note.header?.unit || "MT",
-//         status: note.header?.status || "Pending"
+//         status: note.header?.status || "Pending",
+//         lcStatus: note.lcStatus || note.header?.lcStatus || "Not LC",
+//         lrType: note.lrType || note.header?.lrType || "Normal",
+//         vehicleReach: note.vehicleReach || note.header?.vehicleReach || "Not Reach",
+//         verification: note.verification || note.header?.verification || "Not Verified",
+//         vehicleUnloadedDate: note.vehicleUnloadedDate || note.header?.vehicleUnloadedDate || "",
+//         remarks: note.remarks || note.header?.remarks || ""
 //       });
 
 //       // Set consignor (READ-ONLY)
@@ -770,6 +790,32 @@
 //               <span class="info-value"><strong>${header.to || 'DHULE'}</strong></span>
 //             </div>
 
+//             <!-- LC Status & LR Type -->
+//             <div class="info-row">
+//               <span class="info-label">LC Status:</span>
+//               <span class="info-value"><strong>${header.lcStatus || 'Not LC'}</strong></span>
+//               <span class="info-label">LR Type:</span>
+//               <span class="info-value"><strong>${header.lrType || 'Normal'}</strong></span>
+//             </div>
+//             <div class="info-row">
+//               <span class="info-label">Vehicle Reach:</span>
+//               <span class="info-value"><strong>${header.vehicleReach || 'Not Reach'}</strong></span>
+//               <span class="info-label">Verification:</span>
+//               <span class="info-value"><strong>${header.verification || 'Not Verified'}</strong></span>
+//             </div>
+//             ${header.vehicleUnloadedDate ? `
+//             <div class="info-row">
+//               <span class="info-label">Vehicle Unloaded:</span>
+//               <span class="info-value"><strong>${header.vehicleUnloadedDate}</strong></span>
+//             </div>
+//             ` : ''}
+//             ${header.remarks ? `
+//             <div class="info-row">
+//               <span class="info-label">Remarks:</span>
+//               <span class="info-value">${header.remarks}</span>
+//             </div>
+//             ` : ''}
+
 //             <!-- Consignor / Consignee -->
 //             <div class="party-details">
 //               <div class="party-box">
@@ -968,6 +1014,18 @@
 //                   <span>VNN: {vnnNo}</span>
 //                 </>
 //               )}
+//               {header.lcStatus && (
+//                 <>
+//                   <span>|</span>
+//                   <span>LC: {header.lcStatus}</span>
+//                 </>
+//               )}
+//               {header.lrType && (
+//                 <>
+//                   <span>|</span>
+//                   <span>LR Type: {header.lrType}</span>
+//                 </>
+//               )}
 //             </div>
 //           </div>
 
@@ -1022,6 +1080,29 @@
 //           <div className="grid grid-cols-12 gap-4">
 //             <Input col="col-span-12 md:col-span-3" label="Party Name" value={header.partyName} readOnly={true} />
 //             <Input col="col-span-12 md:col-span-2" label="Order No" value={header.orderNo} readOnly={true} />
+            
+//             {/* LC/Not LC - Read Only */}
+//             <div className="col-span-12 md:col-span-2">
+//               <label className="text-xs font-bold text-slate-600">LC / Not LC</label>
+//               <input
+//                 type="text"
+//                 value={header.lcStatus}
+//                 readOnly
+//                 className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm cursor-not-allowed"
+//               />
+//             </div>
+
+//             {/* LR Type - Read Only */}
+//             <div className="col-span-12 md:col-span-2">
+//               <label className="text-xs font-bold text-slate-600">LR Type</label>
+//               <input
+//                 type="text"
+//                 value={header.lrType}
+//                 readOnly
+//                 className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm cursor-not-allowed"
+//               />
+//             </div>
+
 //             <Input col="col-span-12 md:col-span-2" label="Order Type" value={header.orderType} readOnly={true} />
 //             <Input col="col-span-12 md:col-span-2" label="Plant Code" value={header.plantCode} readOnly={true} />
             
@@ -1042,6 +1123,29 @@
 //             <Input col="col-span-12 md:col-span-1" label="Taluka" value={header.taluka} readOnly={true} />
 //             <Input col="col-span-12 md:col-span-1" label="District" value={header.district} readOnly={true} />
 //             <Input col="col-span-12 md:col-span-1" label="State" value={header.state} readOnly={true} />
+            
+//             {/* Vehicle Reach - Read Only */}
+//             <div className="col-span-12 md:col-span-2">
+//               <label className="text-xs font-bold text-slate-600">Vehicle Reach</label>
+//               <input
+//                 type="text"
+//                 value={header.vehicleReach}
+//                 readOnly
+//                 className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm cursor-not-allowed"
+//               />
+//             </div>
+
+//             {/* Verification - Read Only */}
+//             <div className="col-span-12 md:col-span-2">
+//               <label className="text-xs font-bold text-slate-600">Verification</label>
+//               <input
+//                 type="text"
+//                 value={header.verification}
+//                 readOnly
+//                 className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm cursor-not-allowed"
+//               />
+//             </div>
+
 //             <Input col="col-span-12 md:col-span-2" label="Vehicle No" value={header.vehicleNo} readOnly={true} />
 //             <Input col="col-span-12 md:col-span-2" label="Party/Mobile No" value={header.partyNo} readOnly={true} />
 //             <Input col="col-span-12 md:col-span-2" label="LR No" value={header.lrNo} readOnly={true} />
@@ -1168,6 +1272,27 @@
 //           </div>
 //         </Card>
 
+//         {/* ===== VEHICLE UNLOADED DATE & REMARKS (READ ONLY) ===== */}
+//         <Card title="Vehicle Unloaded & Remarks - Read Only">
+//           <div className="grid grid-cols-12 gap-4">
+//             <div className="col-span-12 md:col-span-4">
+//               <label className="text-xs font-bold text-slate-600">Vehicle Unloaded Date</label>
+//               <input
+//                 type="text"
+//                 value={header.vehicleUnloadedDate || '-'}
+//                 readOnly
+//                 className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm cursor-not-allowed"
+//               />
+//             </div>
+//             <div className="col-span-12 md:col-span-8">
+//               <label className="text-xs font-bold text-slate-600">Remarks / Notes</label>
+//               <div className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 min-h-[60px]">
+//                 {header.remarks || '-'}
+//               </div>
+//             </div>
+//           </div>
+//         </Card>
+
 //         {/* ===== SUMMARY CARD ===== */}
 //         <Card title="Summary">
 //           <div className="grid grid-cols-12 gap-4">
@@ -1177,6 +1302,8 @@
 //                 <div className="space-y-2">
 //                   <InfoRow label="Order No" value={header.orderNo} />
 //                   <InfoRow label="Party Name" value={header.partyName} />
+//                   <InfoRow label="LC Status" value={header.lcStatus} />
+//                   <InfoRow label="LR Type" value={header.lrType} />
 //                   <InfoRow label="From - To" value={`${header.from} → ${header.to}`} />
 //                 </div>
 //               </div>
@@ -1187,6 +1314,8 @@
 //                 <h3 className="text-sm font-bold text-slate-800 mb-3">Vehicle Summary</h3>
 //                 <div className="space-y-2">
 //                   <InfoRow label="Vehicle No" value={header.vehicleNo} />
+//                   <InfoRow label="Vehicle Reach" value={header.vehicleReach} />
+//                   <InfoRow label="Verification" value={header.verification} />
 //                   <InfoRow label="Vendor" value={header.vendorName} />
 //                   <InfoRow label="Mobile No" value={header.partyNo} />
 //                 </div>
@@ -1201,6 +1330,7 @@
 //                     <span className="text-sm text-slate-600">Total Weight:</span>
 //                     <span className="text-xl font-bold text-purple-800">{totalWeight.toFixed(2)} {header.unit}</span>
 //                   </div>
+//                   <InfoRow label="Vehicle Unloaded" value={header.vehicleUnloadedDate || '-'} />
 //                   <InfoRow label="Current Status" value={header.status} />
 //                 </div>
 //               </div>
@@ -1497,7 +1627,11 @@ export default function ApproveConsignmentNote() {
     vehicleReach: "Not Reach",
     verification: "Not Verified",
     vehicleUnloadedDate: "",
-    remarks: ""
+    remarks: "",
+    // ✅ ADD SUB-COMPANY FIELDS
+    subCompanyId: "",
+    subCompanyName: "",
+    subCompanyCode: ""
   });
 
   const [consignor, setConsignor] = useState({
@@ -1566,6 +1700,11 @@ export default function ApproveConsignmentNote() {
       const note = data.data;
       console.log("📦 Consignment Note Data for Approval:", note);
       
+      // ✅ Set sub-company from note
+      const subCompanyId = note.subCompanyId || note.header?.subCompanyId || '';
+      const subCompanyName = note.subCompanyName || note.header?.subCompanyName || '';
+      const subCompanyCode = note.subCompanyCode || note.header?.subCompanyCode || '';
+      
       // Set reference fields
       if (note.vnnNo) setVnnNo(note.vnnNo);
       if (note.vehicleNegotiationId) setVehicleNegotiationId(note.vehicleNegotiationId);
@@ -1598,7 +1737,11 @@ export default function ApproveConsignmentNote() {
         vehicleReach: note.vehicleReach || note.header?.vehicleReach || "Not Reach",
         verification: note.verification || note.header?.verification || "Not Verified",
         vehicleUnloadedDate: note.vehicleUnloadedDate || note.header?.vehicleUnloadedDate || "",
-        remarks: note.remarks || note.header?.remarks || ""
+        remarks: note.remarks || note.header?.remarks || "",
+        // ✅ Set sub-company
+        subCompanyId: subCompanyId,
+        subCompanyName: subCompanyName,
+        subCompanyCode: subCompanyCode
       });
 
       // Set consignor (READ-ONLY)
@@ -1674,12 +1817,18 @@ export default function ApproveConsignmentNote() {
     try {
       const token = localStorage.getItem('token');
       
-      // Prepare update payload - only update status
+      // Prepare update payload - update status and sub-company if needed
       const payload = {
         id: noteId,
         header: {
-          status: header.status
-        }
+          status: header.status,
+          subCompanyId: header.subCompanyId || '',
+          subCompanyName: header.subCompanyName || '',
+          subCompanyCode: header.subCompanyCode || ''
+        },
+        subCompanyId: header.subCompanyId || '',
+        subCompanyName: header.subCompanyName || '',
+        subCompanyCode: header.subCompanyCode || ''
       };
       
       // Send update
@@ -2028,6 +2177,14 @@ export default function ApproveConsignmentNote() {
             </div>
             ` : ''}
 
+            <!-- Sub-Company Display -->
+            ${header.subCompanyName ? `
+            <div class="info-row">
+              <span class="info-label">Sub-Company:</span>
+              <span class="info-value"><strong>${header.subCompanyName} (${header.subCompanyCode})</strong></span>
+            </div>
+            ` : ''}
+
             <!-- Consignor / Consignee -->
             <div class="party-details">
               <div class="party-box">
@@ -2226,6 +2383,12 @@ export default function ApproveConsignmentNote() {
                   <span>VNN: {vnnNo}</span>
                 </>
               )}
+              {header.subCompanyName && (
+                <>
+                  <span>|</span>
+                  <span className="text-blue-600 font-medium">🏢 {header.subCompanyName}</span>
+                </>
+              )}
               {header.lcStatus && (
                 <>
                   <span>|</span>
@@ -2363,6 +2526,17 @@ export default function ApproveConsignmentNote() {
             <Input col="col-span-12 md:col-span-2" label="LR No" value={header.lrNo} readOnly={true} />
             <Input col="col-span-12 md:col-span-2" label="LR Date" value={header.lrDate} readOnly={true} />
             <Input col="col-span-12 md:col-span-1" label="Unit" value={header.unit} readOnly={true} />
+            
+            {/* ✅ SUB-COMPANY - READ ONLY */}
+            <div className="col-span-12 md:col-span-2">
+              <label className="text-xs font-bold text-slate-600">Sub-Company</label>
+              <input
+                type="text"
+                value={header.subCompanyName ? `${header.subCompanyName} (${header.subCompanyCode})` : 'Not Set'}
+                readOnly
+                className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm cursor-not-allowed"
+              />
+            </div>
             
             {/* Status is EDITABLE */}
             <div className="col-span-12 md:col-span-1">
@@ -2517,6 +2691,9 @@ export default function ApproveConsignmentNote() {
                   <InfoRow label="LC Status" value={header.lcStatus} />
                   <InfoRow label="LR Type" value={header.lrType} />
                   <InfoRow label="From - To" value={`${header.from} → ${header.to}`} />
+                  {header.subCompanyName && (
+                    <InfoRow label="Sub-Company" value={`${header.subCompanyName} (${header.subCompanyCode})`} />
+                  )}
                 </div>
               </div>
             </div>

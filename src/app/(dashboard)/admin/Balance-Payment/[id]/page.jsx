@@ -1,3 +1,4 @@
+
 // "use client";
 
 // import React, { useState, useEffect, useRef } from "react";
@@ -163,7 +164,7 @@
 //     }
 //   };
 
-//   // Fetch existing Balance Payment
+//   // Fetch existing Balance Payment - UPDATED with fromState
 //   const fetchBalancePayment = async () => {
 //     setLoading(true);
 //     try {
@@ -216,9 +217,18 @@
 //           pricingSerialNo: payment.pricingSerialNo || ""
 //         });
         
-//         // Set order rows if they exist
+//         // Set order rows - preserve fromState and local status
 //         if (payment.orderRows && payment.orderRows.length > 0) {
-//           setOrderRows(payment.orderRows);
+//           const processedRows = payment.orderRows.map(row => ({
+//             ...row,
+//             stateName: row.stateName || row.state,
+//             fromState: row.fromState || '',
+//             fromName: row.fromName || row.from,
+//             toName: row.toName || row.to,
+//             localStatus: row.localStatus || 'unknown',
+//             localStatusLabel: row.localStatusLabel || 'Unknown'
+//           }));
+//           setOrderRows(processedRows);
 //         }
         
 //         if (payment.podId) {
@@ -233,7 +243,7 @@
 //     }
 //   };
 
-//   // Handle POD Selection - Load new data and update all fields
+//   // Handle POD Selection - Load new data and update all fields - UPDATED with fromState
 //   const handlePODSelect = async (pod) => {
 //     setSelectedPOD(pod);
 //     setLoadingPOD(true);
@@ -262,7 +272,7 @@
 //         const dueDateValue = podStatusSection.dueDate || "";
 //         const finalBalanceValue = totalAmount - advanceAmount - poDeductionValue - podDeductionValue;
         
-//         // Map order rows
+//         // Map order rows - UPDATED with fromState
 //         const mappedOrders = purchaseOrders.map(order => ({
 //           _id: order._id || uid(),
 //           orderNo: order.orderNo || "",
@@ -272,14 +282,20 @@
 //           orderType: order.orderType || "Sales",
 //           pinCode: order.pinCode || "",
 //           state: order.state || "",
+//           stateName: order.stateName || order.state || "", // ✅ ADDED
+//           fromState: order.fromState || "", // ✅ ADDED
 //           district: order.district || "",
 //           from: order.from || "",
+//           fromName: order.fromName || order.from || "", // ✅ ADDED
 //           to: order.to || "",
+//           toName: order.toName || order.to || "", // ✅ ADDED
 //           locationRate: order.locationRate || "",
 //           priceList: order.priceList || "",
 //           weight: order.weight?.toString() || "0",
 //           rate: order.rate?.toString() || "0",
-//           totalAmount: order.totalAmount?.toString() || ((order.weight || 0) * (order.rate || 0)).toString()
+//           totalAmount: order.totalAmount?.toString() || ((order.weight || 0) * (order.rate || 0)).toString(),
+//           localStatus: order.localStatus || "unknown", // ✅ ADDED
+//           localStatusLabel: order.localStatusLabel || "Unknown" // ✅ ADDED
 //         }));
 //         setOrderRows(mappedOrders);
         
@@ -345,7 +361,7 @@
 //         vendorName: formData.vendorName,
 //         podNo: formData.podNo,
 //         purchaseNo: formData.purchaseNo,
-//         orderRows: orderRows,
+//         orderRows: orderRows, // Includes fromState and localStatus
 //         vendorStatus: formData.vendorStatus,
 //         vendorCode: formData.vendorCode,
 //         vendorNamePayment: formData.vendorNamePayment,
@@ -521,7 +537,7 @@
 //           </div>
 //         </Card>
 
-//         {/* Orders Table - READ ONLY */}
+//         {/* Orders Table - READ ONLY WITH FROMSTATE AND LOCAL/NOT LOCAL */}
 //         <Card title="Order Details">
 //           <div className="overflow-auto rounded-xl border border-slate-200">
 //             <table className="min-w-max w-full text-sm">
@@ -533,39 +549,60 @@
 //                   <th className="border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">Order Type</th>
 //                   <th className="border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">Pin Code</th>
 //                   <th className="border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">State</th>
+//                   <th className="border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">From State</th> {/* ✅ ADDED */}
+//                   <th className="border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">Local/Not Local</th> {/* ✅ ADDED */}
 //                   <th className="border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">District</th>
 //                   <th className="border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">From</th>
 //                   <th className="border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">To</th>
 //                   <th className="border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">Location Rate</th>
-
 //                   <th className="border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">Weight</th>
 //                   <th className="border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">Rate</th>
 //                   <th className="border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">Total Amount</th>
 //                 </tr>
 //               </thead>
 //               <tbody>
-//                 {orderRows.map((row) => (
-//                   <tr key={row._id} className="hover:bg-slate-50">
-//                     <td className="border border-slate-200 px-2 py-1"><input type="text" value={row.orderNo} readOnly className="w-full px-2 py-1 border rounded bg-gray-100" /></td>
-//                     <td className="border border-slate-200 px-2 py-1"><input type="text" value={row.partyName} readOnly className="w-full px-2 py-1 border rounded bg-gray-100" /></td>
-//                     <td className="border border-slate-200 px-2 py-1"><input type="text" value={row.plantCode} readOnly className="w-full px-2 py-1 border rounded bg-gray-100" /></td>
-//                     <td className="border border-slate-200 px-2 py-1"><input type="text" value={row.orderType} readOnly className="w-full px-2 py-1 border rounded bg-gray-100" /></td>
-//                     <td className="border border-slate-200 px-2 py-1"><input type="text" value={row.pinCode} readOnly className="w-full px-2 py-1 border rounded bg-gray-100" /></td>
-//                     <td className="border border-slate-200 px-2 py-1"><input type="text" value={row.state} readOnly className="w-full px-2 py-1 border rounded bg-gray-100" /></td>
-//                     <td className="border border-slate-200 px-2 py-1"><input type="text" value={row.district} readOnly className="w-full px-2 py-1 border rounded bg-gray-100" /></td>
-//                     <td className="border border-slate-200 px-2 py-1"><input type="text" value={row.from} readOnly className="w-full px-2 py-1 border rounded bg-gray-100" /></td>
-//                     <td className="border border-slate-200 px-2 py-1"><input type="text" value={row.to} readOnly className="w-full px-2 py-1 border rounded bg-gray-100" /></td>
-
-//                     <td className="border border-slate-200 px-2 py-1"><input type="number" value={row.weight} readOnly className="w-20 px-2 py-1 border rounded bg-gray-100" /></td>
-//                     <td className="border border-slate-200 px-2 py-1"><input type="number" value={row.rate} readOnly className="w-20 px-2 py-1 border rounded bg-gray-100" /></td>
-//                     <td className="border border-slate-200 px-2 py-1"><input type="number" value={row.totalAmount} readOnly className="w-24 px-2 py-1 bg-gray-100 rounded font-bold text-emerald-700" /></td>
-//                   </tr>
-//                 ))}
+//                 {orderRows.map((row) => {
+//                   // Determine local status
+//                   const isLocal = row.fromState && row.state && 
+//                     row.fromState.trim().toUpperCase() === row.state.trim().toUpperCase();
+                  
+//                   return (
+//                     <tr key={row._id} className="hover:bg-slate-50">
+//                       <td className="border border-slate-200 px-2 py-1"><input type="text" value={row.orderNo} readOnly className="w-full px-2 py-1 border rounded bg-gray-100" /></td>
+//                       <td className="border border-slate-200 px-2 py-1"><input type="text" value={row.partyName} readOnly className="w-full px-2 py-1 border rounded bg-gray-100" /></td>
+//                       <td className="border border-slate-200 px-2 py-1"><input type="text" value={row.plantCode} readOnly className="w-full px-2 py-1 border rounded bg-gray-100" /></td>
+//                       <td className="border border-slate-200 px-2 py-1"><input type="text" value={row.orderType} readOnly className="w-full px-2 py-1 border rounded bg-gray-100" /></td>
+//                       <td className="border border-slate-200 px-2 py-1"><input type="text" value={row.pinCode} readOnly className="w-full px-2 py-1 border rounded bg-gray-100" /></td>
+//                       <td className="border border-slate-200 px-2 py-1"><input type="text" value={row.state} readOnly className="w-full px-2 py-1 border rounded bg-gray-100" /></td>
+//                       <td className="border border-slate-200 px-2 py-1"><input type="text" value={row.fromState} readOnly className="w-full px-2 py-1 border rounded bg-gray-100" /></td> {/* ✅ ADDED */}
+//                       <td className="border border-slate-200 px-2 py-1 text-center">
+//                         {row.fromState && row.state ? (
+//                           <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${
+//                             isLocal
+//                               ? 'bg-green-100 text-green-800 border border-green-300'
+//                               : 'bg-red-100 text-red-800 border border-red-300'
+//                           }`}>
+//                             {isLocal ? '✅ Local' : '❌ Not Local'}
+//                           </span>
+//                         ) : (
+//                           <span className="text-xs text-gray-400">-</span>
+//                         )}
+//                       </td> {/* ✅ ADDED */}
+//                       <td className="border border-slate-200 px-2 py-1"><input type="text" value={row.district} readOnly className="w-full px-2 py-1 border rounded bg-gray-100" /></td>
+//                       <td className="border border-slate-200 px-2 py-1"><input type="text" value={row.from} readOnly className="w-full px-2 py-1 border rounded bg-gray-100" /></td>
+//                       <td className="border border-slate-200 px-2 py-1"><input type="text" value={row.to} readOnly className="w-full px-2 py-1 border rounded bg-gray-100" /></td>
+//                       <td className="border border-slate-200 px-2 py-1"><input type="text" value={row.locationRate} readOnly className="w-full px-2 py-1 border rounded bg-gray-100" /></td>
+//                       <td className="border border-slate-200 px-2 py-1"><input type="number" value={row.weight} readOnly className="w-20 px-2 py-1 border rounded bg-gray-100" /></td>
+//                       <td className="border border-slate-200 px-2 py-1"><input type="number" value={row.rate} readOnly className="w-20 px-2 py-1 border rounded bg-gray-100" /></td>
+//                       <td className="border border-slate-200 px-2 py-1"><input type="number" value={row.totalAmount} readOnly className="w-24 px-2 py-1 bg-gray-100 rounded font-bold text-emerald-700" /></td>
+//                     </tr>
+//                   );
+//                 })}
 //               </tbody>
 //               <tfoot className="bg-slate-100">
 //                 <tr>
-//                   <td colSpan="13" className="border border-slate-200 px-3 py-2 text-right font-bold">Total Order Amount:</td>
-//                   <td className="border border-slate-200 px-3 py-2 font-bold text-emerald-800" colSpan="1">
+//                   <td colSpan="14" className="border border-slate-200 px-3 py-2 text-right font-bold">Total Order Amount:</td>
+//                   <td className="border border-slate-200 px-3 py-2 font-bold text-emerald-800">
 //                     ₹{calculateTotalOrderAmount().toLocaleString()}
 //                   </td>
 //                 </tr>
@@ -714,7 +751,7 @@
 //           </div>
 //         </Card>
 
-//          {/* Summary Tables as per Image - READ ONLY */}
+//         {/* Summary Tables as per Image - READ ONLY */}
 //         <div className="overflow-hidden rounded-xl border border-slate-200 mb-4">
 //           <div className="grid grid-cols-5 bg-slate-100 border-b border-slate-200">
 //             <div className="px-4 py-3 text-center">
@@ -784,8 +821,6 @@
 //           </div>
 //         </div>
 
-       
-
 //       </div>
 //     </div>
 //   );
@@ -827,7 +862,9 @@ function PODDropdown({ onSelect, podList, selectedPodNo }) {
   const filteredPODs = podList.filter(p =>
     p.podNo?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     p.purchaseNo?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.vendorName?.toLowerCase().includes(searchQuery.toLowerCase())
+    p.vendorName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    p.companyName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    p.subCompanyName?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const handleSelect = (pod) => {
@@ -862,7 +899,7 @@ function PODDropdown({ onSelect, podList, selectedPodNo }) {
         onFocus={handleInputFocus}
         onBlur={handleInputBlur}
         className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
-        placeholder="Search POD No, Purchase No, or Vendor..."
+        placeholder="Search POD No, Purchase No, Vendor, or Company..."
       />
       {showDropdown && filteredPODs.length > 0 && (
         <div
@@ -874,6 +911,7 @@ function PODDropdown({ onSelect, podList, selectedPodNo }) {
             <div key={p._id} onMouseDown={() => handleSelect(p)} className="p-3 hover:bg-emerald-50 cursor-pointer border-b border-slate-100">
               <div className="font-medium text-slate-800">{p.podNo}</div>
               <div className="text-xs text-slate-500">Purchase: {p.purchaseNo} | Vendor: {p.vendorName || p.vendorFinancial?.vendorName}</div>
+              <div className="text-xs text-slate-500">Company: {p.companyName || 'N/A'} | Sub: {p.subCompanyName || 'N/A'}</div>
               <div className="text-xs text-slate-400">Total: ₹{num(p.totalAmount || p.vendorFinancial?.total).toLocaleString()} | Balance: ₹{num(p.finalBalance || p.vendorFinancial?.finalBalance).toLocaleString()}</div>
             </div>
           ))}
@@ -895,10 +933,20 @@ export default function EditBalancePayment() {
   const [loadingPOD, setLoadingPOD] = useState(false);
   const [orderRows, setOrderRows] = useState([]);
 
+  // ✅ COMPANY INFO STATE
+  const [companyInfo, setCompanyInfo] = useState({
+    companyName: '',
+    companyCode: '',
+    subCompanyId: '',
+    subCompanyName: '',
+    subCompanyCode: ''
+  });
+
   // Form State
   const [formData, setFormData] = useState({
     balancePaymentNo: "",
     branch: "",
+    branchCode: "",
     date: "",
     podNo: "",
     purchaseNo: "",
@@ -956,7 +1004,7 @@ export default function EditBalancePayment() {
     }
   };
 
-  // Fetch existing Balance Payment - UPDATED with fromState
+  // Fetch existing Balance Payment - UPDATED with fromState and Company Info
   const fetchBalancePayment = async () => {
     setLoading(true);
     try {
@@ -969,9 +1017,21 @@ export default function EditBalancePayment() {
       if (data.success && data.data) {
         const payment = data.data;
         
+        console.log('📋 Loaded Balance Payment Data:', payment);
+        
+        // ✅ Set Company Info from payment data
+        setCompanyInfo({
+          companyName: payment.companyName || '',
+          companyCode: payment.companyCode || '',
+          subCompanyId: payment.subCompanyId || null,
+          subCompanyName: payment.subCompanyName || '',
+          subCompanyCode: payment.subCompanyCode || ''
+        });
+        
         setFormData({
           balancePaymentNo: payment.balancePaymentNo || "",
           branch: payment.branch || "",
+          branchCode: payment.branchCode || "",
           date: payment.date ? new Date(payment.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
           podNo: payment.podNo || "",
           purchaseNo: payment.purchaseNo || "",
@@ -1035,7 +1095,7 @@ export default function EditBalancePayment() {
     }
   };
 
-  // Handle POD Selection - Load new data and update all fields - UPDATED with fromState
+  // Handle POD Selection - Load new data and update all fields - UPDATED with fromState and Company Info
   const handlePODSelect = async (pod) => {
     setSelectedPOD(pod);
     setLoadingPOD(true);
@@ -1051,6 +1111,25 @@ export default function EditBalancePayment() {
       
       if (podData.success && podData.data) {
         const pd = podData.data;
+        
+        // ✅ Extract company information from POD data
+        const companyName = pd.companyName || pd.header?.companyName || '';
+        const companyCode = pd.companyCode || pd.header?.companyCode || '';
+        const subCompanyId = pd.subCompanyId || pd.header?.subCompanyId || null;
+        const subCompanyName = pd.subCompanyName || pd.header?.subCompanyName || '';
+        const subCompanyCode = pd.subCompanyCode || pd.header?.subCompanyCode || '';
+        
+        console.log('🏢 Company Info from POD:', { companyName, companyCode, subCompanyName, subCompanyCode });
+        
+        // ✅ Set company info
+        setCompanyInfo({
+          companyName: companyName || '',
+          companyCode: companyCode || '',
+          subCompanyId: subCompanyId || null,
+          subCompanyName: subCompanyName || '',
+          subCompanyCode: subCompanyCode || ''
+        });
+        
         const vendorFinancial = pd.vendorFinancial || {};
         const headerData = pd.header || {};
         const purchaseOrders = pd.purchaseOrders || [];
@@ -1074,26 +1153,27 @@ export default function EditBalancePayment() {
           orderType: order.orderType || "Sales",
           pinCode: order.pinCode || "",
           state: order.state || "",
-          stateName: order.stateName || order.state || "", // ✅ ADDED
-          fromState: order.fromState || "", // ✅ ADDED
+          stateName: order.stateName || order.state || "",
+          fromState: order.fromState || "",
           district: order.district || "",
           from: order.from || "",
-          fromName: order.fromName || order.from || "", // ✅ ADDED
+          fromName: order.fromName || order.from || "",
           to: order.to || "",
-          toName: order.toName || order.to || "", // ✅ ADDED
+          toName: order.toName || order.to || "",
           locationRate: order.locationRate || "",
           priceList: order.priceList || "",
           weight: order.weight?.toString() || "0",
           rate: order.rate?.toString() || "0",
           totalAmount: order.totalAmount?.toString() || ((order.weight || 0) * (order.rate || 0)).toString(),
-          localStatus: order.localStatus || "unknown", // ✅ ADDED
-          localStatusLabel: order.localStatusLabel || "Unknown" // ✅ ADDED
+          localStatus: order.localStatus || "unknown",
+          localStatusLabel: order.localStatusLabel || "Unknown"
         }));
         setOrderRows(mappedOrders);
         
         setFormData(prev => ({
           ...prev,
           branch: headerData.branch || headerData.branchName || "",
+          branchCode: headerData.branchCode || "",
           date: headerData.date ? new Date(headerData.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
           delivery: headerData.delivery || "Normal",
           pricingSerialNo: pd.pricingSerialNo || "",
@@ -1124,7 +1204,10 @@ export default function EditBalancePayment() {
           finalAmount: finalBalanceValue
         }));
         
-        alert(`✅ Loaded POD: ${pod.podNo}\n💰 Total Amount: ₹${totalAmount.toLocaleString()}\n💵 Advance: ₹${advanceAmount.toLocaleString()}\n📊 Balance: ₹${(totalAmount - advanceAmount).toLocaleString()}\n📉 PO Deduction: ₹${poDeductionValue.toLocaleString()}\n🏦 POD Deduction: ₹${podDeductionValue.toLocaleString()}\n💎 Final Balance: ₹${finalBalanceValue.toLocaleString()}\n📅 Due Date: ${dueDateValue || 'N/A'}`);
+        const companyMsg = companyName ? `\n🏢 Company: ${companyName}` : '';
+        const subCompanyMsg = subCompanyName ? `\n🏢 Sub-Company: ${subCompanyName}` : '';
+        
+        alert(`✅ Loaded POD: ${pod.podNo}${companyMsg}${subCompanyMsg}\n💰 Total Amount: ₹${totalAmount.toLocaleString()}\n💵 Advance: ₹${advanceAmount.toLocaleString()}\n📊 Balance: ₹${(totalAmount - advanceAmount).toLocaleString()}\n📉 PO Deduction: ₹${poDeductionValue.toLocaleString()}\n🏦 POD Deduction: ₹${podDeductionValue.toLocaleString()}\n💎 Final Balance: ₹${finalBalanceValue.toLocaleString()}\n📅 Due Date: ${dueDateValue || 'N/A'}`);
       }
     } catch (error) {
       console.error('Error loading POD:', error);
@@ -1148,7 +1231,14 @@ export default function EditBalancePayment() {
       
       const payload = {
         id: paymentId,
+        // ✅ Company info at root level
+        companyName: companyInfo.companyName || '',
+        companyCode: companyInfo.companyCode || '',
+        subCompanyId: companyInfo.subCompanyId || null,
+        subCompanyName: companyInfo.subCompanyName || '',
+        subCompanyCode: companyInfo.subCompanyCode || '',
         branch: formData.branch,
+        branchCode: formData.branchCode,
         date: formData.date,
         vendorName: formData.vendorName,
         podNo: formData.podNo,
@@ -1201,7 +1291,7 @@ export default function EditBalancePayment() {
       const data = await res.json();
 
       if (data.success) {
-        alert(`✅ Balance Payment updated successfully!`);
+        alert(`✅ Balance Payment updated successfully!\nCompany: ${data.data?.companyName || 'N/A'}\nSub-Company: ${data.data?.subCompanyName || 'N/A'}`);
         router.push('/admin/Balance-Payment');
       } else {
         alert(data.message || 'Failed to update balance payment');
@@ -1252,6 +1342,19 @@ export default function EditBalancePayment() {
               </button>
               <div className="text-lg font-extrabold text-slate-900">Edit Balance Payment: {formData.balancePaymentNo}</div>
             </div>
+            {/* ✅ Display Company Info in Top Bar */}
+            {companyInfo.companyName && (
+              <div className="text-xs text-blue-600 mt-0.5 flex items-center gap-2 flex-wrap">
+                <span className="font-medium">🏢 {companyInfo.companyName}</span>
+                {companyInfo.companyCode && <span>({companyInfo.companyCode})</span>}
+                {companyInfo.subCompanyName && (
+                  <span className="text-emerald-600">| Sub: {companyInfo.subCompanyName}</span>
+                )}
+                {companyInfo.subCompanyCode && (
+                  <span className="text-emerald-600">({companyInfo.subCompanyCode})</span>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-3">
@@ -1271,6 +1374,34 @@ export default function EditBalancePayment() {
       {/* Main Content */}
       <div className="mx-auto max-w-full p-4">
         
+        {/* ==================== COMPANY INFORMATION CARD (NEW) ==================== */}
+        <Card title="Company Information">
+          <div className="grid grid-cols-12 gap-3">
+            
+            
+            <div className="col-span-12 md:col-span-3">
+              <label className="text-xs font-bold text-slate-600">Sub-Company Name</label>
+              <input 
+                type="text" 
+                value={companyInfo.subCompanyName || '-'} 
+                readOnly 
+                className="mt-1 w-full rounded-xl border border-slate-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700" 
+              />
+            </div>
+            <div className="col-span-12 md:col-span-2">
+              <label className="text-xs font-bold text-slate-600">Sub-Company Code</label>
+              <input 
+                type="text" 
+                value={companyInfo.subCompanyCode || '-'} 
+                readOnly 
+                className="mt-1 w-full rounded-xl border border-slate-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700" 
+              />
+            </div>
+           
+          </div>
+          <p className="text-xs text-slate-400 mt-2">Company information is auto-loaded from the selected POD</p>
+        </Card>
+
         {/* Balance Payment Information */}
         <Card title="Balance Payment Information">
           <div className="grid grid-cols-12 gap-4">
@@ -1311,16 +1442,16 @@ export default function EditBalancePayment() {
               <input type="text" value={formData.branch} readOnly className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm cursor-not-allowed" />
             </div>
             <div className="col-span-12 md:col-span-2">
+              <label className="text-xs font-bold text-slate-600">Branch Code</label>
+              <input type="text" value={formData.branchCode} readOnly className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm cursor-not-allowed" />
+            </div>
+            <div className="col-span-12 md:col-span-2">
               <label className="text-xs font-bold text-slate-600">Date</label>
               <input type="date" value={formData.date} readOnly className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm cursor-not-allowed" />
             </div>
             <div className="col-span-12 md:col-span-3">
               <label className="text-xs font-bold text-slate-600">Vendor Name</label>
               <input type="text" value={formData.vendorName} readOnly className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm cursor-not-allowed" />
-            </div>
-            <div className="col-span-12 md:col-span-2">
-              <label className="text-xs font-bold text-slate-600">Delivery</label>
-              <input type="text" value={formData.delivery} readOnly className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm cursor-not-allowed" />
             </div>
             <div className="col-span-12 md:col-span-3">
               <label className="text-xs font-bold text-slate-600">Purchase No</label>
@@ -1341,8 +1472,8 @@ export default function EditBalancePayment() {
                   <th className="border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">Order Type</th>
                   <th className="border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">Pin Code</th>
                   <th className="border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">State</th>
-                  <th className="border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">From State</th> {/* ✅ ADDED */}
-                  <th className="border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">Local/Not Local</th> {/* ✅ ADDED */}
+                  <th className="border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">From State</th>
+                  <th className="border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">Local/Not Local</th>
                   <th className="border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">District</th>
                   <th className="border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">From</th>
                   <th className="border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700">To</th>
@@ -1354,7 +1485,6 @@ export default function EditBalancePayment() {
               </thead>
               <tbody>
                 {orderRows.map((row) => {
-                  // Determine local status
                   const isLocal = row.fromState && row.state && 
                     row.fromState.trim().toUpperCase() === row.state.trim().toUpperCase();
                   
@@ -1366,7 +1496,7 @@ export default function EditBalancePayment() {
                       <td className="border border-slate-200 px-2 py-1"><input type="text" value={row.orderType} readOnly className="w-full px-2 py-1 border rounded bg-gray-100" /></td>
                       <td className="border border-slate-200 px-2 py-1"><input type="text" value={row.pinCode} readOnly className="w-full px-2 py-1 border rounded bg-gray-100" /></td>
                       <td className="border border-slate-200 px-2 py-1"><input type="text" value={row.state} readOnly className="w-full px-2 py-1 border rounded bg-gray-100" /></td>
-                      <td className="border border-slate-200 px-2 py-1"><input type="text" value={row.fromState} readOnly className="w-full px-2 py-1 border rounded bg-gray-100" /></td> {/* ✅ ADDED */}
+                      <td className="border border-slate-200 px-2 py-1"><input type="text" value={row.fromState} readOnly className="w-full px-2 py-1 border rounded bg-gray-100" /></td>
                       <td className="border border-slate-200 px-2 py-1 text-center">
                         {row.fromState && row.state ? (
                           <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${
@@ -1379,7 +1509,7 @@ export default function EditBalancePayment() {
                         ) : (
                           <span className="text-xs text-gray-400">-</span>
                         )}
-                      </td> {/* ✅ ADDED */}
+                      </td>
                       <td className="border border-slate-200 px-2 py-1"><input type="text" value={row.district} readOnly className="w-full px-2 py-1 border rounded bg-gray-100" /></td>
                       <td className="border border-slate-200 px-2 py-1"><input type="text" value={row.from} readOnly className="w-full px-2 py-1 border rounded bg-gray-100" /></td>
                       <td className="border border-slate-200 px-2 py-1"><input type="text" value={row.to} readOnly className="w-full px-2 py-1 border rounded bg-gray-100" /></td>

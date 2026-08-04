@@ -1,7 +1,8 @@
 
+
 // // "use client";
 
-// // import { useMemo, useRef, useState, useEffect } from "react";
+// // import { useMemo, useRef, useState, useEffect, useCallback } from "react";
 // // import { useRouter } from "next/navigation";
 // // import mongoose from 'mongoose';
 
@@ -309,6 +310,7 @@
 // //     pinCode: "",
 // //     from: null,
 // //     fromName: "",
+// //     fromState: "",
 // //     to: null,
 // //     toName: "",
 // //     taluka: "",
@@ -325,6 +327,8 @@
 // //     cancellationCharges: "",
 // //     loadingCharges: "",
 // //     otherCharges: "",
+// //     localStatus: "unknown",
+// //     localStatusLabel: "Unknown"
 // //   };
 // // }
 
@@ -1148,6 +1152,274 @@
 // //   const [selectedOrderPanels, setSelectedOrderPanels] = useState([]);
 // //   const orderPanelSearch = useOrderPanelSearch();
 
+// //   // ============================================
+// //   // ✅ DEFINE handleOrderPanelSelect FIRST using useCallback
+// //   // ============================================
+// //   const handleOrderPanelSelect = useCallback(async (fullPanel, removePanelId = null) => {
+// //     if (removePanelId) {
+// //       const panelToRemove = selectedOrderPanels.find(p => p._id === removePanelId);
+      
+// //       setSelectedOrderPanels(prev => prev.filter(p => p._id !== removePanelId));
+// //       setOrders(prev => prev.filter(order => order.orderPanelId !== removePanelId));
+      
+// //       if (panelToRemove) {
+// //         setHeader(prev => ({
+// //           ...prev,
+// //           collectionCharges: String(Math.max(0, (Number(prev.collectionCharges) || 0) - (Number(panelToRemove.collectionCharges) || 0))),
+// //           cancellationCharges: String(Math.max(0, (Number(prev.cancellationCharges) || 0) - (Number(panelToRemove.cancellationCharges) || 0))),
+// //           loadingCharges: String(Math.max(0, (Number(prev.loadingCharges) || 0) - (Number(panelToRemove.loadingCharges) || 0))),
+// //           otherCharges: String(Math.max(0, (Number(prev.otherCharges) || 0) - (Number(panelToRemove.otherCharges) || 0))),
+// //           loadingPoints: String(Math.max(0, (Number(prev.loadingPoints) || 0) - (Number(panelToRemove.loadingPoints) || 0))),
+// //           dropPoints: String(Math.max(0, (Number(prev.dropPoints) || 0) - (Number(panelToRemove.dropPoints) || 0)))
+// //         }));
+// //       }
+      
+// //       if (selectedOrderPanels.length === 1) {
+// //         setOrders([defaultOrderRow()]);
+// //         setHeader(prev => ({
+// //           ...prev,
+// //           branch: null,
+// //           branchName: "",
+// //           branchCode: "",
+// //           partyName: "",
+// //           customerId: null,
+// //           collectionCharges: "",
+// //           cancellationCharges: "",
+// //           loadingCharges: "",
+// //           otherCharges: "",
+// //           loadingPoints: "",
+// //           dropPoints: ""
+// //         }));
+// //         setSelectedCustomer(null);
+// //         setCustomerSearchQuery("");
+// //       }
+// //     } else {
+// //       // Check if already selected
+// //       if (selectedOrderPanels.some(p => p._id === fullPanel._id)) {
+// //         console.log(`⚠️ Order ${fullPanel.orderPanelNo} already selected`);
+// //         return;
+// //       }
+      
+// //       console.log(`➕ Adding order: ${fullPanel.orderPanelNo}`);
+      
+// //       setSelectedOrderPanels(prev => [...prev, fullPanel]);
+      
+// //       if (fullPanel.plantRows && fullPanel.plantRows.length > 0) {
+// //         const newOrders = fullPanel.plantRows.map((row) => {
+// //           let plantId = null;
+// //           let plantName = '';
+// //           let plantCode = '';
+          
+// //           if (row.plantCode) {
+// //             if (typeof row.plantCode === 'object' && row.plantCode._id) {
+// //               plantId = row.plantCode._id;
+// //               plantName = row.plantCode.name || '';
+// //               plantCode = row.plantCode.code || '';
+// //             } else if (typeof row.plantCode === 'string' && isValidObjectId(row.plantCode)) {
+// //               plantId = row.plantCode;
+// //               plantName = row.plantName || '';
+// //               plantCode = row.plantCodeValue || '';
+// //             }
+// //           }
+          
+// //           if (!plantId && row.plantCodeValue) {
+// //             const plant = plants.find(p => p.code === row.plantCodeValue);
+// //             if (plant) {
+// //               plantId = plant._id;
+// //               plantName = plant.name;
+// //               plantCode = plant.code;
+// //             }
+// //           }
+          
+// //           return {
+// //             _id: uid(),
+// //             orderNo: fullPanel.orderPanelNo,
+// //             orderPanelId: fullPanel._id,
+// //             partyName: fullPanel.partyName || fullPanel.customerName || "",
+// //             customerId: fullPanel.customerId || null,
+// //             customerCode: fullPanel.customerCode || "",
+// //             contactPerson: fullPanel.contactPerson || "",
+// //             plantCode: plantId,
+// //             plantName: plantName || row.plantName || "",
+// //             plantCodeValue: plantCode || row.plantCodeValue || "",
+// //             orderType: row.orderType || "Sales",
+// //             pinCode: row.pinCode || "",
+// //             from: row.from || null,
+// //             fromName: row.fromName || "",
+// //             fromState: row.fromState || "",
+// //             to: row.to || null,
+// //             toName: row.toName || "",
+// //             taluka: row.taluka || "",
+// //             talukaName: row.talukaName || "",
+// //             district: row.district || "",
+// //             districtName: row.districtName || "",
+// //             state: row.state || "",
+// //             stateName: row.stateName || "",
+// //             country: row.country || "",
+// //             countryName: row.countryName || "",
+// //             weight: row.weight || "",
+// //             status: row.status || "Open",
+// //             collectionCharges: row.collectionCharges?.toString() || "",
+// //             cancellationCharges: row.cancellationCharges?.toString() || "Nil",
+// //             loadingCharges: row.loadingCharges?.toString() || "Nil",
+// //             otherCharges: row.otherCharges?.toString() || "",
+// //             localStatus: row.localStatus || "unknown",
+// //             localStatusLabel: row.localStatusLabel || "Unknown"
+// //           };
+// //         });
+        
+// //         setOrders(prev => {
+// //           const existingOrdersFromPanel = prev.filter(o => o.orderPanelId === fullPanel._id);
+// //           if (existingOrdersFromPanel.length > 0) {
+// //             const otherOrders = prev.filter(o => o.orderPanelId !== fullPanel._id);
+// //             return [...otherOrders, ...newOrders];
+// //           }
+// //           return [...prev, ...newOrders];
+// //         });
+// //       }
+
+// //       // Update header charges
+// //       setHeader(prev => {
+// //         const newHeader = { ...prev };
+        
+// //         if (selectedOrderPanels.length === 0) {
+// //           newHeader.branch = fullPanel.branch || null;
+// //           newHeader.branchName = fullPanel.branchName || "";
+// //           newHeader.branchCode = fullPanel.branchCode || "";
+// //           newHeader.delivery = fullPanel.delivery || "Urgent";
+// //           newHeader.date = fullPanel.date ? new Date(fullPanel.date).toISOString().split('T')[0] : prev.date;
+// //           newHeader.partyName = fullPanel.partyName || fullPanel.customerName || "";
+// //           newHeader.customerId = fullPanel.customerId || null;
+// //           newHeader.collectionCharges = fullPanel.collectionCharges?.toString() || "0";
+// //           newHeader.cancellationCharges = fullPanel.cancellationCharges?.toString() || "0";
+// //           newHeader.loadingCharges = fullPanel.loadingCharges?.toString() || "0";
+// //           newHeader.otherCharges = fullPanel.otherCharges?.toString() || "0";
+// //           newHeader.loadingPoints = fullPanel.loadingPoints?.toString() || "0";
+// //           newHeader.dropPoints = fullPanel.dropPoints?.toString() || "0";
+// //         } else {
+// //           newHeader.collectionCharges = String((Number(prev.collectionCharges) || 0) + (Number(fullPanel.collectionCharges) || 0));
+// //           newHeader.cancellationCharges = String((Number(prev.cancellationCharges) || 0) + (Number(fullPanel.cancellationCharges) || 0));
+// //           newHeader.loadingCharges = String((Number(prev.loadingCharges) || 0) + (Number(fullPanel.loadingCharges) || 0));
+// //           newHeader.otherCharges = String((Number(prev.otherCharges) || 0) + (Number(fullPanel.otherCharges) || 0));
+// //           newHeader.loadingPoints = String((Number(prev.loadingPoints) || 0) + (Number(fullPanel.loadingPoints) || 0));
+// //           newHeader.dropPoints = String((Number(prev.dropPoints) || 0) + (Number(fullPanel.dropPoints) || 0));
+// //         }
+        
+// //         return newHeader;
+// //       });
+
+// //       if (selectedOrderPanels.length === 0 && fullPanel.customerId) {
+// //         const customer = customerSearch.customers.find(c => c._id === fullPanel.customerId);
+// //         if (customer) {
+// //           setSelectedCustomer(customer);
+// //           setCustomerSearchQuery(customer.customerName);
+// //         }
+// //       }
+// //     }
+// //   }, [selectedOrderPanels, plants, customerSearch.customers]);
+
+// //   // ============================================
+// //   // ✅ FETCH SELECTED ORDERS FROM URL PARAMS - RUNS ONLY ONCE
+// //   // ============================================
+// //   const hasLoadedOrders = useRef(false);
+
+// //   useEffect(() => {
+// //     // Prevent multiple executions
+// //     if (hasLoadedOrders.current) {
+// //       console.log('⏭️ Orders already loaded, skipping...');
+// //       return;
+// //     }
+
+// //     const urlParams = new URLSearchParams(window.location.search);
+// //     const orderIds = urlParams.get('orderIds');
+// //     const orderPanelNos = urlParams.get('orderPanelNos');
+    
+// //     if (!orderIds) {
+// //       console.log('ℹ️ No order IDs found in URL');
+// //       return;
+// //     }
+
+// //     const ids = orderIds.split(',').filter(id => id.trim() !== '');
+// //     const panelNos = orderPanelNos ? orderPanelNos.split(',').filter(no => no.trim() !== '') : [];
+    
+// //     console.log(`📋 Loading ${ids.length} order(s) from URL params`);
+    
+// //     // Mark as loaded immediately to prevent re-runs
+// //     hasLoadedOrders.current = true;
+
+// //     // Fetch and select these order panels
+// //     const fetchAndSelectOrders = async () => {
+// //       try {
+// //         const token = localStorage.getItem('token');
+// //         const loadedPanels = [];
+        
+// //         for (let i = 0; i < ids.length; i++) {
+// //           const id = ids[i];
+// //           const panelNo = panelNos[i] || '';
+          
+// //           if (!id) continue;
+          
+// //           console.log(`📥 Fetching order ${i + 1}/${ids.length}: ${id}`);
+          
+// //           const res = await fetch(`/api/order-panel?id=${id}`, {
+// //             headers: { Authorization: `Bearer ${token}` },
+// //           });
+// //           const data = await res.json();
+          
+// //           if (data.success && data.data) {
+// //             const panel = data.data;
+            
+// //             const formattedPanel = {
+// //               _id: panel._id,
+// //               orderPanelNo: panel.orderPanelNo || panelNo,
+// //               branchName: panel.branchName || '',
+// //               branchCode: panel.branchCode || '',
+// //               branch: panel.branch || null,
+// //               customerId: panel.customerId || null,
+// //               customerName: panel.customerName || '',
+// //               customerCode: panel.customerCode || '',
+// //               contactPerson: panel.contactPerson || '',
+// //               partyName: panel.partyName || panel.customerName || '',
+// //               collectionCharges: panel.collectionCharges || 0,
+// //               cancellationCharges: panel.cancellationCharges || 'Nil',
+// //               loadingCharges: panel.loadingCharges || 'Nil',
+// //               otherCharges: panel.otherCharges || 0,
+// //               loadingPoints: panel.loadingPoints || 0,
+// //               dropPoints: panel.dropPoints || 0,
+// //               delivery: panel.delivery || 'Normal',
+// //               date: panel.date,
+// //               plantRows: panel.plantRows || [],
+// //               packData: panel.packData || {}
+// //             };
+            
+// //             loadedPanels.push(formattedPanel);
+// //             console.log(`✅ Loaded order: ${formattedPanel.orderPanelNo}`);
+// //           } else {
+// //             console.warn(`⚠️ Failed to load order ${id}:`, data.message);
+// //           }
+// //         }
+        
+// //         console.log(`📦 Adding ${loadedPanels.length} panel(s) to the form`);
+// //         for (const panel of loadedPanels) {
+// //           await new Promise(resolve => setTimeout(resolve, 100));
+// //           await handleOrderPanelSelect(panel);
+// //         }
+        
+// //         console.log(`✅ Successfully loaded ${loadedPanels.length} order panel(s)`);
+        
+// //         if (loadedPanels.length === 0) {
+// //           alert('No valid orders could be loaded. Please try selecting orders again.');
+// //         }
+        
+// //       } catch (error) {
+// //         console.error('Error loading selected orders:', error);
+// //         alert('Error loading selected orders. Please try again.');
+// //       }
+// //     };
+    
+// //     fetchAndSelectOrders();
+// //   }, [handleOrderPanelSelect]);
+
 // //   // Fetch Purchase Types from backend
 // //   const fetchPurchaseTypes = async () => {
 // //     try {
@@ -1344,165 +1616,6 @@
 // //       vendorStatus: supplier.supplierStatus || "Active"
 // //     }));
 // //   };
-
-// // const handleOrderPanelSelect = async (fullPanel, removePanelId = null) => {
-// //   if (removePanelId) {
-// //     const panelToRemove = selectedOrderPanels.find(p => p._id === removePanelId);
-    
-// //     setSelectedOrderPanels(prev => prev.filter(p => p._id !== removePanelId));
-// //     setOrders(prev => prev.filter(order => order.orderPanelId !== removePanelId));
-    
-// //     if (panelToRemove) {
-// //       setHeader(prev => ({
-// //         ...prev,
-// //         collectionCharges: String(Math.max(0, (Number(prev.collectionCharges) || 0) - (Number(panelToRemove.collectionCharges) || 0))),
-// //         cancellationCharges: String(Math.max(0, (Number(prev.cancellationCharges) || 0) - (Number(panelToRemove.cancellationCharges) || 0))),
-// //         loadingCharges: String(Math.max(0, (Number(prev.loadingCharges) || 0) - (Number(panelToRemove.loadingCharges) || 0))),
-// //         otherCharges: String(Math.max(0, (Number(prev.otherCharges) || 0) - (Number(panelToRemove.otherCharges) || 0))),
-// //         loadingPoints: String(Math.max(0, (Number(prev.loadingPoints) || 0) - (Number(panelToRemove.loadingPoints) || 0))),
-// //         dropPoints: String(Math.max(0, (Number(prev.dropPoints) || 0) - (Number(panelToRemove.dropPoints) || 0)))
-// //       }));
-// //     }
-    
-// //     if (selectedOrderPanels.length === 1) {
-// //       setOrders([defaultOrderRow()]);
-// //       setHeader(prev => ({
-// //         ...prev,
-// //         branch: null,
-// //         branchName: "",
-// //         branchCode: "",
-// //         partyName: "",
-// //         customerId: null,
-// //         collectionCharges: "",
-// //         cancellationCharges: "",
-// //         loadingCharges: "",
-// //         otherCharges: "",
-// //         loadingPoints: "",
-// //         dropPoints: ""
-// //       }));
-// //       setSelectedCustomer(null);
-// //       setCustomerSearchQuery("");
-// //     }
-// //   } else {
-// //     if (selectedOrderPanels.some(p => p._id === fullPanel._id)) {
-// //       alert("This order panel is already selected");
-// //       return;
-// //     }
-    
-// //     const newSelectedPanels = [...selectedOrderPanels, fullPanel];
-// //     setSelectedOrderPanels(newSelectedPanels);
-    
-// //     if (fullPanel.plantRows && fullPanel.plantRows.length > 0) {
-// //       const newOrders = fullPanel.plantRows.map((row) => {
-// //         let plantId = null;
-// //         let plantName = '';
-// //         let plantCode = '';
-        
-// //         if (row.plantCode) {
-// //           if (typeof row.plantCode === 'object' && row.plantCode._id) {
-// //             plantId = row.plantCode._id;
-// //             plantName = row.plantCode.name || '';
-// //             plantCode = row.plantCode.code || '';
-// //           } else if (typeof row.plantCode === 'string' && isValidObjectId(row.plantCode)) {
-// //             plantId = row.plantCode;
-// //             plantName = row.plantName || '';
-// //             plantCode = row.plantCodeValue || '';
-// //           }
-// //         }
-        
-// //         if (!plantId && row.plantCodeValue) {
-// //           const plant = plants.find(p => p.code === row.plantCodeValue);
-// //           if (plant) {
-// //             plantId = plant._id;
-// //             plantName = plant.name;
-// //             plantCode = plant.code;
-// //           }
-// //         }
-        
-// //         // ✅ FIX: Get charges from each plant row, not from top level
-// //         return {
-// //           _id: uid(),
-// //           orderNo: fullPanel.orderPanelNo,
-// //           orderPanelId: fullPanel._id,
-// //           partyName: fullPanel.partyName || fullPanel.customerName || "",
-// //           customerId: fullPanel.customerId || null,
-// //           customerCode: fullPanel.customerCode || "",
-// //           contactPerson: fullPanel.contactPerson || "",
-// //           plantCode: plantId,
-// //           plantName: plantName || row.plantName || "",
-// //           plantCodeValue: plantCode || row.plantCodeValue || "",
-// //           orderType: row.orderType || "Sales",
-// //           pinCode: row.pinCode || "",
-// //           from: row.from || null,
-// //           fromName: row.fromName || "",
-// //           to: row.to || null,
-// //           toName: row.toName || "",
-// //           taluka: row.taluka || "",
-// //           talukaName: row.talukaName || "",
-// //           district: row.district || "",
-// //           districtName: row.districtName || "",
-// //           state: row.state || "",
-// //           stateName: row.stateName || "",
-// //           country: row.country || "",
-// //           countryName: row.countryName || "",
-// //           weight: row.weight || "",
-// //           status: row.status || "Open",
-// //           // ✅ FIX: Map charges from the plant row (per order)
-// //           collectionCharges: row.collectionCharges?.toString() || "",
-// //           cancellationCharges: row.cancellationCharges?.toString() || "Nil",
-// //           loadingCharges: row.loadingCharges?.toString() || "Nil",
-// //           otherCharges: row.otherCharges?.toString() || "",
-// //         };
-// //       });
-      
-// //       setOrders(prev => {
-// //         const existingOrdersFromPanel = prev.filter(o => o.orderPanelId === fullPanel._id);
-// //         if (existingOrdersFromPanel.length > 0) {
-// //           const otherOrders = prev.filter(o => o.orderPanelId !== fullPanel._id);
-// //           return [...otherOrders, ...newOrders];
-// //         }
-// //         return [...prev, ...newOrders];
-// //       });
-// //     }
-
-// //     if (selectedOrderPanels.length === 0) {
-// //       setHeader(prev => ({
-// //         ...prev,
-// //         branch: fullPanel.branch || null,
-// //         branchName: fullPanel.branchName || "",
-// //         branchCode: fullPanel.branchCode || "",
-// //         delivery: fullPanel.delivery || "Urgent",
-// //         date: fullPanel.date ? new Date(fullPanel.date).toISOString().split('T')[0] : prev.date,
-// //         partyName: fullPanel.partyName || fullPanel.customerName || "",
-// //         customerId: fullPanel.customerId || null,
-// //         collectionCharges: fullPanel.collectionCharges?.toString() || "0",
-// //         cancellationCharges: fullPanel.cancellationCharges?.toString() || "0",
-// //         loadingCharges: fullPanel.loadingCharges?.toString() || "0",
-// //         otherCharges: fullPanel.otherCharges?.toString() || "0",
-// //         loadingPoints: fullPanel.loadingPoints?.toString() || "0",
-// //         dropPoints: fullPanel.dropPoints?.toString() || "0"
-// //       }));
-// //     } else {
-// //       setHeader(prev => ({
-// //         ...prev,
-// //         collectionCharges: String((Number(prev.collectionCharges) || 0) + (Number(fullPanel.collectionCharges) || 0)),
-// //         cancellationCharges: String((Number(prev.cancellationCharges) || 0) + (Number(fullPanel.cancellationCharges) || 0)),
-// //         loadingCharges: String((Number(prev.loadingCharges) || 0) + (Number(fullPanel.loadingCharges) || 0)),
-// //         otherCharges: String((Number(prev.otherCharges) || 0) + (Number(fullPanel.otherCharges) || 0)),
-// //         loadingPoints: String((Number(prev.loadingPoints) || 0) + (Number(fullPanel.loadingPoints) || 0)),
-// //         dropPoints: String((Number(prev.dropPoints) || 0) + (Number(fullPanel.dropPoints) || 0))
-// //       }));
-// //     }
-
-// //     if (selectedOrderPanels.length === 0 && fullPanel.customerId) {
-// //       const customer = customerSearch.customers.find(c => c._id === fullPanel.customerId);
-// //       if (customer) {
-// //         setSelectedCustomer(customer);
-// //         setCustomerSearchQuery(customer.customerName);
-// //       }
-// //     }
-// //   }
-// // };
 
 // //   const updateOrder = (id, key, value) => {
 // //     setOrders((prev) => prev.map((r) => (r._id === id ? { ...r, [key]: value } : r)));
@@ -1778,6 +1891,7 @@
 // //           pinCode: order.pinCode,
 // //           from: order.from || null,
 // //           fromName: order.fromName,
+// //           fromState: order.fromState || '',
 // //           to: order.to || null,
 // //           toName: order.toName,
 // //           taluka: order.taluka,
@@ -1793,7 +1907,9 @@
 // //           collectionCharges: num(order.collectionCharges) || 0,
 // //           cancellationCharges: order.cancellationCharges || 'Nil',
 // //           loadingCharges: order.loadingCharges || 'Nil',
-// //           otherCharges: num(order.otherCharges) || 0
+// //           otherCharges: num(order.otherCharges) || 0,
+// //           localStatus: order.localStatus || 'unknown',
+// //           localStatusLabel: order.localStatusLabel || 'Unknown'
 // //         })),
 // //         totalWeight,
 // //         negotiation: {
@@ -1979,6 +2095,7 @@
 // //     { key: "taluka", label: "Taluka" },
 // //     { key: "district", label: "District" },
 // //     { key: "state", label: "State" },
+// //     { key: "localStatus", label: "Local/Not Local" },
 // //     { key: "country", label: "Country" },
 // //     { key: "weight", label: "Weight" },
 // //     { key: "status", label: "Status" },
@@ -2155,6 +2272,19 @@
 // //                         placeholder="State"
 // //                       />
 // //                     </td>
+// //                     <td className="border border-yellow-300 px-2 py-2 text-center">
+// //                       {row.fromState && row.stateName ? (
+// //                         <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${
+// //                           row.fromState.trim().toUpperCase() === row.stateName.trim().toUpperCase()
+// //                             ? 'bg-green-100 text-green-800 border border-green-300'
+// //                             : 'bg-red-100 text-red-800 border border-red-300'
+// //                         }`}>
+// //                           {row.fromState.trim().toUpperCase() === row.stateName.trim().toUpperCase() ? '✅ Local' : '❌ Not Local'}
+// //                         </span>
+// //                       ) : (
+// //                         <span className="text-xs text-gray-400">-</span>
+// //                       )}
+// //                     </td>
 // //                     <td className="border border-yellow-300 px-2 py-2">
 // //                       <input
 // //                         value={row.countryName || row.country || ""}
@@ -2253,122 +2383,119 @@
 // //     );
 // //   };
 
-// //  const VendorsTable = ({ rows, onChange, onRemove, onAdd }) => {
-// //   // Track selected supplier names for each row
-// //   const [selectedSupplierNames, setSelectedSupplierNames] = useState({});
-  
-// //   useEffect(() => {
-// //     const names = {};
-// //     rows.forEach(row => {
-// //       if (row.vendorName) {
-// //         names[row._id] = row.vendorName;
-// //       }
-// //     });
-// //     setSelectedSupplierNames(names);
-// //   }, [rows]);
+// //   const VendorsTable = ({ rows, onChange, onRemove, onAdd }) => {
+// //     const [selectedSupplierNames, setSelectedSupplierNames] = useState({});
+    
+// //     useEffect(() => {
+// //       const names = {};
+// //       rows.forEach(row => {
+// //         if (row.vendorName) {
+// //           names[row._id] = row.vendorName;
+// //         }
+// //       });
+// //       setSelectedSupplierNames(names);
+// //     }, [rows]);
 
-// //   return (
-// //     <div className="overflow-auto rounded-xl border border-yellow-300 max-h-[300px]">
-// //       <table className="min-w-full w-full text-sm">
-// //         <thead className="sticky top-0 bg-yellow-400">
-// //           <tr>
-// //             {vendorColumns.map((col) => (
-// //               <th
-// //                 key={col.key}
-// //                 className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 text-center"
-// //               >
-// //                 {col.label}
-// //               </th>
-// //             ))}
-// //             <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 text-center">
-// //               Actions
-// //             </th>
-// //           </tr>
-// //         </thead>
-
-// //         <tbody>
-// //           {rows.map((row, index) => (
-// //             <tr key={row._id} className="hover:bg-yellow-50 even:bg-slate-50">
-// //               <td className="border border-yellow-300 px-2 py-2">
-// //                 <TableSearchableDropdown
-// //                   items={supplierSearch?.suppliers || []}
-// //                   selectedId={selectedSupplierNames[row._id] || row.vendorName}
-// //                   onSelect={(supplier) => {
-// //                     if (supplier) {
-// //                       setSelectedSupplierNames(prev => ({
-// //                         ...prev,
-// //                         [row._id]: supplier.supplierName
-// //                       }));
-// //                       updateVendor(row._id, 'vendorName', supplier.supplierName);
-// //                       updateVendor(row._id, 'vendorCode', supplier.supplierCode || '');
-// //                     }
-// //                   }}
-// //                   placeholder="Select Supplier"
-// //                   displayField="supplierName"
-// //                   codeField="supplierCode"
-// //                   cellId={`supplier-${row._id}`}
-// //                 />
-// //               </td>
-// //               <td className="border border-yellow-300 px-2 py-2">
-// //                 <input
-// //                   type="text"
-// //                   value={row.vendorCode || ""}
-// //                   readOnly
-// //                   className="w-full rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-sm outline-none cursor-not-allowed"
-// //                   placeholder="Auto-filled"
-// //                 />
-// //               </td>
-// //               <td className="border border-yellow-300 px-2 py-2">
-// //                 <select
-// //                   value={row.purchaseType || ""}
-// //                   onChange={(e) => updateVendor(row._id, 'purchaseType', e.target.value)}
-// //                   className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+// //     return (
+// //       <div className="overflow-auto rounded-xl border border-yellow-300 max-h-[300px]">
+// //         <table className="min-w-full w-full text-sm">
+// //           <thead className="sticky top-0 bg-yellow-400">
+// //             <tr>
+// //               {vendorColumns.map((col) => (
+// //                 <th
+// //                   key={col.key}
+// //                   className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 text-center"
 // //                 >
-// //                   <option value="">Select Purchase Type</option>
-// //                   {purchaseTypes.length > 0 ? (
-// //                     purchaseTypes.map((opt) => (
-// //                       <option key={opt} value={opt}>{opt}</option>
-// //                     ))
-// //                   ) : (
-// //                     <option value="" disabled>No purchase types available</option>
-// //                   )}
-// //                 </select>
-// //               </td>
-// //               <td className="border border-yellow-300 px-2 py-2">
-// //   <input
-// //     type="text"
-// //     defaultValue={row.marketRate || ""}
-// //     onBlur={(e) => {
-// //       const value = e.target.value;
-// //       // Allow only numbers and decimal point
-// //       if (value === '' || /^\d*\.?\d*$/.test(value)) {
-// //         updateVendor(row._id, 'marketRate', value);
-// //       } else {
-// //         // Reset to previous value if invalid
-// //         e.target.value = row.marketRate || "";
-// //       }
-// //     }}
-// //     className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-// //     placeholder="Enter Market Rate"
-// //   />
-// // </td>
-// //               <td className="border border-yellow-300 px-2 py-2 text-center">
-// //                 {rows.length > 1 && (
-// //                   <button
-// //                     onClick={() => onRemove(row._id)}
-// //                     className="rounded-lg bg-red-500 px-3 py-1.5 text-xs font-bold text-white hover:bg-red-600 transition"
-// //                   >
-// //                     Remove
-// //                   </button>
-// //                 )}
-// //               </td>
+// //                   {col.label}
+// //                 </th>
+// //               ))}
+// //               <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 text-center">
+// //                 Actions
+// //               </th>
 // //             </tr>
-// //           ))}
-// //         </tbody>
-// //       </table>
-// //     </div>
-// //   );
-// // };
+// //           </thead>
+
+// //           <tbody>
+// //             {rows.map((row, index) => (
+// //               <tr key={row._id} className="hover:bg-yellow-50 even:bg-slate-50">
+// //                 <td className="border border-yellow-300 px-2 py-2">
+// //                   <TableSearchableDropdown
+// //                     items={supplierSearch?.suppliers || []}
+// //                     selectedId={selectedSupplierNames[row._id] || row.vendorName}
+// //                     onSelect={(supplier) => {
+// //                       if (supplier) {
+// //                         setSelectedSupplierNames(prev => ({
+// //                           ...prev,
+// //                           [row._id]: supplier.supplierName
+// //                         }));
+// //                         updateVendor(row._id, 'vendorName', supplier.supplierName);
+// //                         updateVendor(row._id, 'vendorCode', supplier.supplierCode || '');
+// //                       }
+// //                     }}
+// //                     placeholder="Select Supplier"
+// //                     displayField="supplierName"
+// //                     codeField="supplierCode"
+// //                     cellId={`supplier-${row._id}`}
+// //                   />
+// //                 </td>
+// //                 <td className="border border-yellow-300 px-2 py-2">
+// //                   <input
+// //                     type="text"
+// //                     value={row.vendorCode || ""}
+// //                     readOnly
+// //                     className="w-full rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-sm outline-none cursor-not-allowed"
+// //                     placeholder="Auto-filled"
+// //                   />
+// //                 </td>
+// //                 <td className="border border-yellow-300 px-2 py-2">
+// //                   <select
+// //                     value={row.purchaseType || ""}
+// //                     onChange={(e) => updateVendor(row._id, 'purchaseType', e.target.value)}
+// //                     className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+// //                   >
+// //                     <option value="">Select Purchase Type</option>
+// //                     {purchaseTypes.length > 0 ? (
+// //                       purchaseTypes.map((opt) => (
+// //                         <option key={opt} value={opt}>{opt}</option>
+// //                       ))
+// //                     ) : (
+// //                       <option value="" disabled>No purchase types available</option>
+// //                     )}
+// //                   </select>
+// //                 </td>
+// //                 <td className="border border-yellow-300 px-2 py-2">
+// //                   <input
+// //                     type="text"
+// //                     defaultValue={row.marketRate || ""}
+// //                     onBlur={(e) => {
+// //                       const value = e.target.value;
+// //                       if (value === '' || /^\d*\.?\d*$/.test(value)) {
+// //                         updateVendor(row._id, 'marketRate', value);
+// //                       } else {
+// //                         e.target.value = row.marketRate || "";
+// //                       }
+// //                     }}
+// //                     className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+// //                     placeholder="Enter Market Rate"
+// //                   />
+// //                 </td>
+// //                 <td className="border border-yellow-300 px-2 py-2 text-center">
+// //                   {rows.length > 1 && (
+// //                     <button
+// //                       onClick={() => onRemove(row._id)}
+// //                       className="rounded-lg bg-red-500 px-3 py-1.5 text-xs font-bold text-white hover:bg-red-600 transition"
+// //                     >
+// //                       Remove
+// //                     </button>
+// //                   )}
+// //                 </td>
+// //               </tr>
+// //             ))}
+// //           </tbody>
+// //         </table>
+// //       </div>
+// //     );
+// //   };
 
 // //   return (
 // //     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white">
@@ -2485,7 +2612,6 @@
 // //           <div className="mb-4">
 // //             <div className="text-sm font-bold text-slate-700 mb-2">Billing Type / Charges</div>
 // //             <BillingTypeTable header={header} setHeader={setHeader} billingColumns={billingColumns} selectedOrderPanels={selectedOrderPanels} orders={orders} />
-            
 // //           </div>
 
 // //           {/* Orders Table */}
@@ -2505,7 +2631,7 @@
 // //             </div>
 // //           </div>
 
-// //           {/* Suppliers / Market Rates Section - Added at bottom of Part 1 */}
+// //           {/* Suppliers / Market Rates Section */}
 // //           <div className="mt-6">
 // //             <div className="flex items-center justify-between mb-4">
 // //               <div className="text-sm font-bold text-slate-700">Suppliers / Market Rates</div>
@@ -2521,7 +2647,7 @@
 // //         </Card>
 
 // //         {/* PART 2: VEHICLE NEGOTIATION - PART 2 */}
-// //         <Card title="Vehicle - Negotiation - Part - 2">
+// //         <Card title="Rate-Target">
 // //           <div className="grid grid-cols-12 gap-3 mb-4">
 // //             <Input col="col-span-12 md:col-span-3" label="Max Rate" value={negotiation.maxRate} onChange={(v) => setNegotiation((p) => ({ ...p, maxRate: v }))} />
 // //             <Input col="col-span-12 md:col-span-3" label="Target Rate" value={negotiation.targetRate} onChange={(v) => setNegotiation((p) => ({ ...p, targetRate: v }))} />
@@ -2560,7 +2686,7 @@
 // //         </Card>
 
 // //         {/* PART 3: VEHICLE APPROVAL - PART 3 */}
-// //         <Card title="Vehicle - Approval - Part - 3">
+// //         <Card title="Vehicle-Placement_Reat">
 // //           <div className="grid grid-cols-12 gap-3 mb-4">
 // //             <div className="col-span-12 md:col-span-4">
 // //               <label className="text-xs font-bold text-slate-600">Supplier Name</label>
@@ -2573,7 +2699,6 @@
 // //               value={approval.rateType} 
 // //               onChange={(v) => {
 // //                 setApproval((p) => ({ ...p, rateType: v }));
-// //                 // Clear the other field when switching
 // //                 if (v === "Per MT") {
 // //                   setApproval((p) => ({ ...p, finalFix: "" }));
 // //                 } else if (v === "Fixed") {
@@ -2644,18 +2769,18 @@
 
 // //           <div>
 // //             <div className="text-sm font-extrabold text-slate-900 mb-3">Remarks</div>
-// //            <textarea
-// //   value={approval.remarks}
-// //   onChange={(e) => setApproval((p) => ({ ...p, remarks: e.target.value }))}
-// //   className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm outline-none cursor-not-allowed"
-// //   rows={2}
-// //   placeholder="Enter approval remarks..."
-// //   readOnly={true}
-// // />
+// //             <textarea
+// //               value={approval.remarks}
+// //               onChange={(e) => setApproval((p) => ({ ...p, remarks: e.target.value }))}
+// //               className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm outline-none cursor-not-allowed"
+// //               rows={2}
+// //               placeholder="Enter approval remarks..."
+// //               readOnly={true}
+// //             />
 // //           </div>
 // //         </Card>
 
-// //         {/* MEMO UPLOAD with Approval Dropdown */}
+// //         {/* MEMO UPLOAD */}
 // //         <Card title="Memo - Upload">
 // //           <div className="rounded-xl border border-slate-200 p-4">
 // //             <div className="text-sm font-extrabold text-slate-900 mb-3">Memo Upload</div>
@@ -2700,10 +2825,9 @@
 // //   );
 // // }
 
-
 // "use client";
 
-// import { useMemo, useRef, useState, useEffect } from "react";
+// import { useMemo, useRef, useState, useEffect, useCallback } from "react";
 // import { useRouter } from "next/navigation";
 // import mongoose from 'mongoose';
 
@@ -2744,73 +2868,7 @@
 //   const [y, m, d] = dateStr.split("-");
 //   return `${d}/${m}/${y}`;
 // }
-// // Add this code at the beginning of your Vehicle Negotiation Create component
 
-// // ✅ Load selected orders from URL params (Multi-select)
-// useEffect(() => {
-//   const urlParams = new URLSearchParams(window.location.search);
-//   const orderIds = urlParams.get('orderIds');
-//   const orderPanelNos = urlParams.get('orderPanelNos');
-  
-//   if (orderIds) {
-//     const ids = orderIds.split(',');
-//     const panelNos = orderPanelNos ? orderPanelNos.split(',') : [];
-    
-//     // Fetch and select these order panels
-//     const fetchAndSelectOrders = async () => {
-//       try {
-//         const token = localStorage.getItem('token');
-        
-//         for (let i = 0; i < ids.length; i++) {
-//           const id = ids[i];
-//           const panelNo = panelNos[i] || '';
-          
-//           if (!id) continue;
-          
-//           // Fetch the order panel details
-//           const res = await fetch(`/api/order-panel?id=${id}`, {
-//             headers: { Authorization: `Bearer ${token}` },
-//           });
-//           const data = await res.json();
-          
-//           if (data.success && data.data) {
-//             const panel = data.data;
-            
-//             const formattedPanel = {
-//               _id: panel._id,
-//               orderPanelNo: panel.orderPanelNo || panelNo,
-//               branchName: panel.branchName || '',
-//               branchCode: panel.branchCode || '',
-//               branch: panel.branch || null,
-//               customerId: panel.customerId || null,
-//               customerName: panel.customerName || '',
-//               customerCode: panel.customerCode || '',
-//               contactPerson: panel.contactPerson || '',
-//               partyName: panel.partyName || panel.customerName || '',
-//               collectionCharges: panel.collectionCharges || 0,
-//               cancellationCharges: panel.cancellationCharges || 'Nil',
-//               loadingCharges: panel.loadingCharges || 'Nil',
-//               otherCharges: panel.otherCharges || 0,
-//               loadingPoints: panel.loadingPoints || 0,
-//               dropPoints: panel.dropPoints || 0,
-//               delivery: panel.delivery || 'Normal',
-//               date: panel.date,
-//               plantRows: panel.plantRows || [],
-//               packData: panel.packData || {}
-//             };
-            
-//             // Add the order panel to the selection
-//             handleOrderPanelSelect(formattedPanel);
-//           }
-//         }
-//       } catch (error) {
-//         console.error('Error loading selected orders:', error);
-//       }
-//     };
-    
-//     fetchAndSelectOrders();
-//   }
-// }, []);
 // /* =======================
 //   Supplier Search Hook
 // ========================= */
@@ -2963,7 +3021,7 @@
 // }
 
 // /* =======================
-//   Order Panel Search Hook
+//   Order Panel Search Hook - Only Approved Orders
 // ========================= */
 // function useOrderPanelSearch() {
 //   const [orderPanels, setOrderPanels] = useState([]);
@@ -2976,6 +3034,7 @@
 //     try {
 //       const token = localStorage.getItem('token');
       
+//       // First, get used order panel IDs from vehicle negotiations
 //       const vehicleRes = await fetch('/api/vehicle-negotiation?format=table', {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
@@ -2992,6 +3051,7 @@
 //         });
 //       }
       
+//       // Fetch order panels
 //       const res = await fetch('/api/order-panel', {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
@@ -3003,7 +3063,9 @@
 //       const data = await res.json();
       
 //       if (data.success && Array.isArray(data.data)) {
+//         // Filter: only Approved status and not used in vehicle negotiation
 //         const availablePanels = data.data.filter(panel => 
+//           panel.panelStatus === 'Approved' && 
 //           !usedOrderPanelIds.has(panel.orderPanelNo)
 //         );
         
@@ -3894,6 +3956,7 @@
 //   const router = useRouter();
   
 //   const [branches, setBranches] = useState([]);
+//   const [subCompanies, setSubCompanies] = useState([]);
 //   const [countries, setCountries] = useState([]);
 //   const [plants, setPlants] = useState([]);
 //   const [loading, setLoading] = useState(false);
@@ -3918,6 +3981,290 @@
 //   const [selectedSupplier, setSelectedSupplier] = useState(null);
 //   const [selectedOrderPanels, setSelectedOrderPanels] = useState([]);
 //   const orderPanelSearch = useOrderPanelSearch();
+
+//   // ============================================
+//   // ✅ DEFINE handleOrderPanelSelect FIRST using useCallback
+//   // ============================================
+//   const handleOrderPanelSelect = useCallback(async (fullPanel, removePanelId = null) => {
+//     if (removePanelId) {
+//       const panelToRemove = selectedOrderPanels.find(p => p._id === removePanelId);
+      
+//       setSelectedOrderPanels(prev => prev.filter(p => p._id !== removePanelId));
+//       setOrders(prev => prev.filter(order => order.orderPanelId !== removePanelId));
+      
+//       if (panelToRemove) {
+//         setHeader(prev => ({
+//           ...prev,
+//           collectionCharges: String(Math.max(0, (Number(prev.collectionCharges) || 0) - (Number(panelToRemove.collectionCharges) || 0))),
+//           cancellationCharges: String(Math.max(0, (Number(prev.cancellationCharges) || 0) - (Number(panelToRemove.cancellationCharges) || 0))),
+//           loadingCharges: String(Math.max(0, (Number(prev.loadingCharges) || 0) - (Number(panelToRemove.loadingCharges) || 0))),
+//           otherCharges: String(Math.max(0, (Number(prev.otherCharges) || 0) - (Number(panelToRemove.otherCharges) || 0))),
+//           loadingPoints: String(Math.max(0, (Number(prev.loadingPoints) || 0) - (Number(panelToRemove.loadingPoints) || 0))),
+//           dropPoints: String(Math.max(0, (Number(prev.dropPoints) || 0) - (Number(panelToRemove.dropPoints) || 0)))
+//         }));
+//       }
+      
+//       if (selectedOrderPanels.length === 1) {
+//         setOrders([defaultOrderRow()]);
+//         setHeader(prev => ({
+//           ...prev,
+//           branch: null,
+//           branchName: "",
+//           branchCode: "",
+//           subCompanyId: null,
+//           subCompanyName: "",
+//           subCompanyCode: "",
+//           partyName: "",
+//           customerId: null,
+//           collectionCharges: "",
+//           cancellationCharges: "",
+//           loadingCharges: "",
+//           otherCharges: "",
+//           loadingPoints: "",
+//           dropPoints: ""
+//         }));
+//         setSelectedCustomer(null);
+//         setCustomerSearchQuery("");
+//       }
+//     } else {
+//       // Check if already selected
+//       if (selectedOrderPanels.some(p => p._id === fullPanel._id)) {
+//         console.log(`⚠️ Order ${fullPanel.orderPanelNo} already selected`);
+//         return;
+//       }
+      
+//       console.log(`➕ Adding order: ${fullPanel.orderPanelNo}`);
+      
+//       setSelectedOrderPanels(prev => [...prev, fullPanel]);
+      
+//       if (fullPanel.plantRows && fullPanel.plantRows.length > 0) {
+//         const newOrders = fullPanel.plantRows.map((row) => {
+//           let plantId = null;
+//           let plantName = '';
+//           let plantCode = '';
+          
+//           if (row.plantCode) {
+//             if (typeof row.plantCode === 'object' && row.plantCode._id) {
+//               plantId = row.plantCode._id;
+//               plantName = row.plantCode.name || '';
+//               plantCode = row.plantCode.code || '';
+//             } else if (typeof row.plantCode === 'string' && isValidObjectId(row.plantCode)) {
+//               plantId = row.plantCode;
+//               plantName = row.plantName || '';
+//               plantCode = row.plantCodeValue || '';
+//             }
+//           }
+          
+//           if (!plantId && row.plantCodeValue) {
+//             const plant = plants.find(p => p.code === row.plantCodeValue);
+//             if (plant) {
+//               plantId = plant._id;
+//               plantName = plant.name;
+//               plantCode = plant.code;
+//             }
+//           }
+          
+//           return {
+//             _id: uid(),
+//             orderNo: fullPanel.orderPanelNo,
+//             orderPanelId: fullPanel._id,
+//             partyName: fullPanel.partyName || fullPanel.customerName || "",
+//             customerId: fullPanel.customerId || null,
+//             customerCode: fullPanel.customerCode || "",
+//             contactPerson: fullPanel.contactPerson || "",
+//             plantCode: plantId,
+//             plantName: plantName || row.plantName || "",
+//             plantCodeValue: plantCode || row.plantCodeValue || "",
+//             orderType: row.orderType || "Sales",
+//             pinCode: row.pinCode || "",
+//             from: row.from || null,
+//             fromName: row.fromName || "",
+//             fromState: row.fromState || "",
+//             to: row.to || null,
+//             toName: row.toName || "",
+//             taluka: row.taluka || "",
+//             talukaName: row.talukaName || "",
+//             district: row.district || "",
+//             districtName: row.districtName || "",
+//             state: row.state || "",
+//             stateName: row.stateName || "",
+//             country: row.country || "",
+//             countryName: row.countryName || "",
+//             weight: row.weight || "",
+//             status: row.status || "Open",
+//             collectionCharges: row.collectionCharges?.toString() || "",
+//             cancellationCharges: row.cancellationCharges?.toString() || "Nil",
+//             loadingCharges: row.loadingCharges?.toString() || "Nil",
+//             otherCharges: row.otherCharges?.toString() || "",
+//             localStatus: row.localStatus || "unknown",
+//             localStatusLabel: row.localStatusLabel || "Unknown"
+//           };
+//         });
+        
+//         setOrders(prev => {
+//           const existingOrdersFromPanel = prev.filter(o => o.orderPanelId === fullPanel._id);
+//           if (existingOrdersFromPanel.length > 0) {
+//             const otherOrders = prev.filter(o => o.orderPanelId !== fullPanel._id);
+//             return [...otherOrders, ...newOrders];
+//           }
+//           return [...prev, ...newOrders];
+//         });
+//       }
+
+//       // Update header charges and sub-company
+//       setHeader(prev => {
+//         const newHeader = { ...prev };
+        
+//         if (selectedOrderPanels.length === 0) {
+//           newHeader.branch = fullPanel.branch || null;
+//           newHeader.branchName = fullPanel.branchName || "";
+//           newHeader.branchCode = fullPanel.branchCode || "";
+//           // Add sub-company fields
+//           newHeader.subCompanyId = fullPanel.subCompanyId || null;
+//           newHeader.subCompanyName = fullPanel.subCompanyName || "";
+//           newHeader.subCompanyCode = fullPanel.subCompanyCode || "";
+//           newHeader.delivery = fullPanel.delivery || "Urgent";
+//           newHeader.date = fullPanel.date ? new Date(fullPanel.date).toISOString().split('T')[0] : prev.date;
+//           newHeader.partyName = fullPanel.partyName || fullPanel.customerName || "";
+//           newHeader.customerId = fullPanel.customerId || null;
+//           newHeader.collectionCharges = fullPanel.collectionCharges?.toString() || "0";
+//           newHeader.cancellationCharges = fullPanel.cancellationCharges?.toString() || "0";
+//           newHeader.loadingCharges = fullPanel.loadingCharges?.toString() || "0";
+//           newHeader.otherCharges = fullPanel.otherCharges?.toString() || "0";
+//           newHeader.loadingPoints = fullPanel.loadingPoints?.toString() || "0";
+//           newHeader.dropPoints = fullPanel.dropPoints?.toString() || "0";
+//         } else {
+//           newHeader.collectionCharges = String((Number(prev.collectionCharges) || 0) + (Number(fullPanel.collectionCharges) || 0));
+//           newHeader.cancellationCharges = String((Number(prev.cancellationCharges) || 0) + (Number(fullPanel.cancellationCharges) || 0));
+//           newHeader.loadingCharges = String((Number(prev.loadingCharges) || 0) + (Number(fullPanel.loadingCharges) || 0));
+//           newHeader.otherCharges = String((Number(prev.otherCharges) || 0) + (Number(fullPanel.otherCharges) || 0));
+//           newHeader.loadingPoints = String((Number(prev.loadingPoints) || 0) + (Number(fullPanel.loadingPoints) || 0));
+//           newHeader.dropPoints = String((Number(prev.dropPoints) || 0) + (Number(fullPanel.dropPoints) || 0));
+//           // Keep sub-company from first selected panel (or don't change if already set)
+//           if (!prev.subCompanyId) {
+//             newHeader.subCompanyId = fullPanel.subCompanyId || null;
+//             newHeader.subCompanyName = fullPanel.subCompanyName || "";
+//             newHeader.subCompanyCode = fullPanel.subCompanyCode || "";
+//           }
+//         }
+        
+//         return newHeader;
+//       });
+
+//       if (selectedOrderPanels.length === 0 && fullPanel.customerId) {
+//         const customer = customerSearch.customers.find(c => c._id === fullPanel.customerId);
+//         if (customer) {
+//           setSelectedCustomer(customer);
+//           setCustomerSearchQuery(customer.customerName);
+//         }
+//       }
+//     }
+//   }, [selectedOrderPanels, plants, customerSearch.customers]);
+
+//   // ============================================
+//   // ✅ FETCH SELECTED ORDERS FROM URL PARAMS - RUNS ONLY ONCE
+//   // ============================================
+//   const hasLoadedOrders = useRef(false);
+
+//   useEffect(() => {
+//     // Prevent multiple executions
+//     if (hasLoadedOrders.current) {
+//       console.log('⏭️ Orders already loaded, skipping...');
+//       return;
+//     }
+
+//     const urlParams = new URLSearchParams(window.location.search);
+//     const orderIds = urlParams.get('orderIds');
+//     const orderPanelNos = urlParams.get('orderPanelNos');
+    
+//     if (!orderIds) {
+//       console.log('ℹ️ No order IDs found in URL');
+//       return;
+//     }
+
+//     const ids = orderIds.split(',').filter(id => id.trim() !== '');
+//     const panelNos = orderPanelNos ? orderPanelNos.split(',').filter(no => no.trim() !== '') : [];
+    
+//     console.log(`📋 Loading ${ids.length} order(s) from URL params`);
+    
+//     // Mark as loaded immediately to prevent re-runs
+//     hasLoadedOrders.current = true;
+
+//     // Fetch and select these order panels
+//     const fetchAndSelectOrders = async () => {
+//       try {
+//         const token = localStorage.getItem('token');
+//         const loadedPanels = [];
+        
+//         for (let i = 0; i < ids.length; i++) {
+//           const id = ids[i];
+//           const panelNo = panelNos[i] || '';
+          
+//           if (!id) continue;
+          
+//           console.log(`📥 Fetching order ${i + 1}/${ids.length}: ${id}`);
+          
+//           const res = await fetch(`/api/order-panel?id=${id}`, {
+//             headers: { Authorization: `Bearer ${token}` },
+//           });
+//           const data = await res.json();
+          
+//           if (data.success && data.data) {
+//             const panel = data.data;
+            
+//             const formattedPanel = {
+//               _id: panel._id,
+//               orderPanelNo: panel.orderPanelNo || panelNo,
+//               branchName: panel.branchName || '',
+//               branchCode: panel.branchCode || '',
+//               branch: panel.branch || null,
+//               subCompanyId: panel.subCompanyId || null,
+//               subCompanyName: panel.subCompanyName || '',
+//               subCompanyCode: panel.subCompanyCode || '',
+//               customerId: panel.customerId || null,
+//               customerName: panel.customerName || '',
+//               customerCode: panel.customerCode || '',
+//               contactPerson: panel.contactPerson || '',
+//               partyName: panel.partyName || panel.customerName || '',
+//               collectionCharges: panel.collectionCharges || 0,
+//               cancellationCharges: panel.cancellationCharges || 'Nil',
+//               loadingCharges: panel.loadingCharges || 'Nil',
+//               otherCharges: panel.otherCharges || 0,
+//               loadingPoints: panel.loadingPoints || 0,
+//               dropPoints: panel.dropPoints || 0,
+//               delivery: panel.delivery || 'Normal',
+//               date: panel.date,
+//               plantRows: panel.plantRows || [],
+//               packData: panel.packData || {}
+//             };
+            
+//             loadedPanels.push(formattedPanel);
+//             console.log(`✅ Loaded order: ${formattedPanel.orderPanelNo}`);
+//           } else {
+//             console.warn(`⚠️ Failed to load order ${id}:`, data.message);
+//           }
+//         }
+        
+//         console.log(`📦 Adding ${loadedPanels.length} panel(s) to the form`);
+//         for (const panel of loadedPanels) {
+//           await new Promise(resolve => setTimeout(resolve, 100));
+//           await handleOrderPanelSelect(panel);
+//         }
+        
+//         console.log(`✅ Successfully loaded ${loadedPanels.length} order panel(s)`);
+        
+//         if (loadedPanels.length === 0) {
+//           alert('No valid orders could be loaded. Please try selecting orders again.');
+//         }
+        
+//       } catch (error) {
+//         console.error('Error loading selected orders:', error);
+//         alert('Error loading selected orders. Please try again.');
+//       }
+//     };
+    
+//     fetchAndSelectOrders();
+//   }, [handleOrderPanelSelect]);
 
 //   // Fetch Purchase Types from backend
 //   const fetchPurchaseTypes = async () => {
@@ -3962,6 +4309,9 @@
 //     branch: null,
 //     branchName: "",
 //     branchCode: "",
+//     subCompanyId: null,
+//     subCompanyName: "",
+//     subCompanyCode: "",
 //     delivery: "Urgent",
 //     date: new Date().toISOString().split('T')[0],
 //     loadingPoints: "",
@@ -3979,10 +4329,30 @@
 //   const [memoFile, setMemoFile] = useState(null);
 //   const audioRef = useRef(null);
 
+//   // Fetch Sub Companies
+//   const fetchSubCompanies = async () => {
+//     try {
+//       const token = localStorage.getItem('token');
+//       const res = await fetch('/api/subcompanies', {
+//         headers: { Authorization: `Bearer ${token}` },
+//       });
+//       const data = await res.json();
+//       if (data.success && Array.isArray(data.data)) {
+//         setSubCompanies(data.data);
+//       } else {
+//         setSubCompanies([]);
+//       }
+//     } catch (error) {
+//       console.error('Error fetching sub-companies:', error.message);
+//       setSubCompanies([]);
+//     }
+//   };
+
 //   useEffect(() => {
 //     fetchBranches();
 //     fetchCountries();
 //     fetchPlants();
+//     fetchSubCompanies();
 //     supplierSearch.searchSuppliers();
 //     fetchPurchaseTypes();
 //     fetchPaymentTerms();   
@@ -4115,168 +4485,6 @@
 //       vendorStatus: supplier.supplierStatus || "Active"
 //     }));
 //   };
-
-// const handleOrderPanelSelect = async (fullPanel, removePanelId = null) => {
-//   if (removePanelId) {
-//     const panelToRemove = selectedOrderPanels.find(p => p._id === removePanelId);
-    
-//     setSelectedOrderPanels(prev => prev.filter(p => p._id !== removePanelId));
-//     setOrders(prev => prev.filter(order => order.orderPanelId !== removePanelId));
-    
-//     if (panelToRemove) {
-//       setHeader(prev => ({
-//         ...prev,
-//         collectionCharges: String(Math.max(0, (Number(prev.collectionCharges) || 0) - (Number(panelToRemove.collectionCharges) || 0))),
-//         cancellationCharges: String(Math.max(0, (Number(prev.cancellationCharges) || 0) - (Number(panelToRemove.cancellationCharges) || 0))),
-//         loadingCharges: String(Math.max(0, (Number(prev.loadingCharges) || 0) - (Number(panelToRemove.loadingCharges) || 0))),
-//         otherCharges: String(Math.max(0, (Number(prev.otherCharges) || 0) - (Number(panelToRemove.otherCharges) || 0))),
-//         loadingPoints: String(Math.max(0, (Number(prev.loadingPoints) || 0) - (Number(panelToRemove.loadingPoints) || 0))),
-//         dropPoints: String(Math.max(0, (Number(prev.dropPoints) || 0) - (Number(panelToRemove.dropPoints) || 0)))
-//       }));
-//     }
-    
-//     if (selectedOrderPanels.length === 1) {
-//       setOrders([defaultOrderRow()]);
-//       setHeader(prev => ({
-//         ...prev,
-//         branch: null,
-//         branchName: "",
-//         branchCode: "",
-//         partyName: "",
-//         customerId: null,
-//         collectionCharges: "",
-//         cancellationCharges: "",
-//         loadingCharges: "",
-//         otherCharges: "",
-//         loadingPoints: "",
-//         dropPoints: ""
-//       }));
-//       setSelectedCustomer(null);
-//       setCustomerSearchQuery("");
-//     }
-//   } else {
-//     if (selectedOrderPanels.some(p => p._id === fullPanel._id)) {
-//       alert("This order panel is already selected");
-//       return;
-//     }
-    
-//     const newSelectedPanels = [...selectedOrderPanels, fullPanel];
-//     setSelectedOrderPanels(newSelectedPanels);
-    
-//     if (fullPanel.plantRows && fullPanel.plantRows.length > 0) {
-//       const newOrders = fullPanel.plantRows.map((row) => {
-//         let plantId = null;
-//         let plantName = '';
-//         let plantCode = '';
-        
-//         if (row.plantCode) {
-//           if (typeof row.plantCode === 'object' && row.plantCode._id) {
-//             plantId = row.plantCode._id;
-//             plantName = row.plantCode.name || '';
-//             plantCode = row.plantCode.code || '';
-//           } else if (typeof row.plantCode === 'string' && isValidObjectId(row.plantCode)) {
-//             plantId = row.plantCode;
-//             plantName = row.plantName || '';
-//             plantCode = row.plantCodeValue || '';
-//           }
-//         }
-        
-//         if (!plantId && row.plantCodeValue) {
-//           const plant = plants.find(p => p.code === row.plantCodeValue);
-//           if (plant) {
-//             plantId = plant._id;
-//             plantName = plant.name;
-//             plantCode = plant.code;
-//           }
-//         }
-        
-//         // ✅ FIX: Get charges from each plant row, not from top level
-//         return {
-//           _id: uid(),
-//           orderNo: fullPanel.orderPanelNo,
-//           orderPanelId: fullPanel._id,
-//           partyName: fullPanel.partyName || fullPanel.customerName || "",
-//           customerId: fullPanel.customerId || null,
-//           customerCode: fullPanel.customerCode || "",
-//           contactPerson: fullPanel.contactPerson || "",
-//           plantCode: plantId,
-//           plantName: plantName || row.plantName || "",
-//           plantCodeValue: plantCode || row.plantCodeValue || "",
-//           orderType: row.orderType || "Sales",
-//           pinCode: row.pinCode || "",
-//           from: row.from || null,
-//           fromName: row.fromName || "",
-//           fromState: row.fromState || "",
-//           to: row.to || null,
-//           toName: row.toName || "",
-//           taluka: row.taluka || "",
-//           talukaName: row.talukaName || "",
-//           district: row.district || "",
-//           districtName: row.districtName || "",
-//           state: row.state || "",
-//           stateName: row.stateName || "",
-//           country: row.country || "",
-//           countryName: row.countryName || "",
-//           weight: row.weight || "",
-//           status: row.status || "Open",
-//           // ✅ FIX: Map charges from the plant row (per order)
-//           collectionCharges: row.collectionCharges?.toString() || "",
-//           cancellationCharges: row.cancellationCharges?.toString() || "Nil",
-//           loadingCharges: row.loadingCharges?.toString() || "Nil",
-//           otherCharges: row.otherCharges?.toString() || "",
-//           localStatus: row.localStatus || "unknown",
-//           localStatusLabel: row.localStatusLabel || "Unknown"
-//         };
-//       });
-      
-//       setOrders(prev => {
-//         const existingOrdersFromPanel = prev.filter(o => o.orderPanelId === fullPanel._id);
-//         if (existingOrdersFromPanel.length > 0) {
-//           const otherOrders = prev.filter(o => o.orderPanelId !== fullPanel._id);
-//           return [...otherOrders, ...newOrders];
-//         }
-//         return [...prev, ...newOrders];
-//       });
-//     }
-
-//     if (selectedOrderPanels.length === 0) {
-//       setHeader(prev => ({
-//         ...prev,
-//         branch: fullPanel.branch || null,
-//         branchName: fullPanel.branchName || "",
-//         branchCode: fullPanel.branchCode || "",
-//         delivery: fullPanel.delivery || "Urgent",
-//         date: fullPanel.date ? new Date(fullPanel.date).toISOString().split('T')[0] : prev.date,
-//         partyName: fullPanel.partyName || fullPanel.customerName || "",
-//         customerId: fullPanel.customerId || null,
-//         collectionCharges: fullPanel.collectionCharges?.toString() || "0",
-//         cancellationCharges: fullPanel.cancellationCharges?.toString() || "0",
-//         loadingCharges: fullPanel.loadingCharges?.toString() || "0",
-//         otherCharges: fullPanel.otherCharges?.toString() || "0",
-//         loadingPoints: fullPanel.loadingPoints?.toString() || "0",
-//         dropPoints: fullPanel.dropPoints?.toString() || "0"
-//       }));
-//     } else {
-//       setHeader(prev => ({
-//         ...prev,
-//         collectionCharges: String((Number(prev.collectionCharges) || 0) + (Number(fullPanel.collectionCharges) || 0)),
-//         cancellationCharges: String((Number(prev.cancellationCharges) || 0) + (Number(fullPanel.cancellationCharges) || 0)),
-//         loadingCharges: String((Number(prev.loadingCharges) || 0) + (Number(fullPanel.loadingCharges) || 0)),
-//         otherCharges: String((Number(prev.otherCharges) || 0) + (Number(fullPanel.otherCharges) || 0)),
-//         loadingPoints: String((Number(prev.loadingPoints) || 0) + (Number(fullPanel.loadingPoints) || 0)),
-//         dropPoints: String((Number(prev.dropPoints) || 0) + (Number(fullPanel.dropPoints) || 0))
-//       }));
-//     }
-
-//     if (selectedOrderPanels.length === 0 && fullPanel.customerId) {
-//       const customer = customerSearch.customers.find(c => c._id === fullPanel.customerId);
-//       if (customer) {
-//         setSelectedCustomer(customer);
-//         setCustomerSearchQuery(customer.customerName);
-//       }
-//     }
-//   }
-// };
 
 //   const updateOrder = (id, key, value) => {
 //     setOrders((prev) => prev.map((r) => (r._id === id ? { ...r, [key]: value } : r)));
@@ -4680,6 +4888,9 @@
 //       branch: null,
 //       branchName: "",
 //       branchCode: "",
+//       subCompanyId: null,
+//       subCompanyName: "",
+//       subCompanyCode: "",
 //       delivery: "Urgent",
 //       date: new Date().toISOString().split('T')[0],
 //       loadingPoints: "",
@@ -5044,122 +5255,119 @@
 //     );
 //   };
 
-//  const VendorsTable = ({ rows, onChange, onRemove, onAdd }) => {
-//   // Track selected supplier names for each row
-//   const [selectedSupplierNames, setSelectedSupplierNames] = useState({});
-  
-//   useEffect(() => {
-//     const names = {};
-//     rows.forEach(row => {
-//       if (row.vendorName) {
-//         names[row._id] = row.vendorName;
-//       }
-//     });
-//     setSelectedSupplierNames(names);
-//   }, [rows]);
+//   const VendorsTable = ({ rows, onChange, onRemove, onAdd }) => {
+//     const [selectedSupplierNames, setSelectedSupplierNames] = useState({});
+    
+//     useEffect(() => {
+//       const names = {};
+//       rows.forEach(row => {
+//         if (row.vendorName) {
+//           names[row._id] = row.vendorName;
+//         }
+//       });
+//       setSelectedSupplierNames(names);
+//     }, [rows]);
 
-//   return (
-//     <div className="overflow-auto rounded-xl border border-yellow-300 max-h-[300px]">
-//       <table className="min-w-full w-full text-sm">
-//         <thead className="sticky top-0 bg-yellow-400">
-//           <tr>
-//             {vendorColumns.map((col) => (
-//               <th
-//                 key={col.key}
-//                 className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 text-center"
-//               >
-//                 {col.label}
-//               </th>
-//             ))}
-//             <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 text-center">
-//               Actions
-//             </th>
-//           </tr>
-//         </thead>
-
-//         <tbody>
-//           {rows.map((row, index) => (
-//             <tr key={row._id} className="hover:bg-yellow-50 even:bg-slate-50">
-//               <td className="border border-yellow-300 px-2 py-2">
-//                 <TableSearchableDropdown
-//                   items={supplierSearch?.suppliers || []}
-//                   selectedId={selectedSupplierNames[row._id] || row.vendorName}
-//                   onSelect={(supplier) => {
-//                     if (supplier) {
-//                       setSelectedSupplierNames(prev => ({
-//                         ...prev,
-//                         [row._id]: supplier.supplierName
-//                       }));
-//                       updateVendor(row._id, 'vendorName', supplier.supplierName);
-//                       updateVendor(row._id, 'vendorCode', supplier.supplierCode || '');
-//                     }
-//                   }}
-//                   placeholder="Select Supplier"
-//                   displayField="supplierName"
-//                   codeField="supplierCode"
-//                   cellId={`supplier-${row._id}`}
-//                 />
-//               </td>
-//               <td className="border border-yellow-300 px-2 py-2">
-//                 <input
-//                   type="text"
-//                   value={row.vendorCode || ""}
-//                   readOnly
-//                   className="w-full rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-sm outline-none cursor-not-allowed"
-//                   placeholder="Auto-filled"
-//                 />
-//               </td>
-//               <td className="border border-yellow-300 px-2 py-2">
-//                 <select
-//                   value={row.purchaseType || ""}
-//                   onChange={(e) => updateVendor(row._id, 'purchaseType', e.target.value)}
-//                   className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+//     return (
+//       <div className="overflow-auto rounded-xl border border-yellow-300 max-h-[300px]">
+//         <table className="min-w-full w-full text-sm">
+//           <thead className="sticky top-0 bg-yellow-400">
+//             <tr>
+//               {vendorColumns.map((col) => (
+//                 <th
+//                   key={col.key}
+//                   className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 text-center"
 //                 >
-//                   <option value="">Select Purchase Type</option>
-//                   {purchaseTypes.length > 0 ? (
-//                     purchaseTypes.map((opt) => (
-//                       <option key={opt} value={opt}>{opt}</option>
-//                     ))
-//                   ) : (
-//                     <option value="" disabled>No purchase types available</option>
-//                   )}
-//                 </select>
-//               </td>
-//               <td className="border border-yellow-300 px-2 py-2">
-//   <input
-//     type="text"
-//     defaultValue={row.marketRate || ""}
-//     onBlur={(e) => {
-//       const value = e.target.value;
-//       // Allow only numbers and decimal point
-//       if (value === '' || /^\d*\.?\d*$/.test(value)) {
-//         updateVendor(row._id, 'marketRate', value);
-//       } else {
-//         // Reset to previous value if invalid
-//         e.target.value = row.marketRate || "";
-//       }
-//     }}
-//     className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-//     placeholder="Enter Market Rate"
-//   />
-// </td>
-//               <td className="border border-yellow-300 px-2 py-2 text-center">
-//                 {rows.length > 1 && (
-//                   <button
-//                     onClick={() => onRemove(row._id)}
-//                     className="rounded-lg bg-red-500 px-3 py-1.5 text-xs font-bold text-white hover:bg-red-600 transition"
-//                   >
-//                     Remove
-//                   </button>
-//                 )}
-//               </td>
+//                   {col.label}
+//                 </th>
+//               ))}
+//               <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 text-center">
+//                 Actions
+//               </th>
 //             </tr>
-//           ))}
-//         </tbody>
-//       </table>
-//     </div>
-//   );
-// };
+//           </thead>
+
+//           <tbody>
+//             {rows.map((row, index) => (
+//               <tr key={row._id} className="hover:bg-yellow-50 even:bg-slate-50">
+//                 <td className="border border-yellow-300 px-2 py-2">
+//                   <TableSearchableDropdown
+//                     items={supplierSearch?.suppliers || []}
+//                     selectedId={selectedSupplierNames[row._id] || row.vendorName}
+//                     onSelect={(supplier) => {
+//                       if (supplier) {
+//                         setSelectedSupplierNames(prev => ({
+//                           ...prev,
+//                           [row._id]: supplier.supplierName
+//                         }));
+//                         updateVendor(row._id, 'vendorName', supplier.supplierName);
+//                         updateVendor(row._id, 'vendorCode', supplier.supplierCode || '');
+//                       }
+//                     }}
+//                     placeholder="Select Supplier"
+//                     displayField="supplierName"
+//                     codeField="supplierCode"
+//                     cellId={`supplier-${row._id}`}
+//                   />
+//                 </td>
+//                 <td className="border border-yellow-300 px-2 py-2">
+//                   <input
+//                     type="text"
+//                     value={row.vendorCode || ""}
+//                     readOnly
+//                     className="w-full rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-sm outline-none cursor-not-allowed"
+//                     placeholder="Auto-filled"
+//                   />
+//                 </td>
+//                 <td className="border border-yellow-300 px-2 py-2">
+//                   <select
+//                     value={row.purchaseType || ""}
+//                     onChange={(e) => updateVendor(row._id, 'purchaseType', e.target.value)}
+//                     className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+//                   >
+//                     <option value="">Select Purchase Type</option>
+//                     {purchaseTypes.length > 0 ? (
+//                       purchaseTypes.map((opt) => (
+//                         <option key={opt} value={opt}>{opt}</option>
+//                       ))
+//                     ) : (
+//                       <option value="" disabled>No purchase types available</option>
+//                     )}
+//                   </select>
+//                 </td>
+//                 <td className="border border-yellow-300 px-2 py-2">
+//                   <input
+//                     type="text"
+//                     defaultValue={row.marketRate || ""}
+//                     onBlur={(e) => {
+//                       const value = e.target.value;
+//                       if (value === '' || /^\d*\.?\d*$/.test(value)) {
+//                         updateVendor(row._id, 'marketRate', value);
+//                       } else {
+//                         e.target.value = row.marketRate || "";
+//                       }
+//                     }}
+//                     className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+//                     placeholder="Enter Market Rate"
+//                   />
+//                 </td>
+//                 <td className="border border-yellow-300 px-2 py-2 text-center">
+//                   {rows.length > 1 && (
+//                     <button
+//                       onClick={() => onRemove(row._id)}
+//                       className="rounded-lg bg-red-500 px-3 py-1.5 text-xs font-bold text-white hover:bg-red-600 transition"
+//                     >
+//                       Remove
+//                     </button>
+//                   )}
+//                 </td>
+//               </tr>
+//             ))}
+//           </tbody>
+//         </table>
+//       </div>
+//     );
+//   };
 
 //   return (
 //     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white">
@@ -5235,6 +5443,33 @@
 //               />
 //             </div>
 
+//             {/* Sub-Company Dropdown */}
+//             <div className="col-span-12 md:col-span-3">
+//               <label className="text-xs font-bold text-slate-600">Sub-Company</label>
+//               <select
+//                 value={header.subCompanyId || ''}
+//                 onChange={(e) => {
+//                   const subCompanyId = e.target.value;
+//                   const selected = subCompanies.find(sc => sc._id === subCompanyId);
+//                   setHeader(prev => ({
+//                     ...prev,
+//                     subCompanyId: subCompanyId,
+//                     subCompanyName: selected?.name || '',
+//                     subCompanyCode: selected?.code || ''
+//                   }));
+//                 }}
+//                 disabled={selectedOrderPanels.length > 0}
+//                 className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 disabled:bg-slate-50 disabled:cursor-not-allowed"
+//               >
+//                 <option value="">Select Sub-Company</option>
+//                 {subCompanies.map((sc) => (
+//                   <option key={sc._id} value={sc._id}>
+//                     {sc.name} ({sc.code})
+//                   </option>
+//                 ))}
+//               </select>
+//             </div>
+
 //             <Select col="col-span-12 md:col-span-3" label="Delivery" value={header.delivery} onChange={(v) => setHeader((p) => ({ ...p, delivery: v }))} options={["Urgent", "Normal", "Express", "Scheduled"]} readOnly={selectedOrderPanels.length > 0} />
 //             <Input type="date" col="col-span-12 md:col-span-3" label="Date" value={header.date} onChange={(v) => setHeader((p) => ({ ...p, date: v }))} readOnly={selectedOrderPanels.length > 0} />
             
@@ -5276,7 +5511,6 @@
 //           <div className="mb-4">
 //             <div className="text-sm font-bold text-slate-700 mb-2">Billing Type / Charges</div>
 //             <BillingTypeTable header={header} setHeader={setHeader} billingColumns={billingColumns} selectedOrderPanels={selectedOrderPanels} orders={orders} />
-            
 //           </div>
 
 //           {/* Orders Table */}
@@ -5296,7 +5530,7 @@
 //             </div>
 //           </div>
 
-//           {/* Suppliers / Market Rates Section - Added at bottom of Part 1 */}
+//           {/* Suppliers / Market Rates Section */}
 //           <div className="mt-6">
 //             <div className="flex items-center justify-between mb-4">
 //               <div className="text-sm font-bold text-slate-700">Suppliers / Market Rates</div>
@@ -5364,7 +5598,6 @@
 //               value={approval.rateType} 
 //               onChange={(v) => {
 //                 setApproval((p) => ({ ...p, rateType: v }));
-//                 // Clear the other field when switching
 //                 if (v === "Per MT") {
 //                   setApproval((p) => ({ ...p, finalFix: "" }));
 //                 } else if (v === "Fixed") {
@@ -5435,18 +5668,18 @@
 
 //           <div>
 //             <div className="text-sm font-extrabold text-slate-900 mb-3">Remarks</div>
-//            <textarea
-//   value={approval.remarks}
-//   onChange={(e) => setApproval((p) => ({ ...p, remarks: e.target.value }))}
-//   className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm outline-none cursor-not-allowed"
-//   rows={2}
-//   placeholder="Enter approval remarks..."
-//   readOnly={true}
-// />
+//             <textarea
+//               value={approval.remarks}
+//               onChange={(e) => setApproval((p) => ({ ...p, remarks: e.target.value }))}
+//               className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm outline-none cursor-not-allowed"
+//               rows={2}
+//               placeholder="Enter approval remarks..."
+//               readOnly={true}
+//             />
 //           </div>
 //         </Card>
 
-//         {/* MEMO UPLOAD with Approval Dropdown */}
+//         {/* MEMO UPLOAD */}
 //         <Card title="Memo - Upload">
 //           <div className="rounded-xl border border-slate-200 p-4">
 //             <div className="text-sm font-extrabold text-slate-900 mb-3">Memo Upload</div>
@@ -5490,7 +5723,6 @@
 //     </div>
 //   );
 // }
-
 "use client";
 
 import { useMemo, useRef, useState, useEffect, useCallback } from "react";
@@ -5687,7 +5919,7 @@ function useVehicleSearch() {
 }
 
 /* =======================
-  Order Panel Search Hook
+  Order Panel Search Hook - Only Approved Orders
 ========================= */
 function useOrderPanelSearch() {
   const [orderPanels, setOrderPanels] = useState([]);
@@ -5700,6 +5932,7 @@ function useOrderPanelSearch() {
     try {
       const token = localStorage.getItem('token');
       
+      // First, get used order panel IDs from vehicle negotiations
       const vehicleRes = await fetch('/api/vehicle-negotiation?format=table', {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -5716,6 +5949,7 @@ function useOrderPanelSearch() {
         });
       }
       
+      // Fetch order panels
       const res = await fetch('/api/order-panel', {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -5727,7 +5961,9 @@ function useOrderPanelSearch() {
       const data = await res.json();
       
       if (data.success && Array.isArray(data.data)) {
+        // Filter: only Approved status and not used in vehicle negotiation
         const availablePanels = data.data.filter(panel => 
+          panel.panelStatus === 'Approved' && 
           !usedOrderPanelIds.has(panel.orderPanelNo)
         );
         
@@ -5819,7 +6055,10 @@ function defaultOrderRow(index = 1) {
     loadingCharges: "",
     otherCharges: "",
     localStatus: "unknown",
-    localStatusLabel: "Unknown"
+    localStatusLabel: "Unknown",
+    subCompanyId: null,
+    subCompanyName: "",
+    subCompanyCode: ""
   };
 }
 
@@ -5879,9 +6118,7 @@ function Select({ label, value, onChange, options = [], col = "", readOnly = fal
       >
         <option value="">Select {label}</option>
         {options.map((o) => (
-          <option key={o} value={o}>
-            {o}
-          </option>
+          <option key={o} value={o}>{o}</option>
         ))}
       </select>
     </div>
@@ -6361,9 +6598,22 @@ function MultiSelectOrderPanelDropdown({
       setAllPanels(orderPanelSearch.orderPanels);
       
       const selectedIds = selectedPanels.map(p => p._id);
-      const filtered = orderPanelSearch.orderPanels.filter(
+      
+      // Get the sub-company of the first selected panel (if any)
+      const firstSelectedSubCompanyId = selectedPanels.length > 0 ? selectedPanels[0].subCompanyId : null;
+      
+      // Filter panels based on sub-company restriction
+      let filtered = orderPanelSearch.orderPanels.filter(
         panel => !selectedIds.includes(panel._id)
       );
+      
+      // If there's a selected sub-company, only show panels from that sub-company
+      if (firstSelectedSubCompanyId) {
+        filtered = filtered.filter(panel => 
+          panel.subCompanyId === firstSelectedSubCompanyId
+        );
+      }
+      
       setPanels(filtered);
     }
   }, [orderPanelSearch.orderPanels, selectedPanels]);
@@ -6372,18 +6622,35 @@ function MultiSelectOrderPanelDropdown({
     setSearchQuery(query);
     
     const selectedIds = selectedPanels.map(p => p._id);
+    const firstSelectedSubCompanyId = selectedPanels.length > 0 ? selectedPanels[0].subCompanyId : null;
     
     if (!query.trim()) {
-      const filtered = allPanels.filter(panel => !selectedIds.includes(panel._id));
+      let filtered = allPanels.filter(panel => !selectedIds.includes(panel._id));
+      
+      if (firstSelectedSubCompanyId) {
+        filtered = filtered.filter(panel => 
+          panel.subCompanyId === firstSelectedSubCompanyId
+        );
+      }
+      
       setPanels(filtered);
     } else {
-      const filtered = allPanels.filter(panel => 
+      let filtered = allPanels.filter(panel => 
         !selectedIds.includes(panel._id) && (
           panel.orderPanelNo?.toLowerCase().includes(query.toLowerCase()) ||
           panel.partyName?.toLowerCase().includes(query.toLowerCase()) ||
-          panel.customerName?.toLowerCase().includes(query.toLowerCase())
+          panel.customerName?.toLowerCase().includes(query.toLowerCase()) ||
+          panel.subCompanyName?.toLowerCase().includes(query.toLowerCase()) ||
+          panel.subCompanyCode?.toLowerCase().includes(query.toLowerCase())
         )
       );
+      
+      if (firstSelectedSubCompanyId) {
+        filtered = filtered.filter(panel => 
+          panel.subCompanyId === firstSelectedSubCompanyId
+        );
+      }
+      
       setPanels(filtered);
     }
   };
@@ -6394,6 +6661,15 @@ function MultiSelectOrderPanelDropdown({
     if (selectedPanels.some(p => p._id === panel._id)) {
       alert("This order panel is already selected");
       return;
+    }
+    
+    // Check sub-company consistency
+    if (selectedPanels.length > 0) {
+      const firstPanelSubCompanyId = selectedPanels[0].subCompanyId;
+      if (panel.subCompanyId !== firstPanelSubCompanyId) {
+        alert(`⚠️ You can only select orders from the same sub-company.\nCurrent: ${selectedPanels[0].subCompanyName || 'None'}\nSelected: ${panel.subCompanyName || 'None'}`);
+        return;
+      }
     }
     
     setLoading(true);
@@ -6437,9 +6713,18 @@ function MultiSelectOrderPanelDropdown({
     await orderPanelSearch.searchOrderPanels();
     
     const selectedIds = selectedPanels.map(p => p._id);
-    const filtered = orderPanelSearch.orderPanels.filter(
+    const firstSelectedSubCompanyId = selectedPanels.length > 0 ? selectedPanels[0].subCompanyId : null;
+    
+    let filtered = orderPanelSearch.orderPanels.filter(
       panel => !selectedIds.includes(panel._id)
     );
+    
+    if (firstSelectedSubCompanyId) {
+      filtered = filtered.filter(panel => 
+        panel.subCompanyId === firstSelectedSubCompanyId
+      );
+    }
+    
     setPanels(filtered);
     setShowDropdown(true);
   };
@@ -6464,16 +6749,28 @@ function MultiSelectOrderPanelDropdown({
     };
   }, []);
 
+  const currentSubCompany = selectedPanels.length > 0 ? selectedPanels[0] : null;
+
   return (
     <div className="relative" ref={dropdownRef}>
       {selectedPanels.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-2 p-2 border border-yellow-200 rounded-lg bg-yellow-50">
+          {currentSubCompany && currentSubCompany.subCompanyName && (
+            <div className="w-full text-xs font-semibold text-blue-600 mb-1">
+              Sub-Company: {currentSubCompany.subCompanyName} ({currentSubCompany.subCompanyCode})
+            </div>
+          )}
           {selectedPanels.map((panel) => (
             <div
               key={panel._id}
               className="flex items-center gap-1 bg-yellow-100 px-2 py-1 rounded-md text-sm"
             >
               <span className="font-medium">{panel.orderPanelNo}</span>
+              {panel.subCompanyName && (
+                <span className="text-xs text-gray-500 ml-1">
+                  ({panel.subCompanyName})
+                </span>
+              )}
               <button
                 onClick={() => handleRemovePanel(panel._id)}
                 className="text-red-500 hover:text-red-700 font-bold ml-1"
@@ -6494,7 +6791,7 @@ function MultiSelectOrderPanelDropdown({
         onClick={handleInputClick}
         onBlur={handleInputBlur}
         className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-        placeholder={placeholder}
+        placeholder={selectedPanels.length > 0 ? `Add more orders from same sub-company...` : placeholder}
         autoComplete="off"
       />
       
@@ -6524,6 +6821,11 @@ function MultiSelectOrderPanelDropdown({
                   {panel.partyName || panel.customerName || 'N/A'} | 
                   Branch: {panel.branchName || panel.branchCode || 'N/A'} | 
                   Weight: {panel.totalWeight || 0}
+                  {panel.subCompanyName && (
+                    <span className="ml-2 text-blue-600">
+                      Sub-Company: {panel.subCompanyName} ({panel.subCompanyCode})
+                    </span>
+                  )}
                 </div>
               </div>
             ))
@@ -6531,11 +6833,13 @@ function MultiSelectOrderPanelDropdown({
             <div className="p-3 text-center text-sm text-slate-500">
               {searchQuery.trim() ? 
                 `No matching order panels found for "${searchQuery}"` : 
-                "No order panels available"
+                selectedPanels.length > 0 ? 
+                  "No more order panels available from this sub-company" :
+                  "No order panels available"
               }
-              {selectedPanels.length > 0 && (
-                <div className="text-xs text-slate-400 mt-1">
-                  {selectedPanels.length} panel(s) already selected
+              {selectedPanels.length > 0 && selectedPanels[0].subCompanyName && (
+                <div className="text-xs text-blue-600 mt-1">
+                  Currently selecting from: {selectedPanels[0].subCompanyName}
                 </div>
               )}
             </div>
@@ -6618,6 +6922,7 @@ export default function VehicleNegotiationPanel() {
   const router = useRouter();
   
   const [branches, setBranches] = useState([]);
+  const [subCompanies, setSubCompanies] = useState([]);
   const [countries, setCountries] = useState([]);
   const [plants, setPlants] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -6672,6 +6977,9 @@ export default function VehicleNegotiationPanel() {
           branch: null,
           branchName: "",
           branchCode: "",
+          subCompanyId: null,
+          subCompanyName: "",
+          subCompanyCode: "",
           partyName: "",
           customerId: null,
           collectionCharges: "",
@@ -6689,6 +6997,29 @@ export default function VehicleNegotiationPanel() {
       if (selectedOrderPanels.some(p => p._id === fullPanel._id)) {
         console.log(`⚠️ Order ${fullPanel.orderPanelNo} already selected`);
         return;
+      }
+      
+      // Check sub-company consistency
+      if (selectedOrderPanels.length > 0) {
+        const currentSubCompanyId = selectedOrderPanels[0].subCompanyId;
+        const newSubCompanyId = fullPanel.subCompanyId;
+        
+        // If both have sub-company and they don't match, block selection
+        if (currentSubCompanyId && newSubCompanyId && currentSubCompanyId !== newSubCompanyId) {
+          alert(`⚠️ You can only select orders from the same sub-company.\nCurrent: ${selectedOrderPanels[0].subCompanyName || 'None'}\nSelected: ${fullPanel.subCompanyName || 'None'}`);
+          return;
+        }
+        
+        // If one has sub-company and other doesn't
+        if (currentSubCompanyId && !newSubCompanyId) {
+          alert(`⚠️ This order has no sub-company. Please select orders from the same sub-company: ${selectedOrderPanels[0].subCompanyName}`);
+          return;
+        }
+        
+        if (!currentSubCompanyId && newSubCompanyId) {
+          alert(`⚠️ This order has sub-company: ${fullPanel.subCompanyName}. Please select orders from the same sub-company or start fresh.`);
+          return;
+        }
       }
       
       console.log(`➕ Adding order: ${fullPanel.orderPanelNo}`);
@@ -6750,12 +7081,15 @@ export default function VehicleNegotiationPanel() {
             countryName: row.countryName || "",
             weight: row.weight || "",
             status: row.status || "Open",
-            collectionCharges: row.collectionCharges?.toString() || "",
-            cancellationCharges: row.cancellationCharges?.toString() || "Nil",
-            loadingCharges: row.loadingCharges?.toString() || "Nil",
-            otherCharges: row.otherCharges?.toString() || "",
+            collectionCharges: fullPanel.collectionCharges?.toString() || "",
+            cancellationCharges: fullPanel.cancellationCharges?.toString() || "",
+            loadingCharges: fullPanel.loadingCharges?.toString() || "",
+            otherCharges: fullPanel.otherCharges?.toString() || "",
             localStatus: row.localStatus || "unknown",
-            localStatusLabel: row.localStatusLabel || "Unknown"
+            localStatusLabel: row.localStatusLabel || "Unknown",
+            subCompanyId: fullPanel.subCompanyId || null,
+            subCompanyName: fullPanel.subCompanyName || '',
+            subCompanyCode: fullPanel.subCompanyCode || ''
           };
         });
         
@@ -6769,7 +7103,7 @@ export default function VehicleNegotiationPanel() {
         });
       }
 
-      // Update header charges
+      // Update header charges and sub-company
       setHeader(prev => {
         const newHeader = { ...prev };
         
@@ -6777,6 +7111,10 @@ export default function VehicleNegotiationPanel() {
           newHeader.branch = fullPanel.branch || null;
           newHeader.branchName = fullPanel.branchName || "";
           newHeader.branchCode = fullPanel.branchCode || "";
+          // Add sub-company fields
+          newHeader.subCompanyId = fullPanel.subCompanyId || null;
+          newHeader.subCompanyName = fullPanel.subCompanyName || "";
+          newHeader.subCompanyCode = fullPanel.subCompanyCode || "";
           newHeader.delivery = fullPanel.delivery || "Urgent";
           newHeader.date = fullPanel.date ? new Date(fullPanel.date).toISOString().split('T')[0] : prev.date;
           newHeader.partyName = fullPanel.partyName || fullPanel.customerName || "";
@@ -6794,6 +7132,12 @@ export default function VehicleNegotiationPanel() {
           newHeader.otherCharges = String((Number(prev.otherCharges) || 0) + (Number(fullPanel.otherCharges) || 0));
           newHeader.loadingPoints = String((Number(prev.loadingPoints) || 0) + (Number(fullPanel.loadingPoints) || 0));
           newHeader.dropPoints = String((Number(prev.dropPoints) || 0) + (Number(fullPanel.dropPoints) || 0));
+          // Keep sub-company from first selected panel
+          if (!prev.subCompanyId) {
+            newHeader.subCompanyId = fullPanel.subCompanyId || null;
+            newHeader.subCompanyName = fullPanel.subCompanyName || "";
+            newHeader.subCompanyCode = fullPanel.subCompanyCode || "";
+          }
         }
         
         return newHeader;
@@ -6815,7 +7159,6 @@ export default function VehicleNegotiationPanel() {
   const hasLoadedOrders = useRef(false);
 
   useEffect(() => {
-    // Prevent multiple executions
     if (hasLoadedOrders.current) {
       console.log('⏭️ Orders already loaded, skipping...');
       return;
@@ -6835,10 +7178,8 @@ export default function VehicleNegotiationPanel() {
     
     console.log(`📋 Loading ${ids.length} order(s) from URL params`);
     
-    // Mark as loaded immediately to prevent re-runs
     hasLoadedOrders.current = true;
 
-    // Fetch and select these order panels
     const fetchAndSelectOrders = async () => {
       try {
         const token = localStorage.getItem('token');
@@ -6866,6 +7207,9 @@ export default function VehicleNegotiationPanel() {
               branchName: panel.branchName || '',
               branchCode: panel.branchCode || '',
               branch: panel.branch || null,
+              subCompanyId: panel.subCompanyId || null,
+              subCompanyName: panel.subCompanyName || '',
+              subCompanyCode: panel.subCompanyCode || '',
               customerId: panel.customerId || null,
               customerName: panel.customerName || '',
               customerCode: panel.customerCode || '',
@@ -6954,6 +7298,9 @@ export default function VehicleNegotiationPanel() {
     branch: null,
     branchName: "",
     branchCode: "",
+    subCompanyId: null,
+    subCompanyName: "",
+    subCompanyCode: "",
     delivery: "Urgent",
     date: new Date().toISOString().split('T')[0],
     loadingPoints: "",
@@ -6971,10 +7318,30 @@ export default function VehicleNegotiationPanel() {
   const [memoFile, setMemoFile] = useState(null);
   const audioRef = useRef(null);
 
+  // Fetch Sub Companies
+  const fetchSubCompanies = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/subcompanies', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (data.success && Array.isArray(data.data)) {
+        setSubCompanies(data.data);
+      } else {
+        setSubCompanies([]);
+      }
+    } catch (error) {
+      console.error('Error fetching sub-companies:', error.message);
+      setSubCompanies([]);
+    }
+  };
+
   useEffect(() => {
     fetchBranches();
     fetchCountries();
     fetchPlants();
+    fetchSubCompanies();
     supplierSearch.searchSuppliers();
     fetchPurchaseTypes();
     fetchPaymentTerms();   
@@ -7366,7 +7733,10 @@ export default function VehicleNegotiationPanel() {
         },
         selectedOrderPanels: selectedOrderPanels.map(panel => ({
           _id: panel._id,
-          orderPanelNo: panel.orderPanelNo
+          orderPanelNo: panel.orderPanelNo,
+          subCompanyId: panel.subCompanyId || header.subCompanyId || null,
+          subCompanyName: panel.subCompanyName || header.subCompanyName || '',
+          subCompanyCode: panel.subCompanyCode || header.subCompanyCode || ''
         })),
         orders: orders.map(order => ({
           orderNo: order.orderNo,
@@ -7400,7 +7770,10 @@ export default function VehicleNegotiationPanel() {
           loadingCharges: order.loadingCharges || 'Nil',
           otherCharges: num(order.otherCharges) || 0,
           localStatus: order.localStatus || 'unknown',
-          localStatusLabel: order.localStatusLabel || 'Unknown'
+          localStatusLabel: order.localStatusLabel || 'Unknown',
+          subCompanyId: order.subCompanyId || header.subCompanyId || null,
+          subCompanyName: order.subCompanyName || header.subCompanyName || '',
+          subCompanyCode: order.subCompanyCode || header.subCompanyCode || ''
         })),
         totalWeight,
         negotiation: {
@@ -7510,6 +7883,9 @@ export default function VehicleNegotiationPanel() {
       branch: null,
       branchName: "",
       branchCode: "",
+      subCompanyId: null,
+      subCompanyName: "",
+      subCompanyCode: "",
       delivery: "Urgent",
       date: new Date().toISOString().split('T')[0],
       loadingPoints: "",
@@ -7594,6 +7970,7 @@ export default function VehicleNegotiationPanel() {
     { key: "cancellationCharges", label: "Cancellation Charges" },
     { key: "loadingCharges", label: "Loading Charges" },
     { key: "otherCharges", label: "Other Charges" },
+    { key: "subCompanyName", label: "Sub-Company" },
   ];
 
   const vendorColumns = [
@@ -7846,6 +8223,14 @@ export default function VehicleNegotiationPanel() {
                         placeholder="Other Charges"
                       />
                     </td>
+                    <td className="border border-yellow-300 px-2 py-2">
+                      <div className="text-sm">
+                        <span className="font-medium">{row.subCompanyName || '-'}</span>
+                        {row.subCompanyCode && (
+                          <span className="text-xs text-gray-500 ml-1">({row.subCompanyCode})</span>
+                        )}
+                      </div>
+                    </td>
                     <td className="border border-yellow-300 px-2 py-2 text-center">
                       {isReadOnly ? (
                         <span className="text-xs text-slate-400">Read Only</span>
@@ -8060,6 +8445,53 @@ export default function VehicleNegotiationPanel() {
                 codeField="code"
                 disabled={selectedOrderPanels.length > 0}
               />
+            </div>
+
+            {/* Sub-Company Dropdown */}
+            <div className="col-span-12 md:col-span-3">
+              <label className="text-xs font-bold text-slate-600">Sub-Company</label>
+              {selectedOrderPanels.length > 0 && selectedOrderPanels[0].subCompanyName ? (
+                <div className="mt-1 w-full rounded-xl border border-slate-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700">
+                  {selectedOrderPanels[0].subCompanyName} ({selectedOrderPanels[0].subCompanyCode})
+                  <span className="ml-2 text-xs text-gray-500">(Locked - {selectedOrderPanels.length} order(s))</span>
+                </div>
+              ) : (
+                <select
+                  value={header.subCompanyId || ''}
+                  onChange={(e) => {
+                    const subCompanyId = e.target.value;
+                    const selected = subCompanies.find(sc => sc._id === subCompanyId);
+                    setHeader(prev => ({
+                      ...prev,
+                      subCompanyId: subCompanyId,
+                      subCompanyName: selected?.name || '',
+                      subCompanyCode: selected?.code || ''
+                    }));
+                    setOrders(prevOrders => 
+                      prevOrders.map(order => ({
+                        ...order,
+                        subCompanyId: subCompanyId,
+                        subCompanyName: selected?.name || '',
+                        subCompanyCode: selected?.code || ''
+                      }))
+                    );
+                  }}
+                  disabled={selectedOrderPanels.length > 0}
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 disabled:bg-slate-50 disabled:cursor-not-allowed"
+                >
+                  <option value="">Select Sub-Company</option>
+                  {subCompanies.map((sc) => (
+                    <option key={sc._id} value={sc._id}>
+                      {sc.name} ({sc.code})
+                    </option>
+                  ))}
+                </select>
+              )}
+              {selectedOrderPanels.length > 0 && selectedOrderPanels[0].subCompanyName && (
+                <div className="text-xs text-green-600 mt-1">
+                  ✅ All orders from same sub-company: {selectedOrderPanels[0].subCompanyName}
+                </div>
+              )}
             </div>
 
             <Select col="col-span-12 md:col-span-3" label="Delivery" value={header.delivery} onChange={(v) => setHeader((p) => ({ ...p, delivery: v }))} options={["Urgent", "Normal", "Express", "Scheduled"]} readOnly={selectedOrderPanels.length > 0} />
