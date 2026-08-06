@@ -1,5 +1,4 @@
 
-
 // // "use client";
 
 // // import { useMemo, useRef, useState, useEffect, useCallback } from "react";
@@ -196,7 +195,7 @@
 // // }
 
 // // /* =======================
-// //   Order Panel Search Hook
+// //   Order Panel Search Hook - Only Approved Orders
 // // ========================= */
 // // function useOrderPanelSearch() {
 // //   const [orderPanels, setOrderPanels] = useState([]);
@@ -209,6 +208,7 @@
 // //     try {
 // //       const token = localStorage.getItem('token');
       
+// //       // First, get used order panel IDs from vehicle negotiations
 // //       const vehicleRes = await fetch('/api/vehicle-negotiation?format=table', {
 // //         headers: { Authorization: `Bearer ${token}` },
 // //       });
@@ -225,6 +225,7 @@
 // //         });
 // //       }
       
+// //       // Fetch order panels
 // //       const res = await fetch('/api/order-panel', {
 // //         headers: { Authorization: `Bearer ${token}` },
 // //       });
@@ -236,7 +237,9 @@
 // //       const data = await res.json();
       
 // //       if (data.success && Array.isArray(data.data)) {
+// //         // Filter: only Approved status and not used in vehicle negotiation
 // //         const availablePanels = data.data.filter(panel => 
+// //           panel.panelStatus === 'Approved' && 
 // //           !usedOrderPanelIds.has(panel.orderPanelNo)
 // //         );
         
@@ -328,7 +331,10 @@
 // //     loadingCharges: "",
 // //     otherCharges: "",
 // //     localStatus: "unknown",
-// //     localStatusLabel: "Unknown"
+// //     localStatusLabel: "Unknown",
+// //     subCompanyId: null,
+// //     subCompanyName: "",
+// //     subCompanyCode: ""
 // //   };
 // // }
 
@@ -388,9 +394,7 @@
 // //       >
 // //         <option value="">Select {label}</option>
 // //         {options.map((o) => (
-// //           <option key={o} value={o}>
-// //             {o}
-// //           </option>
+// //           <option key={o} value={o}>{o}</option>
 // //         ))}
 // //       </select>
 // //     </div>
@@ -748,14 +752,16 @@
 // //   value, 
 // //   onSelect,
 // //   placeholder = "Search supplier...",
-// //   readOnly = false
+// //   readOnly = false,
+// //   suppliers = [], // Add this prop
+// //   loading = false // Add this prop
 // // }) {
 // //   const [searchQuery, setSearchQuery] = useState("");
 // //   const [showDropdown, setShowDropdown] = useState(false);
-// //   const [suppliers, setSuppliers] = useState([]);
+// //   const [filteredSuppliers, setFilteredSuppliers] = useState([]);
 // //   const dropdownRef = useRef(null);
-// //   const supplierSearch = useSupplierSearch();
 
+// //   // Update search query when value changes
 // //   useEffect(() => {
 // //     if (value) {
 // //       setSearchQuery(value);
@@ -764,25 +770,35 @@
 // //     }
 // //   }, [value]);
 
+// //   // Update filtered suppliers when suppliers prop changes
 // //   useEffect(() => {
-// //     setSuppliers(supplierSearch.suppliers);
-// //   }, [supplierSearch.suppliers]);
+// //     if (searchQuery.trim()) {
+// //       const filtered = suppliers.filter(supplier =>
+// //         supplier.supplierName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+// //         supplier.supplierCode?.toLowerCase().includes(searchQuery.toLowerCase())
+// //       );
+// //       setFilteredSuppliers(filtered);
+// //     } else {
+// //       setFilteredSuppliers(suppliers);
+// //     }
+// //   }, [suppliers, searchQuery]);
 
 // //   const handleSearch = (query) => {
 // //     if (readOnly) return;
 // //     setSearchQuery(query);
+    
 // //     if (!showDropdown) {
 // //       setShowDropdown(true);
 // //     }
     
 // //     if (!query.trim()) {
-// //       setSuppliers(supplierSearch.suppliers);
+// //       setFilteredSuppliers(suppliers);
 // //     } else {
-// //       const filtered = supplierSearch.suppliers.filter(supplier =>
+// //       const filtered = suppliers.filter(supplier =>
 // //         supplier.supplierName?.toLowerCase().includes(query.toLowerCase()) ||
 // //         supplier.supplierCode?.toLowerCase().includes(query.toLowerCase())
 // //       );
-// //       setSuppliers(filtered);
+// //       setFilteredSuppliers(filtered);
 // //     }
 // //   };
 
@@ -793,12 +809,9 @@
 // //     onSelect(supplier);
 // //   };
 
-// //   const handleInputFocus = async () => {
+// //   const handleInputFocus = () => {
 // //     if (readOnly) return;
-// //     if (supplierSearch.suppliers.length === 0) {
-// //       await supplierSearch.searchSuppliers();
-// //     }
-// //     setSuppliers(supplierSearch.suppliers);
+// //     setFilteredSuppliers(suppliers);
 // //     setShowDropdown(true);
 // //   };
 
@@ -820,13 +833,13 @@
       
 // //       {showDropdown && !readOnly && (
 // //         <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
-// //           {supplierSearch.loading ? (
+// //           {loading ? (
 // //             <div className="p-3 text-center text-sm text-slate-500">
 // //               <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-sky-500 mx-auto"></div>
 // //               <p className="mt-1">Loading suppliers...</p>
 // //             </div>
-// //           ) : suppliers.length > 0 ? (
-// //             suppliers.map((supplier) => (
+// //           ) : filteredSuppliers.length > 0 ? (
+// //             filteredSuppliers.map((supplier) => (
 // //               <div
 // //                 key={supplier._id}
 // //                 onMouseDown={() => handleSelectItem(supplier)}
@@ -842,7 +855,7 @@
 // //             ))
 // //           ) : (
 // //             <div className="p-3 text-center text-sm text-slate-500">
-// //               No suppliers found
+// //               {searchQuery.trim() ? "No suppliers found" : "No suppliers available"}
 // //             </div>
 // //           )}
 // //         </div>
@@ -870,9 +883,22 @@
 // //       setAllPanels(orderPanelSearch.orderPanels);
       
 // //       const selectedIds = selectedPanels.map(p => p._id);
-// //       const filtered = orderPanelSearch.orderPanels.filter(
+      
+// //       // Get the sub-company of the first selected panel (if any)
+// //       const firstSelectedSubCompanyId = selectedPanels.length > 0 ? selectedPanels[0].subCompanyId : null;
+      
+// //       // Filter panels based on sub-company restriction
+// //       let filtered = orderPanelSearch.orderPanels.filter(
 // //         panel => !selectedIds.includes(panel._id)
 // //       );
+      
+// //       // If there's a selected sub-company, only show panels from that sub-company
+// //       if (firstSelectedSubCompanyId) {
+// //         filtered = filtered.filter(panel => 
+// //           panel.subCompanyId === firstSelectedSubCompanyId
+// //         );
+// //       }
+      
 // //       setPanels(filtered);
 // //     }
 // //   }, [orderPanelSearch.orderPanels, selectedPanels]);
@@ -881,18 +907,35 @@
 // //     setSearchQuery(query);
     
 // //     const selectedIds = selectedPanels.map(p => p._id);
+// //     const firstSelectedSubCompanyId = selectedPanels.length > 0 ? selectedPanels[0].subCompanyId : null;
     
 // //     if (!query.trim()) {
-// //       const filtered = allPanels.filter(panel => !selectedIds.includes(panel._id));
+// //       let filtered = allPanels.filter(panel => !selectedIds.includes(panel._id));
+      
+// //       if (firstSelectedSubCompanyId) {
+// //         filtered = filtered.filter(panel => 
+// //           panel.subCompanyId === firstSelectedSubCompanyId
+// //         );
+// //       }
+      
 // //       setPanels(filtered);
 // //     } else {
-// //       const filtered = allPanels.filter(panel => 
+// //       let filtered = allPanels.filter(panel => 
 // //         !selectedIds.includes(panel._id) && (
 // //           panel.orderPanelNo?.toLowerCase().includes(query.toLowerCase()) ||
 // //           panel.partyName?.toLowerCase().includes(query.toLowerCase()) ||
-// //           panel.customerName?.toLowerCase().includes(query.toLowerCase())
+// //           panel.customerName?.toLowerCase().includes(query.toLowerCase()) ||
+// //           panel.subCompanyName?.toLowerCase().includes(query.toLowerCase()) ||
+// //           panel.subCompanyCode?.toLowerCase().includes(query.toLowerCase())
 // //         )
 // //       );
+      
+// //       if (firstSelectedSubCompanyId) {
+// //         filtered = filtered.filter(panel => 
+// //           panel.subCompanyId === firstSelectedSubCompanyId
+// //         );
+// //       }
+      
 // //       setPanels(filtered);
 // //     }
 // //   };
@@ -903,6 +946,15 @@
 // //     if (selectedPanels.some(p => p._id === panel._id)) {
 // //       alert("This order panel is already selected");
 // //       return;
+// //     }
+    
+// //     // Check sub-company consistency
+// //     if (selectedPanels.length > 0) {
+// //       const firstPanelSubCompanyId = selectedPanels[0].subCompanyId;
+// //       if (panel.subCompanyId !== firstPanelSubCompanyId) {
+// //         alert(`⚠️ You can only select orders from the same sub-company.\nCurrent: ${selectedPanels[0].subCompanyName || 'None'}\nSelected: ${panel.subCompanyName || 'None'}`);
+// //         return;
+// //       }
 // //     }
     
 // //     setLoading(true);
@@ -946,9 +998,18 @@
 // //     await orderPanelSearch.searchOrderPanels();
     
 // //     const selectedIds = selectedPanels.map(p => p._id);
-// //     const filtered = orderPanelSearch.orderPanels.filter(
+// //     const firstSelectedSubCompanyId = selectedPanels.length > 0 ? selectedPanels[0].subCompanyId : null;
+    
+// //     let filtered = orderPanelSearch.orderPanels.filter(
 // //       panel => !selectedIds.includes(panel._id)
 // //     );
+    
+// //     if (firstSelectedSubCompanyId) {
+// //       filtered = filtered.filter(panel => 
+// //         panel.subCompanyId === firstSelectedSubCompanyId
+// //       );
+// //     }
+    
 // //     setPanels(filtered);
 // //     setShowDropdown(true);
 // //   };
@@ -973,16 +1034,28 @@
 // //     };
 // //   }, []);
 
+// //   const currentSubCompany = selectedPanels.length > 0 ? selectedPanels[0] : null;
+
 // //   return (
 // //     <div className="relative" ref={dropdownRef}>
 // //       {selectedPanels.length > 0 && (
 // //         <div className="flex flex-wrap gap-2 mb-2 p-2 border border-yellow-200 rounded-lg bg-yellow-50">
+// //           {currentSubCompany && currentSubCompany.subCompanyName && (
+// //             <div className="w-full text-xs font-semibold text-blue-600 mb-1">
+// //               Sub-Company: {currentSubCompany.subCompanyName} ({currentSubCompany.subCompanyCode})
+// //             </div>
+// //           )}
 // //           {selectedPanels.map((panel) => (
 // //             <div
 // //               key={panel._id}
 // //               className="flex items-center gap-1 bg-yellow-100 px-2 py-1 rounded-md text-sm"
 // //             >
 // //               <span className="font-medium">{panel.orderPanelNo}</span>
+// //               {panel.subCompanyName && (
+// //                 <span className="text-xs text-gray-500 ml-1">
+// //                   ({panel.subCompanyName})
+// //                 </span>
+// //               )}
 // //               <button
 // //                 onClick={() => handleRemovePanel(panel._id)}
 // //                 className="text-red-500 hover:text-red-700 font-bold ml-1"
@@ -1003,7 +1076,7 @@
 // //         onClick={handleInputClick}
 // //         onBlur={handleInputBlur}
 // //         className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-// //         placeholder={placeholder}
+// //         placeholder={selectedPanels.length > 0 ? `Add more orders from same sub-company...` : placeholder}
 // //         autoComplete="off"
 // //       />
       
@@ -1033,6 +1106,11 @@
 // //                   {panel.partyName || panel.customerName || 'N/A'} | 
 // //                   Branch: {panel.branchName || panel.branchCode || 'N/A'} | 
 // //                   Weight: {panel.totalWeight || 0}
+// //                   {panel.subCompanyName && (
+// //                     <span className="ml-2 text-blue-600">
+// //                       Sub-Company: {panel.subCompanyName} ({panel.subCompanyCode})
+// //                     </span>
+// //                   )}
 // //                 </div>
 // //               </div>
 // //             ))
@@ -1040,11 +1118,13 @@
 // //             <div className="p-3 text-center text-sm text-slate-500">
 // //               {searchQuery.trim() ? 
 // //                 `No matching order panels found for "${searchQuery}"` : 
-// //                 "No order panels available"
+// //                 selectedPanels.length > 0 ? 
+// //                   "No more order panels available from this sub-company" :
+// //                   "No order panels available"
 // //               }
-// //               {selectedPanels.length > 0 && (
-// //                 <div className="text-xs text-slate-400 mt-1">
-// //                   {selectedPanels.length} panel(s) already selected
+// //               {selectedPanels.length > 0 && selectedPanels[0].subCompanyName && (
+// //                 <div className="text-xs text-blue-600 mt-1">
+// //                   Currently selecting from: {selectedPanels[0].subCompanyName}
 // //                 </div>
 // //               )}
 // //             </div>
@@ -1127,6 +1207,7 @@
 // //   const router = useRouter();
   
 // //   const [branches, setBranches] = useState([]);
+// //   const [subCompanies, setSubCompanies] = useState([]);
 // //   const [countries, setCountries] = useState([]);
 // //   const [plants, setPlants] = useState([]);
 // //   const [loading, setLoading] = useState(false);
@@ -1181,6 +1262,9 @@
 // //           branch: null,
 // //           branchName: "",
 // //           branchCode: "",
+// //           subCompanyId: null,
+// //           subCompanyName: "",
+// //           subCompanyCode: "",
 // //           partyName: "",
 // //           customerId: null,
 // //           collectionCharges: "",
@@ -1198,6 +1282,29 @@
 // //       if (selectedOrderPanels.some(p => p._id === fullPanel._id)) {
 // //         console.log(`⚠️ Order ${fullPanel.orderPanelNo} already selected`);
 // //         return;
+// //       }
+      
+// //       // Check sub-company consistency
+// //       if (selectedOrderPanels.length > 0) {
+// //         const currentSubCompanyId = selectedOrderPanels[0].subCompanyId;
+// //         const newSubCompanyId = fullPanel.subCompanyId;
+        
+// //         // If both have sub-company and they don't match, block selection
+// //         if (currentSubCompanyId && newSubCompanyId && currentSubCompanyId !== newSubCompanyId) {
+// //           alert(`⚠️ You can only select orders from the same sub-company.\nCurrent: ${selectedOrderPanels[0].subCompanyName || 'None'}\nSelected: ${fullPanel.subCompanyName || 'None'}`);
+// //           return;
+// //         }
+        
+// //         // If one has sub-company and other doesn't
+// //         if (currentSubCompanyId && !newSubCompanyId) {
+// //           alert(`⚠️ This order has no sub-company. Please select orders from the same sub-company: ${selectedOrderPanels[0].subCompanyName}`);
+// //           return;
+// //         }
+        
+// //         if (!currentSubCompanyId && newSubCompanyId) {
+// //           alert(`⚠️ This order has sub-company: ${fullPanel.subCompanyName}. Please select orders from the same sub-company or start fresh.`);
+// //           return;
+// //         }
 // //       }
       
 // //       console.log(`➕ Adding order: ${fullPanel.orderPanelNo}`);
@@ -1259,12 +1366,15 @@
 // //             countryName: row.countryName || "",
 // //             weight: row.weight || "",
 // //             status: row.status || "Open",
-// //             collectionCharges: row.collectionCharges?.toString() || "",
-// //             cancellationCharges: row.cancellationCharges?.toString() || "Nil",
-// //             loadingCharges: row.loadingCharges?.toString() || "Nil",
-// //             otherCharges: row.otherCharges?.toString() || "",
+// //             collectionCharges: fullPanel.collectionCharges?.toString() || "",
+// //             cancellationCharges: fullPanel.cancellationCharges?.toString() || "",
+// //             loadingCharges: fullPanel.loadingCharges?.toString() || "",
+// //             otherCharges: fullPanel.otherCharges?.toString() || "",
 // //             localStatus: row.localStatus || "unknown",
-// //             localStatusLabel: row.localStatusLabel || "Unknown"
+// //             localStatusLabel: row.localStatusLabel || "Unknown",
+// //             subCompanyId: fullPanel.subCompanyId || null,
+// //             subCompanyName: fullPanel.subCompanyName || '',
+// //             subCompanyCode: fullPanel.subCompanyCode || ''
 // //           };
 // //         });
         
@@ -1278,7 +1388,7 @@
 // //         });
 // //       }
 
-// //       // Update header charges
+// //       // Update header charges and sub-company
 // //       setHeader(prev => {
 // //         const newHeader = { ...prev };
         
@@ -1286,6 +1396,10 @@
 // //           newHeader.branch = fullPanel.branch || null;
 // //           newHeader.branchName = fullPanel.branchName || "";
 // //           newHeader.branchCode = fullPanel.branchCode || "";
+// //           // Add sub-company fields
+// //           newHeader.subCompanyId = fullPanel.subCompanyId || null;
+// //           newHeader.subCompanyName = fullPanel.subCompanyName || "";
+// //           newHeader.subCompanyCode = fullPanel.subCompanyCode || "";
 // //           newHeader.delivery = fullPanel.delivery || "Urgent";
 // //           newHeader.date = fullPanel.date ? new Date(fullPanel.date).toISOString().split('T')[0] : prev.date;
 // //           newHeader.partyName = fullPanel.partyName || fullPanel.customerName || "";
@@ -1303,6 +1417,12 @@
 // //           newHeader.otherCharges = String((Number(prev.otherCharges) || 0) + (Number(fullPanel.otherCharges) || 0));
 // //           newHeader.loadingPoints = String((Number(prev.loadingPoints) || 0) + (Number(fullPanel.loadingPoints) || 0));
 // //           newHeader.dropPoints = String((Number(prev.dropPoints) || 0) + (Number(fullPanel.dropPoints) || 0));
+// //           // Keep sub-company from first selected panel
+// //           if (!prev.subCompanyId) {
+// //             newHeader.subCompanyId = fullPanel.subCompanyId || null;
+// //             newHeader.subCompanyName = fullPanel.subCompanyName || "";
+// //             newHeader.subCompanyCode = fullPanel.subCompanyCode || "";
+// //           }
 // //         }
         
 // //         return newHeader;
@@ -1324,7 +1444,6 @@
 // //   const hasLoadedOrders = useRef(false);
 
 // //   useEffect(() => {
-// //     // Prevent multiple executions
 // //     if (hasLoadedOrders.current) {
 // //       console.log('⏭️ Orders already loaded, skipping...');
 // //       return;
@@ -1342,12 +1461,10 @@
 // //     const ids = orderIds.split(',').filter(id => id.trim() !== '');
 // //     const panelNos = orderPanelNos ? orderPanelNos.split(',').filter(no => no.trim() !== '') : [];
     
-// //     console.log(`📋 Loading ${ids.length} order(s) from URL params`);
+// //     console.log(` Loading ${ids.length} order(s) from URL params`);
     
-// //     // Mark as loaded immediately to prevent re-runs
 // //     hasLoadedOrders.current = true;
 
-// //     // Fetch and select these order panels
 // //     const fetchAndSelectOrders = async () => {
 // //       try {
 // //         const token = localStorage.getItem('token');
@@ -1359,7 +1476,7 @@
           
 // //           if (!id) continue;
           
-// //           console.log(`📥 Fetching order ${i + 1}/${ids.length}: ${id}`);
+// //           console.log(` Fetching order ${i + 1}/${ids.length}: ${id}`);
           
 // //           const res = await fetch(`/api/order-panel?id=${id}`, {
 // //             headers: { Authorization: `Bearer ${token}` },
@@ -1375,6 +1492,9 @@
 // //               branchName: panel.branchName || '',
 // //               branchCode: panel.branchCode || '',
 // //               branch: panel.branch || null,
+// //               subCompanyId: panel.subCompanyId || null,
+// //               subCompanyName: panel.subCompanyName || '',
+// //               subCompanyCode: panel.subCompanyCode || '',
 // //               customerId: panel.customerId || null,
 // //               customerName: panel.customerName || '',
 // //               customerCode: panel.customerCode || '',
@@ -1399,7 +1519,7 @@
 // //           }
 // //         }
         
-// //         console.log(`📦 Adding ${loadedPanels.length} panel(s) to the form`);
+// //         console.log(` Adding ${loadedPanels.length} panel(s) to the form`);
 // //         for (const panel of loadedPanels) {
 // //           await new Promise(resolve => setTimeout(resolve, 100));
 // //           await handleOrderPanelSelect(panel);
@@ -1463,6 +1583,9 @@
 // //     branch: null,
 // //     branchName: "",
 // //     branchCode: "",
+// //     subCompanyId: null,
+// //     subCompanyName: "",
+// //     subCompanyCode: "",
 // //     delivery: "Urgent",
 // //     date: new Date().toISOString().split('T')[0],
 // //     loadingPoints: "",
@@ -1480,10 +1603,30 @@
 // //   const [memoFile, setMemoFile] = useState(null);
 // //   const audioRef = useRef(null);
 
+// //   // Fetch Sub Companies
+// //   const fetchSubCompanies = async () => {
+// //     try {
+// //       const token = localStorage.getItem('token');
+// //       const res = await fetch('/api/subcompanies', {
+// //         headers: { Authorization: `Bearer ${token}` },
+// //       });
+// //       const data = await res.json();
+// //       if (data.success && Array.isArray(data.data)) {
+// //         setSubCompanies(data.data);
+// //       } else {
+// //         setSubCompanies([]);
+// //       }
+// //     } catch (error) {
+// //       console.error('Error fetching sub-companies:', error.message);
+// //       setSubCompanies([]);
+// //     }
+// //   };
+
 // //   useEffect(() => {
 // //     fetchBranches();
 // //     fetchCountries();
 // //     fetchPlants();
+// //     fetchSubCompanies();
 // //     supplierSearch.searchSuppliers();
 // //     fetchPurchaseTypes();
 // //     fetchPaymentTerms();   
@@ -1606,16 +1749,28 @@
 // //     }
 // //   }, [customerSearch.customers]);
 
-// //   const handleSupplierSelect = (supplier) => {
-// //     setSelectedSupplier(supplier);
+// // const handleSupplierSelect = (supplier) => {
+// //   if (!supplier) {
+// //     setSelectedSupplier(null);
 // //     setApproval(prev => ({
 // //       ...prev,
-// //       vendorName: supplier.supplierName,
-// //       vendorId: supplier._id,
-// //       vendorCode: supplier.supplierCode,
-// //       vendorStatus: supplier.supplierStatus || "Active"
+// //       vendorName: "",
+// //       vendorId: null,
+// //       vendorCode: "",
+// //       vendorStatus: "Active"
 // //     }));
-// //   };
+// //     return;
+// //   }
+  
+// //   setSelectedSupplier(supplier);
+// //   setApproval(prev => ({
+// //     ...prev,
+// //     vendorName: supplier.supplierName,
+// //     vendorId: supplier._id,
+// //     vendorCode: supplier.supplierCode,
+// //     vendorStatus: supplier.supplierStatus || "Active"
+// //   }));
+// // };
 
 // //   const updateOrder = (id, key, value) => {
 // //     setOrders((prev) => prev.map((r) => (r._id === id ? { ...r, [key]: value } : r)));
@@ -1875,7 +2030,10 @@
 // //         },
 // //         selectedOrderPanels: selectedOrderPanels.map(panel => ({
 // //           _id: panel._id,
-// //           orderPanelNo: panel.orderPanelNo
+// //           orderPanelNo: panel.orderPanelNo,
+// //           subCompanyId: panel.subCompanyId || header.subCompanyId || null,
+// //           subCompanyName: panel.subCompanyName || header.subCompanyName || '',
+// //           subCompanyCode: panel.subCompanyCode || header.subCompanyCode || ''
 // //         })),
 // //         orders: orders.map(order => ({
 // //           orderNo: order.orderNo,
@@ -1909,7 +2067,10 @@
 // //           loadingCharges: order.loadingCharges || 'Nil',
 // //           otherCharges: num(order.otherCharges) || 0,
 // //           localStatus: order.localStatus || 'unknown',
-// //           localStatusLabel: order.localStatusLabel || 'Unknown'
+// //           localStatusLabel: order.localStatusLabel || 'Unknown',
+// //           subCompanyId: order.subCompanyId || header.subCompanyId || null,
+// //           subCompanyName: order.subCompanyName || header.subCompanyName || '',
+// //           subCompanyCode: order.subCompanyCode || header.subCompanyCode || ''
 // //         })),
 // //         totalWeight,
 // //         negotiation: {
@@ -2019,6 +2180,9 @@
 // //       branch: null,
 // //       branchName: "",
 // //       branchCode: "",
+// //       subCompanyId: null,
+// //       subCompanyName: "",
+// //       subCompanyCode: "",
 // //       delivery: "Urgent",
 // //       date: new Date().toISOString().split('T')[0],
 // //       loadingPoints: "",
@@ -2103,6 +2267,7 @@
 // //     { key: "cancellationCharges", label: "Cancellation Charges" },
 // //     { key: "loadingCharges", label: "Loading Charges" },
 // //     { key: "otherCharges", label: "Other Charges" },
+// //     { key: "subCompanyName", label: "Sub-Company" },
 // //   ];
 
 // //   const vendorColumns = [
@@ -2355,6 +2520,14 @@
 // //                         placeholder="Other Charges"
 // //                       />
 // //                     </td>
+// //                     <td className="border border-yellow-300 px-2 py-2">
+// //                       <div className="text-sm">
+// //                         <span className="font-medium">{row.subCompanyName || '-'}</span>
+// //                         {row.subCompanyCode && (
+// //                           <span className="text-xs text-gray-500 ml-1">({row.subCompanyCode})</span>
+// //                         )}
+// //                       </div>
+// //                     </td>
 // //                     <td className="border border-yellow-300 px-2 py-2 text-center">
 // //                       {isReadOnly ? (
 // //                         <span className="text-xs text-slate-400">Read Only</span>
@@ -2571,6 +2744,53 @@
 // //               />
 // //             </div>
 
+// //             {/* Sub-Company Dropdown */}
+// //             <div className="col-span-12 md:col-span-3">
+// //               <label className="text-xs font-bold text-slate-600">Sub-Company</label>
+// //               {selectedOrderPanels.length > 0 && selectedOrderPanels[0].subCompanyName ? (
+// //                 <div className="mt-1 w-full rounded-xl border border-slate-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700">
+// //                   {selectedOrderPanels[0].subCompanyName} ({selectedOrderPanels[0].subCompanyCode})
+// //                   <span className="ml-2 text-xs text-gray-500">(Locked - {selectedOrderPanels.length} order(s))</span>
+// //                 </div>
+// //               ) : (
+// //                 <select
+// //                   value={header.subCompanyId || ''}
+// //                   onChange={(e) => {
+// //                     const subCompanyId = e.target.value;
+// //                     const selected = subCompanies.find(sc => sc._id === subCompanyId);
+// //                     setHeader(prev => ({
+// //                       ...prev,
+// //                       subCompanyId: subCompanyId,
+// //                       subCompanyName: selected?.name || '',
+// //                       subCompanyCode: selected?.code || ''
+// //                     }));
+// //                     setOrders(prevOrders => 
+// //                       prevOrders.map(order => ({
+// //                         ...order,
+// //                         subCompanyId: subCompanyId,
+// //                         subCompanyName: selected?.name || '',
+// //                         subCompanyCode: selected?.code || ''
+// //                       }))
+// //                     );
+// //                   }}
+// //                   disabled={selectedOrderPanels.length > 0}
+// //                   className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 disabled:bg-slate-50 disabled:cursor-not-allowed"
+// //                 >
+// //                   <option value="">Select Sub-Company</option>
+// //                   {subCompanies.map((sc) => (
+// //                     <option key={sc._id} value={sc._id}>
+// //                       {sc.name} ({sc.code})
+// //                     </option>
+// //                   ))}
+// //                 </select>
+// //               )}
+// //               {selectedOrderPanels.length > 0 && selectedOrderPanels[0].subCompanyName && (
+// //                 <div className="text-xs text-green-600 mt-1">
+// //                   ✅ All orders from same sub-company: {selectedOrderPanels[0].subCompanyName}
+// //                 </div>
+// //               )}
+// //             </div>
+
 // //             <Select col="col-span-12 md:col-span-3" label="Delivery" value={header.delivery} onChange={(v) => setHeader((p) => ({ ...p, delivery: v }))} options={["Urgent", "Normal", "Express", "Scheduled"]} readOnly={selectedOrderPanels.length > 0} />
 // //             <Input type="date" col="col-span-12 md:col-span-3" label="Date" value={header.date} onChange={(v) => setHeader((p) => ({ ...p, date: v }))} readOnly={selectedOrderPanels.length > 0} />
             
@@ -2690,7 +2910,15 @@
 // //           <div className="grid grid-cols-12 gap-3 mb-4">
 // //             <div className="col-span-12 md:col-span-4">
 // //               <label className="text-xs font-bold text-slate-600">Supplier Name</label>
-// //               <SupplierSearchDropdown value={selectedSupplier ? selectedSupplier.supplierName : approval.vendorName} onSelect={handleSupplierSelect} placeholder="Search supplier..." readOnly={false} />
+
+// // <SupplierSearchDropdown 
+// //   value={selectedSupplier ? selectedSupplier.supplierName : approval.vendorName}
+// //   onSelect={handleSupplierSelect}
+// //   placeholder="Search supplier..."
+// //   readOnly={false}
+// //   suppliers={supplierSearch.suppliers} // Pass the suppliers from parent
+// //   loading={supplierSearch.loading} // Pass loading state
+// // />
 // //             </div>
 // //             <Select col="col-span-12 md:col-span-4" label="Supplier (Status)" value={approval.vendorStatus} onChange={(v) => setApproval((p) => ({ ...p, vendorStatus: v }))} options={VENDOR_STATUS} readOnly={true} />
 // //             <Select 
@@ -3157,7 +3385,10 @@
 //     loadingCharges: "",
 //     otherCharges: "",
 //     localStatus: "unknown",
-//     localStatusLabel: "Unknown"
+//     localStatusLabel: "Unknown",
+//     subCompanyId: null,
+//     subCompanyName: "",
+//     subCompanyCode: ""
 //   };
 // }
 
@@ -3217,9 +3448,7 @@
 //       >
 //         <option value="">Select {label}</option>
 //         {options.map((o) => (
-//           <option key={o} value={o}>
-//             {o}
-//           </option>
+//           <option key={o} value={o}>{o}</option>
 //         ))}
 //       </select>
 //     </div>
@@ -3577,13 +3806,14 @@
 //   value, 
 //   onSelect,
 //   placeholder = "Search supplier...",
-//   readOnly = false
+//   readOnly = false,
+//   suppliers = [],
+//   loading = false
 // }) {
 //   const [searchQuery, setSearchQuery] = useState("");
 //   const [showDropdown, setShowDropdown] = useState(false);
-//   const [suppliers, setSuppliers] = useState([]);
+//   const [filteredSuppliers, setFilteredSuppliers] = useState([]);
 //   const dropdownRef = useRef(null);
-//   const supplierSearch = useSupplierSearch();
 
 //   useEffect(() => {
 //     if (value) {
@@ -3594,24 +3824,33 @@
 //   }, [value]);
 
 //   useEffect(() => {
-//     setSuppliers(supplierSearch.suppliers);
-//   }, [supplierSearch.suppliers]);
+//     if (searchQuery.trim()) {
+//       const filtered = suppliers.filter(supplier =>
+//         supplier.supplierName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+//         supplier.supplierCode?.toLowerCase().includes(searchQuery.toLowerCase())
+//       );
+//       setFilteredSuppliers(filtered);
+//     } else {
+//       setFilteredSuppliers(suppliers);
+//     }
+//   }, [suppliers, searchQuery]);
 
 //   const handleSearch = (query) => {
 //     if (readOnly) return;
 //     setSearchQuery(query);
+    
 //     if (!showDropdown) {
 //       setShowDropdown(true);
 //     }
     
 //     if (!query.trim()) {
-//       setSuppliers(supplierSearch.suppliers);
+//       setFilteredSuppliers(suppliers);
 //     } else {
-//       const filtered = supplierSearch.suppliers.filter(supplier =>
+//       const filtered = suppliers.filter(supplier =>
 //         supplier.supplierName?.toLowerCase().includes(query.toLowerCase()) ||
 //         supplier.supplierCode?.toLowerCase().includes(query.toLowerCase())
 //       );
-//       setSuppliers(filtered);
+//       setFilteredSuppliers(filtered);
 //     }
 //   };
 
@@ -3622,12 +3861,9 @@
 //     onSelect(supplier);
 //   };
 
-//   const handleInputFocus = async () => {
+//   const handleInputFocus = () => {
 //     if (readOnly) return;
-//     if (supplierSearch.suppliers.length === 0) {
-//       await supplierSearch.searchSuppliers();
-//     }
-//     setSuppliers(supplierSearch.suppliers);
+//     setFilteredSuppliers(suppliers);
 //     setShowDropdown(true);
 //   };
 
@@ -3649,13 +3885,13 @@
       
 //       {showDropdown && !readOnly && (
 //         <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
-//           {supplierSearch.loading ? (
+//           {loading ? (
 //             <div className="p-3 text-center text-sm text-slate-500">
 //               <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-sky-500 mx-auto"></div>
 //               <p className="mt-1">Loading suppliers...</p>
 //             </div>
-//           ) : suppliers.length > 0 ? (
-//             suppliers.map((supplier) => (
+//           ) : filteredSuppliers.length > 0 ? (
+//             filteredSuppliers.map((supplier) => (
 //               <div
 //                 key={supplier._id}
 //                 onMouseDown={() => handleSelectItem(supplier)}
@@ -3671,7 +3907,7 @@
 //             ))
 //           ) : (
 //             <div className="p-3 text-center text-sm text-slate-500">
-//               No suppliers found
+//               {searchQuery.trim() ? "No suppliers found" : "No suppliers available"}
 //             </div>
 //           )}
 //         </div>
@@ -3699,9 +3935,19 @@
 //       setAllPanels(orderPanelSearch.orderPanels);
       
 //       const selectedIds = selectedPanels.map(p => p._id);
-//       const filtered = orderPanelSearch.orderPanels.filter(
+      
+//       const firstSelectedSubCompanyId = selectedPanels.length > 0 ? selectedPanels[0].subCompanyId : null;
+      
+//       let filtered = orderPanelSearch.orderPanels.filter(
 //         panel => !selectedIds.includes(panel._id)
 //       );
+      
+//       if (firstSelectedSubCompanyId) {
+//         filtered = filtered.filter(panel => 
+//           panel.subCompanyId === firstSelectedSubCompanyId
+//         );
+//       }
+      
 //       setPanels(filtered);
 //     }
 //   }, [orderPanelSearch.orderPanels, selectedPanels]);
@@ -3710,18 +3956,35 @@
 //     setSearchQuery(query);
     
 //     const selectedIds = selectedPanels.map(p => p._id);
+//     const firstSelectedSubCompanyId = selectedPanels.length > 0 ? selectedPanels[0].subCompanyId : null;
     
 //     if (!query.trim()) {
-//       const filtered = allPanels.filter(panel => !selectedIds.includes(panel._id));
+//       let filtered = allPanels.filter(panel => !selectedIds.includes(panel._id));
+      
+//       if (firstSelectedSubCompanyId) {
+//         filtered = filtered.filter(panel => 
+//           panel.subCompanyId === firstSelectedSubCompanyId
+//         );
+//       }
+      
 //       setPanels(filtered);
 //     } else {
-//       const filtered = allPanels.filter(panel => 
+//       let filtered = allPanels.filter(panel => 
 //         !selectedIds.includes(panel._id) && (
 //           panel.orderPanelNo?.toLowerCase().includes(query.toLowerCase()) ||
 //           panel.partyName?.toLowerCase().includes(query.toLowerCase()) ||
-//           panel.customerName?.toLowerCase().includes(query.toLowerCase())
+//           panel.customerName?.toLowerCase().includes(query.toLowerCase()) ||
+//           panel.subCompanyName?.toLowerCase().includes(query.toLowerCase()) ||
+//           panel.subCompanyCode?.toLowerCase().includes(query.toLowerCase())
 //         )
 //       );
+      
+//       if (firstSelectedSubCompanyId) {
+//         filtered = filtered.filter(panel => 
+//           panel.subCompanyId === firstSelectedSubCompanyId
+//         );
+//       }
+      
 //       setPanels(filtered);
 //     }
 //   };
@@ -3732,6 +3995,14 @@
 //     if (selectedPanels.some(p => p._id === panel._id)) {
 //       alert("This order panel is already selected");
 //       return;
+//     }
+    
+//     if (selectedPanels.length > 0) {
+//       const firstPanelSubCompanyId = selectedPanels[0].subCompanyId;
+//       if (panel.subCompanyId !== firstPanelSubCompanyId) {
+//         alert(`⚠️ You can only select orders from the same sub-company.\nCurrent: ${selectedPanels[0].subCompanyName || 'None'}\nSelected: ${panel.subCompanyName || 'None'}`);
+//         return;
+//       }
 //     }
     
 //     setLoading(true);
@@ -3775,9 +4046,18 @@
 //     await orderPanelSearch.searchOrderPanels();
     
 //     const selectedIds = selectedPanels.map(p => p._id);
-//     const filtered = orderPanelSearch.orderPanels.filter(
+//     const firstSelectedSubCompanyId = selectedPanels.length > 0 ? selectedPanels[0].subCompanyId : null;
+    
+//     let filtered = orderPanelSearch.orderPanels.filter(
 //       panel => !selectedIds.includes(panel._id)
 //     );
+    
+//     if (firstSelectedSubCompanyId) {
+//       filtered = filtered.filter(panel => 
+//         panel.subCompanyId === firstSelectedSubCompanyId
+//       );
+//     }
+    
 //     setPanels(filtered);
 //     setShowDropdown(true);
 //   };
@@ -3802,16 +4082,28 @@
 //     };
 //   }, []);
 
+//   const currentSubCompany = selectedPanels.length > 0 ? selectedPanels[0] : null;
+
 //   return (
 //     <div className="relative" ref={dropdownRef}>
 //       {selectedPanels.length > 0 && (
 //         <div className="flex flex-wrap gap-2 mb-2 p-2 border border-yellow-200 rounded-lg bg-yellow-50">
+//           {currentSubCompany && currentSubCompany.subCompanyName && (
+//             <div className="w-full text-xs font-semibold text-blue-600 mb-1">
+//               Sub-Company: {currentSubCompany.subCompanyName} ({currentSubCompany.subCompanyCode})
+//             </div>
+//           )}
 //           {selectedPanels.map((panel) => (
 //             <div
 //               key={panel._id}
 //               className="flex items-center gap-1 bg-yellow-100 px-2 py-1 rounded-md text-sm"
 //             >
 //               <span className="font-medium">{panel.orderPanelNo}</span>
+//               {panel.subCompanyName && (
+//                 <span className="text-xs text-gray-500 ml-1">
+//                   ({panel.subCompanyName})
+//                 </span>
+//               )}
 //               <button
 //                 onClick={() => handleRemovePanel(panel._id)}
 //                 className="text-red-500 hover:text-red-700 font-bold ml-1"
@@ -3832,7 +4124,7 @@
 //         onClick={handleInputClick}
 //         onBlur={handleInputBlur}
 //         className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-//         placeholder={placeholder}
+//         placeholder={selectedPanels.length > 0 ? `Add more orders from same sub-company...` : placeholder}
 //         autoComplete="off"
 //       />
       
@@ -3862,6 +4154,11 @@
 //                   {panel.partyName || panel.customerName || 'N/A'} | 
 //                   Branch: {panel.branchName || panel.branchCode || 'N/A'} | 
 //                   Weight: {panel.totalWeight || 0}
+//                   {panel.subCompanyName && (
+//                     <span className="ml-2 text-blue-600">
+//                       Sub-Company: {panel.subCompanyName} ({panel.subCompanyCode})
+//                     </span>
+//                   )}
 //                 </div>
 //               </div>
 //             ))
@@ -3869,11 +4166,13 @@
 //             <div className="p-3 text-center text-sm text-slate-500">
 //               {searchQuery.trim() ? 
 //                 `No matching order panels found for "${searchQuery}"` : 
-//                 "No order panels available"
+//                 selectedPanels.length > 0 ? 
+//                   "No more order panels available from this sub-company" :
+//                   "No order panels available"
 //               }
-//               {selectedPanels.length > 0 && (
-//                 <div className="text-xs text-slate-400 mt-1">
-//                   {selectedPanels.length} panel(s) already selected
+//               {selectedPanels.length > 0 && selectedPanels[0].subCompanyName && (
+//                 <div className="text-xs text-blue-600 mt-1">
+//                   Currently selecting from: {selectedPanels[0].subCompanyName}
 //                 </div>
 //               )}
 //             </div>
@@ -3982,9 +4281,6 @@
 //   const [selectedOrderPanels, setSelectedOrderPanels] = useState([]);
 //   const orderPanelSearch = useOrderPanelSearch();
 
-//   // ============================================
-//   // ✅ DEFINE handleOrderPanelSelect FIRST using useCallback
-//   // ============================================
 //   const handleOrderPanelSelect = useCallback(async (fullPanel, removePanelId = null) => {
 //     if (removePanelId) {
 //       const panelToRemove = selectedOrderPanels.find(p => p._id === removePanelId);
@@ -4027,10 +4323,29 @@
 //         setCustomerSearchQuery("");
 //       }
 //     } else {
-//       // Check if already selected
 //       if (selectedOrderPanels.some(p => p._id === fullPanel._id)) {
 //         console.log(`⚠️ Order ${fullPanel.orderPanelNo} already selected`);
 //         return;
+//       }
+      
+//       if (selectedOrderPanels.length > 0) {
+//         const currentSubCompanyId = selectedOrderPanels[0].subCompanyId;
+//         const newSubCompanyId = fullPanel.subCompanyId;
+        
+//         if (currentSubCompanyId && newSubCompanyId && currentSubCompanyId !== newSubCompanyId) {
+//           alert(`⚠️ You can only select orders from the same sub-company.\nCurrent: ${selectedOrderPanels[0].subCompanyName || 'None'}\nSelected: ${fullPanel.subCompanyName || 'None'}`);
+//           return;
+//         }
+        
+//         if (currentSubCompanyId && !newSubCompanyId) {
+//           alert(`⚠️ This order has no sub-company. Please select orders from the same sub-company: ${selectedOrderPanels[0].subCompanyName}`);
+//           return;
+//         }
+        
+//         if (!currentSubCompanyId && newSubCompanyId) {
+//           alert(`⚠️ This order has sub-company: ${fullPanel.subCompanyName}. Please select orders from the same sub-company or start fresh.`);
+//           return;
+//         }
 //       }
       
 //       console.log(`➕ Adding order: ${fullPanel.orderPanelNo}`);
@@ -4092,12 +4407,15 @@
 //             countryName: row.countryName || "",
 //             weight: row.weight || "",
 //             status: row.status || "Open",
-//             collectionCharges: row.collectionCharges?.toString() || "",
-//             cancellationCharges: row.cancellationCharges?.toString() || "Nil",
-//             loadingCharges: row.loadingCharges?.toString() || "Nil",
-//             otherCharges: row.otherCharges?.toString() || "",
+//             collectionCharges: fullPanel.collectionCharges?.toString() || "",
+//             cancellationCharges: fullPanel.cancellationCharges?.toString() || "",
+//             loadingCharges: fullPanel.loadingCharges?.toString() || "",
+//             otherCharges: fullPanel.otherCharges?.toString() || "",
 //             localStatus: row.localStatus || "unknown",
-//             localStatusLabel: row.localStatusLabel || "Unknown"
+//             localStatusLabel: row.localStatusLabel || "Unknown",
+//             subCompanyId: fullPanel.subCompanyId || null,
+//             subCompanyName: fullPanel.subCompanyName || '',
+//             subCompanyCode: fullPanel.subCompanyCode || ''
 //           };
 //         });
         
@@ -4111,7 +4429,6 @@
 //         });
 //       }
 
-//       // Update header charges and sub-company
 //       setHeader(prev => {
 //         const newHeader = { ...prev };
         
@@ -4119,7 +4436,6 @@
 //           newHeader.branch = fullPanel.branch || null;
 //           newHeader.branchName = fullPanel.branchName || "";
 //           newHeader.branchCode = fullPanel.branchCode || "";
-//           // Add sub-company fields
 //           newHeader.subCompanyId = fullPanel.subCompanyId || null;
 //           newHeader.subCompanyName = fullPanel.subCompanyName || "";
 //           newHeader.subCompanyCode = fullPanel.subCompanyCode || "";
@@ -4140,7 +4456,6 @@
 //           newHeader.otherCharges = String((Number(prev.otherCharges) || 0) + (Number(fullPanel.otherCharges) || 0));
 //           newHeader.loadingPoints = String((Number(prev.loadingPoints) || 0) + (Number(fullPanel.loadingPoints) || 0));
 //           newHeader.dropPoints = String((Number(prev.dropPoints) || 0) + (Number(fullPanel.dropPoints) || 0));
-//           // Keep sub-company from first selected panel (or don't change if already set)
 //           if (!prev.subCompanyId) {
 //             newHeader.subCompanyId = fullPanel.subCompanyId || null;
 //             newHeader.subCompanyName = fullPanel.subCompanyName || "";
@@ -4161,13 +4476,9 @@
 //     }
 //   }, [selectedOrderPanels, plants, customerSearch.customers]);
 
-//   // ============================================
-//   // ✅ FETCH SELECTED ORDERS FROM URL PARAMS - RUNS ONLY ONCE
-//   // ============================================
 //   const hasLoadedOrders = useRef(false);
 
 //   useEffect(() => {
-//     // Prevent multiple executions
 //     if (hasLoadedOrders.current) {
 //       console.log('⏭️ Orders already loaded, skipping...');
 //       return;
@@ -4187,10 +4498,8 @@
     
 //     console.log(`📋 Loading ${ids.length} order(s) from URL params`);
     
-//     // Mark as loaded immediately to prevent re-runs
 //     hasLoadedOrders.current = true;
 
-//     // Fetch and select these order panels
 //     const fetchAndSelectOrders = async () => {
 //       try {
 //         const token = localStorage.getItem('token');
@@ -4266,7 +4575,6 @@
 //     fetchAndSelectOrders();
 //   }, [handleOrderPanelSelect]);
 
-//   // Fetch Purchase Types from backend
 //   const fetchPurchaseTypes = async () => {
 //     try {
 //       const token = localStorage.getItem('token');
@@ -4285,7 +4593,6 @@
 //     }
 //   };
 
-//   // Fetch Payment Terms from backend
 //   const fetchPaymentTerms = async () => {
 //     try {
 //       const token = localStorage.getItem('token');
@@ -4329,7 +4636,6 @@
 //   const [memoFile, setMemoFile] = useState(null);
 //   const audioRef = useRef(null);
 
-//   // Fetch Sub Companies
 //   const fetchSubCompanies = async () => {
 //     try {
 //       const token = localStorage.getItem('token');
@@ -4476,6 +4782,18 @@
 //   }, [customerSearch.customers]);
 
 //   const handleSupplierSelect = (supplier) => {
+//     if (!supplier) {
+//       setSelectedSupplier(null);
+//       setApproval(prev => ({
+//         ...prev,
+//         vendorName: "",
+//         vendorId: null,
+//         vendorCode: "",
+//         vendorStatus: "Active"
+//       }));
+//       return;
+//     }
+    
 //     setSelectedSupplier(supplier);
 //     setApproval(prev => ({
 //       ...prev,
@@ -4744,7 +5062,10 @@
 //         },
 //         selectedOrderPanels: selectedOrderPanels.map(panel => ({
 //           _id: panel._id,
-//           orderPanelNo: panel.orderPanelNo
+//           orderPanelNo: panel.orderPanelNo,
+//           subCompanyId: panel.subCompanyId || header.subCompanyId || null,
+//           subCompanyName: panel.subCompanyName || header.subCompanyName || '',
+//           subCompanyCode: panel.subCompanyCode || header.subCompanyCode || ''
 //         })),
 //         orders: orders.map(order => ({
 //           orderNo: order.orderNo,
@@ -4778,7 +5099,10 @@
 //           loadingCharges: order.loadingCharges || 'Nil',
 //           otherCharges: num(order.otherCharges) || 0,
 //           localStatus: order.localStatus || 'unknown',
-//           localStatusLabel: order.localStatusLabel || 'Unknown'
+//           localStatusLabel: order.localStatusLabel || 'Unknown',
+//           subCompanyId: order.subCompanyId || header.subCompanyId || null,
+//           subCompanyName: order.subCompanyName || header.subCompanyName || '',
+//           subCompanyCode: order.subCompanyCode || header.subCompanyCode || ''
 //         })),
 //         totalWeight,
 //         negotiation: {
@@ -4975,6 +5299,7 @@
 //     { key: "cancellationCharges", label: "Cancellation Charges" },
 //     { key: "loadingCharges", label: "Loading Charges" },
 //     { key: "otherCharges", label: "Other Charges" },
+//     { key: "subCompanyName", label: "Sub-Company" },
 //   ];
 
 //   const vendorColumns = [
@@ -5227,6 +5552,14 @@
 //                         placeholder="Other Charges"
 //                       />
 //                     </td>
+//                     <td className="border border-yellow-300 px-2 py-2">
+//                       <div className="text-sm">
+//                         <span className="font-medium">{row.subCompanyName || '-'}</span>
+//                         {row.subCompanyCode && (
+//                           <span className="text-xs text-gray-500 ml-1">({row.subCompanyCode})</span>
+//                         )}
+//                       </div>
+//                     </td>
 //                     <td className="border border-yellow-300 px-2 py-2 text-center">
 //                       {isReadOnly ? (
 //                         <span className="text-xs text-slate-400">Read Only</span>
@@ -5446,28 +5779,48 @@
 //             {/* Sub-Company Dropdown */}
 //             <div className="col-span-12 md:col-span-3">
 //               <label className="text-xs font-bold text-slate-600">Sub-Company</label>
-//               <select
-//                 value={header.subCompanyId || ''}
-//                 onChange={(e) => {
-//                   const subCompanyId = e.target.value;
-//                   const selected = subCompanies.find(sc => sc._id === subCompanyId);
-//                   setHeader(prev => ({
-//                     ...prev,
-//                     subCompanyId: subCompanyId,
-//                     subCompanyName: selected?.name || '',
-//                     subCompanyCode: selected?.code || ''
-//                   }));
-//                 }}
-//                 disabled={selectedOrderPanels.length > 0}
-//                 className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 disabled:bg-slate-50 disabled:cursor-not-allowed"
-//               >
-//                 <option value="">Select Sub-Company</option>
-//                 {subCompanies.map((sc) => (
-//                   <option key={sc._id} value={sc._id}>
-//                     {sc.name} ({sc.code})
-//                   </option>
-//                 ))}
-//               </select>
+//               {selectedOrderPanels.length > 0 && selectedOrderPanels[0].subCompanyName ? (
+//                 <div className="mt-1 w-full rounded-xl border border-slate-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700">
+//                   {selectedOrderPanels[0].subCompanyName} ({selectedOrderPanels[0].subCompanyCode})
+//                   <span className="ml-2 text-xs text-gray-500">(Locked - {selectedOrderPanels.length} order(s))</span>
+//                 </div>
+//               ) : (
+//                 <select
+//                   value={header.subCompanyId || ''}
+//                   onChange={(e) => {
+//                     const subCompanyId = e.target.value;
+//                     const selected = subCompanies.find(sc => sc._id === subCompanyId);
+//                     setHeader(prev => ({
+//                       ...prev,
+//                       subCompanyId: subCompanyId,
+//                       subCompanyName: selected?.name || '',
+//                       subCompanyCode: selected?.code || ''
+//                     }));
+//                     setOrders(prevOrders => 
+//                       prevOrders.map(order => ({
+//                         ...order,
+//                         subCompanyId: subCompanyId,
+//                         subCompanyName: selected?.name || '',
+//                         subCompanyCode: selected?.code || ''
+//                       }))
+//                     );
+//                   }}
+//                   disabled={selectedOrderPanels.length > 0}
+//                   className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 disabled:bg-slate-50 disabled:cursor-not-allowed"
+//                 >
+//                   <option value="">Select Sub-Company</option>
+//                   {subCompanies.map((sc) => (
+//                     <option key={sc._id} value={sc._id}>
+//                       {sc.name} ({sc.code})
+//                     </option>
+//                   ))}
+//                 </select>
+//               )}
+//               {selectedOrderPanels.length > 0 && selectedOrderPanels[0].subCompanyName && (
+//                 <div className="text-xs text-green-600 mt-1">
+//                   ✅ All orders from same sub-company: {selectedOrderPanels[0].subCompanyName}
+//                 </div>
+//               )}
 //             </div>
 
 //             <Select col="col-span-12 md:col-span-3" label="Delivery" value={header.delivery} onChange={(v) => setHeader((p) => ({ ...p, delivery: v }))} options={["Urgent", "Normal", "Express", "Scheduled"]} readOnly={selectedOrderPanels.length > 0} />
@@ -5506,6 +5859,8 @@
 //                 </div>
 //               )}
 //             </div>
+
+           
 //           </div>
 
 //           <div className="mb-4">
@@ -5543,6 +5898,18 @@
 //             </div>
 //             <VendorsTable rows={vendors} onChange={updateVendor} onRemove={removeVendor} onAdd={addVendor} />
 //           </div>
+
+//            {/* APPROVAL STATUS - NEW FIELD ADDED TO PART 1 */}
+//             <Select 
+//               col="col-span-12 md:col-span-3" 
+//               label="Approval Status" 
+//               value={approval.approvalStatus} 
+//               onChange={(v) => setApproval((p) => ({ ...p, approvalStatus: v }))} 
+//               options={APPROVALS} 
+//               readOnly={false} 
+//             />
+
+          
 //         </Card>
 
 //         {/* PART 2: VEHICLE NEGOTIATION - PART 2 */}
@@ -5551,7 +5918,12 @@
 //             <Input col="col-span-12 md:col-span-3" label="Max Rate" value={negotiation.maxRate} onChange={(v) => setNegotiation((p) => ({ ...p, maxRate: v }))} />
 //             <Input col="col-span-12 md:col-span-3" label="Target Rate" value={negotiation.targetRate} onChange={(v) => setNegotiation((p) => ({ ...p, targetRate: v }))} />
 //             <Input col="col-span-12 md:col-span-3" label="Old Rate %" value={negotiation.oldRatePercent} onChange={(v) => setNegotiation((p) => ({ ...p, oldRatePercent: v }))} />
+
+//             {/* APPROVAL STATUS - NEW FIELD ADDED TO RATE-TARGET */}
+           
 //           </div>
+
+         
 
 //           {/* Remarks & Voice Note */}
 //           <div className="grid grid-cols-12 gap-4">
@@ -5582,6 +5954,14 @@
 //               </div>
 //             </div>
 //           </div>
+//            <Select 
+//               col="col-span-12 md:col-span-3" 
+//               label="Approval Status" 
+//               value={approval.approvalStatus} 
+//               onChange={(v) => setApproval((p) => ({ ...p, approvalStatus: v }))} 
+//               options={APPROVALS} 
+//               readOnly={false} 
+//             />
 //         </Card>
 
 //         {/* PART 3: VEHICLE APPROVAL - PART 3 */}
@@ -5589,7 +5969,14 @@
 //           <div className="grid grid-cols-12 gap-3 mb-4">
 //             <div className="col-span-12 md:col-span-4">
 //               <label className="text-xs font-bold text-slate-600">Supplier Name</label>
-//               <SupplierSearchDropdown value={selectedSupplier ? selectedSupplier.supplierName : approval.vendorName} onSelect={handleSupplierSelect} placeholder="Search supplier..." readOnly={false} />
+//               <SupplierSearchDropdown 
+//                 value={selectedSupplier ? selectedSupplier.supplierName : approval.vendorName}
+//                 onSelect={handleSupplierSelect}
+//                 placeholder="Search supplier..."
+//                 readOnly={false}
+//                 suppliers={supplierSearch.suppliers}
+//                 loading={supplierSearch.loading}
+//               />
 //             </div>
 //             <Select col="col-span-12 md:col-span-4" label="Supplier (Status)" value={approval.vendorStatus} onChange={(v) => setApproval((p) => ({ ...p, vendorStatus: v }))} options={VENDOR_STATUS} readOnly={true} />
 //             <Select 
@@ -6476,13 +6863,14 @@ function SupplierSearchDropdown({
   value, 
   onSelect,
   placeholder = "Search supplier...",
-  readOnly = false
+  readOnly = false,
+  suppliers = [],
+  loading = false
 }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
-  const [suppliers, setSuppliers] = useState([]);
+  const [filteredSuppliers, setFilteredSuppliers] = useState([]);
   const dropdownRef = useRef(null);
-  const supplierSearch = useSupplierSearch();
 
   useEffect(() => {
     if (value) {
@@ -6493,24 +6881,33 @@ function SupplierSearchDropdown({
   }, [value]);
 
   useEffect(() => {
-    setSuppliers(supplierSearch.suppliers);
-  }, [supplierSearch.suppliers]);
+    if (searchQuery.trim()) {
+      const filtered = suppliers.filter(supplier =>
+        supplier.supplierName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        supplier.supplierCode?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      setFilteredSuppliers(filtered);
+    } else {
+      setFilteredSuppliers(suppliers);
+    }
+  }, [suppliers, searchQuery]);
 
   const handleSearch = (query) => {
     if (readOnly) return;
     setSearchQuery(query);
+    
     if (!showDropdown) {
       setShowDropdown(true);
     }
     
     if (!query.trim()) {
-      setSuppliers(supplierSearch.suppliers);
+      setFilteredSuppliers(suppliers);
     } else {
-      const filtered = supplierSearch.suppliers.filter(supplier =>
+      const filtered = suppliers.filter(supplier =>
         supplier.supplierName?.toLowerCase().includes(query.toLowerCase()) ||
         supplier.supplierCode?.toLowerCase().includes(query.toLowerCase())
       );
-      setSuppliers(filtered);
+      setFilteredSuppliers(filtered);
     }
   };
 
@@ -6521,12 +6918,9 @@ function SupplierSearchDropdown({
     onSelect(supplier);
   };
 
-  const handleInputFocus = async () => {
+  const handleInputFocus = () => {
     if (readOnly) return;
-    if (supplierSearch.suppliers.length === 0) {
-      await supplierSearch.searchSuppliers();
-    }
-    setSuppliers(supplierSearch.suppliers);
+    setFilteredSuppliers(suppliers);
     setShowDropdown(true);
   };
 
@@ -6548,13 +6942,13 @@ function SupplierSearchDropdown({
       
       {showDropdown && !readOnly && (
         <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
-          {supplierSearch.loading ? (
+          {loading ? (
             <div className="p-3 text-center text-sm text-slate-500">
               <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-sky-500 mx-auto"></div>
               <p className="mt-1">Loading suppliers...</p>
             </div>
-          ) : suppliers.length > 0 ? (
-            suppliers.map((supplier) => (
+          ) : filteredSuppliers.length > 0 ? (
+            filteredSuppliers.map((supplier) => (
               <div
                 key={supplier._id}
                 onMouseDown={() => handleSelectItem(supplier)}
@@ -6570,7 +6964,7 @@ function SupplierSearchDropdown({
             ))
           ) : (
             <div className="p-3 text-center text-sm text-slate-500">
-              No suppliers found
+              {searchQuery.trim() ? "No suppliers found" : "No suppliers available"}
             </div>
           )}
         </div>
@@ -6599,15 +6993,12 @@ function MultiSelectOrderPanelDropdown({
       
       const selectedIds = selectedPanels.map(p => p._id);
       
-      // Get the sub-company of the first selected panel (if any)
       const firstSelectedSubCompanyId = selectedPanels.length > 0 ? selectedPanels[0].subCompanyId : null;
       
-      // Filter panels based on sub-company restriction
       let filtered = orderPanelSearch.orderPanels.filter(
         panel => !selectedIds.includes(panel._id)
       );
       
-      // If there's a selected sub-company, only show panels from that sub-company
       if (firstSelectedSubCompanyId) {
         filtered = filtered.filter(panel => 
           panel.subCompanyId === firstSelectedSubCompanyId
@@ -6663,7 +7054,6 @@ function MultiSelectOrderPanelDropdown({
       return;
     }
     
-    // Check sub-company consistency
     if (selectedPanels.length > 0) {
       const firstPanelSubCompanyId = selectedPanels[0].subCompanyId;
       if (panel.subCompanyId !== firstPanelSubCompanyId) {
@@ -6948,9 +7338,6 @@ export default function VehicleNegotiationPanel() {
   const [selectedOrderPanels, setSelectedOrderPanels] = useState([]);
   const orderPanelSearch = useOrderPanelSearch();
 
-  // ============================================
-  // ✅ DEFINE handleOrderPanelSelect FIRST using useCallback
-  // ============================================
   const handleOrderPanelSelect = useCallback(async (fullPanel, removePanelId = null) => {
     if (removePanelId) {
       const panelToRemove = selectedOrderPanels.find(p => p._id === removePanelId);
@@ -6993,24 +7380,20 @@ export default function VehicleNegotiationPanel() {
         setCustomerSearchQuery("");
       }
     } else {
-      // Check if already selected
       if (selectedOrderPanels.some(p => p._id === fullPanel._id)) {
         console.log(`⚠️ Order ${fullPanel.orderPanelNo} already selected`);
         return;
       }
       
-      // Check sub-company consistency
       if (selectedOrderPanels.length > 0) {
         const currentSubCompanyId = selectedOrderPanels[0].subCompanyId;
         const newSubCompanyId = fullPanel.subCompanyId;
         
-        // If both have sub-company and they don't match, block selection
         if (currentSubCompanyId && newSubCompanyId && currentSubCompanyId !== newSubCompanyId) {
           alert(`⚠️ You can only select orders from the same sub-company.\nCurrent: ${selectedOrderPanels[0].subCompanyName || 'None'}\nSelected: ${fullPanel.subCompanyName || 'None'}`);
           return;
         }
         
-        // If one has sub-company and other doesn't
         if (currentSubCompanyId && !newSubCompanyId) {
           alert(`⚠️ This order has no sub-company. Please select orders from the same sub-company: ${selectedOrderPanels[0].subCompanyName}`);
           return;
@@ -7103,7 +7486,6 @@ export default function VehicleNegotiationPanel() {
         });
       }
 
-      // Update header charges and sub-company
       setHeader(prev => {
         const newHeader = { ...prev };
         
@@ -7111,7 +7493,6 @@ export default function VehicleNegotiationPanel() {
           newHeader.branch = fullPanel.branch || null;
           newHeader.branchName = fullPanel.branchName || "";
           newHeader.branchCode = fullPanel.branchCode || "";
-          // Add sub-company fields
           newHeader.subCompanyId = fullPanel.subCompanyId || null;
           newHeader.subCompanyName = fullPanel.subCompanyName || "";
           newHeader.subCompanyCode = fullPanel.subCompanyCode || "";
@@ -7132,7 +7513,6 @@ export default function VehicleNegotiationPanel() {
           newHeader.otherCharges = String((Number(prev.otherCharges) || 0) + (Number(fullPanel.otherCharges) || 0));
           newHeader.loadingPoints = String((Number(prev.loadingPoints) || 0) + (Number(fullPanel.loadingPoints) || 0));
           newHeader.dropPoints = String((Number(prev.dropPoints) || 0) + (Number(fullPanel.dropPoints) || 0));
-          // Keep sub-company from first selected panel
           if (!prev.subCompanyId) {
             newHeader.subCompanyId = fullPanel.subCompanyId || null;
             newHeader.subCompanyName = fullPanel.subCompanyName || "";
@@ -7153,9 +7533,6 @@ export default function VehicleNegotiationPanel() {
     }
   }, [selectedOrderPanels, plants, customerSearch.customers]);
 
-  // ============================================
-  // ✅ FETCH SELECTED ORDERS FROM URL PARAMS - RUNS ONLY ONCE
-  // ============================================
   const hasLoadedOrders = useRef(false);
 
   useEffect(() => {
@@ -7255,7 +7632,6 @@ export default function VehicleNegotiationPanel() {
     fetchAndSelectOrders();
   }, [handleOrderPanelSelect]);
 
-  // Fetch Purchase Types from backend
   const fetchPurchaseTypes = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -7274,7 +7650,6 @@ export default function VehicleNegotiationPanel() {
     }
   };
 
-  // Fetch Payment Terms from backend
   const fetchPaymentTerms = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -7318,7 +7693,6 @@ export default function VehicleNegotiationPanel() {
   const [memoFile, setMemoFile] = useState(null);
   const audioRef = useRef(null);
 
-  // Fetch Sub Companies
   const fetchSubCompanies = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -7465,6 +7839,18 @@ export default function VehicleNegotiationPanel() {
   }, [customerSearch.customers]);
 
   const handleSupplierSelect = (supplier) => {
+    if (!supplier) {
+      setSelectedSupplier(null);
+      setApproval(prev => ({
+        ...prev,
+        vendorName: "",
+        vendorId: null,
+        vendorCode: "",
+        vendorStatus: "Active"
+      }));
+      return;
+    }
+    
     setSelectedSupplier(supplier);
     setApproval(prev => ({
       ...prev,
@@ -8530,6 +8916,29 @@ export default function VehicleNegotiationPanel() {
                 </div>
               )}
             </div>
+
+            {/* APPROVAL STATUS - READONLY IN PART 1 */}
+            <Select 
+              col="col-span-12 md:col-span-3" 
+              label="Approval Status" 
+              value={approval.approvalStatus} 
+              onChange={(v) => setApproval((p) => ({ ...p, approvalStatus: v }))} 
+              options={APPROVALS} 
+              readOnly={true} 
+            />
+
+            {/* APPROVAL REMARKS - READONLY IN PART 1 */}
+            <div className="col-span-12 md:col-span-3">
+              <label className="text-xs font-bold text-slate-600">Approval Remarks</label>
+              <textarea
+                value={approval.remarks}
+                onChange={(e) => setApproval((p) => ({ ...p, remarks: e.target.value }))}
+                className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2 text-sm outline-none cursor-not-allowed"
+                rows={1}
+                placeholder="Enter remarks..."
+                readOnly={true}
+              />
+            </div>
           </div>
 
           <div className="mb-4">
@@ -8569,15 +8978,40 @@ export default function VehicleNegotiationPanel() {
           </div>
         </Card>
 
-        {/* PART 2: VEHICLE NEGOTIATION - PART 2 */}
+        {/* PART 2: RATE-TARGET - FULL SECTION READONLY */}
         <Card title="Rate-Target">
           <div className="grid grid-cols-12 gap-3 mb-4">
-            <Input col="col-span-12 md:col-span-3" label="Max Rate" value={negotiation.maxRate} onChange={(v) => setNegotiation((p) => ({ ...p, maxRate: v }))} />
-            <Input col="col-span-12 md:col-span-3" label="Target Rate" value={negotiation.targetRate} onChange={(v) => setNegotiation((p) => ({ ...p, targetRate: v }))} />
-            <Input col="col-span-12 md:col-span-3" label="Old Rate %" value={negotiation.oldRatePercent} onChange={(v) => setNegotiation((p) => ({ ...p, oldRatePercent: v }))} />
+            <Input col="col-span-12 md:col-span-3" label="Max Rate" value={negotiation.maxRate} onChange={(v) => setNegotiation((p) => ({ ...p, maxRate: v }))} readOnly={true} />
+            <Input col="col-span-12 md:col-span-3" label="Target Rate" value={negotiation.targetRate} onChange={(v) => setNegotiation((p) => ({ ...p, targetRate: v }))} readOnly={true} />
+            <Input col="col-span-12 md:col-span-3" label="Old Rate %" value={negotiation.oldRatePercent} onChange={(v) => setNegotiation((p) => ({ ...p, oldRatePercent: v }))} readOnly={true} />
+
+            {/* APPROVAL STATUS - READONLY IN RATE-TARGET */}
+            <Select 
+              col="col-span-12 md:col-span-3" 
+              label="Approval Status" 
+              value={approval.approvalStatus} 
+              onChange={(v) => setApproval((p) => ({ ...p, approvalStatus: v }))} 
+              options={APPROVALS} 
+              readOnly={true} 
+            />
           </div>
 
-          {/* Remarks & Voice Note */}
+          {/* APPROVAL REMARKS - READONLY IN RATE-TARGET */}
+          <div className="grid grid-cols-12 gap-3 mb-4">
+            <div className="col-span-12 md:col-span-6">
+              <label className="text-xs font-bold text-slate-600">Approval Remarks</label>
+              <textarea
+                value={approval.remarks}
+                onChange={(e) => setApproval((p) => ({ ...p, remarks: e.target.value }))}
+                className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2 text-sm outline-none cursor-not-allowed"
+                rows={1}
+                placeholder="Enter remarks..."
+                readOnly={true}
+              />
+            </div>
+          </div>
+
+          {/* Remarks & Voice Note - READONLY */}
           <div className="grid grid-cols-12 gap-4">
             <div className="col-span-12 md:col-span-7">
               <div className="rounded-xl border border-slate-200 p-4">
@@ -8585,16 +9019,17 @@ export default function VehicleNegotiationPanel() {
                 <textarea
                   value={negotiation.remarks1}
                   onChange={(e) => setNegotiation((p) => ({ ...p, remarks1: e.target.value }))}
-                  className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm outline-none cursor-not-allowed"
                   rows={2}
                   placeholder="Enter remarks..."
+                  readOnly={true}
                 />
               </div>
             </div>
             <div className="col-span-12 md:col-span-5">
               <div className="rounded-xl border border-slate-200 p-4">
                 <div className="text-sm font-extrabold text-slate-900 mb-3">Voice Note</div>
-                <input type="file" accept="audio/*" onChange={handleVoiceUpload} className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200" />
+                <input type="file" accept="audio/*" onChange={handleVoiceUpload} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none cursor-not-allowed" disabled={true} />
                 {voiceUrl && (
                   <div className="mt-3">
                     <audio ref={audioRef} src={voiceUrl} controls className="w-full" />
@@ -8608,12 +9043,19 @@ export default function VehicleNegotiationPanel() {
           </div>
         </Card>
 
-        {/* PART 3: VEHICLE APPROVAL - PART 3 */}
+        {/* PART 3: VEHICLE APPROVAL - FULL SECTION READONLY */}
         <Card title="Vehicle-Placement_Reat">
           <div className="grid grid-cols-12 gap-3 mb-4">
             <div className="col-span-12 md:col-span-4">
               <label className="text-xs font-bold text-slate-600">Supplier Name</label>
-              <SupplierSearchDropdown value={selectedSupplier ? selectedSupplier.supplierName : approval.vendorName} onSelect={handleSupplierSelect} placeholder="Search supplier..." readOnly={false} />
+              <SupplierSearchDropdown 
+                value={selectedSupplier ? selectedSupplier.supplierName : approval.vendorName}
+                onSelect={handleSupplierSelect}
+                placeholder="Search supplier..."
+                readOnly={true}
+                suppliers={supplierSearch.suppliers}
+                loading={supplierSearch.loading}
+              />
             </div>
             <Select col="col-span-12 md:col-span-4" label="Supplier (Status)" value={approval.vendorStatus} onChange={(v) => setApproval((p) => ({ ...p, vendorStatus: v }))} options={VENDOR_STATUS} readOnly={true} />
             <Select 
@@ -8629,7 +9071,7 @@ export default function VehicleNegotiationPanel() {
                 }
               }} 
               options={RATE_TYPES} 
-              readOnly={false} 
+              readOnly={true} 
             />
           </div>
 
@@ -8639,7 +9081,7 @@ export default function VehicleNegotiationPanel() {
               label="Final - Per MT (A)" 
               value={approval.finalPerMT} 
               onChange={(v) => setApproval((p) => ({ ...p, finalPerMT: v }))} 
-              readOnly={approval.rateType === "Fixed"} 
+              readOnly={true} 
             />
             <div className="col-span-12 md:col-span-4 mt-2">
               <div className="flex flex-col">
@@ -8661,13 +9103,13 @@ export default function VehicleNegotiationPanel() {
               label="Final - Fix" 
               value={approval.finalFix} 
               onChange={(v) => setApproval((p) => ({ ...p, finalFix: v }))} 
-              readOnly={approval.rateType === "Per MT"} 
+              readOnly={true} 
             />
             <div className="col-span-12 md:col-span-4">
               <label className="text-xs font-bold text-slate-600">Vehicle Number</label>
-              <input type="text" value={approval.vehicleNo || ""} onChange={(e) => setApproval((p) => ({ ...p, vehicleNo: e.target.value }))} className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200" placeholder="Enter vehicle number..." />
+              <input type="text" value={approval.vehicleNo || ""} onChange={(e) => setApproval((p) => ({ ...p, vehicleNo: e.target.value }))} className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none cursor-not-allowed" placeholder="Enter vehicle number..." readOnly={true} />
             </div>
-            <Input col="col-span-12 md:col-span-4" label="Mobile" value={approval.mobile} onChange={(v) => setApproval((p) => ({ ...p, mobile: v }))} readOnly={false} />
+            <Input col="col-span-12 md:col-span-4" label="Mobile" value={approval.mobile} onChange={(v) => setApproval((p) => ({ ...p, mobile: v }))} readOnly={true} />
           </div>
 
           <div className="grid grid-cols-12 gap-3 mb-4">
@@ -8677,7 +9119,7 @@ export default function VehicleNegotiationPanel() {
               value={approval.purchaseType} 
               onChange={(v) => setApproval((p) => ({ ...p, purchaseType: v }))} 
               options={purchaseTypes.length > 0 ? purchaseTypes : PURCHASE_TYPES}
-              readOnly={false} 
+              readOnly={true} 
             />
             <Select 
               col="col-span-12 md:col-span-4" 
@@ -8685,7 +9127,7 @@ export default function VehicleNegotiationPanel() {
               value={approval.paymentTerms} 
               onChange={(v) => setApproval((p) => ({ ...p, paymentTerms: v }))} 
               options={paymentTerms.length > 0 ? paymentTerms : PAYMENT_TERMS}
-              readOnly={false} 
+              readOnly={true} 
             />
             <Select col="col-span-12 md:col-span-4" label="Approval" value={approval.approvalStatus} onChange={(v) => setApproval((p) => ({ ...p, approvalStatus: v }))} options={APPROVALS} readOnly={true} />
           </div>

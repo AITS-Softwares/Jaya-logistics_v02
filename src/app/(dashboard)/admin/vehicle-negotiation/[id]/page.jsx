@@ -1,3 +1,5 @@
+
+
 // // "use client";
 
 // // import { useMemo, useRef, useState, useEffect } from "react";
@@ -235,7 +237,7 @@
 // //     pinCode: "",
 // //     from: null,
 // //     fromName: "",
-// //     fromState: "", // ✅ ADD THIS
+// //     fromState: "",
 // //     to: null,
 // //     toName: "",
 // //     taluka: "",
@@ -252,8 +254,11 @@
 // //     cancellationCharges: "",
 // //     loadingCharges: "",
 // //     otherCharges: "",
-// //     localStatus: "unknown", // ✅ ADD THIS
-// //     localStatusLabel: "Unknown" // ✅ ADD THIS
+// //     localStatus: "unknown",
+// //     localStatusLabel: "Unknown",
+// //     subCompanyId: null,
+// //     subCompanyName: "",
+// //     subCompanyCode: ""
 // //   };
 // // }
 
@@ -910,6 +915,11 @@
 // //               className="flex items-center gap-1 bg-yellow-100 px-2 py-1 rounded-md text-sm"
 // //             >
 // //               <span className="font-medium">{panel.orderPanelNo}</span>
+// //               {panel.subCompanyName && (
+// //                 <span className="text-xs text-gray-500 ml-1">
+// //                   ({panel.subCompanyName})
+// //                 </span>
+// //               )}
 // //               <button
 // //                 onClick={() => handleRemovePanel(panel._id)}
 // //                 className="text-red-500 hover:text-red-700 font-bold ml-1"
@@ -960,6 +970,11 @@
 // //                   {panel.partyName || panel.customerName || 'N/A'} | 
 // //                   Branch: {panel.branchName || panel.branchCode || 'N/A'} | 
 // //                   Weight: {panel.totalWeight || 0}
+// //                   {panel.subCompanyName && (
+// //                     <span className="ml-2 text-blue-600">
+// //                       Sub-Company: {panel.subCompanyName} ({panel.subCompanyCode})
+// //                     </span>
+// //                   )}
 // //                 </div>
 // //               </div>
 // //             ))
@@ -1056,6 +1071,7 @@
 // //   const negotiationId = params.id;
 
 // //   const [branches, setBranches] = useState([]);
+// //   const [subCompanies, setSubCompanies] = useState([]);
 // //   const [countries, setCountries] = useState([]);
 // //   const [plants, setPlants] = useState([]);
 // //   const [loading, setLoading] = useState(false);
@@ -1120,11 +1136,33 @@
 // //     }
 // //   };
 
+// //   // Fetch Sub Companies
+// //   const fetchSubCompanies = async () => {
+// //     try {
+// //       const token = localStorage.getItem('token');
+// //       const res = await fetch('/api/subcompanies', {
+// //         headers: { Authorization: `Bearer ${token}` },
+// //       });
+// //       const data = await res.json();
+// //       if (data.success && Array.isArray(data.data)) {
+// //         setSubCompanies(data.data);
+// //       } else {
+// //         setSubCompanies([]);
+// //       }
+// //     } catch (error) {
+// //       console.error('Error fetching sub-companies:', error.message);
+// //       setSubCompanies([]);
+// //     }
+// //   };
+
 // //   const [header, setHeader] = useState({
 // //     vnnNo: "",
 // //     branch: null,
 // //     branchName: "",
 // //     branchCode: "",
+// //     subCompanyId: null,
+// //     subCompanyName: "",
+// //     subCompanyCode: "",
 // //     delivery: "Urgent",
 // //     date: new Date().toISOString().split('T')[0],
 // //     loadingPoints: "",
@@ -1177,6 +1215,7 @@
 // //   useEffect(() => {
 // //     const fetchData = async () => {
 // //       await fetchBranches();
+// //       await fetchSubCompanies();
 // //       await fetchCountries();
 // //       await fetchPlants();
 // //       await supplierSearch.searchSuppliers();
@@ -1250,11 +1289,15 @@
       
 // //       setVnnNumber(vn.vnnNo || "");
       
+// //       // Set header with sub-company
 // //       setHeader({
 // //         vnnNo: vn.vnnNo || "",
 // //         branch: vn.branch || null,
 // //         branchName: vn.branchName || "",
 // //         branchCode: vn.branchCode || "",
+// //         subCompanyId: vn.subCompanyId || null,
+// //         subCompanyName: vn.subCompanyName || "",
+// //         subCompanyCode: vn.subCompanyCode || "",
 // //         delivery: vn.delivery || "Urgent",
 // //         date: vn.date ? new Date(vn.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
 // //         loadingPoints: vn.loadingPoints?.toString() || "",
@@ -1277,37 +1320,60 @@
 // //         setCustomerSearchQuery(vn.customerName);
 // //       }
 
+// //       // Process orders with sub-company
 // //       if (vn.orders && vn.orders.length > 0) {
-// //   const processedOrders = vn.orders.map(order => ({
-// //     ...order,
-// //     _id: order._id || uid(),
-// //     weight: order.weight?.toString() || "",
-// //     collectionCharges: order.collectionCharges?.toString() || "",
-// //     cancellationCharges: order.cancellationCharges || "",
-// //     loadingCharges: order.loadingCharges || "",
-// //     otherCharges: order.otherCharges?.toString() || "",
-// //     fromState: order.fromState || '', // ✅ ADD THIS
-// //     localStatus: order.localStatus || 'unknown', // ✅ ADD THIS
-// //     localStatusLabel: order.localStatusLabel || 'Unknown' // ✅ ADD THIS
-// //   }));
-// //   setOrders(processedOrders);
-// // } else {
-// //   setOrders([defaultOrderRow()]);
-// // }
+// //         const processedOrders = vn.orders.map(order => ({
+// //           ...order,
+// //           _id: order._id || uid(),
+// //           weight: order.weight?.toString() || "",
+// //           collectionCharges: order.collectionCharges?.toString() || "",
+// //           cancellationCharges: order.cancellationCharges || "",
+// //           loadingCharges: order.loadingCharges || "",
+// //           otherCharges: order.otherCharges?.toString() || "",
+// //           fromState: order.fromState || '',
+// //           localStatus: order.localStatus || 'unknown',
+// //           localStatusLabel: order.localStatusLabel || 'Unknown',
+// //           // Preserve sub-company from order or use header's sub-company
+// //           subCompanyId: order.subCompanyId || vn.subCompanyId || null,
+// //           subCompanyName: order.subCompanyName || vn.subCompanyName || '',
+// //           subCompanyCode: order.subCompanyCode || vn.subCompanyCode || ''
+// //         }));
+// //         setOrders(processedOrders);
+// //       } else {
+// //         setOrders([defaultOrderRow()]);
+// //       }
 
+// //       // Process selected order panels with sub-company
 // //       if (vn.selectedOrderPanels && vn.selectedOrderPanels.length > 0) {
 // //         const fullPanels = [];
 // //         for (const panel of vn.selectedOrderPanels) {
 // //           try {
-// //             const fullPanel = await orderPanelSearch.getOrderPanelById(panel._id);
+// //             let fullPanel = await orderPanelSearch.getOrderPanelById(panel._id);
 // //             if (fullPanel) {
+// //               // Add sub-company from the saved data if not present
+// //               if (!fullPanel.subCompanyId && vn.subCompanyId) {
+// //                 fullPanel.subCompanyId = vn.subCompanyId;
+// //                 fullPanel.subCompanyName = vn.subCompanyName;
+// //                 fullPanel.subCompanyCode = vn.subCompanyCode;
+// //               }
 // //               fullPanels.push(fullPanel);
 // //             } else {
-// //               fullPanels.push(panel);
+// //               // If panel not found, use the saved data
+// //               fullPanels.push({
+// //                 ...panel,
+// //                 subCompanyId: panel.subCompanyId || vn.subCompanyId || null,
+// //                 subCompanyName: panel.subCompanyName || vn.subCompanyName || '',
+// //                 subCompanyCode: panel.subCompanyCode || vn.subCompanyCode || ''
+// //               });
 // //             }
 // //           } catch (err) {
 // //             console.error("Error fetching panel:", err);
-// //             fullPanels.push(panel);
+// //             fullPanels.push({
+// //               ...panel,
+// //               subCompanyId: panel.subCompanyId || vn.subCompanyId || null,
+// //               subCompanyName: panel.subCompanyName || vn.subCompanyName || '',
+// //               subCompanyCode: panel.subCompanyCode || vn.subCompanyCode || ''
+// //             });
 // //           }
 // //         }
 // //         setSelectedOrderPanels(fullPanels);
@@ -1488,6 +1554,9 @@
 // //           branch: null,
 // //           branchName: "",
 // //           branchCode: "",
+// //           subCompanyId: null,
+// //           subCompanyName: "",
+// //           subCompanyCode: "",
 // //           partyName: "",
 // //           customerId: null,
 // //           collectionCharges: "",
@@ -1551,7 +1620,7 @@
 // //             pinCode: row.pinCode || "",
 // //             from: row.from || null,
 // //             fromName: row.fromName || "",
-// //             fromState: row.fromState || "", 
+// //             fromState: row.fromState || "",
 // //             to: row.to || null,
 // //             toName: row.toName || "",
 // //             taluka: row.taluka || "",
@@ -1568,8 +1637,11 @@
 // //             cancellationCharges: fullPanel.cancellationCharges?.toString() || "",
 // //             loadingCharges: fullPanel.loadingCharges?.toString() || "",
 // //             otherCharges: fullPanel.otherCharges?.toString() || "",
-// //                     localStatus: row.localStatus || "unknown", // ✅ ADD THIS
-// //         localStatusLabel: row.localStatusLabel || "Unknown" 
+// //             localStatus: row.localStatus || "unknown",
+// //             localStatusLabel: row.localStatusLabel || "Unknown",
+// //             subCompanyId: fullPanel.subCompanyId || header.subCompanyId || null,
+// //             subCompanyName: fullPanel.subCompanyName || header.subCompanyName || '',
+// //             subCompanyCode: fullPanel.subCompanyCode || header.subCompanyCode || ''
 // //           };
 // //         });
         
@@ -1589,6 +1661,9 @@
 // //           branch: fullPanel.branch || null,
 // //           branchName: fullPanel.branchName || "",
 // //           branchCode: fullPanel.branchCode || "",
+// //           subCompanyId: fullPanel.subCompanyId || null,
+// //           subCompanyName: fullPanel.subCompanyName || "",
+// //           subCompanyCode: fullPanel.subCompanyCode || "",
 // //           delivery: fullPanel.delivery || "Urgent",
 // //           date: fullPanel.date ? new Date(fullPanel.date).toISOString().split('T')[0] : prev.date,
 // //           partyName: fullPanel.partyName || fullPanel.customerName || "",
@@ -1819,7 +1894,10 @@
 // //         },
 // //         selectedOrderPanels: selectedOrderPanels.map(panel => ({
 // //           _id: panel._id,
-// //           orderPanelNo: panel.orderPanelNo
+// //           orderPanelNo: panel.orderPanelNo,
+// //           subCompanyId: panel.subCompanyId || header.subCompanyId || null,
+// //           subCompanyName: panel.subCompanyName || header.subCompanyName || '',
+// //           subCompanyCode: panel.subCompanyCode || header.subCompanyCode || ''
 // //         })),
 // //         orders: orders.map(order => ({
 // //           _id: order._id,
@@ -1836,7 +1914,7 @@
 // //           pinCode: order.pinCode,
 // //           from: order.from || null,
 // //           fromName: order.fromName,
-// //             fromState: order.fromState || '', 
+// //           fromState: order.fromState || '',
 // //           to: order.to || null,
 // //           toName: order.toName,
 // //           taluka: order.taluka,
@@ -1853,8 +1931,11 @@
 // //           cancellationCharges: order.cancellationCharges || 'Nil',
 // //           loadingCharges: order.loadingCharges || 'Nil',
 // //           otherCharges: num(order.otherCharges) || 0,
-// //             localStatus: order.localStatus || 'unknown', // ✅ ADD THIS
-// //   localStatusLabel: order.localStatusLabel || 'Unknown' 
+// //           localStatus: order.localStatus || 'unknown',
+// //           localStatusLabel: order.localStatusLabel || 'Unknown',
+// //           subCompanyId: order.subCompanyId || header.subCompanyId || null,
+// //           subCompanyName: order.subCompanyName || header.subCompanyName || '',
+// //           subCompanyCode: order.subCompanyCode || header.subCompanyCode || ''
 // //         })),
 // //         totalWeight,
 // //         negotiation: {
@@ -1957,26 +2038,27 @@
 // //   }, [orders, header.date, header.vnnNo, approval.approvalStatus, approval.memoStatus]);
 
 // //   const ordersColumns = [
-// //   { key: "orderNo", label: "Order No" },
-// //   { key: "partyName", label: "Party Name" },
-// //   { key: "plantCode", label: "Plant Code *" },
-// //   { key: "plantName", label: "Plant Name" },
-// //   { key: "orderType", label: "Order Type" },
-// //   { key: "pinCode", label: "Pin Code" },
-// //   { key: "from", label: "From" },
-// //   { key: "to", label: "To" },
-// //   { key: "taluka", label: "Taluka" },
-// //   { key: "district", label: "District" },
-// //   { key: "state", label: "State" },
-// //   { key: "localStatus", label: "Local/Not Local" }, // ✅ ADD THIS
-// //   { key: "country", label: "Country" },
-// //   { key: "weight", label: "Weight" },
-// //   { key: "status", label: "Status" },
-// //   { key: "collectionCharges", label: "Collection Charges" },
-// //   { key: "cancellationCharges", label: "Cancellation Charges" },
-// //   { key: "loadingCharges", label: "Loading Charges" },
-// //   { key: "otherCharges", label: "Other Charges" },
-// // ];
+// //     { key: "orderNo", label: "Order No" },
+// //     { key: "partyName", label: "Party Name" },
+// //     { key: "plantCode", label: "Plant Code *" },
+// //     { key: "plantName", label: "Plant Name" },
+// //     { key: "orderType", label: "Order Type" },
+// //     { key: "pinCode", label: "Pin Code" },
+// //     { key: "from", label: "From" },
+// //     { key: "to", label: "To" },
+// //     { key: "taluka", label: "Taluka" },
+// //     { key: "district", label: "District" },
+// //     { key: "state", label: "State" },
+// //     { key: "localStatus", label: "Local/Not Local" },
+// //     { key: "country", label: "Country" },
+// //     { key: "weight", label: "Weight" },
+// //     { key: "status", label: "Status" },
+// //     { key: "collectionCharges", label: "Collection Charges" },
+// //     { key: "cancellationCharges", label: "Cancellation Charges" },
+// //     { key: "loadingCharges", label: "Loading Charges" },
+// //     { key: "otherCharges", label: "Other Charges" },
+// //     { key: "subCompanyName", label: "Sub-Company" },
+// //   ];
 
 // //   const vendorColumns = [
 // //     { key: "vendorName", label: "Supplier Name" },
@@ -1991,251 +2073,257 @@
 // //     { key: "dropPoints", label: "No. of Droping Point", type: "number" },
 // //   ];
 
-// //  const OrdersTable = ({ rows, onChange, onRemove, readOnly = false }) => {
-// //   const columns = ordersColumns;
-// //   // Use the passed readOnly prop instead of internal logic
-// //   const isReadOnly = readOnly;
+// //   const OrdersTable = ({ rows, onChange, onRemove, readOnly = false }) => {
+// //     const columns = ordersColumns;
+// //     const isReadOnly = readOnly;
 
-// //   return (
-// //     <div className="overflow-auto rounded-xl border border-yellow-300 max-h-[500px]">
-// //       <table className="min-w-max w-full text-sm">
-// //         <thead className="sticky top-0 bg-yellow-400 z-10">
-// //           <tr>
-// //             {columns.map((col) => (
-// //               <th
-// //                 key={col.key}
-// //                 className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 text-center"
-// //                 style={{ minWidth: col.key === "orderNo" ? "120px" : col.key === "partyName" ? "150px" : "120px" }}
-// //               >
-// //                 {col.label}
-// //               </th>
-// //             ))}
-// //             <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 text-center">
-// //               Actions
-// //             </th>
-// //           </tr>
-// //         </thead>
-
-// //         <tbody>
-// //           {rows.length > 0 ? (
-// //             rows.map((row) => {
-// //               return (
-// //                 <tr key={row._id} className="hover:bg-yellow-50 even:bg-slate-50">
-// //                   <td className="border border-yellow-300 px-2 py-2">
-// //                     <input
-// //                       value={row.orderNo || ""}
-// //                       onChange={(e) => onChange(row._id, 'orderNo', e.target.value)}
-// //                       readOnly={isReadOnly}
-// //                       className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-// //                       placeholder="Order No"
-// //                     />
-// //                   </td>
-// //                   <td className="border border-yellow-300 px-2 py-2">
-// //                     <input
-// //                       value={row.partyName || ""}
-// //                       onChange={(e) => onChange(row._id, 'partyName', e.target.value)}
-// //                       readOnly={isReadOnly}
-// //                       className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-// //                       placeholder="Party Name"
-// //                     />
-// //                   </td>
-// //                   <td className="border border-yellow-300 px-2 py-2">
-// //                     <input
-// //                       value={row.plantCode || ""}
-// //                       onChange={(e) => onChange(row._id, 'plantCode', e.target.value)}
-// //                       readOnly={isReadOnly}
-// //                       className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-// //                       placeholder="Plant Code"
-// //                     />
-// //                   </td>
-// //                   <td className="border border-yellow-300 px-2 py-2">
-// //                     <input
-// //                       value={row.plantName || ""}
-// //                       onChange={(e) => onChange(row._id, 'plantName', e.target.value)}
-// //                       readOnly={isReadOnly}
-// //                       className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-// //                       placeholder="Plant Name"
-// //                     />
-// //                   </td>
-// //                   <td className="border border-yellow-300 px-2 py-2">
-// //                     <select
-// //                       value={row.orderType || ""}
-// //                       onChange={(e) => onChange(row._id, 'orderType', e.target.value)}
-// //                       disabled={isReadOnly}
-// //                       className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-// //                     >
-// //                       <option value="">Select Order Type</option>
-// //                       {ORDER_TYPES.map((opt) => (
-// //                         <option key={opt} value={opt}>{opt}</option>
-// //                       ))}
-// //                     </select>
-// //                   </td>
-// //                   <td className="border border-yellow-300 px-2 py-2">
-// //                     <input
-// //                       value={row.pinCode || ""}
-// //                       onChange={(e) => onChange(row._id, 'pinCode', e.target.value)}
-// //                       readOnly={isReadOnly}
-// //                       className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-// //                       placeholder="Pin Code"
-// //                     />
-// //                   </td>
-// //                   <td className="border border-yellow-300 px-2 py-2">
-// //                     <input
-// //                       value={row.fromName || ""}
-// //                       onChange={(e) => onChange(row._id, 'fromName', e.target.value)}
-// //                       readOnly={isReadOnly}
-// //                       className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-// //                       placeholder="From"
-// //                     />
-// //                   </td>
-// //                   <td className="border border-yellow-300 px-2 py-2">
-// //                     <input
-// //                       value={row.toName || ""}
-// //                       onChange={(e) => onChange(row._id, 'toName', e.target.value)}
-// //                       readOnly={isReadOnly}
-// //                       className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-// //                       placeholder="To"
-// //                     />
-// //                   </td>
-// //                   <td className="border border-yellow-300 px-2 py-2">
-// //                     <input
-// //                       value={row.talukaName || row.taluka || ""}
-// //                       onChange={(e) => onChange(row._id, 'talukaName', e.target.value)}
-// //                       readOnly={isReadOnly}
-// //                       className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-// //                       placeholder="Taluka"
-// //                     />
-// //                   </td>
-// //                   <td className="border border-yellow-300 px-2 py-2">
-// //                     <input
-// //                       value={row.districtName || row.district || ""}
-// //                       onChange={(e) => onChange(row._id, 'districtName', e.target.value)}
-// //                       readOnly={isReadOnly}
-// //                       className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-// //                       placeholder="District"
-// //                     />
-// //                   </td>
-// //                   <td className="border border-yellow-300 px-2 py-2">
-// //                     <input
-// //                       value={row.stateName || row.state || ""}
-// //                       onChange={(e) => onChange(row._id, 'stateName', e.target.value)}
-// //                       readOnly={isReadOnly}
-// //                       className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-// //                       placeholder="State"
-// //                     />
-// //                   </td>
-// //                   {/* Local Status - ADD THIS */}
-// // <td className="border border-yellow-300 px-2 py-2 text-center">
-// //   {row.fromState && row.stateName ? (
-// //     <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${
-// //       row.fromState.trim().toUpperCase() === row.stateName.trim().toUpperCase()
-// //         ? 'bg-green-100 text-green-800 border border-green-300'
-// //         : 'bg-red-100 text-red-800 border border-red-300'
-// //     }`}>
-// //       {row.fromState.trim().toUpperCase() === row.stateName.trim().toUpperCase() ? '✅ Local' : '❌ Not Local'}
-// //     </span>
-// //   ) : (
-// //     <span className="text-xs text-gray-400">-</span>
-// //   )}
-// // </td>
-// //                   <td className="border border-yellow-300 px-2 py-2">
-// //                     <input
-// //                       value={row.countryName || row.country || ""}
-// //                       onChange={(e) => onChange(row._id, 'countryName', e.target.value)}
-// //                       readOnly={isReadOnly}
-// //                       className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-// //                       placeholder="Country"
-// //                     />
-// //                   </td>
-// //                   <td className="border border-yellow-300 px-2 py-2">
-// //                     <input
-// //                       type="number"
-// //                       value={row.weight || ""}
-// //                       onChange={(e) => onChange(row._id, 'weight', e.target.value)}
-// //                       readOnly={isReadOnly}
-// //                       className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-// //                       placeholder="Weight"
-// //                     />
-// //                   </td>
-// //                   <td className="border border-yellow-300 px-2 py-2">
-// //                     <select
-// //                       value={row.status || ""}
-// //                       onChange={(e) => onChange(row._id, 'status', e.target.value)}
-// //                       disabled={isReadOnly}
-// //                       className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-// //                     >
-// //                       <option value="">Select Status</option>
-// //                       {STATUSES.map((opt) => (
-// //                         <option key={opt} value={opt}>{opt}</option>
-// //                       ))}
-// //                     </select>
-// //                   </td>
-// //                   <td className="border border-yellow-300 px-2 py-2">
-// //                     <input
-// //                       type="number"
-// //                       value={row.collectionCharges || ""}
-// //                       onChange={(e) => onChange(row._id, 'collectionCharges', e.target.value)}
-// //                       readOnly={isReadOnly}
-// //                       className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-// //                       placeholder="Collection Charges"
-// //                     />
-// //                   </td>
-// //                   <td className="border border-yellow-300 px-2 py-2">
-// //                     <input
-// //                       value={row.cancellationCharges || ""}
-// //                       onChange={(e) => onChange(row._id, 'cancellationCharges', e.target.value)}
-// //                       readOnly={isReadOnly}
-// //                       className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-// //                       placeholder="Cancellation Charges"
-// //                     />
-// //                   </td>
-// //                   <td className="border border-yellow-300 px-2 py-2">
-// //                     <input
-// //                       value={row.loadingCharges || ""}
-// //                       onChange={(e) => onChange(row._id, 'loadingCharges', e.target.value)}
-// //                       readOnly={isReadOnly}
-// //                       className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-// //                       placeholder="Loading Charges"
-// //                     />
-// //                   </td>
-// //                   <td className="border border-yellow-300 px-2 py-2">
-// //                     <input
-// //                       type="number"
-// //                       value={row.otherCharges || ""}
-// //                       onChange={(e) => onChange(row._id, 'otherCharges', e.target.value)}
-// //                       readOnly={isReadOnly}
-// //                       className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-// //                       placeholder="Other Charges"
-// //                     />
-// //                   </td>
-// //                   <td className="border border-yellow-300 px-2 py-2 text-center">
-// //                     {!isReadOnly && (
-// //                       <button
-// //                         onClick={() => onRemove(row._id)}
-// //                         className="rounded-lg bg-red-500 px-3 py-1.5 text-xs font-bold text-white hover:bg-red-600 transition"
-// //                       >
-// //                         Remove
-// //                       </button>
-// //                     )}
-// //                     {isReadOnly && (
-// //                       <span className="text-xs text-slate-400">Read Only</span>
-// //                     )}
-// //                   </td>
-// //                 </tr>
-// //               );
-// //             })
-// //           ) : (
+// //     return (
+// //       <div className="overflow-auto rounded-xl border border-yellow-300 max-h-[500px]">
+// //         <table className="min-w-max w-full text-sm">
+// //           <thead className="sticky top-0 bg-yellow-400 z-10">
 // //             <tr>
-// //               <td colSpan={columns.length + 1} className="border border-yellow-300 px-4 py-8 text-center text-slate-400">
-// //                 No orders added. Select order panels above to add orders.
-// //               </td>
+// //               {columns.map((col) => (
+// //                 <th
+// //                   key={col.key}
+// //                   className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 text-center"
+// //                   style={{ minWidth: col.key === "orderNo" ? "120px" : col.key === "partyName" ? "150px" : "120px" }}
+// //                 >
+// //                   {col.label}
+// //                 </th>
+// //               ))}
+// //               <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 text-center">
+// //                 Actions
+// //               </th>
 // //             </tr>
-// //           )}
-// //         </tbody>
-// //       </table>
-// //     </div>
-// //   );
-// // };
+// //           </thead>
+
+// //           <tbody>
+// //             {rows.length > 0 ? (
+// //               rows.map((row) => {
+// //                 return (
+// //                   <tr key={row._id} className="hover:bg-yellow-50 even:bg-slate-50">
+// //                     <td className="border border-yellow-300 px-2 py-2">
+// //                       <input
+// //                         value={row.orderNo || ""}
+// //                         onChange={(e) => onChange(row._id, 'orderNo', e.target.value)}
+// //                         readOnly={isReadOnly}
+// //                         className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+// //                         placeholder="Order No"
+// //                       />
+// //                     </td>
+// //                     <td className="border border-yellow-300 px-2 py-2">
+// //                       <input
+// //                         value={row.partyName || ""}
+// //                         onChange={(e) => onChange(row._id, 'partyName', e.target.value)}
+// //                         readOnly={isReadOnly}
+// //                         className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+// //                         placeholder="Party Name"
+// //                       />
+// //                     </td>
+// //                     <td className="border border-yellow-300 px-2 py-2">
+// //                       <input
+// //                         value={row.plantCode || ""}
+// //                         onChange={(e) => onChange(row._id, 'plantCode', e.target.value)}
+// //                         readOnly={isReadOnly}
+// //                         className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+// //                         placeholder="Plant Code"
+// //                       />
+// //                     </td>
+// //                     <td className="border border-yellow-300 px-2 py-2">
+// //                       <input
+// //                         value={row.plantName || ""}
+// //                         onChange={(e) => onChange(row._id, 'plantName', e.target.value)}
+// //                         readOnly={isReadOnly}
+// //                         className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+// //                         placeholder="Plant Name"
+// //                       />
+// //                     </td>
+// //                     <td className="border border-yellow-300 px-2 py-2">
+// //                       <select
+// //                         value={row.orderType || ""}
+// //                         onChange={(e) => onChange(row._id, 'orderType', e.target.value)}
+// //                         disabled={isReadOnly}
+// //                         className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+// //                       >
+// //                         <option value="">Select Order Type</option>
+// //                         {ORDER_TYPES.map((opt) => (
+// //                           <option key={opt} value={opt}>{opt}</option>
+// //                         ))}
+// //                       </select>
+// //                     </td>
+// //                     <td className="border border-yellow-300 px-2 py-2">
+// //                       <input
+// //                         value={row.pinCode || ""}
+// //                         onChange={(e) => onChange(row._id, 'pinCode', e.target.value)}
+// //                         readOnly={isReadOnly}
+// //                         className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+// //                         placeholder="Pin Code"
+// //                       />
+// //                     </td>
+// //                     <td className="border border-yellow-300 px-2 py-2">
+// //                       <input
+// //                         value={row.fromName || ""}
+// //                         onChange={(e) => onChange(row._id, 'fromName', e.target.value)}
+// //                         readOnly={isReadOnly}
+// //                         className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+// //                         placeholder="From"
+// //                       />
+// //                     </td>
+// //                     <td className="border border-yellow-300 px-2 py-2">
+// //                       <input
+// //                         value={row.toName || ""}
+// //                         onChange={(e) => onChange(row._id, 'toName', e.target.value)}
+// //                         readOnly={isReadOnly}
+// //                         className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+// //                         placeholder="To"
+// //                       />
+// //                     </td>
+// //                     <td className="border border-yellow-300 px-2 py-2">
+// //                       <input
+// //                         value={row.talukaName || row.taluka || ""}
+// //                         onChange={(e) => onChange(row._id, 'talukaName', e.target.value)}
+// //                         readOnly={isReadOnly}
+// //                         className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+// //                         placeholder="Taluka"
+// //                       />
+// //                     </td>
+// //                     <td className="border border-yellow-300 px-2 py-2">
+// //                       <input
+// //                         value={row.districtName || row.district || ""}
+// //                         onChange={(e) => onChange(row._id, 'districtName', e.target.value)}
+// //                         readOnly={isReadOnly}
+// //                         className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+// //                         placeholder="District"
+// //                       />
+// //                     </td>
+// //                     <td className="border border-yellow-300 px-2 py-2">
+// //                       <input
+// //                         value={row.stateName || row.state || ""}
+// //                         onChange={(e) => onChange(row._id, 'stateName', e.target.value)}
+// //                         readOnly={isReadOnly}
+// //                         className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+// //                         placeholder="State"
+// //                       />
+// //                     </td>
+// //                     <td className="border border-yellow-300 px-2 py-2 text-center">
+// //                       {row.fromState && row.stateName ? (
+// //                         <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${
+// //                           row.fromState.trim().toUpperCase() === row.stateName.trim().toUpperCase()
+// //                             ? 'bg-green-100 text-green-800 border border-green-300'
+// //                             : 'bg-red-100 text-red-800 border border-red-300'
+// //                         }`}>
+// //                           {row.fromState.trim().toUpperCase() === row.stateName.trim().toUpperCase() ? '✅ Local' : '❌ Not Local'}
+// //                         </span>
+// //                       ) : (
+// //                         <span className="text-xs text-gray-400">-</span>
+// //                       )}
+// //                     </td>
+// //                     <td className="border border-yellow-300 px-2 py-2">
+// //                       <input
+// //                         value={row.countryName || row.country || ""}
+// //                         onChange={(e) => onChange(row._id, 'countryName', e.target.value)}
+// //                         readOnly={isReadOnly}
+// //                         className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+// //                         placeholder="Country"
+// //                       />
+// //                     </td>
+// //                     <td className="border border-yellow-300 px-2 py-2">
+// //                       <input
+// //                         type="number"
+// //                         value={row.weight || ""}
+// //                         onChange={(e) => onChange(row._id, 'weight', e.target.value)}
+// //                         readOnly={isReadOnly}
+// //                         className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+// //                         placeholder="Weight"
+// //                       />
+// //                     </td>
+// //                     <td className="border border-yellow-300 px-2 py-2">
+// //                       <select
+// //                         value={row.status || ""}
+// //                         onChange={(e) => onChange(row._id, 'status', e.target.value)}
+// //                         disabled={isReadOnly}
+// //                         className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+// //                       >
+// //                         <option value="">Select Status</option>
+// //                         {STATUSES.map((opt) => (
+// //                           <option key={opt} value={opt}>{opt}</option>
+// //                         ))}
+// //                       </select>
+// //                     </td>
+// //                     <td className="border border-yellow-300 px-2 py-2">
+// //                       <input
+// //                         type="number"
+// //                         value={row.collectionCharges || ""}
+// //                         onChange={(e) => onChange(row._id, 'collectionCharges', e.target.value)}
+// //                         readOnly={isReadOnly}
+// //                         className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+// //                         placeholder="Collection Charges"
+// //                       />
+// //                     </td>
+// //                     <td className="border border-yellow-300 px-2 py-2">
+// //                       <input
+// //                         value={row.cancellationCharges || ""}
+// //                         onChange={(e) => onChange(row._id, 'cancellationCharges', e.target.value)}
+// //                         readOnly={isReadOnly}
+// //                         className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+// //                         placeholder="Cancellation Charges"
+// //                       />
+// //                     </td>
+// //                     <td className="border border-yellow-300 px-2 py-2">
+// //                       <input
+// //                         value={row.loadingCharges || ""}
+// //                         onChange={(e) => onChange(row._id, 'loadingCharges', e.target.value)}
+// //                         readOnly={isReadOnly}
+// //                         className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+// //                         placeholder="Loading Charges"
+// //                       />
+// //                     </td>
+// //                     <td className="border border-yellow-300 px-2 py-2">
+// //                       <input
+// //                         type="number"
+// //                         value={row.otherCharges || ""}
+// //                         onChange={(e) => onChange(row._id, 'otherCharges', e.target.value)}
+// //                         readOnly={isReadOnly}
+// //                         className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+// //                         placeholder="Other Charges"
+// //                       />
+// //                     </td>
+// //                     <td className="border border-yellow-300 px-2 py-2">
+// //                       <div className="text-sm">
+// //                         <span className="font-medium">{row.subCompanyName || '-'}</span>
+// //                         {row.subCompanyCode && (
+// //                           <span className="text-xs text-gray-500 ml-1">({row.subCompanyCode})</span>
+// //                         )}
+// //                       </div>
+// //                     </td>
+// //                     <td className="border border-yellow-300 px-2 py-2 text-center">
+// //                       {!isReadOnly && (
+// //                         <button
+// //                           onClick={() => onRemove(row._id)}
+// //                           className="rounded-lg bg-red-500 px-3 py-1.5 text-xs font-bold text-white hover:bg-red-600 transition"
+// //                         >
+// //                           Remove
+// //                         </button>
+// //                       )}
+// //                       {isReadOnly && (
+// //                         <span className="text-xs text-slate-400">Read Only</span>
+// //                       )}
+// //                     </td>
+// //                   </tr>
+// //                 );
+// //               })
+// //             ) : (
+// //               <tr>
+// //                 <td colSpan={columns.length + 1} className="border border-yellow-300 px-4 py-8 text-center text-slate-400">
+// //                   No orders added. Select order panels above to add orders.
+// //                 </td>
+// //               </tr>
+// //             )}
+// //           </tbody>
+// //         </table>
+// //       </div>
+// //     );
+// //   };
 
 // //   const VendorsTable = ({ rows, onChange, onRemove, onAdd }) => {
 // //     const [selectedSupplierNames, setSelectedSupplierNames] = useState({});
@@ -2454,6 +2542,58 @@
 // //               />
 // //             </div>
 
+// //             {/* Sub-Company Dropdown */}
+// //             <div className="col-span-12 md:col-span-3">
+// //               <label className="text-xs font-bold text-slate-600">Sub-Company</label>
+// //               {selectedOrderPanels.length > 0 && selectedOrderPanels[0].subCompanyName ? (
+// //                 <div className="mt-1 w-full rounded-xl border border-slate-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700">
+// //                   {selectedOrderPanels[0].subCompanyName} ({selectedOrderPanels[0].subCompanyCode})
+// //                   <span className="ml-2 text-xs text-gray-500">(Locked - {selectedOrderPanels.length} order(s))</span>
+// //                 </div>
+// //               ) : header.subCompanyName ? (
+// //                 <div className="mt-1 w-full rounded-xl border border-slate-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700">
+// //                   {header.subCompanyName} ({header.subCompanyCode})
+// //                   <span className="ml-2 text-xs text-gray-500">(Saved)</span>
+// //                 </div>
+// //               ) : (
+// //                 <select
+// //                   value={header.subCompanyId || ''}
+// //                   onChange={(e) => {
+// //                     const subCompanyId = e.target.value;
+// //                     const selected = subCompanies.find(sc => sc._id === subCompanyId);
+// //                     setHeader(prev => ({
+// //                       ...prev,
+// //                       subCompanyId: subCompanyId,
+// //                       subCompanyName: selected?.name || '',
+// //                       subCompanyCode: selected?.code || ''
+// //                     }));
+// //                     setOrders(prevOrders => 
+// //                       prevOrders.map(order => ({
+// //                         ...order,
+// //                         subCompanyId: subCompanyId,
+// //                         subCompanyName: selected?.name || '',
+// //                         subCompanyCode: selected?.code || ''
+// //                       }))
+// //                     );
+// //                   }}
+// //                   disabled={selectedOrderPanels.length > 0}
+// //                   className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 disabled:bg-slate-50 disabled:cursor-not-allowed"
+// //                 >
+// //                   <option value="">Select Sub-Company</option>
+// //                   {subCompanies.map((sc) => (
+// //                     <option key={sc._id} value={sc._id}>
+// //                       {sc.name} ({sc.code})
+// //                     </option>
+// //                   ))}
+// //                 </select>
+// //               )}
+// //               {selectedOrderPanels.length > 0 && selectedOrderPanels[0].subCompanyName && (
+// //                 <div className="text-xs text-green-600 mt-1">
+// //                   ✅ All orders from same sub-company: {selectedOrderPanels[0].subCompanyName}
+// //                 </div>
+// //               )}
+// //             </div>
+
 // //             <Select col="col-span-12 md:col-span-3" label="Delivery" value={header.delivery} onChange={(v) => setHeader((p) => ({ ...p, delivery: v }))} options={["Urgent", "Normal", "Express", "Scheduled"]} readOnly={selectedOrderPanels.length > 0} />
 // //             <Input type="date" col="col-span-12 md:col-span-3" label="Date" value={header.date} onChange={(v) => setHeader((p) => ({ ...p, date: v }))} readOnly={selectedOrderPanels.length > 0} />
             
@@ -2495,23 +2635,22 @@
 // //           <div className="mb-4">
 // //             <div className="text-sm font-bold text-slate-700 mb-2">Billing Type / Charges</div>
 // //             <BillingTypeTable header={header} setHeader={setHeader} billingColumns={billingColumns} selectedOrderPanels={selectedOrderPanels} orders={orders} />
-          
 // //           </div>
 
-// //          {/* Orders Table */}
-// // <div>
-// //   <div className="flex items-center justify-between mb-4">
-// //     <div className="text-sm font-bold text-slate-700">
-// //       Orders (Part-1) - {selectedOrderPanels.length > 0 ? "Multi - Order" : "Single Order"} - {orders.length} row{orders.length !== 1 ? 's' : ''}
-// //     </div>
-// //   </div>
-// //   <OrdersTable 
-// //     rows={orders} 
-// //     onChange={updateOrder} 
-// //     onRemove={removeOrder} 
-// //     readOnly={selectedOrderPanels.length > 0}  // ← ADD THIS LINE
-// //   />
-// // </div>
+// //           {/* Orders Table */}
+// //           <div>
+// //             <div className="flex items-center justify-between mb-4">
+// //               <div className="text-sm font-bold text-slate-700">
+// //                 Orders (Part-1) - {selectedOrderPanels.length > 0 ? "Multi - Order" : "Single Order"} - {orders.length} row{orders.length !== 1 ? 's' : ''}
+// //               </div>
+// //             </div>
+// //             <OrdersTable 
+// //               rows={orders} 
+// //               onChange={updateOrder} 
+// //               onRemove={removeOrder} 
+// //               readOnly={selectedOrderPanels.length > 0}
+// //             />
+// //           </div>
 
 // //           <div className="flex justify-end mt-4">
 // //             <div className="flex items-center gap-3 border border-yellow-300 px-6 py-3 bg-yellow-50 rounded-xl">
@@ -2549,13 +2688,13 @@
 // //               <div className="rounded-xl border border-slate-200 p-4">
 // //                 <div className="text-sm font-extrabold text-slate-900 mb-3">Remarks</div>
 // //                 <textarea
-// //   value={negotiation.remarks1}
-// //   onChange={(e) => setNegotiation((p) => ({ ...p, remarks1: e.target.value }))}
-// //   className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm outline-none cursor-not-allowed"
-// //   rows={2}
-// //   placeholder="Enter remarks..."
-// //   readOnly={true}
-// // />
+// //                   value={negotiation.remarks1}
+// //                   onChange={(e) => setNegotiation((p) => ({ ...p, remarks1: e.target.value }))}
+// //                   className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm outline-none cursor-not-allowed"
+// //                   rows={2}
+// //                   placeholder="Enter remarks..."
+// //                   readOnly={true}
+// //                 />
 // //               </div>
 // //             </div>
 // //             <div className="col-span-12 md:col-span-5">
@@ -2714,10 +2853,6 @@
 // //     </div>
 // //   );
 // // }
-
-
-
-
 
 // "use client";
 
@@ -2974,7 +3109,10 @@
 //     loadingCharges: "",
 //     otherCharges: "",
 //     localStatus: "unknown",
-//     localStatusLabel: "Unknown"
+//     localStatusLabel: "Unknown",
+//     subCompanyId: null,
+//     subCompanyName: "",
+//     subCompanyCode: ""
 //   };
 // }
 
@@ -3631,6 +3769,11 @@
 //               className="flex items-center gap-1 bg-yellow-100 px-2 py-1 rounded-md text-sm"
 //             >
 //               <span className="font-medium">{panel.orderPanelNo}</span>
+//               {panel.subCompanyName && (
+//                 <span className="text-xs text-gray-500 ml-1">
+//                   ({panel.subCompanyName})
+//                 </span>
+//               )}
 //               <button
 //                 onClick={() => handleRemovePanel(panel._id)}
 //                 className="text-red-500 hover:text-red-700 font-bold ml-1"
@@ -3681,6 +3824,11 @@
 //                   {panel.partyName || panel.customerName || 'N/A'} | 
 //                   Branch: {panel.branchName || panel.branchCode || 'N/A'} | 
 //                   Weight: {panel.totalWeight || 0}
+//                   {panel.subCompanyName && (
+//                     <span className="ml-2 text-blue-600">
+//                       Sub-Company: {panel.subCompanyName} ({panel.subCompanyCode})
+//                     </span>
+//                   )}
 //                 </div>
 //               </div>
 //             ))
@@ -3917,6 +4065,10 @@
 //     memoFile: null
 //   });
 
+//   // Compute editability based on approval status
+//   const isPart1Approved = approval.approvalStatus === 'Approved';
+//   const isPart2Approved = approval.approvalStatus === 'Approved';
+
 //   // Fetch data from APIs
 //   useEffect(() => {
 //     const fetchData = async () => {
@@ -3995,6 +4147,7 @@
       
 //       setVnnNumber(vn.vnnNo || "");
       
+//       // Set header with sub-company
 //       setHeader({
 //         vnnNo: vn.vnnNo || "",
 //         branch: vn.branch || null,
@@ -4025,6 +4178,7 @@
 //         setCustomerSearchQuery(vn.customerName);
 //       }
 
+//       // Process orders with sub-company
 //       if (vn.orders && vn.orders.length > 0) {
 //         const processedOrders = vn.orders.map(order => ({
 //           ...order,
@@ -4037,28 +4191,47 @@
 //           fromState: order.fromState || '',
 //           localStatus: order.localStatus || 'unknown',
 //           localStatusLabel: order.localStatusLabel || 'Unknown',
-//           subCompanyId: order.subCompanyId || null,
-//           subCompanyName: order.subCompanyName || '',
-//           subCompanyCode: order.subCompanyCode || ''
+//           // Preserve sub-company from order or use header's sub-company
+//           subCompanyId: order.subCompanyId || vn.subCompanyId || null,
+//           subCompanyName: order.subCompanyName || vn.subCompanyName || '',
+//           subCompanyCode: order.subCompanyCode || vn.subCompanyCode || ''
 //         }));
 //         setOrders(processedOrders);
 //       } else {
 //         setOrders([defaultOrderRow()]);
 //       }
 
+//       // Process selected order panels with sub-company
 //       if (vn.selectedOrderPanels && vn.selectedOrderPanels.length > 0) {
 //         const fullPanels = [];
 //         for (const panel of vn.selectedOrderPanels) {
 //           try {
-//             const fullPanel = await orderPanelSearch.getOrderPanelById(panel._id);
+//             let fullPanel = await orderPanelSearch.getOrderPanelById(panel._id);
 //             if (fullPanel) {
+//               // Add sub-company from the saved data if not present
+//               if (!fullPanel.subCompanyId && vn.subCompanyId) {
+//                 fullPanel.subCompanyId = vn.subCompanyId;
+//                 fullPanel.subCompanyName = vn.subCompanyName;
+//                 fullPanel.subCompanyCode = vn.subCompanyCode;
+//               }
 //               fullPanels.push(fullPanel);
 //             } else {
-//               fullPanels.push(panel);
+//               // If panel not found, use the saved data
+//               fullPanels.push({
+//                 ...panel,
+//                 subCompanyId: panel.subCompanyId || vn.subCompanyId || null,
+//                 subCompanyName: panel.subCompanyName || vn.subCompanyName || '',
+//                 subCompanyCode: panel.subCompanyCode || vn.subCompanyCode || ''
+//               });
 //             }
 //           } catch (err) {
 //             console.error("Error fetching panel:", err);
-//             fullPanels.push(panel);
+//             fullPanels.push({
+//               ...panel,
+//               subCompanyId: panel.subCompanyId || vn.subCompanyId || null,
+//               subCompanyName: panel.subCompanyName || vn.subCompanyName || '',
+//               subCompanyCode: panel.subCompanyCode || vn.subCompanyCode || ''
+//             });
 //           }
 //         }
 //         setSelectedOrderPanels(fullPanels);
@@ -4324,9 +4497,9 @@
 //             otherCharges: fullPanel.otherCharges?.toString() || "",
 //             localStatus: row.localStatus || "unknown",
 //             localStatusLabel: row.localStatusLabel || "Unknown",
-//             subCompanyId: fullPanel.subCompanyId || null,
-//             subCompanyName: fullPanel.subCompanyName || '',
-//             subCompanyCode: fullPanel.subCompanyCode || ''
+//             subCompanyId: fullPanel.subCompanyId || header.subCompanyId || null,
+//             subCompanyName: fullPanel.subCompanyName || header.subCompanyName || '',
+//             subCompanyCode: fullPanel.subCompanyCode || header.subCompanyCode || ''
 //           };
 //         });
         
@@ -4579,7 +4752,10 @@
 //         },
 //         selectedOrderPanels: selectedOrderPanels.map(panel => ({
 //           _id: panel._id,
-//           orderPanelNo: panel.orderPanelNo
+//           orderPanelNo: panel.orderPanelNo,
+//           subCompanyId: panel.subCompanyId || header.subCompanyId || null,
+//           subCompanyName: panel.subCompanyName || header.subCompanyName || '',
+//           subCompanyCode: panel.subCompanyCode || header.subCompanyCode || ''
 //         })),
 //         orders: orders.map(order => ({
 //           _id: order._id,
@@ -4615,9 +4791,9 @@
 //           otherCharges: num(order.otherCharges) || 0,
 //           localStatus: order.localStatus || 'unknown',
 //           localStatusLabel: order.localStatusLabel || 'Unknown',
-//           subCompanyId: order.subCompanyId || null,
-//           subCompanyName: order.subCompanyName || '',
-//           subCompanyCode: order.subCompanyCode || ''
+//           subCompanyId: order.subCompanyId || header.subCompanyId || null,
+//           subCompanyName: order.subCompanyName || header.subCompanyName || '',
+//           subCompanyCode: order.subCompanyCode || header.subCompanyCode || ''
 //         })),
 //         totalWeight,
 //         negotiation: {
@@ -4739,6 +4915,7 @@
 //     { key: "cancellationCharges", label: "Cancellation Charges" },
 //     { key: "loadingCharges", label: "Loading Charges" },
 //     { key: "otherCharges", label: "Other Charges" },
+//     { key: "subCompanyName", label: "Sub-Company" },
 //   ];
 
 //   const vendorColumns = [
@@ -4969,6 +5146,14 @@
 //                         placeholder="Other Charges"
 //                       />
 //                     </td>
+//                     <td className="border border-yellow-300 px-2 py-2">
+//                       <div className="text-sm">
+//                         <span className="font-medium">{row.subCompanyName || '-'}</span>
+//                         {row.subCompanyCode && (
+//                           <span className="text-xs text-gray-500 ml-1">({row.subCompanyCode})</span>
+//                         )}
+//                       </div>
+//                     </td>
 //                     <td className="border border-yellow-300 px-2 py-2 text-center">
 //                       {!isReadOnly && (
 //                         <button
@@ -5150,6 +5335,9 @@
 //                 ❌ {saveError}
 //               </div>
 //             )}
+//             <div className="text-xs text-blue-600 mt-1">
+//               ⓘ Part 2 editable only when Part 1 is Approved • Part 3 editable only when Part 2 is Approved
+//             </div>
 //           </div>
 
 //           <div className="flex items-center gap-3">            
@@ -5218,37 +5406,53 @@
 //             {/* Sub-Company Dropdown */}
 //             <div className="col-span-12 md:col-span-3">
 //               <label className="text-xs font-bold text-slate-600">Sub-Company</label>
-//               <select
-//                 value={header.subCompanyId || ''}
-//                 onChange={(e) => {
-//                   const subCompanyId = e.target.value;
-//                   const selected = subCompanies.find(sc => sc._id === subCompanyId);
-//                   setHeader(prev => ({
-//                     ...prev,
-//                     subCompanyId: subCompanyId,
-//                     subCompanyName: selected?.name || '',
-//                     subCompanyCode: selected?.code || ''
-//                   }));
-//                   // Also update orders with sub-company
-//                   setOrders(prevOrders => 
-//                     prevOrders.map(order => ({
-//                       ...order,
+//               {selectedOrderPanels.length > 0 && selectedOrderPanels[0].subCompanyName ? (
+//                 <div className="mt-1 w-full rounded-xl border border-slate-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700">
+//                   {selectedOrderPanels[0].subCompanyName} ({selectedOrderPanels[0].subCompanyCode})
+//                   <span className="ml-2 text-xs text-gray-500">(Locked - {selectedOrderPanels.length} order(s))</span>
+//                 </div>
+//               ) : header.subCompanyName ? (
+//                 <div className="mt-1 w-full rounded-xl border border-slate-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700">
+//                   {header.subCompanyName} ({header.subCompanyCode})
+//                   <span className="ml-2 text-xs text-gray-500">(Saved)</span>
+//                 </div>
+//               ) : (
+//                 <select
+//                   value={header.subCompanyId || ''}
+//                   onChange={(e) => {
+//                     const subCompanyId = e.target.value;
+//                     const selected = subCompanies.find(sc => sc._id === subCompanyId);
+//                     setHeader(prev => ({
+//                       ...prev,
 //                       subCompanyId: subCompanyId,
 //                       subCompanyName: selected?.name || '',
 //                       subCompanyCode: selected?.code || ''
-//                     }))
-//                   );
-//                 }}
-//                 disabled={selectedOrderPanels.length > 0}
-//                 className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 disabled:bg-slate-50 disabled:cursor-not-allowed"
-//               >
-//                 <option value="">Select Sub-Company</option>
-//                 {subCompanies.map((sc) => (
-//                   <option key={sc._id} value={sc._id}>
-//                     {sc.name} ({sc.code})
-//                   </option>
-//                 ))}
-//               </select>
+//                     }));
+//                     setOrders(prevOrders => 
+//                       prevOrders.map(order => ({
+//                         ...order,
+//                         subCompanyId: subCompanyId,
+//                         subCompanyName: selected?.name || '',
+//                         subCompanyCode: selected?.code || ''
+//                       }))
+//                     );
+//                   }}
+//                   disabled={selectedOrderPanels.length > 0}
+//                   className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 disabled:bg-slate-50 disabled:cursor-not-allowed"
+//                 >
+//                   <option value="">Select Sub-Company</option>
+//                   {subCompanies.map((sc) => (
+//                     <option key={sc._id} value={sc._id}>
+//                       {sc.name} ({sc.code})
+//                     </option>
+//                   ))}
+//                 </select>
+//               )}
+//               {selectedOrderPanels.length > 0 && selectedOrderPanels[0].subCompanyName && (
+//                 <div className="text-xs text-green-600 mt-1">
+//                   ✅ All orders from same sub-company: {selectedOrderPanels[0].subCompanyName}
+//                 </div>
+//               )}
 //             </div>
 
 //             <Select col="col-span-12 md:col-span-3" label="Delivery" value={header.delivery} onChange={(v) => setHeader((p) => ({ ...p, delivery: v }))} options={["Urgent", "Normal", "Express", "Scheduled"]} readOnly={selectedOrderPanels.length > 0} />
@@ -5287,12 +5491,34 @@
 //                 </div>
 //               )}
 //             </div>
+
+//             {/* APPROVAL STATUS - PART 1 */}
+//             <Select 
+//               col="col-span-12 md:col-span-3" 
+//               label="Approval Status (Part 1)" 
+//               value={approval.approvalStatus} 
+//               onChange={(v) => setApproval((p) => ({ ...p, approvalStatus: v }))} 
+//               options={APPROVALS} 
+//               readOnly={false} 
+//             />
+
+//             {/* APPROVAL REMARKS - PART 1 */}
+//             <div className="col-span-12 md:col-span-3">
+//               <label className="text-xs font-bold text-slate-600">Approval Remarks</label>
+//               <textarea
+//                 value={approval.remarks}
+//                 onChange={(e) => setApproval((p) => ({ ...p, remarks: e.target.value }))}
+//                 className="mt-1 w-full rounded-xl border border-slate-200 bg-white p-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+//                 rows={1}
+//                 placeholder="Enter remarks..."
+//                 readOnly={false}
+//               />
+//             </div>
 //           </div>
 
 //           <div className="mb-4">
 //             <div className="text-sm font-bold text-slate-700 mb-2">Billing Type / Charges</div>
 //             <BillingTypeTable header={header} setHeader={setHeader} billingColumns={billingColumns} selectedOrderPanels={selectedOrderPanels} orders={orders} />
-          
 //           </div>
 
 //           {/* Orders Table */}
@@ -5332,12 +5558,60 @@
 //           </div>
 //         </Card>
 
-//         {/* PART 2: VEHICLE NEGOTIATION - PART 2 */}
-//         <Card title="Vehicle - Negotiation - Part - 2">
+//         {/* PART 2: VEHICLE NEGOTIATION - PART 2 - Editable only if Part 1 is Approved */}
+//         <Card title="Vehicle - Negotiation - Part - 2 (Rate-Target)">
+//           {!isPart1Approved && (
+//             <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-700">
+//               ⚠️ Part 2 is locked. Please set Part 1 Approval Status to "Approved" to edit this section.
+//             </div>
+//           )}
 //           <div className="grid grid-cols-12 gap-3 mb-4">
-//             <Input col="col-span-12 md:col-span-3" label="Max Rate" value={negotiation.maxRate} onChange={(v) => setNegotiation((p) => ({ ...p, maxRate: v }))} />
-//             <Input col="col-span-12 md:col-span-3" label="Target Rate" value={negotiation.targetRate} onChange={(v) => setNegotiation((p) => ({ ...p, targetRate: v }))} />
-//             <Input col="col-span-12 md:col-span-3" label="Old Rate %" value={negotiation.oldRatePercent} onChange={(v) => setNegotiation((p) => ({ ...p, oldRatePercent: v }))} />
+//             <Input 
+//               col="col-span-12 md:col-span-3" 
+//               label="Max Rate" 
+//               value={negotiation.maxRate} 
+//               onChange={(v) => setNegotiation((p) => ({ ...p, maxRate: v }))} 
+//               readOnly={!isPart1Approved}
+//             />
+//             <Input 
+//               col="col-span-12 md:col-span-3" 
+//               label="Target Rate" 
+//               value={negotiation.targetRate} 
+//               onChange={(v) => setNegotiation((p) => ({ ...p, targetRate: v }))} 
+//               readOnly={!isPart1Approved}
+//             />
+//             <Input 
+//               col="col-span-12 md:col-span-3" 
+//               label="Old Rate %" 
+//               value={negotiation.oldRatePercent} 
+//               onChange={(v) => setNegotiation((p) => ({ ...p, oldRatePercent: v }))} 
+//               readOnly={!isPart1Approved}
+//             />
+
+//             {/* APPROVAL STATUS - PART 2 */}
+//             <Select 
+//               col="col-span-12 md:col-span-3" 
+//               label="Approval Status (Part 2)" 
+//               value={approval.approvalStatus} 
+//               onChange={(v) => setApproval((p) => ({ ...p, approvalStatus: v }))} 
+//               options={APPROVALS} 
+//               readOnly={!isPart1Approved}
+//             />
+//           </div>
+
+//           {/* APPROVAL REMARKS - PART 2 */}
+//           <div className="grid grid-cols-12 gap-3 mb-4">
+//             <div className="col-span-12 md:col-span-6">
+//               <label className="text-xs font-bold text-slate-600">Approval Remarks</label>
+//               <textarea
+//                 value={approval.remarks}
+//                 onChange={(e) => setApproval((p) => ({ ...p, remarks: e.target.value }))}
+//                 className="mt-1 w-full rounded-xl border border-slate-200 bg-white p-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+//                 rows={1}
+//                 placeholder="Enter remarks..."
+//                 readOnly={!isPart1Approved}
+//               />
+//             </div>
 //           </div>
 
 //           {/* Remarks & Voice Note */}
@@ -5372,14 +5646,31 @@
 //           </div>
 //         </Card>
 
-//         {/* PART 3: VEHICLE APPROVAL - PART 3 */}
+//         {/* PART 3: VEHICLE APPROVAL - PART 3 - Editable only if Part 2 is Approved */}
 //         <Card title="Vehicle - Approval - Part - 3">
+//           {!isPart2Approved && (
+//             <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-700">
+//               ⚠️ Part 3 is locked. Please set Part 2 Approval Status to "Approved" to edit this section.
+//             </div>
+//           )}
 //           <div className="grid grid-cols-12 gap-3 mb-4">
 //             <div className="col-span-12 md:col-span-4">
 //               <label className="text-xs font-bold text-slate-600">Supplier Name</label>
-//               <SupplierSearchDropdown value={selectedSupplier ? selectedSupplier.supplierName : approval.vendorName} onSelect={handleSupplierSelect} placeholder="Search supplier..." readOnly={false} />
+//               <SupplierSearchDropdown 
+//                 value={selectedSupplier ? selectedSupplier.supplierName : approval.vendorName} 
+//                 onSelect={handleSupplierSelect} 
+//                 placeholder="Search supplier..." 
+//                 readOnly={!isPart2Approved}
+//               />
 //             </div>
-//             <Select col="col-span-12 md:col-span-4" label="Supplier (Status)" value={approval.vendorStatus} onChange={(v) => setApproval((p) => ({ ...p, vendorStatus: v }))} options={VENDOR_STATUS} readOnly={true} />
+//             <Select 
+//               col="col-span-12 md:col-span-4" 
+//               label="Supplier (Status)" 
+//               value={approval.vendorStatus} 
+//               onChange={(v) => setApproval((p) => ({ ...p, vendorStatus: v }))} 
+//               options={VENDOR_STATUS} 
+//               readOnly={!isPart2Approved}
+//             />
 //             <Select 
 //               col="col-span-12 md:col-span-4" 
 //               label="Rate - Type" 
@@ -5393,7 +5684,7 @@
 //                 }
 //               }} 
 //               options={RATE_TYPES} 
-//               readOnly={false} 
+//               readOnly={!isPart2Approved}
 //             />
 //           </div>
 
@@ -5403,7 +5694,7 @@
 //               label="Final - Per MT (A)" 
 //               value={approval.finalPerMT} 
 //               onChange={(v) => setApproval((p) => ({ ...p, finalPerMT: v }))} 
-//               readOnly={approval.rateType === "Fixed"} 
+//               readOnly={!isPart2Approved || approval.rateType === "Fixed"} 
 //             />
 //             <div className="col-span-12 md:col-span-4 mt-2">
 //               <div className="flex flex-col">
@@ -5425,13 +5716,26 @@
 //               label="Final - Fix" 
 //               value={approval.finalFix} 
 //               onChange={(v) => setApproval((p) => ({ ...p, finalFix: v }))} 
-//               readOnly={approval.rateType === "Per MT"} 
+//               readOnly={!isPart2Approved || approval.rateType === "Per MT"} 
 //             />
 //             <div className="col-span-12 md:col-span-4">
 //               <label className="text-xs font-bold text-slate-600">Vehicle Number</label>
-//               <input type="text" value={approval.vehicleNo || ""} onChange={(e) => setApproval((p) => ({ ...p, vehicleNo: e.target.value }))} className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200" placeholder="Enter vehicle number..." />
+//               <input 
+//                 type="text" 
+//                 value={approval.vehicleNo || ""} 
+//                 onChange={(e) => setApproval((p) => ({ ...p, vehicleNo: e.target.value }))} 
+//                 className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200" 
+//                 placeholder="Enter vehicle number..." 
+//                 readOnly={!isPart2Approved}
+//               />
 //             </div>
-//             <Input col="col-span-12 md:col-span-4" label="Mobile" value={approval.mobile} onChange={(v) => setApproval((p) => ({ ...p, mobile: v }))} readOnly={false} />
+//             <Input 
+//               col="col-span-12 md:col-span-4" 
+//               label="Mobile" 
+//               value={approval.mobile} 
+//               onChange={(v) => setApproval((p) => ({ ...p, mobile: v }))} 
+//               readOnly={!isPart2Approved} 
+//             />
 //           </div>
 
 //           <div className="grid grid-cols-12 gap-3 mb-4">
@@ -5441,7 +5745,7 @@
 //               value={approval.purchaseType} 
 //               onChange={(v) => setApproval((p) => ({ ...p, purchaseType: v }))} 
 //               options={purchaseTypes.length > 0 ? purchaseTypes : PURCHASE_TYPES}
-//               readOnly={false} 
+//               readOnly={!isPart2Approved} 
 //             />
 //             <Select 
 //               col="col-span-12 md:col-span-4" 
@@ -5449,9 +5753,16 @@
 //               value={approval.paymentTerms} 
 //               onChange={(v) => setApproval((p) => ({ ...p, paymentTerms: v }))} 
 //               options={paymentTerms.length > 0 ? paymentTerms : PAYMENT_TERMS}
-//               readOnly={false} 
+//               readOnly={!isPart2Approved} 
 //             />
-//             <Select col="col-span-12 md:col-span-4" label="Approval" value={approval.approvalStatus} onChange={(v) => setApproval((p) => ({ ...p, approvalStatus: v }))} options={APPROVALS} readOnly={true} />
+//             <Select 
+//               col="col-span-12 md:col-span-4" 
+//               label="Approval" 
+//               value={approval.approvalStatus} 
+//               onChange={(v) => setApproval((p) => ({ ...p, approvalStatus: v }))} 
+//               options={APPROVALS} 
+//               readOnly={!isPart2Approved} 
+//             />
 //           </div>
 
 //           <div>
@@ -5462,7 +5773,7 @@
 //               className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
 //               rows={2}
 //               placeholder="Enter approval remarks..."
-//               readOnly={false}
+//               readOnly={!isPart2Approved}
 //             />
 //           </div>
 //         </Card>
@@ -6722,6 +7033,11 @@ export default function EditVehicleNegotiation() {
     memoStatus: "Pending",
     memoFile: null
   });
+
+  // Compute editability based on approval status from the approval page
+  // All approval fields are READONLY in edit page
+  const isPart1Approved = approval.approvalStatus === 'Approved';
+  const isPart2Approved = approval.approvalStatus === 'Approved';
 
   // Fetch data from APIs
   useEffect(() => {
@@ -7989,6 +8305,9 @@ export default function EditVehicleNegotiation() {
                 ❌ {saveError}
               </div>
             )}
+            <div className="text-xs text-blue-600 mt-1">
+              ⓘ Part 2 editable only when Part 1 is Approved • Part 3 editable only when Part 2 is Approved
+            </div>
           </div>
 
           <div className="flex items-center gap-3">            
@@ -8142,6 +8461,27 @@ export default function EditVehicleNegotiation() {
                 </div>
               )}
             </div>
+
+            {/* APPROVAL STATUS - PART 1 - READONLY */}
+            <Select 
+              col="col-span-12 md:col-span-3" 
+              label="Approval Status (Part 1)" 
+              value={approval.approvalStatus} 
+              options={APPROVALS} 
+              readOnly={true} 
+            />
+
+            {/* APPROVAL REMARKS - PART 1 - READONLY */}
+            <div className="col-span-12 md:col-span-3">
+              <label className="text-xs font-bold text-slate-600">Approval Remarks</label>
+              <textarea
+                value={approval.remarks}
+                className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2 text-sm outline-none cursor-not-allowed"
+                rows={1}
+                placeholder="Enter remarks..."
+                readOnly={true}
+              />
+            </div>
           </div>
 
           <div className="mb-4">
@@ -8186,12 +8526,58 @@ export default function EditVehicleNegotiation() {
           </div>
         </Card>
 
-        {/* PART 2: VEHICLE NEGOTIATION - PART 2 */}
-        <Card title="Vehicle - Negotiation - Part - 2">
+        {/* PART 2: VEHICLE NEGOTIATION - PART 2 - Editable only if Part 1 is Approved */}
+        <Card title="Vehicle - Negotiation - Part - 2 (Rate-Target)">
+          {!isPart1Approved && (
+            <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-700">
+              ⚠️ Part 2 is locked. Please set Part 1 Approval Status to "Approved" to edit this section.
+            </div>
+          )}
           <div className="grid grid-cols-12 gap-3 mb-4">
-            <Input col="col-span-12 md:col-span-3" label="Max Rate" value={negotiation.maxRate} onChange={(v) => setNegotiation((p) => ({ ...p, maxRate: v }))} />
-            <Input col="col-span-12 md:col-span-3" label="Target Rate" value={negotiation.targetRate} onChange={(v) => setNegotiation((p) => ({ ...p, targetRate: v }))} />
-            <Input col="col-span-12 md:col-span-3" label="Old Rate %" value={negotiation.oldRatePercent} onChange={(v) => setNegotiation((p) => ({ ...p, oldRatePercent: v }))} />
+            <Input 
+              col="col-span-12 md:col-span-3" 
+              label="Max Rate" 
+              value={negotiation.maxRate} 
+              onChange={(v) => setNegotiation((p) => ({ ...p, maxRate: v }))} 
+              readOnly={!isPart1Approved}
+            />
+            <Input 
+              col="col-span-12 md:col-span-3" 
+              label="Target Rate" 
+              value={negotiation.targetRate} 
+              onChange={(v) => setNegotiation((p) => ({ ...p, targetRate: v }))} 
+              readOnly={!isPart1Approved}
+            />
+            <Input 
+              col="col-span-12 md:col-span-3" 
+              label="Old Rate %" 
+              value={negotiation.oldRatePercent} 
+              onChange={(v) => setNegotiation((p) => ({ ...p, oldRatePercent: v }))} 
+              readOnly={!isPart1Approved}
+            />
+
+            {/* APPROVAL STATUS - PART 2 - READONLY */}
+            <Select 
+              col="col-span-12 md:col-span-3" 
+              label="Approval Status (Part 2)" 
+              value={approval.approvalStatus} 
+              options={APPROVALS} 
+              readOnly={true} 
+            />
+          </div>
+
+          {/* APPROVAL REMARKS - PART 2 - READONLY */}
+          <div className="grid grid-cols-12 gap-3 mb-4">
+            <div className="col-span-12 md:col-span-6">
+              <label className="text-xs font-bold text-slate-600">Approval Remarks</label>
+              <textarea
+                value={approval.remarks}
+                className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2 text-sm outline-none cursor-not-allowed"
+                rows={1}
+                placeholder="Enter remarks..."
+                readOnly={true}
+              />
+            </div>
           </div>
 
           {/* Remarks & Voice Note */}
@@ -8226,14 +8612,31 @@ export default function EditVehicleNegotiation() {
           </div>
         </Card>
 
-        {/* PART 3: VEHICLE APPROVAL - PART 3 */}
+        {/* PART 3: VEHICLE APPROVAL - PART 3 - Editable only if Part 2 is Approved */}
         <Card title="Vehicle - Approval - Part - 3">
+          {!isPart2Approved && (
+            <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-700">
+              ⚠️ Part 3 is locked. Please set Part 2 Approval Status to "Approved" to edit this section.
+            </div>
+          )}
           <div className="grid grid-cols-12 gap-3 mb-4">
             <div className="col-span-12 md:col-span-4">
               <label className="text-xs font-bold text-slate-600">Supplier Name</label>
-              <SupplierSearchDropdown value={selectedSupplier ? selectedSupplier.supplierName : approval.vendorName} onSelect={handleSupplierSelect} placeholder="Search supplier..." readOnly={false} />
+              <SupplierSearchDropdown 
+                value={selectedSupplier ? selectedSupplier.supplierName : approval.vendorName} 
+                onSelect={handleSupplierSelect} 
+                placeholder="Search supplier..." 
+                readOnly={!isPart2Approved}
+              />
             </div>
-            <Select col="col-span-12 md:col-span-4" label="Supplier (Status)" value={approval.vendorStatus} onChange={(v) => setApproval((p) => ({ ...p, vendorStatus: v }))} options={VENDOR_STATUS} readOnly={true} />
+            <Select 
+              col="col-span-12 md:col-span-4" 
+              label="Supplier (Status)" 
+              value={approval.vendorStatus} 
+              onChange={(v) => setApproval((p) => ({ ...p, vendorStatus: v }))} 
+              options={VENDOR_STATUS} 
+              readOnly={!isPart2Approved}
+            />
             <Select 
               col="col-span-12 md:col-span-4" 
               label="Rate - Type" 
@@ -8247,7 +8650,7 @@ export default function EditVehicleNegotiation() {
                 }
               }} 
               options={RATE_TYPES} 
-              readOnly={false} 
+              readOnly={!isPart2Approved}
             />
           </div>
 
@@ -8257,7 +8660,7 @@ export default function EditVehicleNegotiation() {
               label="Final - Per MT (A)" 
               value={approval.finalPerMT} 
               onChange={(v) => setApproval((p) => ({ ...p, finalPerMT: v }))} 
-              readOnly={approval.rateType === "Fixed"} 
+              readOnly={!isPart2Approved || approval.rateType === "Fixed"} 
             />
             <div className="col-span-12 md:col-span-4 mt-2">
               <div className="flex flex-col">
@@ -8279,13 +8682,26 @@ export default function EditVehicleNegotiation() {
               label="Final - Fix" 
               value={approval.finalFix} 
               onChange={(v) => setApproval((p) => ({ ...p, finalFix: v }))} 
-              readOnly={approval.rateType === "Per MT"} 
+              readOnly={!isPart2Approved || approval.rateType === "Per MT"} 
             />
             <div className="col-span-12 md:col-span-4">
               <label className="text-xs font-bold text-slate-600">Vehicle Number</label>
-              <input type="text" value={approval.vehicleNo || ""} onChange={(e) => setApproval((p) => ({ ...p, vehicleNo: e.target.value }))} className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200" placeholder="Enter vehicle number..." />
+              <input 
+                type="text" 
+                value={approval.vehicleNo || ""} 
+                onChange={(e) => setApproval((p) => ({ ...p, vehicleNo: e.target.value }))} 
+                className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200" 
+                placeholder="Enter vehicle number..." 
+                readOnly={!isPart2Approved}
+              />
             </div>
-            <Input col="col-span-12 md:col-span-4" label="Mobile" value={approval.mobile} onChange={(v) => setApproval((p) => ({ ...p, mobile: v }))} readOnly={false} />
+            <Input 
+              col="col-span-12 md:col-span-4" 
+              label="Mobile" 
+              value={approval.mobile} 
+              onChange={(v) => setApproval((p) => ({ ...p, mobile: v }))} 
+              readOnly={!isPart2Approved} 
+            />
           </div>
 
           <div className="grid grid-cols-12 gap-3 mb-4">
@@ -8295,7 +8711,7 @@ export default function EditVehicleNegotiation() {
               value={approval.purchaseType} 
               onChange={(v) => setApproval((p) => ({ ...p, purchaseType: v }))} 
               options={purchaseTypes.length > 0 ? purchaseTypes : PURCHASE_TYPES}
-              readOnly={false} 
+              readOnly={!isPart2Approved} 
             />
             <Select 
               col="col-span-12 md:col-span-4" 
@@ -8303,9 +8719,16 @@ export default function EditVehicleNegotiation() {
               value={approval.paymentTerms} 
               onChange={(v) => setApproval((p) => ({ ...p, paymentTerms: v }))} 
               options={paymentTerms.length > 0 ? paymentTerms : PAYMENT_TERMS}
-              readOnly={false} 
+              readOnly={!isPart2Approved} 
             />
-            <Select col="col-span-12 md:col-span-4" label="Approval" value={approval.approvalStatus} onChange={(v) => setApproval((p) => ({ ...p, approvalStatus: v }))} options={APPROVALS} readOnly={true} />
+            {/* APPROVAL - READONLY */}
+            <Select 
+              col="col-span-12 md:col-span-4" 
+              label="Approval" 
+              value={approval.approvalStatus} 
+              options={APPROVALS} 
+              readOnly={true} 
+            />
           </div>
 
           <div>
@@ -8316,7 +8739,7 @@ export default function EditVehicleNegotiation() {
               className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
               rows={2}
               placeholder="Enter approval remarks..."
-              readOnly={false}
+              readOnly={!isPart2Approved}
             />
           </div>
         </Card>

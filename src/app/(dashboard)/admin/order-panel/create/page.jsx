@@ -1,8 +1,5 @@
 
 
-
-
-
 // "use client";
 
 // import React, { useMemo, useState, useEffect, useRef, useCallback } from "react";
@@ -292,6 +289,7 @@
 //    * STATE FOR API DATA
 //    ========================= */
 //   const [branches, setBranches] = useState([]);
+//   const [subCompanies, setSubCompanies] = useState([]);
 //   const [countries, setCountries] = useState([]);
 //   const [states, setStates] = useState([]);
 //   const [districts, setDistricts] = useState([]);
@@ -428,6 +426,9 @@
 //     branch: "",
 //     branchName: "",
 //     branchCode: "",
+//     subCompanyId: "",
+//     subCompanyName: "",
+//     subCompanyCode: "",
 //     delivery: "Normal",
 //     date: new Date().toISOString().split('T')[0],
 //     partyName: "",
@@ -459,6 +460,7 @@
 //    ========================= */
 //   useEffect(() => {
 //     fetchBranches();
+//     fetchSubCompanies();
 //     fetchCountries();
 //     fetchPlants();
 //     fetchLocations();
@@ -483,6 +485,24 @@
 //     } catch (error) {
 //       console.error('Error fetching branches:', error.message);
 //       setBranches([]);
+//     }
+//   };
+
+//   const fetchSubCompanies = async () => {
+//     try {
+//       const token = localStorage.getItem('token');
+//       const res = await fetch('/api/subcompanies', {
+//         headers: { Authorization: `Bearer ${token}` },
+//       });
+//       const data = await res.json();
+//       if (data.success && Array.isArray(data.data)) {
+//         setSubCompanies(data.data);
+//       } else {
+//         setSubCompanies([]);
+//       }
+//     } catch (error) {
+//       console.error('Error fetching sub-companies:', error.message);
+//       setSubCompanies([]);
 //     }
 //   };
 
@@ -970,6 +990,9 @@
 //         branch: top.branch,
 //         branchName: top.branchName,
 //         branchCode: top.branchCode,
+//         subCompanyId: top.subCompanyId || null,
+//         subCompanyName: top.subCompanyName || '',
+//         subCompanyCode: top.subCompanyCode || '',
 //         delivery: top.delivery,
 //         date: top.date,
 //         customerId: selectedCustomer?._id || null,
@@ -1058,6 +1081,9 @@
 //       branch: "",
 //       branchName: "",
 //       branchCode: "",
+//       subCompanyId: "",
+//       subCompanyName: "",
+//       subCompanyCode: "",
 //       delivery: "Normal",
 //       date: new Date().toISOString().split('T')[0],
 //       partyName: "",
@@ -1208,6 +1234,32 @@
 //                   Create
 //                 </button>
 //               </div>
+//             </div>
+
+//             {/* Sub-Company Dropdown */}
+//             <div className="col-span-12 md:col-span-4">
+//               <label className="text-xs font-bold text-slate-600">Sub-Company</label>
+//               <select
+//                 value={top.subCompanyId || ''}
+//                 onChange={(e) => {
+//                   const subCompanyId = e.target.value;
+//                   const selected = subCompanies.find(sc => sc._id === subCompanyId);
+//                   setTop(prev => ({
+//                     ...prev,
+//                     subCompanyId: subCompanyId,
+//                     subCompanyName: selected?.name || '',
+//                     subCompanyCode: selected?.code || ''
+//                   }));
+//                 }}
+//                 className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+//               >
+//                 <option value="">Select Sub-Company</option>
+//                 {subCompanies.map((sc) => (
+//                   <option key={sc._id} value={sc._id}>
+//                     {sc.name} ({sc.code})
+//                   </option>
+//                 ))}
+//               </select>
 //             </div>
             
 //             <Select
@@ -3123,36 +3175,36 @@ function useExternalPincodeAPI() {
   return { loading, error, pincodeData, multipleCities, fetchPincodeDetails };
 }
 
-// ✅ Enter Key Navigation Helper
-const handleKeyDown = (e, nextFieldRef) => {
-  if (e.key === 'Enter') {
-    e.preventDefault();
-    if (nextFieldRef && nextFieldRef.current) {
-      nextFieldRef.current.focus();
-    }
-  }
-};
-
 export default function CreateOrderPanel() {
   const router = useRouter();
 
-  // ✅ Refs for Enter key navigation
+  // ✅ Refs for Enter/Backspace navigation - Header fields
   const branchRef = useRef(null);
+  const subCompanyRef = useRef(null);
   const deliveryRef = useRef(null);
   const dateRef = useRef(null);
   const partyNameRef = useRef(null);
+  
+  // ✅ Refs for plant rows - ALL fields
   const plantCodeRefs = useRef({});
   const plantNameRefs = useRef({});
   const orderTypeRefs = useRef({});
   const pinCodeRefs = useRef({});
   const fromRefs = useRef({});
   const toRefs = useRef({});
+  const talukaRefs = useRef({});
+  const districtRefs = useRef({});
+  const stateRefs = useRef({});
+  const countryRefs = useRef({});
   const weightRefs = useRef({});
   const statusRefs = useRef({});
   const collectionChargesRefs = useRef({});
   const cancellationChargesRefs = useRef({});
   const loadingChargesRefs = useRef({});
   const otherChargesRefs = useRef({});
+
+  // ✅ Refs for pack rows - ALL fields
+  const packInputRefs = useRef({});
 
   /** =========================
    * STATE FOR API DATA
@@ -3589,12 +3641,11 @@ export default function CreateOrderPanel() {
    * PLANT ROW FUNCTIONS
    ========================= */
   const addPlantRow = () => {
-    setPlantRows((p) => [...p, defaultPlantRow()]);
-    // Focus on the new row's plant code after a short delay
+    const newRow = defaultPlantRow();
+    setPlantRows((p) => [...p, newRow]);
     setTimeout(() => {
-      const newRowId = plantRows[plantRows.length - 1]?._id;
-      if (newRowId && plantCodeRefs.current[newRowId]) {
-        plantCodeRefs.current[newRowId].focus();
+      if (plantCodeRefs.current[newRow._id]) {
+        plantCodeRefs.current[newRow._id].focus();
       }
     }, 100);
   };
@@ -3613,43 +3664,100 @@ export default function CreateOrderPanel() {
     }
   };
 
-  // ✅ Focus next field in plant row
+  // ✅ Navigation helpers for plant rows
+  const getAllPlantFields = (rowId) => {
+    const fields = ['plantCode', 'plantName', 'orderType', 'pinCode', 'from', 'to', 'taluka', 'district', 'state', 'country', 'weight', 'status'];
+    if (showCharges) {
+      fields.push('collectionCharges', 'cancellationCharges', 'loadingCharges', 'otherCharges');
+    }
+    return fields;
+  };
+
+  const getPlantRefMap = (rowId) => {
+    return {
+      plantCode: plantCodeRefs.current[rowId],
+      plantName: plantNameRefs.current[rowId],
+      orderType: orderTypeRefs.current[rowId],
+      pinCode: pinCodeRefs.current[rowId],
+      from: fromRefs.current[rowId],
+      to: toRefs.current[rowId],
+      taluka: talukaRefs.current[rowId],
+      district: districtRefs.current[rowId],
+      state: stateRefs.current[rowId],
+      country: countryRefs.current[rowId],
+      weight: weightRefs.current[rowId],
+      status: statusRefs.current[rowId],
+      collectionCharges: collectionChargesRefs.current[rowId],
+      cancellationCharges: cancellationChargesRefs.current[rowId],
+      loadingCharges: loadingChargesRefs.current[rowId],
+      otherCharges: otherChargesRefs.current[rowId]
+    };
+  };
+
   const focusNextPlantField = (rowId, currentField) => {
-    const rowIndex = plantRows.findIndex(r => r._id === rowId);
-    const fields = ['plantCode', 'orderType', 'pinCode', 'from', 'to', 'weight', 'status'];
+    const fields = getAllPlantFields(rowId);
     const currentIndex = fields.indexOf(currentField);
+    const rowIndex = plantRows.findIndex(r => r._id === rowId);
     
     if (currentIndex !== -1 && currentIndex < fields.length - 1) {
       const nextField = fields[currentIndex + 1];
-      const nextRef = {
-        plantCode: plantCodeRefs.current[rowId],
-        orderType: orderTypeRefs.current[rowId],
-        pinCode: pinCodeRefs.current[rowId],
-        from: fromRefs.current[rowId],
-        to: toRefs.current[rowId],
-        weight: weightRefs.current[rowId],
-        status: statusRefs.current[rowId]
-      }[nextField];
-      
+      const refMap = getPlantRefMap(rowId);
+      const nextRef = refMap[nextField];
       if (nextRef) {
         setTimeout(() => nextRef.focus(), 50);
       }
     } else if (currentIndex === fields.length - 1) {
-      // Last field - move to next row's plant code
       const nextRowIndex = rowIndex + 1;
       if (nextRowIndex < plantRows.length) {
         const nextRowId = plantRows[nextRowIndex]._id;
         if (plantCodeRefs.current[nextRowId]) {
           setTimeout(() => plantCodeRefs.current[nextRowId].focus(), 50);
         }
+      } else {
+        const newRow = defaultPlantRow();
+        setPlantRows((p) => [...p, newRow]);
+        setTimeout(() => {
+          if (plantCodeRefs.current[newRow._id]) {
+            plantCodeRefs.current[newRow._id].focus();
+          }
+        }, 100);
+      }
+    }
+  };
+
+  const focusPrevPlantField = (rowId, currentField) => {
+    const fields = getAllPlantFields(rowId);
+    const currentIndex = fields.indexOf(currentField);
+    const rowIndex = plantRows.findIndex(r => r._id === rowId);
+    
+    if (currentIndex > 0) {
+      const prevField = fields[currentIndex - 1];
+      const refMap = getPlantRefMap(rowId);
+      const prevRef = refMap[prevField];
+      if (prevRef) {
+        setTimeout(() => prevRef.focus(), 50);
+      }
+    } else if (currentIndex === 0) {
+      if (rowIndex > 0) {
+        const prevRowId = plantRows[rowIndex - 1]._id;
+        const prevFields = getAllPlantFields(prevRowId);
+        const lastField = prevFields[prevFields.length - 1];
+        const refMap = getPlantRefMap(prevRowId);
+        const prevRef = refMap[lastField];
+        if (prevRef) {
+          setTimeout(() => prevRef.focus(), 50);
+        }
+      } else {
+        if (partyNameRef.current) {
+          setTimeout(() => partyNameRef.current.focus(), 50);
+        }
       }
     }
   };
 
   /** =========================
-   * PACK DATA FUNCTIONS - Single array
+   * PACK DATA FUNCTIONS
    ========================= */
-  
   const recalculatePalletizationWeights = (row) => {
     const updatedRow = { ...row };
     
@@ -3735,16 +3843,14 @@ export default function CreateOrderPanel() {
   };
   
   const addRow = () => {
-    if (packRows.length === 1 && packRows[0].packType === "PALLETIZATION") {
-      setPackRows([
-        { ...defaultRow(activePack), packType: activePack }
-      ]);
-    } else {
-      setPackRows((prev) => [
-        ...prev,
-        { ...defaultRow(activePack), packType: activePack }
-      ]);
-    }
+    const newRow = { ...defaultRow(activePack), packType: activePack };
+    setPackRows((prev) => [...prev, newRow]);
+    setTimeout(() => {
+      if (packInputRefs.current[newRow._id]) {
+        const firstInput = packInputRefs.current[newRow._id];
+        if (firstInput) firstInput.focus();
+      }
+    }, 100);
   };
 
   const removeRow = (id) => {
@@ -3758,10 +3864,121 @@ export default function CreateOrderPanel() {
   const duplicateRow = (id) => {
     const row = packRows.find((r) => r._id === id);
     if (!row) return;
-    setPackRows((prev) => [
-      ...prev,
-      { ...row, _id: uid() }
-    ]);
+    const newRow = { ...row, _id: uid() };
+    setPackRows((prev) => [...prev, newRow]);
+    setTimeout(() => {
+      if (packInputRefs.current[newRow._id]) {
+        const firstInput = packInputRefs.current[newRow._id];
+        if (firstInput) firstInput.focus();
+      }
+    }, 100);
+  };
+
+  // ✅ Pack row navigation helpers
+  const getPackColumns = (packType) => {
+    if (packType === "PALLETIZATION") {
+      return [
+        { key: "noOfPallets" },
+        { key: "unitPerPallets" },
+        { key: "totalPkgs" },
+        { key: "pkgsType" },
+        { key: "uom" },
+        { key: "skuSize" },
+        { key: "packWeight" },
+        { key: "productName" },
+        { key: "wtLtr" },
+        { key: "actualWt" },
+        { key: "chargedWt" },
+      ];
+    }
+    if (packType === "UNIFORM - BAGS/BOXES") {
+      return [
+        { key: "totalPkgs" },
+        { key: "pkgsType" },
+        { key: "uom" },
+        { key: "skuSize" },
+        { key: "packWeight" },
+        { key: "productName" },
+        { key: "wtLtr" },
+        { key: "actualWt" },
+        { key: "chargedWt" },
+      ];
+    }
+    if (packType === "LOOSE - CARGO") {
+      return [
+        { key: "uom" },
+        { key: "productName" },
+        { key: "actualWt" },
+        { key: "chargedWt" },
+      ];
+    }
+    // NON-UNIFORM - GENERAL CARGO
+    return [
+      { key: "nos" },
+      { key: "productName" },
+      { key: "uom" },
+      { key: "length" },
+      { key: "width" },
+      { key: "height" },
+      { key: "actualWt" },
+      { key: "chargedWt" },
+    ];
+  };
+
+  const focusNextPackField = (rowId, currentFieldKey) => {
+    const row = packRows.find(r => r._id === rowId);
+    if (!row) return;
+    
+    const columns = getPackColumns(row.packType);
+    const currentIndex = columns.findIndex(c => c.key === currentFieldKey);
+    const rowIndex = packRows.findIndex(r => r._id === rowId);
+    
+    if (currentIndex !== -1 && currentIndex < columns.length - 1) {
+      const nextKey = columns[currentIndex + 1].key;
+      const refs = packInputRefs.current[rowId];
+      if (refs && refs[nextKey]) {
+        setTimeout(() => refs[nextKey].focus(), 50);
+      }
+    } else if (currentIndex === columns.length - 1) {
+      if (rowIndex < packRows.length - 1) {
+        const nextRowId = packRows[rowIndex + 1]._id;
+        const nextRowColumns = getPackColumns(packRows[rowIndex + 1].packType);
+        const firstKey = nextRowColumns[0]?.key;
+        const refs = packInputRefs.current[nextRowId];
+        if (refs && refs[firstKey]) {
+          setTimeout(() => refs[firstKey].focus(), 50);
+        }
+      } else {
+        addRow();
+      }
+    }
+  };
+
+  const focusPrevPackField = (rowId, currentFieldKey) => {
+    const row = packRows.find(r => r._id === rowId);
+    if (!row) return;
+    
+    const columns = getPackColumns(row.packType);
+    const currentIndex = columns.findIndex(c => c.key === currentFieldKey);
+    const rowIndex = packRows.findIndex(r => r._id === rowId);
+    
+    if (currentIndex > 0) {
+      const prevKey = columns[currentIndex - 1].key;
+      const refs = packInputRefs.current[rowId];
+      if (refs && refs[prevKey]) {
+        setTimeout(() => refs[prevKey].focus(), 50);
+      }
+    } else if (currentIndex === 0) {
+      if (rowIndex > 0) {
+        const prevRowId = packRows[rowIndex - 1]._id;
+        const prevRowColumns = getPackColumns(packRows[rowIndex - 1].packType);
+        const lastKey = prevRowColumns[prevRowColumns.length - 1]?.key;
+        const refs = packInputRefs.current[prevRowId];
+        if (refs && refs[lastKey]) {
+          setTimeout(() => refs[lastKey].focus(), 50);
+        }
+      }
+    }
   };
 
   /** =========================
@@ -3789,7 +4006,6 @@ export default function CreateOrderPanel() {
         throw new Error("No authentication token found. Please login again.");
       }
       
-      // Build packData from packRows
       const packDataGrouped = {
         PALLETIZATION: [],
         'UNIFORM - BAGS/BOXES': [],
@@ -3848,7 +4064,6 @@ export default function CreateOrderPanel() {
         }
       });
       
-      // Remove empty arrays
       Object.keys(packDataGrouped).forEach(key => {
         if (packDataGrouped[key].length === 0) {
           delete packDataGrouped[key];
@@ -3986,30 +4201,29 @@ export default function CreateOrderPanel() {
   // ✅ Register refs for plant rows
   useEffect(() => {
     plantRows.forEach(row => {
-      if (!plantCodeRefs.current[row._id]) {
-        plantCodeRefs.current[row._id] = null;
-      }
-      if (!plantNameRefs.current[row._id]) {
-        plantNameRefs.current[row._id] = null;
-      }
-      if (!orderTypeRefs.current[row._id]) {
-        orderTypeRefs.current[row._id] = null;
-      }
-      if (!pinCodeRefs.current[row._id]) {
-        pinCodeRefs.current[row._id] = null;
-      }
-      if (!fromRefs.current[row._id]) {
-        fromRefs.current[row._id] = null;
-      }
-      if (!toRefs.current[row._id]) {
-        toRefs.current[row._id] = null;
-      }
-      if (!weightRefs.current[row._id]) {
-        weightRefs.current[row._id] = null;
-      }
-      if (!statusRefs.current[row._id]) {
-        statusRefs.current[row._id] = null;
-      }
+      const refs = [
+        { key: 'plantCode', ref: plantCodeRefs },
+        { key: 'plantName', ref: plantNameRefs },
+        { key: 'orderType', ref: orderTypeRefs },
+        { key: 'pinCode', ref: pinCodeRefs },
+        { key: 'from', ref: fromRefs },
+        { key: 'to', ref: toRefs },
+        { key: 'taluka', ref: talukaRefs },
+        { key: 'district', ref: districtRefs },
+        { key: 'state', ref: stateRefs },
+        { key: 'country', ref: countryRefs },
+        { key: 'weight', ref: weightRefs },
+        { key: 'status', ref: statusRefs },
+        { key: 'collectionCharges', ref: collectionChargesRefs },
+        { key: 'cancellationCharges', ref: cancellationChargesRefs },
+        { key: 'loadingCharges', ref: loadingChargesRefs },
+        { key: 'otherCharges', ref: otherChargesRefs }
+      ];
+      refs.forEach(({ key, ref }) => {
+        if (!ref.current[row._id]) {
+          ref.current[row._id] = null;
+        }
+      });
     });
   }, [plantRows]);
 
@@ -4032,6 +4246,10 @@ export default function CreateOrderPanel() {
               <div className="text-lg font-extrabold text-slate-900">
                 Create New Order Panel
               </div>
+            </div>
+            <div className="text-xs text-slate-500 mt-0.5">
+              ⚡ Press <kbd className="px-1 py-0.5 bg-slate-200 rounded text-xs">Enter</kbd> to move to next field, 
+              <kbd className="px-1 py-0.5 bg-slate-200 rounded text-xs ml-1">Backspace</kbd> (empty) to go back
             </div>
             {saveSuccess && (
               <div className="text-sm text-green-600 font-medium">
@@ -4093,6 +4311,16 @@ export default function CreateOrderPanel() {
                     required={true}
                     displayField="name"
                     codeField="code"
+                    inputRef={(el) => { branchRef.current = el; }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (subCompanyRef.current) subCompanyRef.current.focus();
+                      } else if (e.key === 'Backspace' && e.target.value === '') {
+                        e.preventDefault();
+                        // Stay on current field
+                      }
+                    }}
                   />
                 </div>
                 <button
@@ -4109,6 +4337,7 @@ export default function CreateOrderPanel() {
             <div className="col-span-12 md:col-span-4">
               <label className="text-xs font-bold text-slate-600">Sub-Company</label>
               <select
+                ref={subCompanyRef}
                 value={top.subCompanyId || ''}
                 onChange={(e) => {
                   const subCompanyId = e.target.value;
@@ -4119,6 +4348,15 @@ export default function CreateOrderPanel() {
                     subCompanyName: selected?.name || '',
                     subCompanyCode: selected?.code || ''
                   }));
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (deliveryRef.current) deliveryRef.current.focus();
+                  } else if (e.key === 'Backspace' && e.target.value === '') {
+                    e.preventDefault();
+                    if (branchRef.current) branchRef.current.focus();
+                  }
                 }}
                 className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
               >
@@ -4131,25 +4369,43 @@ export default function CreateOrderPanel() {
               </select>
             </div>
             
-            <Select
-              col="col-span-12 md:col-span-4"
-              label="Delivery"
-              value={top.delivery}
-              onChange={(v) => setTop((p) => ({ ...p, delivery: v }))}
-              options={DELIVERY_OPTIONS}
-              ref={deliveryRef}
-              onKeyDown={(e) => handleKeyDown(e, dateRef)}
-            />
+            <div className="col-span-12 md:col-span-4">
+              <SelectWithRef
+                ref={deliveryRef}
+                label="Delivery"
+                value={top.delivery}
+                onChange={(v) => setTop((p) => ({ ...p, delivery: v }))}
+                options={DELIVERY_OPTIONS}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (dateRef.current) dateRef.current.focus();
+                  } else if (e.key === 'Backspace' && e.target.value === '') {
+                    e.preventDefault();
+                    if (subCompanyRef.current) subCompanyRef.current.focus();
+                  }
+                }}
+              />
+            </div>
 
-            <Input
-              col="col-span-12 md:col-span-4"
-              type="date"
-              label="Date"
-              value={top.date}
-              onChange={(v) => setTop((p) => ({ ...p, date: v }))}
-              ref={dateRef}
-              onKeyDown={(e) => handleKeyDown(e, partyNameRef)}
-            />
+            <div className="col-span-12 md:col-span-4">
+              <InputWithRef
+                ref={dateRef}
+                type="date"
+                label="Date"
+                value={top.date}
+                onChange={(v) => setTop((p) => ({ ...p, date: v }))}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (partyNameRef.current) partyNameRef.current.focus();
+                  } else if (e.key === 'Backspace' && e.target.value === '') {
+                    e.preventDefault();
+                    if (deliveryRef.current) deliveryRef.current.focus();
+                  }
+                }}
+              />
+            </div>
             
             <div className="col-span-12 md:col-span-8 relative">
               <label className="text-xs font-bold text-slate-600">Party Name *</label>
@@ -4167,11 +4423,13 @@ export default function CreateOrderPanel() {
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         e.preventDefault();
-                        // Focus first plant code
                         const firstRowId = plantRows[0]?._id;
                         if (firstRowId && plantCodeRefs.current[firstRowId]) {
                           plantCodeRefs.current[firstRowId].focus();
                         }
+                      } else if (e.key === 'Backspace' && e.target.value === '') {
+                        e.preventDefault();
+                        if (dateRef.current) dateRef.current.focus();
                       }
                     }}
                   />
@@ -4262,9 +4520,18 @@ export default function CreateOrderPanel() {
               pinCodeRefs={pinCodeRefs}
               fromRefs={fromRefs}
               toRefs={toRefs}
+              talukaRefs={talukaRefs}
+              districtRefs={districtRefs}
+              stateRefs={stateRefs}
+              countryRefs={countryRefs}
               weightRefs={weightRefs}
               statusRefs={statusRefs}
+              collectionChargesRefs={collectionChargesRefs}
+              cancellationChargesRefs={cancellationChargesRefs}
+              loadingChargesRefs={loadingChargesRefs}
+              otherChargesRefs={otherChargesRefs}
               focusNextPlantField={focusNextPlantField}
+              focusPrevPlantField={focusPrevPlantField}
             />
           </Card>
           
@@ -4307,6 +4574,9 @@ export default function CreateOrderPanel() {
                 uoms={uoms}
                 skuSizes={skuSizes}
                 items={items}
+                packInputRefs={packInputRefs}
+                focusNextPackField={focusNextPackField}
+                focusPrevPackField={focusPrevPackField}
                 onNavigateToCreate={() => router.push('/admin/pkg-type?returnUrl=/admin/order-panel/create')}
                 onNavigateToCreateUOM={() => router.push('/admin/uoms?returnUrl=/admin/order-panel/create')}
                 onNavigateToCreateSKUSize={() => router.push('/admin/sku-sizes?returnUrl=/admin/order-panel/create')}
@@ -4336,8 +4606,8 @@ function Card({ title, right, children }) {
   );
 }
 
-// ✅ Updated Input with ref forwarding and Enter key support
-const Input = React.forwardRef(({ label, value, onChange, col = "", type = "text", required = false, onKeyDown }, ref) => {
+// ✅ Input with ref forwarding and Enter/Backspace key support
+const InputWithRef = React.forwardRef(({ label, value, onChange, col = "", type = "text", required = false, onKeyDown }, ref) => {
   return (
     <div className={col}>
       <label className="text-xs font-bold text-slate-600">{label}</label>
@@ -4353,10 +4623,10 @@ const Input = React.forwardRef(({ label, value, onChange, col = "", type = "text
     </div>
   );
 });
-Input.displayName = 'Input';
+InputWithRef.displayName = 'InputWithRef';
 
-// ✅ Updated Select with ref forwarding and Enter key support
-const Select = React.forwardRef(({ label, value, onChange, options = [], col = "", onKeyDown }, ref) => {
+// ✅ Select with ref forwarding and Enter/Backspace key support
+const SelectWithRef = React.forwardRef(({ label, value, onChange, options = [], col = "", onKeyDown }, ref) => {
   return (
     <div className={col}>
       <label className="text-xs font-bold text-slate-600">{label}</label>
@@ -4377,10 +4647,10 @@ const Select = React.forwardRef(({ label, value, onChange, options = [], col = "
     </div>
   );
 });
-Select.displayName = 'Select';
+SelectWithRef.displayName = 'SelectWithRef';
 
 /** =========================
- * Searchable Dropdown Component
+ * Searchable Dropdown Component with Keyboard Navigation
  ========================= */
 function SearchableDropdown({ 
   items, 
@@ -4390,15 +4660,24 @@ function SearchableDropdown({
   required = false,
   displayField = 'name',
   codeField = 'code',
-  disabled = false
+  disabled = false,
+  inputRef,
+  onKeyDown
 }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredItems, setFilteredItems] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0, direction: 'down' });
+  const ref = useRef(null);
   const dropdownRef = useRef(null);
-  const inputRef = useRef(null);
-  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
+
+  const getDisplayValue = useCallback((item) => {
+    if (!item) return "";
+    const display = item[displayField] || "";
+    const code = item[codeField] ? `(${item[codeField]})` : "";
+    return `${display} ${code}`.trim();
+  }, [displayField, codeField]);
 
   useEffect(() => {
     setFilteredItems(items);
@@ -4412,14 +4691,7 @@ function SearchableDropdown({
       setSelectedItem(null);
       setSearchQuery("");
     }
-  }, [items, selectedId]);
-
-  const getDisplayValue = (item) => {
-    if (!item) return "";
-    const display = item[displayField] || "";
-    const code = item[codeField] ? `(${item[codeField]})` : "";
-    return `${display} ${code}`.trim();
-  };
+  }, [items, selectedId, getDisplayValue]);
 
   const handleSearch = (query) => {
     setSearchQuery(query);
@@ -4427,10 +4699,13 @@ function SearchableDropdown({
     if (!query.trim()) {
       setFilteredItems(items);
     } else {
-      const filtered = items.filter(item =>
-        (item[displayField] && item[displayField].toLowerCase().includes(query.toLowerCase())) ||
-        (item[codeField] && item[codeField].toLowerCase().includes(query.toLowerCase()))
-      );
+      const filtered = items.filter(item => {
+        const searchLower = query.toLowerCase();
+        return (
+          (item[displayField] && item[displayField].toLowerCase().includes(searchLower)) ||
+          (item[codeField] && item[codeField].toLowerCase().includes(searchLower))
+        );
+      });
       setFilteredItems(filtered);
     }
     
@@ -4448,18 +4723,23 @@ function SearchableDropdown({
   };
 
   const handleInputFocus = () => {
-    if (!showDropdown) {
+    if (!showDropdown && ref.current) {
       setFilteredItems(items);
-      setShowDropdown(true);
       
-      if (inputRef.current) {
-        const rect = inputRef.current.getBoundingClientRect();
-        setDropdownPosition({
-          top: rect.bottom + window.scrollY,
-          left: rect.left + window.scrollX,
-          width: rect.width
-        });
-      }
+      const rect = ref.current.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      const spaceBelow = viewportHeight - rect.bottom;
+      const dropdownHeight = 300;
+      const direction = spaceBelow < dropdownHeight ? 'up' : 'down';
+      
+      setDropdownPosition({
+        top: direction === 'down' ? rect.bottom + window.scrollY : rect.top + window.scrollY - dropdownHeight,
+        left: rect.left + window.scrollX,
+        width: rect.width,
+        direction: direction
+      });
+      
+      setShowDropdown(true);
     }
   };
 
@@ -4474,50 +4754,42 @@ function SearchableDropdown({
     }, 200);
   };
 
+  // Set the ref
   useEffect(() => {
-    const handleScroll = () => {
-      if (showDropdown && inputRef.current) {
-        const rect = inputRef.current.getBoundingClientRect();
-        setDropdownPosition({
-          top: rect.bottom + window.scrollY,
-          left: rect.left + window.scrollX,
-          width: rect.width
-        });
-      }
-    };
-    
-    window.addEventListener('scroll', handleScroll, true);
-    window.addEventListener('resize', handleScroll);
-    
-    return () => {
-      window.removeEventListener('scroll', handleScroll, true);
-      window.removeEventListener('resize', handleScroll);
-    };
-  }, [showDropdown]);
+    if (inputRef) {
+      inputRef(ref.current);
+    }
+  }, [inputRef]);
 
   return (
-    <div className="relative" ref={dropdownRef}>
-      <input
-        ref={inputRef}
-        type="text"
-        value={searchQuery}
-        onChange={(e) => handleSearch(e.target.value)}
-        onFocus={handleInputFocus}
-        onBlur={handleInputBlur}
-        className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 disabled:opacity-50"
-        placeholder={placeholder}
-        required={required}
-        disabled={disabled}
-        autoComplete="off"
-      />
+    <>
+      <div className="relative w-full">
+        <input
+          ref={ref}
+          type="text"
+          value={searchQuery}
+          onChange={(e) => handleSearch(e.target.value)}
+          onFocus={handleInputFocus}
+          onBlur={handleInputBlur}
+          onKeyDown={onKeyDown}
+          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 disabled:opacity-50"
+          placeholder={placeholder}
+          required={required}
+          disabled={disabled}
+          autoComplete="off"
+        />
+      </div>
       
       {showDropdown && (
         <div 
-          className="fixed z-[9999] bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto"
+          ref={dropdownRef}
+          className="fixed z-[100000] bg-white border border-slate-200 rounded-lg shadow-xl overflow-y-auto"
           style={{
             top: `${dropdownPosition.top}px`,
             left: `${dropdownPosition.left}px`,
-            width: `${dropdownPosition.width}px`
+            width: `${dropdownPosition.width}px`,
+            maxHeight: '300px',
+            minWidth: '200px'
           }}
         >
           {filteredItems.length > 0 ? (
@@ -4528,15 +4800,15 @@ function SearchableDropdown({
                   e.preventDefault();
                   handleSelectItem(item);
                 }}
-                className={`p-3 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors ${
+                className={`p-2 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors ${
                   selectedItem?._id === item._id ? 'bg-sky-50' : ''
                 }`}
               >
-                <div className="font-medium text-slate-800">
+                <div className="font-medium text-slate-800 text-sm">
                   {item[displayField]}
                 </div>
                 {item[codeField] && (
-                  <div className="text-xs text-slate-500 mt-1">
+                  <div className="text-xs text-slate-500 mt-0.5">
                     Code: {item[codeField]}
                   </div>
                 )}
@@ -4552,12 +4824,12 @@ function SearchableDropdown({
           )}
         </div>
       )}
-    </div>
+    </>
   );
 }
 
 // ============================================================
-// PLANT GRID TABLE COMPONENT (with Enter key support)
+// PLANT GRID TABLE COMPONENT (with Enter/Backspace key support)
 // ============================================================
 function PlantGridTable({ 
   rows, 
@@ -4581,9 +4853,18 @@ function PlantGridTable({
   pinCodeRefs,
   fromRefs,
   toRefs,
+  talukaRefs,
+  districtRefs,
+  stateRefs,
+  countryRefs,
   weightRefs,
   statusRefs,
-  focusNextPlantField
+  collectionChargesRefs,
+  cancellationChargesRefs,
+  loadingChargesRefs,
+  otherChargesRefs,
+  focusNextPlantField,
+  focusPrevPlantField
 }) {
   const [cityDropdownPosition, setCityDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
   const [activeCityRowId, setActiveCityRowId] = useState(null);
@@ -4604,8 +4885,6 @@ function PlantGridTable({
       if (field === 'from') {
         onChange(rowId, 'fromName', '');
         onChange(rowId, 'fromState', '');
-        onChange(rowId, 'localStatus', 'unknown');
-        onChange(rowId, 'localStatusLabel', 'Unknown');
       } else if (field === 'to') {
         onChange(rowId, 'toName', '');
       }
@@ -4627,8 +4906,6 @@ function PlantGridTable({
       if (field === 'from') {
         onChange(rowId, 'fromName', '');
         onChange(rowId, 'fromState', '');
-        onChange(rowId, 'localStatus', 'unknown');
-        onChange(rowId, 'localStatusLabel', 'Unknown');
       } else if (field === 'to') {
         onChange(rowId, 'toName', '');
       }
@@ -4775,11 +5052,14 @@ function PlantGridTable({
                       required={true}
                       displayField="name"
                       codeField="code"
-                      inputRef={(el) => plantCodeRefs.current[r._id] = el}
+                      inputRef={(el) => { plantCodeRefs.current[r._id] = el; }}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
                           e.preventDefault();
                           focusNextPlantField(r._id, 'plantCode');
+                        } else if (e.key === 'Backspace' && e.target.value === '') {
+                          e.preventDefault();
+                          focusPrevPlantField(r._id, 'plantCode');
                         }
                       }}
                     />
@@ -4798,6 +5078,9 @@ function PlantGridTable({
                         if (e.key === 'Enter') {
                           e.preventDefault();
                           focusNextPlantField(r._id, 'plantName');
+                        } else if (e.key === 'Backspace' && e.target.value === '') {
+                          e.preventDefault();
+                          focusPrevPlantField(r._id, 'plantName');
                         }
                       }}
                     />
@@ -4814,6 +5097,9 @@ function PlantGridTable({
                         if (e.key === 'Enter') {
                           e.preventDefault();
                           focusNextPlantField(r._id, 'orderType');
+                        } else if (e.key === 'Backspace' && e.target.value === '') {
+                          e.preventDefault();
+                          focusPrevPlantField(r._id, 'orderType');
                         }
                       }}
                     >
@@ -4841,6 +5127,9 @@ function PlantGridTable({
                           if (e.key === 'Enter') {
                             e.preventDefault();
                             focusNextPlantField(r._id, 'pinCode');
+                          } else if (e.key === 'Backspace' && e.target.value === '') {
+                            e.preventDefault();
+                            focusPrevPlantField(r._id, 'pinCode');
                           }
                         }}
                       />
@@ -4855,7 +5144,7 @@ function PlantGridTable({
                     )}
                   </td>
 
-                  {/* From - Now shows Location Master data with State */}
+                  {/* From */}
                   <td className="border border-yellow-300 px-2 py-2">
                     <div className="flex flex-col gap-1">
                       <TableSearchableDropdown
@@ -4875,11 +5164,14 @@ function PlantGridTable({
                             </div>
                           </div>
                         )}
-                        inputRef={(el) => fromRefs.current[r._id] = el}
+                        inputRef={(el) => { fromRefs.current[r._id] = el; }}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') {
                             e.preventDefault();
                             focusNextPlantField(r._id, 'from');
+                          } else if (e.key === 'Backspace' && e.target.value === '') {
+                            e.preventDefault();
+                            focusPrevPlantField(r._id, 'from');
                           }
                         }}
                       />
@@ -4917,11 +5209,13 @@ function PlantGridTable({
                           if (e.key === 'Enter') {
                             e.preventDefault();
                             if (hasCities && cityOptions.length > 0) {
-                              // If has cities, trigger dropdown
                               handleCityInputClick(e, r._id);
                             } else {
                               focusNextPlantField(r._id, 'to');
                             }
+                          } else if (e.key === 'Backspace' && e.target.value === '') {
+                            e.preventDefault();
+                            focusPrevPlantField(r._id, 'to');
                           }
                         }}
                         className={`city-input-field w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${
@@ -4942,6 +5236,7 @@ function PlantGridTable({
                   {/* Taluka */}
                   <td className="border border-yellow-300 px-2 py-2">
                     <input
+                      ref={(el) => talukaRefs.current[r._id] = el}
                       type="text"
                       value={r.talukaName || r.taluka || ""}
                       readOnly
@@ -4951,6 +5246,9 @@ function PlantGridTable({
                         if (e.key === 'Enter') {
                           e.preventDefault();
                           focusNextPlantField(r._id, 'taluka');
+                        } else if (e.key === 'Backspace' && e.target.value === '') {
+                          e.preventDefault();
+                          focusPrevPlantField(r._id, 'taluka');
                         }
                       }}
                     />
@@ -4959,6 +5257,7 @@ function PlantGridTable({
                   {/* District */}
                   <td className="border border-yellow-300 px-2 py-2">
                     <input
+                      ref={(el) => districtRefs.current[r._id] = el}
                       type="text"
                       value={r.districtName || r.district || ""}
                       readOnly
@@ -4968,6 +5267,9 @@ function PlantGridTable({
                         if (e.key === 'Enter') {
                           e.preventDefault();
                           focusNextPlantField(r._id, 'district');
+                        } else if (e.key === 'Backspace' && e.target.value === '') {
+                          e.preventDefault();
+                          focusPrevPlantField(r._id, 'district');
                         }
                       }}
                     />
@@ -4976,6 +5278,7 @@ function PlantGridTable({
                   {/* State */}
                   <td className="border border-yellow-300 px-2 py-2">
                     <input
+                      ref={(el) => stateRefs.current[r._id] = el}
                       type="text"
                       value={r.stateName || r.state || ""}
                       readOnly
@@ -4985,12 +5288,15 @@ function PlantGridTable({
                         if (e.key === 'Enter') {
                           e.preventDefault();
                           focusNextPlantField(r._id, 'state');
+                        } else if (e.key === 'Backspace' && e.target.value === '') {
+                          e.preventDefault();
+                          focusPrevPlantField(r._id, 'state');
                         }
                       }}
                     />
                   </td>
 
-                  {/* Local Status - NEW COLUMN */}
+                  {/* Local Status */}
                   <td className="border border-yellow-300 px-2 py-2 text-center">
                     {r.fromState && r.stateName ? (
                       <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${
@@ -5008,6 +5314,7 @@ function PlantGridTable({
                   {/* Country */}
                   <td className="border border-yellow-300 px-2 py-2">
                     <input
+                      ref={(el) => countryRefs.current[r._id] = el}
                       type="text"
                       value={r.countryName || r.country || ""}
                       readOnly
@@ -5017,6 +5324,9 @@ function PlantGridTable({
                         if (e.key === 'Enter') {
                           e.preventDefault();
                           focusNextPlantField(r._id, 'country');
+                        } else if (e.key === 'Backspace' && e.target.value === '') {
+                          e.preventDefault();
+                          focusPrevPlantField(r._id, 'country');
                         }
                       }}
                     />
@@ -5035,6 +5345,9 @@ function PlantGridTable({
                         if (e.key === 'Enter') {
                           e.preventDefault();
                           focusNextPlantField(r._id, 'weight');
+                        } else if (e.key === 'Backspace' && e.target.value === '') {
+                          e.preventDefault();
+                          focusPrevPlantField(r._id, 'weight');
                         }
                       }}
                     />
@@ -5051,6 +5364,9 @@ function PlantGridTable({
                         if (e.key === 'Enter') {
                           e.preventDefault();
                           focusNextPlantField(r._id, 'status');
+                        } else if (e.key === 'Backspace' && e.target.value === '') {
+                          e.preventDefault();
+                          focusPrevPlantField(r._id, 'status');
                         }
                       }}
                     >
@@ -5068,38 +5384,78 @@ function PlantGridTable({
                     <>
                       <td className="border border-yellow-300 px-2 py-2">
                         <input
+                          ref={(el) => collectionChargesRefs.current[r._id] = el}
                           type="number"
                           value={r.collectionCharges || ""}
                           onChange={(e) => onChange(r._id, 'collectionCharges', e.target.value)}
                           className="w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
                           placeholder="Collection Charges"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              focusNextPlantField(r._id, 'collectionCharges');
+                            } else if (e.key === 'Backspace' && e.target.value === '') {
+                              e.preventDefault();
+                              focusPrevPlantField(r._id, 'collectionCharges');
+                            }
+                          }}
                         />
                       </td>
                       <td className="border border-yellow-300 px-2 py-2">
                         <input
+                          ref={(el) => cancellationChargesRefs.current[r._id] = el}
                           type="text"
                           value={r.cancellationCharges || ""}
                           onChange={(e) => onChange(r._id, 'cancellationCharges', e.target.value)}
                           className="w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
                           placeholder="Cancellation Charges"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              focusNextPlantField(r._id, 'cancellationCharges');
+                            } else if (e.key === 'Backspace' && e.target.value === '') {
+                              e.preventDefault();
+                              focusPrevPlantField(r._id, 'cancellationCharges');
+                            }
+                          }}
                         />
                       </td>
                       <td className="border border-yellow-300 px-2 py-2">
                         <input
+                          ref={(el) => loadingChargesRefs.current[r._id] = el}
                           type="text"
                           value={r.loadingCharges || ""}
                           onChange={(e) => onChange(r._id, 'loadingCharges', e.target.value)}
                           className="w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
                           placeholder="Loading Charges"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              focusNextPlantField(r._id, 'loadingCharges');
+                            } else if (e.key === 'Backspace' && e.target.value === '') {
+                              e.preventDefault();
+                              focusPrevPlantField(r._id, 'loadingCharges');
+                            }
+                          }}
                         />
                       </td>
                       <td className="border border-yellow-300 px-2 py-2">
                         <input
+                          ref={(el) => otherChargesRefs.current[r._id] = el}
                           type="number"
                           value={r.otherCharges || ""}
                           onChange={(e) => onChange(r._id, 'otherCharges', e.target.value)}
                           className="w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
                           placeholder="Other Charges"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              focusNextPlantField(r._id, 'otherCharges');
+                            } else if (e.key === 'Backspace' && e.target.value === '') {
+                              e.preventDefault();
+                              focusPrevPlantField(r._id, 'otherCharges');
+                            }
+                          }}
                         />
                       </td>
                     </>
@@ -5377,6 +5733,9 @@ function PackTypeTable({
   uoms = [], 
   skuSizes = [], 
   items = [],
+  packInputRefs,
+  focusNextPackField,
+  focusPrevPackField,
   onNavigateToCreate, 
   onNavigateToCreateUOM, 
   onNavigateToCreateSKUSize,
@@ -5588,6 +5947,11 @@ function PackTypeTable({
             rows.map((r) => {
               const cols = getColumnsForRow(r.packType);
               
+              // Initialize refs for this row if not exists
+              if (!packInputRefs.current[r._id]) {
+                packInputRefs.current[r._id] = {};
+              }
+              
               return (
                 <tr key={r._id} className="hover:bg-yellow-50 even:bg-slate-50">
                   <td className="border border-yellow-300 px-2 py-2 text-center font-semibold bg-yellow-50 text-xs">
@@ -5607,6 +5971,15 @@ function PackTypeTable({
                             value="MT"
                             readOnly
                             className="w-full rounded-lg border border-slate-200 bg-slate-100 px-2 py-1.5 text-sm text-slate-700 font-medium"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                focusNextPackField(r._id, c.key);
+                              } else if (e.key === 'Backspace') {
+                                e.preventDefault();
+                                focusPrevPackField(r._id, c.key);
+                              }
+                            }}
                           />
                         </td>
                       );
@@ -5622,6 +5995,15 @@ function PackTypeTable({
                             readOnly
                             className="w-full rounded-lg border border-slate-200 bg-slate-100 px-2 py-1.5 text-sm text-slate-700 font-medium"
                             placeholder="Auto"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                focusNextPackField(r._id, c.key);
+                              } else if (e.key === 'Backspace') {
+                                e.preventDefault();
+                                focusPrevPackField(r._id, c.key);
+                              }
+                            }}
                           />
                         </td>
                       );
@@ -5631,9 +6013,24 @@ function PackTypeTable({
                       <td key={c.key} className="border border-yellow-300 px-2 py-2">
                         {c.isDynamic ? (
                           <select
+                            ref={el => {
+                              if (!packInputRefs.current[r._id]) {
+                                packInputRefs.current[r._id] = {};
+                              }
+                              packInputRefs.current[r._id][c.key] = el;
+                            }}
                             value={r[c.key] || ""}
                             onChange={(e) => handleChange(r._id, c.key, e.target.value)}
                             className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                focusNextPackField(r._id, c.key);
+                              } else if (e.key === 'Backspace' && e.target.value === '') {
+                                e.preventDefault();
+                                focusPrevPackField(r._id, c.key);
+                              }
+                            }}
                           >
                             <option value="">Select</option>
                             {c.options && c.options.map((opt) => (
@@ -5644,9 +6041,24 @@ function PackTypeTable({
                           </select>
                         ) : c.isUOM ? (
                           <select
+                            ref={el => {
+                              if (!packInputRefs.current[r._id]) {
+                                packInputRefs.current[r._id] = {};
+                              }
+                              packInputRefs.current[r._id][c.key] = el;
+                            }}
                             value={r[c.key] || ""}
                             onChange={(e) => handleChange(r._id, c.key, e.target.value)}
                             className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                focusNextPackField(r._id, c.key);
+                              } else if (e.key === 'Backspace' && e.target.value === '') {
+                                e.preventDefault();
+                                focusPrevPackField(r._id, c.key);
+                              }
+                            }}
                           >
                             <option value="">Select</option>
                             {c.options && c.options.map((opt) => (
@@ -5657,9 +6069,24 @@ function PackTypeTable({
                           </select>
                         ) : c.isSKUSize ? (
                           <select
+                            ref={el => {
+                              if (!packInputRefs.current[r._id]) {
+                                packInputRefs.current[r._id] = {};
+                              }
+                              packInputRefs.current[r._id][c.key] = el;
+                            }}
                             value={r[c.key] || ""}
                             onChange={(e) => handleChange(r._id, c.key, e.target.value)}
                             className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                focusNextPackField(r._id, c.key);
+                              } else if (e.key === 'Backspace' && e.target.value === '') {
+                                e.preventDefault();
+                                focusPrevPackField(r._id, c.key);
+                              }
+                            }}
                           >
                             <option value="">Select</option>
                             {c.options && c.options.map((opt) => (
@@ -5672,7 +6099,13 @@ function PackTypeTable({
                           <div className="relative w-full">
                             <div className="flex-1 relative">
                               <input
-                                ref={el => itemInputRefs.current[r._id] = el}
+                                ref={el => {
+                                  itemInputRefs.current[r._id] = el;
+                                  if (!packInputRefs.current[r._id]) {
+                                    packInputRefs.current[r._id] = {};
+                                  }
+                                  packInputRefs.current[r._id][c.key] = el;
+                                }}
                                 type="text"
                                 value={itemSearchQuery[r._id] || r[c.key] || ""}
                                 onChange={(e) => handleItemSearch(r._id, e.target.value)}
@@ -5681,6 +6114,20 @@ function PackTypeTable({
                                 className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
                                 placeholder="Search product..."
                                 autoComplete="off"
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    // If dropdown is open, select first item
+                                    if (showItemDropdown[r._id] && filteredItems[r._id] && filteredItems[r._id].length > 0) {
+                                      handleSelectItem(r._id, filteredItems[r._id][0]);
+                                    } else {
+                                      focusNextPackField(r._id, c.key);
+                                    }
+                                  } else if (e.key === 'Backspace' && e.target.value === '') {
+                                    e.preventDefault();
+                                    focusPrevPackField(r._id, c.key);
+                                  }
+                                }}
                               />
                               {showItemDropdown[r._id] && (
                                 <div 
@@ -5726,9 +6173,24 @@ function PackTypeTable({
                           </div>
                         ) : c.options && !c.isDynamic && !c.isUOM && !c.isSKUSize && !c.isItem ? (
                           <select
+                            ref={el => {
+                              if (!packInputRefs.current[r._id]) {
+                                packInputRefs.current[r._id] = {};
+                              }
+                              packInputRefs.current[r._id][c.key] = el;
+                            }}
                             value={r[c.key] || ""}
                             onChange={(e) => handleChange(r._id, c.key, e.target.value)}
                             className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                focusNextPackField(r._id, c.key);
+                              } else if (e.key === 'Backspace' && e.target.value === '') {
+                                e.preventDefault();
+                                focusPrevPackField(r._id, c.key);
+                              }
+                            }}
                           >
                             <option value="">Select</option>
                             {c.options.map((opt) => (
@@ -5739,6 +6201,12 @@ function PackTypeTable({
                           </select>
                         ) : (
                           <input
+                            ref={el => {
+                              if (!packInputRefs.current[r._id]) {
+                                packInputRefs.current[r._id] = {};
+                              }
+                              packInputRefs.current[r._id][c.key] = el;
+                            }}
                             type={c.type || "text"}
                             value={r[c.key] || ""}
                             readOnly={c.readOnly}
@@ -5750,6 +6218,15 @@ function PackTypeTable({
                             }`}
                             placeholder={c.readOnly ? "Auto" : `Enter`}
                             step={c.type === "number" ? "0.001" : undefined}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                focusNextPackField(r._id, c.key);
+                              } else if (e.key === 'Backspace' && e.target.value === '') {
+                                e.preventDefault();
+                                focusPrevPackField(r._id, c.key);
+                              }
+                            }}
                           />
                         )}
                       </td>
