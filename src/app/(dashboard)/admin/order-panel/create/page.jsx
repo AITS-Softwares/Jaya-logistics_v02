@@ -4783,8 +4783,8 @@ function SearchableDropdown({
       }
       return;
     }
-    if (event.key === 'Enter' && showDropdown && filteredItems.length) {
-      event.preventDefault();
+    if ((event.key === 'Enter' || event.key === 'Tab') && showDropdown && filteredItems.length) {
+      if (event.key === 'Enter') event.preventDefault();
       handleSelectItem(filteredItems[highlightedIndex >= 0 ? highlightedIndex : 0]);
       return;
     }
@@ -5694,8 +5694,8 @@ function TableSearchableDropdown({
       }
       return;
     }
-    if (event.key === 'Enter' && showDropdown && filteredItems.length) {
-      event.preventDefault();
+    if ((event.key === 'Enter' || event.key === 'Tab') && showDropdown && filteredItems.length) {
+      if (event.key === 'Enter') event.preventDefault();
       handleSelectItem(filteredItems[highlightedIndex >= 0 ? highlightedIndex : 0]);
       return;
     }
@@ -6271,8 +6271,8 @@ function PackTypeTable({
                                           : (index <= 0 ? options.length - 1 : index - 1) };
                                       });
                                     }
-                                  } else if (e.key === 'Enter') {
-                                    e.preventDefault();
+                                  } else if (e.key === 'Enter' || e.key === 'Tab') {
+                                    if (e.key === 'Enter') e.preventDefault();
                                     const options = filteredItems[r._id] || items;
                                     if (showItemDropdown[r._id] && options.length > 0) {
                                       handleSelectItem(r._id, options[itemHighlightedIndex[r._id] >= 0 ? itemHighlightedIndex[r._id] : 0]);

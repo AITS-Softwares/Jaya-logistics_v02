@@ -4151,8 +4151,8 @@ function SearchableDropdown({
       event.preventDefault();
       if (!showDropdown) handleInputFocus();
       if (filteredItems.length) setHighlightedIndex(index => event.key === 'ArrowDown' ? (index + 1) % filteredItems.length : (index <= 0 ? filteredItems.length - 1 : index - 1));
-    } else if (event.key === 'Enter' && showDropdown && filteredItems.length) {
-      event.preventDefault();
+    } else if ((event.key === 'Enter' || event.key === 'Tab') && showDropdown && filteredItems.length) {
+      if (event.key === 'Enter') event.preventDefault();
       handleSelectItem(filteredItems[highlightedIndex >= 0 ? highlightedIndex : 0]);
     } else if (event.key === 'Escape') {
       setShowDropdown(false);
@@ -4745,6 +4745,7 @@ function TableSearchableDropdown({
   const [filteredItems, setFilteredItems] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
   const inputRef = useRef(null);
   const dropdownRef = useRef(null);
@@ -4772,6 +4773,7 @@ function TableSearchableDropdown({
 
   const handleSearch = (query) => {
     setSearchQuery(query);
+    setHighlightedIndex(-1);
     
     if (!query.trim()) {
       setFilteredItems(items);
@@ -4797,6 +4799,19 @@ function TableSearchableDropdown({
     setSearchQuery(getDisplayValue(item));
     setShowDropdown(false);
     onSelect?.(item);
+  };
+
+  const handleKeyDown = (event) => {
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      if (!showDropdown) handleInputFocus();
+      if (filteredItems.length) setHighlightedIndex(index => event.key === 'ArrowDown' ? (index + 1) % filteredItems.length : (index <= 0 ? filteredItems.length - 1 : index - 1));
+    } else if ((event.key === 'Enter' || event.key === 'Tab') && showDropdown && filteredItems.length) {
+      if (event.key === 'Enter') event.preventDefault();
+      handleSelectItem(filteredItems[highlightedIndex >= 0 ? highlightedIndex : 0]);
+    } else if (event.key === 'Escape') {
+      setShowDropdown(false);
+    }
   };
 
   const handleInputFocus = () => {
@@ -4835,6 +4850,7 @@ function TableSearchableDropdown({
           onChange={(e) => handleSearch(e.target.value)}
           onFocus={handleInputFocus}
           onBlur={handleInputBlur}
+          onKeyDown={handleKeyDown}
           className="w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 disabled:opacity-50"
           placeholder={placeholder}
           required={required}
@@ -4873,7 +4889,7 @@ function TableSearchableDropdown({
                   handleSelectItem(item);
                 }}
                 className={`p-2 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors ${
-                  selectedItem?._id === item._id ? 'bg-sky-50' : ''
+                  selectedItem?._id === item._id || highlightedIndex === filteredItems.indexOf(item) ? 'bg-sky-100' : ''
                 }`}
               >
                 {renderItem ? (
@@ -4922,6 +4938,7 @@ function PackTypeTable({
 }) {
   
   const [showItemDropdown, setShowItemDropdown] = useState({});
+  const [itemHighlightedIndex, setItemHighlightedIndex] = useState({});
   const [itemSearchQuery, setItemSearchQuery] = useState({});
   const [filteredItems, setFilteredItems] = useState({});
   const [itemDropdownPosition, setItemDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
@@ -4988,6 +5005,7 @@ function PackTypeTable({
 
   const handleItemSearch = (rowId, query) => {
     setItemSearchQuery(prev => ({ ...prev, [rowId]: query }));
+    setItemHighlightedIndex(prev => ({ ...prev, [rowId]: -1 }));
     
     if (!query.trim()) {
       setFilteredItems(prev => ({ ...prev, [rowId]: items }));
@@ -5189,6 +5207,20 @@ function PackTypeTable({
                                   onChange={(e) => handleItemSearch(r._id, e.target.value)}
                                   onFocus={(e) => handleItemInputFocus(r._id, e)}
                                   onBlur={() => handleItemInputBlur(r._id)}
+                                  onKeyDown={(e) => {
+                                    const options = filteredItems[r._id] || items;
+                                    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                                      e.preventDefault();
+                                      if (!showItemDropdown[r._id]) handleItemInputFocus(r._id, e);
+                                      if (options.length) setItemHighlightedIndex(prev => {
+                                        const index = prev[r._id] ?? -1;
+                                        return { ...prev, [r._id]: e.key === 'ArrowDown' ? (index + 1) % options.length : (index <= 0 ? options.length - 1 : index - 1) };
+                                      });
+                                    } else if ((e.key === 'Enter' || e.key === 'Tab') && showItemDropdown[r._id] && options.length) {
+                                      if (e.key === 'Enter') e.preventDefault();
+                                      handleSelectItem(r._id, options[itemHighlightedIndex[r._id] >= 0 ? itemHighlightedIndex[r._id] : 0]);
+                                    }
+                                  }}
                                   className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
                                   placeholder={`Search ${c.label}...`}
                                   autoComplete="off"
@@ -5215,7 +5247,7 @@ function PackTypeTable({
                                             e.preventDefault();
                                             handleSelectItem(r._id, item);
                                           }}
-                                          className="px-3 py-2 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors"
+                                          className={`px-3 py-2 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors ${itemHighlightedIndex[r._id] === (filteredItems[r._id] || items).indexOf(item) ? 'bg-sky-100' : ''}`}
                                         >
                                           <div className="font-medium text-slate-800 text-sm">
                                             {item.itemName}
