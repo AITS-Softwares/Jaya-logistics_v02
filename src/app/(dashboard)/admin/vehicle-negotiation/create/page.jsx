@@ -2809,28 +2809,6 @@ const handleSupplierSelect = (supplier) => {
               )}
             </div>
 
-            {/* APPROVAL STATUS - READONLY IN PART 1 */}
-            <Select 
-              col="col-span-12 md:col-span-3" 
-              label="Approval Status" 
-              value={approval.approvalStatus} 
-              onChange={(v) => setApproval((p) => ({ ...p, approvalStatus: v }))} 
-              options={APPROVALS} 
-              readOnly={true} 
-            />
-
-            {/* APPROVAL REMARKS - READONLY IN PART 1 */}
-            <div className="col-span-12 md:col-span-3">
-              <label className="text-xs font-bold text-slate-600">Approval Remarks</label>
-              <textarea
-                value={approval.remarks}
-                onChange={(e) => setApproval((p) => ({ ...p, remarks: e.target.value }))}
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2 text-sm outline-none cursor-not-allowed"
-                rows={1}
-                placeholder="Enter remarks..."
-                readOnly={true}
-              />
-            </div>
           </div>
 
           <div className="mb-4">
@@ -2997,6 +2975,27 @@ const handleSupplierSelect = (supplier) => {
               onChange={(v) => setApproval((p) => ({ ...p, finalFix: v }))} 
               readOnly={true} 
             />
+            <Select
+              col="col-span-12 md:col-span-4"
+              label="Approval Status"
+              value={approval.approvalStatus}
+              options={APPROVALS}
+              readOnly={true}
+            />
+          </div>
+
+          <div className="mb-4">
+            <label className="text-xs font-bold text-slate-600">Approval Remarks</label>
+            <textarea
+              value={approval.remarks}
+              className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm outline-none cursor-not-allowed"
+              rows={2}
+              placeholder="Approval remarks"
+              readOnly
+            />
+          </div>
+
+          <div className="grid grid-cols-12 gap-3 mb-4">
             <div className="col-span-12 md:col-span-4">
               <label className="text-xs font-bold text-slate-600">Vehicle Number</label>
               <input type="text" value={approval.vehicleNo || ""} onChange={(e) => setApproval((p) => ({ ...p, vehicleNo: e.target.value }))} className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none cursor-not-allowed" placeholder="Enter vehicle number..." readOnly={true} />

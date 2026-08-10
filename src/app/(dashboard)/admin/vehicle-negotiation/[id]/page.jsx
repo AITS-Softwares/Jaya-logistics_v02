@@ -7029,6 +7029,7 @@ export default function EditVehicleNegotiation() {
     purchaseType: "",
     paymentTerms: "",
     part3Status: "Pending",
+    part3Remarks: "",
     approvalStatus: "",
     remarks: "",
     memoStatus: "Pending",
@@ -7252,6 +7253,7 @@ export default function EditVehicleNegotiation() {
           purchaseType: vn.approval.purchaseType || "",
           paymentTerms: vn.approval.paymentTerms || "",
           part3Status: vn.approval.part3Status || "Pending",
+          part3Remarks: vn.approval.part3Remarks || "",
           approvalStatus: vn.approval.approvalStatus || "",
           remarks: vn.approval.remarks || "",
           memoStatus: vn.approval.memoStatus || "Pending",
@@ -8685,6 +8687,27 @@ export default function EditVehicleNegotiation() {
               onChange={(v) => setApproval((p) => ({ ...p, finalFix: v }))} 
               readOnly={!isPart2Approved || approval.rateType === "Per MT"} 
             />
+            <Select
+              col="col-span-12 md:col-span-4"
+              label="Approval Status"
+              value={approval.part3Status}
+              options={APPROVALS}
+              readOnly={true}
+            />
+          </div>
+
+          <div className="mb-4">
+            <label className="text-xs font-bold text-slate-600">Approval Remarks</label>
+            <textarea
+              value={approval.part3Remarks}
+              className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm outline-none cursor-not-allowed"
+              rows={2}
+              placeholder="Approval remarks"
+              readOnly
+            />
+          </div>
+
+          <div className="grid grid-cols-12 gap-3 mb-4">
             <div className="col-span-12 md:col-span-4">
               <label className="text-xs font-bold text-slate-600">Vehicle Number</label>
               <input 
