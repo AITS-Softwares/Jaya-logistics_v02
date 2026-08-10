@@ -2925,6 +2925,7 @@
 
 import React, { useMemo, useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { subscribeToMasterDataChanges } from "@/utils/masterDataEvents";
 
 /** =========================
  * CONSTANTS
@@ -2949,6 +2950,10 @@ function num(v) {
   return Number.isFinite(n) ? n : 0;
 }
 
+function hasNumericValue(v) {
+  return v !== "" && v !== null && v !== undefined && Number.isFinite(Number(v));
+}
+
 /** =========================
  * DEFAULT EMPTY ROWS
  ========================= */
@@ -2964,6 +2969,7 @@ function defaultRow(packType) {
       uom: "MT",
       skuSize: "",
       packWeight: "",
+      productId: "",
       productName: "",
       wtLtr: "",
       actualWt: "",
@@ -2982,6 +2988,7 @@ function defaultRow(packType) {
       uom: "",
       skuSize: "",
       packWeight: "",
+      productId: "",
       productName: "",
       wtLtr: "",
       actualWt: "",
@@ -2995,6 +3002,7 @@ function defaultRow(packType) {
       _id: uid(),
       packType: "LOOSE - CARGO",
       uom: "MT",
+      productId: "",
       productName: "",
       actualWt: "",
       chargedWt: "",
@@ -3006,6 +3014,7 @@ function defaultRow(packType) {
     _id: uid(),
     packType: "NON-UNIFORM - GENERAL CARGO",
     nos: "",
+    productId: "",
     productName: "",
     uom: "MT",
     length: "",
@@ -3247,7 +3256,7 @@ export default function CreateOrderPanel() {
   const fetchItems = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/items', {
+      const res = await fetch('/api/items?activeOnly=true', {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -3389,6 +3398,24 @@ export default function CreateOrderPanel() {
     fetchUOMs();
     fetchSKUSizes();
     fetchItems(); 
+  }, []);
+
+  useEffect(() => {
+    const refreshers = {
+      items: fetchItems,
+      locations: fetchLocations,
+      'pkg-types': fetchPkgTypes,
+      uoms: fetchUOMs,
+      'sku-sizes': fetchSKUSizes,
+      branches: fetchBranches,
+      plants: fetchPlants,
+      countries: fetchCountries,
+      subcompanies: fetchSubCompanies,
+    };
+
+    return subscribeToMasterDataChanges(Object.keys(refreshers), (master) => {
+      refreshers[master]?.();
+    });
   }, []);
 
   const fetchBranches = async () => {
@@ -3766,15 +3793,18 @@ export default function CreateOrderPanel() {
     const packWeight = num(updatedRow.packWeight);
     const uom = (updatedRow.uom || "").toUpperCase().trim();
     
-    let totalPkgs = num(updatedRow.totalPkgs);
-    
-    if (noOfPallets > 0 && unitPerPallets > 0) {
-      const calculatedTotalPkgs = noOfPallets * unitPerPallets;
-      totalPkgs = calculatedTotalPkgs;
-      updatedRow.totalPkgs = String(calculatedTotalPkgs);
+    const hasPalletInputs = hasNumericValue(updatedRow.noOfPallets) && hasNumericValue(updatedRow.unitPerPallets);
+    const hasPackWeight = hasNumericValue(updatedRow.packWeight);
+    let totalPkgs = 0;
+
+    if (hasPalletInputs) {
+      totalPkgs = noOfPallets * unitPerPallets;
+      updatedRow.totalPkgs = String(totalPkgs);
+    } else {
+      updatedRow.totalPkgs = "";
     }
-    
-    if (totalPkgs > 0 && packWeight > 0) {
+
+    if (hasPalletInputs && hasPackWeight) {
       const isLTR = uom === "LTR" || uom === "L" || uom === "LITRE" || uom === "LITRES";
       
       if (isLTR) {
@@ -3801,8 +3831,10 @@ export default function CreateOrderPanel() {
     const totalPkgs = num(updatedRow.totalPkgs);
     const packWeight = num(updatedRow.packWeight);
     const uom = (updatedRow.uom || "").toUpperCase().trim();
-    
-    if (totalPkgs > 0 && packWeight > 0) {
+    const hasTotalPkgs = hasNumericValue(updatedRow.totalPkgs);
+    const hasPackWeight = hasNumericValue(updatedRow.packWeight);
+
+    if (hasTotalPkgs && hasPackWeight) {
       const isLTR = uom === "LTR" || uom === "L" || uom === "LITRE" || uom === "LITRES";
       
       if (isLTR) {
@@ -3846,10 +3878,8 @@ export default function CreateOrderPanel() {
     const newRow = { ...defaultRow(activePack), packType: activePack };
     setPackRows((prev) => [...prev, newRow]);
     setTimeout(() => {
-      if (packInputRefs.current[newRow._id]) {
-        const firstInput = packInputRefs.current[newRow._id];
-        if (firstInput) firstInput.focus();
-      }
+      const firstKey = getPackColumns(newRow.packType)[0]?.key;
+      packInputRefs.current[newRow._id]?.[firstKey]?.focus();
     }, 100);
   };
 
@@ -3867,10 +3897,8 @@ export default function CreateOrderPanel() {
     const newRow = { ...row, _id: uid() };
     setPackRows((prev) => [...prev, newRow]);
     setTimeout(() => {
-      if (packInputRefs.current[newRow._id]) {
-        const firstInput = packInputRefs.current[newRow._id];
-        if (firstInput) firstInput.focus();
-      }
+      const firstKey = getPackColumns(newRow.packType)[0]?.key;
+      packInputRefs.current[newRow._id]?.[firstKey]?.focus();
     }, 100);
   };
 
@@ -3880,14 +3908,11 @@ export default function CreateOrderPanel() {
       return [
         { key: "noOfPallets" },
         { key: "unitPerPallets" },
-        { key: "totalPkgs" },
         { key: "pkgsType" },
         { key: "uom" },
         { key: "skuSize" },
         { key: "packWeight" },
         { key: "productName" },
-        { key: "wtLtr" },
-        { key: "actualWt" },
         { key: "chargedWt" },
       ];
     }
@@ -3899,8 +3924,6 @@ export default function CreateOrderPanel() {
         { key: "skuSize" },
         { key: "packWeight" },
         { key: "productName" },
-        { key: "wtLtr" },
-        { key: "actualWt" },
         { key: "chargedWt" },
       ];
     }
@@ -4023,6 +4046,7 @@ export default function CreateOrderPanel() {
             uom: row.uom || "MT",
             skuSize: row.skuSize || "",
             packWeight: num(row.packWeight),
+            productId: row.productId || null,
             productName: row.productName || "",
             wtLtr: num(row.wtLtr),
             actualWt: num(row.actualWt),
@@ -4037,6 +4061,7 @@ export default function CreateOrderPanel() {
             uom: row.uom || "MT",
             skuSize: row.skuSize || "",
             packWeight: num(row.packWeight),
+            productId: row.productId || null,
             productName: row.productName || "",
             wtLtr: num(row.wtLtr),
             actualWt: num(row.actualWt),
@@ -4046,6 +4071,7 @@ export default function CreateOrderPanel() {
         } else if (row.packType === "LOOSE - CARGO") {
           packDataGrouped['LOOSE - CARGO'].push({
             uom: row.uom || "MT",
+            productId: row.productId || null,
             productName: row.productName || "",
             actualWt: num(row.actualWt),
             chargedWt: num(row.chargedWt)
@@ -4053,6 +4079,7 @@ export default function CreateOrderPanel() {
         } else if (row.packType === "NON-UNIFORM - GENERAL CARGO") {
           packDataGrouped['NON-UNIFORM - GENERAL CARGO'].push({
             nos: num(row.nos),
+            productId: row.productId || null,
             productName: row.productName || "",
             uom: row.uom || "MT",
             length: num(row.length),
@@ -4311,6 +4338,7 @@ export default function CreateOrderPanel() {
                     required={true}
                     displayField="name"
                     codeField="code"
+                    onOpen={fetchBranches}
                     inputRef={(el) => { branchRef.current = el; }}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
@@ -4339,6 +4367,7 @@ export default function CreateOrderPanel() {
               <select
                 ref={subCompanyRef}
                 value={top.subCompanyId || ''}
+                onFocus={fetchSubCompanies}
                 onChange={(e) => {
                   const subCompanyId = e.target.value;
                   const selected = subCompanies.find(sc => sc._id === subCompanyId);
@@ -4508,6 +4537,8 @@ export default function CreateOrderPanel() {
               plants={plants}
               branches={branches}
               locations={locations}
+              onRefreshPlants={fetchPlants}
+              onRefreshLocations={fetchLocations}
               pincodeAPI={pincodeAPI}
               pincodeInput={pincodeInput}
               showCityDropdown={showCityDropdown}
@@ -4574,6 +4605,10 @@ export default function CreateOrderPanel() {
                 uoms={uoms}
                 skuSizes={skuSizes}
                 items={items}
+                onRefreshItems={fetchItems}
+                onRefreshPkgTypes={fetchPkgTypes}
+                onRefreshUOMs={fetchUOMs}
+                onRefreshSKUSizes={fetchSKUSizes}
                 packInputRefs={packInputRefs}
                 focusNextPackField={focusNextPackField}
                 focusPrevPackField={focusPrevPackField}
@@ -4662,6 +4697,7 @@ function SearchableDropdown({
   codeField = 'code',
   disabled = false,
   inputRef,
+  onOpen,
   onKeyDown
 }) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -4723,6 +4759,7 @@ function SearchableDropdown({
   };
 
   const handleInputFocus = () => {
+    onOpen?.();
     if (!showDropdown && ref.current) {
       setFilteredItems(items);
       
@@ -4841,6 +4878,8 @@ function PlantGridTable({
   plants,
   branches,
   locations,
+  onRefreshPlants,
+  onRefreshLocations,
   pincodeAPI,
   pincodeInput,
   showCityDropdown,
@@ -5052,6 +5091,7 @@ function PlantGridTable({
                       required={true}
                       displayField="name"
                       codeField="code"
+                      onOpen={onRefreshPlants}
                       inputRef={(el) => { plantCodeRefs.current[r._id] = el; }}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
@@ -5154,6 +5194,7 @@ function PlantGridTable({
                         placeholder="Search location..."
                         displayField="name"
                         codeField="code"
+                        onOpen={onRefreshLocations}
                         renderItem={(item) => (
                           <div>
                             <div className="font-medium text-slate-800 text-sm">
@@ -5541,6 +5582,7 @@ function TableSearchableDropdown({
   loading = false,
   renderItem = null,
   inputRef,
+  onOpen,
   onKeyDown
 }) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -5602,6 +5644,7 @@ function TableSearchableDropdown({
   };
 
   const handleInputFocus = () => {
+    onOpen?.();
     if (!showDropdown && ref.current) {
       setFilteredItems(items);
       
@@ -5733,6 +5776,10 @@ function PackTypeTable({
   uoms = [], 
   skuSizes = [], 
   items = [],
+  onRefreshItems,
+  onRefreshPkgTypes,
+  onRefreshUOMs,
+  onRefreshSKUSizes,
   packInputRefs,
   focusNextPackField,
   focusPrevPackField,
@@ -5750,15 +5797,31 @@ function PackTypeTable({
   const itemInputRefs = useRef({});
   const itemDropdownRef = useRef({});
 
-  // Update item search when rows change
+  // Keep each row's search result in sync with its current Item Master data.
   useEffect(() => {
-    rows.forEach(row => {
-      if (row.productName && !itemSearchQuery[row._id]) {
-        setItemSearchQuery(prev => ({ ...prev, [row._id]: row.productName }));
-      }
-      if (!filteredItems[row._id]) {
-        setFilteredItems(prev => ({ ...prev, [row._id]: items }));
-      }
+    setItemSearchQuery(prev => {
+      const next = { ...prev };
+      rows.forEach(row => {
+        const selectedItem = items.find((item) => item._id === row.productId);
+        const displayName = selectedItem?.itemName || row.productName;
+        if (displayName && (!next[row._id] || row.productId)) next[row._id] = displayName;
+      });
+      return next;
+    });
+
+    setFilteredItems(prev => {
+      const next = {};
+      rows.forEach(row => {
+        const query = itemSearchQuery[row._id] || row.productName || "";
+        const searchLower = query.toLowerCase();
+        next[row._id] = !searchLower
+          ? items
+          : items.filter(item =>
+              item.itemName?.toLowerCase().includes(searchLower) ||
+              item.itemCode?.toLowerCase().includes(searchLower)
+            );
+      });
+      return next;
     });
   }, [rows, items]);
 
@@ -5825,19 +5888,24 @@ function PackTypeTable({
   // Handle item search
   const handleItemSearch = (rowId, query) => {
     setItemSearchQuery(prev => ({ ...prev, [rowId]: query }));
+    // Free text is only a search term.  A row is linked only after a user
+    // chooses an Item Master record from the result list.
+    onChange(rowId, 'productId', '');
+    onChange(rowId, 'productName', '');
     
     if (!query.trim()) {
       setFilteredItems(prev => ({ ...prev, [rowId]: items }));
     } else {
       const filtered = items.filter(item =>
-        item.itemName.toLowerCase().includes(query.toLowerCase()) ||
-        (item.itemCode && item.itemCode.toLowerCase().includes(query.toLowerCase()))
+        item.itemName?.toLowerCase().includes(query.toLowerCase()) ||
+        item.itemCode?.toLowerCase().includes(query.toLowerCase())
       );
       setFilteredItems(prev => ({ ...prev, [rowId]: filtered }));
     }
   };
 
   const handleSelectItem = (rowId, item) => {
+    onChange(rowId, 'productId', item._id);
     onChange(rowId, 'productName', item.itemName);
     setItemSearchQuery(prev => ({ ...prev, [rowId]: item.itemName }));
     setShowItemDropdown(prev => ({ ...prev, [rowId]: false }));
@@ -5845,6 +5913,7 @@ function PackTypeTable({
   };
 
   const handleItemInputFocus = (rowId, event) => {
+    onRefreshItems?.();
     if (!showItemDropdown[rowId]) {
       setFilteredItems(prev => ({ ...prev, [rowId]: items }));
       
@@ -5903,6 +5972,15 @@ function PackTypeTable({
     };
   }, [activeItemRowId]);
 
+  const allColumns = PACK_TYPES.reduce((columns, packType) => {
+    getColumnsForRow(packType.key).forEach((column) => {
+      if (!columns.some((existing) => existing.key === column.key)) {
+        columns.push(column);
+      }
+    });
+    return columns;
+  }, []);
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -5927,7 +6005,7 @@ function PackTypeTable({
             <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 text-center bg-yellow-400">
               Pack Type
             </th>
-            {rows.length > 0 && getColumnsForRow(rows[0].packType).map((c) => (
+            {allColumns.map((c) => (
               <th
                 key={c.key}
                 className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 text-center"
@@ -5961,7 +6039,11 @@ function PackTypeTable({
                      "Non-uniform"}
                   </td>
                   
-                  {cols.map((c) => {
+                  {allColumns.map((headerColumn) => {
+                    const c = cols.find((column) => column.key === headerColumn.key);
+                    if (!c) {
+                      return <td key={headerColumn.key} className="border border-yellow-300 px-2 py-2 bg-slate-50" />;
+                    }
                     // Handle WT UOM field - always show MT as readonly
                     if (c.key === "wtUom") {
                       return (
@@ -5991,7 +6073,7 @@ function PackTypeTable({
                         <td key={c.key} className="border border-yellow-300 px-2 py-2">
                           <input
                             type="text"
-                            value={r[c.key] || ""}
+                            value={r[c.key] ?? ""}
                             readOnly
                             className="w-full rounded-lg border border-slate-200 bg-slate-100 px-2 py-1.5 text-sm text-slate-700 font-medium"
                             placeholder="Auto"
@@ -6019,7 +6101,8 @@ function PackTypeTable({
                               }
                               packInputRefs.current[r._id][c.key] = el;
                             }}
-                            value={r[c.key] || ""}
+                            value={r[c.key] ?? ""}
+                            onFocus={onRefreshPkgTypes}
                             onChange={(e) => handleChange(r._id, c.key, e.target.value)}
                             className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
                             onKeyDown={(e) => {
@@ -6047,7 +6130,8 @@ function PackTypeTable({
                               }
                               packInputRefs.current[r._id][c.key] = el;
                             }}
-                            value={r[c.key] || ""}
+                            value={r[c.key] ?? ""}
+                            onFocus={onRefreshUOMs}
                             onChange={(e) => handleChange(r._id, c.key, e.target.value)}
                             className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
                             onKeyDown={(e) => {
@@ -6075,7 +6159,8 @@ function PackTypeTable({
                               }
                               packInputRefs.current[r._id][c.key] = el;
                             }}
-                            value={r[c.key] || ""}
+                            value={r[c.key] ?? ""}
+                            onFocus={onRefreshSKUSizes}
                             onChange={(e) => handleChange(r._id, c.key, e.target.value)}
                             className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
                             onKeyDown={(e) => {
@@ -6107,7 +6192,7 @@ function PackTypeTable({
                                   packInputRefs.current[r._id][c.key] = el;
                                 }}
                                 type="text"
-                                value={itemSearchQuery[r._id] || r[c.key] || ""}
+                                value={itemSearchQuery[r._id] ?? r[c.key] ?? ""}
                                 onChange={(e) => handleItemSearch(r._id, e.target.value)}
                                 onFocus={(e) => handleItemInputFocus(r._id, e)}
                                 onBlur={() => handleItemInputBlur(r._id)}
@@ -6179,7 +6264,7 @@ function PackTypeTable({
                               }
                               packInputRefs.current[r._id][c.key] = el;
                             }}
-                            value={r[c.key] || ""}
+                            value={r[c.key] ?? ""}
                             onChange={(e) => handleChange(r._id, c.key, e.target.value)}
                             className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
                             onKeyDown={(e) => {
@@ -6208,7 +6293,7 @@ function PackTypeTable({
                               packInputRefs.current[r._id][c.key] = el;
                             }}
                             type={c.type || "text"}
-                            value={r[c.key] || ""}
+                            value={r[c.key] ?? ""}
                             readOnly={c.readOnly}
                             onChange={(e) => handleChange(r._id, c.key, e.target.value)}
                             className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${

@@ -1058,6 +1058,7 @@ const orderPanelSchema = new mongoose.Schema({
       uom: String,
       skuSize: String,
       packWeight: Number,
+      productId: { type: mongoose.Schema.Types.ObjectId, ref: "Item", default: null },
       productName: String,
       wtLtr: Number,
       actualWt: Number,
@@ -1074,6 +1075,7 @@ const orderPanelSchema = new mongoose.Schema({
       uom: String,
       skuSize: String,
       packWeight: Number,
+      productId: { type: mongoose.Schema.Types.ObjectId, ref: "Item", default: null },
       productName: String,
       wtLtr: Number,
       actualWt: Number,
@@ -1086,6 +1088,7 @@ const orderPanelSchema = new mongoose.Schema({
         default: () => new mongoose.Types.ObjectId()
       },
       uom: String,
+      productId: { type: mongoose.Schema.Types.ObjectId, ref: "Item", default: null },
       productName: String,
       actualWt: Number,
       chargedWt: Number
@@ -1099,6 +1102,7 @@ const orderPanelSchema = new mongoose.Schema({
         type: Number,
         default: 0
       },
+      productId: { type: mongoose.Schema.Types.ObjectId, ref: "Item", default: null },
       productName: {
         type: String,
         default: ''

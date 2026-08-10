@@ -1033,6 +1033,7 @@ export const POST = withAuth(async (req, context, user) => {
           uom: item.uom || '',
           skuSize: item.skuSize || '',
           packWeight: num(item.packWeight),
+          productId: mongoose.Types.ObjectId.isValid(item.productId) ? item.productId : null,
           productName: item.productName || '',
           wtLtr: num(item.wtLtr),
           actualWt: num(item.actualWt),
@@ -1049,6 +1050,7 @@ export const POST = withAuth(async (req, context, user) => {
           uom: item.uom || '',
           skuSize: item.skuSize || '',
           packWeight: num(item.packWeight),
+          productId: mongoose.Types.ObjectId.isValid(item.productId) ? item.productId : null,
           productName: item.productName || '',
           wtLtr: num(item.wtLtr),
           actualWt: num(item.actualWt),
@@ -1061,6 +1063,7 @@ export const POST = withAuth(async (req, context, user) => {
         result['LOOSE - CARGO'] = packData['LOOSE - CARGO'].map(item => ({
           _id: new mongoose.Types.ObjectId(),
           uom: item.uom || '',
+          productId: mongoose.Types.ObjectId.isValid(item.productId) ? item.productId : null,
           productName: item.productName || '',
           actualWt: num(item.actualWt),
           chargedWt: num(item.chargedWt)
@@ -1071,6 +1074,7 @@ export const POST = withAuth(async (req, context, user) => {
         result['NON-UNIFORM - GENERAL CARGO'] = packData['NON-UNIFORM - GENERAL CARGO'].map(item => ({
           _id: new mongoose.Types.ObjectId(),
           nos: num(item.nos),
+          productId: mongoose.Types.ObjectId.isValid(item.productId) ? item.productId : null,
           productName: item.productName || '',
           uom: item.uom || 'MT',
           length: num(item.length),

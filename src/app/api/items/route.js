@@ -58,6 +58,7 @@ export async function GET(req) {
   try {
     const { searchParams } = new URL(req.url);
     const posOnly = searchParams.get("posOnly") === "true";
+    const activeOnly = searchParams.get("activeOnly") === "true";
 
     // ✅ Old logic as it is
     const query = { companyId: user.companyId };
@@ -68,6 +69,11 @@ export async function GET(req) {
       query.active = true;
       query.status = "active";
       query["posConfig.showInPOS"] = { $ne: false };
+    }
+
+    if (activeOnly) {
+      query.active = true;
+      query.status = "active";
     }
 
     const items = await Item.find(query).sort({ createdAt: -1 });

@@ -905,6 +905,7 @@ import {
 import { HiOutlineDocumentText } from "react-icons/hi";
 import ItemGroupSearch from "./ItemGroupSearch";
 import { toast } from "react-toastify";
+import { publishMasterDataChanged } from "@/utils/masterDataEvents";
 
 // ── 6 Steps ──
 const STEPS = [
@@ -1097,11 +1098,11 @@ export default function ItemManagement() {
     try {
       if (id._id) {
         const res = await axios.put(`/api/items/${id._id}`, payload, { headers: { Authorization: `Bearer ${token}` } });
-        if (res.data.success) { setItems(p => p.map(it => it._id === id._id ? res.data.data : it)); toast.success("Item updated!"); }
+        if (res.data.success) { setItems(p => p.map(it => it._id === id._id ? res.data.data : it)); publishMasterDataChanged("items"); toast.success("Item updated!"); }
         else toast.error(res.data.message || "Update failed");
       } else {
         const res = await axios.post("/api/items", payload, { headers: { Authorization: `Bearer ${token}` } });
-        if (res.data.success) { setItems(p => [...p, res.data.data]); toast.success("Item created!"); }
+        if (res.data.success) { setItems(p => [...p, res.data.data]); publishMasterDataChanged("items"); toast.success("Item created!"); }
         else toast.error(res.data.message || "Create failed");
       }
       reset();
@@ -1137,6 +1138,7 @@ export default function ItemManagement() {
       const token = localStorage.getItem("token");
       await axios.delete(`/api/items/${itemId}`, { headers: { Authorization: `Bearer ${token}` } });
       setItems(p => p.filter(it => it._id !== itemId));
+      publishMasterDataChanged("items");
       toast.success("Item deleted");
     } catch { toast.error("Delete failed"); }
   };
@@ -1169,6 +1171,7 @@ export default function ItemManagement() {
         toast.success(`${cr} created · ${up} updated · ${sk} skipped`);
         results.filter(r => r.warnings?.length).forEach(r => toast.warn(`Row ${r.row}: ${r.warnings.join(", ")}`));
         fetchItems();
+        if (cr || up) publishMasterDataChanged("items");
       } else toast.error(res.data.message || "Bulk upload failed");
     } catch { toast.error("Invalid CSV or server error"); }
     finally { setUploading(false); e.target.value = ""; }
