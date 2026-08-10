@@ -7028,16 +7028,16 @@ export default function EditVehicleNegotiation() {
     mobile: "",
     purchaseType: "",
     paymentTerms: "",
+    part3Status: "Pending",
     approvalStatus: "",
     remarks: "",
     memoStatus: "Pending",
     memoFile: null
   });
 
-  // Compute editability based on approval status from the approval page
-  // All approval fields are READONLY in edit page
-  const isPart1Approved = approval.approvalStatus === 'Approved';
+  // Vehicle details are released only after the separate Part 3 approval.
   const isPart2Approved = approval.approvalStatus === 'Approved';
+  const isVehicleDetailsApproved = approval.part3Status === 'Approved';
 
   // Fetch data from APIs
   useEffect(() => {
@@ -7251,6 +7251,7 @@ export default function EditVehicleNegotiation() {
           mobile: vn.approval.mobile || "",
           purchaseType: vn.approval.purchaseType || "",
           paymentTerms: vn.approval.paymentTerms || "",
+          part3Status: vn.approval.part3Status || "Pending",
           approvalStatus: vn.approval.approvalStatus || "",
           remarks: vn.approval.remarks || "",
           memoStatus: vn.approval.memoStatus || "Pending",
@@ -8692,7 +8693,7 @@ export default function EditVehicleNegotiation() {
                 onChange={(e) => setApproval((p) => ({ ...p, vehicleNo: e.target.value }))} 
                 className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200" 
                 placeholder="Enter vehicle number..." 
-                readOnly={!isPart2Approved}
+                readOnly={!isVehicleDetailsApproved}
               />
             </div>
             <Input 
@@ -8700,7 +8701,7 @@ export default function EditVehicleNegotiation() {
               label="Mobile" 
               value={approval.mobile} 
               onChange={(v) => setApproval((p) => ({ ...p, mobile: v }))} 
-              readOnly={!isPart2Approved} 
+              readOnly={!isVehicleDetailsApproved}
             />
           </div>
 
@@ -8711,7 +8712,7 @@ export default function EditVehicleNegotiation() {
               value={approval.purchaseType} 
               onChange={(v) => setApproval((p) => ({ ...p, purchaseType: v }))} 
               options={purchaseTypes.length > 0 ? purchaseTypes : PURCHASE_TYPES}
-              readOnly={!isPart2Approved} 
+              readOnly={!isVehicleDetailsApproved}
             />
             <Select 
               col="col-span-12 md:col-span-4" 
@@ -8719,27 +8720,7 @@ export default function EditVehicleNegotiation() {
               value={approval.paymentTerms} 
               onChange={(v) => setApproval((p) => ({ ...p, paymentTerms: v }))} 
               options={paymentTerms.length > 0 ? paymentTerms : PAYMENT_TERMS}
-              readOnly={!isPart2Approved} 
-            />
-            {/* APPROVAL - READONLY */}
-            <Select 
-              col="col-span-12 md:col-span-4" 
-              label="Approval" 
-              value={approval.approvalStatus} 
-              options={APPROVALS} 
-              readOnly={true} 
-            />
-          </div>
-
-          <div>
-            <div className="text-sm font-extrabold text-slate-900 mb-3">Remarks</div>
-            <textarea
-              value={approval.remarks}
-              onChange={(e) => setApproval((p) => ({ ...p, remarks: e.target.value }))}
-              className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-              rows={2}
-              placeholder="Enter approval remarks..."
-              readOnly={!isPart2Approved}
+              readOnly={!isVehicleDetailsApproved}
             />
           </div>
         </Card>

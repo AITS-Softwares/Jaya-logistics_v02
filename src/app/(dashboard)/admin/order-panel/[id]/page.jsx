@@ -4093,6 +4093,7 @@ function SearchableDropdown({
   const [filteredItems, setFilteredItems] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const dropdownRef = useRef(null);
   const inputRef = useRef(null);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
@@ -4120,6 +4121,7 @@ function SearchableDropdown({
 
   const handleSearch = (query) => {
     setSearchQuery(query);
+    setHighlightedIndex(-1);
     
     if (!query.trim()) {
       setFilteredItems(items);
@@ -4142,6 +4144,19 @@ function SearchableDropdown({
     setSearchQuery(getDisplayValue(item));
     setShowDropdown(false);
     onSelect?.(item);
+  };
+
+  const handleKeyDown = (event) => {
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      if (!showDropdown) handleInputFocus();
+      if (filteredItems.length) setHighlightedIndex(index => event.key === 'ArrowDown' ? (index + 1) % filteredItems.length : (index <= 0 ? filteredItems.length - 1 : index - 1));
+    } else if (event.key === 'Enter' && showDropdown && filteredItems.length) {
+      event.preventDefault();
+      handleSelectItem(filteredItems[highlightedIndex >= 0 ? highlightedIndex : 0]);
+    } else if (event.key === 'Escape') {
+      setShowDropdown(false);
+    }
   };
 
   const handleInputFocus = () => {
@@ -4201,6 +4216,7 @@ function SearchableDropdown({
         onChange={(e) => handleSearch(e.target.value)}
         onFocus={handleInputFocus}
         onBlur={handleInputBlur}
+        onKeyDown={handleKeyDown}
         className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 disabled:opacity-50"
         placeholder={placeholder}
         required={required}
@@ -4226,7 +4242,7 @@ function SearchableDropdown({
                   handleSelectItem(item);
                 }}
                 className={`p-3 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors ${
-                  selectedItem?._id === item._id ? 'bg-sky-50' : ''
+                  selectedItem?._id === item._id || highlightedIndex === filteredItems.indexOf(item) ? 'bg-sky-100' : ''
                 }`}
               >
                 <div className="font-medium text-slate-800">

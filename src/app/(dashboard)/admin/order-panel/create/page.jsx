@@ -3384,6 +3384,7 @@ export default function CreateOrderPanel() {
   const [packRows, setPackRows] = useState([
     { ...defaultRow("PALLETIZATION"), packType: "PALLETIZATION" }
   ]);
+  const [hasReplacedInitialPackRow, setHasReplacedInitialPackRow] = useState(false);
 
   /** =========================
    * FETCH DATA FROM APIs
@@ -3883,6 +3884,16 @@ export default function CreateOrderPanel() {
     }, 100);
   };
 
+  // The initial palletization row is only a starter row.  The first non-default
+  // pack choice replaces it; every later choice is added explicitly as a new row.
+  const handlePackTypeChange = (packType) => {
+    setActivePack(packType);
+    if (!hasReplacedInitialPackRow && packType !== "PALLETIZATION") {
+      setPackRows([{ ...defaultRow(packType), packType }]);
+      setHasReplacedInitialPackRow(true);
+    }
+  };
+
   const removeRow = (id) => {
     if (packRows.length > 1) {
       setPackRows((prev) => prev.filter((r) => r._id !== id));
@@ -4211,6 +4222,7 @@ export default function CreateOrderPanel() {
     setPlantRows([defaultPlantRow()]);
     
     setPackRows([{ ...defaultRow("PALLETIZATION"), packType: "PALLETIZATION" }]);
+    setHasReplacedInitialPackRow(false);
     
     setSelectedCustomer(null);
     setCustomerSearchQuery("");
@@ -4576,7 +4588,7 @@ export default function CreateOrderPanel() {
                   <div className="flex items-center gap-2">
                     <select
                       value={activePack}
-                      onChange={(e) => setActivePack(e.target.value)}
+                      onChange={(e) => handlePackTypeChange(e.target.value)}
                       className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
                     >
                       {PACK_TYPES.map((p) => (
@@ -4704,6 +4716,7 @@ function SearchableDropdown({
   const [filteredItems, setFilteredItems] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0, direction: 'down' });
   const ref = useRef(null);
   const dropdownRef = useRef(null);
@@ -4731,6 +4744,7 @@ function SearchableDropdown({
 
   const handleSearch = (query) => {
     setSearchQuery(query);
+    setHighlightedIndex(-1);
     
     if (!query.trim()) {
       setFilteredItems(items);
@@ -4756,6 +4770,30 @@ function SearchableDropdown({
     setSearchQuery(getDisplayValue(item));
     setShowDropdown(false);
     onSelect?.(item);
+  };
+
+  const handleKeyboardNavigation = (event) => {
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      if (!showDropdown) handleInputFocus();
+      if (filteredItems.length) {
+        setHighlightedIndex((index) => event.key === 'ArrowDown'
+          ? (index + 1) % filteredItems.length
+          : (index <= 0 ? filteredItems.length - 1 : index - 1));
+      }
+      return;
+    }
+    if (event.key === 'Enter' && showDropdown && filteredItems.length) {
+      event.preventDefault();
+      handleSelectItem(filteredItems[highlightedIndex >= 0 ? highlightedIndex : 0]);
+      return;
+    }
+    if (event.key === 'Escape' && showDropdown) {
+      event.preventDefault();
+      setShowDropdown(false);
+      return;
+    }
+    onKeyDown?.(event);
   };
 
   const handleInputFocus = () => {
@@ -4808,7 +4846,7 @@ function SearchableDropdown({
           onChange={(e) => handleSearch(e.target.value)}
           onFocus={handleInputFocus}
           onBlur={handleInputBlur}
-          onKeyDown={onKeyDown}
+          onKeyDown={handleKeyboardNavigation}
           className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 disabled:opacity-50"
           placeholder={placeholder}
           required={required}
@@ -4838,7 +4876,7 @@ function SearchableDropdown({
                   handleSelectItem(item);
                 }}
                 className={`p-2 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors ${
-                  selectedItem?._id === item._id ? 'bg-sky-50' : ''
+                  selectedItem?._id === item._id || highlightedIndex === filteredItems.indexOf(item) ? 'bg-sky-100' : ''
                 }`}
               >
                 <div className="font-medium text-slate-800 text-sm">
@@ -5589,6 +5627,7 @@ function TableSearchableDropdown({
   const [filteredItems, setFilteredItems] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0, direction: 'down' });
   const ref = useRef(null);
   const dropdownRef = useRef(null);
@@ -5616,6 +5655,7 @@ function TableSearchableDropdown({
 
   const handleSearch = (query) => {
     setSearchQuery(query);
+    setHighlightedIndex(-1);
     
     if (!query.trim()) {
       setFilteredItems(items);
@@ -5641,6 +5681,30 @@ function TableSearchableDropdown({
     setSearchQuery(getDisplayValue(item));
     setShowDropdown(false);
     onSelect?.(item);
+  };
+
+  const handleKeyboardNavigation = (event) => {
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      if (!showDropdown) handleInputFocus();
+      if (filteredItems.length) {
+        setHighlightedIndex((index) => event.key === 'ArrowDown'
+          ? (index + 1) % filteredItems.length
+          : (index <= 0 ? filteredItems.length - 1 : index - 1));
+      }
+      return;
+    }
+    if (event.key === 'Enter' && showDropdown && filteredItems.length) {
+      event.preventDefault();
+      handleSelectItem(filteredItems[highlightedIndex >= 0 ? highlightedIndex : 0]);
+      return;
+    }
+    if (event.key === 'Escape' && showDropdown) {
+      event.preventDefault();
+      setShowDropdown(false);
+      return;
+    }
+    onKeyDown?.(event);
   };
 
   const handleInputFocus = () => {
@@ -5693,7 +5757,7 @@ function TableSearchableDropdown({
           onChange={(e) => handleSearch(e.target.value)}
           onFocus={handleInputFocus}
           onBlur={handleInputBlur}
-          onKeyDown={onKeyDown}
+          onKeyDown={handleKeyboardNavigation}
           className="w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 disabled:opacity-50"
           placeholder={placeholder}
           required={required}
@@ -5733,7 +5797,7 @@ function TableSearchableDropdown({
                   handleSelectItem(item);
                 }}
                 className={`p-2 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors ${
-                  selectedItem?._id === item._id ? 'bg-sky-50' : ''
+                  selectedItem?._id === item._id || highlightedIndex === filteredItems.indexOf(item) ? 'bg-sky-100' : ''
                 }`}
               >
                 {renderItem ? (
@@ -5790,6 +5854,7 @@ function PackTypeTable({
 }) {
   
   const [showItemDropdown, setShowItemDropdown] = useState({});
+  const [itemHighlightedIndex, setItemHighlightedIndex] = useState({});
   const [itemSearchQuery, setItemSearchQuery] = useState({});
   const [filteredItems, setFilteredItems] = useState({});
   const [itemDropdownPosition, setItemDropdownPosition] = useState({ top: 0, left: 0, width: 0, direction: 'down' });
@@ -5888,6 +5953,7 @@ function PackTypeTable({
   // Handle item search
   const handleItemSearch = (rowId, query) => {
     setItemSearchQuery(prev => ({ ...prev, [rowId]: query }));
+    setItemHighlightedIndex(prev => ({ ...prev, [rowId]: -1 }));
     // Free text is only a search term.  A row is linked only after a user
     // chooses an Item Master record from the result list.
     onChange(rowId, 'productId', '');
@@ -6024,7 +6090,7 @@ function PackTypeTable({
                         {c.readOnly && <span className="ml-1 text-xs text-blue-600">*Auto</span>}
                       </th>
                     ))}
-                    <th className="border border-yellow-300 px-2 py-2 text-center text-xs font-extrabold text-slate-900">
+                    <th className="sticky right-0 z-10 border border-yellow-300 bg-yellow-50 px-2 py-2 text-center text-xs font-extrabold text-slate-900">
                       Actions
                     </th>
                   </tr>
@@ -6193,11 +6259,23 @@ function PackTypeTable({
                                 placeholder="Search product..."
                                 autoComplete="off"
                                 onKeyDown={(e) => {
-                                  if (e.key === 'Enter') {
+                                  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
                                     e.preventDefault();
-                                    // If dropdown is open, select first item
-                                    if (showItemDropdown[r._id] && filteredItems[r._id] && filteredItems[r._id].length > 0) {
-                                      handleSelectItem(r._id, filteredItems[r._id][0]);
+                                    const options = filteredItems[r._id] || items;
+                                    if (!showItemDropdown[r._id]) handleItemInputFocus(r._id, e);
+                                    if (options.length) {
+                                      setItemHighlightedIndex(prev => {
+                                        const index = prev[r._id] ?? -1;
+                                        return { ...prev, [r._id]: e.key === 'ArrowDown'
+                                          ? (index + 1) % options.length
+                                          : (index <= 0 ? options.length - 1 : index - 1) };
+                                      });
+                                    }
+                                  } else if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    const options = filteredItems[r._id] || items;
+                                    if (showItemDropdown[r._id] && options.length > 0) {
+                                      handleSelectItem(r._id, options[itemHighlightedIndex[r._id] >= 0 ? itemHighlightedIndex[r._id] : 0]);
                                     } else {
                                       focusNextPackField(r._id, c.key);
                                     }
@@ -6230,7 +6308,7 @@ function PackTypeTable({
                                           e.preventDefault();
                                           handleSelectItem(r._id, item);
                                         }}
-                                        className="px-3 py-2 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors"
+                                        className={`px-3 py-2 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors ${itemHighlightedIndex[r._id] === (filteredItems[r._id] || items).indexOf(item) ? 'bg-sky-100' : ''}`}
                                       >
                                         <div className="font-medium text-slate-800 text-sm">
                                           {item.itemName}
@@ -6310,7 +6388,7 @@ function PackTypeTable({
                       </td>
                     );
                   })}
-                  <td className="border border-yellow-300 px-2 py-2">
+                  <td className="sticky right-0 z-10 border border-yellow-300 bg-white px-2 py-2">
                     <div className="flex gap-1 justify-center">
                       <button
                         onClick={() => onDuplicate(r._id)}

@@ -4512,23 +4512,23 @@ export default function ApproveVehicleNegotiation() {
             </div>
           </div>
 
+          <div className="mb-4">
+            <label className="text-xs font-bold text-slate-600">Approval Remarks</label>
+            <textarea
+              value={part3Approval.remarks}
+              onChange={(e) => setPart3Approval(prev => ({ ...prev, remarks: e.target.value }))}
+              className="mt-1 w-full rounded-xl border border-slate-200 bg-white p-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+              rows={2}
+              placeholder="Enter remarks..."
+            />
+          </div>
+
           <div className="grid grid-cols-12 gap-3 mb-4">
             <div className="col-span-12 md:col-span-4">
               <label className="text-xs font-bold text-slate-600">Vehicle Number</label>
               <Input value={approval.vehicleNo} readOnly={true} />
             </div>
             <Input col="col-span-12 md:col-span-4" label="Mobile" value={approval.mobile} readOnly={true} />
-            <div className="col-span-12 md:col-span-4">
-              <label className="text-xs font-bold text-slate-600">Approval Remarks</label>
-              <textarea
-                value={part3Approval.remarks}
-                onChange={(e) => setPart3Approval(prev => ({ ...prev, remarks: e.target.value }))}
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-white p-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-                rows={1}
-                placeholder="Enter remarks..."
-                readOnly={false}
-              />
-            </div>
           </div>
 
           <div className="grid grid-cols-12 gap-3 mb-4">

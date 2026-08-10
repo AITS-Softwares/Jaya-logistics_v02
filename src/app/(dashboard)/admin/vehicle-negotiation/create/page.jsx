@@ -3021,19 +3021,6 @@ const handleSupplierSelect = (supplier) => {
               options={paymentTerms.length > 0 ? paymentTerms : PAYMENT_TERMS}
               readOnly={true} 
             />
-            <Select col="col-span-12 md:col-span-4" label="Approval" value={approval.approvalStatus} onChange={(v) => setApproval((p) => ({ ...p, approvalStatus: v }))} options={APPROVALS} readOnly={true} />
-          </div>
-
-          <div>
-            <div className="text-sm font-extrabold text-slate-900 mb-3">Remarks</div>
-            <textarea
-              value={approval.remarks}
-              onChange={(e) => setApproval((p) => ({ ...p, remarks: e.target.value }))}
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm outline-none cursor-not-allowed"
-              rows={2}
-              placeholder="Enter approval remarks..."
-              readOnly={true}
-            />
           </div>
         </Card>
 
