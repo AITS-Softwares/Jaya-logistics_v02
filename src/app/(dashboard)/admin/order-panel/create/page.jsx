@@ -5972,15 +5972,6 @@ function PackTypeTable({
     };
   }, [activeItemRowId]);
 
-  const allColumns = PACK_TYPES.reduce((columns, packType) => {
-    getColumnsForRow(packType.key).forEach((column) => {
-      if (!columns.some((existing) => existing.key === column.key)) {
-        columns.push(column);
-      }
-    });
-    return columns;
-  }, []);
-
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -6005,17 +5996,8 @@ function PackTypeTable({
             <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 text-center bg-yellow-400">
               Pack Type
             </th>
-            {allColumns.map((c) => (
-              <th
-                key={c.key}
-                className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 text-center"
-              >
-                {c.label}
-                {c.readOnly && <span className="ml-1 text-xs text-blue-600">*Auto</span>}
-              </th>
-            ))}
-            <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 text-center">
-              Actions
+            <th colSpan={100} className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 text-left">
+              Packing Details
             </th>
           </tr>
         </thead>
@@ -6031,7 +6013,22 @@ function PackTypeTable({
               }
               
               return (
-                <tr key={r._id} className="hover:bg-yellow-50 even:bg-slate-50">
+                <React.Fragment key={r._id}>
+                  <tr className="bg-yellow-50">
+                    <th className="border border-yellow-300 px-2 py-2 text-center text-xs font-extrabold text-slate-900">
+                      Pack Type
+                    </th>
+                    {cols.map((c) => (
+                      <th key={c.key} className="border border-yellow-300 px-2 py-2 text-center text-xs font-extrabold text-slate-900">
+                        {c.label}
+                        {c.readOnly && <span className="ml-1 text-xs text-blue-600">*Auto</span>}
+                      </th>
+                    ))}
+                    <th className="border border-yellow-300 px-2 py-2 text-center text-xs font-extrabold text-slate-900">
+                      Actions
+                    </th>
+                  </tr>
+                  <tr className="hover:bg-yellow-50 even:bg-slate-50">
                   <td className="border border-yellow-300 px-2 py-2 text-center font-semibold bg-yellow-50 text-xs">
                     {r.packType === "PALLETIZATION" ? "Palletization" :
                      r.packType === "UNIFORM - BAGS/BOXES" ? "Uniform" :
@@ -6039,11 +6036,7 @@ function PackTypeTable({
                      "Non-uniform"}
                   </td>
                   
-                  {allColumns.map((headerColumn) => {
-                    const c = cols.find((column) => column.key === headerColumn.key);
-                    if (!c) {
-                      return <td key={headerColumn.key} className="border border-yellow-300 px-2 py-2 bg-slate-50" />;
-                    }
+                  {cols.map((c) => {
                     // Handle WT UOM field - always show MT as readonly
                     if (c.key === "wtUom") {
                       return (
@@ -6333,7 +6326,8 @@ function PackTypeTable({
                       </button>
                     </div>
                   </td>
-                </tr>
+                  </tr>
+                </React.Fragment>
               );
             })
           ) : (
