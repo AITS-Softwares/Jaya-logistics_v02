@@ -1,0 +1,42 @@
+import { NextResponse } from 'next/server';
+import mongoose from 'mongoose';
+import dbConnect from '@/lib/db';
+import VehicleNegotiation from '@/app/api/vehicle-negotiation/VehicleNegotiation';
+import { getTokenFromHeader, verifyJWT } from '@/lib/auth';
+
+function authorize(req) {
+  const token = getTokenFromHeader(req);
+  if (!token) return { error: 'Authentication required.', status: 401 };
+  try {
+    const user = verifyJWT(token);
+    if (!user) return { error: 'Invalid session.', status: 401 };
+    if (user.type === 'company' || user.roles?.includes('Admin')) return { user };
+    const module = user.modules?.['Vehicle Negotiation'];
+    if (!module?.selected || module.permissions?.edit !== true) return { error: 'Vehicle Negotiation edit permission is required.', status: 403 };
+    return { user };
+  } catch { return { error: 'Invalid session.', status: 401 }; }
+}
+
+export async function PATCH(req, { params }) {
+  const { id } = params;
+  if (!mongoose.Types.ObjectId.isValid(id)) return NextResponse.json({ success: false, message: 'Invalid record id.' }, { status: 400 });
+  const auth = authorize(req);
+  if (auth.error) return NextResponse.json({ success: false, message: auth.error }, { status: auth.status });
+  const body = await req.json();
+  await dbConnect();
+  const record = await VehicleNegotiation.findOne({ _id: id, companyId: auth.user.companyId || auth.user.id });
+  if (!record) return NextResponse.json({ success: false, message: 'Vehicle Negotiation not found.' }, { status: 404 });
+  if (!record.workflow?.part1Locked || record.approval?.part2Status !== 'Approved') {
+    return NextResponse.json({ success: false, message: 'Part 3 is locked until Part 1 is locked and Rate Target is approved.' }, { status: 409 });
+  }
+  const data = body.approval || {};
+  for (const key of ['vendorName', 'vendorId', 'vendorCode', 'vendorStatus', 'rateType', 'vehicleNo', 'vehicleId', 'vehicleData', 'mobile', 'purchaseType', 'paymentTerms', 'memoStatus', 'memoFile']) {
+    if (data[key] !== undefined) record.approval[key] = data[key];
+  }
+  if (data.finalPerMT !== undefined) record.approval.finalPerMT = Number(data.finalPerMT) || 0;
+  if (data.finalFix !== undefined) record.approval.finalFix = Number(data.finalFix) || 0;
+  record.workflow.audit = record.workflow.audit || [];
+  record.workflow.audit.push({ action: 'part3-saved', by: auth.user.id || null, at: new Date() });
+  await record.save();
+  return NextResponse.json({ success: true, data: record });
+}

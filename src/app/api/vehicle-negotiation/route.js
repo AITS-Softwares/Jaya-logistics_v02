@@ -3827,6 +3827,12 @@ export async function POST(req) {
       },
       companyId: user.companyId,
       createdBy: user.id,
+      workflow: {
+        part1Locked: body.lockPart1 === true,
+        part1LockedAt: body.lockPart1 === true ? new Date() : null,
+        part1LockedBy: body.lockPart1 === true ? user.id : null,
+        audit: body.lockPart1 === true ? [{ action: 'part1-locked', by: user.id, at: new Date() }] : []
+      },
       panelStatus: 'Draft'
     });
 
@@ -3980,6 +3986,13 @@ export async function PUT(req) {
         success: false, 
         message: "Vehicle negotiation not found" 
       }, { status: 404 });
+    }
+
+    if (vehicleNegotiation.workflow?.part1Locked && (body.header || body.selectedOrderPanels || body.orders || body.vendors || body.negotiation || body.voiceUrl !== undefined || body.voiceFileInfo)) {
+      return NextResponse.json({
+        success: false,
+        message: 'Part 1 is locked. Use the Rate Target workspace or Part 3 workflow as applicable.'
+      }, { status: 409 });
     }
 
     // ─── UPDATE HEADER FIELDS (requires 'edit' permission) ───

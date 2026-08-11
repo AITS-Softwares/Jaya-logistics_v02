@@ -1,0 +1,84 @@
+import { NextResponse } from 'next/server';
+import mongoose from 'mongoose';
+import dbConnect from '@/lib/db';
+import VehicleNegotiation from '@/app/api/vehicle-negotiation/VehicleNegotiation';
+import { getTokenFromHeader, verifyJWT } from '@/lib/auth';
+
+const MODULE = 'Rate Target (Vehicle Negotiation)';
+
+function authorize(req, action = 'view') {
+  const token = getTokenFromHeader(req);
+  if (!token) return { error: 'Authentication required.', status: 401 };
+  try {
+    const user = verifyJWT(token);
+    if (!user) return { error: 'Invalid session.', status: 401 };
+    if (user.type === 'company' || user.roles?.includes('Admin')) return { user };
+    const module = user.modules?.[MODULE];
+    if (!module?.selected || module.permissions?.[action] !== true) {
+      return { error: `You do not have ${action} access to Rate Target.`, status: 403 };
+    }
+    return { user };
+  } catch {
+    return { error: 'Invalid session.', status: 401 };
+  }
+}
+
+function recordQuery(id, user) {
+  return { _id: id, companyId: user.companyId || user.id };
+}
+
+function addAudit(record, action, user) {
+  record.workflow.audit.push({ action, by: user.id || null, at: new Date() });
+}
+
+export async function GET(req, { params }) {
+  const auth = authorize(req);
+  if (auth.error) return NextResponse.json({ success: false, message: auth.error }, { status: auth.status });
+  const { id } = params;
+  if (!mongoose.Types.ObjectId.isValid(id)) return NextResponse.json({ success: false, message: 'Invalid record id.' }, { status: 400 });
+
+  await dbConnect();
+  const record = await VehicleNegotiation.findOne(recordQuery(id, auth.user)).lean();
+  if (!record) return NextResponse.json({ success: false, message: 'Vehicle Negotiation not found.' }, { status: 404 });
+  if (!record.workflow?.part1Locked) return NextResponse.json({ success: false, message: 'Part 1 must be locked before Rate Target can be accessed.' }, { status: 409 });
+  return NextResponse.json({ success: true, data: record });
+}
+
+export async function PUT(req, { params }) {
+  const { id } = params;
+  if (!mongoose.Types.ObjectId.isValid(id)) return NextResponse.json({ success: false, message: 'Invalid record id.' }, { status: 400 });
+  const body = await req.json();
+  const isApproval = body.action === 'approve' || body.action === 'reject';
+  const auth = authorize(req, isApproval ? 'approve' : 'edit');
+  if (auth.error) return NextResponse.json({ success: false, message: auth.error }, { status: auth.status });
+
+  await dbConnect();
+  const record = await VehicleNegotiation.findOne(recordQuery(id, auth.user));
+  if (!record) return NextResponse.json({ success: false, message: 'Vehicle Negotiation not found.' }, { status: 404 });
+  if (!record.workflow?.part1Locked) return NextResponse.json({ success: false, message: 'Part 1 must be locked first.' }, { status: 409 });
+
+  if (isApproval) {
+    if (!record.negotiation?.targetRate && record.negotiation?.targetRate !== 0) {
+      return NextResponse.json({ success: false, message: 'Save the Rate Target before approval.' }, { status: 422 });
+    }
+    record.approval.part2Status = body.action === 'approve' ? 'Approved' : 'Reject';
+    record.approval.part2Remarks = String(body.remarks || '').trim();
+    addAudit(record, `rate-target-${body.action}`, auth.user);
+  } else {
+    if (record.approval?.part2Status === 'Approved') {
+      return NextResponse.json({ success: false, message: 'Approved Rate Target is locked. Amend Part 1 to restart the workflow.' }, { status: 409 });
+    }
+    const input = body.negotiation || {};
+    record.negotiation.maxRate = Number(input.maxRate) || 0;
+    record.negotiation.targetRate = Number(input.targetRate) || 0;
+    record.negotiation.oldRatePercent = input.oldRatePercent || '';
+    record.negotiation.remarks1 = input.remarks1 || '';
+    if (body.voiceNote !== undefined) record.voiceNote = body.voiceNote || '';
+    if (body.voiceNoteFile !== undefined) record.voiceNoteFile = body.voiceNoteFile || null;
+    if (record.approval.part2Status === 'Reject') record.approval.part2Status = 'Pending';
+    addAudit(record, 'rate-target-saved', auth.user);
+  }
+
+  await record.save();
+  return NextResponse.json({ success: true, data: record });
+}

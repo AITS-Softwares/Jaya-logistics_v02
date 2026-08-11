@@ -421,6 +421,7 @@ function TableSearchableDropdown({
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const inputRef = useRef(null);
   const dropdownRef = useRef(null);
+  const listboxId = `${cellId || "table-dropdown"}-options`;
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
   const isUpdatingRef = useRef(false);
 
@@ -506,23 +507,27 @@ function TableSearchableDropdown({
   const handleKeyboardNavigation = (event) => {
     if (event.key === "ArrowDown" || event.key === "ArrowUp") {
       event.preventDefault();
+      event.stopPropagation();
+      const options = showDropdown ? filteredItems : items;
       if (!showDropdown) handleInputFocus();
-      if (filteredItems.length) {
+      if (options.length) {
         setHighlightedIndex((index) => event.key === "ArrowDown"
-          ? (index + 1) % filteredItems.length
-          : (index <= 0 ? filteredItems.length - 1 : index - 1));
+          ? (index + 1) % options.length
+          : (index <= 0 ? options.length - 1 : index - 1));
       }
       return;
     }
 
     if (event.key === "Enter" && showDropdown && filteredItems.length) {
       event.preventDefault();
+      event.stopPropagation();
       handleSelectItem(filteredItems[highlightedIndex >= 0 ? highlightedIndex : 0]);
       return;
     }
 
     if (event.key === "Escape" && showDropdown) {
       event.preventDefault();
+      event.stopPropagation();
       setShowDropdown(false);
       setHighlightedIndex(-1);
     }
@@ -575,6 +580,8 @@ function TableSearchableDropdown({
         role="combobox"
         aria-expanded={showDropdown}
         aria-haspopup="listbox"
+        aria-controls={listboxId}
+        aria-activedescendant={highlightedIndex >= 0 ? `${listboxId}-${highlightedIndex}` : undefined}
       />
       
       {showDropdown && !disabled && (
@@ -589,13 +596,16 @@ function TableSearchableDropdown({
           }}
           className="bg-white border border-slate-200 rounded-lg shadow-lg max-h-60 overflow-y-auto"
           role="listbox"
+          id={listboxId}
         >
           {filteredItems.length > 0 ? (
             filteredItems.map((item) => (
               <div
                 key={item._id}
+                id={`${listboxId}-${filteredItems.indexOf(item)}`}
                 data-keyboard-option
                 role="option"
+                aria-selected={highlightedIndex === filteredItems.indexOf(item)}
                 onMouseDown={(e) => {
                   e.preventDefault();
                   handleSelectItem(item);
@@ -2052,7 +2062,7 @@ const handleSupplierSelect = (supplier) => {
     router.push('/admin/vehicle2');
   };
 
-  const handleSaveAll = async () => {
+  const handleSaveAll = async (lockPart1 = false) => {
     if (!header.branch) {
       alert("Please select a branch");
       return;
@@ -2081,6 +2091,7 @@ const handleSupplierSelect = (supplier) => {
       }
 
       const payload = {
+        lockPart1,
         header: {
           ...header,
           customerName: selectedCustomer?.customerName || '',
@@ -2746,13 +2757,8 @@ const handleSupplierSelect = (supplier) => {
               <div className="text-sm text-red-600 font-medium">❌ {saveError}</div>
             )}
           </div>
-          <button
-            onClick={handleSaveAll}
-            disabled={saving}
-            className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${
-              saving ? 'bg-gray-400 cursor-not-allowed' : 'bg-yellow-600 hover:bg-yellow-700'
-            }`}
-          >
+          <div className="flex items-center gap-3">
+          <button onClick={() => handleSaveAll(false)} disabled={saving} className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${saving ? 'bg-gray-400 cursor-not-allowed' : 'bg-yellow-600 hover:bg-yellow-700'}`}>
             {saving ? (
               <span className="flex items-center gap-2">
                 <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -2761,8 +2767,10 @@ const handleSupplierSelect = (supplier) => {
                 </svg>
                 Saving...
               </span>
-            ) : 'Save All'}
+            ) : 'Save Draft'}
           </button>
+          <button onClick={() => handleSaveAll(true)} disabled={saving} className="rounded-xl bg-indigo-600 px-5 py-2 text-sm font-bold text-white hover:bg-indigo-700 disabled:bg-slate-400">Submit & Lock Part 1</button>
+          </div>
         </div>
       </div>
 
@@ -2928,71 +2936,6 @@ const handleSupplierSelect = (supplier) => {
               </button>
             </div>
             <VendorsTable rows={vendors} onChange={updateVendor} onRemove={removeVendor} onAdd={addVendor} />
-          </div>
-        </Card>
-
-        {/* PART 2: RATE-TARGET - FULL SECTION READONLY */}
-        <Card title="Rate-Target">
-          <div className="grid grid-cols-12 gap-3 mb-4">
-            <Input col="col-span-12 md:col-span-3" label="Max Rate" value={negotiation.maxRate} onChange={(v) => setNegotiation((p) => ({ ...p, maxRate: v }))} readOnly={true} />
-            <Input col="col-span-12 md:col-span-3" label="Target Rate" value={negotiation.targetRate} onChange={(v) => setNegotiation((p) => ({ ...p, targetRate: v }))} readOnly={true} />
-            <Input col="col-span-12 md:col-span-3" label="Old Rate %" value={negotiation.oldRatePercent} onChange={(v) => setNegotiation((p) => ({ ...p, oldRatePercent: v }))} readOnly={true} />
-
-            {/* APPROVAL STATUS - READONLY IN RATE-TARGET */}
-            <Select 
-              col="col-span-12 md:col-span-3" 
-              label="Approval Status" 
-              value={approval.approvalStatus} 
-              onChange={(v) => setApproval((p) => ({ ...p, approvalStatus: v }))} 
-              options={APPROVALS} 
-              readOnly={true} 
-            />
-          </div>
-
-          {/* APPROVAL REMARKS - READONLY IN RATE-TARGET */}
-          <div className="grid grid-cols-12 gap-3 mb-4">
-            <div className="col-span-12 md:col-span-6">
-              <label className="text-xs font-bold text-slate-600">Approval Remarks</label>
-              <textarea
-                value={approval.remarks}
-                onChange={(e) => setApproval((p) => ({ ...p, remarks: e.target.value }))}
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2 text-sm outline-none cursor-not-allowed"
-                rows={1}
-                placeholder="Enter remarks..."
-                readOnly={true}
-              />
-            </div>
-          </div>
-
-          {/* Remarks & Voice Note - READONLY */}
-          <div className="grid grid-cols-12 gap-4">
-            <div className="col-span-12 md:col-span-7">
-              <div className="rounded-xl border border-slate-200 p-4">
-                <div className="text-sm font-extrabold text-slate-900 mb-3">Remarks</div>
-                <textarea
-                  value={negotiation.remarks1}
-                  onChange={(e) => setNegotiation((p) => ({ ...p, remarks1: e.target.value }))}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm outline-none cursor-not-allowed"
-                  rows={2}
-                  placeholder="Enter remarks..."
-                  readOnly={true}
-                />
-              </div>
-            </div>
-            <div className="col-span-12 md:col-span-5">
-              <div className="rounded-xl border border-slate-200 p-4">
-                <div className="text-sm font-extrabold text-slate-900 mb-3">Voice Note</div>
-                <input type="file" accept="audio/*" onChange={handleVoiceUpload} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none cursor-not-allowed" disabled={true} />
-                {voiceUrl && (
-                  <div className="mt-3">
-                    <audio ref={audioRef} src={voiceUrl} controls className="w-full" />
-                    {voiceFileInfo?.filePath && process.env.NODE_ENV === 'development' && (
-                      <div className="mt-2 text-xs text-slate-500">File: {voiceFileInfo.originalName}</div>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
           </div>
         </Card>
 

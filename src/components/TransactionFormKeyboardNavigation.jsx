@@ -49,7 +49,7 @@ export function TransactionKeyboardTable({ children, onKeyDown, ...tableProps })
   return (
     <table
       {...tableProps}
-      data-transaction-keyboard-table
+      data-transaction-keyboard-table="true"
       onKeyDown={(event) => {
         handleTableKeyboardNavigation(event);
         onKeyDown?.(event);

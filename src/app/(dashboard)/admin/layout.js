@@ -2346,6 +2346,15 @@ export default function Layout({ children }) {
                     onClick={closeSidebar} 
                     isActive={isActive("/admin/vehicle-negotiation")}
                   />
+                  {canView("Rate Target (Vehicle Negotiation)") && (
+                    <Item
+                      href="/admin/rate-target-vehicle-negotiation"
+                      icon={<HiCurrencyRupee />}
+                      label="Rate Target (Vehicle Negotiation)"
+                      onClick={closeSidebar}
+                      isActive={isActive("/admin/rate-target-vehicle-negotiation")}
+                    />
+                  )}
                   <Item 
                     href="/admin/pricing-panel" 
                     icon={<HiCurrencyRupee />} 
@@ -3069,11 +3078,11 @@ export default function Layout({ children }) {
                 >
                   {/* Show all routes for this module */}
                   <Item
-                    href={`/admin/${moduleName.toLowerCase().replace(/ /g, '-')}`}
+                    href={moduleName === 'Rate Target (Vehicle Negotiation)' ? '/admin/rate-target-vehicle-negotiation' : `/admin/${moduleName.toLowerCase().replace(/ /g, '-')}`}
                     icon={<HiViewGrid />}
                     label={moduleName}
                     onClick={closeSidebar}
-                    isActive={isActive(`/admin/${moduleName.toLowerCase().replace(/ /g, '-')}`)}
+                    isActive={isActive(moduleName === 'Rate Target (Vehicle Negotiation)' ? '/admin/rate-target-vehicle-negotiation' : `/admin/${moduleName.toLowerCase().replace(/ /g, '-')}`)}
                   />
                 </Section>
               );

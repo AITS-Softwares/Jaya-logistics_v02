@@ -6168,6 +6168,7 @@ function TableSearchableDropdown({
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const inputRef = useRef(null);
   const dropdownRef = useRef(null);
+  const listboxId = `${cellId || "table-dropdown"}-options`;
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
   const isUpdatingRef = useRef(false);
 
@@ -6253,23 +6254,27 @@ function TableSearchableDropdown({
   const handleKeyboardNavigation = (event) => {
     if (event.key === "ArrowDown" || event.key === "ArrowUp") {
       event.preventDefault();
+      event.stopPropagation();
+      const options = showDropdown ? filteredItems : items;
       if (!showDropdown) handleInputFocus();
-      if (filteredItems.length) {
+      if (options.length) {
         setHighlightedIndex((index) => event.key === "ArrowDown"
-          ? (index + 1) % filteredItems.length
-          : (index <= 0 ? filteredItems.length - 1 : index - 1));
+          ? (index + 1) % options.length
+          : (index <= 0 ? options.length - 1 : index - 1));
       }
       return;
     }
 
     if (event.key === "Enter" && showDropdown && filteredItems.length) {
       event.preventDefault();
+      event.stopPropagation();
       handleSelectItem(filteredItems[highlightedIndex >= 0 ? highlightedIndex : 0]);
       return;
     }
 
     if (event.key === "Escape" && showDropdown) {
       event.preventDefault();
+      event.stopPropagation();
       setShowDropdown(false);
       setHighlightedIndex(-1);
     }
@@ -6322,6 +6327,8 @@ function TableSearchableDropdown({
         role="combobox"
         aria-expanded={showDropdown}
         aria-haspopup="listbox"
+        aria-controls={listboxId}
+        aria-activedescendant={highlightedIndex >= 0 ? `${listboxId}-${highlightedIndex}` : undefined}
       />
       
       {showDropdown && !disabled && (
@@ -6336,13 +6343,16 @@ function TableSearchableDropdown({
           }}
           className="bg-white border border-slate-200 rounded-lg shadow-lg max-h-60 overflow-y-auto"
           role="listbox"
+          id={listboxId}
         >
           {filteredItems.length > 0 ? (
             filteredItems.map((item) => (
               <div
                 key={item._id}
+                id={`${listboxId}-${filteredItems.indexOf(item)}`}
                 data-keyboard-option
                 role="option"
+                aria-selected={highlightedIndex === filteredItems.indexOf(item)}
                 onMouseDown={(e) => {
                   e.preventDefault();
                   handleSelectItem(item);
@@ -7092,6 +7102,7 @@ export default function EditVehicleNegotiation() {
 
   const [vendors, setVendors] = useState([]);
   const [voiceUrl, setVoiceUrl] = useState("");
+  const [workflow, setWorkflow] = useState({ part1Locked: false, amendmentCount: 0 });
 
   const [approval, setApproval] = useState({
     vendorName: "",
@@ -7107,6 +7118,7 @@ export default function EditVehicleNegotiation() {
     mobile: "",
     purchaseType: "",
     paymentTerms: "",
+    part2Status: "Pending",
     part3Status: "Pending",
     part3Remarks: "",
     approvalStatus: "",
@@ -7115,9 +7127,8 @@ export default function EditVehicleNegotiation() {
     memoFile: null
   });
 
-  // Vehicle details are released only after the separate Part 3 approval.
-  const isPart2Approved = approval.approvalStatus === 'Approved';
-  const isVehicleDetailsApproved = approval.part3Status === 'Approved';
+  const isPart1Locked = Boolean(workflow.part1Locked);
+  const isPart2Approved = approval.part2Status === 'Approved';
 
   // Fetch data from APIs
   useEffect(() => {
@@ -7194,6 +7205,7 @@ export default function EditVehicleNegotiation() {
       }
 
       const vn = data.data;
+      setWorkflow(vn.workflow || { part1Locked: false, amendmentCount: 0 });
       
       setVnnNumber(vn.vnnNo || "");
       
@@ -7331,6 +7343,7 @@ export default function EditVehicleNegotiation() {
           mobile: vn.approval.mobile || "",
           purchaseType: vn.approval.purchaseType || "",
           paymentTerms: vn.approval.paymentTerms || "",
+          part2Status: vn.approval.part2Status || "Pending",
           part3Status: vn.approval.part3Status || "Pending",
           part3Remarks: vn.approval.part3Remarks || "",
           approvalStatus: vn.approval.approvalStatus || "",
@@ -7765,22 +7778,55 @@ export default function EditVehicleNegotiation() {
     router.push('/admin/vehicle2');
   };
 
-  const handleUpdate = async () => {
+  const handleWorkflowAction = async (action) => {
+    const reason = action === 'amend-part1' ? window.prompt('Enter the amendment reason:') : '';
+    if (action === 'amend-part1' && !reason?.trim()) return;
+    if (action === 'lock-part1') {
+      if (!window.confirm('This will save the current Part 1 data and permanently lock it until an amendment is opened. Continue?')) return;
+      const saved = await handleUpdate({ redirect: false });
+      if (!saved) return;
+    }
+    setSaving(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/vehicle-negotiation/${negotiationId}/workflow`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ action, reason })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Workflow update failed.');
+      if (action === 'amend-part1') {
+        await fetchNegotiationData();
+        alert('Part 1 amendment opened. Rate Target and Part 3 approval have been reset.');
+      } else {
+        setWorkflow(data.data.workflow);
+        alert('Part 1 is locked. Continue with Rate Target (Vehicle Negotiation).');
+      }
+    } catch (error) {
+      setSaveError(error.message);
+      alert(`Error: ${error.message}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleUpdate = async ({ redirect = true } = {}) => {
     if (!header.branch) {
       alert("Please select a branch");
-      return;
+      return false;
     }
     
     if (orders.length === 0) {
       alert("Please add at least one order");
-      return;
+      return false;
     }
     
     const hasInvalidOrders = orders.some(order => !order.plantCode);
     if (hasInvalidOrders) {
       const invalidCount = orders.filter(order => !order.plantCode).length;
       alert(`Please select plant for all order rows. ${invalidCount} row(s) missing plant code.`);
-      return;
+      return false;
     }
 
     setSaving(true);
@@ -7885,8 +7931,8 @@ export default function EditVehicleNegotiation() {
         }
       };
 
-      const res = await fetch('/api/vehicle-negotiation', {
-        method: 'PUT',
+      const res = await fetch(isPart1Locked ? `/api/vehicle-negotiation/${negotiationId}/part3` : '/api/vehicle-negotiation', {
+        method: isPart1Locked ? 'PATCH' : 'PUT',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
@@ -7904,9 +7950,12 @@ export default function EditVehicleNegotiation() {
       
       alert(`✅ Vehicle negotiation updated successfully!\nVNN Number: ${header.vnnNo}`);
       
-      setTimeout(() => {
-        router.push('/admin/vehicle-negotiation');
-      }, 2000);
+      if (redirect) {
+        setTimeout(() => {
+          router.push('/admin/vehicle-negotiation');
+        }, 2000);
+      }
+      return true;
       
     } catch (error) {
       console.error('Error updating vehicle negotiation:', error);
@@ -8396,7 +8445,7 @@ export default function EditVehicleNegotiation() {
           <div className="flex items-center gap-3">            
             <button
               onClick={handleUpdate}
-              disabled={saving}
+              disabled={saving || (isPart1Locked && !isPart2Approved)}
               className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${
                 saving 
                   ? 'bg-gray-400 cursor-not-allowed' 
@@ -8411,8 +8460,17 @@ export default function EditVehicleNegotiation() {
                   </svg>
                   Updating...
                 </span>
-              ) : 'Update Negotiation'}
+              ) : (isPart1Locked ? 'Save Vehicle Placement' : 'Save Draft')}
             </button>
+            {!isPart1Locked ? (
+              <button onClick={() => handleWorkflowAction('lock-part1')} disabled={saving} className="rounded-xl bg-indigo-600 px-5 py-2 text-sm font-bold text-white hover:bg-indigo-700 disabled:bg-slate-400">
+                Submit & Lock Part 1
+              </button>
+            ) : (
+              <button onClick={() => handleWorkflowAction('amend-part1')} disabled={saving} className="rounded-xl bg-amber-600 px-5 py-2 text-sm font-bold text-white hover:bg-amber-700 disabled:bg-slate-400">
+                Amend Part 1
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -8420,6 +8478,7 @@ export default function EditVehicleNegotiation() {
       <div className="mx-auto max-w-full p-4 space-y-4">
         {/* PART 1: VEHICLE NEGOTIATION - PART 1 */}
         <Card title="Vehicle Negotiation - Panel - Part -1">
+          <fieldset disabled={isPart1Locked} className="disabled:opacity-70">
           <div className="grid grid-cols-12 gap-3 mb-4">
             <div className="col-span-12 md:col-span-3">
               <label className="text-xs font-bold text-slate-600">Vehicle Negotiation No</label>
@@ -8610,10 +8669,11 @@ export default function EditVehicleNegotiation() {
             </div>
             <VendorsTable rows={vendors} onChange={updateVendor} onRemove={removeVendor} onAdd={addVendor} />
           </div>
+          </fieldset>
         </Card>
 
-        {/* PART 2: VEHICLE NEGOTIATION - PART 2 - Editable only if Part 1 is Approved */}
-        <Card title="Vehicle - Negotiation - Part - 2 (Rate-Target)">
+        {/* Rate Target has moved to its dedicated workspace. */}
+        {false && <Card title="Vehicle - Negotiation - Part - 2 (Rate-Target)">
           {!isPart1Approved && (
             <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-700">
               ⚠️ Part 2 is locked. Please set Part 1 Approval Status to "Approved" to edit this section.
@@ -8696,9 +8756,9 @@ export default function EditVehicleNegotiation() {
               </div>
             </div>
           </div>
-        </Card>
+        </Card>}
 
-        {/* PART 3: VEHICLE APPROVAL - PART 3 - Editable only if Part 2 is Approved */}
+        {/* PART 3: VEHICLE APPROVAL - PART 3 - Editable only after Rate Target approval */}
         <Card title="Vehicle - Approval - Part - 3">
           {!isPart2Approved && (
             <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-700">
@@ -8799,7 +8859,7 @@ export default function EditVehicleNegotiation() {
                 onChange={(e) => setApproval((p) => ({ ...p, vehicleNo: e.target.value }))} 
                 className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200" 
                 placeholder="Enter vehicle number..." 
-                readOnly={!isVehicleDetailsApproved}
+                readOnly={!isPart2Approved}
               />
             </div>
             <Input 
@@ -8807,7 +8867,7 @@ export default function EditVehicleNegotiation() {
               label="Mobile" 
               value={approval.mobile} 
               onChange={(v) => setApproval((p) => ({ ...p, mobile: v }))} 
-              readOnly={!isVehicleDetailsApproved}
+              readOnly={!isPart2Approved}
             />
           </div>
 
@@ -8818,7 +8878,7 @@ export default function EditVehicleNegotiation() {
               value={approval.purchaseType} 
               onChange={(v) => setApproval((p) => ({ ...p, purchaseType: v }))} 
               options={purchaseTypes.length > 0 ? purchaseTypes : PURCHASE_TYPES}
-              readOnly={!isVehicleDetailsApproved}
+              readOnly={!isPart2Approved}
             />
             <Select 
               col="col-span-12 md:col-span-4" 
@@ -8826,7 +8886,7 @@ export default function EditVehicleNegotiation() {
               value={approval.paymentTerms} 
               onChange={(v) => setApproval((p) => ({ ...p, paymentTerms: v }))} 
               options={paymentTerms.length > 0 ? paymentTerms : PAYMENT_TERMS}
-              readOnly={!isVehicleDetailsApproved}
+              readOnly={!isPart2Approved}
             />
           </div>
         </Card>

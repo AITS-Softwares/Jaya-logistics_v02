@@ -1050,6 +1050,23 @@ const vehicleNegotiationSchema = new mongoose.Schema({
     uploadedAt: Date
   },
   
+  // Additive workflow metadata; it does not alter existing Vehicle Negotiation fields.
+  workflow: {
+    part1Locked: { type: Boolean, default: false },
+    part1LockedAt: { type: Date, default: null },
+    part1LockedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'CompanyUser', default: null },
+    amendmentCount: { type: Number, default: 0 },
+    lastAmendmentReason: { type: String, default: '' },
+    lastAmendedAt: { type: Date, default: null },
+    lastAmendedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'CompanyUser', default: null },
+    audit: [{
+      action: { type: String, required: true },
+      reason: { type: String, default: '' },
+      by: { type: mongoose.Schema.Types.ObjectId, ref: 'CompanyUser', default: null },
+      at: { type: Date, default: Date.now }
+    }]
+  },
+
   pricingSerialNo: {
     type: String,
     ref: 'PricingPanel',

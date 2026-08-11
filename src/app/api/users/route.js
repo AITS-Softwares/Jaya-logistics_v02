@@ -47,6 +47,7 @@ const MODULE_PERMISSIONS = {
   // Sales Modules
   "Order Panel": ['view', 'create', 'edit', 'delete', 'approve', 'reject'],
   "Vehicle Negotiation": ['view', 'create', 'edit', 'delete', 'approve'],
+  "Rate Target (Vehicle Negotiation)": ['view', 'edit', 'approve'],
   "Pricing Panel": ['view', 'create', 'edit', 'delete'],
   "Loading Info": ['view', 'create', 'edit', 'delete'],
   "Purchase Panel": ['view', 'create', 'edit', 'delete'],
@@ -157,10 +158,10 @@ function createDefaultModules(roles = []) {
   
   // For non-admin users, only enable modules based on their roles
   const roleModuleMap = {
-    'Sales': ['Order Panel', 'Vehicle Negotiation', 'Pricing Panel', 'Loading Info', 
+    'Sales': ['Order Panel', 'Vehicle Negotiation', 'Rate Target (Vehicle Negotiation)', 'Pricing Panel', 'Loading Info',
               'Purchase Panel', 'Consignment Note', 'Advance Payment', 'Proof Of Delivery',
               'Balance-Payment', 'Billing', 'order-full-report'],
-    'Sales Manager': ['Order Panel', 'Vehicle Negotiation', 'Pricing Panel', 'Loading Info', 
+    'Sales Manager': ['Order Panel', 'Vehicle Negotiation', 'Rate Target (Vehicle Negotiation)', 'Pricing Panel', 'Loading Info',
                       'Purchase Panel', 'Consignment Note', 'Advance Payment', 'Proof Of Delivery',
                       'Balance-Payment', 'Billing', 'order-full-report'],
     'Purchase Manager': ['Purchase Quotation', 'Purchase Order', 'GRN', 'Purchase Invoice', 
