@@ -1133,6 +1133,7 @@ export default function LoadingPanelList() {
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">S.No</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Date</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Arrival No</th>
+                  <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">VNNs</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Branch</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Vehicle No</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Driver</th>
@@ -1147,7 +1148,7 @@ export default function LoadingPanelList() {
               <tbody className="divide-y divide-slate-200">
                 {loading ? (
                   <tr>
-                    <td colSpan="12" className="px-4 py-12 text-center">
+                    <td colSpan="13" className="px-4 py-12 text-center">
                       <div className="flex items-center justify-center">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500"></div>
                       </div>
@@ -1159,6 +1160,15 @@ export default function LoadingPanelList() {
                       <td className="px-4 py-3 text-slate-600">{index + 1}</td>
                       <td className="px-4 py-3 text-slate-600">{item.date}</td>
                       <td className="px-4 py-3 font-medium text-slate-900">{item.vehicleArrivalNo}</td>
+                      <td className="px-4 py-3">
+                        {item.vnnCount ? (
+                          <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium" title={item.vnnNo}>
+                            {item.vnnCount} VNN{item.vnnCount !== 1 ? 's' : ''}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400">-</span>
+                        )}
+                      </td>
                       <td className="px-4 py-3">
                         <div className="font-medium text-slate-800">{item.branch}</div>
                       </td>
@@ -1259,7 +1269,7 @@ export default function LoadingPanelList() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="12" className="px-4 py-12 text-center text-slate-500">
+                    <td colSpan="13" className="px-4 py-12 text-center text-slate-500">
                       <div className="flex flex-col items-center">
                         <svg className="w-16 h-16 text-slate-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7h12m0 0v8m0-8l-8 8-4-4-6 6" />

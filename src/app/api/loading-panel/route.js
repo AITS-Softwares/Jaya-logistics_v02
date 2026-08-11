@@ -1356,11 +1356,15 @@ export async function GET(req) {
           panel.vlUploads?.videoVl
         ].filter(v => v && v !== '' && v !== 'Not Set');
         
+        const vnnNo = panel.selectedVehicleNegotiation?.vnnNo || panel.vehicleNegotiationNo || '';
+
         return {
           _id: panel._id,
           date: panel.date ? new Date(panel.date).toISOString().split('T')[0] : '',
           vehicleArrivalNo: panel.vehicleArrivalNo || 'N/A',
           vehicleNegotiationNo: panel.vehicleNegotiationNo || 'N/A',
+          vnnNo,
+          vnnCount: vnnNo ? 1 : 0,
           branch: panel.branchName || panel.branchCode || 'N/A',
           subCompanyName: panel.subCompanyName || '',
           subCompanyCode: panel.subCompanyCode || '',

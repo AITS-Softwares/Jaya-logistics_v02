@@ -1325,7 +1325,7 @@ export default function PricingPanelList() {
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">S.No</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Date</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">PSN</th>
-                  <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">VNN Numbers</th>
+                  <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">VNNs</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Party Name</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">From → To</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Total Weight</th>
@@ -1351,17 +1351,16 @@ export default function PricingPanelList() {
                       <td className="px-4 py-3 text-slate-600">{item.date}</td>
                       <td className="px-4 py-3 font-medium text-slate-900">{item.pricingSerialNo}</td>
                       <td className="px-4 py-3">
-                        <div className="flex flex-wrap gap-1">
-                          {item.vnnNumbers && item.vnnNumbers.length > 0 ? (
-                            item.vnnNumbers.map((vnn, idx) => (
-                              <span key={idx} className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
-                                {vnn}
-                              </span>
-                            ))
-                          ) : (
-                            <span className="text-slate-400">-</span>
-                          )}
-                        </div>
+                        {item.vnnNumbers?.length ? (
+                          <span
+                            className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium"
+                            title={item.vnnNumbers.join(', ')}
+                          >
+                            {item.vnnNumbers.length} VNN{item.vnnNumbers.length !== 1 ? 's' : ''}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400">-</span>
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         <div className="font-medium text-slate-800">{item.partyName}</div>

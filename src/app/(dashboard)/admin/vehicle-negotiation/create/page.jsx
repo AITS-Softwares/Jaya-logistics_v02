@@ -2940,7 +2940,7 @@ const handleSupplierSelect = (supplier) => {
         </Card>
 
         {/* PART 3: VEHICLE APPROVAL - FULL SECTION READONLY */}
-        <Card title="Vehicle-Placement_Reat">
+        <Card title="Vehicle-Placement_Rate">
           <div className="grid grid-cols-12 gap-3 mb-4">
             <div className="col-span-12 md:col-span-4">
               <label className="text-xs font-bold text-slate-600">Supplier Name</label>
