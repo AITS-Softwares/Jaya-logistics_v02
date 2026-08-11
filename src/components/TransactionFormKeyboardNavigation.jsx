@@ -1,15 +1,96 @@
 "use client";
 
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
-const EDITABLE_FIELD_SELECTOR = [
-  "input:not([type='hidden']):not([type='file']):not([disabled]):not([readonly])",
+const NAVIGABLE_FIELD_SELECTOR = [
+  "input:not([type='hidden']):not([type='file']):not([disabled])",
   "select:not([disabled])",
-  "textarea:not([disabled]):not([readonly])",
+  "textarea:not([disabled])",
 ].join(",");
 
 function isVisible(element) {
   return element.getClientRects().length > 0 && !element.closest("[aria-hidden='true']");
+}
+
+function focusAdjacentField(scope, currentField, direction) {
+  const fields = Array.from(scope.querySelectorAll(NAVIGABLE_FIELD_SELECTOR)).filter(isVisible);
+  const currentIndex = fields.indexOf(currentField);
+  const nextField = fields[currentIndex + direction];
+
+  if (nextField) {
+    nextField.focus({ preventScroll: true });
+    nextField.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }
+}
+
+function handleTableKeyboardNavigation(event) {
+  if (event.defaultPrevented || event.isComposing || event.altKey || event.ctrlKey || event.metaKey) return;
+
+  const target = event.target;
+  if (!(target instanceof HTMLInputElement || target instanceof HTMLSelectElement || target instanceof HTMLTextAreaElement)) return;
+  if (!target.matches(NAVIGABLE_FIELD_SELECTOR) || target instanceof HTMLTextAreaElement) return;
+
+  if (event.key === "Enter") {
+    event.preventDefault();
+    focusAdjacentField(event.currentTarget, target, 1);
+    return;
+  }
+
+  const canGoBack = target instanceof HTMLSelectElement || (
+    target instanceof HTMLInputElement && target.selectionStart === 0 && target.selectionEnd === 0
+  );
+  if (event.key === "Backspace" && target.value === "" && canGoBack) {
+    event.preventDefault();
+    focusAdjacentField(event.currentTarget, target, -1);
+  }
+}
+
+export function TransactionKeyboardTable({ children, onKeyDown, ...tableProps }) {
+  return (
+    <table
+      {...tableProps}
+      data-transaction-keyboard-table
+      onKeyDown={(event) => {
+        handleTableKeyboardNavigation(event);
+        onKeyDown?.(event);
+      }}
+    >
+      {children}
+    </table>
+  );
+}
+
+export function useKeyboardDropdown({ isOpen, options, open, close, onSelect }) {
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
+
+  useEffect(() => {
+    if (!isOpen) setHighlightedIndex(-1);
+  }, [isOpen]);
+
+  const handleKeyDown = useCallback((event) => {
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      if (!isOpen) open?.();
+      if (!options.length) return;
+      setHighlightedIndex((index) => event.key === "ArrowDown"
+        ? (index + 1) % options.length
+        : (index <= 0 ? options.length - 1 : index - 1));
+      return;
+    }
+
+    if (event.key === "Enter" && isOpen && options.length) {
+      event.preventDefault();
+      onSelect?.(options[highlightedIndex >= 0 ? highlightedIndex : 0]);
+      return;
+    }
+
+    if (event.key === "Escape" && isOpen) {
+      event.preventDefault();
+      close?.();
+    }
+  }, [close, highlightedIndex, isOpen, onSelect, open, options]);
+
+  return { highlightedIndex, handleKeyDown };
 }
 
 /**
@@ -20,17 +101,8 @@ function isVisible(element) {
 export default function TransactionFormKeyboardNavigation({ children }) {
   const containerRef = useRef(null);
 
-  const focusAdjacentField = useCallback((currentField, direction) => {
-    const fields = Array.from(
-      containerRef.current?.querySelectorAll(EDITABLE_FIELD_SELECTOR) || []
-    ).filter(isVisible);
-    const currentIndex = fields.indexOf(currentField);
-    const nextField = fields[currentIndex + direction];
-
-    if (nextField) {
-      nextField.focus({ preventScroll: true });
-      nextField.scrollIntoView({ block: "nearest", inline: "nearest" });
-    }
+  const focusAdjacentInForm = useCallback((currentField, direction) => {
+    if (containerRef.current) focusAdjacentField(containerRef.current, currentField, direction);
   }, []);
 
   const handleKeyDownCapture = useCallback((event) => {
@@ -43,9 +115,21 @@ export default function TransactionFormKeyboardNavigation({ children }) {
       return;
     }
 
-    if (!target.matches(EDITABLE_FIELD_SELECTOR)) return;
+    if (!target.matches(NAVIGABLE_FIELD_SELECTOR)) return;
+
+    // Tables have their own field map, matching the Order Panel behavior.
+    if (target.closest("[data-transaction-keyboard-table]")) return;
 
     const dropdown = target.closest("[data-keyboard-dropdown]");
+    const isManagedDropdown = dropdown?.hasAttribute("data-managed-keyboard-dropdown");
+    const managedOptions = isManagedDropdown
+      ? dropdown.querySelectorAll("[data-keyboard-option]")
+      : [];
+    if (
+      isManagedDropdown &&
+      (event.key === "ArrowDown" || event.key === "ArrowUp" || event.key === "Escape" ||
+        (event.key === "Enter" && managedOptions.length > 0))
+    ) return;
     const dropdownOptions = dropdown
       ? Array.from(dropdown.querySelectorAll("[data-keyboard-option]"))
       : [];
@@ -85,21 +169,21 @@ export default function TransactionFormKeyboardNavigation({ children }) {
 
     if (event.key === "Enter") {
       event.preventDefault();
-      focusAdjacentField(target, 1);
+      focusAdjacentInForm(target, 1);
       return;
     }
 
     if (
       event.key === "Backspace" &&
-      target instanceof HTMLInputElement &&
+      (target instanceof HTMLInputElement || target instanceof HTMLSelectElement) &&
       target.value === "" &&
       target.selectionStart === 0 &&
       target.selectionEnd === 0
     ) {
       event.preventDefault();
-      focusAdjacentField(target, -1);
+      focusAdjacentInForm(target, -1);
     }
-  }, [focusAdjacentField]);
+  }, [focusAdjacentInForm]);
 
   return (
     <div ref={containerRef} onKeyDownCapture={handleKeyDownCapture}>

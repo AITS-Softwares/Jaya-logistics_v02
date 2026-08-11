@@ -5828,7 +5828,7 @@
 import { useMemo, useRef, useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import mongoose from 'mongoose';
-import TransactionFormKeyboardNavigation from "@/components/TransactionFormKeyboardNavigation";
+import TransactionFormKeyboardNavigation, { TransactionKeyboardTable, useKeyboardDropdown } from "@/components/TransactionFormKeyboardNavigation";
 
 /* =======================
   HELPERS / CONSTANTS
@@ -6165,6 +6165,7 @@ function TableSearchableDropdown({
   const [filteredItems, setFilteredItems] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const inputRef = useRef(null);
   const dropdownRef = useRef(null);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
@@ -6226,6 +6227,7 @@ function TableSearchableDropdown({
     setSelectedItem(item);
     setSearchQuery(getDisplayValue(item));
     setShowDropdown(false);
+    setHighlightedIndex(-1);
     isUpdatingRef.current = true;
     onSelect?.(item);
     setTimeout(() => { isUpdatingRef.current = false; }, 100);
@@ -6244,7 +6246,33 @@ function TableSearchableDropdown({
     }
     
     setFilteredItems(items);
+    setHighlightedIndex(-1);
     setShowDropdown(true);
+  };
+
+  const handleKeyboardNavigation = (event) => {
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      if (!showDropdown) handleInputFocus();
+      if (filteredItems.length) {
+        setHighlightedIndex((index) => event.key === "ArrowDown"
+          ? (index + 1) % filteredItems.length
+          : (index <= 0 ? filteredItems.length - 1 : index - 1));
+      }
+      return;
+    }
+
+    if (event.key === "Enter" && showDropdown && filteredItems.length) {
+      event.preventDefault();
+      handleSelectItem(filteredItems[highlightedIndex >= 0 ? highlightedIndex : 0]);
+      return;
+    }
+
+    if (event.key === "Escape" && showDropdown) {
+      event.preventDefault();
+      setShowDropdown(false);
+      setHighlightedIndex(-1);
+    }
   };
 
   const handleInputBlur = () => {
@@ -6285,6 +6313,7 @@ function TableSearchableDropdown({
         onChange={(e) => handleSearch(e.target.value)}
         onFocus={handleInputFocus}
         onBlur={handleInputBlur}
+        onKeyDown={handleKeyboardNavigation}
         className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 disabled:opacity-50"
         placeholder={placeholder}
         required={required}
@@ -6319,7 +6348,7 @@ function TableSearchableDropdown({
                   handleSelectItem(item);
                 }}
                 className={`p-2 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors ${
-                  selectedItem?._id === item._id ? 'bg-sky-50' : ''
+                  selectedItem?._id === item._id || highlightedIndex === filteredItems.indexOf(item) ? 'bg-sky-50' : ''
                 }`}
               >
                 <div className="font-medium text-slate-800 text-sm">
@@ -6440,14 +6469,23 @@ function SearchableDropdown({
     }, 200);
   };
 
+  const { highlightedIndex, handleKeyDown: handleDropdownKeyDown } = useKeyboardDropdown({
+    isOpen: showDropdown,
+    options: filteredItems,
+    open: handleInputFocus,
+    close: () => setShowDropdown(false),
+    onSelect: handleSelectItem,
+  });
+
   return (
-    <div className="relative" ref={dropdownRef} data-keyboard-dropdown>
+    <div className="relative" ref={dropdownRef} data-keyboard-dropdown data-managed-keyboard-dropdown>
       <input
         type="text"
         value={searchQuery}
         onChange={(e) => handleSearch(e.target.value)}
         onFocus={handleInputFocus}
         onBlur={handleInputBlur}
+        onKeyDown={handleDropdownKeyDown}
         className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${
           disabled ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
         }`}
@@ -6470,7 +6508,7 @@ function SearchableDropdown({
                 role="option"
                 onMouseDown={() => handleSelectItem(item)}
                 className={`p-3 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors ${
-                  selectedItem?._id === item._id ? 'bg-sky-50' : ''
+                  selectedItem?._id === item._id || highlightedIndex === filteredItems.indexOf(item) ? 'bg-sky-50' : ''
                 }`}
               >
                 <div className="font-medium text-slate-800">
@@ -6569,14 +6607,23 @@ function SupplierSearchDropdown({
     setShowDropdown(true);
   };
 
+  const { highlightedIndex, handleKeyDown: handleDropdownKeyDown } = useKeyboardDropdown({
+    isOpen: showDropdown,
+    options: suppliers,
+    open: handleInputFocus,
+    close: () => setShowDropdown(false),
+    onSelect: handleSelectItem,
+  });
+
   return (
-    <div className="relative" ref={dropdownRef} data-keyboard-dropdown>
+    <div className="relative" ref={dropdownRef} data-keyboard-dropdown data-managed-keyboard-dropdown>
       <input
         type="text"
         value={searchQuery}
         onChange={(e) => handleSearch(e.target.value)}
         onFocus={handleInputFocus}
         onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
+        onKeyDown={handleDropdownKeyDown}
         readOnly={readOnly}
         className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${
           readOnly ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
@@ -6602,7 +6649,7 @@ function SupplierSearchDropdown({
                 data-keyboard-option
                 role="option"
                 onMouseDown={() => handleSelectItem(supplier)}
-                className="p-3 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors"
+                className={`p-3 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors ${highlightedIndex === suppliers.indexOf(supplier) ? 'bg-sky-50' : ''}`}
               >
                 <div className="font-medium text-slate-800">
                   {supplier.supplierName}
@@ -6731,6 +6778,14 @@ function MultiSelectOrderPanelDropdown({
 
   const handleInputBlur = () => {};
 
+  const { highlightedIndex, handleKeyDown: handleDropdownKeyDown } = useKeyboardDropdown({
+    isOpen: showDropdown,
+    options: panels,
+    open: handleInputFocus,
+    close: () => setShowDropdown(false),
+    onSelect: handleSelectPanel,
+  });
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target) &&
@@ -6746,7 +6801,7 @@ function MultiSelectOrderPanelDropdown({
   }, []);
 
   return (
-    <div className="relative" ref={dropdownRef} data-keyboard-dropdown>
+    <div className="relative" ref={dropdownRef} data-keyboard-dropdown data-managed-keyboard-dropdown>
       {selectedPanels.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-2 p-2 border border-yellow-200 rounded-lg bg-yellow-50">
           {selectedPanels.map((panel) => (
@@ -6779,6 +6834,7 @@ function MultiSelectOrderPanelDropdown({
         onFocus={handleInputFocus}
         onClick={handleInputClick}
         onBlur={handleInputBlur}
+        onKeyDown={handleDropdownKeyDown}
         className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
         placeholder={placeholder}
         autoComplete="off"
@@ -6807,7 +6863,7 @@ function MultiSelectOrderPanelDropdown({
                   e.preventDefault();
                   handleSelectPanel(panel);
                 }}
-                className="p-3 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors"
+                className={`p-3 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors ${highlightedIndex === panels.indexOf(panel) ? 'bg-sky-50' : ''}`}
               >
                 <div className="font-medium text-slate-800">
                   {panel.orderPanelNo}
@@ -6851,7 +6907,7 @@ function BillingTypeTable({ header, setHeader, billingColumns, selectedOrderPane
 
   return (
     <div className="overflow-auto rounded-xl border border-yellow-300">
-      <table className="min-w-full w-full text-sm">
+      <TransactionKeyboardTable className="min-w-full w-full text-sm">
         <thead className="sticky top-0 bg-yellow-400">
           <tr>
             {billingColumns.map((col) => (
@@ -6903,7 +6959,7 @@ function BillingTypeTable({ header, setHeader, billingColumns, selectedOrderPane
             ))}
           </tr>
         </tbody>
-      </table>
+      </TransactionKeyboardTable>
     </div>
   );
 }
@@ -7933,7 +7989,7 @@ export default function EditVehicleNegotiation() {
 
     return (
       <div className="overflow-auto rounded-xl border border-yellow-300 max-h-[500px]">
-        <table className="min-w-max w-full text-sm">
+        <TransactionKeyboardTable className="min-w-max w-full text-sm">
           <thead className="sticky top-0 bg-yellow-400 z-10">
             <tr>
               {columns.map((col) => (
@@ -8174,7 +8230,7 @@ export default function EditVehicleNegotiation() {
               </tr>
             )}
           </tbody>
-        </table>
+        </TransactionKeyboardTable>
       </div>
     );
   };
@@ -8194,7 +8250,7 @@ export default function EditVehicleNegotiation() {
 
     return (
       <div className="overflow-auto rounded-xl border border-yellow-300 max-h-[300px]">
-        <table className="min-w-full w-full text-sm">
+        <TransactionKeyboardTable className="min-w-full w-full text-sm">
           <thead className="sticky top-0 bg-yellow-400">
             <tr>
               {vendorColumns.map((col) => (
@@ -8284,7 +8340,7 @@ export default function EditVehicleNegotiation() {
               </tr>
             ))}
           </tbody>
-        </table>
+        </TransactionKeyboardTable>
       </div>
     );
   };

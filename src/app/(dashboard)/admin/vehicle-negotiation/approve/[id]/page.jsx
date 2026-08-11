@@ -3105,7 +3105,7 @@
 import { useMemo, useRef, useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import mongoose from 'mongoose';
-import TransactionFormKeyboardNavigation from "@/components/TransactionFormKeyboardNavigation";
+import TransactionFormKeyboardNavigation, { useKeyboardDropdown } from "@/components/TransactionFormKeyboardNavigation";
 
 /* =======================
   HELPERS / CONSTANTS
@@ -3384,14 +3384,23 @@ function SearchableDropdown({
     onSelect?.(item);
   };
 
+  const { highlightedIndex, handleKeyDown: handleDropdownKeyDown } = useKeyboardDropdown({
+    isOpen: showDropdown,
+    options: filteredItems,
+    open: () => setShowDropdown(true),
+    close: () => setShowDropdown(false),
+    onSelect: handleSelectItem,
+  });
+
   return (
-    <div className="relative" ref={dropdownRef} data-keyboard-dropdown>
+    <div className="relative" ref={dropdownRef} data-keyboard-dropdown data-managed-keyboard-dropdown>
       <input
         type="text"
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
         onFocus={() => setShowDropdown(true)}
         onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
+        onKeyDown={handleDropdownKeyDown}
         disabled={disabled}
         className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${
           disabled ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
@@ -3411,7 +3420,7 @@ function SearchableDropdown({
               data-keyboard-option
               role="option"
               onMouseDown={() => handleSelectItem(item)}
-              className="p-3 hover:bg-slate-50 cursor-pointer border-b border-slate-100"
+              className={`p-3 hover:bg-slate-50 cursor-pointer border-b border-slate-100 ${highlightedIndex === filteredItems.indexOf(item) ? 'bg-sky-50' : ''}`}
             >
               <div className="font-medium text-slate-800">{item[displayField]}</div>
               <div className="text-xs text-slate-500">{item[codeField] && `Code: ${item[codeField]}`}</div>
@@ -3447,14 +3456,23 @@ function SupplierSearchDropdown({ value, onSelect, readOnly = false }) {
     onSelect(supplier);
   };
 
+  const { highlightedIndex, handleKeyDown: handleDropdownKeyDown } = useKeyboardDropdown({
+    isOpen: showDropdown,
+    options: suppliers,
+    open: () => setShowDropdown(true),
+    close: () => setShowDropdown(false),
+    onSelect: handleSelectItem,
+  });
+
   return (
-    <div className="relative" data-keyboard-dropdown>
+    <div className="relative" data-keyboard-dropdown data-managed-keyboard-dropdown>
       <input
         type="text"
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
         onFocus={() => setShowDropdown(true)}
         onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
+        onKeyDown={handleDropdownKeyDown}
         readOnly={readOnly}
         className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${
           readOnly ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
@@ -3474,7 +3492,7 @@ function SupplierSearchDropdown({ value, onSelect, readOnly = false }) {
               data-keyboard-option
               role="option"
               onMouseDown={() => handleSelectItem(supplier)}
-              className="p-3 hover:bg-slate-50 cursor-pointer border-b border-slate-100"
+              className={`p-3 hover:bg-slate-50 cursor-pointer border-b border-slate-100 ${highlightedIndex === suppliers.indexOf(supplier) ? 'bg-sky-50' : ''}`}
             >
               <div className="font-medium text-slate-800">{supplier.supplierName}</div>
               <div className="text-xs text-slate-500">Code: {supplier.supplierCode}</div>
@@ -3510,6 +3528,14 @@ function MultiSelectOrderPanelDropdown({ selectedPanels = [], onSelect, placehol
     onSelect(null, panelId);
   };
 
+  const { highlightedIndex, handleKeyDown: handleDropdownKeyDown } = useKeyboardDropdown({
+    isOpen: showDropdown,
+    options: availablePanels,
+    open: () => setShowDropdown(true),
+    close: () => setShowDropdown(false),
+    onSelect: handleSelectPanel,
+  });
+
   if (readOnly) {
     return (
       <div className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 min-h-[42px]">
@@ -3530,7 +3556,7 @@ function MultiSelectOrderPanelDropdown({ selectedPanels = [], onSelect, placehol
   }
 
   return (
-    <div className="relative" data-keyboard-dropdown>
+    <div className="relative" data-keyboard-dropdown data-managed-keyboard-dropdown>
       {selectedPanels.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-2 p-2 border border-yellow-200 rounded-lg bg-yellow-50">
           {selectedPanels.map((panel) => (
@@ -3550,6 +3576,7 @@ function MultiSelectOrderPanelDropdown({ selectedPanels = [], onSelect, placehol
         onChange={(e) => setSearchQuery(e.target.value)}
         onFocus={() => setShowDropdown(true)}
         onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
+        onKeyDown={handleDropdownKeyDown}
         className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
         placeholder={placeholder}
         autoComplete="off"
@@ -3565,7 +3592,7 @@ function MultiSelectOrderPanelDropdown({ selectedPanels = [], onSelect, placehol
               data-keyboard-option
               role="option"
               onMouseDown={() => handleSelectPanel(panel)}
-              className="p-3 hover:bg-slate-50 cursor-pointer border-b border-slate-100"
+              className={`p-3 hover:bg-slate-50 cursor-pointer border-b border-slate-100 ${highlightedIndex === availablePanels.indexOf(panel) ? 'bg-sky-50' : ''}`}
             >
               <div className="font-medium text-slate-800">{panel.orderPanelNo}</div>
               <div className="text-xs text-slate-500">
