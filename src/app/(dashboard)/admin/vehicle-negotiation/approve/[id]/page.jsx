@@ -3105,6 +3105,7 @@
 import { useMemo, useRef, useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import mongoose from 'mongoose';
+import TransactionFormKeyboardNavigation from "@/components/TransactionFormKeyboardNavigation";
 
 /* =======================
   HELPERS / CONSTANTS
@@ -3384,7 +3385,7 @@ function SearchableDropdown({
   };
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative" ref={dropdownRef} data-keyboard-dropdown>
       <input
         type="text"
         value={searchQuery}
@@ -3397,13 +3398,18 @@ function SearchableDropdown({
         }`}
         placeholder={placeholder}
         autoComplete="off"
+        role="combobox"
+        aria-expanded={showDropdown}
+        aria-haspopup="listbox"
       />
       
       {showDropdown && !disabled && filteredItems.length > 0 && (
-        <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+        <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto" role="listbox">
           {filteredItems.map((item) => (
             <div
               key={item._id}
+              data-keyboard-option
+              role="option"
               onMouseDown={() => handleSelectItem(item)}
               className="p-3 hover:bg-slate-50 cursor-pointer border-b border-slate-100"
             >
@@ -3442,7 +3448,7 @@ function SupplierSearchDropdown({ value, onSelect, readOnly = false }) {
   };
 
   return (
-    <div className="relative">
+    <div className="relative" data-keyboard-dropdown>
       <input
         type="text"
         value={searchQuery}
@@ -3455,13 +3461,18 @@ function SupplierSearchDropdown({ value, onSelect, readOnly = false }) {
         }`}
         placeholder="Search supplier..."
         autoComplete="off"
+        role="combobox"
+        aria-expanded={showDropdown}
+        aria-haspopup="listbox"
       />
       
       {showDropdown && !readOnly && suppliers.length > 0 && (
-        <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+        <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto" role="listbox">
           {suppliers.map((supplier) => (
             <div
               key={supplier._id}
+              data-keyboard-option
+              role="option"
               onMouseDown={() => handleSelectItem(supplier)}
               className="p-3 hover:bg-slate-50 cursor-pointer border-b border-slate-100"
             >
@@ -3519,7 +3530,7 @@ function MultiSelectOrderPanelDropdown({ selectedPanels = [], onSelect, placehol
   }
 
   return (
-    <div className="relative">
+    <div className="relative" data-keyboard-dropdown>
       {selectedPanels.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-2 p-2 border border-yellow-200 rounded-lg bg-yellow-50">
           {selectedPanels.map((panel) => (
@@ -3542,12 +3553,17 @@ function MultiSelectOrderPanelDropdown({ selectedPanels = [], onSelect, placehol
         className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
         placeholder={placeholder}
         autoComplete="off"
+        role="combobox"
+        aria-expanded={showDropdown}
+        aria-haspopup="listbox"
       />
       {showDropdown && availablePanels.length > 0 && (
-        <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+        <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto" role="listbox">
           {availablePanels.map((panel) => (
             <div
               key={panel._id}
+              data-keyboard-option
+              role="option"
               onMouseDown={() => handleSelectPanel(panel)}
               className="p-3 hover:bg-slate-50 cursor-pointer border-b border-slate-100"
             >
@@ -4266,6 +4282,7 @@ export default function ApproveVehicleNegotiation() {
   }
 
   return (
+    <TransactionFormKeyboardNavigation>
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white">
       {/* Top Bar */}
       <div className="sticky top-0 z-40 border-b bg-white/80 backdrop-blur">
@@ -4598,5 +4615,6 @@ export default function ApproveVehicleNegotiation() {
         </Card>
       </div>
     </div>
+    </TransactionFormKeyboardNavigation>
   );
 }

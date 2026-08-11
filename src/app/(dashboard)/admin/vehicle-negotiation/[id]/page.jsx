@@ -5828,6 +5828,7 @@
 import { useMemo, useRef, useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import mongoose from 'mongoose';
+import TransactionFormKeyboardNavigation from "@/components/TransactionFormKeyboardNavigation";
 
 /* =======================
   HELPERS / CONSTANTS
@@ -6276,7 +6277,7 @@ function TableSearchableDropdown({
   }, [showDropdown]);
 
   return (
-    <div className="relative w-full">
+    <div className="relative w-full" data-keyboard-dropdown>
       <input
         ref={inputRef}
         type="text"
@@ -6289,6 +6290,9 @@ function TableSearchableDropdown({
         required={required}
         disabled={disabled}
         autoComplete="off"
+        role="combobox"
+        aria-expanded={showDropdown}
+        aria-haspopup="listbox"
       />
       
       {showDropdown && !disabled && (
@@ -6302,11 +6306,14 @@ function TableSearchableDropdown({
             zIndex: 9999
           }}
           className="bg-white border border-slate-200 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+          role="listbox"
         >
           {filteredItems.length > 0 ? (
             filteredItems.map((item) => (
               <div
                 key={item._id}
+                data-keyboard-option
+                role="option"
                 onMouseDown={(e) => {
                   e.preventDefault();
                   handleSelectItem(item);
@@ -6434,7 +6441,7 @@ function SearchableDropdown({
   };
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative" ref={dropdownRef} data-keyboard-dropdown>
       <input
         type="text"
         value={searchQuery}
@@ -6448,14 +6455,19 @@ function SearchableDropdown({
         required={required}
         disabled={disabled}
         autoComplete="off"
+        role="combobox"
+        aria-expanded={showDropdown}
+        aria-haspopup="listbox"
       />
       
       {showDropdown && !disabled && (
-        <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+        <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto" role="listbox">
           {filteredItems.length > 0 ? (
             filteredItems.map((item) => (
               <div
                 key={item._id}
+                data-keyboard-option
+                role="option"
                 onMouseDown={() => handleSelectItem(item)}
                 className={`p-3 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors ${
                   selectedItem?._id === item._id ? 'bg-sky-50' : ''
@@ -6558,7 +6570,7 @@ function SupplierSearchDropdown({
   };
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative" ref={dropdownRef} data-keyboard-dropdown>
       <input
         type="text"
         value={searchQuery}
@@ -6571,10 +6583,13 @@ function SupplierSearchDropdown({
         }`}
         placeholder={placeholder}
         autoComplete="off"
+        role="combobox"
+        aria-expanded={showDropdown}
+        aria-haspopup="listbox"
       />
       
       {showDropdown && !readOnly && (
-        <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+        <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto" role="listbox">
           {supplierSearch.loading ? (
             <div className="p-3 text-center text-sm text-slate-500">
               <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-sky-500 mx-auto"></div>
@@ -6584,6 +6599,8 @@ function SupplierSearchDropdown({
             suppliers.map((supplier) => (
               <div
                 key={supplier._id}
+                data-keyboard-option
+                role="option"
                 onMouseDown={() => handleSelectItem(supplier)}
                 className="p-3 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors"
               >
@@ -6729,7 +6746,7 @@ function MultiSelectOrderPanelDropdown({
   }, []);
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative" ref={dropdownRef} data-keyboard-dropdown>
       {selectedPanels.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-2 p-2 border border-yellow-200 rounded-lg bg-yellow-50">
           {selectedPanels.map((panel) => (
@@ -6765,11 +6782,15 @@ function MultiSelectOrderPanelDropdown({
         className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
         placeholder={placeholder}
         autoComplete="off"
+        role="combobox"
+        aria-expanded={showDropdown}
+        aria-haspopup="listbox"
       />
       
       {showDropdown && (
         <div 
           className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto"
+          role="listbox"
         >
           {loading || orderPanelSearch.loading ? (
             <div className="p-3 text-center text-sm text-slate-500">
@@ -6780,6 +6801,8 @@ function MultiSelectOrderPanelDropdown({
             panels.map((panel) => (
               <div
                 key={panel._id}
+                data-keyboard-option
+                role="option"
                 onMouseDown={(e) => {
                   e.preventDefault();
                   handleSelectPanel(panel);
@@ -8280,6 +8303,7 @@ export default function EditVehicleNegotiation() {
   }
 
   return (
+    <TransactionFormKeyboardNavigation>
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white">
       <div className="sticky top-0 z-40 border-b bg-white/80 backdrop-blur">
         <div className="mx-auto max-w-full px-4 py-3 flex items-center justify-between">
@@ -8431,7 +8455,7 @@ export default function EditVehicleNegotiation() {
             <Select col="col-span-12 md:col-span-3" label="Delivery" value={header.delivery} onChange={(v) => setHeader((p) => ({ ...p, delivery: v }))} options={["Urgent", "Normal", "Express", "Scheduled"]} readOnly={selectedOrderPanels.length > 0} />
             <Input type="date" col="col-span-12 md:col-span-3" label="Date" value={header.date} onChange={(v) => setHeader((p) => ({ ...p, date: v }))} readOnly={selectedOrderPanels.length > 0} />
             
-            <div className="col-span-12 md:col-span-3 relative">
+            <div className="col-span-12 md:col-span-3 relative" data-keyboard-dropdown>
               <label className="text-xs font-bold text-slate-600">Party Name</label>
               <input
                 type="text"
@@ -8443,9 +8467,12 @@ export default function EditVehicleNegotiation() {
                 className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${selectedOrderPanels.length > 0 ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'}`}
                 placeholder="Search customer by name..."
                 autoComplete="off"
+                role="combobox"
+                aria-expanded={showCustomerDropdown}
+                aria-haspopup="listbox"
               />
               {showCustomerDropdown && selectedOrderPanels.length === 0 && (
-                <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto" role="listbox">
                   {customerSearch.loading ? (
                     <div className="p-3 text-center text-sm text-slate-500">
                       <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-sky-500 mx-auto"></div>
@@ -8453,7 +8480,7 @@ export default function EditVehicleNegotiation() {
                     </div>
                   ) : filteredCustomers.length > 0 ? (
                     filteredCustomers.map((customer) => (
-                      <div key={customer._id} onMouseDown={() => handleSelectCustomer(customer)} className="p-3 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0">
+                      <div key={customer._id} data-keyboard-option role="option" onMouseDown={() => handleSelectCustomer(customer)} className="p-3 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0">
                         <div className="font-medium text-slate-800">{customer.customerName}</div>
                         <div className="text-xs text-slate-500 mt-1">Code: {customer.customerCode}</div>
                       </div>
@@ -8790,5 +8817,6 @@ export default function EditVehicleNegotiation() {
         </Card>
       </div>
     </div>
+    </TransactionFormKeyboardNavigation>
   );
 }
