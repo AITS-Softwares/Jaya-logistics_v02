@@ -1411,6 +1411,7 @@ import ConsignmentNote from "./ConsignmentNote";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import { getNextLRNumber } from "./ConsignmentCounter";
 import mongoose from 'mongoose';
+import { activeOperatingCompanyId, companyScopeFilter } from "@/lib/companyScope";
 
 // ── PERMISSION FUNCTIONS ──
 
@@ -1453,6 +1454,7 @@ async function validateUser(req, requiredAction = null) {
   try {
     const user = verifyJWT(token);
     if (!user) return { error: "Invalid or expired token. Please login again.", status: 401 };
+    try { activeOperatingCompanyId(user); } catch (error) { return { error: error.message, status: 401 }; }
     
     if (!isAuthorized(user)) {
       return { 
@@ -1520,10 +1522,7 @@ export async function GET(req) {
         }, { status: 400 });
       }
 
-      const note = await ConsignmentNote.findOne({
-        _id: id,
-        companyId: user.companyId
-      }).lean();
+      const note = await ConsignmentNote.findOne(companyScopeFilter(user, { _id: id })).lean();
 
       if (!note) {
         return NextResponse.json({ 
@@ -1540,10 +1539,7 @@ export async function GET(req) {
 
     // ============ CASE 2: GET SINGLE BY LR NUMBER ============
     if (lrNo) {
-      const note = await ConsignmentNote.findOne({
-        lrNo: lrNo,
-        companyId: user.companyId
-      }).lean();
+      const note = await ConsignmentNote.findOne(companyScopeFilter(user, { lrNo })).lean();
 
       if (!note) {
         return NextResponse.json({ 
@@ -1560,7 +1556,7 @@ export async function GET(req) {
 
     // ============ CASE 3: TABLE FORMAT FOR LIST VIEW ============
     if (format === 'table') {
-      let query = { companyId: user.companyId };
+      let query = {};
 
       // Search filter
       if (search) {
@@ -1593,7 +1589,7 @@ export async function GET(req) {
         }
       }
 
-      const notes = await ConsignmentNote.find(query)
+      const notes = await ConsignmentNote.find(companyScopeFilter(user, query))
         .sort({ createdAt: -1 })
         .lean();
 
@@ -1625,9 +1621,7 @@ export async function GET(req) {
     }
 
     // ============ CASE 4: LIST FOR DROPDOWNS ============
-    const notes = await ConsignmentNote.find({ 
-      companyId: user.companyId 
-    })
+    const notes = await ConsignmentNote.find(companyScopeFilter(user))
     .select('lrNo loadingInfoNo vnnNo subCompanyName subCompanyCode header.partyName header.orderNo header.status')
     .sort({ createdAt: -1 })
     .lean();
@@ -1670,10 +1664,7 @@ export async function POST(req) {
 
     // Check if loadingInfoNo is already used (if provided)
     if (body.loadingInfoNo) {
-      const existing = await ConsignmentNote.findOne({
-        loadingInfoNo: body.loadingInfoNo,
-        companyId: user.companyId
-      });
+      const existing = await ConsignmentNote.findOne(companyScopeFilter(user, { loadingInfoNo: body.loadingInfoNo }));
       
       if (existing) {
         return NextResponse.json({ 
@@ -1684,9 +1675,9 @@ export async function POST(req) {
     }
 
     // ✅ Get sub-company from body
-    const subCompanyId = body.subCompanyId || body.header?.subCompanyId || null;
-    const subCompanyName = body.subCompanyName || body.header?.subCompanyName || '';
-    const subCompanyCode = body.subCompanyCode || body.header?.subCompanyCode || '';
+    const subCompanyId = user.activeOperatingCompanyId;
+    const subCompanyName = user.activeOperatingCompanyName || '';
+    const subCompanyCode = user.activeOperatingCompanyCode || '';
 
     // Process pack data from frontend structure
     const packData = {
@@ -1891,10 +1882,7 @@ export async function PUT(req) {
       }, { status: 400 });
     }
 
-    const note = await ConsignmentNote.findOne({
-      _id: id,
-      companyId: user.companyId
-    });
+    const note = await ConsignmentNote.findOne(companyScopeFilter(user, { _id: id }));
 
     if (!note) {
       return NextResponse.json({ 
@@ -1905,11 +1893,10 @@ export async function PUT(req) {
 
     // Check if loadingInfoNo is being changed and if new one is already used
     if (body.loadingInfoNo && body.loadingInfoNo !== note.loadingInfoNo) {
-      const existing = await ConsignmentNote.findOne({
+      const existing = await ConsignmentNote.findOne(companyScopeFilter(user, {
         loadingInfoNo: body.loadingInfoNo,
-        companyId: user.companyId,
-        _id: { $ne: id }
-      });
+        _id: { $ne: id },
+      }));
       
       if (existing) {
         return NextResponse.json({ 
@@ -1920,11 +1907,9 @@ export async function PUT(req) {
     }
 
     // ✅ Update sub-company
-    if (body.subCompanyId !== undefined) {
-      note.subCompanyId = body.subCompanyId || null;
-      note.subCompanyName = body.subCompanyName || '';
-      note.subCompanyCode = body.subCompanyCode || '';
-    }
+    note.subCompanyId = user.activeOperatingCompanyId;
+    note.subCompanyName = user.activeOperatingCompanyName || '';
+    note.subCompanyCode = user.activeOperatingCompanyCode || '';
 
     // Update reference fields
     if (body.vnnNo !== undefined) note.vnnNo = body.vnnNo;
@@ -1944,9 +1929,9 @@ export async function PUT(req) {
       note.header = {
         ...note.header,
         ...body.header,
-        subCompanyId: body.header.subCompanyId !== undefined ? body.header.subCompanyId : note.subCompanyId,
-        subCompanyName: body.header.subCompanyName !== undefined ? body.header.subCompanyName : note.subCompanyName,
-        subCompanyCode: body.header.subCompanyCode !== undefined ? body.header.subCompanyCode : note.subCompanyCode
+        subCompanyId: user.activeOperatingCompanyId,
+        subCompanyName: user.activeOperatingCompanyName || '',
+        subCompanyCode: user.activeOperatingCompanyCode || ''
       };
     }
 
@@ -2103,10 +2088,7 @@ export async function DELETE(req) {
     }
 
     // Find the note first to check if it exists
-    const note = await ConsignmentNote.findOne({
-      _id: id,
-      companyId: user.companyId
-    });
+    const note = await ConsignmentNote.findOne(companyScopeFilter(user, { _id: id }));
 
     if (!note) {
       return NextResponse.json({ 
@@ -2124,10 +2106,7 @@ export async function DELETE(req) {
     }
 
     // Delete the note
-    await ConsignmentNote.deleteOne({
-      _id: id,
-      companyId: user.companyId
-    });
+    await ConsignmentNote.deleteOne(companyScopeFilter(user, { _id: id }));
 
     console.log(`✅ Consignment note deleted: ${note.lrNo}`);
 
@@ -2177,10 +2156,7 @@ export async function PATCH(req) {
 
     console.log(`📝 Updating consignment note status: ${id} - ${action}`);
     
-    const note = await ConsignmentNote.findOne({
-      _id: id,
-      companyId: user.companyId
-    });
+    const note = await ConsignmentNote.findOne(companyScopeFilter(user, { _id: id }));
 
     if (!note) {
       return NextResponse.json({ 

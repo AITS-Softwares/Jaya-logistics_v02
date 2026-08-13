@@ -4,6 +4,7 @@ import CompanyUser from "@/models/CompanyUser";
 import { NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
+import { ensureOperatingCompanies } from "@/lib/companyScope";
 
 const SECRET = process.env.JWT_SECRET;
 
@@ -12,6 +13,27 @@ const VALID_ROLES = [
   "Purchase Manager", "Inventory Manager", "Accounts Manager", 
   "HR Manager", "Agent", "Production Head", "Project Manager", "Employee"
 ];
+
+async function resolveOperatingCompanyAccess(companyId, inputIds, accessAll, defaultId) {
+  const operatingCompanies = await ensureOperatingCompanies(companyId);
+  const validIds = new Set(operatingCompanies.map((company) => company._id.toString()));
+  const ids = [...new Set((Array.isArray(inputIds) ? inputIds : []).map(String))];
+  if (ids.some((id) => !validIds.has(id))) throw new Error("One or more selected companies are invalid");
+  if (accessAll === true) {
+    return { operatingCompanyIds: [], defaultOperatingCompanyId: null, accessAllOperatingCompanies: true };
+  }
+  const fallback = operatingCompanies.find((company) => company.code === "JGL");
+  const resolvedIds = ids.length ? ids : (fallback ? [fallback._id.toString()] : []);
+  const resolvedDefault = defaultId && resolvedIds.includes(String(defaultId))
+    ? String(defaultId)
+    : resolvedIds[0] || null;
+  if (!resolvedDefault) throw new Error("At least one company must be assigned to the user");
+  return {
+    operatingCompanyIds: resolvedIds,
+    defaultOperatingCompanyId: resolvedDefault,
+    accessAllOperatingCompanies: false,
+  };
+}
 
 // ─── Helper ───
 function verifyCompany(req) {
@@ -28,6 +50,11 @@ export async function GET(req, { params }) {
   try {
     const company = verifyCompany(req);
     await dbConnect();
+
+    const hasCompanyAccessUpdate =
+      Object.prototype.hasOwnProperty.call(body, "operatingCompanyIds") ||
+      Object.prototype.hasOwnProperty.call(body, "accessAllOperatingCompanies") ||
+      Object.prototype.hasOwnProperty.call(body, "defaultOperatingCompanyId");
 
     const { id } = params;
     const user = await CompanyUser.findOne({
@@ -114,6 +141,18 @@ export async function PUT(req, { params }) {
       roles: body.roles || user.roles,
       employeeId: body.employeeId || user.employeeId,
     };
+
+    if (hasCompanyAccessUpdate) {
+      Object.assign(
+        updateData,
+        await resolveOperatingCompanyAccess(
+          company.companyId,
+          body.operatingCompanyIds,
+          body.accessAllOperatingCompanies === true,
+          body.defaultOperatingCompanyId
+        )
+      );
+    }
 
     // Handle modules if provided
     if (body.modules && typeof body.modules === 'object') {

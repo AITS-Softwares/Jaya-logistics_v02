@@ -970,6 +970,7 @@ import PricingPanel from "./PricingPanel";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import { getNextPricingSerialNumber } from "./PricingCounter";
 import mongoose from 'mongoose';
+import { activeOperatingCompanyId, companyScopeFilter } from "@/lib/companyScope";
 
 // ── PERMISSION FUNCTIONS ──
 
@@ -1008,6 +1009,7 @@ async function validateUser(req, requiredAction = null) {
   try {
     const user = verifyJWT(token);
     if (!user) return { error: "Invalid or expired token. Please login again.", status: 401 };
+    try { activeOperatingCompanyId(user); } catch (error) { return { error: error.message, status: 401 }; }
     
     if (!isAuthorized(user)) {
       return { 
@@ -1082,10 +1084,7 @@ export async function GET(req) {
         }, { status: 400 });
       }
       
-      const pricingPanel = await PricingPanel.findOne({
-        _id: id,
-        companyId: user.companyId
-      }).lean();
+      const pricingPanel = await PricingPanel.findOne(companyScopeFilter(user, { _id: id })).lean();
 
       if (!pricingPanel) {
         return NextResponse.json({ 
@@ -1103,10 +1102,7 @@ export async function GET(req) {
     if (format === 'table') {
       console.log("📋 Fetching pricing panels for table report");
       
-      let query = { 
-        companyId: user.companyId,
-        status: 'Active'
-      };
+      let query = { status: 'Active' };
 
       if (search) {
         query.$or = [
@@ -1131,7 +1127,7 @@ export async function GET(req) {
         query.date = { ...query.date, $lte: endDate };
       }
 
-      const pricingPanels = await PricingPanel.find(query)
+      const pricingPanels = await PricingPanel.find(companyScopeFilter(user, query))
         .sort({ date: -1, createdAt: -1 })
         .lean();
 
@@ -1218,10 +1214,7 @@ export async function GET(req) {
     
     console.log("📋 Fetching pricing panel list");
     
-    const pricingPanels = await PricingPanel.find({ 
-      companyId: user.companyId,
-      status: 'Active'
-    })
+    const pricingPanels = await PricingPanel.find(companyScopeFilter(user, { status: 'Active' }))
     .select('pricingSerialNo date branchName partyName subCompanyName subCompanyCode totalWeight totalAmount rateApproval.approvalStatus orders')
     .sort({ createdAt: -1 })
     .lean();
@@ -1289,7 +1282,7 @@ export async function POST(req) {
     
     let pricingSerialNo = await getNextPricingSerialNumber(user.companyId);
     
-    const existing = await PricingPanel.findOne({ pricingSerialNo, companyId: user.companyId });
+    const existing = await PricingPanel.findOne(companyScopeFilter(user, { pricingSerialNo }));
     if (existing) {
       pricingSerialNo = await getNextPricingSerialNumber(user.companyId);
     }
@@ -1316,22 +1309,9 @@ export async function POST(req) {
       }
     }
 
-    // Handle sub-company
-    let subCompanyId = null;
-    let subCompanyName = '';
-    let subCompanyCode = '';
-    
-    if (body.header?.subCompanyId) {
-      if (typeof body.header.subCompanyId === 'object' && body.header.subCompanyId !== null) {
-        subCompanyId = body.header.subCompanyId._id || null;
-        subCompanyName = body.header.subCompanyId.name || body.header.subCompanyName || '';
-        subCompanyCode = body.header.subCompanyId.code || body.header.subCompanyCode || '';
-      } else {
-        subCompanyId = body.header.subCompanyId;
-        subCompanyName = body.header.subCompanyName || '';
-        subCompanyCode = body.header.subCompanyCode || '';
-      }
-    }
+    const subCompanyId = user.activeOperatingCompanyId;
+    const subCompanyName = user.activeOperatingCompanyName || '';
+    const subCompanyCode = user.activeOperatingCompanyCode || '';
 
     // Process orders
     const orders = [];
@@ -1371,15 +1351,9 @@ export async function POST(req) {
         let orderSubCompanyName = '';
         let orderSubCompanyCode = '';
         
-        if (order.subCompanyId) {
-          orderSubCompanyId = order.subCompanyId;
-          orderSubCompanyName = order.subCompanyName || '';
-          orderSubCompanyCode = order.subCompanyCode || '';
-        } else if (subCompanyId) {
-          orderSubCompanyId = subCompanyId;
-          orderSubCompanyName = subCompanyName;
-          orderSubCompanyCode = subCompanyCode;
-        }
+        orderSubCompanyId = subCompanyId;
+        orderSubCompanyName = subCompanyName;
+        orderSubCompanyCode = subCompanyCode;
         
         orders.push({
           orderNo: order.orderNo,
@@ -1586,10 +1560,7 @@ export async function PUT(req) {
       }, { status: 400 });
     }
     
-    const pricingPanel = await PricingPanel.findOne({
-      _id: id,
-      companyId: user.companyId
-    });
+    const pricingPanel = await PricingPanel.findOne(companyScopeFilter(user, { _id: id }));
 
     if (!pricingPanel) {
       return NextResponse.json({ 
@@ -1604,12 +1575,9 @@ export async function PUT(req) {
       pricingPanel.branchName = body.header.branchName || pricingPanel.branchName;
       pricingPanel.branchCode = body.header.branchCode || pricingPanel.branchCode;
       
-      // Update sub-company
-      if (body.header.subCompanyId !== undefined) {
-        pricingPanel.subCompanyId = body.header.subCompanyId || null;
-        pricingPanel.subCompanyName = body.header.subCompanyName || '';
-        pricingPanel.subCompanyCode = body.header.subCompanyCode || '';
-      }
+      pricingPanel.subCompanyId = user.activeOperatingCompanyId;
+      pricingPanel.subCompanyName = user.activeOperatingCompanyName || '';
+      pricingPanel.subCompanyCode = user.activeOperatingCompanyCode || '';
       
       pricingPanel.delivery = body.header.delivery || pricingPanel.delivery;
       pricingPanel.date = body.header.date ? new Date(body.header.date) : pricingPanel.date;
@@ -1681,9 +1649,9 @@ export async function PUT(req) {
         weight: parseFloat(order.weight) || 0,
         rate: parseFloat(order.rate) || 0,
         totalAmount: (parseFloat(order.weight) || 0) * (parseFloat(order.rate) || 0),
-        subCompanyId: order.subCompanyId || pricingPanel.subCompanyId || null,
-        subCompanyName: order.subCompanyName || pricingPanel.subCompanyName || '',
-        subCompanyCode: order.subCompanyCode || pricingPanel.subCompanyCode || '',
+        subCompanyId: user.activeOperatingCompanyId,
+        subCompanyName: user.activeOperatingCompanyName || '',
+        subCompanyCode: user.activeOperatingCompanyCode || '',
         localStatus: order.localStatus || 'unknown',
         localStatusLabel: order.localStatusLabel || 'Unknown'
       }));
@@ -1767,10 +1735,7 @@ export async function DELETE(req) {
       }, { status: 400 });
     }
     
-    const pricingPanel = await PricingPanel.findOne({
-      _id: id,
-      companyId: user.companyId
-    });
+    const pricingPanel = await PricingPanel.findOne(companyScopeFilter(user, { _id: id }));
 
     if (!pricingPanel) {
       return NextResponse.json({ 
@@ -1779,10 +1744,7 @@ export async function DELETE(req) {
       }, { status: 404 });
     }
 
-    const result = await PricingPanel.deleteOne({
-      _id: id,
-      companyId: user.companyId
-    });
+    const result = await PricingPanel.deleteOne(companyScopeFilter(user, { _id: id }));
 
     if (result.deletedCount === 0) {
       return NextResponse.json({ 
@@ -1849,10 +1811,7 @@ export async function PATCH(req) {
       }, { status: 400 });
     }
     
-    const pricingPanel = await PricingPanel.findOne({
-      _id: id,
-      companyId: user.companyId
-    });
+    const pricingPanel = await PricingPanel.findOne(companyScopeFilter(user, { _id: id }));
 
     if (!pricingPanel) {
       return NextResponse.json({ 

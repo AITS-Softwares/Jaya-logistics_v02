@@ -701,10 +701,10 @@ import { NextResponse } from "next/server";
 import connectDb from "@/lib/db";
 import OrderPanel from "./OrderPanel";
 
-import SubCompany from "../subcompanies/SubCompany";
 import mongoose from 'mongoose';
 import { withAuth, hasPermission } from "@/lib/auth";
 import { getNextOrderPanelNumber } from "./OrderCounter";
+import { companyScopeFilter } from "@/lib/companyScope";
 
 // ── HELPER FUNCTIONS ──
 
@@ -743,10 +743,7 @@ export const GET = withAuth(async (req, context, user) => {
         }, { status: 400 });
       }
       
-      const orderPanel = await OrderPanel.findOne({
-        _id: id,
-        companyId: user.companyId
-      }).lean();
+      const orderPanel = await OrderPanel.findOne(companyScopeFilter(user, { _id: id })).lean();
 
       if (!orderPanel) {
         return NextResponse.json({ 
@@ -788,7 +785,7 @@ export const GET = withAuth(async (req, context, user) => {
     
     // CASE 2: Get flattened data for table view
     if (isTable) {
-      let query = { companyId: user.companyId };
+      let query = companyScopeFilter(user);
       
       const orderPanels = await OrderPanel.find(query)
         .sort({ createdAt: -1 })
@@ -876,7 +873,7 @@ export const GET = withAuth(async (req, context, user) => {
     }
     
     // CASE 3: Get list of orders (summary only)
-    let query = { companyId: user.companyId };
+    let query = companyScopeFilter(user);
     
     const orderPanels = await OrderPanel.find(query)
       .sort({ createdAt: -1 })
@@ -922,10 +919,7 @@ export const POST = withAuth(async (req, context, user) => {
     
     let orderPanelNo = await getNextOrderPanelNumber(user.companyId);
     
-    const existingOrderPanel = await OrderPanel.findOne({ 
-      orderPanelNo, 
-      companyId: user.companyId 
-    });
+    const existingOrderPanel = await OrderPanel.findOne(companyScopeFilter(user, { orderPanelNo }));
     
     if (existingOrderPanel) {
       orderPanelNo = `OP-${Date.now().toString().slice(-6)}`;
@@ -938,22 +932,11 @@ export const POST = withAuth(async (req, context, user) => {
       branchCode = body.branchCode || '';
     }
 
-    // Get sub-company details if provided
-    let subCompanyId = null;
-    let subCompanyName = '';
-    let subCompanyCode = '';
-    
-    if (body.subCompanyId) {
-      const subCompany = await SubCompany.findOne({
-        _id: body.subCompanyId,
-        companyId: user.companyId
-      });
-      if (subCompany) {
-        subCompanyId = subCompany._id;
-        subCompanyName = subCompany.name;
-        subCompanyCode = subCompany.code;
-      }
-    }
+    // Never trust a form-supplied company id. The login selection is the only
+    // source of the company recorded on a transactional document.
+    const subCompanyId = user.activeOperatingCompanyId;
+    const subCompanyName = user.activeOperatingCompanyName || '';
+    const subCompanyCode = user.activeOperatingCompanyCode || '';
 
     const processedPlantRows = (body.plantRows || []).map((row) => {
       const weight = num(row.weight);
@@ -1168,10 +1151,7 @@ export const PUT = withAuth(async (req, context, user) => {
       }, { status: 400 });
     }
 
-    const orderPanel = await OrderPanel.findOne({
-      _id: id,
-      companyId: user.companyId
-    });
+    const orderPanel = await OrderPanel.findOne(companyScopeFilter(user, { _id: id }));
 
     if (!orderPanel) {
       return NextResponse.json({ 
@@ -1180,22 +1160,9 @@ export const PUT = withAuth(async (req, context, user) => {
       }, { status: 404 });
     }
 
-    // Update sub-company fields
-    if (body.subCompanyId) {
-      const subCompany = await SubCompany.findOne({
-        _id: body.subCompanyId,
-        companyId: user.companyId
-      });
-      if (subCompany) {
-        orderPanel.subCompanyId = subCompany._id;
-        orderPanel.subCompanyName = subCompany.name;
-        orderPanel.subCompanyCode = subCompany.code;
-      }
-    } else {
-      orderPanel.subCompanyId = null;
-      orderPanel.subCompanyName = '';
-      orderPanel.subCompanyCode = '';
-    }
+    orderPanel.subCompanyId = user.activeOperatingCompanyId;
+    orderPanel.subCompanyName = user.activeOperatingCompanyName || '';
+    orderPanel.subCompanyCode = user.activeOperatingCompanyCode || '';
 
     // Update other fields
     if (body.branchName) orderPanel.branchName = body.branchName;
@@ -1348,10 +1315,7 @@ export const DELETE = withAuth(async (req, context, user) => {
       }, { status: 400 });
     }
 
-    const result = await OrderPanel.deleteOne({
-      _id: id,
-      companyId: user.companyId
-    });
+    const result = await OrderPanel.deleteOne(companyScopeFilter(user, { _id: id }));
 
     if (result.deletedCount === 0) {
       return NextResponse.json({ 
@@ -1389,10 +1353,7 @@ export const PATCH = withAuth(async (req, context, user) => {
       }, { status: 400 });
     }
 
-    const orderPanel = await OrderPanel.findOne({
-      _id: id,
-      companyId: user.companyId
-    });
+    const orderPanel = await OrderPanel.findOne(companyScopeFilter(user, { _id: id }));
 
     if (!orderPanel) {
       return NextResponse.json({ 

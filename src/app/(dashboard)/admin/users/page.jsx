@@ -182,6 +182,7 @@ const defaultColor = { bg: "bg-gray-50", text: "text-gray-600", border: "border-
 
 const emptyForm = () => ({
   employeeId: "", name: "", email: "", password: "", roles: [], modules: {},
+  operatingCompanyIds: [], defaultOperatingCompanyId: "", accessAllOperatingCompanies: true,
 });
 
 export default function UsersPage() {
@@ -197,12 +198,19 @@ export default function UsersPage() {
   const [showPw, setShowPw]       = useState(false);
   const [expandedMods, setExpandedMods] = useState({});
   const [activeTab, setActiveTab] = useState("info"); // "info" | "roles" | "modules"
+  const [operatingCompanies, setOperatingCompanies] = useState([]);
 
   useEffect(() => {
     if (typeof window !== "undefined") setToken(localStorage.getItem("token"));
   }, []);
 
-  useEffect(() => { if (token) fetchUsers(); }, [token]);
+  useEffect(() => {
+    if (!token) return;
+    fetchUsers();
+    axios.get("/api/subcompanies?operatingOnly=true&limit=100", {
+      headers: { Authorization: `Bearer ${token}` },
+    }).then(({ data }) => setOperatingCompanies(data?.data || [])).catch(() => setOperatingCompanies([]));
+  }, [token]);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -276,11 +284,30 @@ export default function UsersPage() {
 
   const toggleModExpand = (mod) => setExpandedMods(prev => ({ ...prev, [mod]: !prev[mod] }));
 
+  const toggleOperatingCompany = (companyId) => {
+    setForm((prev) => {
+      const selected = prev.operatingCompanyIds.includes(companyId);
+      const operatingCompanyIds = selected
+        ? prev.operatingCompanyIds.filter((id) => id !== companyId)
+        : [...prev.operatingCompanyIds, companyId];
+      return {
+        ...prev,
+        operatingCompanyIds,
+        defaultOperatingCompanyId: selected && prev.defaultOperatingCompanyId === companyId
+          ? (operatingCompanyIds[0] || "")
+          : (prev.defaultOperatingCompanyId || companyId),
+      };
+    });
+  };
+
   // ── Submit ──
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErr("");
     if (!form.roles.length) return setErr("At least one role is required.");
+    if (!form.accessAllOperatingCompanies && !form.operatingCompanyIds.length) {
+      return setErr("Assign at least one operating company, or allow access to all companies.");
+    }
     setSaving(true);
     try {
       if (editingUser) {
@@ -313,7 +340,12 @@ export default function UsersPage() {
       });
     });
     setEditingUser(user);
-    setForm({ employeeId: user?.employeeId?._id || "", name: user?.name || "", email: user?.email || "", password: "", roles, modules: restoredModules });
+    setForm({
+      employeeId: user?.employeeId?._id || "", name: user?.name || "", email: user?.email || "", password: "", roles, modules: restoredModules,
+      operatingCompanyIds: (user?.operatingCompanyIds || []).map((id) => typeof id === "string" ? id : id?._id || String(id)),
+      defaultOperatingCompanyId: user?.defaultOperatingCompanyId?._id || user?.defaultOperatingCompanyId || "",
+      accessAllOperatingCompanies: user?.accessAllOperatingCompanies === true,
+    });
     setActiveTab("info");
     setOpenModal(true);
   };
@@ -538,6 +570,58 @@ export default function UsersPage() {
                           {showPw ? <FiEyeOff className="text-sm" /> : <FiEye className="text-sm" />}
                         </button>
                       </div>
+                    </div>
+
+                    <div className="rounded-xl border border-gray-200 bg-gray-50 p-3.5">
+                      <div className="flex items-start justify-between gap-4 mb-3">
+                        <div>
+                          <p className="text-[10.5px] font-bold uppercase tracking-wider text-gray-500">Operating company access *</p>
+                          <p className="text-xs text-gray-400 mt-1">Users can sign in only to an assigned company.</p>
+                        </div>
+                        <label className="flex items-center gap-2 text-xs font-semibold text-gray-600 cursor-pointer whitespace-nowrap">
+                          <input
+                            type="checkbox"
+                            checked={form.accessAllOperatingCompanies}
+                            onChange={(e) => setForm((prev) => ({
+                              ...prev,
+                              accessAllOperatingCompanies: e.target.checked,
+                              operatingCompanyIds: e.target.checked ? [] : prev.operatingCompanyIds,
+                              defaultOperatingCompanyId: e.target.checked ? "" : prev.defaultOperatingCompanyId,
+                            }))}
+                            className="accent-indigo-600"
+                          />
+                          All companies
+                        </label>
+                      </div>
+                      {!form.accessAllOperatingCompanies && (
+                        <div className="space-y-2">
+                          {operatingCompanies.map((company) => {
+                            const id = company._id;
+                            const checked = form.operatingCompanyIds.includes(id);
+                            return (
+                              <div key={id} className="flex items-center justify-between gap-3">
+                                <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                                  <input type="checkbox" checked={checked} onChange={() => toggleOperatingCompany(id)} className="accent-indigo-600" />
+                                  {company.name}
+                                </label>
+                                {checked && (
+                                  <label className="flex items-center gap-1.5 text-[11px] text-gray-500 cursor-pointer">
+                                    <input
+                                      type="radio"
+                                      name="defaultOperatingCompany"
+                                      checked={form.defaultOperatingCompanyId === id}
+                                      onChange={() => setForm((prev) => ({ ...prev, defaultOperatingCompanyId: id }))}
+                                      className="accent-indigo-600"
+                                    />
+                                    Default
+                                  </label>
+                                )}
+                              </div>
+                            );
+                          })}
+                          {operatingCompanies.length === 0 && <p className="text-xs text-amber-600">Company list is loading. Please reopen this form if it does not appear.</p>}
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}

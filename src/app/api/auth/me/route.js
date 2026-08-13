@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import dbConnect from "@/lib/db";
 import CompanyUser from "@/models/CompanyUser";
 import Company from "@/models/Company";
+import SubCompany from "@/models/SubCompany";
 
 const SECRET = process.env.JWT_SECRET;
 
@@ -75,6 +76,29 @@ export async function GET(req) {
         { success: false, msg: "User not found" },
         { status: 404 }
       );
+    }
+
+    // Validate and expose the operating company that was chosen at login.
+    // A token without this value remains valid for non-transaction legacy
+    // screens, but scoped transaction routes deliberately reject it.
+    if (decoded.activeOperatingCompanyId) {
+      const operatingCompany = await SubCompany.findOne({
+        _id: decoded.activeOperatingCompanyId,
+        companyId: decoded.companyId,
+        isActive: true,
+        isOperatingCompany: true,
+      }).select("name code legalProfile.legalName legalProfile.documentPrefix");
+
+      if (!operatingCompany) {
+        return NextResponse.json(
+          { success: false, msg: "Selected company is no longer available. Please login again." },
+          { status: 401 }
+        );
+      }
+
+      user.activeOperatingCompanyId = operatingCompany._id;
+      user.activeOperatingCompany = operatingCompany.toObject();
+      user.accessAllOperatingCompanies = decoded.accessAllOperatingCompanies === true;
     }
 
     return NextResponse.json({ success: true, user });

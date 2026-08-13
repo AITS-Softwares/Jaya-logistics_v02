@@ -95,24 +95,34 @@ import jwt from "jsonwebtoken";
 
 const SECRET = process.env.JWT_SECRET;
 
+// Mongoose stores `modules` as a MongooseMap. Calling `.toObject()` on that
+// map still returns a Map, which JSON Web Token serialises as `{}`. Convert it
+// explicitly before signing so existing module permissions survive login.
+function serializeModules(modules) {
+  if (!modules) return {};
+
+  const entries = typeof modules.entries === "function"
+    ? Array.from(modules.entries())
+    : Object.entries(modules);
+
+  return entries.reduce((result, [name, value]) => {
+    const plainValue = value && typeof value.toObject === "function"
+      ? value.toObject()
+      : value || {};
+
+    result[name] = {
+      selected: plainValue.selected === true,
+      permissions: plainValue.permissions || {},
+    };
+    return result;
+  }, {});
+}
+
 // --------------------------------------------
 // 1. Sign token for both company and user
 // --------------------------------------------
-export function signToken(user) {
-  // Convert modules Map to plain object if needed
-  let modulesObj = user.modules;
-  if (modulesObj && typeof modulesObj.toObject === 'function') {
-    modulesObj = modulesObj.toObject();
-  } else if (modulesObj instanceof Map) {
-    const plainModules = {};
-    for (const [key, value] of modulesObj) {
-      plainModules[key] = {
-        selected: value.selected || false,
-        permissions: value.permissions || {}
-      };
-    }
-    modulesObj = plainModules;
-  }
+export function signToken(user, session = {}) {
+  const modulesObj = serializeModules(user.modules);
 
   return jwt.sign(
     {
@@ -125,6 +135,25 @@ export function signToken(user) {
       permissions: user.permissions || [],
       // Always include companyId
       companyId: user.companyId || user._id,
+      // The selected legal operating company is session-specific. Keeping it in
+      // the token makes every protected route able to apply the same data scope.
+      activeOperatingCompanyId:
+        session.activeOperatingCompany?._id ||
+        session.activeOperatingCompanyId ||
+        user.activeOperatingCompanyId ||
+        null,
+      activeOperatingCompanyName:
+        session.activeOperatingCompany?.name ||
+        session.activeOperatingCompanyName ||
+        user.activeOperatingCompanyName ||
+        null,
+      activeOperatingCompanyCode:
+        session.activeOperatingCompany?.code ||
+        session.activeOperatingCompanyCode ||
+        user.activeOperatingCompanyCode ||
+        null,
+      operatingCompanyIds: (user.operatingCompanyIds || []).map((id) => id.toString()),
+      accessAllOperatingCompanies: user.accessAllOperatingCompanies === true,
     },
     SECRET,
     { expiresIn: "7d" }

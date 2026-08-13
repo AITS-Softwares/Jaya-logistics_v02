@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import dbConnect from '@/lib/db';
 import VehicleNegotiation from '@/app/api/vehicle-negotiation/VehicleNegotiation';
 import { getTokenFromHeader, verifyJWT } from '@/lib/auth';
+import { activeOperatingCompanyId, companyScopeFilter } from '@/lib/companyScope';
 
 function authorize(req) {
   const token = getTokenFromHeader(req);
@@ -10,6 +11,7 @@ function authorize(req) {
   try {
     const user = verifyJWT(token);
     if (!user) return { error: 'Invalid session.', status: 401 };
+    try { activeOperatingCompanyId(user); } catch (error) { return { error: error.message, status: 401 }; }
     if (user.type === 'company' || user.roles?.includes('Admin')) return { user };
     const module = user.modules?.['Vehicle Negotiation'];
     if (!module?.selected || module.permissions?.edit !== true) return { error: 'Vehicle Negotiation edit permission is required.', status: 403 };
@@ -24,7 +26,7 @@ export async function PATCH(req, { params }) {
   if (auth.error) return NextResponse.json({ success: false, message: auth.error }, { status: auth.status });
   const body = await req.json();
   await dbConnect();
-  const record = await VehicleNegotiation.findOne({ _id: id, companyId: auth.user.companyId || auth.user.id });
+  const record = await VehicleNegotiation.findOne(companyScopeFilter(auth.user, { _id: id }));
   if (!record) return NextResponse.json({ success: false, message: 'Vehicle Negotiation not found.' }, { status: 404 });
   if (!record.workflow?.part1Locked || record.approval?.part2Status !== 'Approved') {
     return NextResponse.json({ success: false, message: 'Part 3 is locked until Part 1 is locked and Rate Target is approved.' }, { status: 409 });

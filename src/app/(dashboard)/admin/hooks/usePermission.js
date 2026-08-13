@@ -29,6 +29,8 @@ export function usePermission() {
     };
 
     loadUser();
+    window.addEventListener('erp:user-session-updated', loadUser);
+    return () => window.removeEventListener('erp:user-session-updated', loadUser);
   }, []);
 
   // Use useCallback to memoize the function

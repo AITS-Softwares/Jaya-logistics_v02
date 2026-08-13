@@ -3374,6 +3374,7 @@ import connectDb from "@/lib/db";
 import VehicleNegotiation from "./VehicleNegotiation";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import { getNextVehicleNegotiationNumber } from "./VehicleNegotiationCounter";
+import { activeOperatingCompanyId, companyScopeFilter } from "@/lib/companyScope";
 import mongoose from 'mongoose';
 
 // Helper function to format date as DD/MM/YYYY
@@ -3435,6 +3436,11 @@ async function validateUser(req, requiredAction = null) {
   try {
     const user = verifyJWT(token);
     if (!user) return { error: "Invalid or expired token. Please login again.", status: 401 };
+    try {
+      activeOperatingCompanyId(user);
+    } catch (scopeError) {
+      return { error: scopeError.message, status: 401 };
+    }
     
     // Check if user is authorized at all
     if (!isAuthorized(user)) {
@@ -3484,10 +3490,9 @@ export async function GET(req) {
     if (vnnNo) {
       console.log(`📄 GET vehicle negotiation by VNN: ${vnnNo}`);
       
-      const vehicleNegotiation = await VehicleNegotiation.findOne({
-        vnnNo: vnnNo,
-        companyId: user.companyId
-      }).lean();
+      const vehicleNegotiation = await VehicleNegotiation.findOne(
+        companyScopeFilter(user, { vnnNo })
+      ).lean();
 
       if (!vehicleNegotiation) {
         return NextResponse.json({ 
@@ -3513,10 +3518,9 @@ export async function GET(req) {
         }, { status: 400 });
       }
       
-      const vehicleNegotiation = await VehicleNegotiation.findOne({
-        _id: id,
-        companyId: user.companyId
-      }).lean();
+      const vehicleNegotiation = await VehicleNegotiation.findOne(
+        companyScopeFilter(user, { _id: id })
+      ).lean();
 
       if (!vehicleNegotiation) {
         return NextResponse.json({ 
@@ -3536,7 +3540,7 @@ export async function GET(req) {
       console.log("📋 Fetching table format data");
       
       // Build query
-      let query = { companyId: user.companyId };
+      let query = {};
       
       // Apply search filter
       if (search) {
@@ -3575,7 +3579,7 @@ export async function GET(req) {
         query.date = { ...query.date, $lte: endDate };
       }
       
-      const vehicleNegotiations = await VehicleNegotiation.find(query)
+      const vehicleNegotiations = await VehicleNegotiation.find(companyScopeFilter(user, query))
         .sort({ date: -1, createdAt: -1 })
         .lean();
 
@@ -3653,9 +3657,7 @@ export async function GET(req) {
     }
 
     // CASE 4: REGULAR LIST
-    const vehicleNegotiations = await VehicleNegotiation.find({
-      companyId: user.companyId
-    })
+    const vehicleNegotiations = await VehicleNegotiation.find(companyScopeFilter(user))
       .sort({ createdAt: -1 })
       .lean();
 
@@ -3694,7 +3696,7 @@ export async function POST(req) {
     let vnnNo = await getNextVehicleNegotiationNumber(user.companyId);
     
     // Check if VNN number already exists
-    const existing = await VehicleNegotiation.findOne({ vnnNo, companyId: user.companyId });
+    const existing = await VehicleNegotiation.findOne(companyScopeFilter(user, { vnnNo }));
     if (existing) {
       vnnNo = await getNextVehicleNegotiationNumber(user.companyId);
     }
@@ -3733,9 +3735,9 @@ export async function POST(req) {
       otherCharges: Number(order.otherCharges) || 0,
       localStatus: order.localStatus || 'unknown',
       localStatusLabel: order.localStatusLabel || 'Unknown',
-      subCompanyId: order.subCompanyId && isValidObjectId(order.subCompanyId) ? order.subCompanyId : null,
-      subCompanyName: order.subCompanyName || '',
-      subCompanyCode: order.subCompanyCode || ''
+      subCompanyId: user.activeOperatingCompanyId,
+      subCompanyName: user.activeOperatingCompanyName || '',
+      subCompanyCode: user.activeOperatingCompanyCode || ''
     }));
 
     // Calculate total weight
@@ -3752,9 +3754,9 @@ export async function POST(req) {
     const selectedOrderPanels = (body.selectedOrderPanels || []).map(panel => ({
       _id: panel._id || '',
       orderPanelNo: panel.orderPanelNo || '',
-      subCompanyId: panel.subCompanyId || null,
-      subCompanyName: panel.subCompanyName || '',
-      subCompanyCode: panel.subCompanyCode || ''
+      subCompanyId: user.activeOperatingCompanyId,
+      subCompanyName: user.activeOperatingCompanyName || '',
+      subCompanyCode: user.activeOperatingCompanyCode || ''
     }));
 
     // Process vendors with purchase type
@@ -3771,9 +3773,9 @@ export async function POST(req) {
       branch: body.header?.branch && isValidObjectId(body.header?.branch) ? body.header?.branch : null,
       branchName: body.header?.branchName || '',
       branchCode: body.header?.branchCode || '',
-      subCompanyId: body.header?.subCompanyId && isValidObjectId(body.header?.subCompanyId) ? body.header?.subCompanyId : null,
-      subCompanyName: body.header?.subCompanyName || '',
-      subCompanyCode: body.header?.subCompanyCode || '',
+      subCompanyId: user.activeOperatingCompanyId,
+      subCompanyName: user.activeOperatingCompanyName || '',
+      subCompanyCode: user.activeOperatingCompanyCode || '',
       delivery: delivery,
       date: body.header?.date ? new Date(body.header.date) : new Date(),
       customerId: body.header?.customerId && isValidObjectId(body.header?.customerId) ? body.header?.customerId : null,
@@ -3912,6 +3914,7 @@ export async function PUT(req) {
           code: 'UNAUTHORIZED'
         }, { status: 401 });
       }
+      activeOperatingCompanyId(user);
     } catch (err) {
       console.error("JWT Verification Failed:", err?.message || err);
       return NextResponse.json({ 
@@ -3976,10 +3979,7 @@ export async function PUT(req) {
 
     // ─── PROCEED WITH UPDATE ───
     // Find the vehicle negotiation
-    const vehicleNegotiation = await VehicleNegotiation.findOne({
-      _id: id,
-      companyId: user.companyId
-    });
+    const vehicleNegotiation = await VehicleNegotiation.findOne(companyScopeFilter(user, { _id: id }));
 
     if (!vehicleNegotiation) {
       return NextResponse.json({ 
@@ -4003,11 +4003,9 @@ export async function PUT(req) {
       vehicleNegotiation.branchName = body.header.branchName || vehicleNegotiation.branchName || '';
       vehicleNegotiation.branchCode = body.header.branchCode || vehicleNegotiation.branchCode || '';
       
-      vehicleNegotiation.subCompanyId = body.header.subCompanyId && isValidObjectId(body.header.subCompanyId) 
-        ? body.header.subCompanyId 
-        : (vehicleNegotiation.subCompanyId || null);
-      vehicleNegotiation.subCompanyName = body.header.subCompanyName || vehicleNegotiation.subCompanyName || '';
-      vehicleNegotiation.subCompanyCode = body.header.subCompanyCode || vehicleNegotiation.subCompanyCode || '';
+      vehicleNegotiation.subCompanyId = user.activeOperatingCompanyId;
+      vehicleNegotiation.subCompanyName = user.activeOperatingCompanyName || '';
+      vehicleNegotiation.subCompanyCode = user.activeOperatingCompanyCode || '';
       
       const validDeliveryValues = ['Urgent', 'Normal', 'Express', 'Scheduled'];
       let delivery = body.header.delivery || vehicleNegotiation.delivery || 'Normal';
@@ -4037,9 +4035,9 @@ export async function PUT(req) {
       vehicleNegotiation.selectedOrderPanels = body.selectedOrderPanels.map(panel => ({
         _id: panel._id || '',
         orderPanelNo: panel.orderPanelNo || '',
-        subCompanyId: panel.subCompanyId || null,
-        subCompanyName: panel.subCompanyName || '',
-        subCompanyCode: panel.subCompanyCode || ''
+        subCompanyId: user.activeOperatingCompanyId,
+        subCompanyName: user.activeOperatingCompanyName || '',
+        subCompanyCode: user.activeOperatingCompanyCode || ''
       }));
     }
 
@@ -4081,9 +4079,9 @@ export async function PUT(req) {
         otherCharges: Number(order.otherCharges) || 0,
         localStatus: order.localStatus || 'unknown',
         localStatusLabel: order.localStatusLabel || 'Unknown',
-        subCompanyId: order.subCompanyId && isValidObjectId(order.subCompanyId) ? order.subCompanyId : null,
-        subCompanyName: order.subCompanyName || '',
-        subCompanyCode: order.subCompanyCode || ''
+        subCompanyId: user.activeOperatingCompanyId,
+        subCompanyName: user.activeOperatingCompanyName || '',
+        subCompanyCode: user.activeOperatingCompanyCode || ''
       }));
       
       vehicleNegotiation.orders = processedOrders;
@@ -4279,10 +4277,7 @@ export async function DELETE(req) {
       }, { status: 400 });
     }
     
-    const result = await VehicleNegotiation.deleteOne({
-      _id: id,
-      companyId: user.companyId
-    });
+    const result = await VehicleNegotiation.deleteOne(companyScopeFilter(user, { _id: id }));
 
     if (result.deletedCount === 0) {
       return NextResponse.json({ 
@@ -4340,10 +4335,7 @@ export async function PATCH(req) {
       }, { status: 400 });
     }
     
-    const vehicleNegotiation = await VehicleNegotiation.findOne({
-      _id: id,
-      companyId: user.companyId
-    });
+    const vehicleNegotiation = await VehicleNegotiation.findOne(companyScopeFilter(user, { _id: id }));
 
     if (!vehicleNegotiation) {
       return NextResponse.json({ 

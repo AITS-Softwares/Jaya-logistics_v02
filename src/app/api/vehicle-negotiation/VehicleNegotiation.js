@@ -1210,6 +1210,7 @@ const vehicleNegotiationSchema = new mongoose.Schema({
 // Add indexes for better performance
 vehicleNegotiationSchema.index({ vnnNo: 1, companyId: 1 });
 vehicleNegotiationSchema.index({ companyId: 1, createdAt: -1 });
+vehicleNegotiationSchema.index({ companyId: 1, subCompanyId: 1, createdAt: -1 });
 vehicleNegotiationSchema.index({ date: -1 });
 vehicleNegotiationSchema.index({ 'approval.part1Status': 1 });
 vehicleNegotiationSchema.index({ 'approval.part2Status': 1 });

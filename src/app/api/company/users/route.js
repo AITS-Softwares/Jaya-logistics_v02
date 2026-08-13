@@ -3,6 +3,7 @@ import CompanyUser from "@/models/CompanyUser";
 import { NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
+import { ensureOperatingCompanies } from "@/lib/companyScope";
 
 const SECRET = process.env.JWT_SECRET;
 
@@ -20,6 +21,36 @@ const VALID_ROLES = [
   "Project Manager",
   "Employee",
 ];
+
+async function resolveOperatingCompanyAccess(companyId, inputIds, accessAll, defaultId) {
+  const operatingCompanies = await ensureOperatingCompanies(companyId);
+  const validIds = new Set(operatingCompanies.map((company) => company._id.toString()));
+  const ids = [...new Set((Array.isArray(inputIds) ? inputIds : []).map(String))];
+
+  if (ids.some((id) => !validIds.has(id))) {
+    throw new Error("One or more selected companies are invalid");
+  }
+
+  if (accessAll === true) {
+    return { operatingCompanyIds: [], defaultOperatingCompanyId: null, accessAllOperatingCompanies: true };
+  }
+
+  // A new user defaults to the legacy company unless the administrator picks a
+  // different allowed company. This is safe and can be changed at any time.
+  const fallback = operatingCompanies.find((company) => company.code === "JGL");
+  const resolvedIds = ids.length ? ids : (fallback ? [fallback._id.toString()] : []);
+  const resolvedDefault = defaultId && resolvedIds.includes(String(defaultId))
+    ? String(defaultId)
+    : resolvedIds[0] || null;
+
+  if (!resolvedDefault) throw new Error("At least one company must be assigned to the user");
+
+  return {
+    operatingCompanyIds: resolvedIds,
+    defaultOperatingCompanyId: resolvedDefault,
+    accessAllOperatingCompanies: false,
+  };
+}
 
 // ─── Helper — company aur normal user dono allow ───
 function verifyToken(req) {
@@ -83,7 +114,10 @@ export async function GET(req) {
 export async function POST(req) {
   try {
     const company = verifyCompany(req); // ✅ POST ke liye company-only
-    const { employeeId, name, email, password, roles = [], modules = {} } = await req.json();
+    const {
+      employeeId, name, email, password, roles = [], modules = {},
+      operatingCompanyIds = [], accessAllOperatingCompanies = true, defaultOperatingCompanyId = null,
+    } = await req.json();
 
     if (!name || !email || !password) {
       return NextResponse.json({ message: "Name, email, and password are required" }, { status: 400 });
@@ -104,6 +138,13 @@ export async function POST(req) {
 
     await dbConnect();
 
+    const companyAccess = await resolveOperatingCompanyAccess(
+      company.companyId,
+      operatingCompanyIds,
+      accessAllOperatingCompanies,
+      defaultOperatingCompanyId
+    );
+
     const dup = await CompanyUser.findOne({ companyId: company.companyId, email });
     if (dup) {
       return NextResponse.json({ message: "Email already exists" }, { status: 409 });
@@ -117,6 +158,7 @@ export async function POST(req) {
       name, email,
       password: hash,
       roles, modules,
+      ...companyAccess,
     });
 
     return NextResponse.json({
@@ -126,6 +168,9 @@ export async function POST(req) {
       roles: user.roles,
       modules: user.modules,
       employeeId: user.employeeId || null,
+      operatingCompanyIds: user.operatingCompanyIds || [],
+      defaultOperatingCompanyId: user.defaultOperatingCompanyId || null,
+      accessAllOperatingCompanies: user.accessAllOperatingCompanies === true,
     }, { status: 201 });
 
   } catch (e) {

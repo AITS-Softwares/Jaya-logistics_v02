@@ -10,7 +10,7 @@ console.log("✅ SubCompanies API route loaded");
 function isAuthorized(user) {
   return (
     user?.type === "company" ||
-    user?.role === "Admin" ||
+    user?.roles?.includes("Admin") ||
     user?.permissions?.includes("subcompany")
   );
 }
@@ -76,12 +76,14 @@ export async function GET(req) {
 
     const url = new URL(req.url);
     const search = url.searchParams.get('search');
+    const operatingOnly = url.searchParams.get('operatingOnly') === 'true';
     const page = parseInt(url.searchParams.get('page') || '1');
     const limit = parseInt(url.searchParams.get('limit') || '10');
     const skip = (page - 1) * limit;
 
     // Build filter
     let filter = { companyId: user.companyId };
+    if (operatingOnly) filter.isOperatingCompany = true;
     
     if (search) {
       filter.$or = [

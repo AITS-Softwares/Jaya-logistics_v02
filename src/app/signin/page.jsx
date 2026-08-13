@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { FiEye, FiEyeOff, FiMail, FiLock, FiChevronRight, FiLoader, FiShield, FiUser, FiBriefcase } from 'react-icons/fi';
@@ -17,15 +17,25 @@ export default function LoginPage() {
 
   const [mode, setMode] = useState('Company'); // Company | User | Customer
   const [step, setStep] = useState('login'); // login | email | setPassword
-  const [form, setForm] = useState({ email: '', password: '' });
+  const [form, setForm] = useState({ email: '', password: '', operatingCompanyCode: '' });
+  const [operatingCompanies, setOperatingCompanies] = useState([]);
   const [show, setShow] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handle = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
+  useEffect(() => {
+    axios.get('/api/auth/operating-companies')
+      .then((response) => setOperatingCompanies(response.data?.data || []))
+      .catch(() => setOperatingCompanies([]));
+  }, []);
+
   const submit = async (e) => {
     e.preventDefault();
     if (!form.email || !form.password) return toast.error("Credentials required");
+    if (mode !== 'Customer' && !form.operatingCompanyCode) {
+      return toast.error("Select a company before signing in");
+    }
 
     setLoading(true);
     try {
@@ -35,7 +45,10 @@ export default function LoginPage() {
         Customer: "/api/customers/login",
       };
 
-      const res = await axios.post(urls[mode], form);
+      const payload = mode === 'Customer'
+        ? { email: form.email, password: form.password }
+        : form;
+      const res = await axios.post(urls[mode], payload);
       const { token, company, user, customer } = res.data;
       const finalUser = company || user || customer;
 
@@ -107,7 +120,7 @@ export default function LoginPage() {
                 type="button"
                 onClick={() => {
                   setMode(m.id);
-                  setForm({ email: '', password: '' });
+                  setForm({ email: '', password: '', operatingCompanyCode: '' });
                 }}
                 className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all duration-500 ${
                   mode === m.id 
@@ -140,6 +153,31 @@ export default function LoginPage() {
                   />
                 </div>
               </div>
+
+              {mode !== 'Customer' && (
+                <div className="group">
+                  <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1 transition-colors group-focus-within:text-indigo-400">Operating Company</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-slate-600 group-focus-within:text-indigo-500 transition-colors">
+                      <FiBriefcase size={18} />
+                    </div>
+                    <select
+                      name="operatingCompanyCode"
+                      value={form.operatingCompanyCode}
+                      onChange={handle}
+                      required
+                      className="w-full appearance-none bg-black/40 border-2 border-transparent focus:border-indigo-500/50 text-white pl-14 pr-5 py-4 rounded-2xl outline-none transition-all duration-300 font-bold text-sm shadow-inner"
+                    >
+                      <option value="" className="bg-slate-900">Select company</option>
+                      {operatingCompanies.map((company) => (
+                        <option key={company.code} value={company.code} className="bg-slate-900">
+                          {company.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
 
               {/* PASSWORD FIELD */}
               <div className="group">

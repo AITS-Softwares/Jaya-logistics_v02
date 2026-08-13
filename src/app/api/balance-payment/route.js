@@ -899,6 +899,7 @@ import BalancePayment from "./BalancePayment";
 import { getNextBalancePaymentNumber } from "./BalancePaymentCounter";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import mongoose from 'mongoose';
+import { activeOperatingCompanyId, companyScopeFilter } from "@/lib/companyScope";
 
 // ── PERMISSION FUNCTIONS ──
 
@@ -941,6 +942,7 @@ async function validateUser(req, requiredAction = null) {
   try {
     const user = verifyJWT(token);
     if (!user) return { error: "Invalid or expired token. Please login again.", status: 401 };
+    try { activeOperatingCompanyId(user); } catch (error) { return { error: error.message, status: 401 }; }
     
     if (!isAuthorized(user)) {
       return { 
@@ -1002,14 +1004,14 @@ export async function GET(req) {
       if (!isValidObjectId(id)) {
         return NextResponse.json({ success: false, message: "Invalid ID" }, { status: 400 });
       }
-      const payment = await BalancePayment.findOne({ _id: id, companyId: user.companyId }).lean();
+      const payment = await BalancePayment.findOne(companyScopeFilter(user, { _id: id })).lean();
       if (!payment) return NextResponse.json({ success: false, message: "Not found" }, { status: 404 });
       return NextResponse.json({ success: true, data: payment });
     }
 
     // Table format for list view
     if (format === 'table') {
-      let query = { companyId: user.companyId };
+      let query = {};
       
       if (search) {
         query.$or = [
@@ -1031,7 +1033,7 @@ export async function GET(req) {
         if (toDate) query.createdAt.$lte = new Date(toDate + 'T23:59:59');
       }
       
-      const payments = await BalancePayment.find(query).sort({ createdAt: -1 }).lean();
+      const payments = await BalancePayment.find(companyScopeFilter(user, query)).sort({ createdAt: -1 }).lean();
       
       const tableData = payments.map(p => ({
         _id: p._id,
@@ -1063,7 +1065,7 @@ export async function GET(req) {
     }
 
     // List for dropdown
-    const payments = await BalancePayment.find({ companyId: user.companyId })
+    const payments = await BalancePayment.find(companyScopeFilter(user))
       .select('balancePaymentNo purchaseNo paymentStatus companyName subCompanyName')
       .sort({ createdAt: -1 })
       .lean();
@@ -1101,9 +1103,9 @@ export async function POST(req) {
     // ✅ Extract company information from body
     const companyName = body.companyName || body.header?.companyName || '';
     const companyCode = body.companyCode || body.header?.companyCode || '';
-    const subCompanyId = body.subCompanyId || body.header?.subCompanyId || null;
-    const subCompanyName = body.subCompanyName || body.header?.subCompanyName || '';
-    const subCompanyCode = body.subCompanyCode || body.header?.subCompanyCode || '';
+    const subCompanyId = user.activeOperatingCompanyId;
+    const subCompanyName = user.activeOperatingCompanyName || '';
+    const subCompanyCode = user.activeOperatingCompanyCode || '';
     
     // Calculate values
     const amount = num(body.amount);
@@ -1234,15 +1236,15 @@ export async function PUT(req) {
       return NextResponse.json({ success: false, message: "Invalid ID" }, { status: 400 });
     }
     
-    const payment = await BalancePayment.findOne({ _id: id, companyId: user.companyId });
+    const payment = await BalancePayment.findOne(companyScopeFilter(user, { _id: id }));
     if (!payment) return NextResponse.json({ success: false, message: "Not found" }, { status: 404 });
     
     // ✅ Update company information
     if (body.companyName !== undefined) payment.companyName = body.companyName;
     if (body.companyCode !== undefined) payment.companyCode = body.companyCode;
-    if (body.subCompanyId !== undefined) payment.subCompanyId = body.subCompanyId;
-    if (body.subCompanyName !== undefined) payment.subCompanyName = body.subCompanyName;
-    if (body.subCompanyCode !== undefined) payment.subCompanyCode = body.subCompanyCode;
+    payment.subCompanyId = user.activeOperatingCompanyId;
+    payment.subCompanyName = user.activeOperatingCompanyName || '';
+    payment.subCompanyCode = user.activeOperatingCompanyCode || '';
     
     // Update all fields
     payment.branch = body.branch || payment.branch;
@@ -1347,10 +1349,10 @@ export async function DELETE(req) {
       return NextResponse.json({ success: false, message: "Invalid ID" }, { status: 400 });
     }
     
-    const payment = await BalancePayment.findOne({ _id: id, companyId: user.companyId });
+    const payment = await BalancePayment.findOne(companyScopeFilter(user, { _id: id }));
     if (!payment) return NextResponse.json({ success: false, message: "Not found" }, { status: 404 });
     
-    await BalancePayment.deleteOne({ _id: id, companyId: user.companyId });
+    await BalancePayment.deleteOne(companyScopeFilter(user, { _id: id }));
     
     return NextResponse.json({ success: true, message: "Balance Payment deleted successfully" });
     
@@ -1384,7 +1386,7 @@ export async function PATCH(req) {
       return NextResponse.json({ success: false, message: "Invalid ID" }, { status: 400 });
     }
     
-    const payment = await BalancePayment.findOne({ _id: id, companyId: user.companyId });
+    const payment = await BalancePayment.findOne(companyScopeFilter(user, { _id: id }));
     if (!payment) return NextResponse.json({ success: false, message: "Not found" }, { status: 404 });
 
     // Get body for additional data

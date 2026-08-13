@@ -2037,6 +2037,7 @@ export default function Layout({ children }) {
         setSession(data.user);
         // Store user in localStorage for permission hook
         localStorage.setItem("user", JSON.stringify(data.user));
+        window.dispatchEvent(new Event('erp:user-session-updated'));
       } catch (err) {
         console.error("Session fetch error:", err);
         router.push("/signin");
@@ -3068,6 +3069,9 @@ export default function Layout({ children }) {
               // Check if user has view permission for this module
               if (!canView(moduleName)) return null;
 
+              // Rate Target belongs under Vehicle Negotiation when that parent module is available.
+              if (moduleName === 'Rate Target (Vehicle Negotiation)' && canView('Vehicle Negotiation')) return null;
+
               return (
                 <Section
                   key={moduleName}
@@ -3084,6 +3088,15 @@ export default function Layout({ children }) {
                     onClick={closeSidebar}
                     isActive={isActive(moduleName === 'Rate Target (Vehicle Negotiation)' ? '/admin/rate-target-vehicle-negotiation' : `/admin/${moduleName.toLowerCase().replace(/ /g, '-')}`)}
                   />
+                  {moduleName === 'Vehicle Negotiation' && canView('Rate Target (Vehicle Negotiation)') && (
+                    <Item
+                      href="/admin/rate-target-vehicle-negotiation"
+                      icon={<HiCurrencyRupee />}
+                      label="Rate Target"
+                      onClick={closeSidebar}
+                      isActive={isActive('/admin/rate-target-vehicle-negotiation')}
+                    />
+                  )}
                 </Section>
               );
             })
@@ -3122,6 +3135,14 @@ export default function Layout({ children }) {
               <div className="hidden md:flex items-center gap-3 text-sm text-gray-300">
                 <span>{session.name || session.email}</span>
               </div>
+              {session.activeOperatingCompany && (
+                <div
+                  className="hidden sm:block rounded-lg border border-blue-400/30 bg-blue-500/10 px-2.5 py-1 text-[10px] font-semibold text-blue-100"
+                  title="Data is limited to the company selected when you signed in. Sign out and select another company to switch."
+                >
+                  {session.activeOperatingCompany.name}
+                </div>
+              )}
 
               <div
                 className="h-9 w-9 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold border-2 border-white/10 shadow-inner"

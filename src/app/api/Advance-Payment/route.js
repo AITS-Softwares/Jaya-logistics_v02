@@ -1623,6 +1623,7 @@ import AdvancePayment from "./AdvancePayment";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import { getNextAdvancePaymentNumber } from "./AdvancePaymentCounter";
 import mongoose from 'mongoose';
+import { activeOperatingCompanyId, companyScopeFilter } from "@/lib/companyScope";
 
 // ── PERMISSION FUNCTIONS ──
 
@@ -1665,6 +1666,7 @@ async function validateUser(req, requiredAction = null) {
   try {
     const user = verifyJWT(token);
     if (!user) return { error: "Invalid or expired token. Please login again.", status: 401 };
+    try { activeOperatingCompanyId(user); } catch (error) { return { error: error.message, status: 401 }; }
     
     if (!isAuthorized(user)) {
       return { 
@@ -1733,10 +1735,7 @@ export async function GET(req) {
         }, { status: 400 });
       }
 
-      const payment = await AdvancePayment.findOne({
-        _id: id,
-        companyId: user.companyId
-      }).lean();
+      const payment = await AdvancePayment.findOne(companyScopeFilter(user, { _id: id })).lean();
 
       if (!payment) {
         return NextResponse.json({ 
@@ -1753,10 +1752,7 @@ export async function GET(req) {
 
     // CASE 2: GET BY PAYMENT NUMBER
     if (paymentNo) {
-      const payment = await AdvancePayment.findOne({
-        paymentNo: paymentNo,
-        companyId: user.companyId
-      }).lean();
+      const payment = await AdvancePayment.findOne(companyScopeFilter(user, { paymentNo })).lean();
 
       if (!payment) {
         return NextResponse.json({ 
@@ -1775,10 +1771,7 @@ export async function GET(req) {
     if (purchaseNo) {
       console.log(`🔍 Searching for Advance Payment with purchaseNo: "${purchaseNo}"`);
       
-      const payment = await AdvancePayment.findOne({
-        purchaseNo: purchaseNo,
-        companyId: user.companyId
-      }).lean();
+      const payment = await AdvancePayment.findOne(companyScopeFilter(user, { purchaseNo })).lean();
       
       console.log("✅ Found payment:", payment ? payment.paymentNo : "NOT FOUND");
 
@@ -1791,7 +1784,7 @@ export async function GET(req) {
 
     // CASE 4: TABLE FORMAT FOR LIST VIEW
     if (format === 'table') {
-      let query = { companyId: user.companyId };
+      let query = {};
 
       if (search) {
         query.$or = [
@@ -1820,7 +1813,7 @@ export async function GET(req) {
         }
       }
 
-      const payments = await AdvancePayment.find(query)
+      const payments = await AdvancePayment.find(companyScopeFilter(user, query))
         .sort({ createdAt: -1 })
         .lean();
 
@@ -1851,9 +1844,7 @@ export async function GET(req) {
     }
 
     // CASE 5: LIST FOR DROPDOWNS
-    const payments = await AdvancePayment.find({ 
-      companyId: user.companyId 
-    })
+    const payments = await AdvancePayment.find(companyScopeFilter(user))
     .select('paymentNo purchaseNo subCompanyName subCompanyCode vendorDetails.vendorName purchaseAmountFromVNN paymentDetails.paymentStatus')
     .sort({ createdAt: -1 })
     .lean();
@@ -1894,10 +1885,7 @@ export async function POST(req) {
     let paymentNo = await getNextAdvancePaymentNumber(user.companyId);
 
     if (body.purchaseNo) {
-      const existing = await AdvancePayment.findOne({
-        purchaseNo: body.purchaseNo,
-        companyId: user.companyId
-      });
+      const existing = await AdvancePayment.findOne(companyScopeFilter(user, { purchaseNo: body.purchaseNo }));
       
       if (existing) {
         return NextResponse.json({ 
@@ -1908,9 +1896,9 @@ export async function POST(req) {
     }
 
     // ✅ Get sub-company from body
-    const subCompanyId = body.subCompanyId || body.header?.subCompanyId || null;
-    const subCompanyName = body.subCompanyName || body.header?.subCompanyName || '';
-    const subCompanyCode = body.subCompanyCode || body.header?.subCompanyCode || '';
+    const subCompanyId = user.activeOperatingCompanyId;
+    const subCompanyName = user.activeOperatingCompanyName || '';
+    const subCompanyCode = user.activeOperatingCompanyCode || '';
 
     const processedOrderRows = (body.orderRows || []).map(row => ({
       _id: new mongoose.Types.ObjectId(),
@@ -1939,9 +1927,9 @@ export async function POST(req) {
       otherCharges: row.otherCharges || '0',
       localStatus: row.localStatus || 'unknown',
       localStatusLabel: row.localStatusLabel || 'Unknown',
-      subCompanyId: row.subCompanyId || subCompanyId,
-      subCompanyName: row.subCompanyName || subCompanyName || '',
-      subCompanyCode: row.subCompanyCode || subCompanyCode || ''
+      subCompanyId,
+      subCompanyName,
+      subCompanyCode
     }));
 
     const processedAdditionItems = (body.additions?.items || []).map(item => ({
@@ -2142,10 +2130,7 @@ export async function PUT(req) {
       }, { status: 400 });
     }
 
-    const payment = await AdvancePayment.findOne({
-      _id: id,
-      companyId: user.companyId
-    });
+    const payment = await AdvancePayment.findOne(companyScopeFilter(user, { _id: id }));
 
     if (!payment) {
       return NextResponse.json({ 
@@ -2162,11 +2147,9 @@ export async function PUT(req) {
     }
 
     // ✅ Update sub-company
-    if (body.subCompanyId !== undefined) {
-      payment.subCompanyId = body.subCompanyId || null;
-      payment.subCompanyName = body.subCompanyName || '';
-      payment.subCompanyCode = body.subCompanyCode || '';
-    }
+    payment.subCompanyId = user.activeOperatingCompanyId;
+    payment.subCompanyName = user.activeOperatingCompanyName || '';
+    payment.subCompanyCode = user.activeOperatingCompanyCode || '';
 
     if (body.purchaseAmountFromVNN !== undefined) {
       payment.purchaseAmountFromVNN = num(body.purchaseAmountFromVNN);
@@ -2177,9 +2160,9 @@ export async function PUT(req) {
         ...payment.header,
         ...body.header,
         branch: body.header.branch ? new mongoose.Types.ObjectId(body.header.branch) : payment.header.branch,
-        subCompanyId: body.header.subCompanyId !== undefined ? body.header.subCompanyId : payment.subCompanyId,
-        subCompanyName: body.header.subCompanyName !== undefined ? body.header.subCompanyName : payment.subCompanyName,
-        subCompanyCode: body.header.subCompanyCode !== undefined ? body.header.subCompanyCode : payment.subCompanyCode,
+        subCompanyId: user.activeOperatingCompanyId,
+        subCompanyName: user.activeOperatingCompanyName || '',
+        subCompanyCode: user.activeOperatingCompanyCode || '',
         date: body.header.date ? new Date(body.header.date) : payment.header.date
       };
     }
@@ -2221,9 +2204,9 @@ export async function PUT(req) {
         otherCharges: row.otherCharges || '0',
         localStatus: row.localStatus || 'unknown',
         localStatusLabel: row.localStatusLabel || 'Unknown',
-        subCompanyId: row.subCompanyId || payment.subCompanyId,
-        subCompanyName: row.subCompanyName || payment.subCompanyName || '',
-        subCompanyCode: row.subCompanyCode || payment.subCompanyCode || ''
+        subCompanyId: user.activeOperatingCompanyId,
+        subCompanyName: user.activeOperatingCompanyName || '',
+        subCompanyCode: user.activeOperatingCompanyCode || ''
       }));
     }
 
@@ -2345,10 +2328,7 @@ export async function DELETE(req) {
       }, { status: 400 });
     }
 
-    const payment = await AdvancePayment.findOne({
-      _id: id,
-      companyId: user.companyId
-    });
+    const payment = await AdvancePayment.findOne(companyScopeFilter(user, { _id: id }));
 
     if (!payment) {
       return NextResponse.json({ 
@@ -2364,10 +2344,7 @@ export async function DELETE(req) {
       }, { status: 400 });
     }
 
-    await AdvancePayment.deleteOne({
-      _id: id,
-      companyId: user.companyId
-    });
+    await AdvancePayment.deleteOne(companyScopeFilter(user, { _id: id }));
 
     return NextResponse.json({ 
       success: true, 
@@ -2421,10 +2398,7 @@ export async function PATCH(req) {
       }, { status: 400 });
     }
 
-    const payment = await AdvancePayment.findOne({
-      _id: id,
-      companyId: user.companyId
-    });
+    const payment = await AdvancePayment.findOne(companyScopeFilter(user, { _id: id }));
 
     if (!payment) {
       return NextResponse.json({ 

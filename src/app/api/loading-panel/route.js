@@ -1160,6 +1160,7 @@ import LoadingPanel from "./LoadingPanel";
 import { getNextLoadingNumber } from "./LoadingCounter";
 import mongoose from 'mongoose';
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
+import { activeOperatingCompanyId, companyScopeFilter } from "@/lib/companyScope";
 
 // ── PERMISSION FUNCTIONS ──
 
@@ -1202,6 +1203,7 @@ async function validateUser(req, requiredAction = null) {
   try {
     const user = verifyJWT(token);
     if (!user) return { error: "Invalid or expired token. Please login again.", status: 401 };
+    try { activeOperatingCompanyId(user); } catch (error) { return { error: error.message, status: 401 }; }
     
     if (!isAuthorized(user)) {
       return { 
@@ -1263,7 +1265,7 @@ export async function GET(req) {
     if (id || vehicleArrivalNo) {
       console.log(`📄 Fetching loading panel: ${id || vehicleArrivalNo}`);
       
-      let query = { companyId: user.companyId };
+      let query = {};
       
       if (id && isValidObjectId(id)) {
         query._id = id;
@@ -1276,7 +1278,7 @@ export async function GET(req) {
         }, { status: 400 });
       }
       
-      const loadingPanel = await LoadingPanel.findOne(query).lean();
+      const loadingPanel = await LoadingPanel.findOne(companyScopeFilter(user, query)).lean();
 
       if (!loadingPanel) {
         return NextResponse.json({ 
@@ -1312,7 +1314,7 @@ export async function GET(req) {
     console.log("📋 Fetching loading panel list");
     
     // Build query with filters
-    let query = { companyId: user.companyId };
+    let query = {};
     
     // Add search filter
     if (search) {
@@ -1339,7 +1341,7 @@ export async function GET(req) {
       }
     }
     
-    const loadingPanels = await LoadingPanel.find(query)
+    const loadingPanels = await LoadingPanel.find(companyScopeFilter(user, query))
       .sort({ createdAt: -1 })
       .lean();
 
@@ -1520,29 +1522,15 @@ export async function POST(req) {
     let vehicleArrivalNo = await getNextLoadingNumber(user.companyId);
     
     // Check if vehicle arrival number already exists
-    const existing = await LoadingPanel.findOne({ 
-      vehicleArrivalNo, 
-      companyId: user.companyId 
-    });
+    const existing = await LoadingPanel.findOne(companyScopeFilter(user, { vehicleArrivalNo }));
     
     if (existing) {
       vehicleArrivalNo = `LD-${Date.now().toString().slice(-8)}`;
     }
 
-    // Handle sub-company from header
-    let subCompanyId = null;
-    let subCompanyName = '';
-    let subCompanyCode = '';
-    
-    if (body.header?.subCompanyId) {
-      subCompanyId = body.header.subCompanyId;
-      subCompanyName = body.header.subCompanyName || '';
-      subCompanyCode = body.header.subCompanyCode || '';
-    } else if (body.subCompanyId) {
-      subCompanyId = body.subCompanyId;
-      subCompanyName = body.subCompanyName || '';
-      subCompanyCode = body.subCompanyCode || '';
-    }
+    const subCompanyId = user.activeOperatingCompanyId;
+    const subCompanyName = user.activeOperatingCompanyName || '';
+    const subCompanyCode = user.activeOperatingCompanyCode || '';
 
     // Process order rows with sub-company
     const processedOrderRows = (body.orderRows || []).map(row => ({
@@ -1572,9 +1560,9 @@ export async function POST(req) {
       localStatus: row.localStatus || 'unknown',
       localStatusLabel: row.localStatusLabel || 'Unknown',
       // Sub-company for each order
-      subCompanyId: row.subCompanyId || subCompanyId || null,
-      subCompanyName: row.subCompanyName || subCompanyName || '',
-      subCompanyCode: row.subCompanyCode || subCompanyCode || ''
+      subCompanyId,
+      subCompanyName,
+      subCompanyCode
     }));
 
     // Process helper info
@@ -1983,10 +1971,7 @@ export async function PUT(req) {
     }
 
     // Check if loading panel exists
-    const existingPanel = await LoadingPanel.findOne({
-      _id: id,
-      companyId: user.companyId
-    });
+    const existingPanel = await LoadingPanel.findOne(companyScopeFilter(user, { _id: id }));
 
     if (!existingPanel) {
       return NextResponse.json({ 
@@ -1995,13 +1980,13 @@ export async function PUT(req) {
       }, { status: 404 });
     }
 
-    // Handle sub-company update
+    updateData.subCompanyId = user.activeOperatingCompanyId;
+    updateData.subCompanyName = user.activeOperatingCompanyName || '';
+    updateData.subCompanyCode = user.activeOperatingCompanyCode || '';
     if (updateData.header) {
-      if (updateData.header.subCompanyId !== undefined) {
-        updateData.subCompanyId = updateData.header.subCompanyId || null;
-        updateData.subCompanyName = updateData.header.subCompanyName || '';
-        updateData.subCompanyCode = updateData.header.subCompanyCode || '';
-      }
+      updateData.header.subCompanyId = user.activeOperatingCompanyId;
+      updateData.header.subCompanyName = user.activeOperatingCompanyName || '';
+      updateData.header.subCompanyCode = user.activeOperatingCompanyCode || '';
     }
 
     // Process order rows if present
@@ -2034,9 +2019,9 @@ export async function PUT(req) {
         otherCharges: num(row.otherCharges) || 0,
         localStatus: row.localStatus || 'unknown',
         localStatusLabel: row.localStatusLabel || 'Unknown',
-        subCompanyId: row.subCompanyId || updateData.subCompanyId || null,
-        subCompanyName: row.subCompanyName || updateData.subCompanyName || '',
-        subCompanyCode: row.subCompanyCode || updateData.subCompanyCode || ''
+        subCompanyId: user.activeOperatingCompanyId,
+        subCompanyName: user.activeOperatingCompanyName || '',
+        subCompanyCode: user.activeOperatingCompanyCode || ''
       }));
 
       updateData.totalWeight = updateData.orderRows.reduce((sum, row) => sum + row.weight, 0);
@@ -2216,10 +2201,7 @@ export async function DELETE(req) {
       }, { status: 400 });
     }
 
-    const deletedPanel = await LoadingPanel.findOneAndDelete({
-      _id: id,
-      companyId: user.companyId
-    });
+    const deletedPanel = await LoadingPanel.findOneAndDelete(companyScopeFilter(user, { _id: id }));
 
     if (!deletedPanel) {
       return NextResponse.json({ 
@@ -2269,10 +2251,7 @@ export async function PATCH(req) {
 
     console.log(`📝 Updating loading panel status: ${id} - ${action}`);
     
-    const loadingPanel = await LoadingPanel.findOne({
-      _id: id,
-      companyId: user.companyId
-    });
+    const loadingPanel = await LoadingPanel.findOne(companyScopeFilter(user, { _id: id }));
 
     if (!loadingPanel) {
       return NextResponse.json({ 

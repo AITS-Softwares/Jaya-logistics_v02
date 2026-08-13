@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import VehicleNegotiation from '@/app/api/vehicle-negotiation/VehicleNegotiation';
 import { getTokenFromHeader, verifyJWT } from '@/lib/auth';
+import { activeOperatingCompanyId, companyScopeFilter } from '@/lib/companyScope';
 
 const MODULE = 'Rate Target (Vehicle Negotiation)';
 
@@ -12,6 +13,7 @@ function authorize(req, action = 'view') {
   try {
     const user = verifyJWT(token);
     if (!user) return { error: 'Invalid session.', status: 401 };
+    try { activeOperatingCompanyId(user); } catch (error) { return { error: error.message, status: 401 }; }
     if (user.type === 'company' || user.roles?.includes('Admin')) return { user };
     const module = user.modules?.[MODULE];
     if (!module?.selected || module.permissions?.[action] !== true) {
@@ -30,13 +32,10 @@ export async function GET(req) {
   await dbConnect();
   const { searchParams } = new URL(req.url);
   const status = searchParams.get('status');
-  const query = {
-    companyId: auth.user.companyId || auth.user.id,
-    'workflow.part1Locked': true
-  };
+  const query = { 'workflow.part1Locked': true };
   if (status && ['Pending', 'Approved', 'Reject'].includes(status)) query['approval.part2Status'] = status;
 
-  const records = await VehicleNegotiation.find(query)
+  const records = await VehicleNegotiation.find(companyScopeFilter(auth.user, query))
     .select('vnnNo date branchName partyName totalWeight negotiation approval.part2Status workflow.part1LockedAt updatedAt')
     .sort({ updatedAt: -1 })
     .lean();

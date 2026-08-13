@@ -6,6 +6,7 @@ import ConsignmentNote from "../consignment-note/ConsignmentNote";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import { getNextPurchaseNumber } from "./PurchaseCounter";
 import mongoose from 'mongoose';
+import { activeOperatingCompanyId, companyScopeFilter } from "@/lib/companyScope";
 
 // ── PERMISSION FUNCTIONS ──
 
@@ -48,6 +49,7 @@ async function validateUser(req, requiredAction = null) {
   try {
     const user = verifyJWT(token);
     if (!user) return { error: "Invalid or expired token. Please login again.", status: 401 };
+    try { activeOperatingCompanyId(user); } catch (error) { return { error: error.message, status: 401 }; }
     
     if (!isAuthorized(user)) {
       return { 
@@ -163,10 +165,7 @@ export async function GET(req) {
         }, { status: 400 });
       }
 
-      const purchase = await PurchasePanel.findOne({
-        _id: id,
-        companyId: user.companyId
-      }).lean();
+      const purchase = await PurchasePanel.findOne(companyScopeFilter(user, { _id: id })).lean();
 
       if (!purchase) {
         return NextResponse.json({ 
@@ -185,10 +184,7 @@ export async function GET(req) {
 
     // CASE 2: GET SINGLE PURCHASE BY PURCHASE NUMBER
     if (purchaseNo) {
-      const purchase = await PurchasePanel.findOne({
-        purchaseNo: purchaseNo,
-        companyId: user.companyId
-      }).lean();
+      const purchase = await PurchasePanel.findOne(companyScopeFilter(user, { purchaseNo })).lean();
 
       if (!purchase) {
         return NextResponse.json({ 
@@ -207,7 +203,7 @@ export async function GET(req) {
 
     // CASE 3: TABLE FORMAT FOR LIST VIEW
     if (format === 'table') {
-      let query = { companyId: user.companyId };
+      let query = {};
 
       if (search) {
         query.$or = [
@@ -235,7 +231,7 @@ export async function GET(req) {
         }
       }
 
-      const purchases = await PurchasePanel.find(query)
+      const purchases = await PurchasePanel.find(companyScopeFilter(user, query))
         .sort({ createdAt: -1 })
         .lean();
 
@@ -289,9 +285,7 @@ export async function GET(req) {
     }
 
     // CASE 4: LIST FOR DROPDOWNS
-    const purchases = await PurchasePanel.find({ 
-      companyId: user.companyId 
-    })
+    const purchases = await PurchasePanel.find(companyScopeFilter(user))
     .select('purchaseNo vnnNo pricingSerialNo subCompanyName subCompanyCode purchaseDetails.vendorName purchaseAmountFromVNN approval.status orderRows purchaseDetails.vehicleNo')
     .sort({ createdAt: -1 })
     .lean();
@@ -357,20 +351,9 @@ export async function POST(req) {
 
     let purchaseNo = await getNextPurchaseNumber(user.companyId);
 
-    // Get sub-company from header
-    let subCompanyId = null;
-    let subCompanyName = '';
-    let subCompanyCode = '';
-    
-    if (body.header?.subCompanyId) {
-      subCompanyId = body.header.subCompanyId;
-      subCompanyName = body.header.subCompanyName || '';
-      subCompanyCode = body.header.subCompanyCode || '';
-    } else if (body.subCompanyId) {
-      subCompanyId = body.subCompanyId;
-      subCompanyName = body.subCompanyName || '';
-      subCompanyCode = body.subCompanyCode || '';
-    }
+    const subCompanyId = user.activeOperatingCompanyId;
+    const subCompanyName = user.activeOperatingCompanyName || '';
+    const subCompanyCode = user.activeOperatingCompanyCode || '';
 
     const processedOrderRows = (body.orders || body.orderRows || []).map(row => ({
       _id: new mongoose.Types.ObjectId(),
@@ -401,9 +384,9 @@ export async function POST(req) {
       otherCharges: row.otherCharges || '0',
       localStatus: row.localStatus || 'unknown',
       localStatusLabel: row.localStatusLabel || 'Unknown',
-      subCompanyId: row.subCompanyId || subCompanyId || null,
-      subCompanyName: row.subCompanyName || subCompanyName || '',
-      subCompanyCode: row.subCompanyCode || subCompanyCode || ''
+      subCompanyId,
+      subCompanyName,
+      subCompanyCode
     }));
 
     const processedAdditions = (body.additions || []).map(row => ({
@@ -634,10 +617,7 @@ export async function PUT(req) {
       }, { status: 400 });
     }
 
-    const purchase = await PurchasePanel.findOne({
-      _id: id,
-      companyId: user.companyId
-    });
+    const purchase = await PurchasePanel.findOne(companyScopeFilter(user, { _id: id }));
 
     if (!purchase) {
       return NextResponse.json({ 
@@ -646,14 +626,9 @@ export async function PUT(req) {
       }, { status: 404 });
     }
 
-    // Update sub-company from header
-    if (body.header) {
-      if (body.header.subCompanyId !== undefined) {
-        purchase.subCompanyId = body.header.subCompanyId || null;
-        purchase.subCompanyName = body.header.subCompanyName || '';
-        purchase.subCompanyCode = body.header.subCompanyCode || '';
-      }
-    }
+    purchase.subCompanyId = user.activeOperatingCompanyId;
+    purchase.subCompanyName = user.activeOperatingCompanyName || '';
+    purchase.subCompanyCode = user.activeOperatingCompanyCode || '';
 
     // Update references
     if (body.vehicleNegotiationId !== undefined) purchase.vehicleNegotiationId = body.vehicleNegotiationId;
@@ -668,9 +643,9 @@ export async function PUT(req) {
         ...purchase.header,
         ...body.header,
         branch: body.header.branch ? new mongoose.Types.ObjectId(body.header.branch) : purchase.header.branch,
-        subCompanyId: body.header.subCompanyId !== undefined ? body.header.subCompanyId : purchase.header.subCompanyId,
-        subCompanyName: body.header.subCompanyName !== undefined ? body.header.subCompanyName : purchase.header.subCompanyName,
-        subCompanyCode: body.header.subCompanyCode !== undefined ? body.header.subCompanyCode : purchase.header.subCompanyCode,
+        subCompanyId: user.activeOperatingCompanyId,
+        subCompanyName: user.activeOperatingCompanyName || '',
+        subCompanyCode: user.activeOperatingCompanyCode || '',
         date: body.header.date ? new Date(body.header.date) : purchase.header.date
       };
     }
@@ -717,9 +692,9 @@ export async function PUT(req) {
         otherCharges: row.otherCharges || '0',
         localStatus: row.localStatus || 'unknown',
         localStatusLabel: row.localStatusLabel || 'Unknown',
-        subCompanyId: row.subCompanyId || purchase.subCompanyId || null,
-        subCompanyName: row.subCompanyName || purchase.subCompanyName || '',
-        subCompanyCode: row.subCompanyCode || purchase.subCompanyCode || ''
+        subCompanyId: user.activeOperatingCompanyId,
+        subCompanyName: user.activeOperatingCompanyName || '',
+        subCompanyCode: user.activeOperatingCompanyCode || ''
       }));
     }
 
@@ -884,10 +859,7 @@ export async function DELETE(req) {
       }, { status: 400 });
     }
 
-    const result = await PurchasePanel.deleteOne({
-      _id: id,
-      companyId: user.companyId
-    });
+    const result = await PurchasePanel.deleteOne(companyScopeFilter(user, { _id: id }));
 
     if (result.deletedCount === 0) {
       return NextResponse.json({ 
@@ -938,10 +910,7 @@ export async function PATCH(req) {
 
     console.log(`📝 Updating purchase status: ${id} - ${action}`);
     
-    const purchase = await PurchasePanel.findOne({
-      _id: id,
-      companyId: user.companyId
-    });
+    const purchase = await PurchasePanel.findOne(companyScopeFilter(user, { _id: id }));
 
     if (!purchase) {
       return NextResponse.json({ 

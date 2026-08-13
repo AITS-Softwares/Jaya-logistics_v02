@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import dbConnect from '@/lib/db';
 import VehicleNegotiation from '@/app/api/vehicle-negotiation/VehicleNegotiation';
 import { getTokenFromHeader, verifyJWT } from '@/lib/auth';
+import { activeOperatingCompanyId, companyScopeFilter } from '@/lib/companyScope';
 
 const MODULE = 'Rate Target (Vehicle Negotiation)';
 
@@ -12,6 +13,7 @@ function authorize(req, action = 'view') {
   try {
     const user = verifyJWT(token);
     if (!user) return { error: 'Invalid session.', status: 401 };
+    try { activeOperatingCompanyId(user); } catch (error) { return { error: error.message, status: 401 }; }
     if (user.type === 'company' || user.roles?.includes('Admin')) return { user };
     const module = user.modules?.[MODULE];
     if (!module?.selected || module.permissions?.[action] !== true) {
@@ -24,7 +26,7 @@ function authorize(req, action = 'view') {
 }
 
 function recordQuery(id, user) {
-  return { _id: id, companyId: user.companyId || user.id };
+  return companyScopeFilter(user, { _id: id });
 }
 
 function addAudit(record, action, user) {

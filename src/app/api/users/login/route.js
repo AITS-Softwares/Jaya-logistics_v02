@@ -76,17 +76,16 @@ import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import CompanyUser from '@/models/CompanyUser';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-
-const SECRET = process.env.JWT_SECRET;
+import { signToken } from '@/lib/auth';
+import { ensureOperatingCompanies } from '@/lib/companyScope';
 
 export async function POST(req) {
   try {
-    const { email, password } = await req.json();
+    const { email, password, operatingCompanyCode } = await req.json();
 
-    if (!email || !password) {
+    if (!email || !password || !operatingCompanyCode) {
       return NextResponse.json(
-        { message: 'Email and password are required' },
+        { message: 'Email, password, and company selection are required' },
         { status: 400 }
       );
     }
@@ -119,7 +118,32 @@ export async function POST(req) {
       );
     }
 
-    // Update last login
+    const operatingCompanies = await ensureOperatingCompanies(user.companyId, user._id);
+    const selectedOperatingCompany = operatingCompanies.find(
+      (company) => company.code === String(operatingCompanyCode).trim().toUpperCase()
+    );
+
+    if (!selectedOperatingCompany) {
+      return NextResponse.json({ message: 'Selected company is unavailable' }, { status: 400 });
+    }
+
+    // Existing users pre-date legal-company access. The confirmed requirement is
+    // one credential set across all legal companies, so they start with access
+    // to all three. An administrator can later restrict this in User Management.
+    if (!user.accessAllOperatingCompanies && (!user.operatingCompanyIds || user.operatingCompanyIds.length === 0)) {
+      user.accessAllOperatingCompanies = true;
+      user.defaultOperatingCompanyId = operatingCompanies.find((company) => company.code === 'JGL')?._id || null;
+    }
+
+    const allowedCompanyIds = (user.operatingCompanyIds || []).map((id) => id.toString());
+    if (!user.accessAllOperatingCompanies && !allowedCompanyIds.includes(selectedOperatingCompany._id.toString())) {
+      return NextResponse.json(
+        { message: 'You do not have access to the selected company. Please contact your administrator.' },
+        { status: 403 }
+      );
+    }
+
+    // Update last login and persist any safe legacy access default.
     user.lastLogin = new Date();
     await user.save();
 
@@ -134,20 +158,7 @@ export async function POST(req) {
       }
     }
 
-    // Generate JWT
-    const token = jwt.sign(
-      {
-        id: user._id,
-        companyId: user.companyId,
-        email: user.email,
-        name: user.name,
-        roles: user.roles || [],
-        modules: modulesObj,
-        type: user.type || 'user',
-      },
-      SECRET,
-      { expiresIn: '7d' }
-    );
+    const token = signToken(user, { activeOperatingCompany: selectedOperatingCompany });
 
     // Remove sensitive fields
     const userResponse = {
@@ -161,7 +172,14 @@ export async function POST(req) {
       isActive: user.isActive,
       employeeId: user.employeeId,
       lastLogin: user.lastLogin,
-      createdAt: user.createdAt
+      createdAt: user.createdAt,
+      operatingCompanyIds: (user.operatingCompanyIds || []).map((id) => id.toString()),
+      accessAllOperatingCompanies: user.accessAllOperatingCompanies === true,
+      activeOperatingCompany: {
+        _id: selectedOperatingCompany._id,
+        name: selectedOperatingCompany.name,
+        code: selectedOperatingCompany.code,
+      },
     };
 
     return NextResponse.json({
