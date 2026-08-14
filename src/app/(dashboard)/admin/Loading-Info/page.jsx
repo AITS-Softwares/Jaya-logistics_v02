@@ -1134,6 +1134,7 @@ export default function LoadingPanelList() {
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Date</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Arrival No</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">VNNs</th>
+                  <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Orders</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Branch</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Vehicle No</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Driver</th>
@@ -1148,7 +1149,7 @@ export default function LoadingPanelList() {
               <tbody className="divide-y divide-slate-200">
                 {loading ? (
                   <tr>
-                    <td colSpan="13" className="px-4 py-12 text-center">
+                    <td colSpan="14" className="px-4 py-12 text-center">
                       <div className="flex items-center justify-center">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500"></div>
                       </div>
@@ -1159,17 +1160,16 @@ export default function LoadingPanelList() {
                     <tr key={item._id} className="hover:bg-yellow-50 transition">
                       <td className="px-4 py-3 text-slate-600">{index + 1}</td>
                       <td className="px-4 py-3 text-slate-600">{item.date}</td>
-                      <td className="px-4 py-3 font-medium text-slate-900">{item.vehicleArrivalNo}</td>
+                       <td className="px-4 py-3 font-medium text-slate-900"><button onClick={() => router.push(`/admin/Loading-Info/${item._id}/view`)} className="hover:text-indigo-600 hover:underline">{item.vehicleArrivalNo}</button></td>
                       <td className="px-4 py-3">
-                        {item.vnnCount ? (
-                          <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium" title={item.vnnNo}>
-                            {item.vnnCount} VNN{item.vnnCount !== 1 ? 's' : ''}
-                          </span>
+                         {item.vnnNo ? (
+                           <span className="rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800">{item.vnnNo}</span>
                         ) : (
                           <span className="text-slate-400">-</span>
                         )}
-                      </td>
-                      <td className="px-4 py-3">
+                       </td>
+                       <td className="px-4 py-3"><div className="flex max-w-48 flex-wrap gap-1">{(item.orderNumbers || []).map((orderNo) => <span key={orderNo} className="rounded-full bg-purple-100 px-2 py-1 text-xs font-medium text-purple-800">{orderNo}</span>)}</div></td>
+                       <td className="px-4 py-3">
                         <div className="font-medium text-slate-800">{item.branch}</div>
                       </td>
                       <td className="px-4 py-3 font-medium">{item.vehicleNo}</td>

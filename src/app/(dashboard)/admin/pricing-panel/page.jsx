@@ -1012,13 +1012,15 @@ export default function PricingPanelList() {
               pricing: item.pricing || 'Pending',
               approval: item.approval || 'Pending',
               orderCount: 1,
-              vnnNumbers: item.vnn && item.vnn !== '-' ? [item.vnn] : []
+              vnnNumbers: item.vnn && item.vnn !== '-' ? [item.vnn] : [],
+              orderNumbers: item.orderNo ? [item.orderNo] : []
             };
           } else {
             grouped[item.panelId].orderCount += 1;
             if (item.vnn && item.vnn !== '-' && !grouped[item.panelId].vnnNumbers.includes(item.vnn)) {
               grouped[item.panelId].vnnNumbers.push(item.vnn);
             }
+            if (item.orderNo && !grouped[item.panelId].orderNumbers.includes(item.orderNo)) grouped[item.panelId].orderNumbers.push(item.orderNo);
           }
         });
         setPanels(Object.values(grouped));
@@ -1349,15 +1351,10 @@ export default function PricingPanelList() {
                     <tr key={item.panelId} className="hover:bg-yellow-50 transition">
                       <td className="px-4 py-3 text-slate-600">{index + 1}</td>
                       <td className="px-4 py-3 text-slate-600">{item.date}</td>
-                      <td className="px-4 py-3 font-medium text-slate-900">{item.pricingSerialNo}</td>
+                       <td className="px-4 py-3 font-medium text-slate-900"><button onClick={() => router.push(`/admin/pricing-panel/${item.panelId}/view`)} className="hover:text-indigo-600 hover:underline">{item.pricingSerialNo}</button></td>
                       <td className="px-4 py-3">
                         {item.vnnNumbers?.length ? (
-                          <span
-                            className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium"
-                            title={item.vnnNumbers.join(', ')}
-                          >
-                            {item.vnnNumbers.length} VNN{item.vnnNumbers.length !== 1 ? 's' : ''}
-                          </span>
+                           <div className="flex max-w-48 flex-wrap gap-1">{item.vnnNumbers.map((vnn) => <span key={vnn} className="rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800">{vnn}</span>)}</div>
                         ) : (
                           <span className="text-slate-400">-</span>
                         )}
@@ -1374,9 +1371,7 @@ export default function PricingPanelList() {
                       </td>
                       <td className="px-4 py-3 font-medium">{item.weight} kg</td>
                       <td className="px-4 py-3">
-                        <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-medium">
-                          {item.orderCount} order{item.orderCount !== 1 ? 's' : ''}
-                        </span>
+                         <div className="flex max-w-48 flex-wrap gap-1">{item.orderNumbers.map((orderNo) => <span key={orderNo} className="rounded-full bg-purple-100 px-2 py-1 text-xs font-medium text-purple-800">{orderNo}</span>)}</div>
                       </td>
                       <td className="px-4 py-3">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${

@@ -4103,17 +4103,25 @@ export default function ApproveVehicleNegotiation() {
       const data = await res.json();
       
       if (data.success) {
+        const uploadedMemo = {
+          filePath: data.filePath,
+          fullPath: data.fullPath,
+          filename: data.filename,
+          originalName: file.name,
+          size: file.size,
+          mimeType: file.type
+        };
+        const memoRes = await fetch(`/api/vehicle-negotiation/${negotiationId}/memo`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ memoFile: uploadedMemo })
+        });
+        const memoData = await memoRes.json();
+        if (!memoRes.ok || !memoData.success) throw new Error(memoData.message || 'Memo metadata could not be saved');
         setApproval(prev => ({ 
           ...prev, 
-          memoStatus: "Uploaded",
-          memoFile: {
-            filePath: data.filePath,
-            fullPath: data.fullPath,
-            filename: data.filename,
-            originalName: file.name,
-            size: file.size,
-            mimeType: file.type
-          }
+          memoStatus: memoData.data.memoStatus,
+          memoFile: memoData.data.memoFile
         }));
         alert("✅ Memo uploaded successfully!");
       }
@@ -4439,47 +4447,27 @@ export default function ApproveVehicleNegotiation() {
 
         {/* PART 2 - Vehicle - Negotiation - Part - 2 (Rate-Target) with Approval Fields Editable */}
         <Card 
-          title="Vehicle - Negotiation - Part - 2 (Rate-Target)" 
-          right={
-            <button
-              onClick={handleSubmitPart2}
-              disabled={savingPart1 || savingPart2 || savingPart3 || uploading}
-              className={`rounded-xl px-4 py-2 text-xs font-bold text-white transition ${
-                savingPart1 || savingPart2 || savingPart3 || uploading ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'
-              }`}
-            >
-              {savingPart2 ? 'Saving...' : 'Submit Part 2'}
-            </button>
-          }
+          title="Vehicle - Negotiation - Part - 2 (Rate-Target)"
         >
           <div className="grid grid-cols-12 gap-3 mb-4">
             <Input col="col-span-12 md:col-span-3" label="Max Rate" value={negotiation.maxRate} readOnly={true} />
             <Input col="col-span-12 md:col-span-3" label="Target Rate" value={negotiation.targetRate} readOnly={true} />
             <Input col="col-span-12 md:col-span-3" label="Old Rate %" value={negotiation.oldRatePercent} readOnly={true} />
             
-            {/* APPROVAL STATUS - PART 2 - Editable */}
+            {/* Rate Target is completed when its owner saves it. */}
             <Select 
               col="col-span-12 md:col-span-3" 
-              label="Approval Status" 
+              label="Rate Target Status"
               value={part2Approval.approvalStatus} 
-              onChange={(v) => setPart2Approval(prev => ({ ...prev, approvalStatus: v }))} 
               options={APPROVALS} 
-              readOnly={false} 
+              readOnly={true}
             />
           </div>
 
-          {/* APPROVAL REMARKS - PART 2 - Editable */}
           <div className="grid grid-cols-12 gap-3 mb-4">
             <div className="col-span-12 md:col-span-6">
-              <label className="text-xs font-bold text-slate-600">Approval Remarks</label>
-              <textarea
-                value={part2Approval.remarks}
-                onChange={(e) => setPart2Approval(prev => ({ ...prev, remarks: e.target.value }))}
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-white p-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-                rows={1}
-                placeholder="Enter remarks..."
-                readOnly={false}
-              />
+              <label className="text-xs font-bold text-slate-600">Rate Target Remarks</label>
+              <div className="mt-1 min-h-10 rounded-xl border border-slate-200 bg-slate-50 p-2 text-sm text-slate-700">{negotiation.remarks1 || '—'}</div>
             </div>
           </div>
 

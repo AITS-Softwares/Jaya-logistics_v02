@@ -5333,7 +5333,7 @@ function useVehicleNegotiation() {
     try {
       const token = localStorage.getItem('token');
       
-      const vnRes = await fetch('/api/vehicle-negotiation', {
+       const vnRes = await fetch('/api/vehicle-negotiation?eligibleFor=loading', {
         headers: { Authorization: `Bearer ${token}` },
       });
       

@@ -8,7 +8,6 @@ export default function RateTargetDetailPage() {
   const router = useRouter();
   const [record, setRecord] = useState(null);
   const [form, setForm] = useState({ maxRate: '', targetRate: '', oldRatePercent: '', remarks1: '', voiceNote: '', voiceNoteFile: null });
-  const [approvalRemarks, setApprovalRemarks] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -24,7 +23,6 @@ export default function RateTargetDetailPage() {
         oldRatePercent: data.data.negotiation?.oldRatePercent ?? '', remarks1: data.data.negotiation?.remarks1 ?? '',
         voiceNote: data.data.voiceNote ?? '', voiceNoteFile: data.data.voiceNoteFile ?? null
       });
-      setApprovalRemarks(data.data.approval?.part2Remarks ?? '');
     } catch (err) { setError(err.message); }
   };
   useEffect(() => { load(); }, [id]);
@@ -35,15 +33,6 @@ export default function RateTargetDetailPage() {
       const token = localStorage.getItem('token');
       const res = await fetch(`/api/rate-target-vehicle-negotiation/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ negotiation: form, voiceNote: form.voiceNote, voiceNoteFile: form.voiceNoteFile }) });
       const data = await res.json(); if (!res.ok) throw new Error(data.message || 'Unable to save Rate Target.');
-      await load();
-    } catch (err) { setError(err.message); } finally { setSaving(false); }
-  };
-  const decide = async (action) => {
-    setSaving(true); setError('');
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`/api/rate-target-vehicle-negotiation/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ action, remarks: approvalRemarks }) });
-      const data = await res.json(); if (!res.ok) throw new Error(data.message || 'Unable to update approval.');
       await load();
     } catch (err) { setError(err.message); } finally { setSaving(false); }
   };
@@ -79,7 +68,6 @@ export default function RateTargetDetailPage() {
         <label className="mt-4 block"><span className="text-xs font-bold text-slate-600">Voice Note</span><input type="file" accept="audio/*" disabled={approved || saving} onChange={uploadVoice} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-100" />{form.voiceNoteFile?.originalName && <span className="mt-1 block text-xs text-slate-500">Uploaded: {form.voiceNoteFile.originalName}</span>}</label>
         {!approved && <button disabled={saving} onClick={save} className="mt-5 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white disabled:bg-slate-400">Save Rate Target</button>}
       </section>
-      <section className="mt-5 rounded-xl border border-slate-200 bg-white p-5"><h2 className="font-bold text-slate-900">Rate Target Approval</h2><label className="mt-3 block"><span className="text-xs font-bold text-slate-600">Approval Remarks</span><textarea value={approvalRemarks} disabled={saving || approved} onChange={(e) => setApprovalRemarks(e.target.value)} rows="3" className="mt-1 w-full rounded-lg border border-slate-300 p-3 text-sm disabled:bg-slate-100" /></label>{!approved && <div className="mt-4 flex gap-3"><button disabled={saving} onClick={() => decide('approve')} className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-bold text-white disabled:bg-slate-400">Approve</button><button disabled={saving} onClick={() => decide('reject')} className="rounded-lg bg-red-600 px-4 py-2 text-sm font-bold text-white disabled:bg-slate-400">Reject</button></div>}</section>
     </>}
   </div></div>;
 }

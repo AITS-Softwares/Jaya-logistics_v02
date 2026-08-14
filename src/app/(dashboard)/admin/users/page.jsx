@@ -50,6 +50,7 @@ const ROLE_OPTIONS = {
    "Sales":[
       "Order Panel",
       "Vehicle Negotiation", 
+      "Rate Target (Vehicle Negotiation)",
       "Pricing Panel", 
       "Loading Info", 
       "Purchase Panel", 
@@ -77,6 +78,7 @@ const ROLE_OPTIONS = {
   "Sales Manager": [
  "Order Panel",
       "Vehicle Negotiation", 
+      "Rate Target (Vehicle Negotiation)",
       "Pricing Panel", 
       "Loading Info", 
       "Purchase Panel", 

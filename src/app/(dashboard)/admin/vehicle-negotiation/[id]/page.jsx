@@ -7118,6 +7118,8 @@ export default function EditVehicleNegotiation() {
     mobile: "",
     purchaseType: "",
     paymentTerms: "",
+    part1Status: "Pending",
+    part1Remarks: "",
     part2Status: "Pending",
     part3Status: "Pending",
     part3Remarks: "",
@@ -7128,7 +7130,7 @@ export default function EditVehicleNegotiation() {
   });
 
   const isPart1Locked = Boolean(workflow.part1Locked);
-  const isPart2Approved = approval.part2Status === 'Approved';
+  const isPart3Approved = approval.part3Status === 'Approved';
 
   // Fetch data from APIs
   useEffect(() => {
@@ -7343,6 +7345,8 @@ export default function EditVehicleNegotiation() {
           mobile: vn.approval.mobile || "",
           purchaseType: vn.approval.purchaseType || "",
           paymentTerms: vn.approval.paymentTerms || "",
+          part1Status: vn.approval.part1Status || "Pending",
+          part1Remarks: vn.approval.part1Remarks || "",
           part2Status: vn.approval.part2Status || "Pending",
           part3Status: vn.approval.part3Status || "Pending",
           part3Remarks: vn.approval.part3Remarks || "",
@@ -7693,17 +7697,25 @@ export default function EditVehicleNegotiation() {
       const data = await res.json();
       
       if (data.success) {
+        const uploadedMemo = {
+          filePath: data.filePath,
+          fullPath: data.fullPath,
+          filename: data.filename,
+          originalName: file.name,
+          size: file.size,
+          mimeType: file.type
+        };
+        const memoRes = await fetch(`/api/vehicle-negotiation/${negotiationId}/memo`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ memoFile: uploadedMemo })
+        });
+        const memoData = await memoRes.json();
+        if (!memoRes.ok || !memoData.success) throw new Error(memoData.message || 'Memo metadata could not be saved');
         setApproval((p) => ({ 
           ...p, 
-          memoStatus: "Uploaded",
-          memoFile: {
-            filePath: data.filePath,
-            fullPath: data.fullPath,
-            filename: data.filename,
-            originalName: file.name,
-            size: file.size,
-            mimeType: file.type
-          }
+          memoStatus: memoData.data.memoStatus,
+          memoFile: memoData.data.memoFile
         }));
         alert("✅ Memo uploaded successfully!");
       } else {
@@ -7991,10 +8003,10 @@ export default function EditVehicleNegotiation() {
       country: o.countryName || "-",
       weight: o.weight,
       orderStatus: o.status,
-      approval: approval.approvalStatus || "Pending",
+      approval: approval.part3Status || "Pending",
       memo: approval.memoStatus || "Pending",
     }));
-  }, [orders, header.date, header.vnnNo, approval.approvalStatus, approval.memoStatus]);
+  }, [orders, header.date, header.vnnNo, approval.part3Status, approval.memoStatus]);
 
   const ordersColumns = [
     { key: "orderNo", label: "Order No" },
@@ -8445,7 +8457,7 @@ export default function EditVehicleNegotiation() {
           <div className="flex items-center gap-3">            
             <button
               onClick={handleUpdate}
-              disabled={saving || (isPart1Locked && !isPart2Approved)}
+              disabled={saving || (isPart1Locked && !isPart3Approved)}
               className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${
                 saving 
                   ? 'bg-gray-400 cursor-not-allowed' 
@@ -8611,7 +8623,7 @@ export default function EditVehicleNegotiation() {
             <Select 
               col="col-span-12 md:col-span-3" 
               label="Approval Status (Part 1)" 
-              value={approval.approvalStatus} 
+              value={approval.part1Status}
               options={APPROVALS} 
               readOnly={true} 
             />
@@ -8620,7 +8632,7 @@ export default function EditVehicleNegotiation() {
             <div className="col-span-12 md:col-span-3">
               <label className="text-xs font-bold text-slate-600">Approval Remarks</label>
               <textarea
-                value={approval.remarks}
+                value={approval.part1Remarks}
                 className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2 text-sm outline-none cursor-not-allowed"
                 rows={1}
                 placeholder="Enter remarks..."
@@ -8760,9 +8772,9 @@ export default function EditVehicleNegotiation() {
 
         {/* PART 3: VEHICLE APPROVAL - PART 3 - Editable only after Rate Target approval */}
         <Card title="Vehicle - Approval - Part - 3">
-          {!isPart2Approved && (
+          {!isPart3Approved && (
             <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-700">
-              ⚠️ Part 3 is locked. Please set Part 2 Approval Status to "Approved" to edit this section.
+              Vehicle placement is locked until Part 3 has been approved.
             </div>
           )}
           <div className="grid grid-cols-12 gap-3 mb-4">
@@ -8772,7 +8784,7 @@ export default function EditVehicleNegotiation() {
                 value={selectedSupplier ? selectedSupplier.supplierName : approval.vendorName} 
                 onSelect={handleSupplierSelect} 
                 placeholder="Search supplier..." 
-                readOnly={!isPart2Approved}
+                readOnly={!isPart3Approved}
               />
             </div>
             <Select 
@@ -8781,7 +8793,7 @@ export default function EditVehicleNegotiation() {
               value={approval.vendorStatus} 
               onChange={(v) => setApproval((p) => ({ ...p, vendorStatus: v }))} 
               options={VENDOR_STATUS} 
-              readOnly={!isPart2Approved}
+              readOnly={!isPart3Approved}
             />
             <Select 
               col="col-span-12 md:col-span-4" 
@@ -8796,7 +8808,7 @@ export default function EditVehicleNegotiation() {
                 }
               }} 
               options={RATE_TYPES} 
-              readOnly={!isPart2Approved}
+              readOnly={!isPart3Approved}
             />
           </div>
 
@@ -8806,7 +8818,7 @@ export default function EditVehicleNegotiation() {
               label="Final - Per MT (A)" 
               value={approval.finalPerMT} 
               onChange={(v) => setApproval((p) => ({ ...p, finalPerMT: v }))} 
-              readOnly={!isPart2Approved || approval.rateType === "Fixed"} 
+              readOnly={!isPart3Approved || approval.rateType === "Fixed"}
             />
             <div className="col-span-12 md:col-span-4 mt-2">
               <div className="flex flex-col">
@@ -8828,7 +8840,7 @@ export default function EditVehicleNegotiation() {
               label="Final - Fix" 
               value={approval.finalFix} 
               onChange={(v) => setApproval((p) => ({ ...p, finalFix: v }))} 
-              readOnly={!isPart2Approved || approval.rateType === "Per MT"} 
+              readOnly={!isPart3Approved || approval.rateType === "Per MT"}
             />
             <Select
               col="col-span-12 md:col-span-4"
@@ -8859,7 +8871,7 @@ export default function EditVehicleNegotiation() {
                 onChange={(e) => setApproval((p) => ({ ...p, vehicleNo: e.target.value }))} 
                 className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200" 
                 placeholder="Enter vehicle number..." 
-                readOnly={!isPart2Approved}
+                readOnly={!isPart3Approved}
               />
             </div>
             <Input 
@@ -8867,7 +8879,7 @@ export default function EditVehicleNegotiation() {
               label="Mobile" 
               value={approval.mobile} 
               onChange={(v) => setApproval((p) => ({ ...p, mobile: v }))} 
-              readOnly={!isPart2Approved}
+              readOnly={!isPart3Approved}
             />
           </div>
 
@@ -8878,7 +8890,7 @@ export default function EditVehicleNegotiation() {
               value={approval.purchaseType} 
               onChange={(v) => setApproval((p) => ({ ...p, purchaseType: v }))} 
               options={purchaseTypes.length > 0 ? purchaseTypes : PURCHASE_TYPES}
-              readOnly={!isPart2Approved}
+              readOnly={!isPart3Approved}
             />
             <Select 
               col="col-span-12 md:col-span-4" 
@@ -8886,7 +8898,7 @@ export default function EditVehicleNegotiation() {
               value={approval.paymentTerms} 
               onChange={(v) => setApproval((p) => ({ ...p, paymentTerms: v }))} 
               options={paymentTerms.length > 0 ? paymentTerms : PAYMENT_TERMS}
-              readOnly={!isPart2Approved}
+              readOnly={!isPart3Approved}
             />
           </div>
         </Card>
@@ -8908,14 +8920,13 @@ export default function EditVehicleNegotiation() {
               </span>
             </div>
             <div className="mt-3">
-              <label className="text-xs font-bold text-slate-600">Memo Approval</label>
+              <label className="text-xs font-bold text-slate-600">Final Approval Status</label>
               <select
-                value={approval.approvalStatus || ""}
-                onChange={(e) => setApproval((p) => ({ ...p, approvalStatus: e.target.value }))}
+                value={approval.part3Status || "Pending"}
                 className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none cursor-not-allowed"
                 disabled={true}
               >
-                <option value="">Select Approval</option>
+                <option value="Pending">Pending</option>
                 {APPROVALS.map((opt) => (
                   <option key={opt} value={opt}>{opt}</option>
                 ))}

@@ -38,7 +38,7 @@ export default function RateTargetVehicleNegotiationPage() {
         <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-extrabold text-slate-900">Rate Target (Vehicle Negotiation)</h1>
-            <p className="mt-1 text-sm text-slate-500">Part 1 must be locked before a Rate Target can be entered or approved.</p>
+            <p className="mt-1 text-sm text-slate-500">Part 1 must be locked before a Rate Target can be entered. Saving it completes Part 2.</p>
           </div>
           <select value={status} onChange={(event) => setStatus(event.target.value)} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm">
             {STATUS.map((item) => <option key={item} value={item}>{item}</option>)}
@@ -53,7 +53,7 @@ export default function RateTargetVehicleNegotiationPage() {
             <tbody>
               {loading ? <tr><td colSpan="7" className="px-4 py-10 text-center text-slate-500">Loading Rate Target queue…</td></tr> : records.length === 0 ? <tr><td colSpan="7" className="px-4 py-10 text-center text-slate-500">No locked Vehicle Negotiations match this filter.</td></tr> : records.map((record) => (
                 <tr key={record._id} className="border-t border-slate-100 hover:bg-slate-50">
-                  <td className="px-4 py-3 font-semibold text-slate-900">{record.vnnNo}</td>
+                  <td className="px-4 py-3"><button onClick={() => router.push(`/admin/vehicle-negotiation/${record._id}/view`)} className="font-semibold text-indigo-700 hover:underline">{record.vnnNo}</button></td>
                   <td className="px-4 py-3">{record.partyName || '—'}</td>
                   <td className="px-4 py-3">{record.branchName || '—'}</td>
                   <td className="px-4 py-3">{record.totalWeight || 0}</td>

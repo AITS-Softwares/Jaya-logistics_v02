@@ -3376,6 +3376,7 @@ import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import { getNextVehicleNegotiationNumber } from "./VehicleNegotiationCounter";
 import { activeOperatingCompanyId, companyScopeFilter } from "@/lib/companyScope";
 import mongoose from 'mongoose';
+import { getFinalVnnStatus, withVnnDisplayData } from '@/lib/vehicleNegotiationWorkflow';
 
 // Helper function to format date as DD/MM/YYYY
 function formatDateDDMMYYYY(date) {
@@ -3483,6 +3484,7 @@ export async function GET(req) {
     const search = url.searchParams.get("search");
     const approvalStatus = url.searchParams.get("approvalStatus");
     const memoStatus = url.searchParams.get("memoStatus");
+    const eligibleFor = url.searchParams.get('eligibleFor');
     const fromDate = url.searchParams.get("fromDate");
     const toDate = url.searchParams.get("toDate");
     
@@ -3554,16 +3556,6 @@ export async function GET(req) {
         ];
       }
       
-      // Apply approval status filter - check all three parts
-      if (approvalStatus) {
-        query.$or = query.$or || [];
-        query.$or.push(
-          { 'approval.part1Status': approvalStatus },
-          { 'approval.part2Status': approvalStatus },
-          { 'approval.part3Status': approvalStatus }
-        );
-      }
-      
       // Apply memo status filter
       if (memoStatus) {
         query['approval.memoStatus'] = memoStatus;
@@ -3579,15 +3571,22 @@ export async function GET(req) {
         query.date = { ...query.date, $lte: endDate };
       }
       
-      const vehicleNegotiations = await VehicleNegotiation.find(companyScopeFilter(user, query))
+      let vehicleNegotiations = await VehicleNegotiation.find(companyScopeFilter(user, query))
         .sort({ date: -1, createdAt: -1 })
         .lean();
+
+      // The list represents the final VNN decision, not a retired single
+      // approvalStatus field. Filtering here also keeps the result correct for
+      // older records that pre-date the three-part workflow.
+      if (approvalStatus) {
+        vehicleNegotiations = vehicleNegotiations.filter((vn) => getFinalVnnStatus(vn) === approvalStatus);
+      }
 
       const tableData = [];
       
       vehicleNegotiations.forEach(vn => {
         const formattedDate = vn.date ? formatDateDDMMYYYY(vn.date) : '';
-        const displayApproval = vn.approval?.part1Status || 'Pending';
+        const displayApproval = getFinalVnnStatus(vn);
         
         if (vn.orders && vn.orders.length > 0) {
           vn.orders.forEach(order => {
@@ -3595,6 +3594,7 @@ export async function GET(req) {
               date: formattedDate,
               vnn: vn.vnnNo || '',
               order: order.orderNo || '',
+              orderNumbers: (vn.orders || []).map((item) => item.orderNo).filter(Boolean),
               partyName: order.partyName || vn.customerName || '',
               vendorName: vn.approval?.vendorName || '',
               vendorCode: vn.approval?.vendorCode || '',
@@ -3623,6 +3623,7 @@ export async function GET(req) {
             date: formattedDate,
             vnn: vn.vnnNo || '',
             order: '',
+            orderNumbers: [],
             partyName: vn.customerName || '',
             vendorCode: vn.approval?.vendorCode || '',
             vendorName: vn.approval?.vendorName || '',
@@ -3657,9 +3658,14 @@ export async function GET(req) {
     }
 
     // CASE 4: REGULAR LIST
-    const vehicleNegotiations = await VehicleNegotiation.find(companyScopeFilter(user))
+    let vehicleNegotiations = await VehicleNegotiation.find(companyScopeFilter(user))
       .sort({ createdAt: -1 })
       .lean();
+
+    vehicleNegotiations = vehicleNegotiations.map(withVnnDisplayData);
+    if (eligibleFor === 'pricing' || eligibleFor === 'loading') {
+      vehicleNegotiations = vehicleNegotiations.filter((vn) => vn.isReadyForDownstream);
+    }
 
     return NextResponse.json({
       success: true,
@@ -4347,6 +4353,20 @@ export async function PATCH(req) {
     // Handle approve action for specific part
     if (action === 'approve') {
       const partToUpdate = part || 'part1';
+
+      if (partToUpdate === 'part2') {
+        return NextResponse.json({
+          success: false,
+          message: 'Rate Target has no separate approval. Save the Rate Target record to complete Part 2.'
+        }, { status: 409 });
+      }
+
+      if (partToUpdate === 'part3' && (!vehicleNegotiation.workflow?.part1Locked || vehicleNegotiation.approval?.part2Status !== 'Approved')) {
+        return NextResponse.json({
+          success: false,
+          message: 'Part 3 can be approved only after Part 1 is locked and Rate Target is completed.'
+        }, { status: 409 });
+      }
       
       // Update specific part status
       if (partToUpdate === 'part1') {
@@ -4358,6 +4378,7 @@ export async function PATCH(req) {
       } else if (partToUpdate === 'part3') {
         vehicleNegotiation.approval.part3Status = 'Approved';
         if (remarks !== undefined) vehicleNegotiation.approval.part3Remarks = remarks;
+        vehicleNegotiation.panelStatus = 'Approved';
       }
       
       // Update shared fields if provided
@@ -4389,6 +4410,13 @@ export async function PATCH(req) {
     // Handle reject action for specific part
     else if (action === 'reject') {
       const partToUpdate = part || 'part1';
+
+      if (partToUpdate === 'part2') {
+        return NextResponse.json({
+          success: false,
+          message: 'Rate Target has no separate approval. Update the Rate Target record instead.'
+        }, { status: 409 });
+      }
       
       if (partToUpdate === 'part1') {
         vehicleNegotiation.approval.part1Status = 'Reject';
@@ -4399,6 +4427,7 @@ export async function PATCH(req) {
       } else if (partToUpdate === 'part3') {
         vehicleNegotiation.approval.part3Status = 'Reject';
         if (remarks !== undefined) vehicleNegotiation.approval.part3Remarks = remarks;
+        vehicleNegotiation.panelStatus = 'Rejected';
       }
       
       await vehicleNegotiation.save();

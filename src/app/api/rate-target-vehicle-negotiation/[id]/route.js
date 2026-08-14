@@ -50,8 +50,7 @@ export async function PUT(req, { params }) {
   const { id } = params;
   if (!mongoose.Types.ObjectId.isValid(id)) return NextResponse.json({ success: false, message: 'Invalid record id.' }, { status: 400 });
   const body = await req.json();
-  const isApproval = body.action === 'approve' || body.action === 'reject';
-  const auth = authorize(req, isApproval ? 'approve' : 'edit');
+  const auth = authorize(req, 'edit');
   if (auth.error) return NextResponse.json({ success: false, message: auth.error }, { status: auth.status });
 
   await dbConnect();
@@ -59,27 +58,21 @@ export async function PUT(req, { params }) {
   if (!record) return NextResponse.json({ success: false, message: 'Vehicle Negotiation not found.' }, { status: 404 });
   if (!record.workflow?.part1Locked) return NextResponse.json({ success: false, message: 'Part 1 must be locked first.' }, { status: 409 });
 
-  if (isApproval) {
-    if (!record.negotiation?.targetRate && record.negotiation?.targetRate !== 0) {
-      return NextResponse.json({ success: false, message: 'Save the Rate Target before approval.' }, { status: 422 });
-    }
-    record.approval.part2Status = body.action === 'approve' ? 'Approved' : 'Reject';
-    record.approval.part2Remarks = String(body.remarks || '').trim();
-    addAudit(record, `rate-target-${body.action}`, auth.user);
-  } else {
-    if (record.approval?.part2Status === 'Approved') {
-      return NextResponse.json({ success: false, message: 'Approved Rate Target is locked. Amend Part 1 to restart the workflow.' }, { status: 409 });
-    }
-    const input = body.negotiation || {};
-    record.negotiation.maxRate = Number(input.maxRate) || 0;
-    record.negotiation.targetRate = Number(input.targetRate) || 0;
-    record.negotiation.oldRatePercent = input.oldRatePercent || '';
-    record.negotiation.remarks1 = input.remarks1 || '';
-    if (body.voiceNote !== undefined) record.voiceNote = body.voiceNote || '';
-    if (body.voiceNoteFile !== undefined) record.voiceNoteFile = body.voiceNoteFile || null;
-    if (record.approval.part2Status === 'Reject') record.approval.part2Status = 'Pending';
-    addAudit(record, 'rate-target-saved', auth.user);
+  if (record.approval?.part2Status === 'Approved') {
+    return NextResponse.json({ success: false, message: 'Completed Rate Target is locked. Amend Part 1 to restart the workflow.' }, { status: 409 });
   }
+  const input = body.negotiation || {};
+  record.negotiation.maxRate = Number(input.maxRate) || 0;
+  record.negotiation.targetRate = Number(input.targetRate) || 0;
+  record.negotiation.oldRatePercent = input.oldRatePercent || '';
+  record.negotiation.remarks1 = input.remarks1 || '';
+  if (body.voiceNote !== undefined) record.voiceNote = body.voiceNote || '';
+  if (body.voiceNoteFile !== undefined) record.voiceNoteFile = body.voiceNoteFile || null;
+  // Rate Target is data entry, not a separate approval. Saving it completes
+  // Part 2 and makes the VNN ready for the Part 3 approval decision.
+  record.approval.part2Status = 'Approved';
+  record.approval.part2Remarks = '';
+  addAudit(record, 'rate-target-saved', auth.user);
 
   await record.save();
   return NextResponse.json({ success: true, data: record });

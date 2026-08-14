@@ -70,13 +70,15 @@ export default function VehicleNegotiationList() {
           ...item,
           orderCount: 1,
           totalWeight: item.weight || 0,
-          orders: [item]
+          orders: [item],
+          orderNumbers: item.order ? [item.order] : []
         });
       } else {
         const existing = vnnMap.get(item.vnn);
         existing.orderCount += 1;
         existing.totalWeight += (item.weight || 0);
         existing.orders.push(item);
+        if (item.order && !existing.orderNumbers.includes(item.order)) existing.orderNumbers.push(item.order);
         
         if (!existing.order && item.order) existing.order = item.order;
         if (!existing.from && item.from) existing.from = item.from;
@@ -355,11 +357,13 @@ export default function VehicleNegotiationList() {
                     <tr key={item.vnId} className="hover:bg-yellow-50 transition">
                       <td className="px-4 py-3 text-slate-600">{index + 1}</td>
                       <td className="px-4 py-3 text-slate-600">{item.date}</td>
-                      <td className="px-4 py-3 font-medium text-slate-900">{item.vnn}</td>
+                      <td className="px-4 py-3 font-medium text-slate-900">
+                        <button onClick={() => router.push(`/admin/vehicle-negotiation/${item.vnId}/view`)} className="hover:text-indigo-600 hover:underline">{item.vnn}</button>
+                      </td>
                       <td className="px-4 py-3">
-                        <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
-                          {item.orderCount} order{item.orderCount !== 1 ? 's' : ''}
-                        </span>
+                        <div className="flex max-w-48 flex-wrap gap-1">
+                          {item.orderNumbers.map((orderNo) => <span key={orderNo} className="rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800">{orderNo}</span>)}
+                        </div>
                       </td>
                       <td className="px-4 py-3">
                         <div className="font-medium text-slate-800">{item.partyName}</div>

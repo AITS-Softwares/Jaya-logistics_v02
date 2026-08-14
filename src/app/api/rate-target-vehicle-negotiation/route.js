@@ -3,6 +3,7 @@ import dbConnect from '@/lib/db';
 import VehicleNegotiation from '@/app/api/vehicle-negotiation/VehicleNegotiation';
 import { getTokenFromHeader, verifyJWT } from '@/lib/auth';
 import { activeOperatingCompanyId, companyScopeFilter } from '@/lib/companyScope';
+import { getVnnPartyName } from '@/lib/vehicleNegotiationWorkflow';
 
 const MODULE = 'Rate Target (Vehicle Negotiation)';
 
@@ -36,9 +37,9 @@ export async function GET(req) {
   if (status && ['Pending', 'Approved', 'Reject'].includes(status)) query['approval.part2Status'] = status;
 
   const records = await VehicleNegotiation.find(companyScopeFilter(auth.user, query))
-    .select('vnnNo date branchName partyName totalWeight negotiation approval.part2Status workflow.part1LockedAt updatedAt')
+    .select('vnnNo date branchName partyName customerName orders.partyName totalWeight negotiation approval.part2Status workflow.part1LockedAt updatedAt')
     .sort({ updatedAt: -1 })
     .lean();
 
-  return NextResponse.json({ success: true, data: records });
+  return NextResponse.json({ success: true, data: records.map((record) => ({ ...record, partyName: getVnnPartyName(record) })) });
 }

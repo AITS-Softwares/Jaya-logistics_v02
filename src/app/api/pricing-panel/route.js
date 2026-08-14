@@ -971,6 +971,7 @@ import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import { getNextPricingSerialNumber } from "./PricingCounter";
 import mongoose from 'mongoose';
 import { activeOperatingCompanyId, companyScopeFilter } from "@/lib/companyScope";
+import VehicleNegotiation from '@/app/api/vehicle-negotiation/VehicleNegotiation';
 
 // ── PERMISSION FUNCTIONS ──
 
@@ -1277,6 +1278,19 @@ export async function POST(req) {
 
   try {
     const body = await req.json();
+
+    const vnnIds = [...new Set((body.orders || []).map((order) => {
+      const value = order?.vehicleNegotiationId;
+      return typeof value === 'object' ? value?._id?.toString() : value?.toString();
+    }).filter((id) => isValidObjectId(id)))];
+    if (vnnIds.length) {
+      const approvedCount = await VehicleNegotiation.countDocuments(companyScopeFilter(user, {
+        _id: { $in: vnnIds }, 'approval.part3Status': 'Approved'
+      }));
+      if (approvedCount !== vnnIds.length) {
+        return NextResponse.json({ success: false, message: 'Only Part 3 approved Vehicle Negotiations can be used for Pricing.' }, { status: 409 });
+      }
+    }
     
     console.log("📝 Creating new pricing panel");
     

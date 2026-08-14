@@ -1161,6 +1161,7 @@ import { getNextLoadingNumber } from "./LoadingCounter";
 import mongoose from 'mongoose';
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import { activeOperatingCompanyId, companyScopeFilter } from "@/lib/companyScope";
+import VehicleNegotiation from '@/app/api/vehicle-negotiation/VehicleNegotiation';
 
 // ── PERMISSION FUNCTIONS ──
 
@@ -1367,6 +1368,7 @@ export async function GET(req) {
           vehicleNegotiationNo: panel.vehicleNegotiationNo || 'N/A',
           vnnNo,
           vnnCount: vnnNo ? 1 : 0,
+          orderNumbers: [...new Set((panel.orderRows || []).map((row) => row.orderNo).filter(Boolean))],
           branch: panel.branchName || panel.branchCode || 'N/A',
           subCompanyName: panel.subCompanyName || '',
           subCompanyCode: panel.subCompanyCode || '',
@@ -1515,6 +1517,16 @@ export async function POST(req) {
 
   try {
     const body = await req.json();
+
+    const selectedVnnId = body.selectedVehicleNegotiation?.id || body.selectedVehicleNegotiation?._id;
+    const selectedVnnNo = body.selectedVehicleNegotiation?.vnnNo || body.vehicleNegotiationNo || body.header?.vehicleNegotiationNo;
+    if (selectedVnnId || selectedVnnNo) {
+      const vnnQuery = selectedVnnId && mongoose.Types.ObjectId.isValid(selectedVnnId) ? { _id: selectedVnnId } : { vnnNo: selectedVnnNo };
+      const approvedVnn = await VehicleNegotiation.findOne(companyScopeFilter(user, { ...vnnQuery, 'approval.part3Status': 'Approved' })).select('_id').lean();
+      if (!approvedVnn) {
+        return NextResponse.json({ success: false, message: 'Only Part 3 approved Vehicle Negotiations can be used for Loading.' }, { status: 409 });
+      }
+    }
     
     console.log("📝 Creating new loading panel");
     
