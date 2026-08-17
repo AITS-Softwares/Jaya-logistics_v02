@@ -626,7 +626,8 @@ const PERMISSION_TYPES = [
 
 // Module configurations with approve permission added
 const MODULES_CONFIG = {
-  'Rate Target (Vehicle Negotiation)': { icon: '🎯', permissions: ['view', 'edit', 'approve'] },
+  'Rate Target (Vehicle Negotiation)': { icon: '🎯', permissions: ['view', 'edit'] },
+  'Vehicle Negotiation Placement': { icon: '🚛', permissions: ['view', 'edit'] },
   // Sales Modules - All have approve permission
   'Order Panel': { icon: '📋', permissions: ['view', 'create', 'edit', 'delete', 'approve', 'reject'] },
   'Vehicle Negotiation': { icon: '🚚', permissions: ['view', 'create', 'edit', 'delete', 'approve'] },

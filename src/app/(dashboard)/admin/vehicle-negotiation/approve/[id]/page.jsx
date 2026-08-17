@@ -4445,7 +4445,7 @@ export default function ApproveVehicleNegotiation() {
           </div>
         </Card>
 
-        {/* PART 2 - Vehicle - Negotiation - Part - 2 (Rate-Target) with Approval Fields Editable */}
+        {/* PART 2 - Rate Target is completed by a validated save, not by approval. */}
         <Card 
           title="Vehicle - Negotiation - Part - 2 (Rate-Target)"
         >
@@ -4453,15 +4453,6 @@ export default function ApproveVehicleNegotiation() {
             <Input col="col-span-12 md:col-span-3" label="Max Rate" value={negotiation.maxRate} readOnly={true} />
             <Input col="col-span-12 md:col-span-3" label="Target Rate" value={negotiation.targetRate} readOnly={true} />
             <Input col="col-span-12 md:col-span-3" label="Old Rate %" value={negotiation.oldRatePercent} readOnly={true} />
-            
-            {/* Rate Target is completed when its owner saves it. */}
-            <Select 
-              col="col-span-12 md:col-span-3" 
-              label="Rate Target Status"
-              value={part2Approval.approvalStatus} 
-              options={APPROVALS} 
-              readOnly={true}
-            />
           </div>
 
           <div className="grid grid-cols-12 gap-3 mb-4">

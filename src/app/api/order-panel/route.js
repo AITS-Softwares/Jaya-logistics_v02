@@ -700,11 +700,15 @@
 import { NextResponse } from "next/server";
 import connectDb from "@/lib/db";
 import OrderPanel from "./OrderPanel";
+import Plant from "@/app/api/plants/schema";
 
 import mongoose from 'mongoose';
 import { withAuth, hasPermission } from "@/lib/auth";
 import { getNextOrderPanelNumber } from "./OrderCounter";
 import { companyScopeFilter } from "@/lib/companyScope";
+
+// Register the referenced model before populating plantRows.plantCode below.
+void Plant;
 
 // ── HELPER FUNCTIONS ──
 
@@ -743,7 +747,9 @@ export const GET = withAuth(async (req, context, user) => {
         }, { status: 400 });
       }
       
-      const orderPanel = await OrderPanel.findOne(companyScopeFilter(user, { _id: id })).lean();
+      const orderPanel = await OrderPanel.findOne(companyScopeFilter(user, { _id: id }))
+        .populate('plantRows.plantCode', 'name code')
+        .lean();
 
       if (!orderPanel) {
         return NextResponse.json({ 

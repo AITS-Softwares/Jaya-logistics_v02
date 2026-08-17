@@ -1522,9 +1522,16 @@ export async function POST(req) {
     const selectedVnnNo = body.selectedVehicleNegotiation?.vnnNo || body.vehicleNegotiationNo || body.header?.vehicleNegotiationNo;
     if (selectedVnnId || selectedVnnNo) {
       const vnnQuery = selectedVnnId && mongoose.Types.ObjectId.isValid(selectedVnnId) ? { _id: selectedVnnId } : { vnnNo: selectedVnnNo };
-      const approvedVnn = await VehicleNegotiation.findOne(companyScopeFilter(user, { ...vnnQuery, 'approval.part3Status': 'Approved' })).select('_id').lean();
+      const approvedVnn = await VehicleNegotiation.findOne(companyScopeFilter(user, {
+        ...vnnQuery,
+        'approval.part3Status': 'Approved',
+        'approval.vehicleNo': { $exists: true, $ne: '' },
+        'approval.mobile': { $exists: true, $ne: '' },
+        'approval.purchaseType': { $exists: true, $ne: '' },
+        'approval.paymentTerms': { $exists: true, $ne: '' },
+      })).select('_id').lean();
       if (!approvedVnn) {
-        return NextResponse.json({ success: false, message: 'Only Part 3 approved Vehicle Negotiations can be used for Loading.' }, { status: 409 });
+        return NextResponse.json({ success: false, message: 'Only Part 3 approved Vehicle Negotiations with completed vehicle placement can be used for Loading.' }, { status: 409 });
       }
     }
     

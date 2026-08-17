@@ -47,7 +47,8 @@ const MODULE_PERMISSIONS = {
   // Sales Modules
   "Order Panel": ['view', 'create', 'edit', 'delete', 'approve', 'reject'],
   "Vehicle Negotiation": ['view', 'create', 'edit', 'delete', 'approve'],
-  "Rate Target (Vehicle Negotiation)": ['view', 'edit', 'approve'],
+  "Vehicle Negotiation Placement": ['view', 'edit'],
+  "Rate Target (Vehicle Negotiation)": ['view', 'edit'],
   "Pricing Panel": ['view', 'create', 'edit', 'delete'],
   "Loading Info": ['view', 'create', 'edit', 'delete'],
   "Purchase Panel": ['view', 'create', 'edit', 'delete'],

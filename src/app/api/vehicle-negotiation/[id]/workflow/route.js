@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import dbConnect from '@/lib/db';
 import VehicleNegotiation from '@/app/api/vehicle-negotiation/VehicleNegotiation';
 import { getTokenFromHeader, verifyJWT } from '@/lib/auth';
+import { activeOperatingCompanyId, companyScopeFilter } from '@/lib/companyScope';
 
 function authorize(req) {
   const token = getTokenFromHeader(req);
@@ -10,6 +11,7 @@ function authorize(req) {
   try {
     const user = verifyJWT(token);
     if (!user) return { error: 'Invalid session.', status: 401 };
+    activeOperatingCompanyId(user);
     if (user.type === 'company' || user.roles?.includes('Admin')) return { user };
     const module = user.modules?.['Vehicle Negotiation'];
     if (!module?.selected || module.permissions?.edit !== true) return { error: 'Vehicle Negotiation edit permission is required.', status: 403 };
@@ -28,7 +30,7 @@ export async function PATCH(req, { params }) {
   if (!['lock-part1', 'amend-part1'].includes(body.action)) return NextResponse.json({ success: false, message: 'Unsupported workflow action.' }, { status: 400 });
 
   await dbConnect();
-  const record = await VehicleNegotiation.findOne({ _id: id, companyId: auth.user.companyId || auth.user.id });
+  const record = await VehicleNegotiation.findOne(companyScopeFilter(auth.user, { _id: id }));
   if (!record) return NextResponse.json({ success: false, message: 'Vehicle Negotiation not found.' }, { status: 404 });
   record.workflow = record.workflow || { audit: [] };
   record.workflow.audit = record.workflow.audit || [];
@@ -58,10 +60,17 @@ export async function PATCH(req, { params }) {
     record.negotiation.remarks1 = '';
     record.voiceNote = '';
     record.voiceNoteFile = null;
-    record.approval.part2Status = 'Pending';
-    record.approval.part2Remarks = '';
+    record.workflow.rateTargetCompletedAt = null;
+    record.workflow.rateTargetCompletedBy = null;
+    record.workflow.rateTargetLastSavedAt = null;
+    record.workflow.placementCompletedAt = null;
+    record.workflow.placementCompletedBy = null;
     record.approval.part3Status = 'Pending';
     record.approval.part3Remarks = '';
+    record.approval.vehicleNo = '';
+    record.approval.mobile = '';
+    record.approval.purchaseType = '';
+    record.approval.paymentTerms = '';
   }
 
   await record.save();

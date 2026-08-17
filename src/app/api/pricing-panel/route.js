@@ -1285,10 +1285,15 @@ export async function POST(req) {
     }).filter((id) => isValidObjectId(id)))];
     if (vnnIds.length) {
       const approvedCount = await VehicleNegotiation.countDocuments(companyScopeFilter(user, {
-        _id: { $in: vnnIds }, 'approval.part3Status': 'Approved'
+        _id: { $in: vnnIds },
+        'approval.part3Status': 'Approved',
+        'approval.vehicleNo': { $exists: true, $ne: '' },
+        'approval.mobile': { $exists: true, $ne: '' },
+        'approval.purchaseType': { $exists: true, $ne: '' },
+        'approval.paymentTerms': { $exists: true, $ne: '' },
       }));
       if (approvedCount !== vnnIds.length) {
-        return NextResponse.json({ success: false, message: 'Only Part 3 approved Vehicle Negotiations can be used for Pricing.' }, { status: 409 });
+        return NextResponse.json({ success: false, message: 'Only Part 3 approved Vehicle Negotiations with completed vehicle placement can be used for Pricing.' }, { status: 409 });
       }
     }
     

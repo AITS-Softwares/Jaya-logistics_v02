@@ -58,20 +58,27 @@ export async function PUT(req, { params }) {
   if (!record) return NextResponse.json({ success: false, message: 'Vehicle Negotiation not found.' }, { status: 404 });
   if (!record.workflow?.part1Locked) return NextResponse.json({ success: false, message: 'Part 1 must be locked first.' }, { status: 409 });
 
-  if (record.approval?.part2Status === 'Approved') {
-    return NextResponse.json({ success: false, message: 'Completed Rate Target is locked. Amend Part 1 to restart the workflow.' }, { status: 409 });
+  if (record.approval?.part3Status === 'Approved') {
+    return NextResponse.json({ success: false, message: 'Rate Target cannot be changed after final VNN approval.' }, { status: 409 });
   }
   const input = body.negotiation || {};
-  record.negotiation.maxRate = Number(input.maxRate) || 0;
-  record.negotiation.targetRate = Number(input.targetRate) || 0;
+  const maxRate = Number(input.maxRate);
+  const targetRate = Number(input.targetRate);
+  if (!Number.isFinite(maxRate) || maxRate <= 0 || !Number.isFinite(targetRate) || targetRate <= 0) {
+    return NextResponse.json({ success: false, message: 'Max Rate and Target Rate are required and must be greater than zero.' }, { status: 422 });
+  }
+  record.negotiation.maxRate = maxRate;
+  record.negotiation.targetRate = targetRate;
   record.negotiation.oldRatePercent = input.oldRatePercent || '';
   record.negotiation.remarks1 = input.remarks1 || '';
   if (body.voiceNote !== undefined) record.voiceNote = body.voiceNote || '';
   if (body.voiceNoteFile !== undefined) record.voiceNoteFile = body.voiceNoteFile || null;
-  // Rate Target is data entry, not a separate approval. Saving it completes
-  // Part 2 and makes the VNN ready for the Part 3 approval decision.
-  record.approval.part2Status = 'Approved';
-  record.approval.part2Remarks = '';
+  // Rate Target is data entry, not an approval. Its completion is tracked in
+  // workflow metadata so Part 3 can be safely unlocked without Part 2 status.
+  record.workflow = record.workflow || { audit: [] };
+  record.workflow.rateTargetCompletedAt = record.workflow.rateTargetCompletedAt || new Date();
+  record.workflow.rateTargetCompletedBy = record.workflow.rateTargetCompletedBy || (auth.user.id || null);
+  record.workflow.rateTargetLastSavedAt = new Date();
   addAudit(record, 'rate-target-saved', auth.user);
 
   await record.save();

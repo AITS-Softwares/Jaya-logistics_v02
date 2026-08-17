@@ -469,12 +469,17 @@ function TableSearchableDropdown({
       setFilteredItems(filtered);
     }
     
-    if (selectedItem && query !== getDisplayValue(selectedItem)) {
-      setSelectedItem(null);
-      isUpdatingRef.current = true;
-      onSelect?.(null);
-      setTimeout(() => { isUpdatingRef.current = false; }, 100);
-    }
+  };
+
+  const clearSelection = () => {
+    if (disabled) return;
+    setSelectedItem(null);
+    setSearchQuery("");
+    setFilteredItems(items);
+    isUpdatingRef.current = true;
+    onSelect?.(null);
+    setTimeout(() => { isUpdatingRef.current = false; }, 100);
+    requestAnimationFrame(() => inputRef.current?.focus());
   };
 
   const handleSelectItem = (item) => {
@@ -488,7 +493,7 @@ function TableSearchableDropdown({
   };
 
   const handleInputFocus = () => {
-    if (disabled) return;
+    if (disabled || selectedItem) return;
     
     if (inputRef.current) {
       const rect = inputRef.current.getBoundingClientRect();
@@ -576,6 +581,7 @@ function TableSearchableDropdown({
         placeholder={placeholder}
         required={required}
         disabled={disabled}
+        readOnly={Boolean(selectedItem)}
         autoComplete="off"
         role="combobox"
         aria-expanded={showDropdown}
@@ -583,6 +589,7 @@ function TableSearchableDropdown({
         aria-controls={listboxId}
         aria-activedescendant={highlightedIndex >= 0 ? `${listboxId}-${highlightedIndex}` : undefined}
       />
+      {selectedItem && !disabled && <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={clearSelection} className="absolute right-1 top-1/2 -translate-y-1/2 rounded p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-800" aria-label="Clear selected value" title="Clear selection to choose another value">×</button>}
       
       {showDropdown && !disabled && (
         <div 
@@ -701,10 +708,14 @@ function SearchableDropdown({
       setFilteredItems(filtered);
     }
     
-    if (selectedItem && query !== getDisplayValue(selectedItem)) {
-      setSelectedItem(null);
-      onSelect?.(null);
-    }
+  };
+
+  const clearSelection = () => {
+    if (disabled) return;
+    setSelectedItem(null);
+    setSearchQuery("");
+    setFilteredItems(items);
+    onSelect?.(null);
   };
 
   const handleSelectItem = (item) => {
@@ -715,7 +726,7 @@ function SearchableDropdown({
   };
 
   const handleInputFocus = () => {
-    if (!showDropdown && !disabled) {
+    if (!showDropdown && !disabled && !selectedItem) {
       setFilteredItems(items);
       setShowDropdown(true);
     }
@@ -755,11 +766,13 @@ function SearchableDropdown({
         placeholder={placeholder}
         required={required}
         disabled={disabled}
+        readOnly={Boolean(selectedItem)}
         autoComplete="off"
         role="combobox"
         aria-expanded={showDropdown}
         aria-haspopup="listbox"
       />
+      {selectedItem && !disabled && <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={clearSelection} className="absolute right-1 top-1/2 -translate-y-1/2 rounded p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-800" aria-label="Clear selected value" title="Clear selection to choose another value">×</button>}
       
       {showDropdown && !disabled && (
         <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto" role="listbox">
@@ -870,7 +883,7 @@ function SupplierSearchDropdown({
   };
 
   const handleInputFocus = () => {
-    if (readOnly) return;
+    if (readOnly || value) return;
     setFilteredSuppliers(suppliers);
     setShowDropdown(true);
   };
@@ -892,7 +905,7 @@ function SupplierSearchDropdown({
         onFocus={handleInputFocus}
         onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
         onKeyDown={handleDropdownKeyDown}
-        readOnly={readOnly}
+        readOnly={readOnly || Boolean(value)}
         className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${
           readOnly ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
         }`}
@@ -902,6 +915,7 @@ function SupplierSearchDropdown({
         aria-expanded={showDropdown}
         aria-haspopup="listbox"
       />
+      {value && !readOnly && <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => { onSelect(null); setSearchQuery(''); setShowDropdown(true); }} className="absolute right-1 top-1/2 -translate-y-1/2 rounded p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-800" aria-label="Clear selected supplier" title="Clear selection to choose another supplier">×</button>}
       
       {showDropdown && !readOnly && (
         <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto" role="listbox">
@@ -1394,26 +1408,28 @@ export default function VehicleNegotiationPanel() {
           let plantId = null;
           let plantName = '';
           let plantCode = '';
-          
-          if (row.plantCode) {
-            if (typeof row.plantCode === 'object' && row.plantCode._id) {
-              plantId = row.plantCode._id;
-              plantName = row.plantCode.name || '';
-              plantCode = row.plantCode.code || '';
-            } else if (typeof row.plantCode === 'string' && isValidObjectId(row.plantCode)) {
-              plantId = row.plantCode;
-              plantName = row.plantName || '';
-              plantCode = row.plantCodeValue || '';
-            }
-          }
-          
-          if (!plantId && row.plantCodeValue) {
-            const plant = plants.find(p => p.code === row.plantCodeValue);
-            if (plant) {
-              plantId = plant._id;
-              plantName = plant.name;
-              plantCode = plant.code;
-            }
+
+          // Prefer the populated Plant record returned by Order Panel. For
+          // legacy rows that only contain an ObjectId, resolve it from the
+          // already-loaded Plant master list instead of showing the ObjectId.
+          const sourcePlantId = typeof row.plantCode === 'object'
+            ? row.plantCode?._id
+            : row.plantCode;
+          const plant = (typeof row.plantCode === 'object' && row.plantCode?._id
+            ? row.plantCode
+            : plants.find((item) =>
+              String(item._id) === String(sourcePlantId) ||
+              (row.plantCodeValue && item.code === row.plantCodeValue)
+            ));
+
+          if (plant) {
+            plantId = plant._id;
+            plantName = plant.name || '';
+            plantCode = plant.code || '';
+          } else if (sourcePlantId && isValidObjectId(sourcePlantId)) {
+            plantId = sourcePlantId;
+            plantName = row.plantName || '';
+            plantCode = row.plantCodeValue || '';
           }
           
           return {
@@ -1928,7 +1944,7 @@ const handleSupplierSelect = (supplier) => {
       vnn: header.vnnNo,
       order: o.orderNo,
       partyName: o.partyName || "-",
-      plantCode: o.plantName || "-",
+      plantCode: o.plantCodeValue || "-",
       orderType: o.orderType,
       pinCode: o.pinCode || "-",
       from: o.fromName || "-",
@@ -2425,10 +2441,9 @@ const handleSupplierSelect = (supplier) => {
                     </td>
                     <td className="border border-yellow-300 px-2 py-2">
                       <input
-                        value={row.plantCode || ""}
-                        onChange={(e) => onChange(row._id, 'plantCode', e.target.value)}
-                        readOnly={isReadOnly}
-                        className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+                        value={row.plantCodeValue || ""}
+                        readOnly
+                        className="w-full rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-sm outline-none cursor-not-allowed"
                         placeholder="Plant Code"
                       />
                     </td>
@@ -2674,6 +2689,14 @@ const handleSupplierSelect = (supplier) => {
                         }));
                         updateVendor(row._id, 'vendorName', supplier.supplierName);
                         updateVendor(row._id, 'vendorCode', supplier.supplierCode || '');
+                      } else {
+                        setSelectedSupplierNames(prev => {
+                          const next = { ...prev };
+                          delete next[row._id];
+                          return next;
+                        });
+                        updateVendor(row._id, 'vendorName', '');
+                        updateVendor(row._id, 'vendorCode', '');
                       }
                     }}
                     placeholder="Select Supplier"

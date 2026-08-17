@@ -9,7 +9,14 @@ export function getFinalVnnStatus(record) {
 }
 
 export function isVnnReadyForDownstream(record) {
-  return getFinalVnnStatus(record) === 'Approved';
+  const placement = record?.approval || {};
+  const placementComplete = Boolean(record?.workflow?.placementCompletedAt) || [
+    placement.vehicleNo,
+    placement.mobile,
+    placement.purchaseType,
+    placement.paymentTerms,
+  ].every((value) => String(value || '').trim());
+  return getFinalVnnStatus(record) === 'Approved' && placementComplete;
 }
 
 export function getVnnPartyName(record) {
@@ -25,6 +32,7 @@ export function withVnnDisplayData(record) {
   return {
     ...record,
     partyName: getVnnPartyName(record),
+    vendorName: record?.approval?.vendorName || '',
     orderNumbers,
     finalApprovalStatus: getFinalVnnStatus(record),
     isReadyForDownstream: isVnnReadyForDownstream(record),

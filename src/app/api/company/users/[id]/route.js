@@ -51,11 +51,6 @@ export async function GET(req, { params }) {
     const company = verifyCompany(req);
     await dbConnect();
 
-    const hasCompanyAccessUpdate =
-      Object.prototype.hasOwnProperty.call(body, "operatingCompanyIds") ||
-      Object.prototype.hasOwnProperty.call(body, "accessAllOperatingCompanies") ||
-      Object.prototype.hasOwnProperty.call(body, "defaultOperatingCompanyId");
-
     const { id } = params;
     const user = await CompanyUser.findOne({
       _id: id,
@@ -80,6 +75,10 @@ export async function PUT(req, { params }) {
     const company = verifyCompany(req);
     const { id } = params;
     const body = await req.json();
+    const hasCompanyAccessUpdate =
+      Object.prototype.hasOwnProperty.call(body, "operatingCompanyIds") ||
+      Object.prototype.hasOwnProperty.call(body, "accessAllOperatingCompanies") ||
+      Object.prototype.hasOwnProperty.call(body, "defaultOperatingCompanyId");
     
     // Validate required fields
     if (!body.name || !body.email) {

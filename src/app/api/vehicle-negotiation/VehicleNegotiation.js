@@ -1055,6 +1055,11 @@ const vehicleNegotiationSchema = new mongoose.Schema({
     part1Locked: { type: Boolean, default: false },
     part1LockedAt: { type: Date, default: null },
     part1LockedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'CompanyUser', default: null },
+    rateTargetCompletedAt: { type: Date, default: null },
+    rateTargetCompletedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'CompanyUser', default: null },
+    rateTargetLastSavedAt: { type: Date, default: null },
+    placementCompletedAt: { type: Date, default: null },
+    placementCompletedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'CompanyUser', default: null },
     amendmentCount: { type: Number, default: 0 },
     lastAmendmentReason: { type: String, default: '' },
     lastAmendedAt: { type: Date, default: null },
@@ -1093,16 +1098,6 @@ const vehicleNegotiationSchema = new mongoose.Schema({
       default: '' 
     },
     
-    // Part 2 Approval (Rate-Target)
-    part2Status: { 
-      type: String, 
-      enum: ['Approved', 'Reject', 'Pending'], 
-      default: 'Pending' 
-    },
-    part2Remarks: { 
-      type: String, 
-      default: '' 
-    },
     
     // Part 3 Approval (Vehicle - Approval - Part - 3)
     part3Status: { 
@@ -1127,8 +1122,8 @@ const vehicleNegotiationSchema = new mongoose.Schema({
     vehicleId: { type: String, default: '' },
     vehicleData: { type: mongoose.Schema.Types.Mixed, default: null },
     mobile: { type: String, default: '' },
-    purchaseType: { type: String, default: 'Loading & Unloading' },
-    paymentTerms: { type: String, default: '80 % Advance' },
+    purchaseType: { type: String, default: '' },
+    paymentTerms: { type: String, default: '' },
     memoStatus: { type: String, enum: ['Uploaded', 'Pending'], default: 'Pending' },
     memoFile: {
       type: {
@@ -1213,7 +1208,6 @@ vehicleNegotiationSchema.index({ companyId: 1, createdAt: -1 });
 vehicleNegotiationSchema.index({ companyId: 1, subCompanyId: 1, createdAt: -1 });
 vehicleNegotiationSchema.index({ date: -1 });
 vehicleNegotiationSchema.index({ 'approval.part1Status': 1 });
-vehicleNegotiationSchema.index({ 'approval.part2Status': 1 });
 vehicleNegotiationSchema.index({ 'approval.part3Status': 1 });
 vehicleNegotiationSchema.index({ branch: 1 });
 vehicleNegotiationSchema.index({ customerId: 1 });

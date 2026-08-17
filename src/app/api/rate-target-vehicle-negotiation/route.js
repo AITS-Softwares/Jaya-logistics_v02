@@ -31,13 +31,10 @@ export async function GET(req) {
   if (auth.error) return NextResponse.json({ success: false, message: auth.error }, { status: auth.status });
 
   await dbConnect();
-  const { searchParams } = new URL(req.url);
-  const status = searchParams.get('status');
   const query = { 'workflow.part1Locked': true };
-  if (status && ['Pending', 'Approved', 'Reject'].includes(status)) query['approval.part2Status'] = status;
 
   const records = await VehicleNegotiation.find(companyScopeFilter(auth.user, query))
-    .select('vnnNo date branchName partyName customerName orders.partyName totalWeight negotiation approval.part2Status workflow.part1LockedAt updatedAt')
+    .select('vnnNo date branchName partyName customerName orders.partyName totalWeight negotiation workflow.part1LockedAt workflow.rateTargetCompletedAt updatedAt')
     .sort({ updatedAt: -1 })
     .lean();
 

@@ -880,6 +880,10 @@ export default function OrderPanelList() {
     router.push(`/admin/order-panel/${orderId}`);
   };
 
+  const handleView = (orderId) => {
+    router.push(`/admin/order-panel/${orderId}/view`);
+  };
+
   // Handle Create New
   const handleCreateNew = () => {
     if (!canCreate(MODULE_NAME)) {
@@ -1288,7 +1292,7 @@ export default function OrderPanelList() {
 
         {/* Orders Table */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
+          <div className="max-h-[calc(100vh-280px)] overflow-auto">
             <table className="w-full text-sm">
               <thead className="bg-yellow-400 border-b border-yellow-500">
                 <tr>
@@ -1345,7 +1349,7 @@ export default function OrderPanelList() {
                           />
                         </td>
                         <td className="px-4 py-3 text-slate-600">{index + 1}</td>
-                        <td className="px-4 py-3 font-medium text-slate-900">{order.orderNo}</td>
+                        <td className="px-4 py-3"><button type="button" onClick={() => handleView(order.originalOrderId)} className="font-semibold text-slate-900 hover:text-indigo-700 hover:underline" title="View order details">{order.orderNo}</button></td>
                         <td className="px-4 py-3 text-slate-600">{formatDate(order.date)}</td>
                         <td className="px-4 py-3">
                           <div>

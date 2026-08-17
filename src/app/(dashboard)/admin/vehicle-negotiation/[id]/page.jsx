@@ -5829,6 +5829,7 @@ import { useMemo, useRef, useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import mongoose from 'mongoose';
 import TransactionFormKeyboardNavigation, { TransactionKeyboardTable, useKeyboardDropdown } from "@/components/TransactionFormKeyboardNavigation";
+import { usePermission } from "../../hooks/usePermission";
 
 /* =======================
   HELPERS / CONSTANTS
@@ -6111,7 +6112,7 @@ function Card({ title, right, children }) {
   );
 }
 
-function Input({ label, value, onChange, col = "", type = "text", readOnly = false }) {
+function Input({ label, value, onChange, col = "", type = "text", readOnly = false, disabled = false }) {
   return (
     <div className={col}>
       <label className="text-xs font-bold text-slate-600">{label}</label>
@@ -6120,8 +6121,9 @@ function Input({ label, value, onChange, col = "", type = "text", readOnly = fal
         value={value || ""}
         onChange={(e) => onChange?.(e.target.value)}
         readOnly={readOnly}
+        disabled={disabled}
         className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${
-          readOnly ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+          readOnly || disabled ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
         }`}
       />
     </div>
@@ -6216,12 +6218,17 @@ function TableSearchableDropdown({
       setFilteredItems(filtered);
     }
     
-    if (selectedItem && query !== getDisplayValue(selectedItem)) {
-      setSelectedItem(null);
-      isUpdatingRef.current = true;
-      onSelect?.(null);
-      setTimeout(() => { isUpdatingRef.current = false; }, 100);
-    }
+  };
+
+  const clearSelection = () => {
+    if (disabled) return;
+    setSelectedItem(null);
+    setSearchQuery("");
+    setFilteredItems(items);
+    isUpdatingRef.current = true;
+    onSelect?.(null);
+    setTimeout(() => { isUpdatingRef.current = false; }, 100);
+    requestAnimationFrame(() => inputRef.current?.focus());
   };
 
   const handleSelectItem = (item) => {
@@ -6235,7 +6242,7 @@ function TableSearchableDropdown({
   };
 
   const handleInputFocus = () => {
-    if (disabled) return;
+    if (disabled || selectedItem) return;
     
     if (inputRef.current) {
       const rect = inputRef.current.getBoundingClientRect();
@@ -6323,6 +6330,7 @@ function TableSearchableDropdown({
         placeholder={placeholder}
         required={required}
         disabled={disabled}
+        readOnly={Boolean(selectedItem)}
         autoComplete="off"
         role="combobox"
         aria-expanded={showDropdown}
@@ -6330,6 +6338,7 @@ function TableSearchableDropdown({
         aria-controls={listboxId}
         aria-activedescendant={highlightedIndex >= 0 ? `${listboxId}-${highlightedIndex}` : undefined}
       />
+      {selectedItem && !disabled && <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={clearSelection} className="absolute right-1 top-1/2 -translate-y-1/2 rounded p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-800" aria-label="Clear selected value" title="Clear selection to choose another value">×</button>}
       
       {showDropdown && !disabled && (
         <div 
@@ -6448,10 +6457,14 @@ function SearchableDropdown({
       setFilteredItems(filtered);
     }
     
-    if (selectedItem && query !== getDisplayValue(selectedItem)) {
-      setSelectedItem(null);
-      onSelect?.(null);
-    }
+  };
+
+  const clearSelection = () => {
+    if (disabled) return;
+    setSelectedItem(null);
+    setSearchQuery("");
+    setFilteredItems(items);
+    onSelect?.(null);
   };
 
   const handleSelectItem = (item) => {
@@ -6462,7 +6475,7 @@ function SearchableDropdown({
   };
 
   const handleInputFocus = () => {
-    if (!showDropdown && !disabled) {
+    if (!showDropdown && !disabled && !selectedItem) {
       setFilteredItems(items);
       setShowDropdown(true);
     }
@@ -6502,11 +6515,13 @@ function SearchableDropdown({
         placeholder={placeholder}
         required={required}
         disabled={disabled}
+        readOnly={Boolean(selectedItem)}
         autoComplete="off"
         role="combobox"
         aria-expanded={showDropdown}
         aria-haspopup="listbox"
       />
+      {selectedItem && !disabled && <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={clearSelection} className="absolute right-1 top-1/2 -translate-y-1/2 rounded p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-800" aria-label="Clear selected value" title="Clear selection to choose another value">×</button>}
       
       {showDropdown && !disabled && (
         <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto" role="listbox">
@@ -6609,7 +6624,7 @@ function SupplierSearchDropdown({
   };
 
   const handleInputFocus = async () => {
-    if (readOnly) return;
+    if (readOnly || value) return;
     if (supplierSearch.suppliers.length === 0) {
       await supplierSearch.searchSuppliers();
     }
@@ -6634,7 +6649,7 @@ function SupplierSearchDropdown({
         onFocus={handleInputFocus}
         onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
         onKeyDown={handleDropdownKeyDown}
-        readOnly={readOnly}
+        readOnly={readOnly || Boolean(value)}
         className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${
           readOnly ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
         }`}
@@ -6644,6 +6659,7 @@ function SupplierSearchDropdown({
         aria-expanded={showDropdown}
         aria-haspopup="listbox"
       />
+      {value && !readOnly && <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => { onSelect(null); setSearchQuery(''); setShowDropdown(true); }} className="absolute right-1 top-1/2 -translate-y-1/2 rounded p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-800" aria-label="Clear selected supplier" title="Clear selection to choose another supplier">×</button>}
       
       {showDropdown && !readOnly && (
         <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto" role="listbox">
@@ -6981,6 +6997,7 @@ export default function EditVehicleNegotiation() {
   const router = useRouter();
   const params = useParams();
   const negotiationId = params.id;
+  const { canEdit } = usePermission();
 
   const [branches, setBranches] = useState([]);
   const [subCompanies, setSubCompanies] = useState([]);
@@ -7120,7 +7137,6 @@ export default function EditVehicleNegotiation() {
     paymentTerms: "",
     part1Status: "Pending",
     part1Remarks: "",
-    part2Status: "Pending",
     part3Status: "Pending",
     part3Remarks: "",
     approvalStatus: "",
@@ -7130,7 +7146,12 @@ export default function EditVehicleNegotiation() {
   });
 
   const isPart1Locked = Boolean(workflow.part1Locked);
-  const isPart3Approved = approval.part3Status === 'Approved';
+  const isPart3Finalized = approval.part3Status === 'Approved';
+  const rateTargetCompleted = Boolean(workflow.rateTargetCompletedAt) ||
+    (Number(negotiation.maxRate) > 0 && Number(negotiation.targetRate) > 0);
+  const canEditVnn = canEdit('Vehicle Negotiation');
+  const canEditPart3 = canEditVnn && isPart1Locked && rateTargetCompleted && !isPart3Finalized;
+  const canEditPlacement = canEdit('Vehicle Negotiation Placement') && isPart1Locked && isPart3Finalized;
 
   // Fetch data from APIs
   useEffect(() => {
@@ -7347,7 +7368,6 @@ export default function EditVehicleNegotiation() {
           paymentTerms: vn.approval.paymentTerms || "",
           part1Status: vn.approval.part1Status || "Pending",
           part1Remarks: vn.approval.part1Remarks || "",
-          part2Status: vn.approval.part2Status || "Pending",
           part3Status: vn.approval.part3Status || "Pending",
           part3Remarks: vn.approval.part3Remarks || "",
           approvalStatus: vn.approval.approvalStatus || "",
@@ -7445,14 +7465,14 @@ export default function EditVehicleNegotiation() {
   }, [customerSearch.customers]);
 
   const handleSupplierSelect = (supplier) => {
-    setSelectedSupplier(supplier);
-    setApproval(prev => ({
+    setSelectedSupplier(supplier || null);
+    setApproval(prev => supplier ? ({
       ...prev,
       vendorName: supplier.supplierName,
       vendorId: supplier._id,
       vendorCode: supplier.supplierCode,
       vendorStatus: supplier.supplierStatus || "Active"
-    }));
+    }) : ({ ...prev, vendorName: '', vendorId: '', vendorCode: '', vendorStatus: 'Active' }));
   };
 
   const handleOrderPanelSelect = async (fullPanel, removePanelId = null) => {
@@ -7665,6 +7685,10 @@ export default function EditVehicleNegotiation() {
     setVendors((p) => p.map((v) => (v._id === id ? { ...v, [key]: value } : v)));
 
   const handleMemoUpload = async (e) => {
+    if (!canEditVnn) {
+      alert('Vehicle Negotiation edit permission is required to upload a memo.');
+      return;
+    }
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -7824,6 +7848,14 @@ export default function EditVehicleNegotiation() {
   };
 
   const handleUpdate = async ({ redirect = true } = {}) => {
+    if (!canEditVnn && !canEditPlacement) {
+      alert('You do not have permission to edit this Vehicle Negotiation stage.');
+      return false;
+    }
+    if (isPart1Locked && !canEditPart3 && !canEditPlacement) {
+      alert('Commercial Part 3 opens after Rate Target. Vehicle placement opens after Part 3 approval with Vehicle Negotiation Placement edit permission.');
+      return false;
+    }
     if (!header.branch) {
       alert("Please select a branch");
       return false;
@@ -7943,7 +7975,13 @@ export default function EditVehicleNegotiation() {
         }
       };
 
-      const res = await fetch(isPart1Locked ? `/api/vehicle-negotiation/${negotiationId}/part3` : '/api/vehicle-negotiation', {
+      const isPlacementSave = isPart1Locked && isPart3Finalized;
+      const endpoint = isPlacementSave
+        ? `/api/vehicle-negotiation/${negotiationId}/placement`
+        : isPart1Locked
+          ? `/api/vehicle-negotiation/${negotiationId}/part3`
+          : '/api/vehicle-negotiation';
+      const res = await fetch(endpoint, {
         method: isPart1Locked ? 'PATCH' : 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -7960,7 +7998,7 @@ export default function EditVehicleNegotiation() {
 
       setSaveSuccess(true);
       
-      alert(`✅ Vehicle negotiation updated successfully!\nVNN Number: ${header.vnnNo}`);
+      alert(`✅ ${isPlacementSave ? 'Vehicle placement saved' : 'Vehicle negotiation updated'} successfully!\nVNN Number: ${header.vnnNo}`);
       
       if (redirect) {
         setTimeout(() => {
@@ -7992,7 +8030,7 @@ export default function EditVehicleNegotiation() {
       vnn: header.vnnNo,
       order: o.orderNo,
       partyName: o.partyName || "-",
-      plantCode: o.plantName || "-",
+      plantCode: o.plantCodeValue ? `${o.plantName || "-"} (${o.plantCodeValue})` : (o.plantName || "-"),
       orderType: o.orderType,
       pinCode: o.pinCode || "-",
       from: o.fromName || "-",
@@ -8093,9 +8131,8 @@ export default function EditVehicleNegotiation() {
                     </td>
                     <td className="border border-yellow-300 px-2 py-2">
                       <input
-                        value={row.plantCode || ""}
-                        onChange={(e) => onChange(row._id, 'plantCode', e.target.value)}
-                        readOnly={isReadOnly}
+                        value={row.plantCodeValue ? `${row.plantName || ''} (${row.plantCodeValue})` : (row.plantName || '')}
+                        readOnly
                         className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
                         placeholder="Plant Code"
                       />
@@ -8343,6 +8380,14 @@ export default function EditVehicleNegotiation() {
                         }));
                         updateVendor(row._id, 'vendorName', supplier.supplierName);
                         updateVendor(row._id, 'vendorCode', supplier.supplierCode || '');
+                      } else {
+                        setSelectedSupplierNames(prev => {
+                          const next = { ...prev };
+                          delete next[row._id];
+                          return next;
+                        });
+                        updateVendor(row._id, 'vendorName', '');
+                        updateVendor(row._id, 'vendorCode', '');
                       }
                     }}
                     placeholder="Select Supplier"
@@ -8450,14 +8495,14 @@ export default function EditVehicleNegotiation() {
               </div>
             )}
             <div className="text-xs text-blue-600 mt-1">
-              ⓘ Part 2 editable only when Part 1 is Approved • Part 3 editable only when Part 2 is Approved
+              ⓘ Commercial Part 3 is editable after Rate Target. Vehicle placement opens only after Part 3 approval.
             </div>
           </div>
 
           <div className="flex items-center gap-3">            
             <button
               onClick={handleUpdate}
-              disabled={saving || (isPart1Locked && !isPart3Approved)}
+              disabled={saving || (!canEditVnn && !canEditPlacement) || (isPart1Locked && !canEditPart3 && !canEditPlacement)}
               className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${
                 saving 
                   ? 'bg-gray-400 cursor-not-allowed' 
@@ -8472,17 +8517,17 @@ export default function EditVehicleNegotiation() {
                   </svg>
                   Updating...
                 </span>
-              ) : (isPart1Locked ? 'Save Vehicle Placement' : 'Save Draft')}
+              ) : (isPart1Locked ? (isPart3Finalized ? 'Save Vehicle Placement' : 'Save Part 3') : 'Save Draft')}
             </button>
-            {!isPart1Locked ? (
+            {!isPart1Locked && canEditVnn ? (
               <button onClick={() => handleWorkflowAction('lock-part1')} disabled={saving} className="rounded-xl bg-indigo-600 px-5 py-2 text-sm font-bold text-white hover:bg-indigo-700 disabled:bg-slate-400">
                 Submit & Lock Part 1
               </button>
-            ) : (
+            ) : (isPart1Locked && canEditVnn && (
               <button onClick={() => handleWorkflowAction('amend-part1')} disabled={saving} className="rounded-xl bg-amber-600 px-5 py-2 text-sm font-bold text-white hover:bg-amber-700 disabled:bg-slate-400">
                 Amend Part 1
               </button>
-            )}
+            ))}
           </div>
         </div>
       </div>
@@ -8490,7 +8535,7 @@ export default function EditVehicleNegotiation() {
       <div className="mx-auto max-w-full p-4 space-y-4">
         {/* PART 1: VEHICLE NEGOTIATION - PART 1 */}
         <Card title="Vehicle Negotiation - Panel - Part -1">
-          <fieldset disabled={isPart1Locked} className="disabled:opacity-70">
+          <fieldset disabled={isPart1Locked || !canEditVnn} className="disabled:opacity-70">
           <div className="grid grid-cols-12 gap-3 mb-4">
             <div className="col-span-12 md:col-span-3">
               <label className="text-xs font-bold text-slate-600">Vehicle Negotiation No</label>
@@ -8772,9 +8817,11 @@ export default function EditVehicleNegotiation() {
 
         {/* PART 3: VEHICLE APPROVAL - PART 3 - Editable only after Rate Target approval */}
         <Card title="Vehicle - Approval - Part - 3">
-          {!isPart3Approved && (
+          {!canEditPart3 && !canEditPlacement && (
             <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-700">
-              Vehicle placement is locked until Part 3 has been approved.
+              {isPart3Finalized
+                ? 'Vehicle placement requires Vehicle Negotiation Placement edit permission.'
+                : 'Commercial Part 3 is locked until Rate Target has valid Max Rate and Target Rate values. Vehicle placement opens after Part 3 approval.'}
             </div>
           )}
           <div className="grid grid-cols-12 gap-3 mb-4">
@@ -8784,7 +8831,7 @@ export default function EditVehicleNegotiation() {
                 value={selectedSupplier ? selectedSupplier.supplierName : approval.vendorName} 
                 onSelect={handleSupplierSelect} 
                 placeholder="Search supplier..." 
-                readOnly={!isPart3Approved}
+                readOnly={!canEditPart3}
               />
             </div>
             <Select 
@@ -8793,7 +8840,7 @@ export default function EditVehicleNegotiation() {
               value={approval.vendorStatus} 
               onChange={(v) => setApproval((p) => ({ ...p, vendorStatus: v }))} 
               options={VENDOR_STATUS} 
-              readOnly={!isPart3Approved}
+              readOnly={!canEditPart3}
             />
             <Select 
               col="col-span-12 md:col-span-4" 
@@ -8808,7 +8855,7 @@ export default function EditVehicleNegotiation() {
                 }
               }} 
               options={RATE_TYPES} 
-              readOnly={!isPart3Approved}
+              readOnly={!canEditPart3}
             />
           </div>
 
@@ -8818,7 +8865,7 @@ export default function EditVehicleNegotiation() {
               label="Final - Per MT (A)" 
               value={approval.finalPerMT} 
               onChange={(v) => setApproval((p) => ({ ...p, finalPerMT: v }))} 
-              readOnly={!isPart3Approved || approval.rateType === "Fixed"}
+              readOnly={!canEditPart3 || approval.rateType === "Fixed"}
             />
             <div className="col-span-12 md:col-span-4 mt-2">
               <div className="flex flex-col">
@@ -8840,25 +8887,7 @@ export default function EditVehicleNegotiation() {
               label="Final - Fix" 
               value={approval.finalFix} 
               onChange={(v) => setApproval((p) => ({ ...p, finalFix: v }))} 
-              readOnly={!isPart3Approved || approval.rateType === "Per MT"}
-            />
-            <Select
-              col="col-span-12 md:col-span-4"
-              label="Approval Status"
-              value={approval.part3Status}
-              options={APPROVALS}
-              readOnly={true}
-            />
-          </div>
-
-          <div className="mb-4">
-            <label className="text-xs font-bold text-slate-600">Approval Remarks</label>
-            <textarea
-              value={approval.part3Remarks}
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm outline-none cursor-not-allowed"
-              rows={2}
-              placeholder="Approval remarks"
-              readOnly
+              readOnly={!canEditPart3 || approval.rateType === "Per MT"}
             />
           </div>
 
@@ -8871,7 +8900,8 @@ export default function EditVehicleNegotiation() {
                 onChange={(e) => setApproval((p) => ({ ...p, vehicleNo: e.target.value }))} 
                 className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200" 
                 placeholder="Enter vehicle number..." 
-                readOnly={!isPart3Approved}
+                readOnly={!canEditPlacement}
+                disabled={!canEditPlacement}
               />
             </div>
             <Input 
@@ -8879,7 +8909,8 @@ export default function EditVehicleNegotiation() {
               label="Mobile" 
               value={approval.mobile} 
               onChange={(v) => setApproval((p) => ({ ...p, mobile: v }))} 
-              readOnly={!isPart3Approved}
+              readOnly={!canEditPlacement}
+              disabled={!canEditPlacement}
             />
           </div>
 
@@ -8890,7 +8921,7 @@ export default function EditVehicleNegotiation() {
               value={approval.purchaseType} 
               onChange={(v) => setApproval((p) => ({ ...p, purchaseType: v }))} 
               options={purchaseTypes.length > 0 ? purchaseTypes : PURCHASE_TYPES}
-              readOnly={!isPart3Approved}
+              readOnly={!canEditPlacement}
             />
             <Select 
               col="col-span-12 md:col-span-4" 
@@ -8898,7 +8929,7 @@ export default function EditVehicleNegotiation() {
               value={approval.paymentTerms} 
               onChange={(v) => setApproval((p) => ({ ...p, paymentTerms: v }))} 
               options={paymentTerms.length > 0 ? paymentTerms : PAYMENT_TERMS}
-              readOnly={!isPart3Approved}
+              readOnly={!canEditPlacement}
             />
           </div>
         </Card>
@@ -8911,6 +8942,7 @@ export default function EditVehicleNegotiation() {
               type="file"
               accept=".pdf,.png,.jpg,.jpeg"
               onChange={handleMemoUpload}
+              disabled={!canEditVnn}
               className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
             />
             <div className="mt-3 text-sm">
@@ -8918,19 +8950,6 @@ export default function EditVehicleNegotiation() {
               <span className={`font-extrabold ${approval.memoStatus === "Uploaded" ? "text-green-700" : "text-yellow-700"}`}>
                 {approval.memoStatus || "Pending"}
               </span>
-            </div>
-            <div className="mt-3">
-              <label className="text-xs font-bold text-slate-600">Final Approval Status</label>
-              <select
-                value={approval.part3Status || "Pending"}
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none cursor-not-allowed"
-                disabled={true}
-              >
-                <option value="Pending">Pending</option>
-                {APPROVALS.map((opt) => (
-                  <option key={opt} value={opt}>{opt}</option>
-                ))}
-              </select>
             </div>
             {approval.memoFile && (
               <div className="mt-2 text-xs text-slate-600">

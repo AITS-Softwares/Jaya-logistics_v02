@@ -3372,6 +3372,8 @@
 import { NextResponse } from "next/server";
 import connectDb from "@/lib/db";
 import VehicleNegotiation from "./VehicleNegotiation";
+import PricingPanel from "@/app/api/pricing-panel/PricingPanel";
+import LoadingPanel from "@/app/api/loading-panel/LoadingPanel";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import { getNextVehicleNegotiationNumber } from "./VehicleNegotiationCounter";
 import { activeOperatingCompanyId, companyScopeFilter } from "@/lib/companyScope";
@@ -3813,8 +3815,6 @@ export async function POST(req) {
       approval: {
         part1Status: body.approval?.part1Status || 'Pending',
         part1Remarks: body.approval?.part1Remarks || '',
-        part2Status: body.approval?.part2Status || 'Pending',
-        part2Remarks: body.approval?.part2Remarks || '',
         part3Status: body.approval?.part3Status || 'Pending',
         part3Remarks: body.approval?.part3Remarks || '',
         vendorName: body.approval?.vendorName || '',
@@ -3824,12 +3824,14 @@ export async function POST(req) {
         rateType: body.approval?.rateType || 'Per MT',
         finalPerMT: Number(body.approval?.finalPerMT) || 0,
         finalFix: Number(body.approval?.finalFix) || 0,
-        vehicleNo: body.approval?.vehicleNo || '',
-        vehicleId: body.approval?.vehicleId || '',
-        vehicleData: body.approval?.vehicleData || null,
-        mobile: body.approval?.mobile || '',
-        purchaseType: body.approval?.purchaseType || 'Loading & Unloading',
-        paymentTerms: body.approval?.paymentTerms || '80 % Advance',
+        // Vehicle placement is completed only after Part 3 approval through
+        // the dedicated Vehicle Negotiation Placement permission.
+        vehicleNo: '',
+        vehicleId: '',
+        vehicleData: null,
+        mobile: '',
+        purchaseType: '',
+        paymentTerms: '',
         memoStatus: body.approval?.memoStatus || 'Pending',
         memoFile: body.approval?.memoFile || null
       },
@@ -3942,10 +3944,8 @@ export async function PUT(req) {
     // ─── DETERMINE IF THIS IS AN APPROVAL UPDATE ───
     const isApprovalUpdate = body.approval && (
       body.approval.part1Status !== undefined ||
-      body.approval.part2Status !== undefined ||
       body.approval.part3Status !== undefined ||
       body.approval.part1Remarks !== undefined ||
-      body.approval.part2Remarks !== undefined ||
       body.approval.part3Remarks !== undefined
     );
 
@@ -4137,14 +4137,6 @@ export async function PUT(req) {
         vehicleNegotiation.approval.part1Remarks = body.approval.part1Remarks;
       }
       
-      // Update Part 2 fields
-      if (body.approval.part2Status !== undefined) {
-        vehicleNegotiation.approval.part2Status = body.approval.part2Status;
-      }
-      if (body.approval.part2Remarks !== undefined) {
-        vehicleNegotiation.approval.part2Remarks = body.approval.part2Remarks;
-      }
-      
       // Update Part 3 fields
       if (body.approval.part3Status !== undefined) {
         vehicleNegotiation.approval.part3Status = body.approval.part3Status;
@@ -4175,52 +4167,10 @@ export async function PUT(req) {
       if (body.approval.finalFix !== undefined) {
         vehicleNegotiation.approval.finalFix = Number(body.approval.finalFix);
       }
-      if (body.approval.vehicleNo !== undefined) {
-        vehicleNegotiation.approval.vehicleNo = body.approval.vehicleNo;
-      }
-      if (body.approval.vehicleId !== undefined) {
-        vehicleNegotiation.approval.vehicleId = body.approval.vehicleId;
-      }
-      if (body.approval.vehicleData !== undefined) {
-        vehicleNegotiation.approval.vehicleData = body.approval.vehicleData;
-      }
-      if (body.approval.mobile !== undefined) {
-        vehicleNegotiation.approval.mobile = body.approval.mobile;
-      }
-      if (body.approval.purchaseType !== undefined) {
-        vehicleNegotiation.approval.purchaseType = body.approval.purchaseType;
-      }
-      if (body.approval.paymentTerms !== undefined) {
-        vehicleNegotiation.approval.paymentTerms = body.approval.paymentTerms;
-      }
-      if (body.approval.memoStatus !== undefined) {
-        vehicleNegotiation.approval.memoStatus = body.approval.memoStatus;
-      }
-      
-      // Handle memoFile
-      if (body.approval.memoFile !== undefined) {
-        if (body.approval.memoFile && typeof body.approval.memoFile === 'object') {
-          const hasFileData = body.approval.memoFile.filePath || 
-                             body.approval.memoFile.filename || 
-                             body.approval.memoFile.originalName;
-          
-          if (hasFileData) {
-            vehicleNegotiation.approval.memoFile = {
-              filePath: body.approval.memoFile.filePath || '',
-              fullPath: body.approval.memoFile.fullPath || '',
-              filename: body.approval.memoFile.filename || '',
-              originalName: body.approval.memoFile.originalName || '',
-              size: Number(body.approval.memoFile.size) || 0,
-              mimeType: body.approval.memoFile.mimeType || '',
-              uploadedAt: body.approval.memoFile.uploadedAt || new Date()
-            };
-          } else {
-            vehicleNegotiation.approval.memoFile = null;
-          }
-        } else if (body.approval.memoFile === null) {
-          vehicleNegotiation.approval.memoFile = null;
-        }
-      }
+      // Placement fields are written only by the dedicated placement endpoint,
+      // and memo metadata only by its dedicated memo endpoint. This keeps the
+      // two field-level permissions enforceable even when this legacy endpoint
+      // receives a larger approval payload.
     }
 
     // Save the updated vehicle negotiation
@@ -4283,6 +4233,34 @@ export async function DELETE(req) {
       }, { status: 400 });
     }
     
+    const vehicleNegotiation = await VehicleNegotiation.findOne(companyScopeFilter(user, { _id: id })).select('vnnNo').lean();
+
+    if (!vehicleNegotiation) {
+      return NextResponse.json({
+        success: false,
+        message: "Vehicle negotiation not found"
+      }, { status: 404 });
+    }
+
+    const [pricingExists, loadingExists] = await Promise.all([
+      PricingPanel.exists(companyScopeFilter(user, { 'orders.vehicleNegotiationId': id })),
+      LoadingPanel.exists(companyScopeFilter(user, {
+        $or: [
+          { 'selectedVehicleNegotiation.id': id },
+          { vehicleNegotiationNo: vehicleNegotiation.vnnNo }
+        ]
+      }))
+    ]);
+
+    if (pricingExists || loadingExists) {
+      return NextResponse.json({
+        success: false,
+        message: 'This Vehicle Negotiation is already used in Pricing or Loading and cannot be deleted.'
+      }, { status: 409 });
+    }
+
+    // Rate Target is stored in this same VNN document, so deleting the VNN
+    // removes its Rate Target data atomically as part of this operation.
     const result = await VehicleNegotiation.deleteOne(companyScopeFilter(user, { _id: id }));
 
     if (result.deletedCount === 0) {
@@ -4323,7 +4301,7 @@ export async function PATCH(req) {
     }
 
     const body = await req.json();
-    const { id, action, part, remarks, vendorName, vendorCode, finalPerMT, finalFix, vehicleNo, mobile, purchaseType, paymentTerms, memoStatus } = body;
+    const { id, action, part, remarks, vendorName, vendorCode, finalPerMT, finalFix, memoStatus } = body;
     
     if (!id) {
       return NextResponse.json({ 
@@ -4361,7 +4339,9 @@ export async function PATCH(req) {
         }, { status: 409 });
       }
 
-      if (partToUpdate === 'part3' && (!vehicleNegotiation.workflow?.part1Locked || vehicleNegotiation.approval?.part2Status !== 'Approved')) {
+      const rateTargetCompleted = Boolean(vehicleNegotiation.workflow?.rateTargetCompletedAt) ||
+        (Number(vehicleNegotiation.negotiation?.maxRate) > 0 && Number(vehicleNegotiation.negotiation?.targetRate) > 0);
+      if (partToUpdate === 'part3' && (!vehicleNegotiation.workflow?.part1Locked || !rateTargetCompleted)) {
         return NextResponse.json({
           success: false,
           message: 'Part 3 can be approved only after Part 1 is locked and Rate Target is completed.'
@@ -4372,9 +4352,6 @@ export async function PATCH(req) {
       if (partToUpdate === 'part1') {
         vehicleNegotiation.approval.part1Status = 'Approved';
         if (remarks !== undefined) vehicleNegotiation.approval.part1Remarks = remarks;
-      } else if (partToUpdate === 'part2') {
-        vehicleNegotiation.approval.part2Status = 'Approved';
-        if (remarks !== undefined) vehicleNegotiation.approval.part2Remarks = remarks;
       } else if (partToUpdate === 'part3') {
         vehicleNegotiation.approval.part3Status = 'Approved';
         if (remarks !== undefined) vehicleNegotiation.approval.part3Remarks = remarks;
@@ -4386,10 +4363,6 @@ export async function PATCH(req) {
       if (vendorCode) vehicleNegotiation.approval.vendorCode = vendorCode;
       if (finalPerMT !== undefined) vehicleNegotiation.approval.finalPerMT = Number(finalPerMT);
       if (finalFix !== undefined) vehicleNegotiation.approval.finalFix = Number(finalFix);
-      if (vehicleNo) vehicleNegotiation.approval.vehicleNo = vehicleNo;
-      if (mobile) vehicleNegotiation.approval.mobile = mobile;
-      if (purchaseType) vehicleNegotiation.approval.purchaseType = purchaseType;
-      if (paymentTerms) vehicleNegotiation.approval.paymentTerms = paymentTerms;
       if (memoStatus) vehicleNegotiation.approval.memoStatus = memoStatus;
       
       await vehicleNegotiation.save();
@@ -4401,7 +4374,6 @@ export async function PATCH(req) {
           _id: vehicleNegotiation._id,
           vnnNo: vehicleNegotiation.vnnNo,
           part1Status: vehicleNegotiation.approval.part1Status,
-          part2Status: vehicleNegotiation.approval.part2Status,
           part3Status: vehicleNegotiation.approval.part3Status
         }
       }, { status: 200 });
@@ -4421,9 +4393,6 @@ export async function PATCH(req) {
       if (partToUpdate === 'part1') {
         vehicleNegotiation.approval.part1Status = 'Reject';
         if (remarks !== undefined) vehicleNegotiation.approval.part1Remarks = remarks;
-      } else if (partToUpdate === 'part2') {
-        vehicleNegotiation.approval.part2Status = 'Reject';
-        if (remarks !== undefined) vehicleNegotiation.approval.part2Remarks = remarks;
       } else if (partToUpdate === 'part3') {
         vehicleNegotiation.approval.part3Status = 'Reject';
         if (remarks !== undefined) vehicleNegotiation.approval.part3Remarks = remarks;
@@ -4439,7 +4408,6 @@ export async function PATCH(req) {
           _id: vehicleNegotiation._id,
           vnnNo: vehicleNegotiation.vnnNo,
           part1Status: vehicleNegotiation.approval.part1Status,
-          part2Status: vehicleNegotiation.approval.part2Status,
           part3Status: vehicleNegotiation.approval.part3Status
         }
       }, { status: 200 });
