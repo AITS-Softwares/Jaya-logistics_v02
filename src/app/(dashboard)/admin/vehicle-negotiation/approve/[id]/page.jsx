@@ -3661,7 +3661,7 @@ function OrdersTable({ rows }) {
             <tr key={row._id || idx} className="hover:bg-yellow-50 even:bg-slate-50">
               <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.orderNo || '-'}</td>
               <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.partyName || '-'}</td>
-              <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.plantCode || '-'}</td>
+              <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.plantCodeValue || '-'}</td>
               <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.plantName || '-'}</td>
               <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.orderType || '-'}</td>
               <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.pinCode || '-'}</td>
