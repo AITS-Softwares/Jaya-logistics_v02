@@ -3065,6 +3065,10 @@ export default function Layout({ children }) {
           {!hasFullAccess &&
             Object.entries(modules).map(([moduleName, data]) => {
               if (!data?.selected) return null;
+
+              // This is a field-level permission inside an existing VNN record,
+              // not a standalone transaction page.
+              if (moduleName === 'Vehicle Negotiation Placement') return null;
               
               // Check if user has view permission for this module
               if (!canView(moduleName)) return null;
