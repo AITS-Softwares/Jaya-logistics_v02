@@ -5443,6 +5443,7 @@ function defaultOrderRow() {
     orderNo: "",
     partyName: "",
     plantCode: "",
+    plantCodeValue: "",
     plantName: "",
     orderType: "",
     pinCode: "",
@@ -7014,6 +7015,7 @@ export default function EditLoadingInfoPanel() {
             orderNo: order.orderNo || "",
             partyName: order.partyName || fullNegotiation.customerName || "",
             plantCode: order.plantCode || "",
+            plantCodeValue: order.plantCodeValue || "",
             plantName: order.plantName || "",
             orderType: order.orderType || "",
             pinCode: order.pinCode || "",
@@ -8281,26 +8283,27 @@ export default function EditLoadingInfoPanel() {
                       <p className="mt-1">Loading vehicle negotiations...</p>
                     </div>
                   ) : filteredVehicleNegotiations.length > 0 ? (
-                    filteredVehicleNegotiations.map((nego) => (
-                      <div
-                        key={nego._id}
-                        onMouseDown={() => handleSelectVehicleNegotiation(nego)}
-                        className="p-3 hover:bg-emerald-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors"
-                      >
-                        <div className="font-medium text-slate-800">
-                          {nego.vnnNo}
+                    filteredVehicleNegotiations.map((nego) => {
+                      const orderNumbers = [...new Set((nego.orders || []).map((order) => order.orderNo).filter(Boolean))];
+                      const routes = [...new Set((nego.orders || []).map((order) => {
+                        const from = order.fromName || order.from;
+                        const to = order.toName || order.to;
+                        return from && to ? `${from} → ${to}` : '';
+                      }).filter(Boolean))];
+                      return (
+                        <div
+                          key={nego._id}
+                          onMouseDown={() => handleSelectVehicleNegotiation(nego)}
+                          className="p-3 hover:bg-emerald-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors"
+                        >
+                          <div className="font-medium text-slate-800">{nego.vnnNo}</div>
+                          <div className="text-xs text-slate-500 mt-1">
+                            Order: {orderNumbers.join(', ') || '—'} | Route: {routes.join(', ') || '—'}
+                          </div>
+                          <div className="text-xs text-emerald-600">✓ Available</div>
                         </div>
-                        <div className="text-xs text-slate-500 mt-1">
-                          Vehicle: {nego.vehicleInfo?.vehicleNo || 'N/A'} • Vendor: {nego.approval?.vendorName || 'N/A'}
-                        </div>
-                        <div className="text-xs text-slate-400">
-                          Customer: {nego.customerName || 'N/A'}
-                        </div>
-                        <div className="text-xs text-emerald-600">
-                          ✓ Available
-                        </div>
-                      </div>
-                    ))
+                      );
+                    })
                   ) : (
                     <div className="p-3 text-center text-sm text-slate-500">
                       {vehicleNegotiationNo.trim() ? 
@@ -8554,7 +8557,7 @@ export default function EditLoadingInfoPanel() {
                         <input type="text" value={row.partyName || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Party Name" />
                       </td>
                       <td className="border border-yellow-300 px-2 py-2">
-                        <input type="text" value={row.plantName || row.plantCode || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Plant" />
+                        <input type="text" value={row.plantCodeValue ? `${row.plantName || ''} (${row.plantCodeValue})` : (row.plantName || row.plantCode || "")} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Plant" />
                       </td>
                       <td className="border border-yellow-300 px-2 py-2">
                         <input type="text" value={row.orderType || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Order Type" />

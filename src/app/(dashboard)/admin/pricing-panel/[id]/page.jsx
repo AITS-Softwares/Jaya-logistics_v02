@@ -2202,6 +2202,11 @@ const BILLING_TYPES = ["Single - Order", "Multi - Order"];
 const DELIVERY_TYPES = ["Urgent", "Normal", "Express", "Scheduled"];
 const APPROVAL_STATUS = ["Pending", "Pending from Team", "Pending from Client", "Approved", "Rejected", "Completed"];
 const RATE_APPROVAL_TYPES = ["Contract Rates", "Mail Approval Rate"];
+const RATE_CALCULATION_MODES = [
+  { value: "order_weight", label: "Auto – Order Weight" },
+  { value: "total_weight", label: "Auto – Total Panel Weight" },
+  { value: "manual_rate", label: "Manual Rate" },
+];
 
 function uid() {
   return Math.random().toString(36).slice(2, 10);
@@ -2362,13 +2367,14 @@ function useRateMasterSearch() {
     setError(null);
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/rate-master', {
+      const res = await fetch('/api/pricing-panel/reference-data', {
         headers: { Authorization: `Bearer ${token}` },
       });
       
       const data = await res.json();
-      if (data.success && Array.isArray(data.data)) {
-        const processedData = data.data.map(rm => ({
+      const masters = data?.data?.rateMasters;
+      if (data.success && Array.isArray(masters)) {
+        const processedData = masters.map(rm => ({
           ...rm,
           locationRates: rm.locationRates || [],
           rateSlabs: rm.locationRates?.flatMap(lr => [{
@@ -2425,12 +2431,12 @@ function useLocationData() {
   const fetchLocations = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/locations', {
+      const res = await fetch('/api/pricing-panel/reference-data', {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-      if (data.success && Array.isArray(data.data)) {
-        setLocations(data.data);
+      if (data.success && Array.isArray(data?.data?.locations)) {
+        setLocations(data.data.locations);
       } else {
         setLocations([]);
       }
@@ -2526,7 +2532,10 @@ function defaultOrderRow() {
     country: "",
     countryName: "",
     locationRate: "",
+    locationRateId: "",
     priceList: "",
+    priceListId: "",
+    rateCalculationMode: "order_weight",
     selectedRateMaster: null,
     weight: "",
     rate: "",
@@ -2973,7 +2982,9 @@ function LocationRateDropdown({
     setSelectedItem(item);
     setSearchQuery(item.name);
     setShowDropdown(false);
-    onSelect?.(item.name);
+    // Keep the full location record so the row can retain the correct
+    // location id and rate slab can be resolved immediately.
+    onSelect?.(item);
   };
 
   const handleInputFocus = () => {
@@ -3013,16 +3024,17 @@ function LocationRateDropdown({
         ref={inputRef}
         type="text"
         value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
+        onChange={(e) => { if (!selectedItem) setSearchQuery(e.target.value); }}
         onFocus={handleInputFocus}
         onBlur={handleInputBlur}
         className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${
           (readOnly || !selectedRateMaster || filteredLocationsByRateMaster.length === 0) ? 'bg-slate-50 cursor-not-allowed' : 'bg-white cursor-pointer'
         }`}
         placeholder={getPlaceholder()}
-        readOnly={readOnly || !selectedRateMaster || filteredLocationsByRateMaster.length === 0}
+        readOnly={readOnly || !!selectedItem || !selectedRateMaster || filteredLocationsByRateMaster.length === 0}
         autoComplete="off"
       />
+      {selectedItem && !readOnly && <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => { setSelectedItem(null); setSearchQuery(""); onSelect?.(null); setShowDropdown(true); }} className="absolute right-7 top-1.5 text-slate-500 hover:text-red-600" aria-label="Clear selected location">×</button>}
       <div className="absolute right-2 top-2 text-gray-400 pointer-events-none">
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -3144,16 +3156,17 @@ function PriceListDropdown({
         ref={inputRef}
         type="text"
         value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
+        onChange={(e) => { if (!selectedItem) setSearchQuery(e.target.value); }}
         onFocus={handleInputFocus}
         onBlur={handleInputBlur}
         className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${
           readOnly ? 'bg-slate-50 cursor-not-allowed' : 'bg-white cursor-pointer'
         }`}
         placeholder={placeholder}
-        readOnly={readOnly}
+        readOnly={readOnly || !!selectedItem}
         autoComplete="off"
       />
+      {selectedItem && !readOnly && <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => { setSelectedItem(null); setSearchQuery(""); onSelect?.(null); setShowDropdown(true); }} className="absolute right-7 top-1.5 text-slate-500 hover:text-red-600" aria-label="Clear selected price list">×</button>}
       <div className="absolute right-2 top-2 text-gray-400 pointer-events-none">
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -3287,6 +3300,7 @@ function OrdersTable({
   { key: "district", label: "District", width: "100px" },
   { key: "taluka", label: "Taluka", width: "100px" },
   { key: "localStatus", label: "Local/Not Local", width: "110px" },
+  { key: "rateCalculationMode", label: "Rate Calculation", width: "170px" },
   { key: "priceList", label: "Price List", width: "160px" },
   { key: "locationRate", label: "Location Rate", width: "140px" },
   { key: "weight", label: "Weight", type: "number", width: "70px" },
@@ -3329,52 +3343,63 @@ function OrdersTable({
     onChange(rowId, 'talukaName', talukaName);
   };
 
-  const handlePriceListSelect = (rowId, rateMaster) => {
-    onChange(rowId, 'priceList', rateMaster.title);
-    onChange(rowId, 'selectedRateMaster', rateMaster);
-    onChange(rowId, 'locationRate', '');
+  const getMatchingSlab = (row, totalWeight = null) => {
+    const weight = row.rateCalculationMode === 'total_weight'
+      ? (totalWeight ?? rows.reduce((sum, item) => sum + Number(item.weight || 0), 0))
+      : Number(row.weight);
+    if (!row.selectedRateMaster || !row.locationRate || !Number.isFinite(weight)) return null;
+    return (row.selectedRateMaster.locationRates || []).find((locationRate) =>
+      locationRate.isActive !== false && locationRate.locationName === row.locationRate &&
+      weight >= Number(locationRate.fromQty) && weight <= Number(locationRate.toQty),
+    ) || null;
+  };
+
+  const applyRate = (rowId, nextRow, totalWeight = null) => {
+    if (nextRow.rateCalculationMode === 'manual_rate') return;
+    const slab = getMatchingSlab(nextRow, totalWeight);
+    if (slab) {
+      onChange(rowId, 'rate', String(slab.rate));
+      onChange(rowId, 'locationRateId', slab._id || '');
+      return;
+    }
     onChange(rowId, 'rate', '');
   };
 
-  const handleLocationRateSelect = (rowId, locationName) => {
-    onChange(rowId, 'locationRate', locationName);
-    
-    const currentRow = rows.find(r => r._id === rowId);
-    if (currentRow && currentRow.selectedRateMaster && currentRow.weight) {
-      const locationRate = currentRow.selectedRateMaster.locationRates?.find(lr => 
-        lr.locationName === locationName
-      );
-      
-      if (locationRate) {
-        const weightNum = parseFloat(currentRow.weight);
-        if (weightNum >= locationRate.fromQty && weightNum <= locationRate.toQty) {
-          onChange(rowId, 'rate', locationRate.rate);
-        } else {
-          onChange(rowId, 'rate', '');
-          alert(`Weight ${currentRow.weight} is outside the range (${locationRate.fromQty} - ${locationRate.toQty}) for this price list`);
-        }
-      }
+  const handlePriceListSelect = (rowId, rateMaster) => {
+    if (!rateMaster) {
+      onChange(rowId, 'priceList', ''); onChange(rowId, 'priceListId', ''); onChange(rowId, 'selectedRateMaster', null);
+      onChange(rowId, 'locationRate', ''); onChange(rowId, 'locationRateId', ''); onChange(rowId, 'rate', '');
+      return;
     }
+    onChange(rowId, 'priceList', rateMaster.title);
+    onChange(rowId, 'priceListId', rateMaster._id || '');
+    onChange(rowId, 'selectedRateMaster', rateMaster);
+    onChange(rowId, 'locationRate', '');
+    onChange(rowId, 'locationRateId', '');
+    onChange(rowId, 'rate', '');
+  };
+
+  const handleLocationRateSelect = (rowId, location) => {
+    const currentRow = rows.find((row) => row._id === rowId);
+    if (!currentRow) return;
+    if (!location) {
+      onChange(rowId, 'locationRate', ''); onChange(rowId, 'locationRateId', ''); onChange(rowId, 'rate', '');
+      return;
+    }
+    const nextRow = { ...currentRow, locationRate: location.name, locationRateId: location._id || '' };
+    onChange(rowId, 'locationRate', location.name);
+    onChange(rowId, 'locationRateId', location._id || '');
+    applyRate(rowId, nextRow);
   };
 
   const handleWeightChange = (rowId, weight) => {
     onChange(rowId, 'weight', weight);
     
-    const currentRow = rows.find(r => r._id === rowId);
-    if (currentRow && currentRow.selectedRateMaster && currentRow.locationRate) {
-      const locationRate = currentRow.selectedRateMaster.locationRates?.find(lr => 
-        lr.locationName === currentRow.locationRate
-      );
-      
-      if (locationRate) {
-        const weightNum = parseFloat(weight);
-        if (weightNum >= locationRate.fromQty && weightNum <= locationRate.toQty) {
-          onChange(rowId, 'rate', locationRate.rate);
-        } else {
-          onChange(rowId, 'rate', '');
-        }
-      }
-    }
+    const nextRows = rows.map((row) => row._id === rowId ? { ...row, weight } : row);
+    const totalWeight = nextRows.reduce((sum, row) => sum + Number(row.weight || 0), 0);
+    nextRows.forEach((row) => {
+      if (row._id === rowId || row.rateCalculationMode === 'total_weight') applyRate(row._id, row, totalWeight);
+    });
   };
 
   return (
@@ -3437,8 +3462,8 @@ function OrdersTable({
 
                 <td className="border border-yellow-300 px-1 py-1">
                   <input
-                    value={row.plantCode || ""}
-                    onChange={(e) => onChange(row._id, 'plantCode', e.target.value)}
+                    value={isFromVehicleNegotiation ? (row.plantCodeValue || row.plantCode || "") : (row.plantCode || "")}
+                    onChange={(e) => onChange(row._id, isFromVehicleNegotiation ? 'plantCodeValue' : 'plantCode', e.target.value)}
                     className={`w-full min-w-[70px] rounded border border-slate-200 px-1 py-1 text-xs outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-200 ${
                       isFromVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
                     }`}
@@ -3599,6 +3624,20 @@ function OrdersTable({
                 </td>
 
                 <td className="border border-yellow-300 px-1 py-1">
+                  <select
+                    value={row.rateCalculationMode || 'order_weight'}
+                    onChange={(e) => {
+                      const rateCalculationMode = e.target.value;
+                      onChange(row._id, 'rateCalculationMode', rateCalculationMode);
+                      applyRate(row._id, { ...row, rateCalculationMode });
+                    }}
+                    className="w-full min-w-[130px] rounded border border-slate-200 bg-white px-1 py-1 text-xs outline-none focus:border-sky-500"
+                  >
+                    {RATE_CALCULATION_MODES.map((mode) => <option key={mode.value} value={mode.value}>{mode.label}</option>)}
+                  </select>
+                </td>
+
+                <td className="border border-yellow-300 px-1 py-1">
                   <PriceListDropdown
                     rateMasters={rateMasters}
                     selectedValue={row.priceList}
@@ -3615,7 +3654,7 @@ function OrdersTable({
                   <LocationRateDropdown
                     locations={locations}
                     selectedName={row.locationRate}
-                    onSelect={(locationName) => handleLocationRateSelect(row._id, locationName)}
+                    onSelect={(location) => handleLocationRateSelect(row._id, location)}
                     readOnly={false}
                     placeholder="Select Location..."
                     selectedRateMaster={row.selectedRateMaster}
@@ -3641,9 +3680,10 @@ function OrdersTable({
                     type="number"
                     step="0.01"
                     value={row.rate || ""}
-                    readOnly
-                    className="w-full min-w-[60px] rounded border border-slate-200 bg-slate-50 px-1 py-1 text-xs outline-none cursor-not-allowed"
-                    placeholder="Auto"
+                    onChange={(e) => onChange(row._id, 'rate', e.target.value)}
+                    readOnly={row.rateCalculationMode !== 'manual_rate'}
+                    className={`w-full min-w-[60px] rounded border border-slate-200 px-1 py-1 text-xs outline-none ${row.rateCalculationMode === 'manual_rate' ? 'bg-white focus:border-sky-500' : 'bg-slate-50 cursor-not-allowed'}`}
+                    placeholder={row.rateCalculationMode === 'manual_rate' ? 'Enter manual rate' : 'Auto'}
                   />
                 </td>
 
@@ -3740,6 +3780,8 @@ export default function EditPricingPanel() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [workflowPhase, setWorkflowPhase] = useState('part1');
+  const [capabilities, setCapabilities] = useState({ canAmendPart1: false, canAmendPart2: false });
   
   const locationData = useLocationData();
   const customerSearch = useCustomerSearch();
@@ -3779,6 +3821,8 @@ export default function EditPricingPanel() {
     approvalType: "Contract Rates",
     uploadFile: null,
     uploadFileName: "",
+    uploadFilePath: "",
+    remarks: "",
     approvalStatus: "Pending",
   });
 
@@ -3792,6 +3836,20 @@ export default function EditPricingPanel() {
     customerSearch.searchCustomers();
     rateMasterSearch.searchRateMasters();
   }, []);
+
+  // Saved panels predate the in-memory selected rate-master object. Rebuild it
+  // after reference data arrives so the Location Rate choices are available.
+  useEffect(() => {
+    if (!rateMasterSearch.rateMasters.length) return;
+    setOrders((previous) => previous.map((order) => {
+      const selectedRateMaster = rateMasterSearch.rateMasters.find((master) =>
+        String(master._id) === String(order.priceListId) || master.title === order.priceList,
+      );
+      return selectedRateMaster && selectedRateMaster !== order.selectedRateMaster
+        ? { ...order, selectedRateMaster, priceListId: order.priceListId || selectedRateMaster._id }
+        : order;
+    }));
+  }, [rateMasterSearch.rateMasters]);
 
   const fetchPricingPanelData = async () => {
     setFetchLoading(true);
@@ -3809,6 +3867,8 @@ export default function EditPricingPanel() {
       }
 
       const panel = data.data;
+      setWorkflowPhase(panel.rateApproval?.workflowPhase || 'part1');
+      setCapabilities(data.capabilities || { canAmendPart1: false, canAmendPart2: false });
       
       // Get VNN from orders
       if (panel.orders && panel.orders.length > 0) {
@@ -3857,6 +3917,7 @@ export default function EditPricingPanel() {
           weight: order.weight?.toString() || "",
           rate: order.rate?.toString() || "",
           locationRate: order.locationRate || "",
+          locationRateId: order.locationRateId || "",
           taluka: order.taluka || "",
           talukaName: order.talukaName || order.taluka || "",
           talukaId: order.talukaId || "",
@@ -3864,6 +3925,8 @@ export default function EditPricingPanel() {
           stateId: order.stateId || "",
           vehicleNegotiationId: order.vehicleNegotiationId || "",
           priceList: order.priceList || "",
+          priceListId: order.priceListId || "",
+          rateCalculationMode: order.rateCalculationMode || "order_weight",
           selectedRateMaster: null,
           collectionCharges: order.collectionCharges?.toString() || "",
           cancellationCharges: order.cancellationCharges || "",
@@ -3887,6 +3950,8 @@ export default function EditPricingPanel() {
           approvalType: panel.rateApproval.approvalType || "Contract Rates",
           uploadFile: null,
           uploadFileName: panel.rateApproval.uploadFile || "",
+          uploadFilePath: panel.rateApproval.uploadFilePath || "",
+          remarks: panel.rateApproval.remarks || "",
           approvalStatus: panel.rateApproval.approvalStatus || "Pending",
         });
       }
@@ -4075,6 +4140,30 @@ export default function EditPricingPanel() {
     }, 0);
   }, [orders]);
 
+  const handleFileSelect = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const allowedTypes = ['application/pdf', 'image/png', 'image/jpeg'];
+    if (!allowedTypes.includes(file.type) || file.size > 5 * 1024 * 1024) {
+      alert('Upload a PDF, PNG, or JPG file up to 5 MB.');
+      event.target.value = '';
+      return;
+    }
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const response = await fetch('/api/pricing-panel/upload-approval', {
+        method: 'POST', headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }, body: formData,
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.message || 'Upload failed');
+      setRateApproval((previous) => ({ ...previous, uploadFile: file, uploadFileName: data.data.fileName, uploadFilePath: data.data.filePath }));
+    } catch (error) {
+      alert(error.message || 'Unable to upload approval document.');
+      event.target.value = '';
+    }
+  };
+
   const handleUpdate = async () => {
     if (!header.branch) {
       alert("Please select a branch");
@@ -4084,6 +4173,10 @@ export default function EditPricingPanel() {
     const hasInvalidOrders = orders.some(order => !order.orderNo);
     if (hasInvalidOrders) {
       alert("Please enter Order No for all order rows");
+      return;
+    }
+    if (orders.some((order) => !order.priceList || !order.locationRate || order.rate === '' || order.rate === null)) {
+      alert('Select a Price List and Location Rate with a valid slab, or enter the approved manual Mail rate before saving.');
       return;
     }
 
@@ -4145,7 +4238,10 @@ export default function EditPricingPanel() {
           country: order.country,
           countryName: order.countryName,
           locationRate: order.locationRate,
+          locationRateId: order.locationRateId,
           priceList: order.priceList,
+          priceListId: order.priceListId,
+          rateCalculationMode: order.rateCalculationMode,
           weight: num(order.weight),
           rate: num(order.rate),
           totalAmount: num(order.weight) * num(order.rate),
@@ -4164,7 +4260,9 @@ export default function EditPricingPanel() {
         rateApproval: {
           approvalType: rateApproval.approvalType,
           approvalStatus: rateApproval.approvalStatus,
-          uploadFile: rateApproval.uploadFileName
+          uploadFile: rateApproval.uploadFileName,
+          uploadFilePath: rateApproval.uploadFilePath,
+          remarks: rateApproval.remarks
         }
       };
 
@@ -4197,6 +4295,25 @@ export default function EditPricingPanel() {
       setSaving(false);
     }
   };
+
+  const handleWorkflowAction = async (action) => {
+    try {
+      const response = await fetch('/api/pricing-panel', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
+        body: JSON.stringify({ id: panelId, action }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.message || 'Unable to update workflow');
+      setWorkflowPhase(data.data.workflowPhase);
+      alert(data.message);
+      await fetchPricingPanelData();
+    } catch (error) {
+      alert(error.message || 'Unable to update workflow.');
+    }
+  };
+
+  const part1Editable = workflowPhase === 'part1';
 
   const billingColumns = [
     { key: "billingType", label: "Billing Type", options: BILLING_TYPES },
@@ -4249,11 +4366,21 @@ export default function EditPricingPanel() {
           </div>
 
           <div className="flex items-center gap-3">
+            {workflowPhase === 'part1' && (
+              <button onClick={() => handleWorkflowAction('submit-part1')} disabled={saving} className="rounded-xl bg-indigo-600 px-5 py-2 text-sm font-bold text-white hover:bg-indigo-700 disabled:bg-gray-400">
+                Submit Saved Part 1 for Approval
+              </button>
+            )}
+            {workflowPhase === 'locked' && capabilities.canAmendPart1 && (
+              <button onClick={() => handleWorkflowAction('amend-part1')} className="rounded-xl bg-orange-600 px-5 py-2 text-sm font-bold text-white hover:bg-orange-700">
+                Amend Part 1
+              </button>
+            )}
             <button
               onClick={handleUpdate}
-              disabled={saving}
+              disabled={saving || !part1Editable}
               className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${
-                saving ? 'bg-gray-400 cursor-not-allowed' : 'bg-yellow-600 hover:bg-yellow-700'
+                saving || !part1Editable ? 'bg-gray-400 cursor-not-allowed' : 'bg-yellow-600 hover:bg-yellow-700'
               }`}
             >
               {saving ? (
@@ -4271,7 +4398,8 @@ export default function EditPricingPanel() {
       </div>
 
       <div className="mx-auto max-w-full p-4 space-y-4">
-        <Card title="Pricing Panel - Part -1">
+        <div className={part1Editable ? '' : 'pointer-events-none opacity-60'}>
+        <Card title={`Pricing Panel - Part -1${part1Editable ? '' : ' (Locked)'}`}>
           <div className="grid grid-cols-12 gap-3 mb-4">
             <div className="col-span-12 md:col-span-3">
               <label className="text-xs font-bold text-slate-600">Pricing Serial No</label>
@@ -4408,34 +4536,16 @@ export default function EditPricingPanel() {
             </div>
           </div>
         </Card>
+        </div>
 
-        <Card title="Rate - Approval - Part - 2 (Read Only)">
+        <Card title={`Rate - Approval - Part - 2${part1Editable ? '' : ' (Locked)'}`}>
           <div className="grid grid-cols-12 gap-4">
-            <Select
-              col="col-span-12 md:col-span-4"
-              label="Rate Approval Type"
-              value={rateApproval.approvalType}
-              onChange={(v) => setRateApproval((p) => ({ ...p, approvalType: v }))}
-              options={RATE_APPROVAL_TYPES}
-              readOnly={true}
-            />
-
+            <Select col="col-span-12 md:col-span-4" label="Rate Approval Type" value={rateApproval.approvalType} onChange={(value) => setRateApproval((previous) => ({ ...previous, approvalType: value }))} options={RATE_APPROVAL_TYPES} readOnly={!part1Editable} />
             <div className="col-span-12 md:col-span-4">
               <label className="text-xs font-bold text-slate-600">Rate Approval Upload</label>
-              <input
-                type="file"
-                accept=".pdf,.png,.jpg,.jpeg"
-                onChange={() => alert("Rate Approval section is read-only")}
-                disabled={true}
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none cursor-not-allowed"
-              />
-              {rateApproval.uploadFileName && (
-                <div className="mt-1 text-xs text-green-600">
-                  ✅ Current file: {rateApproval.uploadFileName}
-                </div>
-              )}
+              <input type="file" accept=".pdf,.png,.jpg,.jpeg" onChange={handleFileSelect} disabled={!part1Editable} className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 disabled:bg-slate-50" />
+              {rateApproval.uploadFileName && <div className="mt-1 text-xs text-green-600">✓ {rateApproval.uploadFileName}</div>}
             </div>
-
             <Select
               col="col-span-12 md:col-span-4"
               label="Approval Status"
@@ -4444,6 +4554,10 @@ export default function EditPricingPanel() {
               options={APPROVAL_STATUS}
               readOnly={true}
             />
+            <div className="col-span-12 md:col-span-8">
+              <label className="text-xs font-bold text-slate-600">Remarks</label>
+              <textarea value={rateApproval.remarks || ''} readOnly className="mt-1 min-h-20 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm" placeholder="Remarks are entered during approval" />
+            </div>
           </div>
         </Card>
       </div>

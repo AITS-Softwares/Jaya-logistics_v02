@@ -887,14 +887,15 @@ function Select({ label, value, options = [], col = "", readOnly = false }) {
 /* =========================
   Editable Select for Approval Section
 ========================= */
-function EditableSelect({ label, value, onChange, options = [], col = "" }) {
+function EditableSelect({ label, value, onChange, options = [], col = "", disabled = false }) {
   return (
     <div className={col}>
       <label className="text-xs font-bold text-slate-600">{label}</label>
       <select
         value={value || ""}
         onChange={(e) => onChange?.(e.target.value)}
-        className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+        disabled={disabled}
+        className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 disabled:bg-slate-50"
       >
         <option value="">Select {label}</option>
         {options.map((o) => (
@@ -1086,6 +1087,7 @@ export default function ApprovePricingPanel() {
   const [rateApproval, setRateApproval] = useState({
     approvalType: "Contract Rates",
     uploadFileName: "",
+    remarks: "",
     approvalStatus: "Pending",
   });
   
@@ -1094,6 +1096,8 @@ export default function ApprovePricingPanel() {
   const [emailSubject, setEmailSubject] = useState("");
   const [emailMessage, setEmailMessage] = useState("");
   const [showEmailModal, setShowEmailModal] = useState(false);
+  const [workflowPhase, setWorkflowPhase] = useState('part1');
+  const [capabilities, setCapabilities] = useState({ canAmendPart1: false, canAmendPart2: false });
 
   useEffect(() => {
     fetchPricingPanelData();
@@ -1115,6 +1119,8 @@ export default function ApprovePricingPanel() {
       }
 
       const panel = data.data;
+      setWorkflowPhase(panel.rateApproval?.workflowPhase || 'part1');
+      setCapabilities(data.capabilities || { canAmendPart1: false, canAmendPart2: false });
       console.log("Fetched panel data:", panel);
       
       // Set pricing serial number
@@ -1168,6 +1174,7 @@ export default function ApprovePricingPanel() {
         setRateApproval({
           approvalType: panel.rateApproval.approvalType || "Contract Rates",
           uploadFileName: panel.rateApproval.uploadFile || "",
+          remarks: panel.rateApproval.remarks || "",
           approvalStatus: panel.rateApproval.approvalStatus || "Pending",
         });
       }
@@ -1234,6 +1241,10 @@ export default function ApprovePricingPanel() {
   };
 
   const handleApprove = async (autoApprove = false) => {
+    if (workflowPhase !== 'part2') {
+      alert('Part 2 is currently locked. Use Amend Part 2 before changing its approval details.');
+      return;
+    }
     const newStatus = autoApprove ? "Approved" : rateApproval.approvalStatus;
     
     if (!newStatus && !autoApprove) {
@@ -1245,39 +1256,19 @@ export default function ApprovePricingPanel() {
     try {
       const token = localStorage.getItem('token');
       
-      // Fetch current data
-      const fetchRes = await fetch(`/api/pricing-panel?id=${panelId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      
-      const fetchData = await fetchRes.json();
-      
-      if (!fetchData.success) {
-        throw new Error('Failed to fetch pricing panel data');
-      }
-      
-      const currentData = fetchData.data;
-      
-      // Update only the rate approval section
-      const updatedData = {
-        ...currentData,
-        rateApproval: {
-          approvalType: rateApproval.approvalType,
-          uploadFile: rateApproval.uploadFileName,
-          approvalStatus: newStatus,
-        }
-      };
-      
-      // Send update
       const res = await fetch('/api/pricing-panel', {
-        method: 'PUT',
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           id: panelId,
-          ...updatedData
+          action: newStatus === 'Approved' ? 'approve-with-update' : 'update-approval',
+          approvalData: {
+            approvalStatus: newStatus,
+            remarks: rateApproval.remarks,
+          }
         }),
       });
 
@@ -1304,6 +1295,24 @@ export default function ApprovePricingPanel() {
       setSaving(false);
     }
   };
+
+  const handleAmendPart2 = async () => {
+    try {
+      const response = await fetch('/api/pricing-panel', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
+        body: JSON.stringify({ id: panelId, action: 'amend-part2' }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.message || 'Unable to amend Part 2');
+      alert(data.message);
+      await fetchPricingPanelData();
+    } catch (error) {
+      alert(error.message || 'Unable to amend Part 2.');
+    }
+  };
+
+  const part2Editable = workflowPhase === 'part2';
 
   // Check URL for auto-approve action (for email link)
   useEffect(() => {
@@ -1367,12 +1376,17 @@ export default function ApprovePricingPanel() {
               </div>
             </div>
             <div className="text-xs text-green-600 mt-1 font-medium">
-              ⓘ Only Rate Approval section is editable
+              ⓘ {part2Editable ? 'Approval Status and Remarks are editable' : workflowPhase === 'part1' ? 'Part 1 must be submitted before approval can start' : 'Approval is locked'}
             </div>
           </div>
 
           <div className="flex items-center gap-3">
-            {rateApproval.approvalType === "Mail Approval Rate" && 
+            {workflowPhase === 'locked' && capabilities.canAmendPart2 && (
+              <button onClick={handleAmendPart2} className="rounded-xl px-5 py-2 text-sm font-bold text-white transition bg-orange-600 hover:bg-orange-700">
+                Amend Part 2
+              </button>
+            )}
+            {part2Editable && rateApproval.approvalType === "Mail Approval Rate" &&
              (rateApproval.approvalStatus === "Pending" || 
               rateApproval.approvalStatus === "Pending from Team" || 
               rateApproval.approvalStatus === "Pending from Client") && (
@@ -1386,9 +1400,9 @@ export default function ApprovePricingPanel() {
             
             <button
               onClick={() => handleApprove(false)}
-              disabled={saving}
+              disabled={saving || !part2Editable}
               className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${
-                saving 
+                saving || !part2Editable
                   ? 'bg-gray-400 cursor-not-allowed' 
                   : 'bg-green-600 hover:bg-green-700'
               }`}
@@ -1500,36 +1514,33 @@ export default function ApprovePricingPanel() {
         </Card>
 
         {/* ===== PART 2: RATE APPROVAL - EDITABLE ===== */}
-        <Card title="Rate - Approval - Part - 2 (Editable)">
+        <Card title={`Rate - Approval - Part - 2${part2Editable ? ' (Editable)' : ' (Locked)'}`}>
           <div className="grid grid-cols-12 gap-4">
-            <EditableSelect
-              col="col-span-12 md:col-span-4"
-              label="Rate Approval Type"
-              value={rateApproval.approvalType}
-              onChange={(v) => setRateApproval({ ...rateApproval, approvalType: v })}
-              options={RATE_APPROVAL_TYPES}
-            />
-
-            <div className="col-span-12 md:col-span-4">
-              <label className="text-xs font-bold text-slate-600">Rate Approval Upload</label>
-              <div className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
-                {rateApproval.uploadFileName || "No file uploaded"}
-              </div>
-              <p className="text-xs text-slate-400 mt-1">File upload is read-only in approval</p>
-            </div>
-
+            <Input col="col-span-12 md:col-span-4" label="Rate Approval Type" value={rateApproval.approvalType} readOnly={true} />
+            <Input col="col-span-12 md:col-span-4" label="Rate Approval Upload" value={rateApproval.uploadFileName || 'No file uploaded'} readOnly={true} />
             <EditableSelect
               col="col-span-12 md:col-span-4"
               label="Approval Status"
               value={rateApproval.approvalStatus}
               onChange={(v) => setRateApproval({ ...rateApproval, approvalStatus: v })}
               options={APPROVAL_STATUS}
+              disabled={!part2Editable}
             />
+            <div className="col-span-12 md:col-span-8">
+              <label className="text-xs font-bold text-slate-600">Remarks</label>
+              <textarea
+                value={rateApproval.remarks}
+                onChange={(e) => setRateApproval({ ...rateApproval, remarks: e.target.value })}
+                readOnly={!part2Editable}
+                className="mt-1 min-h-20 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 read-only:bg-slate-50"
+                placeholder="Enter approval remarks"
+              />
+            </div>
           </div>
           
           <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
             <p className="text-xs text-blue-800">
-              <span className="font-bold">Note:</span> Only the Approval Status and Rate Approval Type can be modified. All other data is read-only.
+              <span className="font-bold">Note:</span> Only Approval Status and Remarks can be modified. All other data is read-only.
               {rateApproval.approvalType === "Mail Approval Rate" && (
                 <span className="block mt-2 text-green-700">
                   📧 <strong>Mail Approval Mode:</strong> Click the "Send Email for Approval" button above to request approval via email.

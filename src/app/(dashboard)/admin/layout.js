@@ -3076,6 +3076,12 @@ export default function Layout({ children }) {
               // Rate Target belongs under Vehicle Negotiation when that parent module is available.
               if (moduleName === 'Rate Target (Vehicle Negotiation)' && canView('Vehicle Negotiation')) return null;
 
+              const modulePath = moduleName === 'Rate Target (Vehicle Negotiation)'
+                ? '/admin/rate-target-vehicle-negotiation'
+                : moduleName === 'Loading Info'
+                  ? '/admin/Loading-Info'
+                  : `/admin/${moduleName.toLowerCase().replace(/ /g, '-')}`;
+
               return (
                 <Section
                   key={moduleName}
@@ -3086,11 +3092,11 @@ export default function Layout({ children }) {
                 >
                   {/* Show all routes for this module */}
                   <Item
-                    href={moduleName === 'Rate Target (Vehicle Negotiation)' ? '/admin/rate-target-vehicle-negotiation' : `/admin/${moduleName.toLowerCase().replace(/ /g, '-')}`}
+                    href={modulePath}
                     icon={<HiViewGrid />}
                     label={moduleName}
                     onClick={closeSidebar}
-                    isActive={isActive(moduleName === 'Rate Target (Vehicle Negotiation)' ? '/admin/rate-target-vehicle-negotiation' : `/admin/${moduleName.toLowerCase().replace(/ /g, '-')}`)}
+                    isActive={isActive(modulePath)}
                   />
                   {moduleName === 'Vehicle Negotiation' && canView('Rate Target (Vehicle Negotiation)') && (
                     <Item

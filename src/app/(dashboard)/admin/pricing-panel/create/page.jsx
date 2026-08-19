@@ -2008,6 +2008,11 @@ const BILLING_TYPES = ["Single - Order", "Multi - Order"];
 const DELIVERY_TYPES = ["Urgent", "Normal", "Express", "Scheduled"];
 const APPROVAL_STATUS = ["Pending", "Pending from Team", "Pending from Client", "Approved", "Rejected", "Completed"];
 const RATE_APPROVAL_TYPES = ["Contract Rates", "Mail Approval Rate"];
+const RATE_CALCULATION_MODES = [
+  { value: "order_weight", label: "Auto – Order Weight" },
+  { value: "total_weight", label: "Auto – Total Panel Weight" },
+  { value: "manual_rate", label: "Manual Rate" },
+];
 
 function uid() {
   return Math.random().toString(36).slice(2, 10);
@@ -2054,10 +2059,17 @@ function useCustomerSearch() {
 }
 
 /* =========================
-  VEHICLE NEGOTIATION SEARCH HOOK
+  PRICING PANEL REFERENCE DATA
+  Restricted to the data required to create a Pricing Panel record.
 ========================= */
 function useVehicleNegotiationSearch() {
   const [vehicleNegotiations, setVehicleNegotiations] = useState([]);
+  const [branches, setBranches] = useState([]);
+  const [plants, setPlants] = useState([]);
+  const [subCompanies, setSubCompanies] = useState([]);
+  const [locations, setLocations] = useState([]);
+  const [countries, setCountries] = useState([]);
+  const [rateMasters, setRateMasters] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -2066,73 +2078,42 @@ function useVehicleNegotiationSearch() {
     setError(null);
     try {
       const token = localStorage.getItem('token');
-      
-       const vnRes = await fetch('/api/vehicle-negotiation?eligibleFor=pricing', {
+      const res = await fetch('/api/pricing-panel/reference-data', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
-      if (!vnRes.ok) {
-        throw new Error(`HTTP error! status: ${vnRes.status}`);
-      }
-      
-      const vnData = await vnRes.json();
-      
-      const pricingRes = await fetch('/api/pricing-panel?format=table', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      
-      const pricingData = await pricingRes.json();
-      
-      const usedVnns = new Set();
-      if (pricingData.success && Array.isArray(pricingData.data)) {
-        pricingData.data.forEach(item => {
-          if (item.vnn && item.vnn !== '-' && item.vnn !== 'N/A') {
-            usedVnns.add(item.vnn);
-          }
-        });
-      }
-      
-      if (vnData.success && Array.isArray(vnData.data)) {
-        const availableVNs = vnData.data.filter(vn => !usedVnns.has(vn.vnnNo));
-        setVehicleNegotiations(availableVNs);
-      } else {
-        setVehicleNegotiations([]);
-        setError(vnData.message || 'No vehicle negotiations found');
-      }
-    } catch (err) {
-      console.error('Error fetching vehicle negotiations:', err);
-      setVehicleNegotiations([]);
-      setError('Failed to fetch vehicle negotiations');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getVehicleNegotiationById = async (id) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`/api/vehicle-negotiation?id=${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      
       if (!res.ok) {
         throw new Error(`HTTP error! status: ${res.status}`);
       }
-      
+
       const data = await res.json();
-      
       if (data.success && data.data) {
-        return data.data;
+        setVehicleNegotiations(Array.isArray(data.data.vehicleNegotiations) ? data.data.vehicleNegotiations : []);
+        setBranches(Array.isArray(data.data.branches) ? data.data.branches : []);
+        setPlants(Array.isArray(data.data.plants) ? data.data.plants : []);
+        setSubCompanies(Array.isArray(data.data.subCompanies) ? data.data.subCompanies : []);
+        setLocations(Array.isArray(data.data.locations) ? data.data.locations : []);
+        setCountries(Array.isArray(data.data.countries) ? data.data.countries : []);
+        setRateMasters(Array.isArray(data.data.rateMasters) ? data.data.rateMasters : []);
       } else {
-        setError(data.message || 'Vehicle negotiation not found');
-        return null;
+        setVehicleNegotiations([]);
+        setBranches([]);
+        setPlants([]);
+        setSubCompanies([]);
+        setLocations([]);
+        setCountries([]);
+        setRateMasters([]);
+        setError(data.message || 'No Pricing Panel reference data found');
       }
     } catch (err) {
-      console.error('Error fetching vehicle negotiation:', err);
-      setError('Failed to fetch vehicle negotiation');
-      return null;
+      console.error('Error fetching Pricing Panel reference data:', err);
+      setVehicleNegotiations([]);
+      setBranches([]);
+      setPlants([]);
+      setSubCompanies([]);
+      setLocations([]);
+      setCountries([]);
+      setRateMasters([]);
+      setError('Failed to fetch Pricing Panel reference data');
     } finally {
       setLoading(false);
     }
@@ -2144,10 +2125,15 @@ function useVehicleNegotiationSearch() {
 
   return { 
     vehicleNegotiations, 
+    branches,
+    plants,
+    subCompanies,
+    locations,
+    countries,
+    rateMasters,
     loading, 
     error, 
-    searchVehicleNegotiations, 
-    getVehicleNegotiationById 
+    searchVehicleNegotiations,
   };
 }
 
@@ -2228,7 +2214,10 @@ function defaultOrderRow() {
     country: "",
     countryName: "",
     locationRate: "",
+    locationRateId: "",
     priceList: "",
+    priceListId: "",
+    rateCalculationMode: "order_weight",
     selectedRateMaster: null,
     weight: "",
     rate: "",
@@ -2485,7 +2474,9 @@ function LocationRateDropdown({
     setSelectedItem(item);
     setSearchQuery(item.name);
     setShowDropdown(false);
-    onSelect?.(item.name);
+    // The parent needs the location id as well as its display name to resolve
+    // the Rate Master slab. Passing only the text prevented auto-rate lookup.
+    onSelect?.(item);
   };
 
   const handleInputFocus = () => {
@@ -2531,16 +2522,27 @@ function LocationRateDropdown({
         ref={inputRef}
         type="text"
         value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
+        onChange={(e) => {
+          if (!selectedItem) setSearchQuery(e.target.value);
+        }}
         onFocus={handleInputFocus}
         onBlur={handleInputBlur}
         className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${
           (readOnly || !selectedRateMaster || filteredLocationsByRateMaster.length === 0) ? 'bg-slate-50 cursor-not-allowed' : 'bg-white cursor-pointer'
         }`}
         placeholder={getPlaceholder()}
-        readOnly={readOnly || !selectedRateMaster || filteredLocationsByRateMaster.length === 0}
+        readOnly={readOnly || !!selectedItem || !selectedRateMaster || filteredLocationsByRateMaster.length === 0}
         autoComplete="off"
       />
+      {selectedItem && !readOnly && (
+        <button
+          type="button"
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => { setSelectedItem(null); setSearchQuery(""); onSelect?.(null); setShowDropdown(true); }}
+          className="absolute right-7 top-1.5 text-slate-500 hover:text-red-600"
+          aria-label="Clear selected location"
+        >×</button>
+      )}
       <div className="absolute right-2 top-2 text-gray-400 pointer-events-none">
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -2685,16 +2687,27 @@ function PriceListDropdown({
         ref={inputRef}
         type="text"
         value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
+        onChange={(e) => {
+          if (!selectedItem) setSearchQuery(e.target.value);
+        }}
         onFocus={handleInputFocus}
         onBlur={handleInputBlur}
         className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${
           readOnly ? 'bg-slate-50 cursor-not-allowed' : 'bg-white cursor-pointer'
         }`}
         placeholder={placeholder}
-        readOnly={readOnly}
+        readOnly={readOnly || !!selectedItem}
         autoComplete="off"
       />
+      {selectedItem && !readOnly && (
+        <button
+          type="button"
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => { setSelectedItem(null); setSearchQuery(""); onSelect?.(null); setShowDropdown(true); }}
+          className="absolute right-7 top-1.5 text-slate-500 hover:text-red-600"
+          aria-label="Clear selected price list"
+        >×</button>
+      )}
       <div className="absolute right-2 top-2 text-gray-400 pointer-events-none">
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -2751,6 +2764,7 @@ function PriceListDropdown({
 ========================= */
 function VehicleNegotiationHeaderDropdown({ 
   onSelect,
+  referenceData,
   placeholder = "Search vehicle negotiation..."
 }) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -2759,7 +2773,7 @@ function VehicleNegotiationHeaderDropdown({
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
   const inputRef = useRef(null);
   const dropdownRef = useRef(null);
-  const vehicleNegotiationSearch = useVehicleNegotiationSearch();
+  const vehicleNegotiationSearch = referenceData;
 
   useEffect(() => {
     setVnList(vehicleNegotiationSearch.vehicleNegotiations);
@@ -2772,25 +2786,10 @@ function VehicleNegotiationHeaderDropdown({
     }
   };
 
-  const handleSelectVN = async (vn) => {
+  const handleSelectVN = (vn) => {
     setSearchQuery(vn.vnnNo);
     setShowDropdown(false);
-    
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`/api/vehicle-negotiation?id=${vn._id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      
-      if (res.ok) {
-        const data = await res.json();
-        if (data.success && data.data) {
-          onSelect(data.data);
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching VN details:', error);
-    }
+    onSelect(vn);
   };
 
   const handleInputFocus = () => {
@@ -2882,21 +2881,26 @@ function VehicleNegotiationHeaderDropdown({
             </div>
           ) : filteredList.length > 0 ? (
             <div className="divide-y divide-slate-100">
-              {filteredList.map((vn) => (
-                <div
-                  key={vn._id}
-                  onMouseDown={() => handleSelectVN(vn)}
-                  className="p-3 hover:bg-yellow-50 cursor-pointer"
-                >
-                  <div className="font-medium text-slate-800">{vn.vnnNo}</div>
-                  <div className="text-xs text-slate-500 mt-1">
-                    {vn.customerName || 'N/A'} | {vn.branchName} | Orders: {vn.orders?.length || 0}
-                    {vn.subCompanyName && (
-                      <span className="ml-2 text-blue-600">Sub-Company: {vn.subCompanyName}</span>
-                    )}
+              {filteredList.map((vn) => {
+                const orderNumbers = [...new Set((vn.orders || []).map((order) => order.orderNo).filter(Boolean))];
+                const routes = [...new Set((vn.orders || []).map((order) => {
+                  const from = order.fromName || order.from;
+                  const to = order.toName || order.to;
+                  return from && to ? `${from} → ${to}` : '';
+                }).filter(Boolean))];
+                return (
+                  <div
+                    key={vn._id}
+                    onMouseDown={() => handleSelectVN(vn)}
+                    className="p-3 hover:bg-yellow-50 cursor-pointer"
+                  >
+                    <div className="font-medium text-slate-800">{vn.vnnNo}</div>
+                    <div className="text-xs text-slate-500 mt-1">
+                      Order: {orderNumbers.join(', ') || '—'} | Route: {routes.join(', ') || '—'}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className="p-4 text-center text-sm text-slate-500">
@@ -2944,6 +2948,7 @@ const columns = [
   { key: "state", label: "State", width: "100px" },
   { key: "localStatus", label: "Local/Not Local", width: "120px" },
   { key: "country", label: "Country", width: "100px" },
+  { key: "rateCalculationMode", label: "Rate Calculation", width: "170px" },
   { key: "priceList", label: "Price List", width: "180px" },
   { key: "locationRate", label: "Location Rate", width: "150px" },
   { key: "weight", label: "Weight", type: "number", width: "80px" },
@@ -2958,47 +2963,69 @@ const columns = [
 
   const isReadOnlyMode = !!selectedVehicleNegotiation;
 
+  const getMatchingSlab = (row, totalWeight = null) => {
+    const weight = row.rateCalculationMode === 'total_weight'
+      ? (totalWeight ?? rows.reduce((sum, item) => sum + Number(item.weight || 0), 0))
+      : Number(row.weight);
+    if (!row.selectedRateMaster || !row.locationRate || !Number.isFinite(weight)) return null;
+    return (row.selectedRateMaster.locationRates || []).find((locationRate) =>
+      locationRate.isActive !== false &&
+      locationRate.locationName === row.locationRate &&
+      weight >= Number(locationRate.fromQty) && weight <= Number(locationRate.toQty),
+    ) || null;
+  };
+
+  const applyRate = (rowId, nextRow, totalWeight = null) => {
+    if (nextRow.rateCalculationMode === 'manual_rate') return;
+    const slab = getMatchingSlab(nextRow, totalWeight);
+    if (slab) {
+      onChange(rowId, 'rate', String(slab.rate));
+      onChange(rowId, 'locationRateId', slab._id || '');
+      return;
+    }
+    onChange(rowId, 'rate', '');
+  };
+
   const handlePriceListSelect = (rowId, rateMaster) => {
+    if (!rateMaster) {
+      onChange(rowId, 'priceList', '');
+      onChange(rowId, 'priceListId', '');
+      onChange(rowId, 'selectedRateMaster', null);
+      onChange(rowId, 'locationRate', '');
+      onChange(rowId, 'locationRateId', '');
+      onChange(rowId, 'rate', '');
+      return;
+    }
     onChange(rowId, 'priceList', rateMaster.title);
+    onChange(rowId, 'priceListId', rateMaster._id || '');
     onChange(rowId, 'selectedRateMaster', rateMaster);
     onChange(rowId, 'locationRate', '');
+    onChange(rowId, 'locationRateId', '');
     onChange(rowId, 'rate', '');
-    const currentRow = rows.find(r => r._id === rowId);
-    if (currentRow && currentRow.weight && currentRow.locationRate) {
-      const locationRate = rateMaster.locationRates?.find(lr => 
-        lr.locationName === currentRow.locationRate
-      );
-      
-      if (locationRate) {
-        const weightNum = parseFloat(currentRow.weight);
-        if (weightNum >= locationRate.fromQty && weightNum <= locationRate.toQty) {
-          onChange(rowId, 'rate', locationRate.rate);
-        } else {
-          onChange(rowId, 'rate', '');
-          alert(`Weight ${currentRow.weight} is outside the range (${locationRate.fromQty} - ${locationRate.toQty}) for this price list`);
-        }
-      }
+  };
+
+  const handleLocationRateSelect = (rowId, location) => {
+    const currentRow = rows.find((row) => row._id === rowId);
+    if (!currentRow) return;
+    if (!location) {
+      onChange(rowId, 'locationRate', '');
+      onChange(rowId, 'locationRateId', '');
+      onChange(rowId, 'rate', '');
+      return;
     }
+    const nextRow = { ...currentRow, locationRate: location.name, locationRateId: location._id || '' };
+    onChange(rowId, 'locationRate', location.name);
+    onChange(rowId, 'locationRateId', location._id || '');
+    applyRate(rowId, nextRow);
   };
 
   const handleWeightChange = (rowId, weight) => {
     onChange(rowId, 'weight', weight);
-    
-    const currentRow = rows.find(r => r._id === rowId);
-    if (currentRow && currentRow.selectedRateMaster && currentRow.locationRate) {
-      const locationRate = currentRow.selectedRateMaster.locationRates?.find(lr => 
-        lr.locationName === currentRow.locationRate
-      );
-      
-      if (locationRate) {
-        const weightNum = parseFloat(weight);
-        if (weightNum >= locationRate.fromQty && weightNum <= locationRate.toQty) {
-          onChange(rowId, 'rate', locationRate.rate);
-        } else {
-          onChange(rowId, 'rate', '');
-        }
-      }
-    }
+    const nextRows = rows.map((row) => row._id === rowId ? { ...row, weight } : row);
+    const totalWeight = nextRows.reduce((sum, row) => sum + Number(row.weight || 0), 0);
+    nextRows.forEach((row) => {
+      if (row._id === rowId || row.rateCalculationMode === 'total_weight') applyRate(row._id, row, totalWeight);
+    });
   };
 
   const handleSubCompanyChange = (rowId, subCompanyId) => {
@@ -3065,8 +3092,8 @@ const columns = [
 
                 <td className="border border-yellow-300 px-1 py-1">
                   <input
-                    value={row.plantCode || ""}
-                    onChange={(e) => onChange(row._id, 'plantCode', e.target.value)}
+                    value={isFromVehicleNegotiation ? (row.plantCodeValue || row.plantCode || "") : (row.plantCode || "")}
+                    onChange={(e) => onChange(row._id, isFromVehicleNegotiation ? 'plantCodeValue' : 'plantCode', e.target.value)}
                     className={`w-full min-w-[80px] rounded border border-slate-200 px-1 py-1 text-xs outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-200 ${
                       isFromVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
                     }`}
@@ -3212,6 +3239,20 @@ const columns = [
                 </td>
 
                 <td className="border border-yellow-300 px-1 py-1">
+                  <select
+                    value={row.rateCalculationMode || 'order_weight'}
+                    onChange={(e) => {
+                      const rateCalculationMode = e.target.value;
+                      onChange(row._id, 'rateCalculationMode', rateCalculationMode);
+                      applyRate(row._id, { ...row, rateCalculationMode });
+                    }}
+                    className="w-full min-w-[130px] rounded border border-slate-200 bg-white px-1 py-1 text-xs outline-none focus:border-sky-500"
+                  >
+                    {RATE_CALCULATION_MODES.map((mode) => <option key={mode.value} value={mode.value}>{mode.label}</option>)}
+                  </select>
+                </td>
+
+                <td className="border border-yellow-300 px-1 py-1">
                   <PriceListDropdown
                     rateMasters={rateMasters}
                     selectedValue={row.priceList}
@@ -3228,10 +3269,7 @@ const columns = [
                   <LocationRateDropdown
                     locations={locations}
                     selectedName={row.locationRate}
-                    onSelect={(locationName) => {
-                      onChange(row._id, 'locationRate', locationName);
-                      onChange(row._id, 'rate', '');
-                    }}
+                    onSelect={(location) => handleLocationRateSelect(row._id, location)}
                     readOnly={false}
                     placeholder="Select Location..."
                     selectedRateMaster={row.selectedRateMaster}
@@ -3257,9 +3295,10 @@ const columns = [
                     type="number"
                     step="0.01"
                     value={row.rate || ""}
-                    readOnly
-                    className="w-full min-w-[70px] rounded border border-slate-200 bg-slate-50 px-1 py-1 text-xs outline-none cursor-not-allowed"
-                    placeholder="Auto"
+                    onChange={(e) => onChange(row._id, 'rate', e.target.value)}
+                    readOnly={row.rateCalculationMode !== 'manual_rate'}
+                    className={`w-full min-w-[70px] rounded border border-slate-200 px-1 py-1 text-xs outline-none ${row.rateCalculationMode === 'manual_rate' ? 'bg-white focus:border-sky-500' : 'bg-slate-50 cursor-not-allowed'}`}
+                    placeholder={row.rateCalculationMode === 'manual_rate' ? 'Enter manual rate' : 'Auto'}
                   />
                 </td>
 
@@ -3368,23 +3407,19 @@ const columns = [
 export default function PricingPanelPage() {
   const router = useRouter();
   
-  const [branches, setBranches] = useState([]);
-  const [subCompanies, setSubCompanies] = useState([]);
-  const [locations, setLocations] = useState([]);
-  const [countries, setCountries] = useState([]);
-  const [plants, setPlants] = useState([]);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [pricingSerialNo, setPricingSerialNo] = useState("");
 
-  const [selectedCustomer, setSelectedCustomer] = useState(null);
-  const customerSearch = useCustomerSearch();
-
   const [selectedVehicleNegotiation, setSelectedVehicleNegotiation] = useState(null);
   const vehicleNegotiationSearch = useVehicleNegotiationSearch();
-
-  const rateMasterSearch = useRateMasterSearch();
+  const branches = vehicleNegotiationSearch.branches;
+  const plants = vehicleNegotiationSearch.plants;
+  const subCompanies = vehicleNegotiationSearch.subCompanies;
+  const locations = vehicleNegotiationSearch.locations;
+  const countries = vehicleNegotiationSearch.countries;
+  const rateMasters = vehicleNegotiationSearch.rateMasters;
 
   // Store subCompanies in window for use in OrdersTable
   useEffect(() => {
@@ -3426,101 +3461,10 @@ export default function PricingPanelPage() {
     approvalType: "Contract Rates",
     uploadFile: null,
     uploadFileName: "",
+    uploadFilePath: "",
+    remarks: "",
     approvalStatus: "Pending",
   });
-
-  useEffect(() => {
-    fetchBranches();
-    fetchLocations();
-    fetchCountries();
-    fetchPlants();
-    fetchSubCompanies();
-    customerSearch.searchCustomers();
-    rateMasterSearch.searchRateMasters();
-  }, []);
-
-  const fetchBranches = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('/api/branches', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (data.success && Array.isArray(data.data)) {
-        setBranches(data.data);
-      }
-    } catch (error) {
-      console.error('Error fetching branches:', error.message);
-    }
-  };
-
-  const fetchSubCompanies = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('/api/subcompanies', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (data.success && Array.isArray(data.data)) {
-        setSubCompanies(data.data);
-      } else {
-        setSubCompanies([]);
-      }
-    } catch (error) {
-      console.error('Error fetching sub-companies:', error.message);
-      setSubCompanies([]);
-    }
-  };
-
-  const fetchLocations = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('/api/locations', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      
-      if (data.success && Array.isArray(data.data)) {
-        setLocations(data.data);
-        console.log("Loaded locations:", data.data.length);
-      } else {
-        setLocations([]);
-      }
-    } catch (error) {
-      console.error('Error fetching locations:', error.message);
-      setLocations([]);
-    }
-  };
-
-  const fetchCountries = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('/api/countries', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (data.success && Array.isArray(data.data)) {
-        setCountries(data.data);
-      }
-    } catch (error) {
-      console.error('Error fetching countries:', error.message);
-    }
-  };
-
-  const fetchPlants = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('/api/plants', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (data.success && Array.isArray(data.data)) {
-        setPlants(data.data);
-      }
-    } catch (error) {
-      console.error('Error fetching plants:', error.message);
-    }
-  };
 
   useEffect(() => {
     if (orders.length === 1) {
@@ -3589,6 +3533,8 @@ export default function PricingPanelPage() {
         locationRateId: "",
         locationRateTitle: "",
         priceList: "",
+        priceListId: "",
+        rateCalculationMode: "order_weight",
         selectedRateMaster: null,
         weight: order.weight || "",
         rate: "",
@@ -3665,8 +3611,28 @@ export default function PricingPanelPage() {
     }, 0);
   }, [orders]);
 
-  const handleFileSelect = (e) => {
-    alert("Rate Approval section is read-only");
+  const handleFileSelect = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const allowedTypes = ['application/pdf', 'image/png', 'image/jpeg'];
+    if (!allowedTypes.includes(file.type) || file.size > 5 * 1024 * 1024) {
+      alert('Upload a PDF, PNG, or JPG file up to 5 MB.');
+      e.target.value = '';
+      return;
+    }
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const response = await fetch('/api/pricing-panel/upload-approval', {
+        method: 'POST', headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }, body: formData,
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.message || 'Upload failed');
+      setRateApproval((prev) => ({ ...prev, uploadFile: file, uploadFileName: data.data.fileName, uploadFilePath: data.data.filePath }));
+    } catch (error) {
+      alert(error.message || 'Unable to upload approval document.');
+      e.target.value = '';
+    }
   };
 
   const handleSaveAll = async () => {
@@ -3678,6 +3644,11 @@ export default function PricingPanelPage() {
     const hasInvalidOrders = orders.some(order => !order.orderNo);
     if (hasInvalidOrders) {
       alert("Please enter Order No for all order rows");
+      return;
+    }
+    const hasMissingRate = orders.some((order) => !order.priceList || !order.locationRate || order.rate === '' || order.rate === null);
+    if (hasMissingRate) {
+      alert('Select a Price List and Location Rate with a valid slab, or enter the approved manual Mail rate before saving.');
       return;
     }
 
@@ -3734,7 +3705,10 @@ export default function PricingPanelPage() {
           country: order.country,
           countryName: order.countryName,
           locationRate: order.locationRate,
+          locationRateId: order.locationRateId,
           priceList: order.priceList,
+          priceListId: order.priceListId,
+          rateCalculationMode: order.rateCalculationMode,
           weight: num(order.weight),
           rate: num(order.rate),
           totalAmount: num(order.weight) * num(order.rate),
@@ -3753,7 +3727,9 @@ export default function PricingPanelPage() {
         rateApproval: {
           approvalType: rateApproval.approvalType,
           approvalStatus: rateApproval.approvalStatus,
-          uploadFileName: rateApproval.uploadFileName
+          uploadFileName: rateApproval.uploadFileName,
+          uploadFilePath: rateApproval.uploadFilePath,
+          remarks: rateApproval.remarks
         },
         branches: branches,
         plants: plants,
@@ -3823,6 +3799,8 @@ export default function PricingPanelPage() {
       approvalType: "Contract Rates",
       uploadFile: null,
       uploadFileName: "",
+      uploadFilePath: "",
+      remarks: "",
       approvalStatus: "Pending",
     });
     
@@ -3902,6 +3880,7 @@ export default function PricingPanelPage() {
               <label className="text-xs font-bold text-slate-600">Search Vehicle Negotiation</label>
               <VehicleNegotiationHeaderDropdown
                 onSelect={handleSelectVehicleNegotiation}
+                referenceData={vehicleNegotiationSearch}
                 placeholder="Search by VNN..."
               />
               {selectedVehicleNegotiation && (
@@ -3991,6 +3970,7 @@ export default function PricingPanelPage() {
               onChange={(v) => setHeader((p) => ({ ...p, date: v }))}
               readOnly={isHeaderReadOnly}
             />
+
           </div>
 
           <div className="mb-4">
@@ -4079,7 +4059,7 @@ export default function PricingPanelPage() {
               billingType={billing.billingType}
               selectedVehicleNegotiation={selectedVehicleNegotiation}
               locations={locations}
-              rateMasters={rateMasterSearch.rateMasters}
+              rateMasters={rateMasters}
               headerBranch={header.branch}
               headerCustomerId={header.customerId}
               headerSubCompanyId={header.subCompanyId}
@@ -4100,33 +4080,20 @@ export default function PricingPanelPage() {
           </div>
         </Card>
 
-        <Card title="Rate - Approval - Part - 2 (Read Only)">
+        <Card title="Rate - Approval - Part - 2">
           <div className="grid grid-cols-12 gap-4">
             <Select
               col="col-span-12 md:col-span-4"
               label="Rate Approval Type"
               value={rateApproval.approvalType}
-              onChange={(v) => setRateApproval((p) => ({ ...p, approvalType: v }))}
+              onChange={(value) => setRateApproval((previous) => ({ ...previous, approvalType: value }))}
               options={RATE_APPROVAL_TYPES}
-              readOnly={true}
             />
-
             <div className="col-span-12 md:col-span-4">
               <label className="text-xs font-bold text-slate-600">Rate Approval Upload</label>
-              <input
-                type="file"
-                accept=".pdf,.png,.jpg,.jpeg"
-                onChange={handleFileSelect}
-                disabled={true}
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none cursor-not-allowed"
-              />
-              {rateApproval.uploadFileName && (
-                <div className="mt-1 text-xs text-green-600">
-                  ✅ File: {rateApproval.uploadFileName}
-                </div>
-              )}
+              <input type="file" accept=".pdf,.png,.jpg,.jpeg" onChange={handleFileSelect} className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200" />
+              {rateApproval.uploadFileName && <div className="mt-1 text-xs text-green-600">✓ {rateApproval.uploadFileName}</div>}
             </div>
-
             <Select
               col="col-span-12 md:col-span-4"
               label="Approval Status"
@@ -4135,6 +4102,10 @@ export default function PricingPanelPage() {
               options={APPROVAL_STATUS}
               readOnly={true}
             />
+            <div className="col-span-12 md:col-span-8">
+              <label className="text-xs font-bold text-slate-600">Remarks</label>
+              <textarea value={rateApproval.remarks || ''} readOnly className="mt-1 min-h-20 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm" placeholder="Remarks are entered during approval" />
+            </div>
           </div>
         </Card>
       </div>
