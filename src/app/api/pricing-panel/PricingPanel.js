@@ -439,7 +439,21 @@ const pricingPanelSchema = new mongoose.Schema({
       type: String,
       default: ''
     },
+    locationRateId: {
+      type: mongoose.Schema.Types.ObjectId,
+      default: null
+    },
     priceList: String,
+    priceListId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'RateMaster',
+      default: null
+    },
+    rateCalculationMode: {
+      type: String,
+      enum: ['order_weight', 'total_weight', 'manual_rate'],
+      default: 'order_weight'
+    },
     weight: {
       type: Number,
       default: 0
@@ -496,10 +510,23 @@ const pricingPanelSchema = new mongoose.Schema({
       default: 'Contract Rates'
     },
     uploadFile: String,
+    uploadFilePath: {
+      type: String,
+      default: ''
+    },
+    remarks: {
+      type: String,
+      default: ''
+    },
     approvalStatus: {
       type: String,
       enum: ['Pending', 'Pending from Team', 'Pending from Client', 'Approved', 'Rejected', 'Completed'],
       default: 'Pending'
+    },
+    workflowPhase: {
+      type: String,
+      enum: ['part1', 'part2', 'locked'],
+      default: 'part1'
     }
   },
   

@@ -793,8 +793,8 @@ export default function EditRateMasterPage() {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Approval Option <span className="text-red-500">*</span>
               </label>
-              <select
-                value={approvalOption}
+                <select
+                  value={approvalOption}
                 onChange={(e) => {
                   setApprovalOption(e.target.value);
                   setApprovalFile(null);
@@ -804,9 +804,9 @@ export default function EditRateMasterPage() {
                 required
               >
                 <option value="contract_rate">Contract Rate</option>
-                <option value="mail_approval">Mail Approval</option>
-              </select>
-            </div>
+                  <option value="mail_approval">Mail Approval</option>
+                </select>
+              </div>
           </div>
 
           {/* File Upload Section */}

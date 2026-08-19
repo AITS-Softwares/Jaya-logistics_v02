@@ -489,6 +489,7 @@ const loadingPanelSchema = new mongoose.Schema({
     orderNo: String,
     partyName: String,
     plantCode: String,
+    plantCodeValue: String,
     plantName: String,
     orderType: String,
     pinCode: String,
