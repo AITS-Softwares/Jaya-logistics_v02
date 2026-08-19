@@ -972,6 +972,8 @@ import { getNextPricingSerialNumber } from "./PricingCounter";
 import mongoose from 'mongoose';
 import { activeOperatingCompanyId, companyScopeFilter } from "@/lib/companyScope";
 import VehicleNegotiation from '@/app/api/vehicle-negotiation/VehicleNegotiation';
+import RateMaster from '@/app/api/rate-master/schema';
+import Location from '@/app/api/locations/schema';
 
 // ── PERMISSION FUNCTIONS ──
 
@@ -1052,11 +1054,11 @@ function formatDateDDMMYYYY(date) {
 }
 
 /* ========================================
-   GET /api/pricing-panel - Requires 'view' permission
+   GET /api/pricing-panel - List requires 'view'; a specific panel supports its section roles
 ======================================== */
 export async function GET(req) {
   await connectDb();
-  const { user, error, status } = await validateUser(req, 'view');
+  const { user, error, status } = await validateUser(req);
   if (error) {
     return NextResponse.json({ 
       success: false, 
@@ -1076,6 +1078,12 @@ export async function GET(req) {
     const toDate = url.searchParams.get("toDate");
     
     if (id) {
+      if (!['view', 'create', 'edit', 'approve'].some((action) => hasPermission(user, action))) {
+        return NextResponse.json({
+          success: false,
+          message: 'Permission denied: no Pricing Panel role can view this record.'
+        }, { status: 403 });
+      }
       console.log(`📄 Fetching pricing panel by ID: ${id}`);
       
       if (!isValidObjectId(id)) {
@@ -1096,8 +1104,19 @@ export async function GET(req) {
 
       return NextResponse.json({ 
         success: true, 
-        data: pricingPanel 
+        data: pricingPanel,
+        capabilities: {
+          canAmendPart1: hasPermission(user, 'edit'),
+          canAmendPart2: hasPermission(user, 'approve')
+        }
       }, { status: 200 });
+    }
+
+    if (!hasPermission(user, 'view')) {
+      return NextResponse.json({
+        success: false,
+        message: 'Permission denied: view action not allowed for Pricing Panel.'
+      }, { status: 403 });
     }
     
     if (format === 'table') {
@@ -1332,6 +1351,8 @@ export async function POST(req) {
     const subCompanyName = user.activeOperatingCompanyName || '';
     const subCompanyCode = user.activeOperatingCompanyCode || '';
 
+    const requestedTotalWeight = (body.orders || []).reduce((sum, order) => sum + (Number(order?.weight) || 0), 0);
+
     // Process orders
     const orders = [];
     
@@ -1373,6 +1394,7 @@ export async function POST(req) {
         orderSubCompanyId = subCompanyId;
         orderSubCompanyName = subCompanyName;
         orderSubCompanyCode = subCompanyCode;
+        const resolvedRate = await resolvePricingRate(user, order, requestedTotalWeight);
         
         orders.push({
           orderNo: order.orderNo,
@@ -1403,10 +1425,13 @@ export async function POST(req) {
           to: order.to || null,
           toName: toBranch ? toBranch.name : order.toName || '',
           locationRate: order.locationRate || '',
-          priceList: order.priceList || '',
+          locationRateId: resolvedRate.locationRateId,
+          priceList: resolvedRate.priceList,
+          priceListId: resolvedRate.priceListId,
+          rateCalculationMode: resolvedRate.rateCalculationMode,
           weight: parseFloat(order.weight) || 0,
-          rate: parseFloat(order.rate) || 0,
-          totalAmount: (parseFloat(order.weight) || 0) * (parseFloat(order.rate) || 0),
+          rate: resolvedRate.rate,
+          totalAmount: (parseFloat(order.weight) || 0) * resolvedRate.rate,
           subCompanyId: orderSubCompanyId,
           subCompanyName: orderSubCompanyName,
           subCompanyCode: orderSubCompanyCode,
@@ -1498,7 +1523,10 @@ export async function POST(req) {
       rateApproval: {
         approvalType: body.rateApproval?.approvalType || 'Contract Rates',
         uploadFile: body.rateApproval?.uploadFileName || '',
-        approvalStatus: body.rateApproval?.approvalStatus || 'Pending'
+        uploadFilePath: body.rateApproval?.uploadFilePath || '',
+        remarks: body.rateApproval?.remarks || '',
+        approvalStatus: 'Pending',
+        workflowPhase: 'part1'
       },
       
       reportRows,
@@ -1588,6 +1616,13 @@ export async function PUT(req) {
       }, { status: 404 });
     }
 
+    if ((pricingPanel.rateApproval?.workflowPhase || 'part1') !== 'part1') {
+      return NextResponse.json({
+        success: false,
+        message: 'Part 1 is locked. Use the appropriate Amend action before editing it.'
+      }, { status: 409 });
+    }
+
     // Update header
     if (body.header) {
       pricingPanel.branch = body.header.branch || pricingPanel.branch;
@@ -1632,7 +1667,10 @@ export async function PUT(req) {
 
     // Update orders
     if (body.orders) {
-      const processedOrders = body.orders.map(order => ({
+      const requestedTotalWeight = body.orders.reduce((sum, order) => sum + (Number(order?.weight) || 0), 0);
+      const processedOrders = await Promise.all(body.orders.map(async (order) => {
+        const resolvedRate = await resolvePricingRate(user, order, requestedTotalWeight);
+        return {
         _id: order._id && isValidObjectId(order._id) 
           ? new mongoose.Types.ObjectId(order._id) 
           : new mongoose.Types.ObjectId(),
@@ -1664,15 +1702,19 @@ export async function PUT(req) {
         to: order.to || null,
         toName: order.toName || '',
         locationRate: order.locationRate || '',
-        priceList: order.priceList || '',
+        locationRateId: resolvedRate.locationRateId,
+        priceList: resolvedRate.priceList,
+        priceListId: resolvedRate.priceListId,
+        rateCalculationMode: resolvedRate.rateCalculationMode,
         weight: parseFloat(order.weight) || 0,
-        rate: parseFloat(order.rate) || 0,
-        totalAmount: (parseFloat(order.weight) || 0) * (parseFloat(order.rate) || 0),
+        rate: resolvedRate.rate,
+        totalAmount: (parseFloat(order.weight) || 0) * resolvedRate.rate,
         subCompanyId: user.activeOperatingCompanyId,
         subCompanyName: user.activeOperatingCompanyName || '',
         subCompanyCode: user.activeOperatingCompanyCode || '',
         localStatus: order.localStatus || 'unknown',
         localStatusLabel: order.localStatusLabel || 'Unknown'
+      };
       }));
       
       pricingPanel.orders = processedOrders;
@@ -1684,8 +1726,11 @@ export async function PUT(req) {
     if (body.rateApproval) {
       pricingPanel.rateApproval = {
         approvalType: body.rateApproval.approvalType || pricingPanel.rateApproval?.approvalType || 'Contract Rates',
-        uploadFile: body.rateApproval.uploadFile || pricingPanel.rateApproval?.uploadFile || '',
-        approvalStatus: body.rateApproval.approvalStatus || pricingPanel.rateApproval?.approvalStatus || 'Pending'
+        uploadFile: body.rateApproval.uploadFile || body.rateApproval.uploadFileName || pricingPanel.rateApproval?.uploadFile || '',
+        uploadFilePath: body.rateApproval.uploadFilePath || pricingPanel.rateApproval?.uploadFilePath || '',
+        remarks: pricingPanel.rateApproval?.remarks ?? '',
+        approvalStatus: pricingPanel.rateApproval?.approvalStatus || 'Pending',
+        workflowPhase: 'part1'
       };
     }
 
@@ -1801,7 +1846,7 @@ export async function DELETE(req) {
 ======================================== */
 export async function PATCH(req) {
   await connectDb();
-  const { user, error, status } = await validateUser(req, 'approve');
+  const { user, error, status } = await validateUser(req);
   if (error) {
     return NextResponse.json({ 
       success: false, 
@@ -1839,18 +1884,49 @@ export async function PATCH(req) {
       }, { status: 404 });
     }
 
+    const part1Actions = ['submit-part1', 'amend-part1'];
+    const part2Actions = ['approve', 'reject', 'complete', 'update-approval', 'approve-with-update', 'amend-part2'];
+    if (part1Actions.includes(action) && !hasPermission(user, 'edit')) {
+      return NextResponse.json({ success: false, message: 'Permission denied: edit action not allowed for Pricing Panel.' }, { status: 403 });
+    }
+    if (part2Actions.includes(action) && !hasPermission(user, 'approve')) {
+      return NextResponse.json({ success: false, message: 'Permission denied: approve action not allowed for Pricing Panel.' }, { status: 403 });
+    }
+
+    const workflowPhase = pricingPanel.rateApproval?.workflowPhase || 'part1';
+    const requirePhase = (phase, message) => {
+      if (workflowPhase !== phase) {
+        return NextResponse.json({ success: false, message }, { status: 409 });
+      }
+      return null;
+    };
+
     switch(action) {
       case 'approve':
+        {
+          const phaseError = requirePhase('part2', 'Part 2 is not open for approval.');
+          if (phaseError) return phaseError;
+        }
         pricingPanel.rateApproval.approvalStatus = 'Approved';
+        pricingPanel.rateApproval.workflowPhase = 'locked';
         pricingPanel.panelStatus = 'Approved';
         break;
         
       case 'reject':
+        {
+          const phaseError = requirePhase('part2', 'Part 2 is not open for approval.');
+          if (phaseError) return phaseError;
+        }
         pricingPanel.rateApproval.approvalStatus = 'Rejected';
-        pricingPanel.panelStatus = 'Rejected';
+        pricingPanel.rateApproval.workflowPhase = 'part1';
+        pricingPanel.panelStatus = 'Draft';
         break;
         
       case 'complete':
+        {
+          const phaseError = requirePhase('locked', 'Pricing Panel must be approved before it can be completed.');
+          if (phaseError) return phaseError;
+        }
         pricingPanel.rateApproval.approvalStatus = 'Completed';
         pricingPanel.panelStatus = 'Completed';
         if (pricingPanel.reportRows) {
@@ -1859,46 +1935,82 @@ export async function PATCH(req) {
           });
         }
         break;
+
+      case 'submit-part1':
+        {
+          const phaseError = requirePhase('part1', 'Part 1 is not open for submission.');
+          if (phaseError) return phaseError;
+        }
+        if (!pricingPanel.branch || !pricingPanel.orders?.length || pricingPanel.orders.some((order) =>
+          !order.orderNo || !order.priceList || !order.locationRate || !Number.isFinite(Number(order.rate)))) {
+          return NextResponse.json({
+            success: false,
+            message: 'Save a complete Part 1 with an order, Price List, Location Rate, and valid rate for every row before submitting it.'
+          }, { status: 422 });
+        }
+        pricingPanel.rateApproval.approvalStatus = 'Pending';
+        pricingPanel.rateApproval.workflowPhase = 'part2';
+        pricingPanel.panelStatus = 'Submitted';
+        break;
         
       case 'update-approval':
+        {
+          const phaseError = requirePhase('part2', 'Part 2 is not open for approval.');
+          if (phaseError) return phaseError;
+        }
         if (approvalData) {
-          const currentApproval = pricingPanel.rateApproval || {};
-          
-          if (approvalData.approvalType !== undefined) {
-            pricingPanel.rateApproval.approvalType = approvalData.approvalType;
-          }
-          if (approvalData.uploadFile !== undefined) {
-            pricingPanel.rateApproval.uploadFile = approvalData.uploadFile;
-          }
           if (approvalData.remarks !== undefined) {
             pricingPanel.rateApproval.remarks = approvalData.remarks;
           }
           if (approvalData.approvalStatus !== undefined) {
             pricingPanel.rateApproval.approvalStatus = approvalData.approvalStatus;
+            if (approvalData.approvalStatus === 'Rejected') {
+              pricingPanel.rateApproval.workflowPhase = 'part1';
+              pricingPanel.panelStatus = 'Draft';
+            }
           }
         }
         break;
         
       case 'approve-with-update':
+        {
+          const phaseError = requirePhase('part2', 'Part 2 is not open for approval.');
+          if (phaseError) return phaseError;
+        }
         if (approvalData) {
-          if (approvalData.approvalType !== undefined) {
-            pricingPanel.rateApproval.approvalType = approvalData.approvalType;
-          }
-          if (approvalData.uploadFile !== undefined) {
-            pricingPanel.rateApproval.uploadFile = approvalData.uploadFile;
-          }
           if (approvalData.remarks !== undefined) {
             pricingPanel.rateApproval.remarks = approvalData.remarks;
           }
         }
         pricingPanel.rateApproval.approvalStatus = 'Approved';
+        pricingPanel.rateApproval.workflowPhase = 'locked';
         pricingPanel.panelStatus = 'Approved';
+        break;
+
+      case 'amend-part1':
+        {
+          const phaseError = requirePhase('locked', 'Only a locked Pricing Panel can be amended.');
+          if (phaseError) return phaseError;
+        }
+        pricingPanel.rateApproval.approvalStatus = 'Pending';
+        pricingPanel.rateApproval.workflowPhase = 'part1';
+        pricingPanel.panelStatus = 'Draft';
+        break;
+
+      case 'amend-part2':
+        {
+          const phaseError = requirePhase('locked', 'Only a locked Pricing Panel can be amended.');
+          if (phaseError) return phaseError;
+        }
+        pricingPanel.rateApproval.approvalStatus = 'Pending';
+        pricingPanel.rateApproval.workflowPhase = 'part2';
+        pricingPanel.panelStatus = 'Submitted';
         break;
         
       default:
         return NextResponse.json({ 
           success: false, 
-          message: "Invalid action. Allowed: approve, reject, complete, update-approval, approve-with-update" 
+          message: "Invalid action."
         }, { status: 400 });
     }
 
@@ -1918,7 +2030,8 @@ export async function PATCH(req) {
         _id: pricingPanel._id,
         pricingSerialNo: pricingPanel.pricingSerialNo,
         approvalStatus: pricingPanel.rateApproval.approvalStatus,
-        panelStatus: pricingPanel.panelStatus
+        panelStatus: pricingPanel.panelStatus,
+        workflowPhase: pricingPanel.rateApproval.workflowPhase
       }
     }, { status: 200 });
 
@@ -1929,4 +2042,95 @@ export async function PATCH(req) {
       message: error.message || "Failed to update pricing panel"
     }, { status: 500 });
   }
+}
+
+/**
+ * The browser may calculate a rate for convenience, but the API is the source
+ * of truth. It always resolves the selected active slab again before save.
+ */
+async function resolvePricingRate(user, order, panelTotalWeight) {
+  const rateCalculationMode = ['order_weight', 'total_weight', 'manual_rate'].includes(order.rateCalculationMode)
+    ? order.rateCalculationMode
+    : 'order_weight';
+  const orderWeight = Number(order.weight);
+  if (!Number.isFinite(orderWeight) || orderWeight < 0) {
+    throw new Error(`A valid weight is required for order ${order.orderNo || 'row'}.`);
+  }
+
+  let rateMaster = null;
+  if (isValidObjectId(order.priceListId)) {
+    rateMaster = await RateMaster.findOne(companyScopeFilter(user, {
+      _id: order.priceListId,
+      isActive: { $ne: false },
+    })).lean();
+  }
+  // Backward-compatible fallback for records saved before priceListId existed.
+  if (!rateMaster && order.priceList) {
+    rateMaster = await RateMaster.findOne(companyScopeFilter(user, {
+      title: order.priceList,
+      isActive: { $ne: false },
+    })).lean();
+  }
+  if (!rateMaster) {
+    throw new Error(`Select an active Price List for order ${order.orderNo || 'row'}.`);
+  }
+
+  let locationRate = null;
+  if (order.locationRateId) {
+    locationRate = (rateMaster.locationRates || []).find((item) =>
+      String(item._id) === String(order.locationRateId) && item.isActive !== false,
+    );
+  }
+  if (!locationRate && order.locationRate) {
+    const location = await Location.findOne({
+      companyId: user.companyId,
+      name: order.locationRate,
+      isActive: { $ne: false },
+    }).select('_id').lean();
+    if (location) {
+      locationRate = (rateMaster.locationRates || []).find((item) =>
+        String(item.locationId) === String(location._id) && item.isActive !== false,
+      );
+    }
+  }
+  if (!locationRate) {
+    throw new Error(`Select a valid Location Rate for order ${order.orderNo || 'row'}.`);
+  }
+
+  if (rateCalculationMode === 'manual_rate') {
+    const manualRate = Number(order.rate);
+    if (!Number.isFinite(manualRate) || manualRate < 0) {
+      throw new Error(`Enter a manual rate for order ${order.orderNo || 'row'}.`);
+    }
+    return {
+      priceListId: rateMaster._id,
+      priceList: rateMaster.title,
+      locationRateId: locationRate._id,
+      rate: manualRate,
+      rateCalculationMode,
+    };
+  }
+
+  const lookupWeight = rateCalculationMode === 'total_weight' ? Number(panelTotalWeight) : orderWeight;
+  if (!Number.isFinite(lookupWeight) || lookupWeight < 0) {
+    throw new Error('A valid total weight is required to calculate the rate.');
+  }
+  const matchingSlab = (rateMaster.locationRates || []).find((item) =>
+    item.isActive !== false &&
+    String(item.locationId) === String(locationRate.locationId) &&
+    lookupWeight >= Number(item.fromQty) && lookupWeight <= Number(item.toQty),
+  );
+
+  if (matchingSlab) {
+    return {
+      priceListId: rateMaster._id,
+      priceList: rateMaster.title,
+      locationRateId: matchingSlab._id,
+      rate: Number(matchingSlab.rate),
+      rateCalculationMode,
+    };
+  }
+
+  const basis = rateCalculationMode === 'total_weight' ? 'total panel weight' : 'order weight';
+  throw new Error(`${basis} ${lookupWeight} has no active rate slab for ${order.locationRate || 'the selected location'} in ${rateMaster.title}.`);
 }

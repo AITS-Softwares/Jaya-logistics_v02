@@ -5320,86 +5320,50 @@ function useOwnerSearch() {
 }
 
 /* =======================
-  Vehicle Negotiation Hook - Shows only unused VNNs
+  Loading Info reference data
+  This is intentionally sourced from the Loading Info API rather than the
+  broader VNN, Order Panel, Branch, and Plant APIs.
 ========================= */
 function useVehicleNegotiation() {
   const [negotiations, setNegotiations] = useState([]);
+  const [branches, setBranches] = useState([]);
+  const [plants, setPlants] = useState([]);
+  const [subCompanies, setSubCompanies] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const fetchNegotiations = async (search = "") => {
+  const fetchNegotiations = async () => {
     setLoading(true);
     setError(null);
     try {
       const token = localStorage.getItem('token');
-      
-       const vnRes = await fetch('/api/vehicle-negotiation?eligibleFor=loading', {
+      const res = await fetch('/api/loading-panel/reference-data', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
-      if (!vnRes.ok) {
-        throw new Error(`HTTP error! status: ${vnRes.status}`);
-      }
-      
-      const vnData = await vnRes.json();
-      
-      const loadingRes = await fetch('/api/loading-panel?format=table', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      
-      const loadingData = await loadingRes.json();
-      
-      const usedVnns = new Set();
-      if (loadingData.success && Array.isArray(loadingData.data)) {
-        loadingData.data.forEach(item => {
-          if (item.vehicleNegotiationNo && item.vehicleNegotiationNo !== '-' && item.vehicleNegotiationNo !== 'N/A') {
-            usedVnns.add(item.vehicleNegotiationNo);
-          }
-        });
-      }
-      
-      if (vnData.success && Array.isArray(vnData.data)) {
-        const availableVNs = vnData.data.filter(vn => !usedVnns.has(vn.vnnNo));
-        setNegotiations(availableVNs);
-        console.log(`📊 Found ${availableVNs.length} available VNNs out of ${vnData.data.length} total`);
-      } else {
-        setNegotiations([]);
-        setError(vnData.message || 'No vehicle negotiations found');
-      }
-    } catch (err) {
-      console.error('Error fetching vehicle negotiations:', err);
-      setNegotiations([]);
-      setError('Failed to fetch vehicle negotiations');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getNegotiationById = async (id) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`/api/vehicle-negotiation?id=${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      
       if (!res.ok) {
         throw new Error(`HTTP error! status: ${res.status}`);
       }
-      
+
       const data = await res.json();
-      
       if (data.success && data.data) {
-        return data.data;
+        setNegotiations(Array.isArray(data.data.negotiations) ? data.data.negotiations : []);
+        setBranches(Array.isArray(data.data.branches) ? data.data.branches : []);
+        setPlants(Array.isArray(data.data.plants) ? data.data.plants : []);
+        setSubCompanies(Array.isArray(data.data.subCompanies) ? data.data.subCompanies : []);
       } else {
-        setError(data.message || 'Vehicle negotiation not found');
-        return null;
+        setNegotiations([]);
+        setBranches([]);
+        setPlants([]);
+        setSubCompanies([]);
+        setError(data.message || 'No Loading Info reference data found');
       }
     } catch (err) {
-      console.error('Error fetching vehicle negotiation:', err);
-      setError('Failed to fetch vehicle negotiation');
-      return null;
+      console.error('Error fetching Loading Info reference data:', err);
+      setNegotiations([]);
+      setBranches([]);
+      setPlants([]);
+      setSubCompanies([]);
+      setError('Failed to fetch Loading Info reference data');
     } finally {
       setLoading(false);
     }
@@ -5409,46 +5373,7 @@ function useVehicleNegotiation() {
     fetchNegotiations();
   }, []);
 
-  return { negotiations, loading, error, fetchNegotiations, getNegotiationById };
-}
-
-/* =======================
-  Loading Info Hook
-========================= */
-function useLoadingInfo() {
-  const [loadingInfos, setLoadingInfos] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-
-  const fetchLoadingInfos = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('/api/loading-panel?format=table', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      
-      const data = await res.json();
-      
-      if (data.success && Array.isArray(data.data)) {
-        setLoadingInfos(data.data);
-      } else {
-        setLoadingInfos([]);
-      }
-    } catch (err) {
-      console.error('Error fetching loading infos:', err);
-      setError('Failed to fetch loading infos');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchLoadingInfos();
-  }, []);
-
-  return { loadingInfos, loading, error, fetchLoadingInfos };
+  return { negotiations, branches, plants, subCompanies, loading, error, fetchNegotiations };
 }
 
 /** =========================
@@ -5460,6 +5385,7 @@ function defaultOrderRow() {
     orderNo: "",
     partyName: "",
     plantCode: "",
+    plantCodeValue: "",
     plantName: "",
     orderType: "",
     pinCode: "",
@@ -6096,11 +6022,6 @@ export default function CreateLoadingInfoPanel() {
   /** =========================
    * STATE FOR API DATA
    ========================= */
-  const [branches, setBranches] = useState([]);
-  const [plants, setPlants] = useState([]);
-  const [orders, setOrders] = useState([]);
-  const [subCompanies, setSubCompanies] = useState([]);
-
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -6114,7 +6035,9 @@ export default function CreateLoadingInfoPanel() {
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const vehicleSearch = useVehicleSearch();
   const vehicleNegotiation = useVehicleNegotiation();
-  const loadingInfo = useLoadingInfo();
+  const branches = vehicleNegotiation.branches;
+  const plants = vehicleNegotiation.plants;
+  const subCompanies = vehicleNegotiation.subCompanies;
   const ownerSearch = useOwnerSearch();
 
   const [vehiclePhotoFiles, setVehiclePhotoFiles] = useState([]);
@@ -6392,34 +6315,9 @@ export default function CreateLoadingInfoPanel() {
   const [stream, setStream] = useState(null);
 
   /** =========================
-   * FETCH SUB-COMPANIES
-   ========================= */
-  const fetchSubCompanies = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('/api/subcompanies', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (data.success && Array.isArray(data.data)) {
-        setSubCompanies(data.data);
-      } else {
-        setSubCompanies([]);
-      }
-    } catch (error) {
-      console.error('Error fetching sub-companies:', error.message);
-      setSubCompanies([]);
-    }
-  };
-
-  /** =========================
    * FETCH DATA FROM APIs
    ========================= */
   useEffect(() => {
-    fetchBranches();
-    fetchPlants();
-    fetchOrders();
-    fetchSubCompanies();
     vehicleSearch.searchVehicles();
   }, []);
 
@@ -6517,94 +6415,6 @@ export default function CreateLoadingInfoPanel() {
       </div>
     );
   }
-
-  const fetchBranches = async () => {
-    setLoading(true);
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setBranches([]);
-        return;
-      }
-      
-      const res = await fetch('/api/branches', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      
-      if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`);
-      }
-      
-      const data = await res.json();
-      if (data.success && Array.isArray(data.data)) {
-        setBranches(data.data);
-      } else {
-        setBranches([]);
-      }
-    } catch (error) {
-      console.error('Error fetching branches:', error);
-      setBranches([]);
-      setApiError('Failed to fetch branches');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchPlants = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setPlants([]);
-        return;
-      }
-      
-      const res = await fetch('/api/plants', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      
-      if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`);
-      }
-      
-      const data = await res.json();
-      if (data.success && Array.isArray(data.data)) {
-        setPlants(data.data);
-      } else {
-        setPlants([]);
-      }
-    } catch (error) {
-      console.error('Error fetching plants:', error);
-      setPlants([]);
-    }
-  };
-
-  const fetchOrders = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setOrders([]);
-        return;
-      }
-      
-      const res = await fetch('/api/order-panel', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      
-      if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`);
-      }
-      
-      const data = await res.json();
-      if (data.success && Array.isArray(data.data)) {
-        setOrders(data.data);
-      } else {
-        setOrders([]);
-      }
-    } catch (error) {
-      console.error('Error fetching orders:', error);
-      setOrders([]);
-    }
-  };
 
   /** =========================
    * CAMERA FUNCTIONS
@@ -6836,7 +6646,9 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
   setFetchingNegotiationData(true);
   
   try {
-    const fullNegotiation = await vehicleNegotiation.getNegotiationById(negotiation._id);
+    // The selected entry already contains the restricted reference fields
+    // returned by the Loading Info reference-data endpoint.
+    const fullNegotiation = negotiation;
     
     if (fullNegotiation) {
       // Debug: Log the sub-company data
@@ -6864,8 +6676,39 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
         loadingCharges: fullNegotiation.loadingCharges || "",
         otherCharges: fullNegotiation.otherCharges || "",
       });
-      
-      // ... rest of the function
+
+      if (Array.isArray(fullNegotiation.orders) && fullNegotiation.orders.length > 0) {
+        setOrderRows(fullNegotiation.orders.map((order) => ({
+          _id: uid(),
+          orderNo: order.orderNo || '',
+          partyName: order.partyName || fullNegotiation.customerName || '',
+          plantCode: order.plantCode || '',
+          plantCodeValue: order.plantCodeValue || '',
+          plantName: order.plantName || '',
+          orderType: order.orderType || '',
+          pinCode: order.pinCode || '',
+          taluka: order.talukaName || order.taluka || '',
+          talukaName: order.talukaName || order.taluka || '',
+          district: order.districtName || order.district || '',
+          districtName: order.districtName || order.district || '',
+          state: order.stateName || order.state || '',
+          stateName: order.stateName || order.state || '',
+          from: order.from || '',
+          fromName: order.fromName || order.from || '',
+          fromState: order.fromState || '',
+          to: order.to || '',
+          toName: order.toName || order.to || '',
+          weight: order.weight?.toString() || '',
+          collectionCharges: order.collectionCharges?.toString() || '',
+          cancellationCharges: order.cancellationCharges || 'Nil',
+          loadingCharges: order.loadingCharges || 'Nil',
+          otherCharges: order.otherCharges?.toString() || '',
+          localStatus: order.localStatus || 'unknown',
+          localStatusLabel: order.localStatusLabel || 'Unknown',
+          subCompanyName: fullNegotiation.subCompanyName || '',
+          subCompanyCode: fullNegotiation.subCompanyCode || '',
+        })));
+      }
     }
   } catch (error) {
     console.error("Error loading vehicle negotiation:", error);
@@ -7516,6 +7359,7 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
           orderNo: order.orderNo,
           partyName: order.partyName,
           plantCode: order.plantCode,
+          plantCodeValue: order.plantCodeValue || '',
           plantName: order.plantName,
           orderType: order.orderType,
           pinCode: order.pinCode,
@@ -7976,31 +7820,27 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
                       <p className="mt-1">Loading vehicle negotiations...</p>
                     </div>
                   ) : filteredVehicleNegotiations.length > 0 ? (
-                    filteredVehicleNegotiations.map((nego) => (
-                      <div
-                        key={nego._id}
-                        onMouseDown={() => handleSelectVehicleNegotiation(nego)}
-                        className="p-3 hover:bg-emerald-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors"
-                      >
-                        <div className="font-medium text-slate-800">
-                          {nego.vnnNo}
-                        </div>
-                        <div className="text-xs text-slate-500 mt-1">
-                          Vehicle: {nego.approval?.vehicleNo || 'N/A'} • Vendor: {nego.approval?.vendorName || 'N/A'}
-                        </div>
-                        <div className="text-xs text-slate-400">
-                          Customer: {nego.customerName || 'N/A'}
-                        </div>
-                        {nego.subCompanyName && (
-                          <div className="text-xs text-blue-600">
-                            Sub-Company: {nego.subCompanyName}
+                    filteredVehicleNegotiations.map((nego) => {
+                      const orderNumbers = [...new Set((nego.orders || []).map((order) => order.orderNo).filter(Boolean))];
+                      const routes = [...new Set((nego.orders || []).map((order) => {
+                        const from = order.fromName || order.from;
+                        const to = order.toName || order.to;
+                        return from && to ? `${from} → ${to}` : '';
+                      }).filter(Boolean))];
+                      return (
+                        <div
+                          key={nego._id}
+                          onMouseDown={() => handleSelectVehicleNegotiation(nego)}
+                          className="p-3 hover:bg-emerald-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors"
+                        >
+                          <div className="font-medium text-slate-800">{nego.vnnNo}</div>
+                          <div className="text-xs text-slate-500 mt-1">
+                            Order: {orderNumbers.join(', ') || '—'} | Route: {routes.join(', ') || '—'}
                           </div>
-                        )}
-                        <div className="text-xs text-emerald-600">
-                          ✓ Available
+                          <div className="text-xs text-emerald-600">✓ Available</div>
                         </div>
-                      </div>
-                    ))
+                      );
+                    })
                   ) : (
                     <div className="p-3 text-center text-sm text-slate-500">
                       {vehicleNegotiationNo.trim() ? 
