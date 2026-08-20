@@ -650,13 +650,15 @@ const MODULES_CONFIG = {
   'Purchase Report': { icon: '📊', permissions: ['view', 'export', 'print'] },
 
   // Masters
-  'Customers': { icon: '👥', permissions: ['view', 'create', 'edit', 'delete'] },
-  'Suppliers': { icon: '🏭', permissions: ['view', 'create', 'edit', 'delete'] },
-  'Items': { icon: '📦', permissions: ['view', 'create', 'edit', 'delete'] },
-  'Company': { icon: '🏢', permissions: ['view', 'edit'] },
+  'Master Data': { icon: '🗂️', permissions: ['view', 'create', 'edit', 'approve', 'reject'] },
+  'Rate Master': { icon: '💱', permissions: ['view', 'create', 'edit', 'approve', 'reject'] },
+  'Customers': { icon: '👥', permissions: ['view', 'create', 'edit', 'approve', 'reject'] },
+  'Suppliers': { icon: '🏭', permissions: ['view', 'create', 'edit', 'approve', 'reject'] },
+  'Items': { icon: '📦', permissions: ['view', 'create', 'edit', 'approve', 'reject'] },
+  'Company': { icon: '🏢', permissions: ['view', 'edit', 'approve', 'reject'] },
   'Users': { icon: '👤', permissions: ['view', 'create', 'edit', 'delete'] },
-  'Accounts': { icon: '💰', permissions: ['view', 'create', 'edit', 'delete'] },
-  'Employees': { icon: '👨‍💼', permissions: ['view', 'create', 'edit', 'delete'] },
+  'Accounts': { icon: '💰', permissions: ['view', 'create', 'edit', 'approve', 'reject'] },
+  'Employees': { icon: '👨‍💼', permissions: ['view', 'create', 'edit', 'approve', 'reject'] },
 
   // Inventory
   'Inventory': { icon: '📊', permissions: ['view', 'create', 'edit', 'delete', 'adjust'] },

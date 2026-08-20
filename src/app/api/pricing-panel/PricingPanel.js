@@ -443,6 +443,13 @@ const pricingPanelSchema = new mongoose.Schema({
       type: mongoose.Schema.Types.ObjectId,
       default: null
     },
+    // Location Master id. For automatic rows the rate slab id is also stored
+    // in locationRateId; manual rows intentionally have no slab id.
+    locationId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Location',
+      default: null
+    },
     priceList: String,
     priceListId: {
       type: mongoose.Schema.Types.ObjectId,

@@ -4,12 +4,56 @@ import Branch from "./schema";  // ✅ Make sure this imports the Branch schema
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 
 // ✅ Role-based access check
+// function isAuthorized(user) {
+//   return (
+//     user?.type === "company" ||
+//     user?.role === "Admin" ||
+//     user?.permissions?.includes("branch")
+//   );
+// }
+
 function isAuthorized(user) {
-  return (
-    user?.type === "company" ||
-    user?.role === "Admin" ||
-    user?.permissions?.includes("branch")
+  if (!user) return false;
+
+  // Company users have access
+  if (user.type === "company") return true;
+
+  // Allowed roles
+  const allowedRoles = [
+    "admin",
+    "sales manager",
+    "purchase manager",
+    "inventory manager",
+    "accounts manager",
+    "hr manager",
+    "support executive",
+    "production head",
+    "project manager"
+  ];
+
+  // Handle both roles array and single role
+  const userRoles = Array.isArray(user.roles)
+    ? user.roles
+    : user.role
+      ? [user.role]
+      : [];
+
+  // Check role
+  const hasAllowedRole = userRoles.some(role =>
+    allowedRoles.includes(role.trim().toLowerCase())
   );
+
+  if (hasAllowedRole) return true;
+
+  // Check permission
+  if (
+    Array.isArray(user.permissions) &&
+    user.permissions.includes("branch")
+  ) {
+    return true;
+  }
+
+  return false;
 }
 
 async function validateUser(req) {

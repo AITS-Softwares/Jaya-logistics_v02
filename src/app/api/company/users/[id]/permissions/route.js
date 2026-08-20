@@ -30,13 +30,15 @@ const MODULE_PERMISSIONS = {
   "Purchase Report": ['view', 'export', 'print'],
 
   // Masters
-  "Customers": ['view', 'create', 'edit', 'delete'],
-  "Suppliers": ['view', 'create', 'edit', 'delete'],
-  "Items": ['view', 'create', 'edit', 'delete'],
-  "Company": ['view', 'edit'],
+  "Master Data": ['view', 'create', 'edit', 'approve', 'reject'],
+  "Rate Master": ['view', 'create', 'edit', 'approve', 'reject'],
+  "Customers": ['view', 'create', 'edit', 'approve', 'reject'],
+  "Suppliers": ['view', 'create', 'edit', 'approve', 'reject'],
+  "Items": ['view', 'create', 'edit', 'approve', 'reject'],
+  "Company": ['view', 'edit', 'approve', 'reject'],
   "Users": ['view', 'create', 'edit', 'delete'],
-  "Accounts": ['view', 'create', 'edit', 'delete'],
-  "Employees": ['view', 'create', 'edit', 'delete'],
+  "Accounts": ['view', 'create', 'edit', 'approve', 'reject'],
+  "Employees": ['view', 'create', 'edit', 'approve', 'reject'],
 
   // Inventory
   "Inventory": ['view', 'create', 'edit', 'delete', 'adjust'],

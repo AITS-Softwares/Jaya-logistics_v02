@@ -65,6 +65,8 @@ const ROLE_OPTIONS = {
 
   // ── Masters ────────────────────────────────────────
   masters: [
+    "Master Data",       // → all non-destructive master navigation
+    "Rate Master",       // → Price List / Location Rate Master
     "Company",           // → /admin/company
     "Users",             // → /admin/users
     "Customers",         // → /admin/customer-view + create
@@ -159,6 +161,18 @@ const PERMISSIONS = [
   "email", "whatsapp",
 ];
 
+// Master records are governed by create/edit/approval permissions.  Users
+// must never receive a delete control for these modules.
+const MASTER_PERMISSION_MODULES = new Set([
+  'Master Data', 'Rate Master', 'Company', 'Customers', 'Suppliers',
+  'Items', 'Employees', 'Accounts',
+]);
+const permissionsForModule = (moduleName) => (
+  MASTER_PERMISSION_MODULES.has(moduleName)
+    ? PERMISSIONS.filter((permission) => permission !== 'delete')
+    : PERMISSIONS
+);
+
 const PERM_ICONS = {
   create: "✦", view: "👁", edit: "✎", delete: "⌫",
   approve: "✓", reject: "✗", copy: "⎘", print: "⎙",
@@ -251,7 +265,7 @@ export default function UsersPage() {
       const modules = { ...prev.modules };
       if (!has) {
         (ROLE_OPTIONS[role] || []).forEach(mod => {
-          if (!modules[mod]) modules[mod] = { selected: false, permissions: PERMISSIONS.reduce((a, p) => ({ ...a, [p]: false }), {}) };
+          if (!modules[mod]) modules[mod] = { selected: false, permissions: permissionsForModule(mod).reduce((a, p) => ({ ...a, [p]: false }), {}) };
         });
       }
       return { ...prev, roles, modules };
@@ -269,7 +283,7 @@ export default function UsersPage() {
   const togglePerm = (mod, perm) => {
     setForm(prev => {
       const modules = { ...prev.modules };
-      if (!modules[mod]) modules[mod] = { selected: true, permissions: PERMISSIONS.reduce((a, p) => ({ ...a, [p]: false }), {}) };
+      if (!modules[mod]) modules[mod] = { selected: true, permissions: permissionsForModule(mod).reduce((a, p) => ({ ...a, [p]: false }), {}) };
       modules[mod] = { ...modules[mod], permissions: { ...modules[mod].permissions, [perm]: !modules[mod].permissions?.[perm] } };
       return { ...prev, modules };
     });
@@ -279,7 +293,7 @@ export default function UsersPage() {
     setForm(prev => {
       const modules = { ...prev.modules };
       if (!modules[mod]) modules[mod] = { selected: true, permissions: {} };
-      modules[mod] = { ...modules[mod], permissions: PERMISSIONS.reduce((a, p) => ({ ...a, [p]: val }), {}) };
+      modules[mod] = { ...modules[mod], permissions: permissionsForModule(mod).reduce((a, p) => ({ ...a, [p]: val }), {}) };
       return { ...prev, modules };
     });
   };
@@ -312,10 +326,16 @@ export default function UsersPage() {
     }
     setSaving(true);
     try {
+      const safeModules = Object.fromEntries(Object.entries(form.modules || {}).map(([moduleName, data]) => {
+        const permissions = { ...(data?.permissions || {}) };
+        if (MASTER_PERMISSION_MODULES.has(moduleName)) delete permissions.delete;
+        return [moduleName, { ...data, permissions }];
+      }));
+      const safeForm = { ...form, modules: safeModules };
       if (editingUser) {
-        await axios.put(`/api/company/users/${editingUser._id}`, form, { headers: { Authorization: `Bearer ${token}` } });
+        await axios.put(`/api/company/users/${editingUser._id}`, safeForm, { headers: { Authorization: `Bearer ${token}` } });
       } else {
-        await axios.post("/api/company/users", form, { headers: { Authorization: `Bearer ${token}` } });
+        await axios.post("/api/company/users", safeForm, { headers: { Authorization: `Bearer ${token}` } });
       }
       resetForm();
       setOpenModal(false);
@@ -333,12 +353,12 @@ export default function UsersPage() {
     Object.entries(savedModules).forEach(([mod, data]) => {
       restoredModules[mod] = {
         selected: !!data?.selected,
-        permissions: { ...PERMISSIONS.reduce((a, p) => ({ ...a, [p]: false }), {}), ...(data?.permissions || {}) },
+        permissions: { ...permissionsForModule(mod).reduce((a, p) => ({ ...a, [p]: false }), {}), ...(data?.permissions || {}) },
       };
     });
     roles.forEach(role => {
       (ROLE_OPTIONS[role] || []).forEach(mod => {
-        if (!restoredModules[mod]) restoredModules[mod] = { selected: false, permissions: PERMISSIONS.reduce((a, p) => ({ ...a, [p]: false }), {}) };
+        if (!restoredModules[mod]) restoredModules[mod] = { selected: false, permissions: permissionsForModule(mod).reduce((a, p) => ({ ...a, [p]: false }), {}) };
       });
     });
     setEditingUser(user);
@@ -683,7 +703,7 @@ export default function UsersPage() {
                             const allSelected = modulesList.every(m => form.modules?.[m]?.selected);
                             setForm(prev => {
                               const modules = { ...prev.modules };
-                              modulesList.forEach(mod => { if (!modules[mod]) modules[mod] = { selected: false, permissions: PERMISSIONS.reduce((a, p) => ({ ...a, [p]: false }), {}) }; modules[mod] = { ...modules[mod], selected: !allSelected }; });
+                              modulesList.forEach(mod => { if (!modules[mod]) modules[mod] = { selected: false, permissions: permissionsForModule(mod).reduce((a, p) => ({ ...a, [p]: false }), {}) }; modules[mod] = { ...modules[mod], selected: !allSelected }; });
                               return { ...prev, modules };
                             });
                           }} className="text-xs font-bold text-indigo-600 hover:text-indigo-800">
@@ -733,7 +753,7 @@ export default function UsersPage() {
                                     </div>
                                   </div>
                                   <div className="grid grid-cols-4 sm:grid-cols-7 gap-1.5">
-                                    {PERMISSIONS.map(perm => {
+                                    {permissionsForModule(mod).map(perm => {
                                       const active = !!form.modules?.[mod]?.permissions?.[perm];
                                       return (
                                         <button key={perm} type="button" onClick={() => togglePerm(mod, perm)}

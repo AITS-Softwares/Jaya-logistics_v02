@@ -2928,7 +2928,8 @@ function LocationRateDropdown({
   onSelect, 
   placeholder = "Select Location...",
   readOnly = false,
-  selectedRateMaster = null
+  selectedRateMaster = null,
+  allowAllLocations = false
 }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
@@ -2937,11 +2938,14 @@ function LocationRateDropdown({
   const inputRef = useRef(null);
 
   const availableLocationNames = useMemo(() => {
+    if (allowAllLocations) {
+      return (locations || []).map((location) => location.name);
+    }
     if (selectedRateMaster && selectedRateMaster.locationRates) {
       return selectedRateMaster.locationRates.map(lr => lr.locationName);
     }
     return [];
-  }, [selectedRateMaster]);
+  }, [selectedRateMaster, allowAllLocations, locations]);
 
   const filteredLocationsByRateMaster = useMemo(() => {
     if (!selectedRateMaster) {
@@ -2952,10 +2956,10 @@ function LocationRateDropdown({
       return [];
     }
     
-    return (locations || []).filter(loc => 
-      availableLocationNames.includes(loc.name)
-    );
-  }, [locations, selectedRateMaster, availableLocationNames]);
+    return allowAllLocations
+      ? (locations || [])
+      : (locations || []).filter(loc => availableLocationNames.includes(loc.name));
+  }, [locations, selectedRateMaster, availableLocationNames, allowAllLocations]);
 
   useEffect(() => {
     if (selectedName && locations) {
@@ -3000,6 +3004,16 @@ function LocationRateDropdown({
       }
     }, 200);
   };
+
+  useEffect(() => {
+    const closeDropdown = () => setShowDropdown(false);
+    window.addEventListener('scroll', closeDropdown, true);
+    window.addEventListener('resize', closeDropdown);
+    return () => {
+      window.removeEventListener('scroll', closeDropdown, true);
+      window.removeEventListener('resize', closeDropdown);
+    };
+  }, []);
 
   const searchedLocations = useMemo(() => {
     if (!searchQuery.trim()) return filteredLocationsByRateMaster;
@@ -3076,7 +3090,8 @@ function PriceListDropdown({
   branchId,
   customerId,
   placeholder = "Select Price List...",
-  readOnly = false
+  readOnly = false,
+  rateCalculationMode = 'order_weight'
 }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
@@ -3086,6 +3101,10 @@ function PriceListDropdown({
 
   const filteredRateMasters = useMemo(() => {
     let filtered = rateMasters || [];
+    if (rateCalculationMode === 'manual_rate') {
+      return filtered.filter((rm) => rm.usageMode === 'manual_rate_default');
+    }
+    filtered = filtered.filter((rm) => (rm.usageMode || 'standard') === 'standard');
     
     if (branchId) {
       filtered = filtered.filter(rm => {
@@ -3106,7 +3125,7 @@ function PriceListDropdown({
     }
     
     return filtered;
-  }, [rateMasters, branchId, customerId]);
+  }, [rateMasters, branchId, customerId, rateCalculationMode]);
 
   useEffect(() => {
     if (selectedValue) {
@@ -3142,6 +3161,16 @@ function PriceListDropdown({
       }
     }, 200);
   };
+
+  useEffect(() => {
+    const closeDropdown = () => setShowDropdown(false);
+    window.addEventListener('scroll', closeDropdown, true);
+    window.addEventListener('resize', closeDropdown);
+    return () => {
+      window.removeEventListener('scroll', closeDropdown, true);
+      window.removeEventListener('resize', closeDropdown);
+    };
+  }, []);
 
   const searchedItems = useMemo(() => {
     if (!searchQuery.trim()) return filteredRateMasters;
@@ -3368,7 +3397,7 @@ function OrdersTable({
   const handlePriceListSelect = (rowId, rateMaster) => {
     if (!rateMaster) {
       onChange(rowId, 'priceList', ''); onChange(rowId, 'priceListId', ''); onChange(rowId, 'selectedRateMaster', null);
-      onChange(rowId, 'locationRate', ''); onChange(rowId, 'locationRateId', ''); onChange(rowId, 'rate', '');
+      onChange(rowId, 'locationRate', ''); onChange(rowId, 'locationRateId', ''); onChange(rowId, 'locationId', ''); onChange(rowId, 'rate', '');
       return;
     }
     onChange(rowId, 'priceList', rateMaster.title);
@@ -3376,6 +3405,7 @@ function OrdersTable({
     onChange(rowId, 'selectedRateMaster', rateMaster);
     onChange(rowId, 'locationRate', '');
     onChange(rowId, 'locationRateId', '');
+    onChange(rowId, 'locationId', '');
     onChange(rowId, 'rate', '');
   };
 
@@ -3386,9 +3416,10 @@ function OrdersTable({
       onChange(rowId, 'locationRate', ''); onChange(rowId, 'locationRateId', ''); onChange(rowId, 'rate', '');
       return;
     }
-    const nextRow = { ...currentRow, locationRate: location.name, locationRateId: location._id || '' };
+    const nextRow = { ...currentRow, locationRate: location.name, locationId: location._id || '', locationRateId: '' };
     onChange(rowId, 'locationRate', location.name);
-    onChange(rowId, 'locationRateId', location._id || '');
+    onChange(rowId, 'locationId', location._id || '');
+    onChange(rowId, 'locationRateId', '');
     applyRate(rowId, nextRow);
   };
 
@@ -3628,8 +3659,11 @@ function OrdersTable({
                     value={row.rateCalculationMode || 'order_weight'}
                     onChange={(e) => {
                       const rateCalculationMode = e.target.value;
+                      if (rateCalculationMode !== row.rateCalculationMode) {
+                        ['priceList', 'priceListId', 'selectedRateMaster', 'locationRate', 'locationRateId', 'locationId', 'rate'].forEach((key) => onChange(row._id, key, key === 'selectedRateMaster' ? null : ''));
+                      }
                       onChange(row._id, 'rateCalculationMode', rateCalculationMode);
-                      applyRate(row._id, { ...row, rateCalculationMode });
+                      if (rateCalculationMode === row.rateCalculationMode) applyRate(row._id, { ...row, rateCalculationMode });
                     }}
                     className="w-full min-w-[130px] rounded border border-slate-200 bg-white px-1 py-1 text-xs outline-none focus:border-sky-500"
                   >
@@ -3647,6 +3681,7 @@ function OrdersTable({
                     customerId={currentCustomerId}
                     placeholder="Select Price List..."
                     readOnly={false}
+                    rateCalculationMode={row.rateCalculationMode}
                   />
                 </td>
 
@@ -3658,6 +3693,7 @@ function OrdersTable({
                     readOnly={false}
                     placeholder="Select Location..."
                     selectedRateMaster={row.selectedRateMaster}
+                    allowAllLocations={row.rateCalculationMode === 'manual_rate' && row.selectedRateMaster?.usageMode === 'manual_rate_default'}
                   />
                 </td>
 
@@ -3918,6 +3954,7 @@ export default function EditPricingPanel() {
           rate: order.rate?.toString() || "",
           locationRate: order.locationRate || "",
           locationRateId: order.locationRateId || "",
+          locationId: order.locationId || "",
           taluka: order.taluka || "",
           talukaName: order.talukaName || order.taluka || "",
           talukaId: order.talukaId || "",
@@ -4239,6 +4276,7 @@ export default function EditPricingPanel() {
           countryName: order.countryName,
           locationRate: order.locationRate,
           locationRateId: order.locationRateId,
+          locationId: order.locationId,
           priceList: order.priceList,
           priceListId: order.priceListId,
           rateCalculationMode: order.rateCalculationMode,

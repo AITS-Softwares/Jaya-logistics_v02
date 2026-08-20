@@ -468,7 +468,7 @@ import fs from 'fs';
 import path from 'path';
 
 // ✅ Role-based access for vehicle negotiation management
-function isAuthorized(user) {
+function isAuthorized(user, action = 'view') {
   if (!user) return false;
 
   // ✅ Company users have full access
@@ -498,7 +498,12 @@ function isAuthorized(user) {
 
   if (hasAllowedRole) return true;
 
-  // ✅ Check for specific permission (if your system uses permissions)
+  const module = user.modules?.['Rate Master'];
+  if (module?.selected && module.permissions?.[action] === true) {
+    return true;
+  }
+
+  // ✅ Backward-compatible permission check for previously assigned users.
   if (Array.isArray(user.permissions) && 
       user.permissions.includes("vehicle_negotiation")) {
     return true;
@@ -507,14 +512,14 @@ function isAuthorized(user) {
   return false;
 }
 
-async function validateUser(req) {
+async function validateUser(req, action = 'view') {
   const token = getTokenFromHeader(req);
   if (!token) return { error: "Token missing", status: 401 };
 
   try {
     const user = await verifyJWT(token);
     if (!user) return { error: "Invalid token", status: 401 };
-    if (!isAuthorized(user)) return { error: "Unauthorized", status: 403 };
+    if (!isAuthorized(user, action)) return { error: "Unauthorized", status: 403 };
     return { user, error: null, status: 200 };
   } catch (err) {
     console.error("JWT Verification Failed:", err);
@@ -587,6 +592,7 @@ export async function GET(req) {
           title: rateMaster.title,
           customerId: rateMaster.customerId,
           branchId: rateMaster.branchId,
+          usageMode: rateMaster.usageMode || 'standard',
           companyId: rateMaster.companyId,
           createdBy: rateMaster.createdBy,
           isActive: rateMaster.isActive,
@@ -647,6 +653,7 @@ export async function GET(req) {
           title: rm.title,
           customerId: rm.customerId,
           branchId: rm.branchId,
+          usageMode: rm.usageMode || 'standard',
           companyId: rm.companyId,
           createdBy: rm.createdBy,
           isActive: rm.isActive,
@@ -683,7 +690,7 @@ export async function GET(req) {
 
 export async function POST(req) {
   await connectDb();
-  const { user, error, status } = await validateUser(req);
+  const { user, error, status } = await validateUser(req, 'create');
   if (error) return NextResponse.json({ success: false, message: error }, { status });
 
   try {
@@ -698,16 +705,20 @@ export async function POST(req) {
       customRuleLimit,
       customRuleToLimit,
       approvalOption,
-      approvalFile
+      approvalFile,
+      usageMode = 'standard'
     } = await req.json();
 
     if (!title || !title.trim()) {
       return NextResponse.json({ success: false, message: "Title is required" }, { status: 400 });
     }
-    if (!customerId) {
+    if (!['standard', 'manual_rate_default'].includes(usageMode)) {
+      return NextResponse.json({ success: false, message: 'Invalid Price List usage type' }, { status: 400 });
+    }
+    if (usageMode === 'standard' && !customerId) {
       return NextResponse.json({ success: false, message: "Customer is required" }, { status: 400 });
     }
-    if (!branchId) {
+    if (usageMode === 'standard' && !branchId) {
       return NextResponse.json({ success: false, message: "Branch is required" }, { status: 400 });
     }
     if (!approvalOption) {
@@ -734,6 +745,13 @@ export async function POST(req) {
       return NextResponse.json({ success: false, message: "Rate master with this title already exists" }, { status: 400 });
     }
 
+    if (usageMode === 'manual_rate_default') {
+      const existingDefault = await RateMaster.findOne({ companyId: user.companyId, usageMode: 'manual_rate_default', isActive: { $ne: false } });
+      if (existingDefault) {
+        return NextResponse.json({ success: false, message: 'Only one active Manual Rate Default Price List is allowed per company.' }, { status: 409 });
+      }
+    }
+
     let finalCustomWeightRule = customWeightRule;
     if (weightRule === 'custom' && !finalCustomWeightRule) {
       if (customRuleType === 'above') {
@@ -747,9 +765,10 @@ export async function POST(req) {
 
     const newRateMaster = new RateMaster({
       title: title.trim(),
-      customerId,
-      branchId,
-      locationRates: locationRates || [],
+      customerId: usageMode === 'manual_rate_default' ? null : customerId,
+      branchId: usageMode === 'manual_rate_default' ? null : branchId,
+      usageMode,
+      locationRates: usageMode === 'manual_rate_default' ? [] : (locationRates || []),
       weightRule: weightRule || 'all_weights',
       customWeightRule: finalCustomWeightRule || '',
       customRuleType: customRuleType || '',
@@ -783,7 +802,7 @@ export async function POST(req) {
 
 export async function PUT(req) {
   await connectDb();
-  const { user, error, status } = await validateUser(req);
+  const { user, error, status } = await validateUser(req, 'edit');
   if (error) return NextResponse.json({ success: false, message: error }, { status });
 
   try {
@@ -801,6 +820,7 @@ export async function PUT(req) {
       customRuleToLimit,
       approvalOption,
       approvalFile,
+      usageMode,
       rateId 
     } = await req.json();
 
@@ -822,6 +842,24 @@ export async function PUT(req) {
     const finalBranchId = branchId !== undefined ? branchId : existingRateMaster.branchId;
     const finalWeightRule = weightRule !== undefined ? weightRule : existingRateMaster.weightRule;
     const finalApprovalOption = approvalOption !== undefined ? approvalOption : existingRateMaster.approvalOption;
+    const finalUsageMode = usageMode !== undefined ? usageMode : (existingRateMaster.usageMode || 'standard');
+    if (!['standard', 'manual_rate_default'].includes(finalUsageMode)) {
+      return NextResponse.json({ success: false, message: 'Invalid Price List usage type' }, { status: 400 });
+    }
+    if (finalUsageMode === 'standard' && (!finalCustomerId || !finalBranchId)) {
+      return NextResponse.json({ success: false, message: 'Customer and branch are required for a standard Price List' }, { status: 400 });
+    }
+    if (finalUsageMode === 'manual_rate_default') {
+      const anotherDefault = await RateMaster.findOne({
+        companyId: user.companyId,
+        usageMode: 'manual_rate_default',
+        isActive: { $ne: false },
+        _id: { $ne: existingRateMaster._id }
+      });
+      if (anotherDefault) {
+        return NextResponse.json({ success: false, message: 'Only one active Manual Rate Default Price List is allowed per company' }, { status: 409 });
+      }
+    }
     
     let finalCustomWeightRule = customWeightRule !== undefined ? customWeightRule : existingRateMaster.customWeightRule || '';
     let finalCustomRuleType = customRuleType !== undefined ? customRuleType : existingRateMaster.customRuleType || '';
@@ -1004,12 +1042,19 @@ export async function PUT(req) {
       validatedLocationRates = existingRateMaster.locationRates;
     }
 
+    // A global Manual Rate Default intentionally has no slabs. It supplies
+    // locations from Location Master and never participates in range lookup.
+    if (finalUsageMode === 'manual_rate_default') {
+      validatedLocationRates = [];
+    }
+
     const updatedRateMaster = await RateMaster.findOneAndUpdate(
       { _id: rateMasterId, companyId: user.companyId },
       {
         title: finalTitle.trim(),
-        customerId: finalCustomerId,
-        branchId: finalBranchId,
+        customerId: finalUsageMode === 'manual_rate_default' ? null : finalCustomerId,
+        branchId: finalUsageMode === 'manual_rate_default' ? null : finalBranchId,
+        usageMode: finalUsageMode,
         locationRates: validatedLocationRates,
         weightRule: finalWeightRule,
         customWeightRule: finalCustomWeightRule,
@@ -1049,6 +1094,7 @@ export async function PUT(req) {
         title: updatedRateMaster.title,
         customerId: updatedRateMaster.customerId,
         branchId: updatedRateMaster.branchId,
+        usageMode: updatedRateMaster.usageMode || 'standard',
         companyId: updatedRateMaster.companyId,
         createdBy: updatedRateMaster.createdBy,
         isActive: updatedRateMaster.isActive,
@@ -1080,7 +1126,7 @@ export async function PUT(req) {
 
 export async function DELETE(req) {
   await connectDb();
-  const { user, error, status } = await validateUser(req);
+  const { user, error, status } = await validateUser(req, 'delete');
   if (error) return NextResponse.json({ success: false, message: error }, { status });
 
   try {
@@ -1090,6 +1136,13 @@ export async function DELETE(req) {
 
     if (!rateMasterId) {
       return NextResponse.json({ success: false, message: "Rate master ID is required" }, { status: 400 });
+    }
+
+    // A master record itself is not deletable by normal users. Rate-slab
+    // history remains separately manageable through its existing workflow.
+    const isCompanyAdmin = user.type === 'company' || user.roles?.includes('Admin');
+    if (!rateId && !isCompanyAdmin) {
+      return NextResponse.json({ success: false, message: 'Rate Master records cannot be deleted by users' }, { status: 403 });
     }
 
     const rateMaster = await RateMaster.findOne({
