@@ -3668,8 +3668,8 @@ export default function PricingPanelPage() {
           subCompanyId: header.subCompanyId || null,
           subCompanyName: header.subCompanyName || '',
           subCompanyCode: header.subCompanyCode || '',
-          partyName: selectedCustomer?.customerName || header.partyName,
-          customerId: selectedCustomer?._id || header.customerId
+          partyName: header.partyName || '',// selectedCustomer?.customerName || '',
+          customerId: header.customerId || '' //selectedCustomer?._id || ''
         },
         billing: {
           ...billing,
@@ -3804,7 +3804,7 @@ export default function PricingPanelPage() {
       approvalStatus: "Pending",
     });
     
-    setSelectedCustomer(null);
+    // setSelectedCustomer(null); Not defined 
     setSelectedVehicleNegotiation(null);
     
     setSaveSuccess(false);
