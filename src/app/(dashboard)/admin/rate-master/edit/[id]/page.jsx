@@ -333,6 +333,7 @@ export default function EditRateMasterPage() {
   const [customRuleLimit, setCustomRuleLimit] = useState('');
   const [customRuleToLimit, setCustomRuleToLimit] = useState('');
   const [approvalOption, setApprovalOption] = useState('contract_rate');
+  const [usageMode, setUsageMode] = useState('standard');
   
   // File upload states
   const [approvalFile, setApprovalFile] = useState(null);
@@ -359,10 +360,11 @@ export default function EditRateMasterPage() {
       if (data.success && data.data) {
         const rateMaster = data.data;
         setTitle(rateMaster.title);
-        setCustomerId(rateMaster.customerId);
-        setBranchId(rateMaster.branchId);
+        setCustomerId(rateMaster.customerId || '');
+        setBranchId(rateMaster.branchId || '');
         setWeightRule(rateMaster.weightRule || 'all_weights');
         setApprovalOption(rateMaster.approvalOption || 'contract_rate');
+        setUsageMode(rateMaster.usageMode || 'standard');
         
         // Set custom rule fields
         if (rateMaster.weightRule === 'custom') {
@@ -497,11 +499,11 @@ export default function EditRateMasterPage() {
       setError('Please enter rate master title');
       return;
     }
-    if (!customerId) {
+    if (usageMode === 'standard' && !customerId) {
       setError('Please select a customer');
       return;
     }
-    if (!branchId) {
+    if (usageMode === 'standard' && !branchId) {
       setError('Please select a branch');
       return;
     }
@@ -546,8 +548,9 @@ export default function EditRateMasterPage() {
       
       const payload = {
         title: title.trim(),
-        customerId: customerId,
-        branchId: branchId,
+        customerId: usageMode === 'manual_rate_default' ? null : customerId,
+        branchId: usageMode === 'manual_rate_default' ? null : branchId,
+        usageMode,
         weightRule: weightRule,
         customWeightRule: finalCustomWeightRule || '',
         customRuleType: customRuleType || '',
@@ -649,6 +652,31 @@ export default function EditRateMasterPage() {
               />
             </div>
 
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Price List Usage <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={usageMode}
+                onChange={(e) => {
+                  const nextUsageMode = e.target.value;
+                  setUsageMode(nextUsageMode);
+                  if (nextUsageMode === 'manual_rate_default') {
+                    setCustomerId('');
+                    setBranchId('');
+                    setWeightRule('all_weights');
+                    setApprovalOption('mail_approval');
+                  }
+                }}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="standard">Standard — automatic slab pricing</option>
+                <option value="manual_rate_default">Manual Rate Default — global locations and manual rate</option>
+              </select>
+              {usageMode === 'manual_rate_default' && <p className="mt-1 text-xs text-gray-500">This one company-wide list is available only for Manual Rate. Do not add rate slabs to it.</p>}
+            </div>
+
+            {usageMode === 'standard' && <>
             {/* Customer Name Field */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -689,6 +717,7 @@ export default function EditRateMasterPage() {
               </select>
             </div>
 
+            </>}
             {/* Weight Rule Dropdown */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">

@@ -3323,6 +3323,7 @@ export default function RateMasterManagePage() {
   const [customRuleLimit, setCustomRuleLimit] = useState('');
   const [customRuleToLimit, setCustomRuleToLimit] = useState('');
   const [approvalOption, setApprovalOption] = useState('contract_rate');
+  const [usageMode, setUsageMode] = useState('standard');
   
   // File upload states
   const [approvalFile, setApprovalFile] = useState(null);
@@ -3595,11 +3596,11 @@ export default function RateMasterManagePage() {
       setFormError('Please enter rate master title');
       return;
     }
-    if (!customerId) {
+    if (usageMode === 'standard' && !customerId) {
       setFormError('Please select a customer');
       return;
     }
-    if (!branchId) {
+    if (usageMode === 'standard' && !branchId) {
       setFormError('Please select a branch');
       return;
     }
@@ -3643,8 +3644,9 @@ export default function RateMasterManagePage() {
       
       const payload = {
         title: title.trim(),
-        customerId: customerId,
-        branchId: branchId,
+        customerId: usageMode === 'manual_rate_default' ? null : customerId,
+        branchId: usageMode === 'manual_rate_default' ? null : branchId,
+        usageMode,
         weightRule: weightRule,
         customWeightRule: finalCustomWeightRule || '',
         customRuleType: customRuleType || '',
@@ -4297,6 +4299,15 @@ export default function RateMasterManagePage() {
           <form onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Price List Usage <span className="text-red-500">*</span></label>
+                <select value={usageMode} onChange={(e) => { setUsageMode(e.target.value); if (e.target.value === 'manual_rate_default') { setCustomerId(''); setBranchId(''); setWeightRule('all_weights'); setApprovalOption('mail_approval'); } }} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="standard">Standard Rate List</option>
+                  <option value="manual_rate_default">Manual Rate Default (company-wide)</option>
+                </select>
+                {usageMode === 'manual_rate_default' && <p className="text-xs text-gray-500 mt-1">Visible only for Manual Rate. Locations are taken directly from Location Master; do not add rate slabs.</p>}
+              </div>
+
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Title <span className="text-red-500">*</span>
                 </label>
@@ -4310,6 +4321,7 @@ export default function RateMasterManagePage() {
                 />
               </div>
 
+              {usageMode === 'standard' && <>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Customer Name <span className="text-red-500">*</span>
@@ -4465,6 +4477,7 @@ export default function RateMasterManagePage() {
                   <option value="mail_approval">Mail Approval</option>
                 </select>
               </div>
+              </>}
             </div>
 
             {/* File Upload Section */}
@@ -4633,12 +4646,6 @@ export default function RateMasterManagePage() {
                             className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600 text-xs"
                           >
                             Edit
-                          </button>
-                          <button
-                            onClick={() => deleteRateMaster(master._id)}
-                            className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-xs"
-                          >
-                            Delete
                           </button>
                         </div>
                       </td>

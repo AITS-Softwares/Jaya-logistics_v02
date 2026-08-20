@@ -16,7 +16,7 @@ import Customer from "@/models/CustomerModel";
 const orderFields = [
   "orderNo", "partyName", "customerId", "customerCode", "contactPerson", "plantCode",
   "plantCodeValue", "plantName", "orderType", "pinCode", "from", "fromName", "fromState",
-  "to", "toName", "taluka", "talukaName", "district", "districtName", "state", "stateName",
+  "to", "toName", "taluka", "talukaName", "district", "districtName", "state", "stateName", "locationId",
   "country", "countryName", "weight", "collectionCharges", "cancellationCharges", "loadingCharges",
   "otherCharges", "localStatus", "localStatusLabel",
 ];
@@ -115,7 +115,7 @@ export const GET = withAuth(async (req, context, user) => {
       Country.find({ companyId: user.companyId }, { name: 1, code: 1 }).sort({ name: 1 }).lean(),
       RateMaster.find(
         { companyId: user.companyId, isActive: { $ne: false } },
-        { title: 1, customerId: 1, branchId: 1, locationRates: 1 },
+        { title: 1, customerId: 1, branchId: 1, usageMode: 1, locationRates: 1 },
       ).sort({ createdAt: -1 }).lean(),
     ]);
 
@@ -151,6 +151,7 @@ export const GET = withAuth(async (req, context, user) => {
         title: rateMaster.title,
         customerId: rateMaster.customerId,
         branchId: rateMaster.branchId,
+        usageMode: rateMaster.usageMode || 'standard',
         branchName: branch?.name || "",
         branchCode: branch?.code || "",
         customerName: customer?.customerName || "",

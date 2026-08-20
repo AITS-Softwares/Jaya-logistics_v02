@@ -1426,6 +1426,7 @@ export async function POST(req) {
           toName: toBranch ? toBranch.name : order.toName || '',
           locationRate: order.locationRate || '',
           locationRateId: resolvedRate.locationRateId,
+          locationId: resolvedRate.locationId,
           priceList: resolvedRate.priceList,
           priceListId: resolvedRate.priceListId,
           rateCalculationMode: resolvedRate.rateCalculationMode,
@@ -1703,6 +1704,7 @@ export async function PUT(req) {
         toName: order.toName || '',
         locationRate: order.locationRate || '',
         locationRateId: resolvedRate.locationRateId,
+        locationId: resolvedRate.locationId,
         priceList: resolvedRate.priceList,
         priceListId: resolvedRate.priceListId,
         rateCalculationMode: resolvedRate.rateCalculationMode,
@@ -2075,6 +2077,41 @@ async function resolvePricingRate(user, order, panelTotalWeight) {
     throw new Error(`Select an active Price List for order ${order.orderNo || 'row'}.`);
   }
 
+  if (rateCalculationMode === 'manual_rate') {
+    if (rateMaster.usageMode !== 'manual_rate_default') {
+      throw new Error('Manual Rate requires the active Default Price List.');
+    }
+    const selectedLocationId = order.locationId || order.locationRateId;
+    if (!isValidObjectId(selectedLocationId)) {
+      throw new Error(`Select a valid Location Master location for order ${order.orderNo || 'row'}.`);
+    }
+    const location = await Location.findOne({
+      _id: selectedLocationId,
+      companyId: user.companyId,
+      isActive: { $ne: false },
+    }).select('_id name').lean();
+    if (!location) {
+      throw new Error('The selected Location Master location is inactive or unavailable.');
+    }
+    const manualRate = Number(order.rate);
+    if (!Number.isFinite(manualRate) || manualRate < 0) {
+      throw new Error(`Enter a manual rate for order ${order.orderNo || 'row'}.`);
+    }
+    return {
+      priceListId: rateMaster._id,
+      priceList: rateMaster.title,
+      locationRateId: null,
+      locationId: location._id,
+      locationName: location.name,
+      rate: manualRate,
+      rateCalculationMode,
+    };
+  }
+
+  if (rateMaster.usageMode === 'manual_rate_default') {
+    throw new Error('The Default Price List can only be used with Manual Rate.');
+  }
+
   let locationRate = null;
   if (order.locationRateId) {
     locationRate = (rateMaster.locationRates || []).find((item) =>
@@ -2097,20 +2134,6 @@ async function resolvePricingRate(user, order, panelTotalWeight) {
     throw new Error(`Select a valid Location Rate for order ${order.orderNo || 'row'}.`);
   }
 
-  if (rateCalculationMode === 'manual_rate') {
-    const manualRate = Number(order.rate);
-    if (!Number.isFinite(manualRate) || manualRate < 0) {
-      throw new Error(`Enter a manual rate for order ${order.orderNo || 'row'}.`);
-    }
-    return {
-      priceListId: rateMaster._id,
-      priceList: rateMaster.title,
-      locationRateId: locationRate._id,
-      rate: manualRate,
-      rateCalculationMode,
-    };
-  }
-
   const lookupWeight = rateCalculationMode === 'total_weight' ? Number(panelTotalWeight) : orderWeight;
   if (!Number.isFinite(lookupWeight) || lookupWeight < 0) {
     throw new Error('A valid total weight is required to calculate the rate.');
@@ -2126,6 +2149,7 @@ async function resolvePricingRate(user, order, panelTotalWeight) {
       priceListId: rateMaster._id,
       priceList: rateMaster.title,
       locationRateId: matchingSlab._id,
+      locationId: locationRate.locationId,
       rate: Number(matchingSlab.rate),
       rateCalculationMode,
     };

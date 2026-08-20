@@ -130,12 +130,21 @@ const rateMasterSchema = new mongoose.Schema({
   customerId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Customer',
-    required: true
+    required: function() { return this.usageMode !== 'manual_rate_default'; },
+    default: null
   },
   branchId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Branch',
-    required: true
+    required: function() { return this.usageMode !== 'manual_rate_default'; },
+    default: null
+  },
+  // A company-wide list used only when a Pricing Panel row is Manual Rate.
+  // Its title remains user-facing (for example, "Default").
+  usageMode: {
+    type: String,
+    enum: ['standard', 'manual_rate_default'],
+    default: 'standard'
   },
   locationRates: [locationRateSchema],
   weightRule: {
