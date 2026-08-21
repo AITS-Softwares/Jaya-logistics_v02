@@ -3141,6 +3141,32 @@ export default function Layout({ children }) {
               <Item href="/admin/purchase-type" icon={<HiCurrencyRupee />} label="Purchase Types" onClick={closeSidebar} isActive={isActive('/admin/purchase-type')} />
             </Section>
           )}
+          {!hasFullAccess && canView('Master Data') && (
+            <Section
+              title="Masters View"
+              icon={<HiViewGrid />}
+              isOpen={openMenu === 'assignedMastersView'}
+              onToggle={() => toggleMenu('assignedMastersView')}
+            >
+              <Item href="/admin/customer-view" icon={<HiUsers />} label="Customer View" onClick={closeSidebar} isActive={isActive('/admin/customer-view')} />
+              <Item href="/admin/supplier" icon={<HiUserGroup />} label="Supplier View" onClick={closeSidebar} isActive={isActive('/admin/supplier')} />
+              <Item href="/admin/item" icon={<HiCube />} label="Item View" onClick={closeSidebar} isActive={isActive('/admin/item')} />
+              <Item href="/admin/account-head-view" icon={<HiOutlineLibrary />} label="Account Head View" onClick={closeSidebar} isActive={isActive('/admin/account-head-view')} />
+              <Item href="/admin/bank-head-details-view" icon={<HiCurrencyDollar />} label="General Ledger View" onClick={closeSidebar} isActive={isActive('/admin/bank-head-details-view')} />
+              <Item href="/admin/email-templates" icon={<HiDocumentText />} label="Email Templates" onClick={closeSidebar} isActive={isActive('/admin/email-templates')} />
+              <Item href="/admin/email-masters" icon={<HiOutlineCreditCard />} label="Email & App Password Master" onClick={closeSidebar} isActive={isActive('/admin/email-masters')} />
+              <Item href="/admin/branches" icon={<HiOfficeBuilding />} label="Branches" onClick={closeSidebar} isActive={isActive('/admin/branches')} />
+              <Item href="/admin/locations" icon={<HiOfficeBuilding />} label="From-location" onClick={closeSidebar} isActive={isActive('/admin/locations')} />
+              <Item href="/admin/pkg-type" icon={<HiOfficeBuilding />} label="Pkg-type" onClick={closeSidebar} isActive={isActive('/admin/pkg-type')} />
+              <Item href="/admin/vehicles" icon={<HiTruck />} label="Vehicles" onClick={closeSidebar} isActive={isActive('/admin/vehicles')} />
+              <Item href="/admin/owners" icon={<HiTruck />} label="Vehicles-owner" onClick={closeSidebar} isActive={isActive('/admin/owners')} />
+              <Item href="/admin/plants" icon={<HiTruck />} label="Plants" onClick={closeSidebar} isActive={isActive('/admin/plants')} />
+              <Item href="/admin/rate-master/create" icon={<HiCurrencyRupee />} label="Rate-Location-Master-create" onClick={closeSidebar} isActive={isActive('/admin/rate-master/create')} />
+              <Item href="/admin/UOM" icon={<HiCurrencyRupee />} label="UOM" onClick={closeSidebar} isActive={isActive('/admin/UOM')} />
+              <Item href="/admin/sku-sizes" icon={<HiCurrencyRupee />} label="SKU Sizes" onClick={closeSidebar} isActive={isActive('/admin/sku-sizes')} />
+              <Item href="/admin/purchase-type" icon={<HiCurrencyRupee />} label="Purchase Types" onClick={closeSidebar} isActive={isActive('/admin/purchase-type')} />
+            </Section>
+          )}
           {!hasFullAccess && canView('Rate Master') && (
             <Section
               title="Rate Master"

@@ -1179,7 +1179,7 @@ export default function LoadingPanelList() {
                           <div className="text-xs text-slate-500">{item.driverNo}</div>
                         </div>
                       </td>
-                      <td className="px-4 py-3 font-medium">{item.totalWeight} kg</td>
+                      <td className="px-4 py-3 font-medium">{item.totalWeight} MT</td>
                       <td className="px-4 py-3">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(item.vbpApproval)}`}>
                           {item.vbpApproval || 'Pending'}

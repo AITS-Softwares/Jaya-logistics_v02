@@ -57,6 +57,19 @@ export default function LoginPage() {
       localStorage.setItem("token", token);
       localStorage.setItem("user", JSON.stringify(finalUser));
 
+      // Verify the newly-created session before announcing success. This makes
+      // a header/session failure visible on the login screen instead of leaving
+      // the user on a non-working dashboard after a misleading success toast.
+      const sessionCheck = await fetch('/api/auth/me', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!sessionCheck.ok) {
+        const sessionData = await sessionCheck.json().catch(() => ({}));
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        throw new Error(sessionData.message || sessionData.msg || 'Unable to start your session. Please try again.');
+      }
+
       toast.success(`Access Granted: ${finalUser.name || "User"}`);
 
       const roleRedirectMap = {

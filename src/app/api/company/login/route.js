@@ -47,7 +47,9 @@ export async function POST(req) {
       name: selectedOperatingCompany.name,
       code: selectedOperatingCompany.code,
     };
-    return NextResponse.json({ token, company: safeCompany }, { status: 200 });
+    const response = NextResponse.json({ token, company: safeCompany }, { status: 200 });
+    response.cookies.set({ name: 'token', value: '', maxAge: 0, path: '/' });
+    return response;
 
   } catch (err) {
     console.error('Company Login Error:', err);

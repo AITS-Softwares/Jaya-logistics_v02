@@ -1173,6 +1173,14 @@ export async function GET(req) {
       
       for (const panel of pricingPanels) {
         const formattedDate = panel.date ? formatDateDDMMYYYY(panel.date) : '';
+        // The list is grouped by panel in the UI. Calculate its weight once
+        // from all saved order rows so old records with a stale/missing stored
+        // total also display the correct total.
+        const calculatedTotalWeight = (panel.orders || []).reduce(
+          (sum, order) => sum + (Number(order.weight) || 0),
+          0
+        );
+        const panelTotalWeight = calculatedTotalWeight || Number(panel.totalWeight || 0);
         
         if (panel.orders && panel.orders.length > 0) {
           for (const order of panel.orders) {
@@ -1207,6 +1215,7 @@ export async function GET(req) {
               from: order.fromName || '',
               to: order.toName || '',
               weight: order.weight || 0,
+              totalWeight: panelTotalWeight,
               pricing: reportRow?.pricing || panel.reportRows?.[0]?.pricing || 'Pending',
               approval: panel.rateApproval?.approvalStatus || 'Pending',
               branchName: panel.branchName || '',
@@ -1231,6 +1240,7 @@ export async function GET(req) {
             from: '',
             to: '',
             weight: 0,
+            totalWeight: panelTotalWeight,
             pricing: panel.reportRows?.[0]?.pricing || 'Pending',
             approval: panel.rateApproval?.approvalStatus || 'Pending',
             branchName: panel.branchName || '',

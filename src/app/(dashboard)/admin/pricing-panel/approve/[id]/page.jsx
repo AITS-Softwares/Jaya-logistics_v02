@@ -1099,9 +1099,11 @@ export default function ApprovePricingPanel() {
   const [workflowPhase, setWorkflowPhase] = useState('part1');
   const [capabilities, setCapabilities] = useState({ canAmendPart1: false, canAmendPart2: false });
 
+  // Legacy approval URL: retain the route for old bookmarks/email links but
+  // immediately use the single, permission-aware Part 2 screen.
   useEffect(() => {
-    fetchPricingPanelData();
-  }, []);
+    router.replace(`/admin/pricing-panel/${panelId}`);
+  }, [router, panelId]);
 
   const fetchPricingPanelData = async () => {
     setLoading(true);
@@ -1314,14 +1316,8 @@ export default function ApprovePricingPanel() {
 
   const part2Editable = workflowPhase === 'part2';
 
-  // Check URL for auto-approve action (for email link)
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const action = urlParams.get('action');
-    if (action === 'approve') {
-      handleApprove(true);
-    }
-  }, []);
+  // Automatic approval via a URL is intentionally disabled. The authorised
+  // Part 2 user must review the record and attachment in the canonical screen.
 
   const totalWeight = useMemo(() => {
     return orders.reduce((acc, r) => acc + num(r.weight), 0);

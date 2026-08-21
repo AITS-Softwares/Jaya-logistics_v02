@@ -1386,7 +1386,7 @@ export default function OrderPanelList() {
                             <span className="font-medium">{order.to}</span>
                           </div>
                         </td>
-                        <td className="px-4 py-3 font-medium">{order.weight} kg</td>
+                        <td className="px-4 py-3 font-medium">{order.weight} MT</td>
                         <td className="px-4 py-3">
                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                             order.status === 'Open' ? 'bg-green-100 text-green-800' :
