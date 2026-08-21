@@ -3809,7 +3809,7 @@ export default function EditPricingPanel() {
   const router = useRouter();
   const params = useParams();
   const panelId = params.id;
-  const { canApprove } = usePermission();
+  const { canApprove, canEdit } = usePermission();
   const PART2_APPROVAL_MODULE = 'Pricing Panel - Part 2 Approval';
 
   const [branches, setBranches] = useState([]);
@@ -3841,7 +3841,8 @@ export default function EditPricingPanel() {
     delivery: "Normal",
     date: new Date().toISOString().split('T')[0],
     partyName: "",
-    customerId: ""
+    customerId: "",
+    customerCode: ""
   });
 
   const [billing, setBilling] = useState({
@@ -3935,8 +3936,12 @@ export default function EditPricingPanel() {
         subCompanyCode: panel.subCompanyCode || "",
         delivery: panel.delivery || "Normal",
         date: panel.date ? new Date(panel.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-        partyName: panel.partyName || "",
-        customerId: panel.customerId || ""
+        // Older panels did not always persist header customer fields. Their
+        // first saved order is the authoritative fallback, so historic panels
+        // display the same party/customer information as new panels.
+        partyName: panel.partyName || panel.orders?.[0]?.partyName || "",
+        customerId: panel.customerId || panel.orders?.[0]?.customerId || "",
+        customerCode: panel.customerCode || panel.orders?.[0]?.customerCode || ""
       });
 
       setBilling({
@@ -4204,6 +4209,23 @@ export default function EditPricingPanel() {
     }
   };
 
+  const handleOpenAttachment = async () => {
+    try {
+      const response = await fetch(`/api/pricing-panel/${panelId}/attachment`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.message || 'Unable to open attachment.');
+      }
+      const objectUrl = URL.createObjectURL(await response.blob());
+      window.open(objectUrl, '_blank', 'noopener,noreferrer');
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+    } catch (error) {
+      alert(error.message || 'Unable to open attachment.');
+    }
+  };
+
   const handleUpdate = async () => {
     if (!header.branch) {
       alert("Please select a branch");
@@ -4323,10 +4345,7 @@ export default function EditPricingPanel() {
 
       setSaveSuccess(true);
       alert(`✅ Pricing panel updated successfully!\nPricing Serial No: ${header.pricingSerialNo}`);
-      
-      setTimeout(() => {
-        router.push('/admin/pricing-panel');
-      }, 2000);
+      router.replace('/admin/pricing-panel');
       
     } catch (error) {
       console.error('Error updating pricing panel:', error);
@@ -4346,15 +4365,22 @@ export default function EditPricingPanel() {
       });
       const data = await response.json();
       if (!response.ok || !data.success) throw new Error(data.message || 'Unable to update workflow');
-      setWorkflowPhase(data.data.workflowPhase);
       alert(data.message);
+      // A completed submit/approval must not leave a stale, editable form in
+      // the browser. Return to the list, where the current workflow state is
+      // loaded again from the server.
+      if (['submit-part1', 'approve-with-update', 'approve', 'reject'].includes(action)) {
+        router.replace('/admin/pricing-panel');
+        return;
+      }
+      setWorkflowPhase(data.data.workflowPhase);
       await fetchPricingPanelData();
     } catch (error) {
       alert(error.message || 'Unable to update workflow.');
     }
   };
 
-  const part1Editable = workflowPhase === 'part1';
+  const part1Editable = workflowPhase === 'part1' && canEdit('Pricing Panel');
   const part2Editable = workflowPhase === 'part2' && canApprove(PART2_APPROVAL_MODULE);
 
   const billingColumns = [
@@ -4408,7 +4434,7 @@ export default function EditPricingPanel() {
           </div>
 
           <div className="flex items-center gap-3">
-            {workflowPhase === 'part1' && (
+            {part1Editable && (
               <button onClick={() => handleWorkflowAction('submit-part1')} disabled={saving} className="rounded-xl bg-indigo-600 px-5 py-2 text-sm font-bold text-white hover:bg-indigo-700 disabled:bg-gray-400">
                 Submit Saved Part 1 for Approval
               </button>
@@ -4523,6 +4549,12 @@ export default function EditPricingPanel() {
                 placeholder="Party Name"
               />
             </div>
+            <Input
+              col="col-span-12 md:col-span-3"
+              label="Customer Code"
+              value={header.customerCode}
+              readOnly={true}
+            />
           </div>
 
           <div className="mb-4">
@@ -4569,8 +4601,8 @@ export default function EditPricingPanel() {
 
           <div className="flex justify-end gap-4 mt-4">
             <div className="flex items-center gap-3 border border-yellow-300 px-6 py-3 bg-yellow-50 rounded-xl">
-              <div className="text-sm font-extrabold text-slate-900">Total Weight:</div>
-              <div className="text-xl font-extrabold text-emerald-700">{totalWeight}</div>
+              <div className="text-sm font-extrabold text-slate-900">Total Weight (MT):</div>
+              <div className="text-xl font-extrabold text-emerald-700">{totalWeight} MT</div>
             </div>
             <div className="flex items-center gap-3 border border-yellow-300 px-6 py-3 bg-yellow-50 rounded-xl">
               <div className="text-sm font-extrabold text-slate-900">Total Amount:</div>
@@ -4606,7 +4638,7 @@ export default function EditPricingPanel() {
             <div className="col-span-12 md:col-span-4">
               <label className="text-xs font-bold text-slate-600">Rate Approval Upload</label>
               <input type="file" accept=".pdf,.png,.jpg,.jpeg" onChange={handleFileSelect} disabled={!part1Editable} className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 disabled:bg-slate-50" />
-              {rateApproval.uploadFileName && <div className="mt-1 text-xs text-green-600">✓ {rateApproval.uploadFileName}</div>}
+              {rateApproval.uploadFileName && <div className="mt-1 flex items-center gap-3 text-xs text-green-600">✓ {rateApproval.uploadFileName}{rateApproval.uploadFilePath && <button type="button" onClick={handleOpenAttachment} className="font-bold text-sky-700 underline">View attachment</button>}</div>}
             </div>
             <Select
               col="col-span-12 md:col-span-4"

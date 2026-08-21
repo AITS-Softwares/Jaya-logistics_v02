@@ -3780,8 +3780,10 @@ export default function PricingPanelPage() {
       setPricingSerialNo(data.data?.pricingSerialNo || "Generated");
       
       alert(`✅ Pricing panel saved successfully!\nPricing Serial No: ${data.data?.pricingSerialNo}`);
-      
-      resetForm();
+      // Do not retain selected VNN/order values after a successful create.
+      // The list reloads the saved record from the server and avoids an
+      // accidental duplicate submission from stale form state.
+      router.replace('/admin/pricing-panel');
       
     } catch (error) {
       console.error('Error saving pricing panel:', error);

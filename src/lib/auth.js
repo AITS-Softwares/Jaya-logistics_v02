@@ -95,9 +95,9 @@ import jwt from "jsonwebtoken";
 
 const SECRET = process.env.JWT_SECRET;
 
-// Mongoose stores `modules` as a MongooseMap. Calling `.toObject()` on that
-// map still returns a Map, which JSON Web Token serialises as `{}`. Convert it
-// explicitly before signing so existing module permissions survive login.
+// Keep JWTs small.  The token only needs selected modules and their granted
+// actions; serialising every unselected module was enough to exceed reverse
+// proxy header limits for users with a large permissions map.
 function serializeModules(modules) {
   if (!modules) return {};
 
@@ -110,9 +110,14 @@ function serializeModules(modules) {
       ? value.toObject()
       : value || {};
 
+    if (plainValue.selected !== true) return result;
+
     result[name] = {
-      selected: plainValue.selected === true,
-      permissions: plainValue.permissions || {},
+      selected: true,
+      permissions: Object.entries(plainValue.permissions || {}).reduce((permissions, [action, allowed]) => {
+        if (allowed === true) permissions[action] = true;
+        return permissions;
+      }, {}),
     };
     return result;
   }, {});

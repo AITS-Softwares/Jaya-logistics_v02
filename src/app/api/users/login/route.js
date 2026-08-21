@@ -182,11 +182,16 @@ export async function POST(req) {
       },
     };
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       token,
       user: userResponse
     });
+    // Older deployments used a cookie token while the current app uses the
+    // Authorization header. Remove a stale browser cookie before redirecting;
+    // an oversized legacy cookie can otherwise cause a 431 on the next page.
+    response.cookies.set({ name: 'token', value: '', maxAge: 0, path: '/' });
+    return response;
 
   } catch (error) {
     console.error('Login error:', error);

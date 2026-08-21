@@ -1011,7 +1011,9 @@ export default function PricingPanelList() {
               partyName: item.partyName,
               from: item.from,
               to: item.to,
-              weight: item.weight,
+              // The table API includes a panel total on every order row.
+              // Never use the first order's weight as the pricing total.
+              weight: item.totalWeight ?? item.weight,
               pricing: item.pricing || 'Pending',
               approval: item.approval || 'Pending',
               orderCount: 1,
@@ -1111,56 +1113,14 @@ export default function PricingPanelList() {
     router.push(`/admin/pricing-panel/${panelId}`);
   };
 
-  // ✅ Quick Approve function - approves without going to approve page
-  const handleQuickApprove = async (panelId, pricingSerialNo) => {
-    if (!canApprove(MODULE_NAME)) {
-      alert('You don\'t have permission to approve pricing panels');
-      return;
-    }
-
-    if (!confirm(`Are you sure you want to approve Pricing Panel ${pricingSerialNo}?`)) {
-      return;
-    }
-
-    setApproveLoading(panelId);
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('/api/pricing-panel', {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ 
-          id: panelId, 
-          action: 'approve'
-        })
-      });
-
-      const data = await res.json();
-
-      if (data.success) {
-        alert('Pricing panel approved successfully!');
-        fetchPanels();
-      } else {
-        alert(data.message || 'Failed to approve');
-      }
-    } catch (error) {
-      console.error('Error approving:', error);
-      alert('Failed to approve');
-    } finally {
-      setApproveLoading(null);
-    }
-  };
-
-  // ✅ Full Approve with Details - navigates to approve page
+  // Part 2 approval is always reviewed in the canonical detail page; this
+  // prevents the legacy approval route from using a different permission rule.
   const handleApprove = (panelId) => {
-    if (!canApprove(MODULE_NAME)) {
-      alert('You don\'t have permission to approve pricing panels');
+    if (!canApprovePart2) {
+      alert('You do not have permission to approve Pricing Panel Part 2.');
       return;
     }
-    // Navigate to the approval page with the panel ID
-    router.push(`/admin/pricing-panel/approve/${panelId}`);
+    router.push(`/admin/pricing-panel/${panelId}`);
   };
 
   const handleCreateNew = () => {
@@ -1372,7 +1332,7 @@ export default function PricingPanelList() {
                           <span>{item.to || '-'}</span>
                         </div>
                       </td>
-                      <td className="px-4 py-3 font-medium">{item.weight} kg</td>
+                      <td className="px-4 py-3 font-medium">{item.weight} MT</td>
                       <td className="px-4 py-3">
                          <div className="flex max-w-48 flex-wrap gap-1">{item.orderNumbers.map((orderNo) => <span key={orderNo} className="rounded-full bg-purple-100 px-2 py-1 text-xs font-medium text-purple-800">{orderNo}</span>)}</div>
                       </td>
@@ -1410,26 +1370,9 @@ export default function PricingPanelList() {
                             </button>
                           )}
                           
-                          {/* ✅ Quick Approve Button - Green (with checkmark) - Based ONLY on permission */}
-                          {canApprove(MODULE_NAME) && (
-                            <button
-                              onClick={() => handleQuickApprove(item.panelId, item.pricingSerialNo)}
-                              disabled={approveLoading === item.panelId}
-                              className="p-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition disabled:opacity-50"
-                              title="Quick Approve"
-                            >
-                              {approveLoading === item.panelId ? (
-                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-700"></div>
-                              ) : (
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                </svg>
-                              )}
-                            </button>
-                          )}
                           {canApprovePart2 && (
                             <button
-                              onClick={() => router.push(`/admin/pricing-panel/${item.panelId}`)}
+                              onClick={() => handleApprove(item.panelId)}
                               className="p-2 bg-violet-100 text-violet-700 rounded-lg hover:bg-violet-200 transition"
                               title="Open Part 2 approval"
                             >
@@ -1439,18 +1382,6 @@ export default function PricingPanelList() {
                             </button>
                           )}
                           
-                          {/* ✅ Full Approve with Details - Blue (navigates to approve page) - Based ONLY on permission */}
-                          {canApprove(MODULE_NAME) && (
-                            <button
-                              onClick={() => handleApprove(item.panelId)}
-                              className="p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition"
-                              title="Approve with Details"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                              </svg>
-                            </button>
-                          )}
                           
                           {/* Delete Button - Only shown if user has delete permission */}
                           {canDelete(MODULE_NAME) && (
