@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import connectDb from "@/lib/db";
 import Branch from "./schema";  // ✅ Make sure this imports the Branch schema
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
+import { validateMasterDataRequest } from '@/lib/masterDataPermission';
 
 // ✅ Role-based access check
 // function isAuthorized(user) {
@@ -56,19 +57,8 @@ function isAuthorized(user) {
   return false;
 }
 
-async function validateUser(req) {
-  const token = getTokenFromHeader(req);
-  if (!token) return { error: "Token missing", status: 401 };
-
-  try {
-    const user = await verifyJWT(token);
-    if (!user) return { error: "Invalid token", status: 401 };
-    if (!isAuthorized(user)) return { error: "Unauthorized", status: 403 };
-    return { user, error: null, status: 200 };
-  } catch (err) {
-    console.error("JWT Verification Failed:", err?.message || err);
-    return { error: "Invalid token", status: 401 };
-  }
+async function validateUser(req, action = 'view') {
+  return validateMasterDataRequest(req, action);
 }
 
 /* ========================================
@@ -76,7 +66,7 @@ async function validateUser(req) {
 ======================================== */
 export async function GET(req) {
   await connectDb();
-  const { user, error, status } = await validateUser(req);
+  const { user, error, status } = await validateUser(req, 'view');
   if (error) return NextResponse.json({ success: false, message: error }, { status });
 
   try {
@@ -97,7 +87,7 @@ export async function GET(req) {
 ======================================== */
 export async function POST(req) {
   await connectDb();
-  const { user, error, status } = await validateUser(req);
+  const { user, error, status } = await validateUser(req, 'create');
   if (error) return NextResponse.json({ success: false, message: error }, { status });
 
   try {
@@ -138,7 +128,7 @@ export async function POST(req) {
 ======================================== */
 export async function DELETE(req) {
   await connectDb();
-  const { user, error, status } = await validateUser(req);
+  const { user, error, status } = await validateUser(req, 'delete');
   if (error) return NextResponse.json({ success: false, message: error }, { status });
 
   try {

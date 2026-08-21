@@ -632,6 +632,7 @@ const MODULES_CONFIG = {
   'Order Panel': { icon: '📋', permissions: ['view', 'create', 'edit', 'delete', 'approve', 'reject'] },
   'Vehicle Negotiation': { icon: '🚚', permissions: ['view', 'create', 'edit', 'delete', 'approve'] },
   'Pricing Panel': { icon: '💰', permissions: ['view', 'create', 'edit', 'delete', 'approve'] },
+  'Pricing Panel - Part 2 Approval': { icon: '✅', permissions: ['view', 'approve'] },
   'Loading Info': { icon: '📦', permissions: ['view', 'create', 'edit', 'delete', 'approve'] },
   'Purchase Panel': { icon: '🛒', permissions: ['view', 'create', 'edit', 'delete', 'approve'] },
   'Consignment Note': { icon: '📄', permissions: ['view', 'create', 'edit', 'delete', 'approve'] },

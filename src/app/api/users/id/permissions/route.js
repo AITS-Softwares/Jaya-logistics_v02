@@ -10,6 +10,7 @@ const MODULE_PERMISSIONS = {
   "Order Panel": ['view', 'create', 'edit', 'delete', 'approve', 'reject'],
   "Vehicle Negotiation": ['view', 'create', 'edit', 'delete', 'approve'],
   "Pricing Panel": ['view', 'create', 'edit', 'delete'],
+  "Pricing Panel - Part 2 Approval": ['view', 'approve'],
   "Loading Info": ['view', 'create', 'edit', 'delete'],
   "Purchase Panel": ['view', 'create', 'edit', 'delete'],
   "Consignment Note": ['view', 'create', 'edit', 'delete'],

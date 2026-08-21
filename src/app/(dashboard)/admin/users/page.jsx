@@ -92,6 +92,10 @@ const ROLE_OPTIONS = {
       "order-full-report", 
   ],
 
+  // Gives no Part 1 pricing access. Administrators can assign this role to
+  // the user responsible only for Approval Status and Remarks in Part 2.
+  "Pricing Part 2 Approver": ["Pricing Panel - Part 2 Approval"],
+
   // ── Purchase Manager ───────────────────────────────
   "Purchase Manager": [
     "Purchase Quotation", // → /admin/PurchaseQuotationList
@@ -184,6 +188,7 @@ const ROLE_COLORS = {
   Admin:              { bg: "bg-rose-50",    text: "text-rose-600",    border: "border-rose-200",    dot: "bg-rose-500" },
   masters:            { bg: "bg-violet-50",  text: "text-violet-600",  border: "border-violet-200",  dot: "bg-violet-500" },
   "Sales Manager":    { bg: "bg-blue-50",    text: "text-blue-600",    border: "border-blue-200",    dot: "bg-blue-500" },
+  "Pricing Part 2 Approver": { bg: "bg-violet-50", text: "text-violet-600", border: "border-violet-200", dot: "bg-violet-500" },
   "Purchase Manager": { bg: "bg-amber-50",   text: "text-amber-600",   border: "border-amber-200",   dot: "bg-amber-500" },
   "Inventory Manager":{ bg: "bg-emerald-50", text: "text-emerald-600", border: "border-emerald-200", dot: "bg-emerald-500" },
   "Accounts Manager": { bg: "bg-cyan-50",    text: "text-cyan-600",    border: "border-cyan-200",    dot: "bg-cyan-500" },

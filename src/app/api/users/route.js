@@ -50,6 +50,7 @@ const MODULE_PERMISSIONS = {
   "Vehicle Negotiation Placement": ['view', 'edit'],
   "Rate Target (Vehicle Negotiation)": ['view', 'edit'],
   "Pricing Panel": ['view', 'create', 'edit', 'delete'],
+  "Pricing Panel - Part 2 Approval": ['view', 'approve'],
   "Loading Info": ['view', 'create', 'edit', 'delete'],
   "Purchase Panel": ['view', 'create', 'edit', 'delete'],
   "Consignment Note": ['view', 'create', 'edit', 'delete'],

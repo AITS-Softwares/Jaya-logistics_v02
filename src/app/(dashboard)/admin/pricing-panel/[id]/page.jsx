@@ -2193,6 +2193,7 @@
 
 import { useMemo, useState, useEffect, useRef, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { usePermission } from "../../hooks/usePermission";
 
 /* =========================
   CONSTANTS
@@ -3808,6 +3809,8 @@ export default function EditPricingPanel() {
   const router = useRouter();
   const params = useParams();
   const panelId = params.id;
+  const { canApprove } = usePermission();
+  const PART2_APPROVAL_MODULE = 'Pricing Panel - Part 2 Approval';
 
   const [branches, setBranches] = useState([]);
   const [countries, setCountries] = useState([]);
@@ -4334,12 +4337,12 @@ export default function EditPricingPanel() {
     }
   };
 
-  const handleWorkflowAction = async (action) => {
+  const handleWorkflowAction = async (action, approvalData) => {
     try {
       const response = await fetch('/api/pricing-panel', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
-        body: JSON.stringify({ id: panelId, action }),
+        body: JSON.stringify({ id: panelId, action, approvalData }),
       });
       const data = await response.json();
       if (!response.ok || !data.success) throw new Error(data.message || 'Unable to update workflow');
@@ -4352,6 +4355,7 @@ export default function EditPricingPanel() {
   };
 
   const part1Editable = workflowPhase === 'part1';
+  const part2Editable = workflowPhase === 'part2' && canApprove(PART2_APPROVAL_MODULE);
 
   const billingColumns = [
     { key: "billingType", label: "Billing Type", options: BILLING_TYPES },
@@ -4576,7 +4580,27 @@ export default function EditPricingPanel() {
         </Card>
         </div>
 
-        <Card title={`Rate - Approval - Part - 2${part1Editable ? '' : ' (Locked)'}`}>
+        <Card
+          title={`Rate - Approval - Part - 2${part2Editable ? ' (Open for approval)' : workflowPhase === 'part2' ? ' (Awaiting authorised approval)' : ' (Locked)'}`}
+          right={part2Editable && (
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => handleWorkflowAction('update-approval', { approvalStatus: rateApproval.approvalStatus, remarks: rateApproval.remarks })}
+                className="rounded-xl bg-sky-600 px-4 py-2 text-sm font-bold text-white hover:bg-sky-700"
+              >
+                Save Approval Details
+              </button>
+              <button
+                type="button"
+                onClick={() => handleWorkflowAction('approve-with-update', { remarks: rateApproval.remarks })}
+                className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-700"
+              >
+                Approve Part 2
+              </button>
+            </div>
+          )}
+        >
           <div className="grid grid-cols-12 gap-4">
             <Select col="col-span-12 md:col-span-4" label="Rate Approval Type" value={rateApproval.approvalType} onChange={(value) => setRateApproval((previous) => ({ ...previous, approvalType: value }))} options={RATE_APPROVAL_TYPES} readOnly={!part1Editable} />
             <div className="col-span-12 md:col-span-4">
@@ -4590,11 +4614,11 @@ export default function EditPricingPanel() {
               value={rateApproval.approvalStatus}
               onChange={(v) => setRateApproval((p) => ({ ...p, approvalStatus: v }))}
               options={APPROVAL_STATUS}
-              readOnly={true}
+              readOnly={!part2Editable}
             />
             <div className="col-span-12 md:col-span-8">
               <label className="text-xs font-bold text-slate-600">Remarks</label>
-              <textarea value={rateApproval.remarks || ''} readOnly className="mt-1 min-h-20 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm" placeholder="Remarks are entered during approval" />
+              <textarea value={rateApproval.remarks || ''} onChange={(event) => setRateApproval((previous) => ({ ...previous, remarks: event.target.value }))} readOnly={!part2Editable} className="mt-1 min-h-20 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm read-only:cursor-not-allowed" placeholder="Remarks are entered during approval" />
             </div>
           </div>
         </Card>
