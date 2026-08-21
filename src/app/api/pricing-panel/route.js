@@ -976,6 +976,19 @@ import RateMaster from '@/app/api/rate-master/schema';
 import Location from '@/app/api/locations/schema';
 
 // ── PERMISSION FUNCTIONS ──
+const PART2_APPROVAL_MODULE = 'Pricing Panel - Part 2 Approval';
+
+function hasPart2ApprovalPermission(user, action) {
+  if (!user) return false;
+  if (user.type === 'company' || user.roles?.includes('Admin')) return true;
+
+  const moduleData = user.modules?.[PART2_APPROVAL_MODULE];
+  if (!moduleData?.selected) return false;
+  // Match the permission UI: a selected module has view access unless view was
+  // explicitly disabled, while approve always requires an explicit grant.
+  if (action === 'view') return moduleData.permissions?.view !== false;
+  return moduleData.permissions?.[action] === true;
+}
 
 function isAuthorized(user) {
   if (!user) return false;
@@ -984,11 +997,7 @@ function isAuthorized(user) {
   if (user.roles && user.roles.includes("Admin")) return true;
   
   const modules = user.modules || {};
-  const moduleData = modules["Pricing Panel"];
-  
-  if (!moduleData || !moduleData.selected) return false;
-  
-  return true;
+  return !!modules["Pricing Panel"]?.selected || !!modules[PART2_APPROVAL_MODULE]?.selected;
 }
 
 function hasPermission(user, action) {
@@ -1078,7 +1087,8 @@ export async function GET(req) {
     const toDate = url.searchParams.get("toDate");
     
     if (id) {
-      if (!['view', 'create', 'edit', 'approve'].some((action) => hasPermission(user, action))) {
+      if (!['view', 'create', 'edit', 'approve'].some((action) => hasPermission(user, action)) &&
+          !['view', 'approve'].some((action) => hasPart2ApprovalPermission(user, action))) {
         return NextResponse.json({
           success: false,
           message: 'Permission denied: no Pricing Panel role can view this record.'
@@ -1107,12 +1117,15 @@ export async function GET(req) {
         data: pricingPanel,
         capabilities: {
           canAmendPart1: hasPermission(user, 'edit'),
-          canAmendPart2: hasPermission(user, 'approve')
+          canAmendPart2: hasPart2ApprovalPermission(user, 'approve'),
+          canApprovePart2: hasPart2ApprovalPermission(user, 'approve')
         }
       }, { status: 200 });
     }
 
-    if (!hasPermission(user, 'view')) {
+    const hasPricingView = hasPermission(user, 'view');
+    const hasPart2View = hasPart2ApprovalPermission(user, 'view') || hasPart2ApprovalPermission(user, 'approve');
+    if (!hasPricingView && !hasPart2View) {
       return NextResponse.json({
         success: false,
         message: 'Permission denied: view action not allowed for Pricing Panel.'
@@ -1123,6 +1136,9 @@ export async function GET(req) {
       console.log("📋 Fetching pricing panels for table report");
       
       let query = { status: 'Active' };
+      // A Part 2 approver is deliberately limited to records that are actually
+      // awaiting Part 2 approval; this permission does not expose all pricing data.
+      if (!hasPricingView) query['rateApproval.workflowPhase'] = 'part2';
 
       if (search) {
         query.$or = [
@@ -1234,7 +1250,9 @@ export async function GET(req) {
     
     console.log("📋 Fetching pricing panel list");
     
-    const pricingPanels = await PricingPanel.find(companyScopeFilter(user, { status: 'Active' }))
+    const listQuery = { status: 'Active' };
+    if (!hasPricingView) listQuery['rateApproval.workflowPhase'] = 'part2';
+    const pricingPanels = await PricingPanel.find(companyScopeFilter(user, listQuery))
     .select('pricingSerialNo date branchName partyName subCompanyName subCompanyCode totalWeight totalAmount rateApproval.approvalStatus orders')
     .sort({ createdAt: -1 })
     .lean();
@@ -1887,11 +1905,14 @@ export async function PATCH(req) {
     }
 
     const part1Actions = ['submit-part1', 'amend-part1'];
-    const part2Actions = ['approve', 'reject', 'complete', 'update-approval', 'approve-with-update', 'amend-part2'];
+    const part2Actions = ['approve', 'reject', 'update-approval', 'approve-with-update', 'amend-part2'];
     if (part1Actions.includes(action) && !hasPermission(user, 'edit')) {
       return NextResponse.json({ success: false, message: 'Permission denied: edit action not allowed for Pricing Panel.' }, { status: 403 });
     }
-    if (part2Actions.includes(action) && !hasPermission(user, 'approve')) {
+    if (part2Actions.includes(action) && !hasPart2ApprovalPermission(user, 'approve')) {
+      return NextResponse.json({ success: false, message: 'Permission denied: Pricing Panel Part 2 Approval permission is required.' }, { status: 403 });
+    }
+    if (action === 'complete' && !hasPermission(user, 'approve')) {
       return NextResponse.json({ success: false, message: 'Permission denied: approve action not allowed for Pricing Panel.' }, { status: 403 });
     }
 

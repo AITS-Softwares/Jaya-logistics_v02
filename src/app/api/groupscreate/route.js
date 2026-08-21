@@ -2,11 +2,13 @@ import dbConnect from "@/lib/db";
 import Group from "@/models/groupModels";
 import { NextResponse } from "next/server";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
+import { validateMasterDataRequest } from '@/lib/masterDataPermission';
 
 /**
  * ✅ Validate JWT & Return User
  */
-async function authenticate(req) {
+async function authenticate(req, action = 'view') {
+  return validateMasterDataRequest(req, action);
   const token = getTokenFromHeader(req);
   if (!token) {
     return { error: "Token missing", status: 401 };
@@ -30,7 +32,7 @@ async function authenticate(req) {
 export async function GET(req) {
   await dbConnect();
 
-  const { user, error, status } = await authenticate(req);
+  const { user, error, status } = await authenticate(req, 'view');
   if (error) {
     return NextResponse.json({ success: false, message: error }, { status });
   }
@@ -70,7 +72,7 @@ export async function GET(req) {
 export async function POST(req) {
   await dbConnect();
 
-  const { user, error, status } = await authenticate(req);
+  const { user, error, status } = await authenticate(req, 'create');
   if (error) {
     return NextResponse.json({ success: false, message: error }, { status });
   }
@@ -114,7 +116,7 @@ export async function POST(req) {
 export async function PUT(req, { params }) {
   await dbConnect();
 
-  const { user, error, status } = await authenticate(req);
+  const { user, error, status } = await authenticate(req, 'edit');
   if (error) {
     return NextResponse.json({ success: false, message: error }, { status });
   }
@@ -159,7 +161,7 @@ export async function PUT(req, { params }) {
 export async function DELETE(req, { params }) {
   await dbConnect();
 
-  const { user, error, status } = await authenticate(req);
+  const { user, error, status } = await authenticate(req, 'delete');
   if (error) {
     return NextResponse.json({ success: false, message: error }, { status });
   }

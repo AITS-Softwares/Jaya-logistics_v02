@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import connectDb from "@/lib/db";
 import SubCompany from "./SubCompany";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
+import { validateMasterDataRequest } from '@/lib/masterDataPermission';
 
 console.log("✅ SubCompanies API route loaded");
 
@@ -15,7 +16,8 @@ function isAuthorized(user) {
   );
 }
 
-async function validateUser(req) {
+async function validateUser(req, action = 'view') {
+  return validateMasterDataRequest(req, action);
   const token = getTokenFromHeader(req);
   if (!token) return { error: "Token missing", status: 401 };
 
@@ -71,7 +73,7 @@ export async function GET(req) {
   
   try {
     await connectDb();
-    const { user, error, status } = await validateUser(req);
+    const { user, error, status } = await validateUser(req, 'view');
     if (error) return NextResponse.json({ success: false, message: error }, { status });
 
     const url = new URL(req.url);
@@ -129,7 +131,7 @@ export async function POST(req) {
   
   try {
     await connectDb();
-    const { user, error, status } = await validateUser(req);
+    const { user, error, status } = await validateUser(req, 'create');
     if (error) return NextResponse.json({ success: false, message: error }, { status });
 
     const body = await req.json();
@@ -196,7 +198,7 @@ export async function DELETE(req) {
   
   try {
     await connectDb();
-    const { user, error, status } = await validateUser(req);
+    const { user, error, status } = await validateUser(req, 'delete');
     if (error) return NextResponse.json({ success: false, message: error }, { status });
 
     const url = new URL(req.url);

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import Item from "@/models/ItemModels";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
+import { validateMasterDataRequest } from '@/lib/masterDataPermission';
 
 /* -------------------------------
    ✅ Role-Based Access
@@ -33,7 +34,8 @@ function isAuthorized(user) {
 }
 
 /* ✅ Validate User Helper */
-async function validateUser(req) {
+async function validateUser(req, action = 'view') {
+  return validateMasterDataRequest(req, action);
   const token = getTokenFromHeader(req);
   if (!token) return { error: "Token missing", status: 401 };
 
@@ -52,7 +54,7 @@ async function validateUser(req) {
 ======================================== */
 export async function GET(req, { params }) {
   await dbConnect();
-  const { user, error, status } = await validateUser(req);
+  const { user, error, status } = await validateUser(req, 'view');
   if (error) return NextResponse.json({ success: false, message: error }, { status });
 
   const { id } = params;
@@ -76,7 +78,7 @@ export async function GET(req, { params }) {
 ======================================== */
 export async function PUT(req, { params }) {
   await dbConnect();
-  const { user, error, status } = await validateUser(req);
+  const { user, error, status } = await validateUser(req, 'edit');
   if (error) return NextResponse.json({ success: false, message: error }, { status });
 
   const { id } = params;
@@ -110,7 +112,7 @@ export async function PUT(req, { params }) {
 ======================================== */
 export async function DELETE(req, { params }) {
   await dbConnect();
-  const { user, error, status } = await validateUser(req);
+  const { user, error, status } = await validateUser(req, 'delete');
   if (error) return NextResponse.json({ success: false, message: error }, { status });
 
   const { id } = params;

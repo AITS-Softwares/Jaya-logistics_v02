@@ -3068,7 +3068,7 @@ export default function Layout({ children }) {
 
               // This is a field-level permission inside an existing VNN record,
               // not a standalone transaction page.
-              if (moduleName === 'Vehicle Negotiation Placement') return null;
+              if (['Vehicle Negotiation Placement', 'Master Data', 'Rate Master', 'Pricing Panel - Part 2 Approval'].includes(moduleName)) return null;
               
               // Check if user has view permission for this module
               if (!canView(moduleName)) return null;
@@ -3149,6 +3149,16 @@ export default function Layout({ children }) {
               onToggle={() => toggleMenu('assignedRateMaster')}
             >
               <Item href="/admin/rate-master/create" icon={<HiCurrencyRupee />} label="Price Lists" onClick={closeSidebar} isActive={isActive('/admin/rate-master/create')} />
+            </Section>
+          )}
+          {!hasFullAccess && canView('Pricing Panel - Part 2 Approval') && !canView('Pricing Panel') && (
+            <Section
+              title="Pricing Panel Approval"
+              icon={<HiCurrencyRupee />}
+              isOpen={openMenu === 'pricingPanelPart2Approval'}
+              onToggle={() => toggleMenu('pricingPanelPart2Approval')}
+            >
+              <Item href="/admin/pricing-panel" icon={<HiViewGrid />} label="Pending Part 2 Approvals" onClick={closeSidebar} isActive={isActive('/admin/pricing-panel')} />
             </Section>
           )}
 

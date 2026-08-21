@@ -975,6 +975,9 @@ export default function PricingPanelList() {
   });
 
   const MODULE_NAME = 'Pricing Panel';
+  const PART2_APPROVAL_MODULE = 'Pricing Panel - Part 2 Approval';
+  const canAccessPricingList = canView(MODULE_NAME) || canView(PART2_APPROVAL_MODULE) || canApprove(PART2_APPROVAL_MODULE);
+  const canApprovePart2 = canApprove(PART2_APPROVAL_MODULE);
 
   // Fetch panels - wrapped in useCallback to prevent infinite re-renders
   const fetchPanels = useCallback(async () => {
@@ -1039,13 +1042,13 @@ export default function PricingPanelList() {
   // Only fetch when permissions are loaded and user has view permission
   useEffect(() => {
     if (!permissionLoading) {
-      if (canView(MODULE_NAME)) {
+      if (canAccessPricingList) {
         fetchPanels();
       } else {
         setLoading(false);
       }
     }
-  }, [permissionLoading, canView, fetchPanels]);
+  }, [permissionLoading, canAccessPricingList, fetchPanels]);
 
   const handleFilterChange = (key, value) => {
     setFilters(prev => ({ ...prev, [key]: value }));
@@ -1181,7 +1184,7 @@ export default function PricingPanelList() {
   }
 
   // If user doesn't have view permission, show access denied
-  if (!canView(MODULE_NAME)) {
+  if (!canAccessPricingList) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center max-w-md p-8 bg-white rounded-xl shadow-lg">
@@ -1422,6 +1425,17 @@ export default function PricingPanelList() {
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                 </svg>
                               )}
+                            </button>
+                          )}
+                          {canApprovePart2 && (
+                            <button
+                              onClick={() => router.push(`/admin/pricing-panel/${item.panelId}`)}
+                              className="p-2 bg-violet-100 text-violet-700 rounded-lg hover:bg-violet-200 transition"
+                              title="Open Part 2 approval"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
                             </button>
                           )}
                           

@@ -4,6 +4,7 @@ import dbConnect from "@/lib/db.js";
 import Supplier from "@/models/SupplierModels";
 import BankHead from "@/models/BankHead";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
+import { validateMasterDataRequest } from '@/lib/masterDataPermission';
 
 // ── Auth helper
 function getToken(req) {
@@ -33,7 +34,8 @@ function isAuthorized(decoded) {
   return false;
 }
 
-async function validateUser(req) {
+async function validateUser(req, action = 'view') {
+  return validateMasterDataRequest(req, action);
   const token = getToken(req);
   if (!token) return { error: "Token missing", status: 401 };
   try {
@@ -50,7 +52,7 @@ async function validateUser(req) {
 // GET /api/suppliers
 export async function GET(req) {
   await dbConnect();
-  const { user, error, status } = await validateUser(req);
+  const { user, error, status } = await validateUser(req, 'view');
   if (error) return NextResponse.json({ success: false, message: error }, { status });
 
   try {
@@ -68,7 +70,7 @@ export async function GET(req) {
 // POST /api/suppliers
 export async function POST(req) {
   await dbConnect();
-  const { user, error, status } = await validateUser(req);
+  const { user, error, status } = await validateUser(req, 'create');
   if (error) return NextResponse.json({ success: false, message: error }, { status });
 
   try {

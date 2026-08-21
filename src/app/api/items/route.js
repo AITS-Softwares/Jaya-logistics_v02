@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import Item from "@/models/ItemModels";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
+import { validateMasterDataRequest } from '@/lib/masterDataPermission';
 
 // ✅ Role-based access for item management
 function isAuthorized(user) {
@@ -31,7 +32,8 @@ function isAuthorized(user) {
 }
 
 // ✅ Validate user token & permissions
-async function validateUser(req) {
+async function validateUser(req, action = 'view') {
+  return validateMasterDataRequest(req, action);
   const token = getTokenFromHeader(req);
   if (!token) return { error: "Token missing", status: 401 };
 
@@ -51,7 +53,7 @@ async function validateUser(req) {
 export async function GET(req) {
   await dbConnect();
 
-  const { user, error, status } = await validateUser(req);
+  const { user, error, status } = await validateUser(req, 'view');
   if (error)
     return NextResponse.json({ success: false, message: error }, { status });
 
@@ -94,7 +96,7 @@ export async function GET(req) {
 ======================================== */
 export async function POST(req) {
   await dbConnect();
-  const { user, error, status } = await validateUser(req);
+  const { user, error, status } = await validateUser(req, 'create');
   if (error) return NextResponse.json({ success: false, message: error }, { status });
 
   try {
