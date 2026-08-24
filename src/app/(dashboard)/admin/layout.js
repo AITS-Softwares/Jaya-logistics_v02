@@ -2069,6 +2069,12 @@ export default function Layout({ children }) {
   const isAdminUser = isCompany || session?.roles?.includes("Admin");
   const hasFullAccess = isAdminUser;
   const modules = session?.modules || {};
+  // Some App Router folders intentionally retain their legacy casing. Do not
+  // derive those URLs from the display name: Linux production hosts are
+  // case-sensitive, unlike local Windows development.
+  const moduleRouteOverrides = {
+    'Purchase Panel': '/admin/Purchase-Panel',
+  };
 
   const toggleSubmenu = (k) => setOpenSubmenus((p) => ({ ...p, [k]: !p[k] }));
   const toggleMenu = (m) => setOpenMenu(openMenu === m ? null : m);
@@ -3076,11 +3082,12 @@ export default function Layout({ children }) {
               // Rate Target belongs under Vehicle Negotiation when that parent module is available.
               if (moduleName === 'Rate Target (Vehicle Negotiation)' && canView('Vehicle Negotiation')) return null;
 
-              const modulePath = moduleName === 'Rate Target (Vehicle Negotiation)'
+              const modulePath = moduleRouteOverrides[moduleName]
+                || (moduleName === 'Rate Target (Vehicle Negotiation)'
                 ? '/admin/rate-target-vehicle-negotiation'
                 : moduleName === 'Loading Info'
                   ? '/admin/Loading-Info'
-                  : `/admin/${moduleName.toLowerCase().replace(/ /g, '-')}`;
+                  : `/admin/${moduleName.toLowerCase().replace(/ /g, '-')}`);
 
               return (
                 <Section
