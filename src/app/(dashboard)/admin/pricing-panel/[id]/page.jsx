@@ -3862,6 +3862,9 @@ export default function EditPricingPanel() {
     uploadFile: null,
     uploadFileName: "",
     uploadFilePath: "",
+    uploadStoredName: "",
+    uploadFileSize: 0,
+    uploadMimeType: "",
     remarks: "",
     approvalStatus: "Pending",
   });
@@ -3996,6 +3999,9 @@ export default function EditPricingPanel() {
           uploadFile: null,
           uploadFileName: panel.rateApproval.uploadFile || "",
           uploadFilePath: panel.rateApproval.uploadFilePath || "",
+          uploadStoredName: panel.rateApproval.uploadStoredName || "",
+          uploadFileSize: panel.rateApproval.uploadFileSize || 0,
+          uploadMimeType: panel.rateApproval.uploadMimeType || "",
           remarks: panel.rateApproval.remarks || "",
           approvalStatus: panel.rateApproval.approvalStatus || "Pending",
         });
@@ -4202,27 +4208,18 @@ export default function EditPricingPanel() {
       });
       const data = await response.json();
       if (!response.ok || !data.success) throw new Error(data.message || 'Upload failed');
-      setRateApproval((previous) => ({ ...previous, uploadFile: file, uploadFileName: data.data.fileName, uploadFilePath: data.data.filePath }));
+      setRateApproval((previous) => ({
+        ...previous,
+        uploadFile: file,
+        uploadFileName: data.data.fileName,
+        uploadFilePath: data.data.filePath,
+        uploadStoredName: data.data.storedName,
+        uploadFileSize: data.data.fileSize,
+        uploadMimeType: data.data.mimeType,
+      }));
     } catch (error) {
       alert(error.message || 'Unable to upload approval document.');
       event.target.value = '';
-    }
-  };
-
-  const handleOpenAttachment = async () => {
-    try {
-      const response = await fetch(`/api/pricing-panel/${panelId}/attachment`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-      });
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        throw new Error(data.message || 'Unable to open attachment.');
-      }
-      const objectUrl = URL.createObjectURL(await response.blob());
-      window.open(objectUrl, '_blank', 'noopener,noreferrer');
-      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
-    } catch (error) {
-      alert(error.message || 'Unable to open attachment.');
     }
   };
 
@@ -4325,6 +4322,9 @@ export default function EditPricingPanel() {
           approvalStatus: rateApproval.approvalStatus,
           uploadFile: rateApproval.uploadFileName,
           uploadFilePath: rateApproval.uploadFilePath,
+          uploadStoredName: rateApproval.uploadStoredName,
+          uploadFileSize: rateApproval.uploadFileSize,
+          uploadMimeType: rateApproval.uploadMimeType,
           remarks: rateApproval.remarks
         }
       };
@@ -4638,7 +4638,7 @@ export default function EditPricingPanel() {
             <div className="col-span-12 md:col-span-4">
               <label className="text-xs font-bold text-slate-600">Rate Approval Upload</label>
               <input type="file" accept=".pdf,.png,.jpg,.jpeg" onChange={handleFileSelect} disabled={!part1Editable} className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 disabled:bg-slate-50" />
-              {rateApproval.uploadFileName && <div className="mt-1 flex items-center gap-3 text-xs text-green-600">✓ {rateApproval.uploadFileName}{rateApproval.uploadFilePath && <button type="button" onClick={handleOpenAttachment} className="font-bold text-sky-700 underline">View attachment</button>}</div>}
+              {rateApproval.uploadFileName && <div className="mt-1 flex items-center gap-3 text-xs text-green-600">✓ {rateApproval.uploadFileName}{rateApproval.uploadFilePath && <a href={rateApproval.uploadFilePath} target="_blank" rel="noopener noreferrer" className="font-bold text-sky-700 underline">View attachment</a>}</div>}
             </div>
             <Select
               col="col-span-12 md:col-span-4"

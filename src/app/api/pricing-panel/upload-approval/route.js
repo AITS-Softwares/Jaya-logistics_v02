@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { mkdir, writeFile } from "fs/promises";
 import path from "path";
+import { randomUUID } from "crypto";
 import { withAuth } from "@/lib/auth";
 
 export const runtime = "nodejs";
@@ -21,13 +22,25 @@ export const POST = withAuth(async (request) => {
     }
 
     const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-    const storedName = `${Date.now()}-${safeName}`;
+    // Keep approval documents in the same public uploads tree used by the
+    // existing memo/document features. A UUID avoids filename collisions when
+    // two users upload the same file at the same time.
+    const storedName = `${randomUUID()}-${safeName}`;
     const relativePath = `/uploads/pricing-approval/${storedName}`;
     const directory = path.join(process.cwd(), "public", "uploads", "pricing-approval");
     await mkdir(directory, { recursive: true });
     await writeFile(path.join(directory, storedName), Buffer.from(await file.arrayBuffer()));
 
-    return NextResponse.json({ success: true, data: { fileName: file.name, filePath: relativePath } });
+    return NextResponse.json({
+      success: true,
+      data: {
+        fileName: file.name,
+        filePath: relativePath,
+        storedName,
+        fileSize: file.size,
+        mimeType: file.type,
+      },
+    });
   } catch (error) {
     console.error("POST /api/pricing-panel/upload-approval error:", error);
     return NextResponse.json({ success: false, message: "Unable to upload approval document." }, { status: 500 });

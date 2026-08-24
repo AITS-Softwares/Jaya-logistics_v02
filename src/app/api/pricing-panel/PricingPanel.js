@@ -521,6 +521,18 @@ const pricingPanelSchema = new mongoose.Schema({
       type: String,
       default: ''
     },
+    uploadStoredName: {
+      type: String,
+      default: ''
+    },
+    uploadFileSize: {
+      type: Number,
+      default: 0
+    },
+    uploadMimeType: {
+      type: String,
+      default: ''
+    },
     remarks: {
       type: String,
       default: ''

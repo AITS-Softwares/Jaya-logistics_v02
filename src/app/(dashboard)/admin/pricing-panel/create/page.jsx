@@ -3485,6 +3485,9 @@ export default function PricingPanelPage() {
     uploadFile: null,
     uploadFileName: "",
     uploadFilePath: "",
+    uploadStoredName: "",
+    uploadFileSize: 0,
+    uploadMimeType: "",
     remarks: "",
     approvalStatus: "Pending",
   });
@@ -3651,7 +3654,15 @@ export default function PricingPanelPage() {
       });
       const data = await response.json();
       if (!response.ok || !data.success) throw new Error(data.message || 'Upload failed');
-      setRateApproval((prev) => ({ ...prev, uploadFile: file, uploadFileName: data.data.fileName, uploadFilePath: data.data.filePath }));
+      setRateApproval((prev) => ({
+        ...prev,
+        uploadFile: file,
+        uploadFileName: data.data.fileName,
+        uploadFilePath: data.data.filePath,
+        uploadStoredName: data.data.storedName,
+        uploadFileSize: data.data.fileSize,
+        uploadMimeType: data.data.mimeType,
+      }));
     } catch (error) {
       alert(error.message || 'Unable to upload approval document.');
       e.target.value = '';
@@ -3753,6 +3764,9 @@ export default function PricingPanelPage() {
           approvalStatus: rateApproval.approvalStatus,
           uploadFileName: rateApproval.uploadFileName,
           uploadFilePath: rateApproval.uploadFilePath,
+          uploadStoredName: rateApproval.uploadStoredName,
+          uploadFileSize: rateApproval.uploadFileSize,
+          uploadMimeType: rateApproval.uploadMimeType,
           remarks: rateApproval.remarks
         },
         branches: branches,
@@ -3826,6 +3840,9 @@ export default function PricingPanelPage() {
       uploadFile: null,
       uploadFileName: "",
       uploadFilePath: "",
+      uploadStoredName: "",
+      uploadFileSize: 0,
+      uploadMimeType: "",
       remarks: "",
       approvalStatus: "Pending",
     });

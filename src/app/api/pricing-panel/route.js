@@ -1553,6 +1553,9 @@ export async function POST(req) {
         approvalType: body.rateApproval?.approvalType || 'Contract Rates',
         uploadFile: body.rateApproval?.uploadFileName || '',
         uploadFilePath: body.rateApproval?.uploadFilePath || '',
+        uploadStoredName: body.rateApproval?.uploadStoredName || '',
+        uploadFileSize: Number(body.rateApproval?.uploadFileSize) || 0,
+        uploadMimeType: body.rateApproval?.uploadMimeType || '',
         remarks: body.rateApproval?.remarks || '',
         approvalStatus: 'Pending',
         workflowPhase: 'part1'
@@ -1758,6 +1761,9 @@ export async function PUT(req) {
         approvalType: body.rateApproval.approvalType || pricingPanel.rateApproval?.approvalType || 'Contract Rates',
         uploadFile: body.rateApproval.uploadFile || body.rateApproval.uploadFileName || pricingPanel.rateApproval?.uploadFile || '',
         uploadFilePath: body.rateApproval.uploadFilePath || pricingPanel.rateApproval?.uploadFilePath || '',
+        uploadStoredName: body.rateApproval.uploadStoredName || pricingPanel.rateApproval?.uploadStoredName || '',
+        uploadFileSize: body.rateApproval.uploadFileSize ?? pricingPanel.rateApproval?.uploadFileSize ?? 0,
+        uploadMimeType: body.rateApproval.uploadMimeType || pricingPanel.rateApproval?.uploadMimeType || '',
         remarks: pricingPanel.rateApproval?.remarks ?? '',
         approvalStatus: pricingPanel.rateApproval?.approvalStatus || 'Pending',
         workflowPhase: 'part1'
