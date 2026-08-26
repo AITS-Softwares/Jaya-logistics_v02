@@ -1069,12 +1069,17 @@ function addApprovalHistory(panel, { revision = approvalRevision(panel), action,
 }
 
 async function resolvePricingBranch(user, value) {
-  const branchId = typeof value === 'object' && value !== null ? value._id : value;
-  if (!isValidObjectId(String(branchId || ''))) return null;
-  return Branch.findOne(
-    { _id: branchId, companyId: user.companyId, isActive: { $ne: false } },
-    { _id: 1, name: 1, code: 1 },
-  ).lean();
+  const branchValue = typeof value === 'object' && value !== null
+    ? value._id || value.id || value.value || value.code || value.name
+    : value;
+  if (!branchValue) return null;
+
+  const scope = { companyId: user.companyId, isActive: { $ne: false } };
+  const query = isValidObjectId(String(branchValue))
+    ? { ...scope, _id: branchValue }
+    : { ...scope, $or: [{ code: String(branchValue) }, { name: String(branchValue) }] };
+
+  return Branch.findOne(query, { _id: 1, name: 1, code: 1 }).lean();
 }
 
 async function removeReplacedApprovalFile(relativePath) {
@@ -1402,15 +1407,16 @@ export async function POST(req) {
     let branchId = null;
     let branchName = '';
     let branchCode = '';
-    const selectedBranch = await resolvePricingBranch(user, body.header?.branch);
-    if (body.header?.branch && !selectedBranch) {
-      return NextResponse.json({ success: false, message: 'The selected branch is unavailable for the active company.' }, { status: 400 });
+    const selectedBranch = await resolvePricingBranch(
+      user,
+      body.header?.branch || body.header?.branchCode || body.header?.branchName,
+    );
+    if (!selectedBranch) {
+      return NextResponse.json({ success: false, message: 'Select an active branch before saving the Pricing Panel.' }, { status: 400 });
     }
-    if (selectedBranch) {
-      branchId = selectedBranch._id;
-      branchName = selectedBranch.name || '';
-      branchCode = selectedBranch.code || '';
-    }
+    branchId = selectedBranch._id;
+    branchName = selectedBranch.name || '';
+    branchCode = selectedBranch.code || '';
 
     const subCompanyId = user.activeOperatingCompanyId;
     const subCompanyName = user.activeOperatingCompanyName || '';
@@ -1490,7 +1496,7 @@ export async function POST(req) {
           fromState: order.fromState || '',
           to: order.to || null,
           toName: toBranch ? toBranch.name : order.toName || '',
-          locationRate: order.locationRate || '',
+          locationRate: resolvedRate.locationName || order.locationRate || '',
           locationRateId: resolvedRate.locationRateId,
           locationId: resolvedRate.locationId,
           priceList: resolvedRate.priceList,
@@ -1780,7 +1786,7 @@ export async function PUT(req) {
         fromState: order.fromState || '',
         to: order.to || null,
         toName: order.toName || '',
-        locationRate: order.locationRate || '',
+        locationRate: resolvedRate.locationName || order.locationRate || '',
         locationRateId: resolvedRate.locationRateId,
         locationId: resolvedRate.locationId,
         priceList: resolvedRate.priceList,
@@ -2296,11 +2302,20 @@ async function resolvePricingRate(user, order, panelTotalWeight) {
   );
 
   if (matchingSlab) {
+    const location = await Location.findOne({
+      _id: matchingSlab.locationId,
+      companyId: user.companyId,
+      isActive: { $ne: false },
+    }).select('name').lean();
+    if (!location) {
+      throw new Error('The selected Location Master location is inactive or unavailable.');
+    }
     return {
       priceListId: rateMaster._id,
       priceList: rateMaster.title,
       locationRateId: matchingSlab._id,
       locationId: locationRate.locationId,
+      locationName: location.name,
       rate: Number(matchingSlab.rate),
       rateCalculationMode,
     };

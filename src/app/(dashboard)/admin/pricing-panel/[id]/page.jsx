@@ -2967,6 +2967,13 @@ function LocationRateDropdown({
   }, [locations, selectedRateMaster, availableLocationNames, allowAllLocations]);
 
   useEffect(() => {
+    // The saved row can render before Rate Master data arrives. Preserve the
+    // saved location instead of treating that temporary state as a user clear.
+    if (selectedName && !selectedRateMaster) {
+      setSelectedItem(null);
+      setSearchQuery(selectedName);
+      return;
+    }
     if (selectedName && locations) {
       const isValidLocation = availableLocationNames.includes(selectedName);
       if (isValidLocation) {
@@ -2977,8 +2984,7 @@ function LocationRateDropdown({
         }
       } else {
         setSelectedItem(null);
-        setSearchQuery("");
-        onSelect?.("");
+        setSearchQuery(selectedName);
       }
     } else if (!selectedName) {
       setSelectedItem(null);

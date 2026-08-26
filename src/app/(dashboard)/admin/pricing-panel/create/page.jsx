@@ -2454,6 +2454,13 @@ function LocationRateDropdown({
   }, [locations, selectedRateMaster, availableLocationNames, allowAllLocations]);
 
   useEffect(() => {
+    // Reference data arrives after the saved row. Never clear the parent row
+    // merely because its Price List/location list has not loaded yet.
+    if (selectedName && !selectedRateMaster) {
+      setSelectedItem(null);
+      setSearchQuery(selectedName);
+      return;
+    }
     if (selectedName && locations) {
       const isValidLocation = availableLocationNames.includes(selectedName);
       if (isValidLocation) {
@@ -2464,8 +2471,7 @@ function LocationRateDropdown({
         }
       } else {
         setSelectedItem(null);
-        setSearchQuery("");
-        onSelect?.("");
+        setSearchQuery(selectedName);
       }
     } else if (!selectedName) {
       setSelectedItem(null);
