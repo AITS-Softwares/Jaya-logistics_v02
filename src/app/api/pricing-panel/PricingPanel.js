@@ -388,6 +388,13 @@ const pricingPanelSchema = new mongoose.Schema({
       type: mongoose.Schema.Types.ObjectId,
       ref: 'VehicleNegotiation'
     },
+    // Snapshot the user-facing VNN number as well as its reference. The
+    // reference keeps the relationship intact; this value keeps saved panels
+    // readable even when the source VNN is no longer in a selectable list.
+    vnnNumber: {
+      type: String,
+      default: ''
+    },
     partyName: String,
     customerId: mongoose.Schema.Types.ObjectId,
     customerCode: String,
@@ -544,9 +551,33 @@ const pricingPanelSchema = new mongoose.Schema({
     },
     workflowPhase: {
       type: String,
-      enum: ['part1', 'part2', 'locked'],
+      // `locked` remains accepted for records created before the repeatable
+      // approval workflow. New approvals use `approved` instead.
+      enum: ['part1', 'part2', 'approved', 'locked'],
       default: 'part1'
-    }
+    },
+    // The current Part 1 version and the versions most recently submitted and
+    // approved. This permits editing after approval without treating an old
+    // approval as approval of the newly edited values.
+    approvalRevision: {
+      type: Number,
+      default: 1
+    },
+    submittedRevision: {
+      type: Number,
+      default: 0
+    },
+    approvedRevision: {
+      type: Number,
+      default: 0
+    },
+    approvalHistory: [{
+      revision: { type: Number, default: 0 },
+      action: { type: String, enum: ['submitted', 'approved', 'rejected', 'changed'] },
+      userId: { type: mongoose.Schema.Types.ObjectId, ref: 'CompanyUser' },
+      remarks: { type: String, default: '' },
+      createdAt: { type: Date, default: Date.now }
+    }]
   },
   
   // Report Data - ADD SUB-COMPANY TO REPORT ROWS

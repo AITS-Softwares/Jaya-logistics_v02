@@ -2193,6 +2193,7 @@
 
 import { useMemo, useState, useEffect, useRef, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { createPortal } from "react-dom";
 import { usePermission } from "../../hooks/usePermission";
 
 /* =========================
@@ -2935,8 +2936,11 @@ function LocationRateDropdown({
   const [searchQuery, setSearchQuery] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const [menuPosition, setMenuPosition] = useState(null);
   const dropdownRef = useRef(null);
   const inputRef = useRef(null);
+  const menuRef = useRef(null);
 
   const availableLocationNames = useMemo(() => {
     if (allowAllLocations) {
@@ -2998,24 +3002,6 @@ function LocationRateDropdown({
     }
   };
 
-  const handleInputBlur = () => {
-    setTimeout(() => {
-      if (dropdownRef.current && !dropdownRef.current.contains(document.activeElement)) {
-        setShowDropdown(false);
-      }
-    }, 200);
-  };
-
-  useEffect(() => {
-    const closeDropdown = () => setShowDropdown(false);
-    window.addEventListener('scroll', closeDropdown, true);
-    window.addEventListener('resize', closeDropdown);
-    return () => {
-      window.removeEventListener('scroll', closeDropdown, true);
-      window.removeEventListener('resize', closeDropdown);
-    };
-  }, []);
-
   const searchedLocations = useMemo(() => {
     if (!searchQuery.trim()) return filteredLocationsByRateMaster;
     return filteredLocationsByRateMaster.filter(loc => 
@@ -3033,6 +3019,60 @@ function LocationRateDropdown({
     return placeholder;
   };
 
+  useEffect(() => {
+    if (!showDropdown) return;
+    const updatePosition = () => {
+      const rect = inputRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      setMenuPosition({
+        top: rect.bottom + 4,
+        left: rect.left,
+        width: rect.width,
+        maxHeight: Math.max(120, Math.min(240, window.innerHeight - rect.bottom - 12)),
+      });
+    };
+    updatePosition();
+    window.addEventListener('resize', updatePosition);
+    // Reposition when the table scrolls; do not close a menu the user is
+    // actively scrolling through.
+    window.addEventListener('scroll', updatePosition, true);
+    return () => {
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+    };
+  }, [showDropdown]);
+
+  useEffect(() => {
+    const handlePointerDown = (event) => {
+      if (!dropdownRef.current?.contains(event.target) && !menuRef.current?.contains(event.target)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handlePointerDown);
+    return () => document.removeEventListener('mousedown', handlePointerDown);
+  }, []);
+
+  useEffect(() => setActiveIndex(-1), [showDropdown, searchQuery, searchedLocations.length]);
+
+  const handleKeyDown = (event) => {
+    if (readOnly || !selectedRateMaster || !searchedLocations.length) return;
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      setShowDropdown(true);
+      setActiveIndex((index) => Math.min(index + 1, searchedLocations.length - 1));
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      setShowDropdown(true);
+      setActiveIndex((index) => Math.max(index - 1, 0));
+    } else if (event.key === 'Enter' && showDropdown && activeIndex >= 0) {
+      event.preventDefault();
+      handleSelectItem(searchedLocations[activeIndex]);
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      setShowDropdown(false);
+    }
+  };
+
   return (
     <div className="relative w-full" ref={dropdownRef}>
       <input
@@ -3041,7 +3081,7 @@ function LocationRateDropdown({
         value={searchQuery}
         onChange={(e) => { if (!selectedItem) setSearchQuery(e.target.value); }}
         onFocus={handleInputFocus}
-        onBlur={handleInputBlur}
+        onKeyDown={handleKeyDown}
         className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${
           (readOnly || !selectedRateMaster || filteredLocationsByRateMaster.length === 0) ? 'bg-slate-50 cursor-not-allowed' : 'bg-white cursor-pointer'
         }`}
@@ -3056,17 +3096,20 @@ function LocationRateDropdown({
         </svg>
       </div>
       
-      {showDropdown && !readOnly && selectedRateMaster && filteredLocationsByRateMaster.length > 0 && (
-        <div className="absolute z-[9999] w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg overflow-y-auto max-h-60">
+      {showDropdown && !readOnly && selectedRateMaster && filteredLocationsByRateMaster.length > 0 && menuPosition && typeof document !== 'undefined' && createPortal(
+        <div ref={menuRef} role="listbox" className="fixed z-[10000] bg-white border border-slate-200 rounded-lg shadow-xl overflow-y-auto" style={{ top: menuPosition.top, left: menuPosition.left, width: menuPosition.width, maxHeight: menuPosition.maxHeight }}>
           <div className="sticky top-0 bg-gray-50 px-3 py-2 text-xs font-semibold text-slate-600 border-b">
             Select Location (from {selectedRateMaster.title})
           </div>
-          {searchedLocations.map((location) => (
+          {searchedLocations.map((location, index) => (
             <div
               key={location._id}
-              onMouseDown={() => handleSelectItem(location)}
+              role="option"
+              aria-selected={activeIndex === index}
+              onMouseDown={(event) => { event.preventDefault(); handleSelectItem(location); }}
+              onMouseEnter={() => setActiveIndex(index)}
               className={`px-3 py-2 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors ${
-                selectedItem?._id === location._id ? 'bg-sky-50' : ''
+                selectedItem?._id === location._id || activeIndex === index ? 'bg-sky-50' : ''
               }`}
             >
               <div className="font-medium text-slate-800 text-sm">
@@ -3074,7 +3117,8 @@ function LocationRateDropdown({
               </div>
             </div>
           ))}
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );
@@ -3097,8 +3141,11 @@ function PriceListDropdown({
   const [searchQuery, setSearchQuery] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const [menuPosition, setMenuPosition] = useState(null);
   const dropdownRef = useRef(null);
   const inputRef = useRef(null);
+  const menuRef = useRef(null);
 
   const filteredRateMasters = useMemo(() => {
     let filtered = rateMasters || [];
@@ -3155,30 +3202,64 @@ function PriceListDropdown({
     }
   };
 
-  const handleInputBlur = () => {
-    setTimeout(() => {
-      if (dropdownRef.current && !dropdownRef.current.contains(document.activeElement)) {
-        setShowDropdown(false);
-      }
-    }, 200);
-  };
-
-  useEffect(() => {
-    const closeDropdown = () => setShowDropdown(false);
-    window.addEventListener('scroll', closeDropdown, true);
-    window.addEventListener('resize', closeDropdown);
-    return () => {
-      window.removeEventListener('scroll', closeDropdown, true);
-      window.removeEventListener('resize', closeDropdown);
-    };
-  }, []);
-
   const searchedItems = useMemo(() => {
     if (!searchQuery.trim()) return filteredRateMasters;
     return filteredRateMasters.filter(rm => 
       rm.title.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [filteredRateMasters, searchQuery]);
+
+  useEffect(() => {
+    if (!showDropdown) return;
+    const updatePosition = () => {
+      const rect = inputRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      setMenuPosition({
+        top: rect.bottom + 4,
+        left: rect.left,
+        width: rect.width,
+        maxHeight: Math.max(120, Math.min(240, window.innerHeight - rect.bottom - 12)),
+      });
+    };
+    updatePosition();
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
+    return () => {
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+    };
+  }, [showDropdown]);
+
+  useEffect(() => {
+    const handlePointerDown = (event) => {
+      if (!dropdownRef.current?.contains(event.target) && !menuRef.current?.contains(event.target)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handlePointerDown);
+    return () => document.removeEventListener('mousedown', handlePointerDown);
+  }, []);
+
+  useEffect(() => setActiveIndex(-1), [showDropdown, searchQuery, searchedItems.length]);
+
+  const handleKeyDown = (event) => {
+    if (readOnly || !searchedItems.length) return;
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      setShowDropdown(true);
+      setActiveIndex((index) => Math.min(index + 1, searchedItems.length - 1));
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      setShowDropdown(true);
+      setActiveIndex((index) => Math.max(index - 1, 0));
+    } else if (event.key === 'Enter' && showDropdown && activeIndex >= 0) {
+      event.preventDefault();
+      handleSelectItem(searchedItems[activeIndex]);
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      setShowDropdown(false);
+    }
+  };
 
   return (
     <div className="relative w-full" ref={dropdownRef}>
@@ -3188,7 +3269,7 @@ function PriceListDropdown({
         value={searchQuery}
         onChange={(e) => { if (!selectedItem) setSearchQuery(e.target.value); }}
         onFocus={handleInputFocus}
-        onBlur={handleInputBlur}
+        onKeyDown={handleKeyDown}
         className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${
           readOnly ? 'bg-slate-50 cursor-not-allowed' : 'bg-white cursor-pointer'
         }`}
@@ -3203,18 +3284,21 @@ function PriceListDropdown({
         </svg>
       </div>
       
-      {showDropdown && !readOnly && filteredRateMasters.length > 0 && (
-        <div className="absolute z-[9999] w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg overflow-y-auto max-h-60">
+      {showDropdown && !readOnly && filteredRateMasters.length > 0 && menuPosition && typeof document !== 'undefined' && createPortal(
+        <div ref={menuRef} role="listbox" className="fixed z-[10000] bg-white border border-slate-200 rounded-lg shadow-xl overflow-y-auto" style={{ top: menuPosition.top, left: menuPosition.left, width: menuPosition.width, maxHeight: menuPosition.maxHeight }}>
           <div className="sticky top-0 bg-gray-50 px-3 py-2 text-xs font-semibold text-slate-600 border-b">
             Select Price List
           </div>
           {searchedItems.length > 0 ? (
-            searchedItems.map((rm) => (
+            searchedItems.map((rm, index) => (
               <div
                 key={rm._id}
-                onMouseDown={() => handleSelectItem(rm)}
+                role="option"
+                aria-selected={activeIndex === index}
+                onMouseDown={(event) => { event.preventDefault(); handleSelectItem(rm); }}
+                onMouseEnter={() => setActiveIndex(index)}
                 className={`px-3 py-2 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors ${
-                  selectedItem?._id === rm._id ? 'bg-sky-50' : ''
+                  selectedItem?._id === rm._id || activeIndex === index ? 'bg-sky-50' : ''
                 }`}
               >
                 <div className="font-medium text-slate-800 text-sm">
@@ -3233,7 +3317,8 @@ function PriceListDropdown({
               }
             </div>
           )}
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );
@@ -3820,7 +3905,6 @@ export default function EditPricingPanel() {
   const [saveError, setSaveError] = useState(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [workflowPhase, setWorkflowPhase] = useState('part1');
-  const [capabilities, setCapabilities] = useState({ canAmendPart1: false, canAmendPart2: false });
   
   const locationData = useLocationData();
   const customerSearch = useCustomerSearch();
@@ -3911,23 +3995,12 @@ export default function EditPricingPanel() {
 
       const panel = data.data;
       setWorkflowPhase(panel.rateApproval?.workflowPhase || 'part1');
-      setCapabilities(data.capabilities || { canAmendPart1: false, canAmendPart2: false });
       
-      // Get VNN from orders
-      if (panel.orders && panel.orders.length > 0) {
-        const firstOrder = panel.orders[0];
-        let vnnValue = null;
-        
-        if (firstOrder.vnnNumber) {
-          vnnValue = firstOrder.vnnNumber;
-        } else if (firstOrder.vnn) {
-          vnnValue = firstOrder.vnn;
-        }
-        
-        if (vnnValue) {
-          setCurrentVnn(vnnValue);
-        }
-      }
+      // New panels persist a VNN number snapshot. For older panels that only
+      // contain the VNN ID, fetch it once so their saved source remains visible.
+      const firstVnnOrder = panel.orders?.find((order) => order.vehicleNegotiationId);
+      const storedVnn = firstVnnOrder?.vnnNumber || firstVnnOrder?.vnn || '';
+      if (storedVnn) setCurrentVnn(storedVnn);
       
       setHeader({
         pricingSerialNo: panel.pricingSerialNo || "",
@@ -4014,6 +4087,33 @@ export default function EditPricingPanel() {
           customerCode: panel.customerCode || "",
           contactPersonName: panel.contactPerson || ""
         });
+      }
+
+      const vnnId = firstVnnOrder?.vehicleNegotiationId?._id || firstVnnOrder?.vehicleNegotiationId;
+      if (vnnId) {
+        try {
+          const vnnResponse = await fetch(`/api/vehicle-negotiation?id=${vnnId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          const vnnPayload = await vnnResponse.json();
+          if (vnnResponse.ok && vnnPayload.success && vnnPayload.data) {
+            const vnn = vnnPayload.data;
+            setCurrentVnn(vnn.vnnNo || storedVnn);
+
+            // Repairs the display of historical records where a VNN was saved
+            // but the corresponding branch snapshot was missing.
+            if (!panel.branch) {
+              setHeader((previous) => ({
+                ...previous,
+                branch: vnn.branch?._id || vnn.branch || previous.branch,
+                branchName: vnn.branchName || previous.branchName,
+                branchCode: vnn.branchCode || previous.branchCode,
+              }));
+            }
+          }
+        } catch (error) {
+          console.error('Unable to load the saved Vehicle Negotiation:', error);
+        }
       }
 
     } catch (error) {
@@ -4223,6 +4323,59 @@ export default function EditPricingPanel() {
     }
   };
 
+  const handleOpenAttachment = async () => {
+    // Open during the click event, before awaiting the authenticated request,
+    // so browsers do not treat this as a blocked popup.
+    const attachmentWindow = window.open('', '_blank');
+    if (!attachmentWindow) {
+      alert('Your browser blocked the attachment window. Please allow popups and try again.');
+      return;
+    }
+    attachmentWindow.opener = null;
+    attachmentWindow.document.title = 'Opening attachment…';
+
+    try {
+      const response = await fetch(`/api/pricing-panel/${panelId}/attachment`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.message || 'Unable to open attachment.');
+      }
+      const objectUrl = URL.createObjectURL(await response.blob());
+      attachmentWindow.location.replace(objectUrl);
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 5 * 60_000);
+    } catch (error) {
+      attachmentWindow.close();
+      alert(error.message || 'Unable to open attachment.');
+    }
+  };
+
+  const handleRemoveAttachment = async () => {
+    if (!window.confirm(`Remove ${rateApproval.uploadFileName}? This permanently deletes the server file.`)) return;
+
+    try {
+      const response = await fetch(`/api/pricing-panel/${panelId}/attachment`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.message || 'Unable to remove attachment.');
+      setRateApproval((previous) => ({
+        ...previous,
+        uploadFile: null,
+        uploadFileName: '',
+        uploadFilePath: '',
+        uploadStoredName: '',
+        uploadFileSize: 0,
+        uploadMimeType: '',
+      }));
+      alert(data.message);
+    } catch (error) {
+      alert(error.message || 'Unable to remove attachment.');
+    }
+  };
+
   const handleUpdate = async () => {
     if (!header.branch) {
       alert("Please select a branch");
@@ -4344,8 +4497,8 @@ export default function EditPricingPanel() {
       }
 
       setSaveSuccess(true);
-      alert(`✅ Pricing panel updated successfully!\nPricing Serial No: ${header.pricingSerialNo}`);
-      router.replace('/admin/pricing-panel');
+      alert(`✅ Pricing panel updated successfully.\nSubmit this revision for approval when it is ready.`);
+      await fetchPricingPanelData();
       
     } catch (error) {
       console.error('Error updating pricing panel:', error);
@@ -4380,8 +4533,11 @@ export default function EditPricingPanel() {
     }
   };
 
-  const part1Editable = workflowPhase === 'part1' && canEdit('Pricing Panel');
+  // Workflow state controls whether an approval is awaiting Part 2. It never
+  // overrides a user's Pricing Panel edit permission for Part 1.
+  const part1Editable = canEdit('Pricing Panel');
   const part2Editable = workflowPhase === 'part2' && canApprove(PART2_APPROVAL_MODULE);
+  const canSubmitPart1 = part1Editable && workflowPhase === 'part1' && rateApproval.approvalStatus !== 'Approved';
 
   const billingColumns = [
     { key: "billingType", label: "Billing Type", options: BILLING_TYPES },
@@ -4434,14 +4590,9 @@ export default function EditPricingPanel() {
           </div>
 
           <div className="flex items-center gap-3">
-            {part1Editable && (
+            {canSubmitPart1 && (
               <button onClick={() => handleWorkflowAction('submit-part1')} disabled={saving} className="rounded-xl bg-indigo-600 px-5 py-2 text-sm font-bold text-white hover:bg-indigo-700 disabled:bg-gray-400">
                 Submit Saved Part 1 for Approval
-              </button>
-            )}
-            {workflowPhase === 'locked' && capabilities.canAmendPart1 && (
-              <button onClick={() => handleWorkflowAction('amend-part1')} className="rounded-xl bg-orange-600 px-5 py-2 text-sm font-bold text-white hover:bg-orange-700">
-                Amend Part 1
               </button>
             )}
             <button
@@ -4467,7 +4618,7 @@ export default function EditPricingPanel() {
 
       <div className="mx-auto max-w-full p-4 space-y-4">
         <div className={part1Editable ? '' : 'pointer-events-none opacity-60'}>
-        <Card title={`Pricing Panel - Part -1${part1Editable ? '' : ' (Locked)'}`}>
+        <Card title={`Pricing Panel - Part -1${part1Editable ? '' : ' (Read only)'}`}>
           <div className="grid grid-cols-12 gap-3 mb-4">
             <div className="col-span-12 md:col-span-3">
               <label className="text-xs font-bold text-slate-600">Pricing Serial No</label>
@@ -4613,7 +4764,7 @@ export default function EditPricingPanel() {
         </div>
 
         <Card
-          title={`Rate - Approval - Part - 2${part2Editable ? ' (Open for approval)' : workflowPhase === 'part2' ? ' (Awaiting authorised approval)' : ' (Locked)'}`}
+          title={`Rate - Approval - Part - 2${part2Editable ? ' (Open for approval)' : workflowPhase === 'part2' ? ' (Awaiting authorised approval)' : workflowPhase === 'approved' || workflowPhase === 'locked' ? ' (Approved)' : ' (Waiting for Part 1 submission)'}`}
           right={part2Editable && (
             <div className="flex flex-wrap gap-2">
               <button
@@ -4636,9 +4787,10 @@ export default function EditPricingPanel() {
           <div className="grid grid-cols-12 gap-4">
             <Select col="col-span-12 md:col-span-4" label="Rate Approval Type" value={rateApproval.approvalType} onChange={(value) => setRateApproval((previous) => ({ ...previous, approvalType: value }))} options={RATE_APPROVAL_TYPES} readOnly={!part1Editable} />
             <div className="col-span-12 md:col-span-4">
-              <label className="text-xs font-bold text-slate-600">Rate Approval Upload</label>
+              <label className="text-xs font-bold text-slate-600">{rateApproval.uploadFileName ? 'Replace Rate Approval Upload' : 'Rate Approval Upload'}</label>
               <input type="file" accept=".pdf,.png,.jpg,.jpeg" onChange={handleFileSelect} disabled={!part1Editable} className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 disabled:bg-slate-50" />
-              {rateApproval.uploadFileName && <div className="mt-1 flex items-center gap-3 text-xs text-green-600">✓ {rateApproval.uploadFileName}{rateApproval.uploadFilePath && <a href={rateApproval.uploadFilePath} target="_blank" rel="noopener noreferrer" className="font-bold text-sky-700 underline">View attachment</a>}</div>}
+              {rateApproval.uploadFileName && <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-green-600">✓ {rateApproval.uploadFileName}{rateApproval.uploadFilePath && <button type="button" onClick={handleOpenAttachment} className="font-bold text-sky-700 underline">View attachment</button>}{part1Editable && !rateApproval.uploadFile && <button type="button" onClick={handleRemoveAttachment} className="font-bold text-rose-700 underline">Remove attachment</button>}</div>}
+              {part1Editable && rateApproval.uploadFile && <p className="mt-1 text-xs text-amber-700">Replacement selected. Click Update Pricing Panel to save it and remove the previous file.</p>}
             </div>
             <Select
               col="col-span-12 md:col-span-4"

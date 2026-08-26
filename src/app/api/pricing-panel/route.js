@@ -965,6 +965,8 @@
 
 // app/api/pricing-panel/route.js
 import { NextResponse } from "next/server";
+import { unlink } from 'fs/promises';
+import path from 'path';
 import connectDb from "@/lib/db";
 import PricingPanel from "./PricingPanel";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
@@ -974,6 +976,7 @@ import { activeOperatingCompanyId, companyScopeFilter } from "@/lib/companyScope
 import VehicleNegotiation from '@/app/api/vehicle-negotiation/VehicleNegotiation';
 import RateMaster from '@/app/api/rate-master/schema';
 import Location from '@/app/api/locations/schema';
+import Branch from '@/app/api/branches/schema';
 
 // ── PERMISSION FUNCTIONS ──
 const PART2_APPROVAL_MODULE = 'Pricing Panel - Part 2 Approval';
@@ -1048,6 +1051,46 @@ async function validateUser(req, requiredAction = null) {
 
 function isValidObjectId(id) {
   return id && mongoose.Types.ObjectId.isValid(id);
+}
+
+function approvalRevision(panel) {
+  return Math.max(1, Number(panel.rateApproval?.approvalRevision) || 1);
+}
+
+function addApprovalHistory(panel, { revision = approvalRevision(panel), action, user, remarks = '' }) {
+  if (!panel.rateApproval.approvalHistory) panel.rateApproval.approvalHistory = [];
+  panel.rateApproval.approvalHistory.push({
+    revision,
+    action,
+    userId: user?.id || null,
+    remarks,
+    createdAt: new Date(),
+  });
+}
+
+async function resolvePricingBranch(user, value) {
+  const branchId = typeof value === 'object' && value !== null ? value._id : value;
+  if (!isValidObjectId(String(branchId || ''))) return null;
+  return Branch.findOne(
+    { _id: branchId, companyId: user.companyId, isActive: { $ne: false } },
+    { _id: 1, name: 1, code: 1 },
+  ).lean();
+}
+
+async function removeReplacedApprovalFile(relativePath) {
+  if (typeof relativePath !== 'string' || !relativePath.startsWith('/uploads/pricing-approval/')) return;
+  const filename = path.basename(relativePath);
+  const locations = [
+    path.join(process.cwd(), 'public', 'uploads', 'pricing-approval', filename),
+    path.join(process.cwd(), 'uploads', 'pricing-approval', filename),
+  ];
+  await Promise.all(locations.map(async (filePath) => {
+    try {
+      await unlink(filePath);
+    } catch (error) {
+      if (error?.code !== 'ENOENT') throw error;
+    }
+  }));
 }
 
 function formatDateDDMMYYYY(date) {
@@ -1353,26 +1396,20 @@ export async function POST(req) {
       pricingSerialNo = await getNextPricingSerialNumber(user.companyId);
     }
 
-    // Handle branch
+    // Resolve the branch on the server instead of relying on the browser's
+    // reference-data array. This guarantees that the saved ID, name and code
+    // always describe the same branch.
     let branchId = null;
     let branchName = '';
     let branchCode = '';
-    
-    if (body.header?.branch) {
-      if (typeof body.header.branch === 'object' && body.header.branch !== null) {
-        branchId = body.header.branch._id || null;
-        branchName = body.header.branch.name || body.header.branchName || '';
-        branchCode = body.header.branch.code || body.header.branchCode || '';
-      } else {
-        branchId = body.header.branch;
-        if (body.branches && Array.isArray(body.branches)) {
-          const branchFromArray = body.branches.find(b => b._id === branchId);
-          if (branchFromArray) {
-            branchName = branchFromArray.name || '';
-            branchCode = branchFromArray.code || '';
-          }
-        }
-      }
+    const selectedBranch = await resolvePricingBranch(user, body.header?.branch);
+    if (body.header?.branch && !selectedBranch) {
+      return NextResponse.json({ success: false, message: 'The selected branch is unavailable for the active company.' }, { status: 400 });
+    }
+    if (selectedBranch) {
+      branchId = selectedBranch._id;
+      branchName = selectedBranch.name || '';
+      branchCode = selectedBranch.code || '';
     }
 
     const subCompanyId = user.activeOperatingCompanyId;
@@ -1427,6 +1464,7 @@ export async function POST(req) {
         orders.push({
           orderNo: order.orderNo,
           vehicleNegotiationId: vehicleNegotiationId,
+          vnnNumber: order.vnnNumber || '',
           partyName: order.partyName || body.header?.partyName || '',
           customerId: order.customerId || body.header?.customerId || null,
           customerCode: order.customerCode || '',
@@ -1558,7 +1596,11 @@ export async function POST(req) {
         uploadMimeType: body.rateApproval?.uploadMimeType || '',
         remarks: body.rateApproval?.remarks || '',
         approvalStatus: 'Pending',
-        workflowPhase: 'part1'
+        workflowPhase: 'part1',
+        approvalRevision: 1,
+        submittedRevision: 0,
+        approvedRevision: 0,
+        approvalHistory: [],
       },
       
       reportRows,
@@ -1648,18 +1690,22 @@ export async function PUT(req) {
       }, { status: 404 });
     }
 
-    if ((pricingPanel.rateApproval?.workflowPhase || 'part1') !== 'part1') {
-      return NextResponse.json({
-        success: false,
-        message: 'Part 1 is locked. Use the appropriate Amend action before editing it.'
-      }, { status: 409 });
-    }
+    // Part 1 is editable whenever the caller has Pricing Panel edit
+    // permission. A save creates a new approval revision instead of freezing
+    // the record after an earlier approval.
 
-    // Update header
+    // Re-resolve a branch sent by the form so its saved name/code cannot go
+    // blank or diverge from the selected branch ID.
     if (body.header) {
-      pricingPanel.branch = body.header.branch || pricingPanel.branch;
-      pricingPanel.branchName = body.header.branchName || pricingPanel.branchName;
-      pricingPanel.branchCode = body.header.branchCode || pricingPanel.branchCode;
+      if (body.header.branch) {
+        const selectedBranch = await resolvePricingBranch(user, body.header.branch);
+        if (!selectedBranch) {
+          return NextResponse.json({ success: false, message: 'The selected branch is unavailable for the active company.' }, { status: 400 });
+        }
+        pricingPanel.branch = selectedBranch._id;
+        pricingPanel.branchName = selectedBranch.name || '';
+        pricingPanel.branchCode = selectedBranch.code || '';
+      }
       
       pricingPanel.subCompanyId = user.activeOperatingCompanyId;
       pricingPanel.subCompanyName = user.activeOperatingCompanyName || '';
@@ -1708,6 +1754,7 @@ export async function PUT(req) {
           : new mongoose.Types.ObjectId(),
         orderNo: order.orderNo || '',
         vehicleNegotiationId: order.vehicleNegotiationId || null,
+        vnnNumber: order.vnnNumber || '',
         partyName: order.partyName || '',
         customerId: order.customerId || null,
         customerCode: order.customerCode || '',
@@ -1755,7 +1802,10 @@ export async function PUT(req) {
       pricingPanel.totalAmount = processedOrders.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
     }
 
-    // Update rate approval
+    // Update rate approval. A replacement gets a fresh filename; delete the
+    // old physical file only after the database update has succeeded.
+    const previousApprovalPath = pricingPanel.rateApproval?.uploadFilePath || '';
+    let replacementApprovalPath = previousApprovalPath;
     if (body.rateApproval) {
       pricingPanel.rateApproval = {
         approvalType: body.rateApproval.approvalType || pricingPanel.rateApproval?.approvalType || 'Contract Rates',
@@ -1766,11 +1816,38 @@ export async function PUT(req) {
         uploadMimeType: body.rateApproval.uploadMimeType || pricingPanel.rateApproval?.uploadMimeType || '',
         remarks: pricingPanel.rateApproval?.remarks ?? '',
         approvalStatus: pricingPanel.rateApproval?.approvalStatus || 'Pending',
-        workflowPhase: 'part1'
+        workflowPhase: pricingPanel.rateApproval?.workflowPhase || 'part1',
+        approvalRevision: approvalRevision(pricingPanel),
+        submittedRevision: Number(pricingPanel.rateApproval?.submittedRevision) || 0,
+        approvedRevision: Number(pricingPanel.rateApproval?.approvedRevision) || 0,
+        approvalHistory: pricingPanel.rateApproval?.approvalHistory || [],
       };
+      replacementApprovalPath = pricingPanel.rateApproval.uploadFilePath;
     }
 
+    const nextRevision = approvalRevision(pricingPanel) + 1;
+    pricingPanel.rateApproval.approvalRevision = nextRevision;
+    pricingPanel.rateApproval.submittedRevision = 0;
+    pricingPanel.rateApproval.approvalStatus = 'Pending';
+    pricingPanel.rateApproval.workflowPhase = 'part1';
+    pricingPanel.panelStatus = 'Draft';
+    addApprovalHistory(pricingPanel, {
+      revision: nextRevision,
+      action: 'changed',
+      user,
+      remarks: 'Part 1 updated; approval is required for this revision.',
+    });
+
     await pricingPanel.save();
+    if (replacementApprovalPath && replacementApprovalPath !== previousApprovalPath) {
+      try {
+        await removeReplacedApprovalFile(previousApprovalPath);
+      } catch (error) {
+        // The record already points to the new file. Keep the old file rather
+        // than failing a successful update; it can be cleaned up safely later.
+        console.error('Unable to remove replaced pricing approval file:', error);
+      }
+    }
 
     console.log(`✅ Pricing panel updated successfully: ${id}`);
 
@@ -1779,7 +1856,9 @@ export async function PUT(req) {
       message: "Pricing panel updated successfully",
       data: {
         _id: pricingPanel._id,
-        pricingSerialNo: pricingPanel.pricingSerialNo
+        pricingSerialNo: pricingPanel.pricingSerialNo,
+        workflowPhase: pricingPanel.rateApproval.workflowPhase,
+        approvalRevision: pricingPanel.rateApproval.approvalRevision,
       }
     }, { status: 200 });
 
@@ -1947,8 +2026,15 @@ export async function PATCH(req) {
           if (phaseError) return phaseError;
         }
         pricingPanel.rateApproval.approvalStatus = 'Approved';
-        pricingPanel.rateApproval.workflowPhase = 'locked';
+        pricingPanel.rateApproval.workflowPhase = 'approved';
+        pricingPanel.rateApproval.approvedRevision = pricingPanel.rateApproval.submittedRevision || approvalRevision(pricingPanel);
         pricingPanel.panelStatus = 'Approved';
+        addApprovalHistory(pricingPanel, {
+          revision: pricingPanel.rateApproval.approvedRevision,
+          action: 'approved',
+          user,
+          remarks: approvalData?.remarks || pricingPanel.rateApproval.remarks || '',
+        });
         break;
         
       case 'reject':
@@ -1959,12 +2045,19 @@ export async function PATCH(req) {
         pricingPanel.rateApproval.approvalStatus = 'Rejected';
         pricingPanel.rateApproval.workflowPhase = 'part1';
         pricingPanel.panelStatus = 'Draft';
+        addApprovalHistory(pricingPanel, {
+          revision: pricingPanel.rateApproval.submittedRevision || approvalRevision(pricingPanel),
+          action: 'rejected',
+          user,
+          remarks: approvalData?.remarks || pricingPanel.rateApproval.remarks || '',
+        });
         break;
         
       case 'complete':
         {
-          const phaseError = requirePhase('locked', 'Pricing Panel must be approved before it can be completed.');
-          if (phaseError) return phaseError;
+          if (!['approved', 'locked'].includes(workflowPhase)) {
+            return NextResponse.json({ success: false, message: 'Pricing Panel must be approved before it can be completed.' }, { status: 409 });
+          }
         }
         pricingPanel.rateApproval.approvalStatus = 'Completed';
         pricingPanel.panelStatus = 'Completed';
@@ -1989,7 +2082,13 @@ export async function PATCH(req) {
         }
         pricingPanel.rateApproval.approvalStatus = 'Pending';
         pricingPanel.rateApproval.workflowPhase = 'part2';
+        pricingPanel.rateApproval.submittedRevision = approvalRevision(pricingPanel);
         pricingPanel.panelStatus = 'Submitted';
+        addApprovalHistory(pricingPanel, {
+          revision: pricingPanel.rateApproval.submittedRevision,
+          action: 'submitted',
+          user,
+        });
         break;
         
       case 'update-approval':
@@ -2006,6 +2105,12 @@ export async function PATCH(req) {
             if (approvalData.approvalStatus === 'Rejected') {
               pricingPanel.rateApproval.workflowPhase = 'part1';
               pricingPanel.panelStatus = 'Draft';
+              addApprovalHistory(pricingPanel, {
+                revision: pricingPanel.rateApproval.submittedRevision || approvalRevision(pricingPanel),
+                action: 'rejected',
+                user,
+                remarks: approvalData.remarks || pricingPanel.rateApproval.remarks || '',
+              });
             }
           }
         }
@@ -2022,14 +2127,22 @@ export async function PATCH(req) {
           }
         }
         pricingPanel.rateApproval.approvalStatus = 'Approved';
-        pricingPanel.rateApproval.workflowPhase = 'locked';
+        pricingPanel.rateApproval.workflowPhase = 'approved';
+        pricingPanel.rateApproval.approvedRevision = pricingPanel.rateApproval.submittedRevision || approvalRevision(pricingPanel);
         pricingPanel.panelStatus = 'Approved';
+        addApprovalHistory(pricingPanel, {
+          revision: pricingPanel.rateApproval.approvedRevision,
+          action: 'approved',
+          user,
+          remarks: approvalData?.remarks || pricingPanel.rateApproval.remarks || '',
+        });
         break;
 
       case 'amend-part1':
         {
-          const phaseError = requirePhase('locked', 'Only a locked Pricing Panel can be amended.');
-          if (phaseError) return phaseError;
+          if (!['approved', 'locked'].includes(workflowPhase)) {
+            return NextResponse.json({ success: false, message: 'Only an approved Pricing Panel can be amended.' }, { status: 409 });
+          }
         }
         pricingPanel.rateApproval.approvalStatus = 'Pending';
         pricingPanel.rateApproval.workflowPhase = 'part1';
@@ -2038,8 +2151,9 @@ export async function PATCH(req) {
 
       case 'amend-part2':
         {
-          const phaseError = requirePhase('locked', 'Only a locked Pricing Panel can be amended.');
-          if (phaseError) return phaseError;
+          if (!['approved', 'locked'].includes(workflowPhase)) {
+            return NextResponse.json({ success: false, message: 'Only an approved Pricing Panel can be amended.' }, { status: 409 });
+          }
         }
         pricingPanel.rateApproval.approvalStatus = 'Pending';
         pricingPanel.rateApproval.workflowPhase = 'part2';
