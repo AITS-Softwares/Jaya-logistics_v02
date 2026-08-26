@@ -949,8 +949,23 @@ const vehicleNegotiationSchema = new mongoose.Schema({
     countryName: String,
     state: String,
     stateName: String,
+    stateId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'State',
+      default: null
+    },
     district: String,
     districtName: String,
+    districtId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'District',
+      default: null
+    },
+    talukaId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Taluka',
+      default: null
+    },
     localStatus: { type: String, enum: ['local', 'not-local', 'unknown'], default: 'unknown' },
     localStatusLabel: { type: String, enum: ['Local', 'Not Local', 'Unknown'], default: 'Unknown' },
     weight: {

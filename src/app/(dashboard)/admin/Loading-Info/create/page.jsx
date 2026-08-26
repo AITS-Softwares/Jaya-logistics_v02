@@ -6331,6 +6331,7 @@ export default function CreateLoadingInfoPanel() {
   const canvasRef = useRef(null);
   const [stream, setStream] = useState(null);
   const [cameraTarget, setCameraTarget] = useState(null);
+  const [mediaPickerTarget, setMediaPickerTarget] = useState(null);
 
   useEffect(() => {
     if (showCamera && stream && videoRef.current) {
@@ -6443,10 +6444,39 @@ export default function CreateLoadingInfoPanel() {
   /** =========================
    * CAMERA FUNCTIONS
    ========================= */
+  const appendUploadFile = (section, field, file) => {
+    const append = (setter) => setter(prev => ({
+      ...prev,
+      [field]: [...(prev[field] || []), file],
+    }));
+
+    if (section === 'vehicle') append(setVehicleFiles);
+    if (section === 'vbp') append(setVbpFiles);
+    if (section === 'vft') append(setVftFiles);
+    if (section === 'vot') append(setVotFiles);
+    if (section === 'vl') append(setVlFiles);
+    if (section === 'weighment') append(setWeighmentFiles);
+  };
+
+  const openNativeCameraPicker = (target) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    // On mobile browsers this asks the native picker for the device camera.
+    // It remains a safe fallback on HTTP where live webcam APIs are blocked.
+    input.setAttribute('capture', 'environment');
+    input.onchange = (event) => {
+      const file = event.target.files?.[0];
+      if (file) appendUploadFile(target.section, target.field, file);
+    };
+    input.click();
+  };
+
   const openCamera = async (target) => {
     try {
-      if (!navigator.mediaDevices?.getUserMedia) {
-        throw new Error("Camera access is not supported by this browser");
+      if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+        openNativeCameraPicker(target);
+        return;
       }
 
       const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -6455,12 +6485,14 @@ export default function CreateLoadingInfoPanel() {
       setShowCamera(true);
     } catch (err) {
       console.error("Error accessing camera:", err);
-      alert("Unable to access the camera. Please allow permission and use HTTPS (or localhost).");
+      // A denied/unavailable live stream should still allow phone users to
+      // take a picture through the browser's native file chooser.
+      openNativeCameraPicker(target);
     }
   };
 
   const startCamera = () => openCamera({ section: "vehicle", field: "photo", label: "Driver Photo" });
-  const startVbpCamera = (field) => openCamera({ section: "vbp", field, label: field.toUpperCase() });
+  const openImageMediaPicker = (section, field, label) => setMediaPickerTarget({ section, field, label });
 
   const stopCamera = () => {
     if (stream) {
@@ -6487,17 +6519,7 @@ export default function CreateLoadingInfoPanel() {
         const filename = `${cameraTarget?.field || "driver_photo"}_${now.getTime()}.jpg`;
         const file = new File([blob], filename, { type: 'image/jpeg' });
         
-        if (cameraTarget?.section === "vbp") {
-          setVbpFiles(prev => ({
-            ...prev,
-            [cameraTarget.field]: [...(prev[cameraTarget.field] || []), file],
-          }));
-        } else {
-          setVehicleFiles(prev => ({
-            ...prev,
-            photo: [...prev.photo, file]
-          }));
-        }
+        appendUploadFile(cameraTarget?.section || 'vehicle', cameraTarget?.field || 'photo', file);
         
         if (cameraTarget?.section === "vehicle") {
           setArrivalDetails(prev => ({
@@ -6956,44 +6978,7 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
       const file = e.target.files[0];
       if (!file) return;
 
-      switch(section) {
-        case 'vehicle':
-          setVehicleFiles(prev => ({
-            ...prev,
-            [field]: [...prev[field], file]
-          }));
-          break;
-        case 'vbp':
-          setVbpFiles(prev => ({
-            ...prev,
-            [field]: [...prev[field], file]
-          }));
-          break;
-        case 'vft':
-          setVftFiles(prev => ({
-            ...prev,
-            [field]: [...prev[field], file]
-          }));
-          break;
-        case 'vot':
-          setVotFiles(prev => ({
-            ...prev,
-            [field]: [...prev[field], file]
-          }));
-          break;
-        case 'vl':
-          setVlFiles(prev => ({
-            ...prev,
-            [field]: [...prev[field], file]
-          }));
-          break;
-        case 'weighment':
-          setWeighmentFiles(prev => ({
-            ...prev,
-            [field]: [...prev[field], file]
-          }));
-          break;
-      }
+      appendUploadFile(section, field, file);
     };
     
     input.click();
@@ -7755,6 +7740,38 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
           </div>
         </div>
       </div>
+
+      {/* Compact source chooser shared by all vehicle-picture slots. */}
+      {mediaPickerTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <h3 className="text-base font-extrabold text-slate-900">Add {mediaPickerTarget.label}</h3>
+                <p className="mt-1 text-xs text-slate-500">Choose an existing image or take one now.</p>
+              </div>
+              <button type="button" onClick={() => setMediaPickerTarget(null)} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-800" aria-label="Close">×</button>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => { const target = mediaPickerTarget; setMediaPickerTarget(null); handleFileSelect(target.section, target.field); }}
+                className="rounded-xl border border-sky-200 bg-sky-50 px-3 py-4 text-sm font-bold text-sky-700 hover:bg-sky-100"
+              >
+                Upload file
+              </button>
+              <button
+                type="button"
+                onClick={() => { const target = mediaPickerTarget; setMediaPickerTarget(null); openCamera(target); }}
+                className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-4 text-sm font-bold text-emerald-700 hover:bg-emerald-100"
+              >
+                Take photo
+              </button>
+            </div>
+            {typeof window !== 'undefined' && !window.isSecureContext && <p className="mt-3 text-xs text-amber-700">On this HTTP server, Take photo opens your device’s native image picker. Live webcam preview requires HTTPS.</p>}
+          </div>
+        </div>
+      )}
 
       {/* Camera Modal */}
       {showCamera && (
@@ -9058,7 +9075,7 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
                       <div key={num} className="col-span-1">
                         <div className="text-xs font-bold text-slate-600 mb-1">VBP - {num}</div>
                         <button 
-                          onClick={() => handleFileSelect('vbp', `vbp${num}`)}
+                          onClick={() => openImageMediaPicker('vbp', `vbp${num}`, `VBP-${num}`)}
                           className={`w-full rounded-lg px-2 py-3 text-xs font-bold border hover:bg-opacity-80 ${
                             vbpFiles[`vbp${num}`].length > 0 
                               ? 'bg-green-50 text-green-700 border-green-200' 
@@ -9066,13 +9083,6 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
                           }`}
                         >
                           {vbpFiles[`vbp${num}`].length > 0 ? `✓ ${vbpFiles[`vbp${num}`].length} file(s)` : 'Select'}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => startVbpCamera(`vbp${num}`)}
-                          className="mt-1 w-full rounded-lg border border-emerald-200 bg-emerald-50 px-2 py-2 text-xs font-bold text-emerald-700 hover:bg-emerald-100"
-                        >
-                          Camera
                         </button>
                         {vbpFiles[`vbp${num}`].map((file, idx) => (
                           <FileUploadItem 
@@ -9142,7 +9152,7 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
                   <div key={num} className="col-span-1">
                     <div className="text-xs font-bold text-slate-600 mb-1">VFT - {num}</div>
                     <button 
-                      onClick={() => handleFileSelect('vft', `vft${num}`)}
+                      onClick={() => openImageMediaPicker('vft', `vft${num}`, `VFT-${num}`)}
                       className={`w-full rounded-lg px-2 py-3 text-xs font-bold border hover:bg-opacity-80 ${
                         vftFiles[`vft${num}`].length > 0 
                           ? 'bg-green-50 text-green-700 border-green-200' 
@@ -9263,7 +9273,7 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
                         </div>
                         
                         <button 
-                          onClick={() => handleFileSelect('vl', `vl${fieldNum}`)}
+                          onClick={() => openImageMediaPicker('vl', `vl${fieldNum}`, `VL(stack)-${fieldNum}`)}
                           disabled={isDisabled}
                           className={`w-full rounded-lg py-2.5 text-sm font-bold border transition-all ${
                             currentCount > 0 
@@ -9483,7 +9493,7 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
                   <div key={num} className="col-span-1">
                     <div className="text-xs font-bold text-slate-600 mb-1">VOT - {num}</div>
                     <button 
-                      onClick={() => handleFileSelect('vot', `vot${num}`)}
+                      onClick={() => openImageMediaPicker('vot', `vot${num}`, `VOT-${num}`)}
                       className={`w-full rounded-lg px-2 py-3 text-xs font-bold border hover:bg-opacity-80 ${
                         votFiles[`vot${num}`].length > 0 
                           ? 'bg-green-50 text-green-700 border-green-200' 

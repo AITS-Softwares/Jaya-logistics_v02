@@ -2621,6 +2621,7 @@ function SearchableDropdown({
   required = false,
   displayField = 'name',
   codeField = 'code',
+  fallbackLabel = '',
   disabled = false,
   readOnly = false
 }) {
@@ -2637,6 +2638,10 @@ function SearchableDropdown({
       setSelectedItem(item);
       if (item) {
         setSearchQuery(getDisplayValue(item));
+      } else {
+        // Pricing users need not have Branch Master access just to read the
+        // branch snapshot saved on this transaction.
+        setSearchQuery(fallbackLabel);
       }
     } else {
       setSelectedItem(null);
@@ -3669,16 +3674,16 @@ function OrdersTable({
                 </td>
 
                 <td className="border border-yellow-300 px-1 py-1">
+                  {isFromVehicleNegotiation ? (
+                    <input readOnly value={row.stateName || row.state || '-'} className="w-full min-w-[100px] rounded border border-slate-200 bg-slate-50 px-1 py-1 text-xs text-slate-700" />
+                  ) : (
                   <select
                     value={row.stateId || ""}
                     onChange={(e) => {
                       const selectedState = states.find(s => s._id === e.target.value);
                       handleStateChange(row._id, e.target.value, selectedState?.name || "");
                     }}
-                    className={`w-full min-w-[100px] rounded border border-slate-200 px-1 py-1 text-xs outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-200 ${
-                      isFromVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-                    }`}
-                    disabled={isFromVehicleNegotiation}
+                    className="w-full min-w-[100px] rounded border border-slate-200 bg-white px-1 py-1 text-xs outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-200"
                   >
                     <option value="">Select State</option>
                     {states.map((state) => (
@@ -3687,19 +3692,21 @@ function OrdersTable({
                       </option>
                     ))}
                   </select>
+                  )}
                 </td>
 
                 <td className="border border-yellow-300 px-1 py-1">
+                  {isFromVehicleNegotiation ? (
+                    <input readOnly value={row.districtName || row.district || '-'} className="w-full min-w-[100px] rounded border border-slate-200 bg-slate-50 px-1 py-1 text-xs text-slate-700" />
+                  ) : (
                   <select
                     value={row.districtId || ""}
                     onChange={(e) => {
                       const selectedDistrict = districtOptions.find(d => d._id === e.target.value);
                       handleDistrictChange(row._id, e.target.value, selectedDistrict?.name || "");
                     }}
-                    className={`w-full min-w-[100px] rounded border border-slate-200 px-1 py-1 text-xs outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-200 ${
-                      (isFromVehicleNegotiation || !row.stateId) ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-                    }`}
-                    disabled={isFromVehicleNegotiation || !row.stateId}
+                    className="w-full min-w-[100px] rounded border border-slate-200 bg-white px-1 py-1 text-xs outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-200 disabled:bg-slate-50"
+                    disabled={!row.stateId}
                   >
                     <option value="">Select District</option>
                     {districtOptions.map((district) => (
@@ -3708,19 +3715,21 @@ function OrdersTable({
                       </option>
                     ))}
                   </select>
+                  )}
                 </td>
 
                 <td className="border border-yellow-300 px-1 py-1">
+                  {isFromVehicleNegotiation ? (
+                    <input readOnly value={row.talukaName || row.taluka || '-'} className="w-full min-w-[100px] rounded border border-slate-200 bg-slate-50 px-1 py-1 text-xs text-slate-700" />
+                  ) : (
                   <select
                     value={row.talukaId || ""}
                     onChange={(e) => {
                       const selectedTaluka = talukaOptions.find(t => t._id === e.target.value);
                       handleTalukaChange(row._id, e.target.value, selectedTaluka?.name || "");
                     }}
-                    className={`w-full min-w-[100px] rounded border border-slate-200 px-1 py-1 text-xs outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-200 ${
-                      (isFromVehicleNegotiation || !row.districtId) ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-                    }`}
-                    disabled={isFromVehicleNegotiation || !row.districtId}
+                    className="w-full min-w-[100px] rounded border border-slate-200 bg-white px-1 py-1 text-xs outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-200 disabled:bg-slate-50"
+                    disabled={!row.districtId}
                   >
                     <option value="">Select Taluka</option>
                     {talukaOptions.map((taluka) => (
@@ -3729,6 +3738,7 @@ function OrdersTable({
                       </option>
                     ))}
                   </select>
+                  )}
                 </td>
 
                 {/* Local Status */}
@@ -4663,6 +4673,7 @@ export default function EditPricingPanel() {
                 required={true}
                 displayField="name"
                 codeField="code"
+                fallbackLabel={header.branchName ? `${header.branchName}${header.branchCode ? ` (${header.branchCode})` : ''}` : ''}
                 readOnly={true}
               />
             </div>
