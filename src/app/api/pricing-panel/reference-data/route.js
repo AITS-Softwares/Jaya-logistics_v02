@@ -16,7 +16,7 @@ import Customer from "@/models/CustomerModel";
 const orderFields = [
   "orderNo", "partyName", "customerId", "customerCode", "contactPerson", "plantCode",
   "plantCodeValue", "plantName", "orderType", "pinCode", "from", "fromName", "fromState",
-  "to", "toName", "taluka", "talukaName", "district", "districtName", "state", "stateName", "locationId",
+  "to", "toName", "taluka", "talukaName", "talukaId", "district", "districtName", "districtId", "state", "stateName", "stateId", "locationId",
   "country", "countryName", "weight", "collectionCharges", "cancellationCharges", "loadingCharges",
   "otherCharges", "localStatus", "localStatusLabel",
 ];
