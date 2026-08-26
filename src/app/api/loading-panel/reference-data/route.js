@@ -4,6 +4,7 @@ import connectDb from "@/lib/db";
 import { companyScopeFilter } from "@/lib/companyScope";
 import { isVnnReadyForDownstream } from "@/lib/vehicleNegotiationWorkflow";
 import VehicleNegotiation from "@/app/api/vehicle-negotiation/VehicleNegotiation";
+import OrderPanel from "@/app/api/order-panel/OrderPanel";
 import LoadingPanel from "../LoadingPanel";
 import Branch from "@/app/api/branches/schema";
 import Plant from "@/app/api/plants/schema";
@@ -16,11 +17,59 @@ const orderFields = [
   "cancellationCharges", "loadingCharges", "otherCharges", "localStatus", "localStatusLabel",
 ];
 
+const packTypes = [
+  "PALLETIZATION",
+  "UNIFORM - BAGS/BOXES",
+  "LOOSE - CARGO",
+  "NON-UNIFORM - GENERAL CARGO",
+];
+
+const packFields = {
+  PALLETIZATION: ["noOfPallets", "unitPerPallets", "totalPkgs", "pkgsType", "uom", "skuSize", "packWeight", "productName", "wtLtr", "actualWt", "chargedWt", "wtUom", "isUniform"],
+  "UNIFORM - BAGS/BOXES": ["totalPkgs", "pkgsType", "uom", "skuSize", "packWeight", "productName", "wtLtr", "actualWt", "chargedWt", "wtUom"],
+  "LOOSE - CARGO": ["uom", "productName", "actualWt", "chargedWt"],
+  "NON-UNIFORM - GENERAL CARGO": ["nos", "productName", "uom", "length", "width", "height", "actualWt", "chargedWt"],
+};
+
 function loadingOrderReference(order = {}) {
   return orderFields.reduce((reference, field) => {
     reference[field] = order[field] ?? "";
     return reference;
   }, {});
+}
+
+function loadingPackRows(packData = {}) {
+  return packTypes.reduce((result, packType) => {
+    result[packType] = (packData[packType] || []).map((row) => (
+      packFields[packType].reduce((reference, field) => {
+        reference[field] = row[field] ?? "";
+        return reference;
+      }, {})
+    ));
+    return result;
+  }, {});
+}
+
+async function packDataForVnn(vnn, user) {
+  const orderedIds = (vnn.selectedOrderPanels || [])
+    .map((panel) => String(panel?._id || ""))
+    .filter((id) => /^[a-f\d]{24}$/i.test(id));
+
+  if (!orderedIds.length) return loadingPackRows();
+
+  const orderPanels = await OrderPanel.find(
+    companyScopeFilter(user, { _id: { $in: orderedIds } }),
+    { packData: 1 },
+  ).lean();
+  const byId = new Map(orderPanels.map((panel) => [String(panel._id), panel.packData || {}]));
+
+  return orderedIds.reduce((merged, id) => {
+    const source = loadingPackRows(byId.get(id));
+    packTypes.forEach((packType) => {
+      merged[packType].push(...source[packType]);
+    });
+    return merged;
+  }, loadingPackRows());
 }
 
 function loadingVnnReference(vnn) {
@@ -56,6 +105,36 @@ function loadingVnnReference(vnn) {
 export const GET = withAuth(async (req, context, user) => {
   try {
     await connectDb();
+    const url = new URL(req.url);
+    const vnnId = url.searchParams.get("vnnId");
+
+    // The form requests pack rows only after the user selects one eligible VNN.
+    // This avoids exposing complete Order Panel records or loading all pack rows
+    // into the initial dropdown response.
+    if (vnnId) {
+      if (!/^[a-f\d]{24}$/i.test(vnnId)) {
+        return NextResponse.json({ success: false, message: "Invalid VNN ID" }, { status: 400 });
+      }
+
+      const vnn = await VehicleNegotiation.findOne(
+        companyScopeFilter(user, { _id: vnnId }),
+        {
+          selectedOrderPanels: 1,
+          "approval.part3Status": 1,
+          "approval.vehicleNo": 1,
+          "approval.mobile": 1,
+          "approval.purchaseType": 1,
+          "approval.paymentTerms": 1,
+          "workflow.placementCompletedAt": 1,
+        },
+      ).lean();
+
+      if (!vnn || !isVnnReadyForDownstream(vnn)) {
+        return NextResponse.json({ success: false, message: "This VNN is not available for Loading Info" }, { status: 404 });
+      }
+
+      return NextResponse.json({ success: true, data: { packData: await packDataForVnn(vnn, user) } });
+    }
 
     const [vehicleNegotiations, loadingPanels, branches, plants, subCompanies] = await Promise.all([
       VehicleNegotiation.find(

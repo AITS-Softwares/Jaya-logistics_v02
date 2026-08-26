@@ -5475,6 +5475,23 @@ function defaultPackRow(packType) {
   };
 }
 
+function packDataForForm(source = {}) {
+  return PACK_TYPES.reduce((result, { key }) => {
+    result[key] = (source[key] || []).map((row) => {
+      const normalized = { ...defaultPackRow(key) };
+      Object.entries(row).forEach(([field, value]) => {
+        if (field !== "_id" && value !== null && value !== undefined) {
+          normalized[field] = typeof value === "number" ? String(value) : value;
+        }
+      });
+      return normalized;
+    });
+
+    if (!result[key].length) result[key] = [defaultPackRow(key)];
+    return result;
+  }, {});
+}
+
 /* =======================
   UI Components
 ========================= */
@@ -6313,6 +6330,13 @@ export default function CreateLoadingInfoPanel() {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const [stream, setStream] = useState(null);
+  const [cameraTarget, setCameraTarget] = useState(null);
+
+  useEffect(() => {
+    if (showCamera && stream && videoRef.current) {
+      videoRef.current.srcObject = stream;
+    }
+  }, [showCamera, stream]);
 
   /** =========================
    * FETCH DATA FROM APIs
@@ -6419,19 +6443,24 @@ export default function CreateLoadingInfoPanel() {
   /** =========================
    * CAMERA FUNCTIONS
    ========================= */
-  const startCamera = async () => {
+  const openCamera = async (target) => {
     try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
-      setStream(mediaStream);
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
+      if (!navigator.mediaDevices?.getUserMedia) {
+        throw new Error("Camera access is not supported by this browser");
       }
+
+      const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
+      setCameraTarget(target);
+      setStream(mediaStream);
       setShowCamera(true);
     } catch (err) {
       console.error("Error accessing camera:", err);
-      alert("Unable to access camera. Please check permissions.");
+      alert("Unable to access the camera. Please allow permission and use HTTPS (or localhost).");
     }
   };
+
+  const startCamera = () => openCamera({ section: "vehicle", field: "photo", label: "Driver Photo" });
+  const startVbpCamera = (field) => openCamera({ section: "vbp", field, label: field.toUpperCase() });
 
   const stopCamera = () => {
     if (stream) {
@@ -6439,6 +6468,7 @@ export default function CreateLoadingInfoPanel() {
       setStream(null);
     }
     setShowCamera(false);
+    setCameraTarget(null);
   };
 
   const capturePhoto = () => {
@@ -6454,21 +6484,30 @@ export default function CreateLoadingInfoPanel() {
       
       canvas.toBlob((blob) => {
         const now = new Date();
-        const filename = `driver_photo_${now.getTime()}.jpg`;
+        const filename = `${cameraTarget?.field || "driver_photo"}_${now.getTime()}.jpg`;
         const file = new File([blob], filename, { type: 'image/jpeg' });
         
-        setVehicleFiles(prev => ({
-          ...prev,
-          photo: [...prev.photo, file]
-        }));
+        if (cameraTarget?.section === "vbp") {
+          setVbpFiles(prev => ({
+            ...prev,
+            [cameraTarget.field]: [...(prev[cameraTarget.field] || []), file],
+          }));
+        } else {
+          setVehicleFiles(prev => ({
+            ...prev,
+            photo: [...prev.photo, file]
+          }));
+        }
         
-        setArrivalDetails(prev => ({
-          ...prev,
-          date: now.toISOString().split('T')[0],
-          time: now.toLocaleTimeString(),
-        }));
+        if (cameraTarget?.section === "vehicle") {
+          setArrivalDetails(prev => ({
+            ...prev,
+            date: now.toISOString().split('T')[0],
+            time: now.toLocaleTimeString(),
+          }));
+        }
         
-        alert(`✅ Driver photo captured successfully!\n📅 Date: ${now.toLocaleDateString()}\n⏰ Time: ${now.toLocaleTimeString()}`);
+        alert(`✅ ${cameraTarget?.label || "Photo"} captured successfully!`);
         
         stopCamera();
       }, 'image/jpeg', 0.9);
@@ -6709,6 +6748,19 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
           subCompanyCode: fullNegotiation.subCompanyCode || '',
         })));
       }
+
+      const token = localStorage.getItem('token');
+      const packResponse = await fetch(
+        `/api/loading-panel/reference-data?vnnId=${encodeURIComponent(fullNegotiation._id)}`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      const packResult = await packResponse.json();
+
+      if (!packResponse.ok || !packResult.success) {
+        throw new Error(packResult.message || "Unable to load the selected orders' pack details");
+      }
+
+      setPackData(packDataForForm(packResult.data?.packData));
     }
   } catch (error) {
     console.error("Error loading vehicle negotiation:", error);
@@ -7709,7 +7761,7 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
         <div className="fixed inset-0 z-50 bg-black bg-opacity-90 flex items-center justify-center">
           <div className="bg-white rounded-2xl p-4 max-w-2xl w-full mx-4">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold text-slate-900">Capture Driver Photo</h3>
+              <h3 className="text-lg font-bold text-slate-900">Capture {cameraTarget?.label || "Photo"}</h3>
               <button
                 onClick={stopCamera}
                 className="text-red-500 hover:text-red-700 p-2"
@@ -7988,7 +8040,7 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                 </svg>
-                {vehicleFiles.aadhar.length > 0 ? `✓ ${vehicleFiles.aadhar.length} file(s)` : 'Upload Aadhar'}
+                {vehicleFiles.aadhar.length > 0 ? `✓ ${vehicleFiles.aadhar.length} file(s)` : 'Upload Driving License'}
               </button>
               {vehicleFiles.aadhar.map((file, idx) => (
                 <FileUploadItem 
@@ -7996,10 +8048,10 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
                   file={file} 
                   index={idx}
                   onRemove={() => removeFile('vehicle', 'aadhar', idx)}
-                  label="Aadhar"
+                  label="Driving License"
                 />
               ))}
-              <p className="text-xs text-slate-400 mt-1">Upload Owner's Aadhar Card (PDF/Image)</p>
+              <p className="text-xs text-slate-400 mt-1">Upload Driving License (PDF/Image)</p>
             </div>
           </div>
         </Card>
@@ -9014,6 +9066,13 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
                           }`}
                         >
                           {vbpFiles[`vbp${num}`].length > 0 ? `✓ ${vbpFiles[`vbp${num}`].length} file(s)` : 'Select'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => startVbpCamera(`vbp${num}`)}
+                          className="mt-1 w-full rounded-lg border border-emerald-200 bg-emerald-50 px-2 py-2 text-xs font-bold text-emerald-700 hover:bg-emerald-100"
+                        >
+                          Camera
                         </button>
                         {vbpFiles[`vbp${num}`].map((file, idx) => (
                           <FileUploadItem 
