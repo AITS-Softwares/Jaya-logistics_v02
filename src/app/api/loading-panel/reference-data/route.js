@@ -51,19 +51,26 @@ function loadingPackRows(packData = {}) {
 }
 
 async function packDataForVnn(vnn, user) {
-  const orderedIds = (vnn.selectedOrderPanels || [])
-    .map((panel) => String(panel?._id || ""))
+  // Some existing VNNs have their source Order Panel only on the copied order
+  // row. Use both references so all valid historical and newly-created VNNs
+  // populate the same Loading Info pack tables.
+  const orderedIds = [
+    ...(vnn.selectedOrderPanels || []).map((panel) => panel?._id),
+    ...(vnn.orders || []).map((order) => order?.orderPanelId),
+  ]
+    .map((id) => String(id || ""))
     .filter((id) => /^[a-f\d]{24}$/i.test(id));
 
-  if (!orderedIds.length) return loadingPackRows();
+  const uniqueOrderIds = [...new Set(orderedIds)];
+  if (!uniqueOrderIds.length) return loadingPackRows();
 
   const orderPanels = await OrderPanel.find(
-    companyScopeFilter(user, { _id: { $in: orderedIds } }),
+    companyScopeFilter(user, { _id: { $in: uniqueOrderIds } }),
     { packData: 1 },
   ).lean();
   const byId = new Map(orderPanels.map((panel) => [String(panel._id), panel.packData || {}]));
 
-  return orderedIds.reduce((merged, id) => {
+  return uniqueOrderIds.reduce((merged, id) => {
     const source = loadingPackRows(byId.get(id));
     packTypes.forEach((packType) => {
       merged[packType].push(...source[packType]);
@@ -91,6 +98,8 @@ function loadingVnnReference(vnn) {
     cancellationCharges: vnn.cancellationCharges || "",
     loadingCharges: vnn.loadingCharges || "",
     otherCharges: vnn.otherCharges || "",
+    vehicleNo: vnn.approval?.vehicleNo || "",
+    driverMobileNo: vnn.approval?.mobile || "",
     orders: (vnn.orders || []).map(loadingOrderReference),
   };
 }
@@ -120,6 +129,7 @@ export const GET = withAuth(async (req, context, user) => {
         companyScopeFilter(user, { _id: vnnId }),
         {
           selectedOrderPanels: 1,
+          "orders.orderPanelId": 1,
           "approval.part3Status": 1,
           "approval.vehicleNo": 1,
           "approval.mobile": 1,
