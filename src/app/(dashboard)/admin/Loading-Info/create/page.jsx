@@ -5492,6 +5492,14 @@ function packDataForForm(source = {}) {
   }, {});
 }
 
+function hasMeaningfulPackRows(rows) {
+  return Array.isArray(rows) && rows.some((row) =>
+    Object.entries(row || {}).some(([field, value]) =>
+      field !== "_id" && value !== "" && value !== null && value !== undefined && value !== 0 && value !== false,
+    ),
+  );
+}
+
 /* =======================
   UI Components
 ========================= */
@@ -6738,6 +6746,14 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
         otherCharges: fullNegotiation.otherCharges || "",
       });
 
+      // The Loading Info reference endpoint exposes only these safe vehicle
+      // placement snapshots. They are read-only after VNN selection.
+      setVehicleInfo((previous) => ({
+        ...previous,
+        vehicleNo: fullNegotiation.vehicleNo || "",
+        driverMobileNo: fullNegotiation.driverMobileNo || "",
+      }));
+
       if (Array.isArray(fullNegotiation.orders) && fullNegotiation.orders.length > 0) {
         setOrderRows(fullNegotiation.orders.map((order) => ({
           _id: uid(),
@@ -6782,7 +6798,16 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
         throw new Error(packResult.message || "Unable to load the selected orders' pack details");
       }
 
-      setPackData(packDataForForm(packResult.data?.packData));
+      const sourcePackData = packResult.data?.packData || {};
+      setPackData(packDataForForm(sourcePackData));
+
+      // Open the pack type that contains the selected VNN's actual Order Panel
+      // rows. The form otherwise defaults to Palletization even when, for
+      // example, only Uniform Bags/Boxes was entered on the source order.
+      const selectedPack =
+        PACK_TYPES.find(({ key }) => hasMeaningfulPackRows(sourcePackData[key])) ||
+        PACK_TYPES.find(({ key }) => Array.isArray(sourcePackData[key]) && sourcePackData[key].length > 0);
+      setActivePack(selectedPack?.key || "PALLETIZATION");
     }
   } catch (error) {
     console.error("Error loading vehicle negotiation:", error);

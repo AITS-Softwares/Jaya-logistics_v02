@@ -4633,7 +4633,9 @@ export default function EditPricingPanel() {
       </div>
 
       <div className="mx-auto max-w-full p-4 space-y-4">
-        <div className={part1Editable ? '' : 'pointer-events-none opacity-60'}>
+        {/* Do not use pointer-events-none here. Part 2 approvers must be able
+            to scroll and inspect every Part 1 table cell before approving. */}
+        <fieldset disabled={!part1Editable} className="min-w-0">
         <Card title={`Pricing Panel - Part -1${part1Editable ? '' : ' (Read only)'}`}>
           <div className="grid grid-cols-12 gap-3 mb-4">
             <div className="col-span-12 md:col-span-3">
@@ -4778,7 +4780,7 @@ export default function EditPricingPanel() {
             </div>
           </div>
         </Card>
-        </div>
+        </fieldset>
 
         <Card
           title={`Rate - Approval - Part - 2${part2Editable ? ' (Open for approval)' : workflowPhase === 'part2' ? ' (Awaiting authorised approval)' : workflowPhase === 'approved' || workflowPhase === 'locked' ? ' (Approved)' : ' (Waiting for Part 1 submission)'}`}
