@@ -1110,6 +1110,19 @@ function formatDateDDMMYYYY(date) {
   return `${day}/${month}/${year}`;
 }
 
+// The list's "Status" column describes the Part 1 workflow. The separate
+// "Approval Status" column always mirrors rateApproval.approvalStatus.
+function pricingListStatus(panel) {
+  const approvalStatus = panel.rateApproval?.approvalStatus;
+  const workflowPhase = panel.rateApproval?.workflowPhase;
+
+  if (panel.panelStatus === 'Completed' || approvalStatus === 'Completed') return 'Completed';
+  if (approvalStatus === 'Rejected') return 'Rejected';
+  if (panel.panelStatus === 'Approved' || approvalStatus === 'Approved' || ['approved', 'locked'].includes(workflowPhase)) return 'Approved';
+  if (panel.panelStatus === 'Submitted' || workflowPhase === 'part2') return 'Pending Approval';
+  return 'Draft';
+}
+
 /* ========================================
    GET /api/pricing-panel - List requires 'view'; a specific panel supports its section roles
 ======================================== */
@@ -1221,6 +1234,7 @@ export async function GET(req) {
       
       for (const panel of pricingPanels) {
         const formattedDate = panel.date ? formatDateDDMMYYYY(panel.date) : '';
+        const pricing = pricingListStatus(panel);
         // The list is grouped by panel in the UI. Calculate its weight once
         // from all saved order rows so old records with a stale/missing stored
         // total also display the correct total.
@@ -1232,8 +1246,6 @@ export async function GET(req) {
         
         if (panel.orders && panel.orders.length > 0) {
           for (const order of panel.orders) {
-            const reportRow = panel.reportRows?.find(r => r.order === order.orderNo);
-            
             let vnnNumber = '-';
             if (order.vehicleNegotiationId) {
               try {
@@ -1264,7 +1276,7 @@ export async function GET(req) {
               to: order.toName || '',
               weight: order.weight || 0,
               totalWeight: panelTotalWeight,
-              pricing: reportRow?.pricing || panel.reportRows?.[0]?.pricing || 'Pending',
+              pricing,
               approval: panel.rateApproval?.approvalStatus || 'Pending',
               branchName: panel.branchName || '',
               subCompanyName: order.subCompanyName || panel.subCompanyName || '',
@@ -1289,7 +1301,7 @@ export async function GET(req) {
             to: '',
             weight: 0,
             totalWeight: panelTotalWeight,
-            pricing: panel.reportRows?.[0]?.pricing || 'Pending',
+            pricing,
             approval: panel.rateApproval?.approvalStatus || 'Pending',
             branchName: panel.branchName || '',
             subCompanyName: panel.subCompanyName || '',
@@ -1298,11 +1310,15 @@ export async function GET(req) {
         }
       }
 
+      const filteredTableData = pricingStatus
+        ? tableData.filter((row) => row.pricing === pricingStatus)
+        : tableData;
+
       return NextResponse.json({
         success: true,
-        data: tableData,
-        total: tableData.length,
-        message: `Found ${tableData.length} order records`
+        data: filteredTableData,
+        total: filteredTableData.length,
+        message: `Found ${filteredTableData.length} order records`
       }, { status: 200 });
     }
     
