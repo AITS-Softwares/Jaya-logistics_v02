@@ -5274,10 +5274,6 @@ function useVehicleSearch() {
     }
   };
 
-  useEffect(() => {
-    searchVehicles();
-  }, []);
-
   return { vehicles, loading, error, searchVehicles, getVehicleById };
 }
 
@@ -6346,13 +6342,6 @@ export default function CreateLoadingInfoPanel() {
       videoRef.current.srcObject = stream;
     }
   }, [showCamera, stream]);
-
-  /** =========================
-   * FETCH DATA FROM APIs
-   ========================= */
-  useEffect(() => {
-    vehicleSearch.searchVehicles();
-  }, []);
 
   // Owner Search Dropdown Component
   function OwnerSearchDropdown({ onSelect, placeholder = "Search owner..." }) {

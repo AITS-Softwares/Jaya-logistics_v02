@@ -5187,6 +5187,19 @@ function num(v) {
   return Number.isFinite(n) ? n : 0;
 }
 
+function toHtmlTime(value) {
+  const time = String(value || "").trim();
+  if (!time) return "";
+  if (/^\d{2}:\d{2}(:\d{2}(\.\d{1,3})?)?$/.test(time)) return time;
+
+  const match = time.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)$/i);
+  if (!match) return "";
+
+  let hour = Number(match[1]) % 12;
+  if (match[4].toUpperCase() === "PM") hour += 12;
+  return `${String(hour).padStart(2, "0")}:${match[2]}${match[3] ? `:${match[3]}` : ""}`;
+}
+
 /* =======================
   Vehicle Search Hook
 ========================= */
@@ -5257,10 +5270,6 @@ function useVehicleSearch() {
     }
   };
 
-  useEffect(() => {
-    searchVehicles();
-  }, []);
-
   return { vehicles, loading, error, searchVehicles, getVehicleById };
 }
 
@@ -5307,82 +5316,44 @@ function useOwnerSearch() {
 ========================= */
 function useVehicleNegotiation() {
   const [negotiations, setNegotiations] = useState([]);
+  const [branches, setBranches] = useState([]);
+  const [plants, setPlants] = useState([]);
+  const [subCompanies, setSubCompanies] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const fetchNegotiations = async (search = "") => {
+  const fetchNegotiations = async () => {
     setLoading(true);
     setError(null);
     try {
       const token = localStorage.getItem('token');
-      
-      const vnRes = await fetch('/api/vehicle-negotiation', {
+      const response = await fetch('/api/loading-panel/reference-data', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
-      if (!vnRes.ok) {
-        throw new Error(`HTTP error! status: ${vnRes.status}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
-      const vnData = await vnRes.json();
-      
-      const loadingRes = await fetch('/api/loading-panel?format=table', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      
-      const loadingData = await loadingRes.json();
-      
-      const usedVnns = new Set();
-      if (loadingData.success && Array.isArray(loadingData.data)) {
-        loadingData.data.forEach(item => {
-          if (item.vehicleNegotiationNo && item.vehicleNegotiationNo !== '-' && item.vehicleNegotiationNo !== 'N/A') {
-            usedVnns.add(item.vehicleNegotiationNo);
-          }
-        });
-      }
-      
-      if (vnData.success && Array.isArray(vnData.data)) {
-        const availableVNs = vnData.data.filter(vn => !usedVnns.has(vn.vnnNo));
-        setNegotiations(availableVNs);
-        console.log(`📊 Found ${availableVNs.length} available VNNs out of ${vnData.data.length} total`);
+
+      const data = await response.json();
+      if (data.success && data.data) {
+        setNegotiations(Array.isArray(data.data.negotiations) ? data.data.negotiations : []);
+        setBranches(Array.isArray(data.data.branches) ? data.data.branches : []);
+        setPlants(Array.isArray(data.data.plants) ? data.data.plants : []);
+        setSubCompanies(Array.isArray(data.data.subCompanies) ? data.data.subCompanies : []);
       } else {
         setNegotiations([]);
-        setError(vnData.message || 'No vehicle negotiations found');
+        setBranches([]);
+        setPlants([]);
+        setSubCompanies([]);
+        setError(data.message || 'No Loading Info reference data found');
       }
     } catch (err) {
-      console.error('Error fetching vehicle negotiations:', err);
+      console.error('Error fetching Loading Info reference data:', err);
       setNegotiations([]);
-      setError('Failed to fetch vehicle negotiations');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getNegotiationById = async (id) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`/api/vehicle-negotiation?id=${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      
-      if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`);
-      }
-      
-      const data = await res.json();
-      
-      if (data.success && data.data) {
-        return data.data;
-      } else {
-        setError(data.message || 'Vehicle negotiation not found');
-        return null;
-      }
-    } catch (err) {
-      console.error('Error fetching vehicle negotiation:', err);
-      setError('Failed to fetch vehicle negotiation');
-      return null;
+      setBranches([]);
+      setPlants([]);
+      setSubCompanies([]);
+      setError('Failed to fetch Loading Info reference data');
     } finally {
       setLoading(false);
     }
@@ -5392,7 +5363,7 @@ function useVehicleNegotiation() {
     fetchNegotiations();
   }, []);
 
-  return { negotiations, loading, error, fetchNegotiations, getNegotiationById };
+  return { negotiations, branches, plants, subCompanies, loading, error, fetchNegotiations };
 }
 
 /* =======================
@@ -5530,6 +5501,31 @@ function defaultPackRow(packType) {
     actualWt: "",
     chargedWt: "",
   };
+}
+
+function packDataForForm(source = {}) {
+  return PACK_TYPES.reduce((result, { key }) => {
+    result[key] = (source[key] || []).map((row) => {
+      const normalized = { ...defaultPackRow(key) };
+      Object.entries(row).forEach(([field, value]) => {
+        if (field !== "_id" && value !== null && value !== undefined) {
+          normalized[field] = typeof value === "number" ? String(value) : value;
+        }
+      });
+      return normalized;
+    });
+
+    if (!result[key].length) result[key] = [defaultPackRow(key)];
+    return result;
+  }, {});
+}
+
+function hasMeaningfulPackRows(rows) {
+  return Array.isArray(rows) && rows.some((row) =>
+    Object.entries(row || {}).some(([field, value]) =>
+      field !== "_id" && value !== "" && value !== null && value !== undefined && value !== 0 && value !== false,
+    ),
+  );
 }
 
 /* =======================
@@ -6352,13 +6348,13 @@ export default function EditLoadingInfoPanel() {
     if (panelId) {
       fetchLoadingPanelData();
     }
-    fetchBranches();
-    fetchSubCompanies();
-    fetchPlants();
-    fetchOrders();
-    vehicleNegotiation.fetchNegotiations();
-    vehicleSearch.searchVehicles();
   }, [panelId]);
+
+  useEffect(() => {
+    setBranches(vehicleNegotiation.branches);
+    setPlants(vehicleNegotiation.plants);
+    setSubCompanies(vehicleNegotiation.subCompanies);
+  }, [vehicleNegotiation.branches, vehicleNegotiation.plants, vehicleNegotiation.subCompanies]);
 
   const fetchLoadingPanelData = async () => {
     setFetchLoading(true);
@@ -6678,9 +6674,9 @@ export default function EditLoadingInfoPanel() {
       if (panel.arrivalDetails) {
         setArrivalDetails({
           date: panel.arrivalDetails.date ? new Date(panel.arrivalDetails.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-          time: panel.arrivalDetails.time || "",
+          time: toHtmlTime(panel.arrivalDetails.time),
           outDate: panel.arrivalDetails.outDate ? new Date(panel.arrivalDetails.outDate).toISOString().split('T')[0] : "",
-          outTime: panel.arrivalDetails.outTime || "",
+          outTime: toHtmlTime(panel.arrivalDetails.outTime),
         });
       }
 
@@ -6959,7 +6955,10 @@ export default function EditLoadingInfoPanel() {
     setFetchingNegotiationData(true);
     
     try {
-      const fullNegotiation = await vehicleNegotiation.getNegotiationById(negotiation._id);
+      // The dropdown is populated by the scoped Loading Info reference API.
+      // Do not call the broader VNN API here: that API is intentionally
+      // restricted to Vehicle Negotiation users.
+      const fullNegotiation = negotiation;
       
       if (fullNegotiation) {
         setHeader({
@@ -6981,33 +6980,11 @@ export default function EditLoadingInfoPanel() {
           otherCharges: fullNegotiation.otherCharges || "",
         });
 
-        if (fullNegotiation.vehicleInfo) {
-          const vInfo = fullNegotiation.vehicleInfo;
-          setVehicleInfo({
-            ...vehicleInfo,
-            vehicleNo: vInfo.vehicleNo || "",
-            driverMobileNo: vInfo.driverMobileNo || "",
-            driverName: vInfo.driverName || "",
-            drivingLicense: vInfo.drivingLicense || "",
-            vehicleWeight: vInfo.vehicleWeight?.toString() || "",
-            vehicleOwnerName: vInfo.vehicleOwnerName || "",
-            vehicleOwnerRC: vInfo.vehicleOwnerRC || "",
-            ownerPanCard: vInfo.ownerPanCard || "",
-            verified: vInfo.verified || false,
-            vehicleType: vInfo.vehicleType || "",
-            message: vInfo.message || "",
-            remarks: vInfo.remarks || "",
-            rcDocument: vInfo.rcDocument || "",
-            panDocument: vInfo.panDocument || "",
-            licenseDocument: vInfo.licenseDocument || "",
-            driverPhoto: vInfo.driverPhoto || "",
-            vehicleId: vInfo.vehicleId || "",
-            insuranceNumber: vInfo.insuranceNumber || "",
-            chasisNumber: vInfo.chasisNumber || "",
-            fitnessNumber: vInfo.fitnessNumber || "",
-            pucNumber: vInfo.pucNumber || ""
-          });
-        }
+        setVehicleInfo((previous) => ({
+          ...previous,
+          vehicleNo: fullNegotiation.vehicleNo || "",
+          driverMobileNo: fullNegotiation.driverMobileNo || "",
+        }));
 
         if (fullNegotiation.orders && fullNegotiation.orders.length > 0) {
           const newOrderRows = fullNegotiation.orders.map(order => ({
@@ -7042,6 +7019,27 @@ export default function EditLoadingInfoPanel() {
           }));
           setOrderRows(newOrderRows);
         }
+
+        const referenceToken = localStorage.getItem('token');
+        const packResponse = await fetch(
+          `/api/loading-panel/reference-data?vnnId=${encodeURIComponent(fullNegotiation._id)}`,
+          { headers: { Authorization: `Bearer ${referenceToken}` } },
+        );
+        const packResult = await packResponse.json();
+        if (!packResponse.ok || !packResult.success) {
+          throw new Error(packResult.message || "Unable to load the selected orders' pack details");
+        }
+
+        const sourcePackData = packResult.data?.packData || {};
+        setPackData(packDataForForm(sourcePackData));
+        const selectedPack =
+          PACK_TYPES.find(({ key }) => hasMeaningfulPackRows(sourcePackData[key])) ||
+          PACK_TYPES.find(({ key }) => Array.isArray(sourcePackData[key]) && sourcePackData[key].length > 0);
+        setActivePack(selectedPack?.key || "PALLETIZATION");
+
+        alert(`✅ Data loaded from Vehicle Negotiation: ${negotiation.vnnNo}`);
+        return;
+
         // Fetch pack data from order panels
         let mergedPackData = {
           PALLETIZATION: [],

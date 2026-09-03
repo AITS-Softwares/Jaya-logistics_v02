@@ -212,4 +212,4 @@ export const GET = withAuth(async (req, context, user) => {
       { status: 500 },
     );
   }
-}, { module: "Loading Info", action: "create" });
+}, { module: "Loading Info", actions: ["create", "edit", "view"] });

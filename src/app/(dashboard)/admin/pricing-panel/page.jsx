@@ -1014,7 +1014,7 @@ export default function PricingPanelList() {
               // The table API includes a panel total on every order row.
               // Never use the first order's weight as the pricing total.
               weight: item.totalWeight ?? item.weight,
-              pricing: item.pricing || 'Pending',
+              pricing: item.pricing || 'Draft',
               approval: item.approval || 'Pending',
               orderCount: 1,
               vnnNumbers: item.vnn && item.vnn !== '-' ? [item.vnn] : [],
@@ -1225,8 +1225,11 @@ export default function PricingPanelList() {
                 onChange={(e) => handleFilterChange('pricingStatus', e.target.value)}
                 className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200"
               >
-                <option value="">All Pricing Status</option>
-                <option value="Pending">Pending</option>
+                <option value="">All Status</option>
+                <option value="Draft">Draft</option>
+                <option value="Pending Approval">Pending Approval</option>
+                <option value="Approved">Approved</option>
+                <option value="Rejected">Rejected</option>
                 <option value="Completed">Completed</option>
               </select>
             </div>
@@ -1236,7 +1239,7 @@ export default function PricingPanelList() {
                 onChange={(e) => handleFilterChange('approvalStatus', e.target.value)}
                 className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200"
               >
-                <option value="">All Approval</option>
+                <option value="">All Approval Status</option>
                 <option value="Pending">Pending</option>
                 <option value="Pending from Team">Pending from Team</option>
                 <option value="Pending from Client">Pending from Client</option>
@@ -1295,8 +1298,8 @@ export default function PricingPanelList() {
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">From → To</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Total Weight</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Orders</th>
-                  <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Pricing</th>
-                  <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Approval</th>
+                  <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Status</th>
+                  <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Approval Status</th>
                   <th className="px-4 py-3 text-center text-xs font-extrabold text-slate-900 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
@@ -1338,7 +1341,11 @@ export default function PricingPanelList() {
                       </td>
                       <td className="px-4 py-3">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          item.pricing === 'Completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                          item.pricing === 'Approved' ? 'bg-green-100 text-green-800' :
+                          item.pricing === 'Rejected' ? 'bg-red-100 text-red-800' :
+                          item.pricing === 'Completed' ? 'bg-blue-100 text-blue-800' :
+                          item.pricing === 'Pending Approval' ? 'bg-orange-100 text-orange-800' :
+                          'bg-slate-100 text-slate-700'
                         }`}>
                           {item.pricing}
                         </span>
