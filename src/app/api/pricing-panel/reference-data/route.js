@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { withAuth } from "@/lib/auth";
+import { hasAnyPermission, withAuth } from "@/lib/auth";
 import connectDb from "@/lib/db";
 import { companyScopeFilter } from "@/lib/companyScope";
 import { isVnnReadyForDownstream } from "@/lib/vehicleNegotiationWorkflow";
@@ -10,6 +10,8 @@ import Plant from "@/app/api/plants/schema";
 import SubCompany from "@/models/SubCompany";
 import Location from "@/app/api/locations/schema";
 import Country from "@/app/api/countries/schema";
+import State from "@/app/api/states/schema";
+import District from "@/app/api/districts/schema";
 import RateMaster from "@/app/api/rate-master/schema";
 import Customer from "@/models/CustomerModel";
 
@@ -63,8 +65,27 @@ function pricingVnnReference(vnn) {
 export const GET = withAuth(async (req, context, user) => {
   try {
     await connectDb();
+    const canUsePricingReference =
+      hasAnyPermission(user, "Pricing Panel", ["create", "edit", "view"]) ||
+      hasAnyPermission(user, "Pricing Panel - Part 2 Approval", ["view", "approve"]);
+    if (!canUsePricingReference) {
+      return NextResponse.json(
+        { success: false, message: "Pricing Panel access is required for this reference data." },
+        { status: 403 },
+      );
+    }
 
-    const [vehicleNegotiations, pricingPanels, branches, plants, subCompanies, locations, countries, rawRateMasters] = await Promise.all([
+    const url = new URL(req.url);
+    const stateId = url.searchParams.get("stateId");
+    if (stateId) {
+      const districts = await District.find(
+        { companyId: user.companyId, state: stateId },
+        { name: 1, code: 1, state: 1, country: 1 },
+      ).sort({ name: 1 }).lean();
+      return NextResponse.json({ success: true, data: { districts } });
+    }
+
+    const [vehicleNegotiations, pricingPanels, branches, plants, subCompanies, locations, countries, states, rawRateMasters] = await Promise.all([
       VehicleNegotiation.find(
         companyScopeFilter(user),
         {
@@ -113,6 +134,7 @@ export const GET = withAuth(async (req, context, user) => {
         { name: 1, state: 1 },
       ).sort({ name: 1 }).lean(),
       Country.find({ companyId: user.companyId }, { name: 1, code: 1 }).sort({ name: 1 }).lean(),
+      State.find({ companyId: user.companyId }, { name: 1, code: 1, country: 1 }).sort({ name: 1 }).lean(),
       RateMaster.find(
         { companyId: user.companyId, isActive: { $ne: false } },
         { title: 1, customerId: 1, branchId: 1, usageMode: 1, locationRates: 1 },
@@ -177,6 +199,7 @@ export const GET = withAuth(async (req, context, user) => {
         subCompanies,
         locations,
         countries,
+        states,
         rateMasters,
       },
     });
@@ -187,4 +210,4 @@ export const GET = withAuth(async (req, context, user) => {
       { status: 500 },
     );
   }
-}, { module: "Pricing Panel", actions: ["create", "edit"] });
+});

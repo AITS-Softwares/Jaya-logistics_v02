@@ -2415,13 +2415,13 @@ function useLocationData() {
   const fetchStates = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/states', {
+      const res = await fetch('/api/pricing-panel/reference-data', {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-      if (data.success && Array.isArray(data.data)) {
-        setStates(data.data);
-        return data.data;
+      if (res.ok && data.success && Array.isArray(data.data?.states)) {
+        setStates(data.data.states);
+        return data.data.states;
       }
       return [];
     } catch (error) {
@@ -2452,13 +2452,13 @@ function useLocationData() {
     if (!stateId) return [];
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`/api/districts?stateId=${stateId}`, {
+      const res = await fetch(`/api/pricing-panel/reference-data?stateId=${encodeURIComponent(stateId)}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-      if (data.success && Array.isArray(data.data)) {
-        setDistricts(prev => ({ ...prev, [stateId]: data.data }));
-        return data.data;
+      if (res.ok && data.success && Array.isArray(data.data?.districts)) {
+        setDistricts(prev => ({ ...prev, [stateId]: data.data.districts }));
+        return data.data.districts;
       }
       return [];
     } catch (error) {
@@ -2758,32 +2758,13 @@ function VehicleNegotiationHeaderDropdown({
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/vehicle-negotiation', {
+      const res = await fetch('/api/pricing-panel/reference-data', {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
       
-      if (data.success && Array.isArray(data.data)) {
-        const pricingRes = await fetch('/api/pricing-panel?format=table', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const pricingData = await pricingRes.json();
-        
-        const usedVnns = new Set();
-        if (pricingData.success && Array.isArray(pricingData.data)) {
-          pricingData.data.forEach(item => {
-            if (item.vnn && item.vnn !== '-' && item.vnn !== 'N/A') {
-              if (item.vnn !== currentVnn) {
-                usedVnns.add(item.vnn);
-              }
-            }
-          });
-        }
-        
-        const availableVNs = data.data.filter(vn => 
-          !usedVnns.has(vn.vnnNo) || vn.vnnNo === currentVnn
-        );
-        setVnList(availableVNs);
+      if (res.ok && data.success && Array.isArray(data.data?.vehicleNegotiations)) {
+        setVnList(data.data.vehicleNegotiations);
       } else {
         setVnList([]);
       }
@@ -2812,26 +2793,13 @@ function VehicleNegotiationHeaderDropdown({
     }
   }, [currentVnn, vnList]);
 
-  const handleSelectVN = async (vn) => {
+  const handleSelectVN = (vn) => {
     if (readOnly) return;
     setSearchQuery(`${vn.vnnNo} - ${vn.customerName || ''}`);
     setShowDropdown(false);
-    
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`/api/vehicle-negotiation?id=${vn._id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      
-      if (res.ok) {
-        const data = await res.json();
-        if (data.success && data.data) {
-          onSelect(data.data);
-        }
-      }
-    } catch (error) {
-      console.error('Error:', error);
-    }
+    // The scoped reference response contains every field this panel needs.
+    // Do not require Vehicle Negotiation master permission just to select it.
+    onSelect(vn);
   };
 
   const filteredList = useMemo(() => {
@@ -3921,6 +3889,8 @@ export default function EditPricingPanel() {
   const [saveError, setSaveError] = useState(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [workflowPhase, setWorkflowPhase] = useState('part1');
+  const [approvalDirty, setApprovalDirty] = useState(false);
+  const [workflowSaving, setWorkflowSaving] = useState(false);
   
   const locationData = useLocationData();
   const customerSearch = useCustomerSearch();
@@ -3970,13 +3940,10 @@ export default function EditPricingPanel() {
   });
 
   useEffect(() => {
-    fetchBranches();
-    fetchCountries();
-    fetchPlants();
+    fetchPricingReferenceData();
     fetchPricingPanelData();
     locationData.fetchStates();
     locationData.fetchLocations();
-    customerSearch.searchCustomers();
     rateMasterSearch.searchRateMasters();
   }, []);
 
@@ -4095,6 +4062,7 @@ export default function EditPricingPanel() {
           approvalStatus: panel.rateApproval.approvalStatus || "Pending",
         });
       }
+      setApprovalDirty(false);
 
       if (panel.partyName) {
         setSelectedCustomer({
@@ -4105,33 +4073,6 @@ export default function EditPricingPanel() {
         });
       }
 
-      const vnnId = firstVnnOrder?.vehicleNegotiationId?._id || firstVnnOrder?.vehicleNegotiationId;
-      if (vnnId) {
-        try {
-          const vnnResponse = await fetch(`/api/vehicle-negotiation?id=${vnnId}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          const vnnPayload = await vnnResponse.json();
-          if (vnnResponse.ok && vnnPayload.success && vnnPayload.data) {
-            const vnn = vnnPayload.data;
-            setCurrentVnn(vnn.vnnNo || storedVnn);
-
-            // Repairs the display of historical records where a VNN was saved
-            // but the corresponding branch snapshot was missing.
-            if (!panel.branch) {
-              setHeader((previous) => ({
-                ...previous,
-                branch: vnn.branch?._id || vnn.branch || previous.branch,
-                branchName: vnn.branchName || previous.branchName,
-                branchCode: vnn.branchCode || previous.branchCode,
-              }));
-            }
-          }
-        } catch (error) {
-          console.error('Unable to load the saved Vehicle Negotiation:', error);
-        }
-      }
-
     } catch (error) {
       console.error('Error fetching pricing panel:', error);
       alert(`Failed to load pricing panel: ${error.message}`);
@@ -4140,48 +4081,20 @@ export default function EditPricingPanel() {
     }
   };
 
-  const fetchBranches = async () => {
+  const fetchPricingReferenceData = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/branches', {
+      const res = await fetch('/api/pricing-panel/reference-data', {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-      if (data.success && Array.isArray(data.data)) {
-        setBranches(data.data);
+      if (res.ok && data.success && data.data) {
+        setBranches(Array.isArray(data.data.branches) ? data.data.branches : []);
+        setCountries(Array.isArray(data.data.countries) ? data.data.countries : []);
+        setPlants(Array.isArray(data.data.plants) ? data.data.plants : []);
       }
     } catch (error) {
-      console.error('Error fetching branches:', error.message);
-    }
-  };
-
-  const fetchCountries = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('/api/countries', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (data.success && Array.isArray(data.data)) {
-        setCountries(data.data);
-      }
-    } catch (error) {
-      console.error('Error fetching countries:', error.message);
-    }
-  };
-
-  const fetchPlants = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('/api/plants', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (data.success && Array.isArray(data.data)) {
-        setPlants(data.data);
-      }
-    } catch (error) {
-      console.error('Error fetching plants:', error.message);
+      console.error('Error fetching Pricing Panel reference data:', error.message);
     }
   };
 
@@ -4526,6 +4439,7 @@ export default function EditPricingPanel() {
   };
 
   const handleWorkflowAction = async (action, approvalData) => {
+    setWorkflowSaving(true);
     try {
       const response = await fetch('/api/pricing-panel', {
         method: 'PATCH',
@@ -4543,9 +4457,12 @@ export default function EditPricingPanel() {
         return;
       }
       setWorkflowPhase(data.data.workflowPhase);
+      if (action === 'update-approval') setApprovalDirty(false);
       await fetchPricingPanelData();
     } catch (error) {
       alert(error.message || 'Unable to update workflow.');
+    } finally {
+      setWorkflowSaving(false);
     }
   };
 
@@ -4788,17 +4705,15 @@ export default function EditPricingPanel() {
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
-                onClick={() => handleWorkflowAction('update-approval', { approvalStatus: rateApproval.approvalStatus, remarks: rateApproval.remarks })}
-                className="rounded-xl bg-sky-600 px-4 py-2 text-sm font-bold text-white hover:bg-sky-700"
+                disabled={workflowSaving}
+                onClick={() => approvalDirty
+                  ? handleWorkflowAction('update-approval', { approvalStatus: rateApproval.approvalStatus, remarks: rateApproval.remarks })
+                  : handleWorkflowAction('approve-with-update', { remarks: rateApproval.remarks })}
+                className={`rounded-xl px-4 py-2 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-slate-400 ${
+                  approvalDirty ? 'bg-sky-600 hover:bg-sky-700' : 'bg-emerald-600 hover:bg-emerald-700'
+                }`}
               >
-                Save Approval Details
-              </button>
-              <button
-                type="button"
-                onClick={() => handleWorkflowAction('approve-with-update', { remarks: rateApproval.remarks })}
-                className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-700"
-              >
-                Approve Part 2
+                {workflowSaving ? 'Saving...' : approvalDirty ? 'Save Approval Details' : 'Approve Part 2'}
               </button>
             </div>
           )}
@@ -4815,13 +4730,16 @@ export default function EditPricingPanel() {
               col="col-span-12 md:col-span-4"
               label="Approval Status"
               value={rateApproval.approvalStatus}
-              onChange={(v) => setRateApproval((p) => ({ ...p, approvalStatus: v }))}
+              onChange={(v) => {
+                setApprovalDirty(true);
+                setRateApproval((p) => ({ ...p, approvalStatus: v }));
+              }}
               options={APPROVAL_STATUS}
               readOnly={!part2Editable}
             />
             <div className="col-span-12 md:col-span-8">
               <label className="text-xs font-bold text-slate-600">Remarks</label>
-              <textarea value={rateApproval.remarks || ''} onChange={(event) => setRateApproval((previous) => ({ ...previous, remarks: event.target.value }))} readOnly={!part2Editable} className="mt-1 min-h-20 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm read-only:cursor-not-allowed" placeholder="Remarks are entered during approval" />
+              <textarea value={rateApproval.remarks || ''} onChange={(event) => { setApprovalDirty(true); setRateApproval((previous) => ({ ...previous, remarks: event.target.value })); }} readOnly={!part2Editable} className="mt-1 min-h-20 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm read-only:cursor-not-allowed" placeholder="Remarks are entered during approval" />
             </div>
           </div>
         </Card>
