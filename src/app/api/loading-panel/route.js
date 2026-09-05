@@ -1705,6 +1705,9 @@ export async function POST(req) {
         }
       }
     }
+    processedVlPhotoDetails.forEach((detail) => {
+      detail.total = (num(detail.width) * num(detail.height)) + num(detail.nose);
+    });
 
     // Process deduction rows
     const processedDeductionRows = (body.deductionRows || []).map(row => ({
@@ -2080,9 +2083,24 @@ export async function PUT(req) {
             existing[field] = value;
             processedDetails.set(baseKey, existing);
           }
+        } else if (typeof value === 'string' && !isNaN(parseFloat(value))) {
+          const match = key.match(/(vl\d+_\d+)_(height|width|nose)/);
+          if (match) {
+            const baseKey = match[1];
+            const field = match[2];
+            let existing = processedDetails.get(baseKey);
+            if (!existing) {
+              existing = { height: 0, width: 0, nose: 0 };
+            }
+            existing[field] = parseFloat(value);
+            processedDetails.set(baseKey, existing);
+          }
         }
       }
-      updateData.vlPhotoDetails = processedDetails;
+      processedDetails.forEach((detail) => {
+        detail.total = (num(detail.width) * num(detail.height)) + num(detail.nose);
+      });
+      updateData.vlPhotoDetails = Object.fromEntries(processedDetails);
     }
 
     // Process arrivalDetails with outDate
