@@ -5187,6 +5187,23 @@ function num(v) {
   return Number.isFinite(n) ? n : 0;
 }
 
+// The database stores each VL image as one grouped Map entry (for example
+// vl1_0: { width, height, nose }). The form uses flat input keys. Accept both
+// shapes so existing records and newly saved dimensions reload correctly.
+function normalizeVlPhotoDetails(details) {
+  const source = details instanceof Map ? Object.fromEntries(details) : (details || {});
+  return Object.entries(source).reduce((normalized, [key, value]) => {
+    if (value && typeof value === "object" && !Array.isArray(value)) {
+      normalized[`${key}_width`] = value.width ?? "";
+      normalized[`${key}_height`] = value.height ?? "";
+      normalized[`${key}_nose`] = value.nose ?? "";
+    } else {
+      normalized[key] = value;
+    }
+    return normalized;
+  }, {});
+}
+
 function toHtmlTime(value) {
   const time = String(value || "").trim();
   if (!time) return "";
@@ -6549,7 +6566,7 @@ export default function EditLoadingInfoPanel() {
 
       // Set VL Photo Details
       if (panel.vlPhotoDetails) {
-        setVlPhotoDetails(panel.vlPhotoDetails);
+        setVlPhotoDetails(normalizeVlPhotoDetails(panel.vlPhotoDetails));
       }
 
       // Set VL Fields
