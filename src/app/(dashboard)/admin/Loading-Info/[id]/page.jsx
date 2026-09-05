@@ -5213,7 +5213,9 @@ function useVehicleSearch() {
     setError(null);
     try {
       const token = localStorage.getItem('token');
-      const url = query ? `/api/vehicles?search=${encodeURIComponent(query)}` : '/api/vehicles';
+      const url = query
+        ? `/api/loading-panel/reference-data?lookup=vehicles&search=${encodeURIComponent(query)}`
+        : '/api/loading-panel/reference-data?lookup=vehicles';
       
       const res = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
@@ -5225,8 +5227,8 @@ function useVehicleSearch() {
       
       const data = await res.json();
       
-      if (data.success && Array.isArray(data.data)) {
-        setVehicles(data.data);
+      if (data.success && Array.isArray(data.data?.vehicles)) {
+        setVehicles(data.data.vehicles);
       } else {
         setVehicles([]);
         setError(data.message || 'No vehicles found');
@@ -5245,7 +5247,7 @@ function useVehicleSearch() {
     setError(null);
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`/api/vehicles?id=${id}`, {
+      const res = await fetch('/api/loading-panel/reference-data?lookup=vehicles', {
         headers: { Authorization: `Bearer ${token}` },
       });
       
@@ -5255,8 +5257,9 @@ function useVehicleSearch() {
       
       const data = await res.json();
       
-      if (data.success && data.data) {
-        return data.data;
+      const vehicle = data.data?.vehicles?.find((item) => item._id === id);
+      if (data.success && vehicle) {
+        return vehicle;
       } else {
         setError(data.message || 'Vehicle not found');
         return null;
@@ -5286,15 +5289,17 @@ function useOwnerSearch() {
     setError(null);
     try {
       const token = localStorage.getItem('token');
-      const url = vehicleNumber ? `/api/owners?search=${encodeURIComponent(vehicleNumber)}` : '/api/owners';
+      const url = vehicleNumber
+        ? `/api/loading-panel/reference-data?lookup=owners&search=${encodeURIComponent(vehicleNumber)}`
+        : '/api/loading-panel/reference-data?lookup=owners';
       
       const res = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
       
-      if (data.success && Array.isArray(data.data)) {
-        setOwners(data.data);
+      if (data.success && Array.isArray(data.data?.owners)) {
+        setOwners(data.data.owners);
       } else {
         setOwners([]);
         setError(data.message || 'No owners found');
@@ -5528,6 +5533,38 @@ function hasMeaningfulPackRows(rows) {
   );
 }
 
+async function openLoadingAttachment(filePath) {
+  const panelId = window.location.pathname.match(/\/admin\/Loading-Info\/([^/?#]+)/i)?.[1];
+  if (!panelId || panelId === "create" || !filePath) {
+    alert("This attachment is not available yet.");
+    return;
+  }
+
+  // Open synchronously to avoid popup blockers, then replace it with the
+  // authorised file response once it has been received.
+  const previewWindow = window.open("", "_blank");
+  try {
+    const token = localStorage.getItem("token");
+    const response = await fetch(
+      `/api/loading-panel/${encodeURIComponent(panelId)}/attachment?path=${encodeURIComponent(filePath)}`,
+      { headers: { Authorization: `Bearer ${token}` } },
+    );
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+    const objectUrl = URL.createObjectURL(await response.blob());
+    if (previewWindow) {
+      previewWindow.location.replace(objectUrl);
+    } else {
+      window.open(objectUrl, "_blank");
+    }
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 5 * 60 * 1000);
+  } catch (error) {
+    console.error("Unable to open Loading Info attachment:", error);
+    if (previewWindow) previewWindow.close();
+    alert("The attachment could not be opened. It may no longer be present on the server.");
+  }
+}
+
 /* =======================
   UI Components
 ========================= */
@@ -5547,7 +5584,7 @@ function FileUploadItem({ file, onRemove, index, label, isExisting = false, read
 
   const handleView = () => {
     if (isExisting && file.path) {
-      window.open(file.path, '_blank');
+      openLoadingAttachment(file.path);
     } else if (file.type && file.type.startsWith('image/')) {
       const url = URL.createObjectURL(file);
       window.open(url, '_blank');
@@ -5843,14 +5880,16 @@ function OwnerSearchDropdown({ onSelect, placeholder = "Search owner...", readOn
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const url = query ? `/api/owners?search=${encodeURIComponent(query)}` : '/api/owners';
+      const url = query
+        ? `/api/loading-panel/reference-data?lookup=owners&search=${encodeURIComponent(query)}`
+        : '/api/loading-panel/reference-data?lookup=owners';
       const res = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-      if (data.success && Array.isArray(data.data)) {
-        setOwners(data.data);
-        setFilteredOwners(data.data);
+      if (data.success && Array.isArray(data.data?.owners)) {
+        setOwners(data.data.owners);
+        setFilteredOwners(data.data.owners);
       }
     } catch (err) {
       console.error("Error fetching owners:", err);

@@ -5217,7 +5217,9 @@ function useVehicleSearch() {
     setError(null);
     try {
       const token = localStorage.getItem('token');
-      const url = query ? `/api/vehicles?search=${encodeURIComponent(query)}` : '/api/vehicles';
+      const url = query
+        ? `/api/loading-panel/reference-data?lookup=vehicles&search=${encodeURIComponent(query)}`
+        : '/api/loading-panel/reference-data?lookup=vehicles';
       
       const res = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
@@ -5229,8 +5231,8 @@ function useVehicleSearch() {
       
       const data = await res.json();
       
-      if (data.success && Array.isArray(data.data)) {
-        setVehicles(data.data);
+      if (data.success && Array.isArray(data.data?.vehicles)) {
+        setVehicles(data.data.vehicles);
       } else {
         setVehicles([]);
         setError(data.message || 'No vehicles found');
@@ -5249,7 +5251,7 @@ function useVehicleSearch() {
     setError(null);
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`/api/vehicles?id=${id}`, {
+      const res = await fetch('/api/loading-panel/reference-data?lookup=vehicles', {
         headers: { Authorization: `Bearer ${token}` },
       });
       
@@ -5259,8 +5261,9 @@ function useVehicleSearch() {
       
       const data = await res.json();
       
-      if (data.success && data.data) {
-        return data.data;
+      const vehicle = data.data?.vehicles?.find((item) => item._id === id);
+      if (data.success && vehicle) {
+        return vehicle;
       } else {
         setError(data.message || 'Vehicle not found');
         return null;
@@ -5290,15 +5293,17 @@ function useOwnerSearch() {
     setError(null);
     try {
       const token = localStorage.getItem('token');
-      const url = vehicleNumber ? `/api/owners?search=${encodeURIComponent(vehicleNumber)}` : '/api/owners';
+      const url = vehicleNumber
+        ? `/api/loading-panel/reference-data?lookup=owners&search=${encodeURIComponent(vehicleNumber)}`
+        : '/api/loading-panel/reference-data?lookup=owners';
       
       const res = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
       
-      if (data.success && Array.isArray(data.data)) {
-        setOwners(data.data);
+      if (data.success && Array.isArray(data.data?.owners)) {
+        setOwners(data.data.owners);
       } else {
         setOwners([]);
         setError(data.message || 'No owners found');
@@ -5548,12 +5553,16 @@ function FileUploadItem({ file, onRemove, index, label, isCameraPhoto = false, p
   );
 }
 
-function VehicleSearchDropdown({ onSelect, placeholder = "Search vehicle...", selectedVehicleId }) {
-  const [searchQuery, setSearchQuery] = useState("");
+function VehicleSearchDropdown({ onSelect, placeholder = "Search vehicle...", selectedVehicleId, value = "" }) {
+  const [searchQuery, setSearchQuery] = useState(value || "");
   const [showDropdown, setShowDropdown] = useState(false);
   const [filteredVehicles, setFilteredVehicles] = useState([]);
   const dropdownRef = useRef(null);
   const vehicleSearch = useVehicleSearch();
+
+  useEffect(() => {
+    setSearchQuery(value || "");
+  }, [value]);
 
   useEffect(() => {
     if (vehicleSearch.vehicles.length > 0) {
@@ -6356,14 +6365,16 @@ export default function CreateLoadingInfoPanel() {
       setLoading(true);
       try {
         const token = localStorage.getItem('token');
-        const url = query ? `/api/owners?search=${encodeURIComponent(query)}` : '/api/owners';
+        const url = query
+          ? `/api/loading-panel/reference-data?lookup=owners&search=${encodeURIComponent(query)}`
+          : '/api/loading-panel/reference-data?lookup=owners';
         const res = await fetch(url, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
-        if (data.success && Array.isArray(data.data)) {
-          setOwners(data.data);
-          setFilteredOwners(data.data);
+        if (data.success && Array.isArray(data.data?.owners)) {
+          setOwners(data.data.owners);
+          setFilteredOwners(data.data.owners);
         }
       } catch (err) {
         console.error("Error fetching owners:", err);
@@ -6574,13 +6585,13 @@ export default function CreateLoadingInfoPanel() {
     if (vehicle.vehicleNumber) {
       try {
         const token = localStorage.getItem('token');
-        const res = await fetch(`/api/owners?search=${encodeURIComponent(vehicle.vehicleNumber)}`, {
+        const res = await fetch(`/api/loading-panel/reference-data?lookup=owners&search=${encodeURIComponent(vehicle.vehicleNumber)}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
         
-        if (data.success && Array.isArray(data.data) && data.data.length > 0) {
-          const owner = data.data[0];
+        if (data.success && Array.isArray(data.data?.owners) && data.data.owners.length > 0) {
+          const owner = data.data.owners[0];
           
           setVehicleInfo(prev => ({
             ...prev,
@@ -8543,12 +8554,32 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
                             onSelect={handleVehicleSelect}
                             placeholder="Type to search vehicle..."
                             selectedVehicleId={selectedVehicle?._id}
+                            value={vehicleInfo.vehicleNo}
                           />
                           <div className="text-xs text-slate-400 mt-1">Search by vehicle number or owner name</div>
                         </div>
 
                         <div className="mt-3 pt-2 border-t border-slate-200">
-                          {/* Owner search disabled */}
+                          <label className="text-xs font-bold text-slate-600">Or Search by Owner Name</label>
+                          <OwnerSearchDropdown
+                            onSelect={(owner) => {
+                              setVehicleInfo((prev) => ({
+                                ...prev,
+                                vehicleNo: owner.vehicleNumber || "",
+                                vehicleOwnerName: owner.ownerName || "",
+                                vehicleOwnerRC: owner.rcNumber || "",
+                                ownerPanCard: owner.ownerPanCard || "",
+                                message: `Vehicle Owner: ${owner.ownerName || ""}\nContact: ${owner.mobileNumber1 || owner.mobileNumber2 || ""}\nRC Number: ${owner.rcNumber || ""}`,
+                                remarks: `Pan Card: ${owner.ownerPanCard || "N/A"}`,
+                              }));
+                              setSelectedVehicle({
+                                _id: owner._id,
+                                vehicleNumber: owner.vehicleNumber || "",
+                                ownerName: owner.ownerName || "",
+                              });
+                            }}
+                            placeholder="Search by owner name, vehicle number, or RC number..."
+                          />
                         </div>
 
                         <button
