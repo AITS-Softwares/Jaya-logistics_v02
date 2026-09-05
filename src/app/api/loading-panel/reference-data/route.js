@@ -9,6 +9,8 @@ import LoadingPanel from "../LoadingPanel";
 import Branch from "@/app/api/branches/schema";
 import Plant from "@/app/api/plants/schema";
 import SubCompany from "@/models/SubCompany";
+import Vehicle from "@/app/api/vehicles/Vehicle";
+import Owner from "@/app/api/owners/Owner";
 
 const orderFields = [
   "orderNo", "partyName", "plantCode", "plantCodeValue", "plantName", "orderType",
@@ -104,6 +106,54 @@ function loadingVnnReference(vnn) {
   };
 }
 
+// Vehicle and owner masters remain protected by their own APIs. Loading Info
+// needs a small, read-only subset solely to select the vehicle that is being
+// loaded, so expose that subset through this transaction-scoped endpoint.
+function loadingVehicleReference(vehicle = {}) {
+  return {
+    _id: vehicle._id,
+    vehicleNumber: vehicle.vehicleNumber || "",
+    ownerName: vehicle.ownerName || "",
+    ownerId: vehicle.ownerId || "",
+    rcNumber: vehicle.rcNumber || "",
+    pucNumber: vehicle.pucNumber || "",
+    fitnessNumber: vehicle.fitnessNumber || "",
+    chasisNumber: vehicle.chasisNumber || "",
+    insuranceNumber: vehicle.insuranceNumber || "",
+    vehicleType: vehicle.vehicleType || "",
+    vehicleWeight: vehicle.vehicleWeight ?? "",
+    rcDocuments: vehicle.rcDocuments || [],
+    pucDocuments: vehicle.pucDocuments || [],
+    fitnessDocuments: vehicle.fitnessDocuments || [],
+    weightSlipDocuments: vehicle.weightSlipDocuments || [],
+    insuranceDocuments: vehicle.insuranceDocuments || [],
+    chasisDocuments: vehicle.chasisDocuments || [],
+    vehiclePhotos: vehicle.vehiclePhotos || [],
+  };
+}
+
+function loadingOwnerReference(owner = {}) {
+  return {
+    _id: owner._id,
+    ownerName: owner.ownerName || "",
+    vehicleNumber: owner.vehicleNumber || "",
+    ownerPanCard: owner.ownerPanCard || "",
+    mobileNumber1: owner.mobileNumber1 || "",
+    mobileNumber2: owner.mobileNumber2 || "",
+    adharCardNumber: owner.adharCardNumber || "",
+    rcNumber: owner.rcNumber || "",
+    rcDocuments: owner.rcDocuments || [],
+    panCardDocuments: owner.panCardDocuments || [],
+    adharCardDocuments: owner.adharCardDocuments || [],
+  };
+}
+
+function searchFilter(search, fields) {
+  if (!search) return {};
+  const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return { $or: fields.map((field) => ({ [field]: { $regex: escaped, $options: "i" } })) };
+}
+
 /**
  * Data required by the Loading Info create form.
  *
@@ -116,6 +166,33 @@ export const GET = withAuth(async (req, context, user) => {
     await connectDb();
     const url = new URL(req.url);
     const vnnId = url.searchParams.get("vnnId");
+    const lookup = url.searchParams.get("lookup");
+    const search = url.searchParams.get("search")?.trim() || "";
+
+    // Do not make Loading Info users depend on the master-data routes. These
+    // routes enforce Master Data permission and were the source of the 403s
+    // and blank auto-filled fields for Loading Info-only users.
+    if (lookup === "vehicles") {
+      const vehicles = await Vehicle.find(
+        {
+          companyId: user.companyId,
+          isActive: { $ne: false },
+          ...searchFilter(search, ["vehicleNumber", "ownerName", "rcNumber", "chasisNumber"]),
+        },
+      ).sort({ vehicleNumber: 1 }).lean();
+      return NextResponse.json({ success: true, data: { vehicles: vehicles.map(loadingVehicleReference) } });
+    }
+
+    if (lookup === "owners") {
+      const owners = await Owner.find(
+        {
+          companyId: user.companyId,
+          isActive: { $ne: false },
+          ...searchFilter(search, ["ownerName", "vehicleNumber", "rcNumber", "mobileNumber1"]),
+        },
+      ).sort({ ownerName: 1 }).lean();
+      return NextResponse.json({ success: true, data: { owners: owners.map(loadingOwnerReference) } });
+    }
 
     // The form requests pack rows only after the user selects one eligible VNN.
     // This avoids exposing complete Order Panel records or loading all pack rows
