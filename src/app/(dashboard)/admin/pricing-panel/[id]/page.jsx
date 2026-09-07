@@ -3878,7 +3878,7 @@ export default function EditPricingPanel() {
   const router = useRouter();
   const params = useParams();
   const panelId = params.id;
-  const { canApprove, canEdit } = usePermission();
+  const { canApprove, canCreate, canEdit } = usePermission();
   const PART2_APPROVAL_MODULE = 'Pricing Panel - Part 2 Approval';
 
   const [branches, setBranches] = useState([]);
@@ -4470,7 +4470,7 @@ export default function EditPricingPanel() {
   // overrides a user's Pricing Panel edit permission for Part 1.
   const part1Editable = canEdit('Pricing Panel');
   const part2Editable = workflowPhase === 'part2' && canApprove(PART2_APPROVAL_MODULE);
-  const canSubmitPart1 = part1Editable && workflowPhase === 'part1' && rateApproval.approvalStatus !== 'Approved';
+  const canSubmitPart1 = (part1Editable || canCreate('Pricing Panel')) && workflowPhase === 'part1' && rateApproval.approvalStatus !== 'Approved';
 
   const billingColumns = [
     { key: "billingType", label: "Billing Type", options: BILLING_TYPES },
@@ -4524,7 +4524,7 @@ export default function EditPricingPanel() {
 
           <div className="flex items-center gap-3">
             {canSubmitPart1 && (
-              <button onClick={() => handleWorkflowAction('submit-part1')} disabled={saving} className="rounded-xl bg-indigo-600 px-5 py-2 text-sm font-bold text-white hover:bg-indigo-700 disabled:bg-gray-400">
+              <button onClick={() => handleWorkflowAction('submit-part1')} disabled={workflowSaving} className="rounded-xl bg-indigo-600 px-5 py-2 text-sm font-bold text-white hover:bg-indigo-700 disabled:bg-gray-400">
                 Submit Saved Part 1 for Approval
               </button>
             )}
@@ -4543,7 +4543,7 @@ export default function EditPricingPanel() {
                   </svg>
                   Updating...
                 </span>
-              ) : 'Update Pricing Panel'}
+              ) : 'Draft'}
             </button>
           </div>
         </div>
@@ -4724,7 +4724,7 @@ export default function EditPricingPanel() {
               <label className="text-xs font-bold text-slate-600">{rateApproval.uploadFileName ? 'Replace Rate Approval Upload' : 'Rate Approval Upload'}</label>
               <input type="file" accept=".pdf,.png,.jpg,.jpeg" onChange={handleFileSelect} disabled={!part1Editable} className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 disabled:bg-slate-50" />
               {rateApproval.uploadFileName && <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-green-600">✓ {rateApproval.uploadFileName}{rateApproval.uploadFilePath && <button type="button" onClick={handleOpenAttachment} className="font-bold text-sky-700 underline">View attachment</button>}{part1Editable && !rateApproval.uploadFile && <button type="button" onClick={handleRemoveAttachment} className="font-bold text-rose-700 underline">Remove attachment</button>}</div>}
-              {part1Editable && rateApproval.uploadFile && <p className="mt-1 text-xs text-amber-700">Replacement selected. Click Update Pricing Panel to save it and remove the previous file.</p>}
+              {part1Editable && rateApproval.uploadFile && <p className="mt-1 text-xs text-amber-700">Replacement selected. Click Draft to save it and remove the previous file.</p>}
             </div>
             <Select
               col="col-span-12 md:col-span-4"

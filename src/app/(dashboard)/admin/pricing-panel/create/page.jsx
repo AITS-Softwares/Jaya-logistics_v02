@@ -3681,7 +3681,7 @@ export default function PricingPanelPage() {
     }
   };
 
-  const handleSaveAll = async () => {
+  const handleSaveAll = async ({ submitAfterSave = false } = {}) => {
     if (!header.branch) {
       alert("Please select a branch");
       return;
@@ -3805,14 +3805,43 @@ export default function PricingPanelPage() {
         throw new Error(data.message || `Failed to save pricing panel: ${res.status}`);
       }
 
+      const savedPanelId = data.data?._id;
+      if (!savedPanelId) {
+        throw new Error('Pricing panel was saved, but its ID was not returned.');
+      }
+
+      // A new record must exist before it can enter Part 2. Creating and
+      // submitting here makes the two visible actions useful immediately,
+      // without requiring the user to refresh or reopen the entry.
+      if (submitAfterSave) {
+        const workflowResponse = await fetch('/api/pricing-panel', {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ id: savedPanelId, action: 'submit-part1' }),
+        });
+        const workflowData = await workflowResponse.json();
+        if (!workflowResponse.ok || !workflowData.success) {
+          // The draft was created successfully. Open it so the user can fix
+          // any submission requirement instead of creating a duplicate.
+          alert(`Pricing panel was saved as a draft. ${workflowData.message || 'It could not be submitted for approval.'}`);
+          router.replace(`/admin/pricing-panel/${savedPanelId}`);
+          return;
+        }
+      }
+
       setSaveSuccess(true);
       setPricingSerialNo(data.data?.pricingSerialNo || "Generated");
       
-      alert(`✅ Pricing panel saved successfully!\nPricing Serial No: ${data.data?.pricingSerialNo}`);
-      // Do not retain selected VNN/order values after a successful create.
-      // The list reloads the saved record from the server and avoids an
-      // accidental duplicate submission from stale form state.
-      router.replace('/admin/pricing-panel');
+      alert(submitAfterSave
+        ? `✅ Pricing panel submitted for approval!\nPricing Serial No: ${data.data?.pricingSerialNo}`
+        : `✅ Pricing panel saved as a draft!\nPricing Serial No: ${data.data?.pricingSerialNo}`);
+      // Go straight to the saved entry. It now immediately shows the Draft
+      // and Submit for Approval actions, rather than making the user refresh
+      // the list or reopen the document.
+      router.replace(`/admin/pricing-panel/${savedPanelId}`);
       
     } catch (error) {
       console.error('Error saving pricing panel:', error);
@@ -3902,7 +3931,20 @@ export default function PricingPanelPage() {
 
           <div className="flex items-center gap-3">
             <button
-              onClick={handleSaveAll}
+              type="button"
+              onClick={() => handleSaveAll({ submitAfterSave: true })}
+              disabled={saving}
+              className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${
+                saving
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-indigo-600 hover:bg-indigo-700'
+              }`}
+            >
+              {saving ? 'Saving...' : 'Submit for Approval'}
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSaveAll()}
               disabled={saving}
               className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${
                 saving
@@ -3918,7 +3960,7 @@ export default function PricingPanelPage() {
                   </svg>
                   Saving...
                 </span>
-              ) : 'Save All'}
+              ) : 'Draft'}
             </button>
           </div>
         </div>

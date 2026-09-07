@@ -2021,9 +2021,14 @@ export async function PATCH(req) {
       }, { status: 404 });
     }
 
-    const part1Actions = ['submit-part1', 'amend-part1'];
     const part2Actions = ['approve', 'reject', 'update-approval', 'approve-with-update', 'amend-part2'];
-    if (part1Actions.includes(action) && !hasPermission(user, 'edit')) {
+    // Submitting is the final step of creating a Part 1 draft. A user with
+    // create-only access must be able to submit the draft they just created;
+    // changing an existing Part 1 still requires edit permission.
+    if (action === 'submit-part1' && !hasPermission(user, 'edit') && !hasPermission(user, 'create')) {
+      return NextResponse.json({ success: false, message: 'Permission denied: create or edit permission is required to submit Pricing Panel Part 1.' }, { status: 403 });
+    }
+    if (action === 'amend-part1' && !hasPermission(user, 'edit')) {
       return NextResponse.json({ success: false, message: 'Permission denied: edit action not allowed for Pricing Panel.' }, { status: 403 });
     }
     if (part2Actions.includes(action) && !hasPart2ApprovalPermission(user, 'approve')) {
