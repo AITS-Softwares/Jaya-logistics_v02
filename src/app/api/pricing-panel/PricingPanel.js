@@ -606,7 +606,10 @@ const pricingPanelSchema = new mongoose.Schema({
     },
     approval: {
       type: String,
-      enum: ['Pending', 'Approved', 'Rejected', 'Completed'],
+      // Keep this in sync with rateApproval.approvalStatus. Report rows are
+      // regenerated on every save, so a valid Part 2 choice must also be a
+      // valid report-row value.
+      enum: ['Pending', 'Pending from Team', 'Pending from Client', 'Approved', 'Rejected', 'Completed'],
       default: 'Pending'
     },
     // ✅ ADD SUB-COMPANY TO REPORT ROWS
