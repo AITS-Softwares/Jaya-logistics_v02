@@ -60,6 +60,7 @@
 import { NextResponse } from "next/server";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
+import { randomUUID } from "crypto";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -146,7 +147,9 @@ export async function POST(req) {
     // Generate unique filename
     const timestamp = Date.now();
     const safeFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-    const filename = `${timestamp}-${safeFileName}`;
+    // Multiple same-named photos are uploaded concurrently. Date.now() alone
+    // can collide and overwrite a file, leaving a record with a missing preview.
+    const filename = `${timestamp}-${randomUUID()}-${safeFileName}`;
     const filepath = path.join(uploadDir, filename);
     console.log(`💾 Saving to: ${filepath}`);
 

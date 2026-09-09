@@ -2915,7 +2915,7 @@ function useLoadingInfo() {
     try {
       const token = localStorage.getItem('token');
       
-      const loadingRes = await fetch('/api/loading-panel?format=table', {
+      const loadingRes = await fetch('/api/purchase-panel/reference-data', {
         headers: { Authorization: `Bearer ${token}` },
       });
       
@@ -2926,41 +2926,16 @@ function useLoadingInfo() {
       }
       
       const loadingData = await loadingRes.json();
-      
-      const purchaseRes = await fetch('/api/purchase-panel?format=table', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      
-      let usedLoadingInfos = new Set();
-      
-      if (purchaseRes.ok) {
-        const purchaseData = await purchaseRes.json();
-        if (purchaseData.success && Array.isArray(purchaseData.data)) {
-          purchaseData.data.forEach(item => {
-            if (item.loadingInfoNo && item.loadingInfoNo !== '') {
-              usedLoadingInfos.add(item.loadingInfoNo);
-            }
-          });
-        }
-      }
-      
-      if (loadingData.success && Array.isArray(loadingData.data)) {
-        const availableInfos = loadingData.data.filter(info => 
-          info.vehicleNegotiationNo && 
-          info.vehicleNegotiationNo !== 'N/A' &&
-          !usedLoadingInfos.has(info.vehicleArrivalNo)
-        );
-        
-        console.log(`📊 Found ${availableInfos.length} available loading infos out of ${loadingData.data.length} total`);
-        
-        const enhancedData = availableInfos.map(item => ({
+      if (loadingData.success && Array.isArray(loadingData.data?.loadingInfos)) {
+        const enhancedData = loadingData.data.loadingInfos.map(item => ({
           ...item,
           driverNo: item.driverNo || item.driverMobileNo || '',
           vehicleInfo: item.vehicleInfo || {},
           orderRows: item.orderRows || []
         }));
-        
         setLoadingInfos(enhancedData);
+      } else {
+        setLoadingInfos([]);
       }
     } catch (error) {
       console.error('Error fetching loading info:', error);
@@ -3001,7 +2976,7 @@ function useVehicleNegotiation() {
       const token = localStorage.getItem('token');
       console.log(`🔍 Fetching Vehicle Negotiation with VNN: ${vnnNo}`);
       
-      const res = await fetch(`/api/vehicle-negotiation?vnnNo=${encodeURIComponent(vnnNo)}`, {
+      const res = await fetch(`/api/purchase-panel/reference-data?vnnNo=${encodeURIComponent(vnnNo)}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       
@@ -3013,7 +2988,7 @@ function useVehicleNegotiation() {
       const data = await res.json();
       console.log("📦 Vehicle Negotiation Data:", data);
       
-      return data.success ? data.data : null;
+      return data.success ? data.data?.vehicleNegotiation : null;
     } catch (error) {
       console.error('Error fetching negotiation:', error);
       return null;
@@ -3146,12 +3121,12 @@ export default function CreatePurchasePanel() {
   const fetchSubCompanies = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/subcompanies', {
+      const res = await fetch('/api/purchase-panel/reference-data?lookup=subcompanies', {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-      if (data.success && Array.isArray(data.data)) {
-        setSubCompanies(data.data);
+      if (data.success && Array.isArray(data.data?.subCompanies)) {
+        setSubCompanies(data.data.subCompanies);
       } else {
         setSubCompanies([]);
       }
@@ -3305,11 +3280,6 @@ export default function CreatePurchasePanel() {
    * FETCH DATA FROM APIs
    ========================= */
   useEffect(() => {
-    fetchBranches();
-    fetchPlants();
-    fetchPriceLists();
-    fetchOrders();
-    fetchVendors();
     fetchSubCompanies(); 
     loadingInfoHook.fetchLoadingInfos();
   }, []);
@@ -3491,28 +3461,6 @@ export default function CreatePurchasePanel() {
         }
       }
       
-      // ✅ If still no subCompanyId, fetch the full loading panel
-      if (!subCompanyId && loadingInfo.vehicleArrivalNo) {
-        try {
-          const token = localStorage.getItem('token');
-          const fullLoadingRes = await fetch(`/api/loading-panel?vehicleArrivalNo=${loadingInfo.vehicleArrivalNo}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          
-          if (fullLoadingRes.ok) {
-            const fullData = await fullLoadingRes.json();
-            if (fullData.success && fullData.data) {
-              subCompanyId = fullData.data.subCompanyId || '';
-              subCompanyName = fullData.data.subCompanyName || subCompanyName;
-              subCompanyCode = fullData.data.subCompanyCode || subCompanyCode;
-              console.log("📌 Sub-Company from FULL Loading Panel:", { subCompanyId, subCompanyName, subCompanyCode });
-            }
-          }
-        } catch (error) {
-          console.error("Error fetching full loading panel:", error);
-        }
-      }
-      
       const vnnFromLoading = loadingInfo.vehicleNegotiationNo;
       
       if (!vnnFromLoading) {
@@ -3578,62 +3526,19 @@ export default function CreatePurchasePanel() {
       try {
         const token = localStorage.getItem('token');
         
-        // Fetch pricing panel
-        const pricingRes = await fetch('/api/pricing-panel?format=table', {
+        // Purchase users may not have view permission for the source modules.
+        // Resolve every downstream record through the scoped Purchase reference
+        // endpoint instead of calling each master/transaction API directly.
+        const referenceRes = await fetch(`/api/purchase-panel/reference-data?vehicleArrivalNo=${encodeURIComponent(loadingInfo.vehicleArrivalNo)}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        
-        if (pricingRes.ok) {
-          const pricingList = await pricingRes.json();
-          
-          if (pricingList.success && Array.isArray(pricingList.data)) {
-            for (const panel of pricingList.data) {
-              if (panel.vnn === vnnFromLoading || panel.vehicleNegotiationId === vehicleNegotiationId) {
-                const fullPricingRes = await fetch(`/api/pricing-panel?id=${panel.panelId || panel._id}`, {
-                  headers: { Authorization: `Bearer ${token}` },
-                });
-                
-                if (fullPricingRes.ok) {
-                  const fullData = await fullPricingRes.json();
-                  if (fullData.success) {
-                    pricingData = fullData.data;
-                    console.log("✅ Found Pricing Panel:", pricingData.pricingSerialNo);
-                    break;
-                  }
-                }
-              }
-            }
-          }
-        }
-        
-        // Fetch Order Panel data
-        if (vnnData.selectedOrderPanels && vnnData.selectedOrderPanels.length > 0) {
-          const firstOrderPanel = vnnData.selectedOrderPanels[0];
-          if (firstOrderPanel && firstOrderPanel._id) {
-            const orderRes = await fetch(`/api/order-panel?id=${firstOrderPanel._id}`, {
-              headers: { Authorization: `Bearer ${token}` },
-            });
-            
-            if (orderRes.ok) {
-              const orderData = await orderRes.json();
-              if (orderData.success && orderData.data) {
-                orderPanelData = orderData.data;
-                console.log("✅ Found Order Panel Data:", orderPanelData.orderPanelNo);
-              }
-            }
-          }
-        }
-        
-        // Fetch FULL Loading Panel data
-        const loadingPanelRes = await fetch(`/api/loading-panel?vehicleArrivalNo=${loadingInfo.vehicleArrivalNo}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        
-        if (loadingPanelRes.ok) {
-          const loadingPanelResult = await loadingPanelRes.json();
-          if (loadingPanelResult.success && loadingPanelResult.data) {
-            loadingPanelData = loadingPanelResult.data;
-            console.log("✅ Found Loading Panel Data:", loadingPanelData.vehicleArrivalNo);
+
+        if (referenceRes.ok) {
+          const referenceData = await referenceRes.json();
+          if (referenceData.success && referenceData.data) {
+            pricingData = referenceData.data.pricingPanel || null;
+            loadingPanelData = referenceData.data.loadingInfo || null;
+            console.log("✅ Loaded scoped Purchase reference data");
           }
         }
         

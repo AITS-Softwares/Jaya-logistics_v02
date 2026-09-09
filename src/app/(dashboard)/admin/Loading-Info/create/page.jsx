@@ -6599,7 +6599,9 @@ export default function CreateLoadingInfoPanel() {
             vehicleOwnerRC: owner.rcNumber || "",
             ownerPanCard: owner.ownerPanCard || "",
             message: `Vehicle Owner: ${owner.ownerName}\nContact: ${owner.mobileNumber1 || owner.mobileNumber2}\nRC Number: ${owner.rcNumber || ''}`,
-            remarks: `Pan Card: ${owner.ownerPanCard || 'N/A'}\nAdhar Card: ${owner.adharCardNumber || 'N/A'}`
+            // Remarks are intentionally user-entered. Do not copy master-data
+            // identifiers into this free-text field when a vehicle is selected.
+            remarks: ''
           }));
           
           setExistingFiles(prev => ({
@@ -8570,7 +8572,8 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
                                 vehicleOwnerRC: owner.rcNumber || "",
                                 ownerPanCard: owner.ownerPanCard || "",
                                 message: `Vehicle Owner: ${owner.ownerName || ""}\nContact: ${owner.mobileNumber1 || owner.mobileNumber2 || ""}\nRC Number: ${owner.rcNumber || ""}`,
-                                remarks: `Pan Card: ${owner.ownerPanCard || "N/A"}`,
+                                // Keep remarks blank for the user to enter if needed.
+                                remarks: '',
                               }));
                               setSelectedVehicle({
                                 _id: owner._id,
