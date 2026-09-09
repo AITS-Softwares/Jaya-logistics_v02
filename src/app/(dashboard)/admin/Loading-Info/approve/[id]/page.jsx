@@ -1798,6 +1798,45 @@ function num(v) {
 ========================= */
 function FileDisplayItem({ file, label }) {
   const [showModal, setShowModal] = useState(false);
+  const [displayPath, setDisplayPath] = useState(
+    file.previewPath?.startsWith('/api/loading-panel/') ? '' : (file.previewPath || file.path)
+  );
+  // Stored paths retain the real extension; generated display labels often do not.
+  const fileNameForType = file.path || file.originalName || file.name;
+
+  useEffect(() => {
+    const protectedPath = file.previewPath;
+    if (!protectedPath?.startsWith('/api/loading-panel/')) {
+      setDisplayPath(protectedPath || file.path);
+      return undefined;
+    }
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setDisplayPath(file.path);
+      return undefined;
+    }
+
+    let active = true;
+    let objectUrl = '';
+    fetch(protectedPath, { headers: { Authorization: `Bearer ${token}` } })
+      .then((response) => {
+        if (!response.ok) throw new Error(`Attachment request failed: ${response.status}`);
+        return response.blob();
+      })
+      .then((blob) => {
+        objectUrl = URL.createObjectURL(blob);
+        if (active) setDisplayPath(objectUrl);
+      })
+      .catch(() => {
+        if (active) setDisplayPath('');
+      });
+
+    return () => {
+      active = false;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [file.path, file.previewPath]);
   
   const isImage = (filePath) => {
     if (!filePath) return false;
@@ -1816,16 +1855,16 @@ function FileDisplayItem({ file, label }) {
   };
 
   const getFileTypeLabel = () => {
-    if (isImage(file.path)) return 'Image';
-    if (isVideo(file.path)) return 'Video';
+    if (isImage(fileNameForType)) return 'Image';
+    if (isVideo(fileNameForType)) return 'Video';
     return 'Document';
   };
 
   const handleClick = () => {
-    if (isImage(file.path) || isVideo(file.path)) {
+    if (displayPath && (isImage(fileNameForType) || isVideo(fileNameForType))) {
       setShowModal(true);
-    } else if (file.path) {
-      window.open(file.path, '_blank');
+    } else if (displayPath) {
+      window.open(displayPath, '_blank');
     }
   };
 
@@ -1836,9 +1875,9 @@ function FileDisplayItem({ file, label }) {
         className="group relative bg-white rounded-lg border border-slate-200 overflow-hidden hover:shadow-lg hover:border-blue-400 transition-all cursor-pointer"
       >
         <div className="aspect-video bg-gray-100 flex items-center justify-center relative overflow-hidden">
-          {isImage(file.path) ? (
+          {isImage(fileNameForType) && displayPath ? (
             <img 
-              src={file.path} 
+              src={displayPath}
               alt={getFileName()}
               className="w-full h-full object-cover transition-transform group-hover:scale-105"
               onError={(e) => {
@@ -1853,7 +1892,7 @@ function FileDisplayItem({ file, label }) {
                 `;
               }}
             />
-          ) : isVideo(file.path) ? (
+          ) : isVideo(fileNameForType) && displayPath ? (
             <div className="relative w-full h-full bg-gray-800 flex items-center justify-center">
               <svg className="w-16 h-16 text-white opacity-80 group-hover:opacity-100 transition-opacity" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M8 5v14l11-7z"/>
@@ -1903,7 +1942,7 @@ function FileDisplayItem({ file, label }) {
             </button>
             
             <a
-              href={file.path}
+              href={displayPath}
               download
               className="absolute -top-12 left-0 text-white hover:text-gray-300 text-sm flex items-center gap-2 z-10 bg-black/50 px-3 py-1 rounded-lg"
               onClick={(e) => e.stopPropagation()}
@@ -1914,18 +1953,18 @@ function FileDisplayItem({ file, label }) {
               Download
             </a>
             
-            {isImage(file.path) && (
+            {isImage(fileNameForType) && displayPath && (
               <img 
-                src={file.path} 
+                src={displayPath}
                 alt={getFileName()}
                 className="w-full h-full object-contain"
                 onClick={(e) => e.stopPropagation()}
               />
             )}
             
-            {isVideo(file.path) && (
+            {isVideo(fileNameForType) && displayPath && (
               <video 
-                src={file.path} 
+                src={displayPath}
                 controls 
                 autoPlay
                 className="w-full h-full object-contain"
@@ -2436,6 +2475,16 @@ export default function ApproveLoadingPanel() {
         setVlFields(panel.vlFields);
       }
 
+      const attachmentUrl = (filePath) => {
+        if (!filePath || /^https?:\/\//i.test(filePath) || filePath.startsWith('/api/')) return filePath;
+        return `/api/loading-panel/${panelId}/attachment?path=${encodeURIComponent(filePath)}`;
+      };
+      const withPreviewUrl = (file) => ({ ...file, previewPath: attachmentUrl(file.path) });
+      const withPreviewUrls = (files) => files.map(withPreviewUrl);
+      const withGroupPreviewUrls = (groups) => Object.fromEntries(
+        Object.entries(groups).map(([key, files]) => [key, withPreviewUrls(files)])
+      );
+
       // Set existing files - Vehicle Documents
       const vehicleDocs = {
         rc: panel.vehicleInfo?.rcDocument ? [{ path: panel.vehicleInfo.rcDocument, name: 'RC Document', originalName: 'RC Document' }] : [],
@@ -2546,21 +2595,21 @@ export default function ApproveLoadingPanel() {
       }
 
       setExistingFiles({
-        vehicle: vehicleDocs,
-        vbp: vbpFiles,
-        vft: vftFiles,
-        vot: votFiles,
-        vl: vlFiles,
+        vehicle: withGroupPreviewUrls(vehicleDocs),
+        vbp: withGroupPreviewUrls(vbpFiles),
+        vft: withGroupPreviewUrls(vftFiles),
+        vot: withGroupPreviewUrls(votFiles),
+        vl: withGroupPreviewUrls(vlFiles),
         weighment: {
-          weighSlip: panel.loadedWeighment?.weighSlip ? [{
+          weighSlip: panel.loadedWeighment?.weighSlip ? withPreviewUrls([{
             path: panel.loadedWeighment.weighSlip,
             name: 'Weigh Slip',
             originalName: 'Weigh Slip'
-          }] : []
+          }]) : []
         },
-        vehiclePhotos: vehiclePhotos,
-        vehicleSlips: vehicleSlips,
-        loadedVehicleSlips: loadedVehicleSlips
+        vehiclePhotos: withPreviewUrls(vehiclePhotos),
+        vehicleSlips: withPreviewUrls(vehicleSlips),
+        loadedVehicleSlips: withPreviewUrls(loadedVehicleSlips)
       });
 
       // Set approval sections
@@ -2720,6 +2769,31 @@ export default function ApproveLoadingPanel() {
       const data = await res.json();
 
       if (data.success) {
+        // PUT persists the editable values. Final approval is a separate state
+        // transition: without this PATCH, records stay Draft and cannot appear
+        // in the Purchase Panel's approved Loading Info selector.
+        const approvalRes = await fetch('/api/loading-panel', {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            id: panelId,
+            action: 'approve',
+            vbpRemark: vbpUploads.remark,
+            vlLoadingStatus: vlUploads.loadingStatus,
+            loadingCharges: num(loadedWeighment.loadingCharges),
+            loadingStaffMunshiyana: num(loadedWeighment.loadingStaffMunshiyana),
+            otherExpenses: num(loadedWeighment.otherExpenses),
+            vehicleFloorTarpaulin: num(loadedWeighment.vehicleFloorTarpaulin),
+            vehicleOuterTarpaulin: num(loadedWeighment.vehicleOuterTarpaulin),
+          }),
+        });
+        const approvalData = await approvalRes.json();
+        if (!approvalRes.ok || !approvalData.success) {
+          throw new Error(approvalData.message || 'Failed to mark Loading Info as approved');
+        }
         alert(`✅ Loading Panel approved/updated successfully!`);
         router.push('/admin/Loading-Info');
       } else {
@@ -3023,52 +3097,19 @@ export default function ApproveLoadingPanel() {
           </Card>
         </div>
 
-        {/* Pack Type - READ ONLY with ALL pack types displayed */}
-        <div className="mt-4">
-          <Card title="Pack Type (Read Only)">
-            <div className="space-y-6">
-              {/* PALLETIZATION Table */}
-              <div>
-                <div className="mb-3">
-                  <div className="text-sm font-bold text-slate-800 bg-yellow-100 inline-block px-4 py-1.5 rounded-lg">
-                    Palletization
-                  </div>
+        {/* Purchase workflow uses only the Uniform Bags/Boxes pack table here. */}
+        {packData["UNIFORM - BAGS/BOXES"]?.length > 0 ? (
+          <div className="mt-4">
+            <Card title="Pack Type (Read Only)">
+              <div className="space-y-6">
+                <div>
+                  <div className="mb-3"><div className="text-sm font-bold text-slate-800 bg-yellow-100 inline-block px-4 py-1.5 rounded-lg">Uniform - Bags/Boxes</div></div>
+                  <PackTypeTable packType="UNIFORM - BAGS/BOXES" rows={packData["UNIFORM - BAGS/BOXES"]} />
                 </div>
-                <PackTypeTable packType="PALLETIZATION" rows={packData.PALLETIZATION || []} />
               </div>
-
-              {/* UNIFORM - BAGS/BOXES Table */}
-              <div>
-                <div className="mb-3">
-                  <div className="text-sm font-bold text-slate-800 bg-yellow-100 inline-block px-4 py-1.5 rounded-lg">
-                    Uniform - Bags/Boxes
-                  </div>
-                </div>
-                <PackTypeTable packType="UNIFORM - BAGS/BOXES" rows={packData["UNIFORM - BAGS/BOXES"] || []} />
-              </div>
-
-              {/* LOOSE - CARGO Table */}
-              <div>
-                <div className="mb-3">
-                  <div className="text-sm font-bold text-slate-800 bg-yellow-100 inline-block px-4 py-1.5 rounded-lg">
-                    Loose - Cargo
-                  </div>
-                </div>
-                <PackTypeTable packType="LOOSE - CARGO" rows={packData["LOOSE - CARGO"] || []} />
-              </div>
-
-              {/* NON-UNIFORM - GENERAL CARGO Table */}
-              <div>
-                <div className="mb-3">
-                  <div className="text-sm font-bold text-slate-800 bg-yellow-100 inline-block px-4 py-1.5 rounded-lg">
-                    Non-uniform - General Cargo
-                  </div>
-                </div>
-                <PackTypeTable packType="NON-UNIFORM - GENERAL CARGO" rows={packData["NON-UNIFORM - GENERAL CARGO"] || []} />
-              </div>
-            </div>
-          </Card>
-        </div>
+            </Card>
+          </div>
+        ) : null}
 
         {/* VBP Panel - EDITABLE */}
         <div className="mt-4">
@@ -3186,9 +3227,12 @@ export default function ApproveLoadingPanel() {
                     return fileList.map((file, idx) => {
                       // Get dimensions from vlPhotoDetails
                       const fileKey = `${key}_${idx}`;
-                      const width = parseFloat(vlPhotoDetails[`${fileKey}_width`]) || 0;
-                      const height = parseFloat(vlPhotoDetails[`${fileKey}_height`]) || 0;
-                      const nose = parseFloat(vlPhotoDetails[`${fileKey}_nose`]) || 0;
+                      // Current records are stored as { vl1_0: { width, height,
+                      // nose } }; older records used flat field keys. Support both.
+                      const dimensions = vlPhotoDetails[fileKey] || {};
+                      const width = parseFloat(dimensions.width ?? vlPhotoDetails[`${fileKey}_width`]) || 0;
+                      const height = parseFloat(dimensions.height ?? vlPhotoDetails[`${fileKey}_height`]) || 0;
+                      const nose = parseFloat(dimensions.nose ?? vlPhotoDetails[`${fileKey}_nose`]) || 0;
                       const total = (width * height) + nose;
                       
                       return (
