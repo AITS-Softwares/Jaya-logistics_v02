@@ -2429,7 +2429,9 @@ export default function ApproveLoadingPanel() {
           ownerPanCard: panel.vehicleInfo.ownerPanCard || "",
           verified: panel.vehicleInfo.verified || false,
           vehicleType: panel.vehicleInfo.vehicleType || "",
-          message: panel.vehicleInfo.message || "",
+          // Vehicle/owner master data used to be copied into this free-text
+          // field.  The approval view must leave it blank for the approver.
+          message: "",
           remarks: panel.vehicleInfo.remarks || "",
           insuranceNumber: panel.vehicleInfo.insuranceNumber || "",
           chasisNumber: panel.vehicleInfo.chasisNumber || "",
@@ -2769,9 +2771,9 @@ export default function ApproveLoadingPanel() {
       const data = await res.json();
 
       if (data.success) {
-        // PUT persists the editable values. Final approval is a separate state
-        // transition: without this PATCH, records stay Draft and cannot appear
-        // in the Purchase Panel's approved Loading Info selector.
+        // Keep the single submit action, but send each section's chosen status.
+        // The API otherwise defaults omitted statuses to the action's Approved
+        // value and overwrites Pending/Rejected selections.
         const approvalRes = await fetch('/api/loading-panel', {
           method: 'PATCH',
           headers: {
@@ -2781,8 +2783,13 @@ export default function ApproveLoadingPanel() {
           body: JSON.stringify({
             id: panelId,
             action: 'approve',
+            vbpApproval: vbpUploads.approval,
             vbpRemark: vbpUploads.remark,
+            vftApproval: vftUploads.approval,
+            votApproval: votUploads.approval,
+            vlApproval: vlUploads.approval,
             vlLoadingStatus: vlUploads.loadingStatus,
+            weighmentApproval: loadedWeighment.approval,
             loadingCharges: num(loadedWeighment.loadingCharges),
             loadingStaffMunshiyana: num(loadedWeighment.loadingStaffMunshiyana),
             otherExpenses: num(loadedWeighment.otherExpenses),
@@ -2794,7 +2801,7 @@ export default function ApproveLoadingPanel() {
         if (!approvalRes.ok || !approvalData.success) {
           throw new Error(approvalData.message || 'Failed to mark Loading Info as approved');
         }
-        alert(`✅ Loading Panel approved/updated successfully!`);
+        alert(`✅ Loading Panel submitted successfully!`);
         router.push('/admin/Loading-Info');
       } else {
         alert(data.message || 'Failed to update approval');
@@ -2873,7 +2880,7 @@ export default function ApproveLoadingPanel() {
                   </svg>
                   Saving...
                 </span>
-              ) : 'Submit Approval'}
+              ) : 'Submit'}
             </button>
           </div>
         </div>
