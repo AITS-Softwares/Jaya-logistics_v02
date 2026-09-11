@@ -3862,6 +3862,37 @@ export default function EditPurchasePanel() {
         setMemoFileInfo(purchase.memoFile);
       }
 
+      // Hydrate the VNN summary from the Purchase Panel reference endpoint.
+      // This endpoint is intentionally available to Purchase users even when
+      // they do not have permissions for Loading Info or Vehicle Negotiation.
+      if (purchase.loadingInfoNo || purchase.vnnNo) {
+        try {
+          const referenceQuery = purchase.loadingInfoNo
+            ? `vehicleArrivalNo=${encodeURIComponent(purchase.loadingInfoNo)}`
+            : `vnnNo=${encodeURIComponent(purchase.vnnNo)}`;
+          const referenceRes = await fetch(`/api/purchase-panel/reference-data?${referenceQuery}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          const referenceData = await referenceRes.json();
+          const linkedVnn = referenceData.data?.vehicleNegotiation;
+          const linkedLoadingInfo = referenceData.data?.loadingInfo;
+
+          if (referenceRes.ok && referenceData.success && linkedVnn) {
+            setSelectedVNN(linkedVnn);
+            setPurchaseDetails((previous) => ({
+              ...previous,
+              vendorName: previous.vendorName || linkedVnn.approval?.vendorName || "",
+              vendorCode: previous.vendorCode || linkedVnn.approval?.vendorCode || "",
+              vehicleNo: previous.vehicleNo || linkedVnn.approval?.vehicleNo || linkedVnn.vehicleInfo?.vehicleNo || linkedLoadingInfo?.vehicleInfo?.vehicleNo || "",
+              vehicleType: previous.vehicleType || linkedVnn.vehicleInfo?.vehicleType || linkedVnn.approval?.vehicleType || linkedLoadingInfo?.vehicleInfo?.vehicleType || "",
+              driverMobileNo: previous.driverMobileNo || linkedLoadingInfo?.vehicleInfo?.driverMobileNo || "",
+            }));
+          }
+        } catch (referenceError) {
+          console.error("Unable to hydrate Purchase Panel reference data:", referenceError);
+        }
+      }
+
     } catch (error) {
       console.error('Error fetching purchase:', error);
       setApiError(error.message);

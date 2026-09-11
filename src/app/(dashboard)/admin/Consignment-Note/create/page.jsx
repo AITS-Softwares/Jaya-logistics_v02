@@ -4144,7 +4144,7 @@ export default function CreateConsignmentNote() {
         return null;
       }
       
-      const res = await fetch('/api/vehicle-negotiation?format=table', {
+      const res = await fetch(`/api/consignment-note/reference-data?orderNo=${encodeURIComponent(orderNo)}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       
@@ -4153,24 +4153,11 @@ export default function CreateConsignmentNote() {
       }
       
       const data = await res.json();
-      console.log('Vehicle Negotiation API response:', data);
-      
-      if (data.success && Array.isArray(data.data)) {
-        const matchingRecord = data.data.find(record => record.order === orderNo);
-        
-        if (matchingRecord && matchingRecord.vnId) {
-          const detailRes = await fetch(`/api/vehicle-negotiation?id=${matchingRecord.vnId}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          
-          const detailData = await detailRes.json();
-          
-          if (detailData.success && detailData.data) {
-            console.log('✅ Found vehicle negotiation data:', detailData.data);
-            setVehicleNegotiationData(detailData.data);
-            return detailData.data;
-          }
-        }
+      const vehicleNegotiation = data.data?.vehicleNegotiation;
+      if (data.success && vehicleNegotiation) {
+        console.log('✅ Found linked vehicle negotiation data:', vehicleNegotiation);
+        setVehicleNegotiationData(vehicleNegotiation);
+        return vehicleNegotiation;
       }
       
       setVehicleNegotiationData(null);
