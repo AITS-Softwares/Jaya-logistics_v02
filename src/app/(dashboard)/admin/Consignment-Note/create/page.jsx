@@ -249,18 +249,18 @@
 // //         setAllOrders([]);
 // //         return;
 // //       }
-      
+
 // //       const res = await fetch('/api/order-panel?format=table', {
 // //         headers: { Authorization: `Bearer ${token}` },
 // //       });
-      
+
 // //       if (!res.ok) {
 // //         throw new Error(`API returned ${res.status}`);
 // //       }
-      
+
 // //       const data = await res.json();
 // //       console.log('Orders API response:', data);
-      
+
 // //       if (data.success && Array.isArray(data.data)) {
 // //         setAllOrders(data.data);
 // //         setFilteredOrders(data.data);
@@ -290,28 +290,28 @@
 // //         console.warn('No token found');
 // //         return null;
 // //       }
-      
+
 // //       const res = await fetch('/api/vehicle-negotiation?format=table', {
 // //         headers: { Authorization: `Bearer ${token}` },
 // //       });
-      
+
 // //       if (!res.ok) {
 // //         throw new Error(`API returned ${res.status}`);
 // //       }
-      
+
 // //       const data = await res.json();
 // //       console.log('Vehicle Negotiation API response:', data);
-      
+
 // //       if (data.success && Array.isArray(data.data)) {
 // //         const matchingRecord = data.data.find(record => record.order === orderNo);
-        
+
 // //         if (matchingRecord && matchingRecord.vnId) {
 // //           const detailRes = await fetch(`/api/vehicle-negotiation?id=${matchingRecord.vnId}`, {
 // //             headers: { Authorization: `Bearer ${token}` },
 // //           });
-          
+
 // //           const detailData = await detailRes.json();
-          
+
 // //           if (detailData.success && detailData.data) {
 // //             console.log('✅ Found vehicle negotiation data:', detailData.data);
 // //             setVehicleNegotiationData(detailData.data);
@@ -319,7 +319,7 @@
 // //           }
 // //         }
 // //       }
-      
+
 // //       setVehicleNegotiationData(null);
 // //       return null;
 // //     } catch (error) {
@@ -343,18 +343,18 @@
 // //         setCustomers([]);
 // //         return;
 // //       }
-      
+
 // //       const res = await fetch('/api/customers', {
 // //         headers: { Authorization: `Bearer ${token}` },
 // //       });
-      
+
 // //       if (!res.ok) {
 // //         throw new Error(`API returned ${res.status}`);
 // //       }
-      
+
 // //       const data = await res.json();
 // //       console.log('Customers API response:', data);
-      
+
 // //       if (data.success && Array.isArray(data.data)) {
 // //         const customersWithAddress = data.data.map(customer => ({
 // //           ...customer,
@@ -384,7 +384,7 @@
 // //    ========================= */
 // //   const extractAddressesFromCustomer = (customer) => {
 // //     const addresses = [];
-    
+
 // //     if (customer.billingAddresses && Array.isArray(customer.billingAddresses)) {
 // //       customer.billingAddresses.forEach((addr, idx) => {
 // //         if (addr.address1 || addr.address2 || addr.city) {
@@ -400,7 +400,7 @@
 // //         }
 // //       });
 // //     }
-    
+
 // //     if (customer.shippingAddresses && Array.isArray(customer.shippingAddresses)) {
 // //       customer.shippingAddresses.forEach((addr, idx) => {
 // //         if (addr.address1 || addr.address2 || addr.city) {
@@ -416,7 +416,7 @@
 // //         }
 // //       });
 // //     }
-    
+
 // //     if (addresses.length === 0) {
 // //       const oldAddress = customer.address || customer.billingAddress || customer.shippingAddress || customer.customerAddress || '';
 // //       if (oldAddress) {
@@ -428,7 +428,7 @@
 // //         });
 // //       }
 // //     }
-    
+
 // //     return addresses;
 // //   };
 
@@ -445,12 +445,12 @@
 // //    ========================= */
 // //   const handleOrderSearch = (query) => {
 // //     setHeader(prev => ({ ...prev, orderNo: query }));
-    
+
 // //     if (!allOrders || allOrders.length === 0) {
 // //       setFilteredOrders([]);
 // //       return;
 // //     }
-    
+
 // //     if (query.trim() === "") {
 // //       setFilteredOrders(allOrders);
 // //     } else {
@@ -464,45 +464,45 @@
 
 // //   const handleSelectOrder = async (order) => {
 // //     setFetchingOrder(true);
-    
+
 // //     try {
 // //       const token = localStorage.getItem('token');
 // //       const orderId = order._id || order.originalOrderId;
-      
+
 // //       let fullOrder = order;
-      
+
 // //       if (orderId) {
 // //         const res = await fetch(`/api/order-panel?id=${orderId}`, {
 // //           headers: { Authorization: `Bearer ${token}` },
 // //         });
-        
+
 // //         const data = await res.json();
 // //         if (data.success && data.data) {
 // //           fullOrder = data.data;
 // //         }
 // //       }
-      
+
 // //       console.log('Selected Order Details:', fullOrder);
-      
+
 // //       const orderNo = fullOrder.orderPanelNo || fullOrder.orderNo || order.orderNo || '';
 // //       const partyName = fullOrder.partyName || fullOrder.customerName || order.partyName || '';
-      
+
 // //       let plantCode = '';
 // //       let plantName = '';
-      
+
 // //       if (fullOrder.plantRows && fullOrder.plantRows.length > 0) {
 // //         const firstRow = fullOrder.plantRows[0];
 // //         plantCode = firstRow.plantCodeValue || firstRow.plantCode || '';
 // //         plantName = firstRow.plantName || '';
 // //       }
-      
+
 // //       let fromLocation = fullOrder.from || order.from || '';
 // //       let fromState = '';
 // //       let toLocation = fullOrder.to || order.to || '';
 // //       let taluka = fullOrder.taluka || order.taluka || '';
 // //       let district = fullOrder.district || order.district || '';
 // //       let state = fullOrder.state || order.state || '';
-      
+
 // //       if (fullOrder.plantRows && fullOrder.plantRows.length > 0) {
 // //         const firstRow = fullOrder.plantRows[0];
 // //         fromLocation = firstRow.fromName || firstRow.from || fromLocation;
@@ -512,12 +512,12 @@
 // //         district = firstRow.districtName || firstRow.district || district;
 // //         state = firstRow.stateName || firstRow.state || state;
 // //       }
-      
+
 // //       const vehicleData = await fetchVehicleNegotiationByOrder(orderNo);
-      
+
 // //       if (vehicleData && vehicleData.approval) {
 // //         console.log('🚛 Applying vehicle negotiation data:', vehicleData.approval);
-        
+
 // //         setHeader(prev => ({
 // //           ...prev,
 // //           orderNo: orderNo,
@@ -551,14 +551,14 @@
 // //           state: state,
 // //         }));
 // //       }
-      
+
 // //       setConsignor(prev => ({
 // //         ...prev,
 // //         name: partyName
 // //       }));
-      
+
 // //       setIsReadOnly(true);
-      
+
 // //       if (fullOrder.packData) {
 // //         if (fullOrder.packData.PALLETIZATION && fullOrder.packData.PALLETIZATION.length > 0) {
 // //           const palletRows = fullOrder.packData.PALLETIZATION.map(item => ({
@@ -579,7 +579,7 @@
 // //           }));
 // //           setPalletizationRows(palletRows);
 // //         }
-        
+
 // //         if (fullOrder.packData['UNIFORM - BAGS/BOXES'] && fullOrder.packData['UNIFORM - BAGS/BOXES'].length > 0) {
 // //           const uniformRowsData = fullOrder.packData['UNIFORM - BAGS/BOXES'].map(item => ({
 // //             _id: uid(),
@@ -597,7 +597,7 @@
 // //           }));
 // //           setUniformRows(uniformRowsData);
 // //         }
-        
+
 // //         if (fullOrder.packData['LOOSE - CARGO'] && fullOrder.packData['LOOSE - CARGO'].length > 0) {
 // //           const looseRowsData = fullOrder.packData['LOOSE - CARGO'].map(item => ({
 // //             _id: uid(),
@@ -609,7 +609,7 @@
 // //           }));
 // //           setLooseCargoRows(looseRowsData);
 // //         }
-        
+
 // //         if (fullOrder.packData['NON-UNIFORM - GENERAL CARGO'] && fullOrder.packData['NON-UNIFORM - GENERAL CARGO'].length > 0) {
 // //           const nonUniformRowsData = fullOrder.packData['NON-UNIFORM - GENERAL CARGO'].map(item => ({
 // //             _id: uid(),
@@ -626,12 +626,12 @@
 // //           setNonUniformRows(nonUniformRowsData);
 // //         }
 // //       }
-      
+
 // //       const vehicleInfo = vehicleData?.approval?.vehicleNo ? 
 // //         `\n🚛 Vehicle: ${vehicleData.approval.vehicleNo}\n👤 Vendor: ${vehicleData.approval.vendorName || 'N/A'}\n📱 Mobile: ${vehicleData.approval.mobile || 'N/A'}` : '';
-      
+
 // //       alert(`✅ Order ${orderNo} loaded successfully!${vehicleInfo}\nData is now read-only.`);
-      
+
 // //     } catch (error) {
 // //       console.error('Error fetching order details:', error);
 // //       alert(`❌ Failed to load order details: ${error.message}`);
@@ -657,20 +657,20 @@
 // //       }
 // //     }, 200);
 // //   };
-  
+
 // //   const router = useRouter();
-  
+
 // //   /** =========================
 // //    * CUSTOMER DROPDOWN HANDLERS
 // //    ========================= */
 // //   const handleConsignorSearch = (query) => {
 // //     setConsignor(prev => ({ ...prev, name: query }));
-    
+
 // //     if (!customers || customers.length === 0) {
 // //       setFilteredConsignors([]);
 // //       return;
 // //     }
-    
+
 // //     if (query.trim() === "") {
 // //       setFilteredConsignors(customers);
 // //     } else {
@@ -684,14 +684,14 @@
 
 // //   const handleSelectConsignor = (customer) => {
 // //     const addresses = extractAddressesFromCustomer(customer);
-    
+
 // //     setConsignor({
 // //       name: customer.customerName,
 // //       address: addresses.length > 0 ? addresses[0].address : '',
 // //       customerId: customer._id,
 // //       selectedAddressTitle: addresses.length > 0 ? addresses[0].title : ''
 // //     });
-    
+
 // //     setConsignorAddresses(addresses);
 // //     setShowConsignorDropdown(false);
 // //   };
@@ -726,12 +726,12 @@
 
 // //   const handleConsigneeSearch = (query) => {
 // //     setConsignee(prev => ({ ...prev, name: query }));
-    
+
 // //     if (!customers || customers.length === 0) {
 // //       setFilteredConsignees([]);
 // //       return;
 // //     }
-    
+
 // //     if (query.trim() === "") {
 // //       setFilteredConsignees(customers);
 // //     } else {
@@ -745,14 +745,14 @@
 
 // //   const handleSelectConsignee = (customer) => {
 // //     const addresses = extractAddressesFromCustomer(customer);
-    
+
 // //     setConsignee({
 // //       name: customer.customerName,
 // //       address: addresses.length > 0 ? addresses[0].address : '',
 // //       customerId: customer._id,
 // //       selectedAddressTitle: addresses.length > 0 ? addresses[0].title : ''
 // //     });
-    
+
 // //     setConsigneeAddresses(addresses);
 // //     setShowConsigneeDropdown(false);
 // //   };
@@ -818,7 +818,7 @@
 // //       if (!token) {
 // //         throw new Error("No authentication token found");
 // //       }
-      
+
 // //       const payload = {
 // //         header,
 // //         consignor,
@@ -860,11 +860,11 @@
 // //       if (!res.ok) {
 // //         throw new Error(data.message || `Failed to save consignment note: ${res.status}`);
 // //       }
-      
+
 // //       alert(`✅ Consignment Note saved successfully!\nLR No: ${data.data?.lrNo || header.lrNo}`);
-      
+
 // //       router.push('/admin/Consignment-Note');
-      
+
 // //     } catch (error) {
 // //       console.error('Error saving consignment note:', error);
 // //       alert(`❌ Error: ${error.message}`);
@@ -1360,7 +1360,7 @@
 // //                               filteredConsignors.map((customer) => {
 // //                                 const addresses = extractAddressesFromCustomer(customer);
 // //                                 const addressCount = addresses.length;
-                                
+
 // //                                 return (
 // //                                   <div
 // //                                     key={customer._id}
@@ -1389,7 +1389,7 @@
 // //                       </div>
 // //                     </div>
 // //                   </div>
-                  
+
 // //                   <div className="relative" ref={consignorAddressRef}>
 // //                     <label className="text-xs font-bold text-slate-600">Select Address Title</label>
 // //                     <div className="relative">
@@ -1425,7 +1425,7 @@
 // //                       )}
 // //                     </div>
 // //                   </div>
-                  
+
 // //                   <div>
 // //                     <label className="text-xs font-bold text-slate-600">Consignor Address</label>
 // //                     <textarea
@@ -1476,7 +1476,7 @@
 // //                               filteredConsignees.map((customer) => {
 // //                                 const addresses = extractAddressesFromCustomer(customer);
 // //                                 const addressCount = addresses.length;
-                                
+
 // //                                 return (
 // //                                   <div
 // //                                     key={customer._id}
@@ -1505,7 +1505,7 @@
 // //                       </div>
 // //                     </div>
 // //                   </div>
-                  
+
 // //                   <div className="relative" ref={consigneeAddressRef}>
 // //                     <label className="text-xs font-bold text-slate-600">Select Address Title</label>
 // //                     <div className="relative">
@@ -1541,7 +1541,7 @@
 // //                       )}
 // //                     </div>
 // //                   </div>
-                  
+
 // //                   <div>
 // //                     <label className="text-xs font-bold text-slate-600">Consignee Address</label>
 // //                     <textarea
@@ -1565,9 +1565,9 @@
 // //             </div>
 // //           </div>
 // //         </div>
-        
+
 // //         {/* ===== Product Details - All 4 Pack Types ===== */}
-        
+
 // //         {/* PALLETIZATION Section */}
 // //         <div className="mt-4">
 // //           <Card title="Palletization">
@@ -2108,18 +2108,18 @@
 //         setAllOrders([]);
 //         return;
 //       }
-      
+
 //       const res = await fetch('/api/order-panel?format=table', {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       if (!res.ok) {
 //         throw new Error(`API returned ${res.status}`);
 //       }
-      
+
 //       const data = await res.json();
 //       console.log('Orders API response:', data);
-      
+
 //       if (data.success && Array.isArray(data.data)) {
 //         setAllOrders(data.data);
 //         setFilteredOrders(data.data);
@@ -2149,28 +2149,28 @@
 //         console.warn('No token found');
 //         return null;
 //       }
-      
+
 //       const res = await fetch('/api/vehicle-negotiation?format=table', {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       if (!res.ok) {
 //         throw new Error(`API returned ${res.status}`);
 //       }
-      
+
 //       const data = await res.json();
 //       console.log('Vehicle Negotiation API response:', data);
-      
+
 //       if (data.success && Array.isArray(data.data)) {
 //         const matchingRecord = data.data.find(record => record.order === orderNo);
-        
+
 //         if (matchingRecord && matchingRecord.vnId) {
 //           const detailRes = await fetch(`/api/vehicle-negotiation?id=${matchingRecord.vnId}`, {
 //             headers: { Authorization: `Bearer ${token}` },
 //           });
-          
+
 //           const detailData = await detailRes.json();
-          
+
 //           if (detailData.success && detailData.data) {
 //             console.log('✅ Found vehicle negotiation data:', detailData.data);
 //             setVehicleNegotiationData(detailData.data);
@@ -2178,7 +2178,7 @@
 //           }
 //         }
 //       }
-      
+
 //       setVehicleNegotiationData(null);
 //       return null;
 //     } catch (error) {
@@ -2202,18 +2202,18 @@
 //         setCustomers([]);
 //         return;
 //       }
-      
+
 //       const res = await fetch('/api/customers', {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       if (!res.ok) {
 //         throw new Error(`API returned ${res.status}`);
 //       }
-      
+
 //       const data = await res.json();
 //       console.log('Customers API response:', data);
-      
+
 //       if (data.success && Array.isArray(data.data)) {
 //         const customersWithAddress = data.data.map(customer => ({
 //           ...customer,
@@ -2243,7 +2243,7 @@
 //    ========================= */
 //   const extractAddressesFromCustomer = (customer) => {
 //     const addresses = [];
-    
+
 //     if (customer.billingAddresses && Array.isArray(customer.billingAddresses)) {
 //       customer.billingAddresses.forEach((addr, idx) => {
 //         if (addr.address1 || addr.address2 || addr.city) {
@@ -2259,7 +2259,7 @@
 //         }
 //       });
 //     }
-    
+
 //     if (customer.shippingAddresses && Array.isArray(customer.shippingAddresses)) {
 //       customer.shippingAddresses.forEach((addr, idx) => {
 //         if (addr.address1 || addr.address2 || addr.city) {
@@ -2275,7 +2275,7 @@
 //         }
 //       });
 //     }
-    
+
 //     if (addresses.length === 0) {
 //       const oldAddress = customer.address || customer.billingAddress || customer.shippingAddress || customer.customerAddress || '';
 //       if (oldAddress) {
@@ -2287,7 +2287,7 @@
 //         });
 //       }
 //     }
-    
+
 //     return addresses;
 //   };
 
@@ -2304,12 +2304,12 @@
 //    ========================= */
 //   const handleOrderSearch = (query) => {
 //     setHeader(prev => ({ ...prev, orderNo: query }));
-    
+
 //     if (!allOrders || allOrders.length === 0) {
 //       setFilteredOrders([]);
 //       return;
 //     }
-    
+
 //     if (query.trim() === "") {
 //       setFilteredOrders(allOrders);
 //     } else {
@@ -2323,45 +2323,45 @@
 
 //   const handleSelectOrder = async (order) => {
 //     setFetchingOrder(true);
-    
+
 //     try {
 //       const token = localStorage.getItem('token');
 //       const orderId = order._id || order.originalOrderId;
-      
+
 //       let fullOrder = order;
-      
+
 //       if (orderId) {
 //         const res = await fetch(`/api/order-panel?id=${orderId}`, {
 //           headers: { Authorization: `Bearer ${token}` },
 //         });
-        
+
 //         const data = await res.json();
 //         if (data.success && data.data) {
 //           fullOrder = data.data;
 //         }
 //       }
-      
+
 //       console.log('Selected Order Details:', fullOrder);
-      
+
 //       const orderNo = fullOrder.orderPanelNo || fullOrder.orderNo || order.orderNo || '';
 //       const partyName = fullOrder.partyName || fullOrder.customerName || order.partyName || '';
-      
+
 //       let plantCode = '';
 //       let plantName = '';
-      
+
 //       if (fullOrder.plantRows && fullOrder.plantRows.length > 0) {
 //         const firstRow = fullOrder.plantRows[0];
 //         plantCode = firstRow.plantCodeValue || firstRow.plantCode || '';
 //         plantName = firstRow.plantName || '';
 //       }
-      
+
 //       let fromLocation = fullOrder.from || order.from || '';
 //       let fromState = '';
 //       let toLocation = fullOrder.to || order.to || '';
 //       let taluka = fullOrder.taluka || order.taluka || '';
 //       let district = fullOrder.district || order.district || '';
 //       let state = fullOrder.state || order.state || '';
-      
+
 //       if (fullOrder.plantRows && fullOrder.plantRows.length > 0) {
 //         const firstRow = fullOrder.plantRows[0];
 //         fromLocation = firstRow.fromName || firstRow.from || fromLocation;
@@ -2371,12 +2371,12 @@
 //         district = firstRow.districtName || firstRow.district || district;
 //         state = firstRow.stateName || firstRow.state || state;
 //       }
-      
+
 //       const vehicleData = await fetchVehicleNegotiationByOrder(orderNo);
-      
+
 //       if (vehicleData && vehicleData.approval) {
 //         console.log('🚛 Applying vehicle negotiation data:', vehicleData.approval);
-        
+
 //         setHeader(prev => ({
 //           ...prev,
 //           orderNo: orderNo,
@@ -2410,14 +2410,14 @@
 //           state: state,
 //         }));
 //       }
-      
+
 //       setConsignor(prev => ({
 //         ...prev,
 //         name: partyName
 //       }));
-      
+
 //       setIsReadOnly(true);
-      
+
 //       if (fullOrder.packData) {
 //         if (fullOrder.packData.PALLETIZATION && fullOrder.packData.PALLETIZATION.length > 0) {
 //           const palletRows = fullOrder.packData.PALLETIZATION.map(item => ({
@@ -2438,7 +2438,7 @@
 //           }));
 //           setPalletizationRows(palletRows);
 //         }
-        
+
 //         if (fullOrder.packData['UNIFORM - BAGS/BOXES'] && fullOrder.packData['UNIFORM - BAGS/BOXES'].length > 0) {
 //           const uniformRowsData = fullOrder.packData['UNIFORM - BAGS/BOXES'].map(item => ({
 //             _id: uid(),
@@ -2456,7 +2456,7 @@
 //           }));
 //           setUniformRows(uniformRowsData);
 //         }
-        
+
 //         if (fullOrder.packData['LOOSE - CARGO'] && fullOrder.packData['LOOSE - CARGO'].length > 0) {
 //           const looseRowsData = fullOrder.packData['LOOSE - CARGO'].map(item => ({
 //             _id: uid(),
@@ -2468,7 +2468,7 @@
 //           }));
 //           setLooseCargoRows(looseRowsData);
 //         }
-        
+
 //         if (fullOrder.packData['NON-UNIFORM - GENERAL CARGO'] && fullOrder.packData['NON-UNIFORM - GENERAL CARGO'].length > 0) {
 //           const nonUniformRowsData = fullOrder.packData['NON-UNIFORM - GENERAL CARGO'].map(item => ({
 //             _id: uid(),
@@ -2485,12 +2485,12 @@
 //           setNonUniformRows(nonUniformRowsData);
 //         }
 //       }
-      
+
 //       const vehicleInfo = vehicleData?.approval?.vehicleNo ? 
 //         `\n🚛 Vehicle: ${vehicleData.approval.vehicleNo}\n👤 Vendor: ${vehicleData.approval.vendorName || 'N/A'}\n📱 Mobile: ${vehicleData.approval.mobile || 'N/A'}` : '';
-      
+
 //       alert(`✅ Order ${orderNo} loaded successfully!${vehicleInfo}\nData is now read-only.`);
-      
+
 //     } catch (error) {
 //       console.error('Error fetching order details:', error);
 //       alert(`❌ Failed to load order details: ${error.message}`);
@@ -2516,20 +2516,20 @@
 //       }
 //     }, 200);
 //   };
-  
+
 //   const router = useRouter();
-  
+
 //   /** =========================
 //    * CUSTOMER DROPDOWN HANDLERS
 //    ========================= */
 //   const handleConsignorSearch = (query) => {
 //     setConsignor(prev => ({ ...prev, name: query }));
-    
+
 //     if (!customers || customers.length === 0) {
 //       setFilteredConsignors([]);
 //       return;
 //     }
-    
+
 //     if (query.trim() === "") {
 //       setFilteredConsignors(customers);
 //     } else {
@@ -2543,14 +2543,14 @@
 
 //   const handleSelectConsignor = (customer) => {
 //     const addresses = extractAddressesFromCustomer(customer);
-    
+
 //     setConsignor({
 //       name: customer.customerName,
 //       address: addresses.length > 0 ? addresses[0].address : '',
 //       customerId: customer._id,
 //       selectedAddressTitle: addresses.length > 0 ? addresses[0].title : ''
 //     });
-    
+
 //     setConsignorAddresses(addresses);
 //     setShowConsignorDropdown(false);
 //   };
@@ -2585,12 +2585,12 @@
 
 //   const handleConsigneeSearch = (query) => {
 //     setConsignee(prev => ({ ...prev, name: query }));
-    
+
 //     if (!customers || customers.length === 0) {
 //       setFilteredConsignees([]);
 //       return;
 //     }
-    
+
 //     if (query.trim() === "") {
 //       setFilteredConsignees(customers);
 //     } else {
@@ -2604,14 +2604,14 @@
 
 //   const handleSelectConsignee = (customer) => {
 //     const addresses = extractAddressesFromCustomer(customer);
-    
+
 //     setConsignee({
 //       name: customer.customerName,
 //       address: addresses.length > 0 ? addresses[0].address : '',
 //       customerId: customer._id,
 //       selectedAddressTitle: addresses.length > 0 ? addresses[0].title : ''
 //     });
-    
+
 //     setConsigneeAddresses(addresses);
 //     setShowConsigneeDropdown(false);
 //   };
@@ -2677,7 +2677,7 @@
 //       if (!token) {
 //         throw new Error("No authentication token found");
 //       }
-      
+
 //       const payload = {
 //         header,
 //         consignor,
@@ -2723,11 +2723,11 @@
 //       if (!res.ok) {
 //         throw new Error(data.message || `Failed to save consignment note: ${res.status}`);
 //       }
-      
+
 //       alert(`✅ Consignment Note saved successfully!\nLR No: ${data.data?.lrNo || header.lrNo}`);
-      
+
 //       router.push('/admin/Consignment-Note');
-      
+
 //     } catch (error) {
 //       console.error('Error saving consignment note:', error);
 //       alert(`❌ Error: ${error.message}`);
@@ -3271,7 +3271,7 @@
 //                               filteredConsignors.map((customer) => {
 //                                 const addresses = extractAddressesFromCustomer(customer);
 //                                 const addressCount = addresses.length;
-                                
+
 //                                 return (
 //                                   <div
 //                                     key={customer._id}
@@ -3300,7 +3300,7 @@
 //                       </div>
 //                     </div>
 //                   </div>
-                  
+
 //                   <div className="relative" ref={consignorAddressRef}>
 //                     <label className="text-xs font-bold text-slate-600">Select Address Title</label>
 //                     <div className="relative">
@@ -3336,7 +3336,7 @@
 //                       )}
 //                     </div>
 //                   </div>
-                  
+
 //                   <div>
 //                     <label className="text-xs font-bold text-slate-600">Consignor Address</label>
 //                     <textarea
@@ -3387,7 +3387,7 @@
 //                               filteredConsignees.map((customer) => {
 //                                 const addresses = extractAddressesFromCustomer(customer);
 //                                 const addressCount = addresses.length;
-                                
+
 //                                 return (
 //                                   <div
 //                                     key={customer._id}
@@ -3416,7 +3416,7 @@
 //                       </div>
 //                     </div>
 //                   </div>
-                  
+
 //                   <div className="relative" ref={consigneeAddressRef}>
 //                     <label className="text-xs font-bold text-slate-600">Select Address Title</label>
 //                     <div className="relative">
@@ -3452,7 +3452,7 @@
 //                       )}
 //                     </div>
 //                   </div>
-                  
+
 //                   <div>
 //                     <label className="text-xs font-bold text-slate-600">Consignee Address</label>
 //                     <textarea
@@ -3476,9 +3476,9 @@
 //             </div>
 //           </div>
 //         </div>
-        
+
 //         {/* ===== Product Details - All 4 Pack Types ===== */}
-        
+
 //         {/* PALLETIZATION Section */}
 //         <div className="mt-4">
 //           <Card title="Palletization">
@@ -3760,7 +3760,7 @@
 //                 />
 //                 <div className="text-xs text-slate-400 mt-1">Date when vehicle was unloaded</div>
 //               </div>
-              
+
 //               <div className="col-span-12 md:col-span-8">
 //                 <label className="text-xs font-bold text-slate-600">Remarks / Notes</label>
 //                 <textarea
@@ -3811,13 +3811,13 @@ const UNIT_OPTIONS = ["MT", "KG", "LTR", "TON", "M3", "PCS"];
 const PKGS_TYPE_OPTIONS = ["Drum", "Boxes", "Bags", "Cartons", "Crates", "Pallets", "Box"];
 const UOM_OPTIONS = ["KG", "LTR", "TON", "M3", "PCS", "Kgs", "Ltr", "MT"];
 const PRODUCT_NAME_OPTIONS = [
-  "CALCIUM NITRATE 20KG", 
-  "CALCIUM NITRATE 10KG", 
-  "CALCIUM NITRATE 1KG", 
-  "Chromite Sand", 
-  "Bud Builder", 
-  "Di-Betic Easter", 
-  "Polysulphate - Premium", 
+  "CALCIUM NITRATE 20KG",
+  "CALCIUM NITRATE 10KG",
+  "CALCIUM NITRATE 1KG",
+  "Chromite Sand",
+  "Bud Builder",
+  "Di-Betic Easter",
+  "Polysulphate - Premium",
   "YaraVita Stopit 1Ltr",
   "CN 25 Kgs"
 ];
@@ -3827,6 +3827,8 @@ const LC_STATUS_OPTIONS = ["LC", "Not LC"];
 const LR_TYPE_OPTIONS = ["Export", "Import", "Normal"];
 const VEHICLE_REACH_OPTIONS = ["Reach", "Not Reach"];
 const VERIFICATION_OPTIONS = ["Verified", "Not Verified"];
+// Orders that already have an LR in one of these statuses are hidden from the order picker
+const HIDE_ORDER_IF_LR_STATUS = ['Approved'];
 
 function uid() {
   return Math.random().toString(36).slice(2, 10);
@@ -4063,18 +4065,18 @@ export default function CreateConsignmentNote() {
         setSubCompanies([]);
         return;
       }
-      
+
       const res = await fetch('/api/subcompanies', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       if (!res.ok) {
         throw new Error(`API returned ${res.status}`);
       }
-      
+
       const data = await res.json();
       console.log('Sub-Companies API response:', data);
-      
+
       if (data.success && Array.isArray(data.data)) {
         setSubCompanies(data.data);
         console.log(`✅ Loaded ${data.data.length} sub-companies`);
@@ -4102,22 +4104,45 @@ export default function CreateConsignmentNote() {
         setAllOrders([]);
         return;
       }
-      
+
       const res = await fetch('/api/order-panel?format=table', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       if (!res.ok) {
         throw new Error(`API returned ${res.status}`);
       }
-      
+
       const data = await res.json();
       console.log('Orders API response:', data);
-      
+
+      // Collect order numbers that already have an approved/completed LR
+      const usedOrderNos = new Set();
+      try {
+        const lrRes = await fetch('/api/consignment-note', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (lrRes.ok) {
+          const lrData = await lrRes.json();
+          (lrData.data || []).forEach((n) => {
+            const no = n.header?.orderNo;
+            if (no && HIDE_ORDER_IF_LR_STATUS.includes(n.header?.status)) {
+              usedOrderNos.add(String(no).trim().toLowerCase());
+            }
+          });
+        }
+      } catch (e) {
+        console.warn('Could not load existing LRs, showing all orders', e);
+      }
+
       if (data.success && Array.isArray(data.data)) {
-        setAllOrders(data.data);
-        setFilteredOrders(data.data);
-        console.log(`✅ Loaded ${data.data.length} orders`);
+        const availableOrders = data.data.filter((o) => {
+          const no = String(o.orderNo || o.orderPanelNo || '').trim().toLowerCase();
+          return !usedOrderNos.has(no);
+        });
+        setAllOrders(availableOrders);
+        setFilteredOrders(availableOrders);
+        console.log(`✅ Loaded ${availableOrders.length} orders (${data.data.length - availableOrders.length} hidden, LR already exists)`);
       } else {
         setAllOrders([]);
         setFilteredOrders([]);
@@ -4143,15 +4168,15 @@ export default function CreateConsignmentNote() {
         console.warn('No token found');
         return null;
       }
-      
+
       const res = await fetch(`/api/consignment-note/reference-data?orderNo=${encodeURIComponent(orderNo)}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       if (!res.ok) {
         throw new Error(`API returned ${res.status}`);
       }
-      
+
       const data = await res.json();
       const vehicleNegotiation = data.data?.vehicleNegotiation;
       if (data.success && vehicleNegotiation) {
@@ -4159,7 +4184,7 @@ export default function CreateConsignmentNote() {
         setVehicleNegotiationData(vehicleNegotiation);
         return vehicleNegotiation;
       }
-      
+
       setVehicleNegotiationData(null);
       return null;
     } catch (error) {
@@ -4183,18 +4208,18 @@ export default function CreateConsignmentNote() {
         setCustomers([]);
         return;
       }
-      
+
       const res = await fetch('/api/customers', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       if (!res.ok) {
         throw new Error(`API returned ${res.status}`);
       }
-      
+
       const data = await res.json();
       console.log('Customers API response:', data);
-      
+
       if (data.success && Array.isArray(data.data)) {
         const customersWithAddress = data.data.map(customer => ({
           ...customer,
@@ -4224,7 +4249,7 @@ export default function CreateConsignmentNote() {
    ========================= */
   const extractAddressesFromCustomer = (customer) => {
     const addresses = [];
-    
+
     if (customer.billingAddresses && Array.isArray(customer.billingAddresses)) {
       customer.billingAddresses.forEach((addr, idx) => {
         if (addr.address1 || addr.address2 || addr.city) {
@@ -4240,7 +4265,7 @@ export default function CreateConsignmentNote() {
         }
       });
     }
-    
+
     if (customer.shippingAddresses && Array.isArray(customer.shippingAddresses)) {
       customer.shippingAddresses.forEach((addr, idx) => {
         if (addr.address1 || addr.address2 || addr.city) {
@@ -4256,7 +4281,7 @@ export default function CreateConsignmentNote() {
         }
       });
     }
-    
+
     if (addresses.length === 0) {
       const oldAddress = customer.address || customer.billingAddress || customer.shippingAddress || customer.customerAddress || '';
       if (oldAddress) {
@@ -4268,7 +4293,7 @@ export default function CreateConsignmentNote() {
         });
       }
     }
-    
+
     return addresses;
   };
 
@@ -4286,12 +4311,12 @@ export default function CreateConsignmentNote() {
    ========================= */
   const handleOrderSearch = (query) => {
     setHeader(prev => ({ ...prev, orderNo: query }));
-    
+
     if (!allOrders || allOrders.length === 0) {
       setFilteredOrders([]);
       return;
     }
-    
+
     if (query.trim() === "") {
       setFilteredOrders(allOrders);
     } else {
@@ -4305,45 +4330,45 @@ export default function CreateConsignmentNote() {
 
   const handleSelectOrder = async (order) => {
     setFetchingOrder(true);
-    
+
     try {
       const token = localStorage.getItem('token');
       const orderId = order._id || order.originalOrderId;
-      
+
       let fullOrder = order;
-      
+
       if (orderId) {
         const res = await fetch(`/api/order-panel?id=${orderId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        
+
         const data = await res.json();
         if (data.success && data.data) {
           fullOrder = data.data;
         }
       }
-      
+
       console.log('Selected Order Details:', fullOrder);
-      
+
       const orderNo = fullOrder.orderPanelNo || fullOrder.orderNo || order.orderNo || '';
       const partyName = fullOrder.partyName || fullOrder.customerName || order.partyName || '';
-      
+
       let plantCode = '';
       let plantName = '';
-      
+
       if (fullOrder.plantRows && fullOrder.plantRows.length > 0) {
         const firstRow = fullOrder.plantRows[0];
         plantCode = firstRow.plantCodeValue || firstRow.plantCode || '';
         plantName = firstRow.plantName || '';
       }
-      
+
       let fromLocation = fullOrder.from || order.from || '';
       let fromState = '';
       let toLocation = fullOrder.to || order.to || '';
       let taluka = fullOrder.taluka || order.taluka || '';
       let district = fullOrder.district || order.district || '';
       let state = fullOrder.state || order.state || '';
-      
+
       if (fullOrder.plantRows && fullOrder.plantRows.length > 0) {
         const firstRow = fullOrder.plantRows[0];
         fromLocation = firstRow.fromName || firstRow.from || fromLocation;
@@ -4353,17 +4378,17 @@ export default function CreateConsignmentNote() {
         district = firstRow.districtName || firstRow.district || district;
         state = firstRow.stateName || firstRow.state || state;
       }
-      
+
       // ✅ Get sub-company from order
       const subCompanyName = fullOrder.subCompanyName || '';
       const subCompanyCode = fullOrder.subCompanyCode || '';
       const subCompanyId = fullOrder.subCompanyId || '';
-      
+
       const vehicleData = await fetchVehicleNegotiationByOrder(orderNo);
-      
+
       if (vehicleData && vehicleData.approval) {
         console.log('🚛 Applying vehicle negotiation data:', vehicleData.approval);
-        
+
         setHeader(prev => ({
           ...prev,
           orderNo: orderNo,
@@ -4405,14 +4430,14 @@ export default function CreateConsignmentNote() {
           subCompanyCode: subCompanyCode || prev.subCompanyCode
         }));
       }
-      
+
       setConsignor(prev => ({
         ...prev,
         name: partyName
       }));
-      
+
       setIsReadOnly(true);
-      
+
       if (fullOrder.packData) {
         if (fullOrder.packData.PALLETIZATION && fullOrder.packData.PALLETIZATION.length > 0) {
           const palletRows = fullOrder.packData.PALLETIZATION.map(item => ({
@@ -4433,7 +4458,7 @@ export default function CreateConsignmentNote() {
           }));
           setPalletizationRows(palletRows);
         }
-        
+
         if (fullOrder.packData['UNIFORM - BAGS/BOXES'] && fullOrder.packData['UNIFORM - BAGS/BOXES'].length > 0) {
           const uniformRowsData = fullOrder.packData['UNIFORM - BAGS/BOXES'].map(item => ({
             _id: uid(),
@@ -4451,7 +4476,7 @@ export default function CreateConsignmentNote() {
           }));
           setUniformRows(uniformRowsData);
         }
-        
+
         if (fullOrder.packData['LOOSE - CARGO'] && fullOrder.packData['LOOSE - CARGO'].length > 0) {
           const looseRowsData = fullOrder.packData['LOOSE - CARGO'].map(item => ({
             _id: uid(),
@@ -4463,7 +4488,7 @@ export default function CreateConsignmentNote() {
           }));
           setLooseCargoRows(looseRowsData);
         }
-        
+
         if (fullOrder.packData['NON-UNIFORM - GENERAL CARGO'] && fullOrder.packData['NON-UNIFORM - GENERAL CARGO'].length > 0) {
           const nonUniformRowsData = fullOrder.packData['NON-UNIFORM - GENERAL CARGO'].map(item => ({
             _id: uid(),
@@ -4480,14 +4505,14 @@ export default function CreateConsignmentNote() {
           setNonUniformRows(nonUniformRowsData);
         }
       }
-      
-      const vehicleInfo = vehicleData?.approval?.vehicleNo ? 
+
+      const vehicleInfo = vehicleData?.approval?.vehicleNo ?
         `\n🚛 Vehicle: ${vehicleData.approval.vehicleNo}\n👤 Vendor: ${vehicleData.approval.vendorName || 'N/A'}\n📱 Mobile: ${vehicleData.approval.mobile || 'N/A'}` : '';
-      
+
       const subCompanyInfo = subCompanyName ? `\n🏢 Sub-Company: ${subCompanyName} (${subCompanyCode})` : '';
-      
+
       alert(`✅ Order ${orderNo} loaded successfully!${vehicleInfo}${subCompanyInfo}\nData is now read-only.`);
-      
+
     } catch (error) {
       console.error('Error fetching order details:', error);
       alert(`❌ Failed to load order details: ${error.message}`);
@@ -4513,18 +4538,18 @@ export default function CreateConsignmentNote() {
       }
     }, 200);
   };
-  
+
   /** =========================
    * CUSTOMER DROPDOWN HANDLERS
    ========================= */
   const handleConsignorSearch = (query) => {
     setConsignor(prev => ({ ...prev, name: query }));
-    
+
     if (!customers || customers.length === 0) {
       setFilteredConsignors([]);
       return;
     }
-    
+
     if (query.trim() === "") {
       setFilteredConsignors(customers);
     } else {
@@ -4538,14 +4563,14 @@ export default function CreateConsignmentNote() {
 
   const handleSelectConsignor = (customer) => {
     const addresses = extractAddressesFromCustomer(customer);
-    
+
     setConsignor({
       name: customer.customerName,
       address: addresses.length > 0 ? addresses[0].address : '',
       customerId: customer._id,
       selectedAddressTitle: addresses.length > 0 ? addresses[0].title : ''
     });
-    
+
     setConsignorAddresses(addresses);
     setShowConsignorDropdown(false);
   };
@@ -4580,12 +4605,12 @@ export default function CreateConsignmentNote() {
 
   const handleConsigneeSearch = (query) => {
     setConsignee(prev => ({ ...prev, name: query }));
-    
+
     if (!customers || customers.length === 0) {
       setFilteredConsignees([]);
       return;
     }
-    
+
     if (query.trim() === "") {
       setFilteredConsignees(customers);
     } else {
@@ -4599,14 +4624,14 @@ export default function CreateConsignmentNote() {
 
   const handleSelectConsignee = (customer) => {
     const addresses = extractAddressesFromCustomer(customer);
-    
+
     setConsignee({
       name: customer.customerName,
       address: addresses.length > 0 ? addresses[0].address : '',
       customerId: customer._id,
       selectedAddressTitle: addresses.length > 0 ? addresses[0].title : ''
     });
-    
+
     setConsigneeAddresses(addresses);
     setShowConsigneeDropdown(false);
   };
@@ -4672,7 +4697,7 @@ export default function CreateConsignmentNote() {
       if (!token) {
         throw new Error("No authentication token found");
       }
-      
+
       const payload = {
         header: {
           ...header,
@@ -4728,12 +4753,12 @@ export default function CreateConsignmentNote() {
       if (!res.ok) {
         throw new Error(data.message || `Failed to save consignment note: ${res.status}`);
       }
-      
+
       const subCompanyMsg = header.subCompanyName ? `\n🏢 Sub-Company: ${header.subCompanyName}` : '';
       alert(`✅ Consignment Note saved successfully!\nLR No: ${data.data?.lrNo || header.lrNo}${subCompanyMsg}`);
-      
+
       router.push('/admin/Consignment-Note');
-      
+
     } catch (error) {
       console.error('Error saving consignment note:', error);
       alert(`❌ Error: ${error.message}`);
@@ -4804,11 +4829,10 @@ export default function CreateConsignmentNote() {
             <button
               onClick={handleSave}
               disabled={saving || fetchingOrder}
-              className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${
-                saving || fetchingOrder
-                  ? 'bg-gray-400 cursor-not-allowed' 
-                  : 'bg-emerald-600 hover:bg-emerald-700'
-              }`}
+              className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${saving || fetchingOrder
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-emerald-600 hover:bg-emerald-700'
+                }`}
             >
               {saving ? (
                 <span className="flex items-center gap-2">
@@ -4880,8 +4904,8 @@ export default function CreateConsignmentNote() {
                     ))
                   ) : (
                     <div className="p-3 text-center text-sm text-slate-500">
-                      {header.orderNo.trim() ? 
-                        `No orders found for "${header.orderNo}"` : 
+                      {header.orderNo.trim() ?
+                        `No orders found for "${header.orderNo}"` :
                         "No orders available. Please create orders first."
                       }
                     </div>
@@ -5327,7 +5351,7 @@ export default function CreateConsignmentNote() {
                               filteredConsignors.map((customer) => {
                                 const addresses = extractAddressesFromCustomer(customer);
                                 const addressCount = addresses.length;
-                                
+
                                 return (
                                   <div
                                     key={customer._id}
@@ -5345,8 +5369,8 @@ export default function CreateConsignmentNote() {
                               })
                             ) : (
                               <div className="p-3 text-center text-sm text-slate-500">
-                                {consignor.name.trim() ? 
-                                  `No customers found for "${consignor.name}"` : 
+                                {consignor.name.trim() ?
+                                  `No customers found for "${consignor.name}"` :
                                   "No customers available"
                                 }
                               </div>
@@ -5356,7 +5380,7 @@ export default function CreateConsignmentNote() {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="relative" ref={consignorAddressRef}>
                     <label className="text-xs font-bold text-slate-600">Select Address Title</label>
                     <div className="relative">
@@ -5392,7 +5416,7 @@ export default function CreateConsignmentNote() {
                       )}
                     </div>
                   </div>
-                  
+
                   <div>
                     <label className="text-xs font-bold text-slate-600">Consignor Address</label>
                     <textarea
@@ -5443,7 +5467,7 @@ export default function CreateConsignmentNote() {
                               filteredConsignees.map((customer) => {
                                 const addresses = extractAddressesFromCustomer(customer);
                                 const addressCount = addresses.length;
-                                
+
                                 return (
                                   <div
                                     key={customer._id}
@@ -5461,8 +5485,8 @@ export default function CreateConsignmentNote() {
                               })
                             ) : (
                               <div className="p-3 text-center text-sm text-slate-500">
-                                {consignee.name.trim() ? 
-                                  `No customers found for "${consignee.name}"` : 
+                                {consignee.name.trim() ?
+                                  `No customers found for "${consignee.name}"` :
                                   "No customers available"
                                 }
                               </div>
@@ -5472,7 +5496,7 @@ export default function CreateConsignmentNote() {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="relative" ref={consigneeAddressRef}>
                     <label className="text-xs font-bold text-slate-600">Select Address Title</label>
                     <div className="relative">
@@ -5508,7 +5532,7 @@ export default function CreateConsignmentNote() {
                       )}
                     </div>
                   </div>
-                  
+
                   <div>
                     <label className="text-xs font-bold text-slate-600">Consignee Address</label>
                     <textarea
@@ -5532,7 +5556,7 @@ export default function CreateConsignmentNote() {
             </div>
           </div>
         </div>
-        
+
         {/* ===== Product Details - All 4 Pack Types ===== */}
         {/* (PALLETIZATION, UNIFORM, LOOSE CARGO, NON-UNIFORM tables remain the same) */}
 
@@ -5644,12 +5668,11 @@ export default function CreateConsignmentNote() {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-slate-600">Status:</span>
-                      <span className={`font-bold px-2 py-0.5 rounded-full text-xs ${
-                        header.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                      <span className={`font-bold px-2 py-0.5 rounded-full text-xs ${header.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
                         header.status === 'Approved' ? 'bg-green-100 text-green-800' :
-                        header.status === 'Completed' ? 'bg-blue-100 text-blue-800' :
-                        'bg-red-100 text-red-800'
-                      }`}>
+                          header.status === 'Completed' ? 'bg-blue-100 text-blue-800' :
+                            'bg-red-100 text-red-800'
+                        }`}>
                         {header.status}
                       </span>
                     </div>
@@ -5675,7 +5698,7 @@ export default function CreateConsignmentNote() {
                 />
                 <div className="text-xs text-slate-400 mt-1">Date when vehicle was unloaded</div>
               </div>
-              
+
               <div className="col-span-12 md:col-span-8">
                 <label className="text-xs font-bold text-slate-600">Remarks / Notes</label>
                 <textarea

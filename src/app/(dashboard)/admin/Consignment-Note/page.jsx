@@ -24,23 +24,23 @@
 // //     setLoading(true);
 // //     try {
 // //       const token = localStorage.getItem('token');
-      
+
 // //       const params = new URLSearchParams({ format: 'table' });
 // //       if (filters.search) params.append('search', filters.search);
 // //       if (filters.fromDate) params.append('fromDate', filters.fromDate);
 // //       if (filters.toDate) params.append('toDate', filters.toDate);
 // //       if (filters.status) params.append('status', filters.status);
-      
+
 // //       const res = await fetch(`/api/consignment-note?${params.toString()}`, {
 // //         headers: { Authorization: `Bearer ${token}` },
 // //       });
-      
+
 // //       if (!res.ok) {
 // //         throw new Error(`HTTP error! status: ${res.status}`);
 // //       }
-      
+
 // //       const data = await res.json();
-      
+
 // //       if (data.success) {
 // //         setNotes(data.data || []);
 // //       } else {
@@ -112,11 +112,11 @@
 // //   const handleView = (noteId) => {
 // //     router.push(`/admin/Consignment-Note/view/${noteId}`);
 // //   };
-  
+
 // //   const handleApprove = (noteId) => {
 // //     router.push(`/admin/Consignment-Note/approve/${noteId}`);
 // //   };
-  
+
 // //   const getStatusColor = (status) => {
 // //     switch(status?.toLowerCase()) {
 // //       case 'approved': return 'bg-green-100 text-green-800';
@@ -298,7 +298,7 @@
 // //                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
 // //                             </svg>
 // //                           </button>
-                        
+
 // //                           <button
 // //                             onClick={() => handleApprove(item._id)}
 // //                             className="p-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition"
@@ -308,7 +308,7 @@
 // //                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
 // //                             </svg>
 // //                           </button>
-                          
+
 // //                           <button
 // //                             onClick={() => handleDelete(item._id, item.lrNo)}
 // //                             disabled={deleteLoading === item._id}
@@ -393,23 +393,23 @@
 //     setError(null);
 //     try {
 //       const token = localStorage.getItem('token');
-      
+
 //       const params = new URLSearchParams({ format: 'table' });
 //       if (filters.search) params.append('search', filters.search);
 //       if (filters.fromDate) params.append('fromDate', filters.fromDate);
 //       if (filters.toDate) params.append('toDate', filters.toDate);
 //       if (filters.status) params.append('status', filters.status);
-      
+
 //       const res = await fetch(`/api/consignment-note?${params.toString()}`, {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       if (!res.ok) {
 //         throw new Error(`HTTP error! status: ${res.status}`);
 //       }
-      
+
 //       const data = await res.json();
-      
+
 //       if (data.success) {
 //         setNotes(data.data || []);
 //       } else {
@@ -505,7 +505,7 @@
 //   const handleView = (noteId) => {
 //     router.push(`/admin/Consignment-Note/view/${noteId}`);
 //   };
-  
+
 //   // ✅ NEW: Quick Approve function - approves without going to approve page
 //   const handleQuickApprove = async (noteId, lrNo) => {
 //     if (!canApprove(MODULE_NAME)) {
@@ -556,7 +556,7 @@
 //     }
 //     router.push(`/admin/Consignment-Note/approve/${noteId}`);
 //   };
-  
+
 //   const getStatusColor = (status) => {
 //     switch(status?.toLowerCase()) {
 //       case 'approved': return 'bg-green-100 text-green-800';
@@ -777,7 +777,7 @@
 //                               </svg>
 //                             </button>
 //                           )}
-                        
+
 //                           {/* ✅ Quick Approve Button - Green (with checkmark) */}
 //                           {canApprove(MODULE_NAME) && item.status !== 'Approved' && item.status !== 'Rejected' && item.status !== 'Completed' && (
 //                             <button
@@ -795,7 +795,7 @@
 //                               )}
 //                             </button>
 //                           )}
-                          
+
 //                           {/* ✅ Full Approve Button - Blue (with details) */}
 //                           {canApprove(MODULE_NAME) && item.status !== 'Approved' && item.status !== 'Rejected' && item.status !== 'Completed' && (
 //                             <button
@@ -808,7 +808,7 @@
 //                               </svg>
 //                             </button>
 //                           )}
-                          
+
 //                           {/* Delete Button - Only shown if user has delete permission */}
 //                           {canDelete(MODULE_NAME) && (
 //                             <button
@@ -896,23 +896,23 @@ export default function ConsignmentNoteList() {
     setError(null);
     try {
       const token = localStorage.getItem('token');
-      
+
       const params = new URLSearchParams({ format: 'table' });
       if (filters.search) params.append('search', filters.search);
       if (filters.fromDate) params.append('fromDate', filters.fromDate);
       if (filters.toDate) params.append('toDate', filters.toDate);
       if (filters.status) params.append('status', filters.status);
-      
+
       const res = await fetch(`/api/consignment-note?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       if (!res.ok) {
         throw new Error(`HTTP error! status: ${res.status}`);
       }
-      
+
       const data = await res.json();
-      
+
       if (data.success) {
         setNotes(data.data || []);
       } else {
@@ -1008,7 +1008,7 @@ export default function ConsignmentNoteList() {
   const handleView = (noteId) => {
     router.push(`/admin/Consignment-Note/view/${noteId}`);
   };
-  
+
   // ✅ Quick Approve function - approves without going to approve page
   const handleQuickApprove = async (noteId, lrNo) => {
     if (!canApprove(MODULE_NAME)) {
@@ -1029,8 +1029,8 @@ export default function ConsignmentNoteList() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ 
-          id: noteId, 
+        body: JSON.stringify({
+          id: noteId,
           action: 'approve'
         })
       });
@@ -1059,9 +1059,9 @@ export default function ConsignmentNoteList() {
     }
     router.push(`/admin/Consignment-Note/approve/${noteId}`);
   };
-  
+
   const getStatusColor = (status) => {
-    switch(status?.toLowerCase()) {
+    switch (status?.toLowerCase()) {
       case 'approved': return 'bg-green-100 text-green-800';
       case 'rejected': return 'bg-red-100 text-red-800';
       case 'completed': return 'bg-blue-100 text-blue-800';
@@ -1090,7 +1090,7 @@ export default function ConsignmentNoteList() {
         <div className="text-center max-w-md p-8 bg-white rounded-xl shadow-lg">
           <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg className="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                 d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
           </div>
@@ -1219,6 +1219,7 @@ export default function ConsignmentNoteList() {
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Date</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">LR No</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Party Name</th>
+                  <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Order No</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">LC Status</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">LR Type</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">From → To</th>
@@ -1231,7 +1232,7 @@ export default function ConsignmentNoteList() {
               <tbody className="divide-y divide-slate-200">
                 {loading ? (
                   <tr>
-                    <td colSpan="11" className="px-4 py-12 text-center">
+                    <td colSpan="12" className="px-4 py-12 text-center">
                       <div className="flex items-center justify-center">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500"></div>
                       </div>
@@ -1246,18 +1247,17 @@ export default function ConsignmentNoteList() {
                       <td className="px-4 py-3">
                         <div className="font-medium text-slate-800">{item.partyName}</div>
                       </td>
+                      <td className="px-4 py-3 text-slate-600">{item.orderNo}</td>
                       <td className="px-4 py-3">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          item.lcStatus === 'LC' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
-                        }`}>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${item.lcStatus === 'LC' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
+                          }`}>
                           {item.lcStatus || 'Not LC'}
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          item.lrType === 'Export' ? 'bg-green-100 text-green-800' :
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${item.lrType === 'Export' ? 'bg-green-100 text-green-800' :
                           item.lrType === 'Import' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'
-                        }`}>
+                          }`}>
                           {item.lrType || 'Normal'}
                         </span>
                       </td>
@@ -1289,7 +1289,7 @@ export default function ConsignmentNoteList() {
                               </svg>
                             </button>
                           )}
-                        
+
                           {/* ✅ Quick Approve Button - Green (with checkmark) - Based ONLY on permission */}
                           {canApprove(MODULE_NAME) && (
                             <button
@@ -1307,7 +1307,7 @@ export default function ConsignmentNoteList() {
                               )}
                             </button>
                           )}
-                          
+
                           {/* ✅ Full Approve Button - Blue (with details) - Based ONLY on permission */}
                           {canApprove(MODULE_NAME) && (
                             <button
@@ -1320,7 +1320,7 @@ export default function ConsignmentNoteList() {
                               </svg>
                             </button>
                           )}
-                          
+
                           {/* Delete Button - Only shown if user has delete permission */}
                           {canDelete(MODULE_NAME) && (
                             <button
@@ -1344,7 +1344,7 @@ export default function ConsignmentNoteList() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="11" className="px-4 py-12 text-center text-slate-500">
+                    <td colSpan="12" className="px-4 py-12 text-center text-slate-500">
                       <div className="flex flex-col items-center">
                         <svg className="w-16 h-16 text-slate-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
