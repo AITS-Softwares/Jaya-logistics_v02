@@ -3210,7 +3210,8 @@ const PAYMENT_TERMS_OPTIONS = [
   "90 % Advance", 
   "Rs.10,000/- Balance Only", 
   "Rs. 5000/- Balance Only", 
-  "Full Payment after Delivery"
+  "Full Payment after Delivery",
+  "Custom / Manual"
 ];
 const RATE_TYPE_OPTIONS = ["Per MT", "Fixed"];
 const VENDOR_STATUS_OPTIONS = ["Active", "Blacklisted"];
@@ -3224,6 +3225,15 @@ function uid() {
 function num(v) {
   const n = Number(v);
   return Number.isFinite(n) ? n : 0;
+}
+
+function advanceForPaymentTerm(paymentTerms, purchaseAmount) {
+  const amount = num(purchaseAmount);
+  if (paymentTerms === "90 % Advance") return amount * 0.9;
+  if (paymentTerms === "Rs.10,000/- Balance Only") return 10000;
+  if (paymentTerms === "Rs. 5000/- Balance Only") return 5000;
+  if (paymentTerms === "Full Payment after Delivery") return 0;
+  return amount * 0.8;
 }
 
 /* =======================
@@ -3553,6 +3563,12 @@ export default function EditPurchasePanel() {
    * PURCHASE AMOUNT FROM VNN (A x B)
    ========================= */
   const [purchaseAmountFromVNN, setPurchaseAmountFromVNN] = useState(0);
+
+  useEffect(() => {
+    if (purchaseDetails.paymentTerms === "Custom / Manual") return;
+    const advance = advanceForPaymentTerm(purchaseDetails.paymentTerms, purchaseAmountFromVNN).toString();
+    setPurchaseDetails((current) => current.advance === advance ? current : { ...current, advance });
+  }, [purchaseDetails.paymentTerms, purchaseAmountFromVNN]);
 
   /** =========================
    * FETCH LOADING
@@ -5531,9 +5547,11 @@ export default function EditPurchasePanel() {
                         type="number"
                         value={purchaseDetails.advance}
                         onChange={(e) => setPurchaseDetails({ ...purchaseDetails, advance: e.target.value })}
-                        className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500"
+                        readOnly={purchaseDetails.paymentTerms !== "Custom / Manual"}
+                        className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none ${purchaseDetails.paymentTerms === "Custom / Manual" ? "bg-white focus:border-sky-500" : "bg-slate-100 cursor-not-allowed"}`}
                         placeholder="0"
                       />
+                      <p className="text-xs text-slate-500 mt-1">Select Custom / Manual to enter an amount.</p>
                     </div>
                   </div>
                 </div>

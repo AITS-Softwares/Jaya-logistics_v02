@@ -1,4 +1,4 @@
-       
+
 
 // "use client";
 
@@ -263,17 +263,17 @@
 //         setAllOrders([]);
 //         return;
 //       }
-      
+
 //       const res = await fetch('/api/order-panel?format=table', {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       if (!res.ok) {
 //         throw new Error(`API returned ${res.status}`);
 //       }
-      
+
 //       const data = await res.json();
-      
+
 //       if (data.success && Array.isArray(data.data)) {
 //         setAllOrders(data.data);
 //         setFilteredOrders(data.data);
@@ -302,17 +302,17 @@
 //         setCustomers([]);
 //         return;
 //       }
-      
+
 //       const res = await fetch('/api/customers', {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       if (!res.ok) {
 //         throw new Error(`API returned ${res.status}`);
 //       }
-      
+
 //       const data = await res.json();
-      
+
 //       if (data.success && Array.isArray(data.data)) {
 //         const customersWithAddress = data.data.map(customer => ({
 //           ...customer,
@@ -341,7 +341,7 @@
 //    ========================= */
 //   const extractAddressesFromCustomer = (customer) => {
 //     const addresses = [];
-    
+
 //     if (customer.billingAddresses && Array.isArray(customer.billingAddresses)) {
 //       customer.billingAddresses.forEach((addr, idx) => {
 //         if (addr.address1 || addr.address2 || addr.city) {
@@ -357,7 +357,7 @@
 //         }
 //       });
 //     }
-    
+
 //     if (customer.shippingAddresses && Array.isArray(customer.shippingAddresses)) {
 //       customer.shippingAddresses.forEach((addr, idx) => {
 //         if (addr.address1 || addr.address2 || addr.city) {
@@ -373,7 +373,7 @@
 //         }
 //       });
 //     }
-    
+
 //     if (addresses.length === 0) {
 //       const oldAddress = customer.address || customer.billingAddress || customer.shippingAddress || customer.customerAddress || '';
 //       if (oldAddress) {
@@ -385,7 +385,7 @@
 //         });
 //       }
 //     }
-    
+
 //     return addresses;
 //   };
 
@@ -397,32 +397,32 @@
 //     try {
 //       const token = localStorage.getItem('token');
 //       if (!token) return null;
-      
+
 //       const res = await fetch('/api/vehicle-negotiation?format=table', {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       if (!res.ok) return null;
-      
+
 //       const data = await res.json();
-      
+
 //       if (data.success && Array.isArray(data.data)) {
 //         const matchingRecord = data.data.find(record => record.order === orderNo);
-        
+
 //         if (matchingRecord && matchingRecord.vnId) {
 //           const detailRes = await fetch(`/api/vehicle-negotiation?id=${matchingRecord.vnId}`, {
 //             headers: { Authorization: `Bearer ${token}` },
 //           });
-          
+
 //           const detailData = await detailRes.json();
-          
+
 //           if (detailData.success && detailData.data) {
 //             setVehicleNegotiationData(detailData.data);
 //             return detailData.data;
 //           }
 //         }
 //       }
-      
+
 //       setVehicleNegotiationData(null);
 //       return null;
 //     } catch (error) {
@@ -441,24 +441,24 @@
 //     setFetchLoading(true);
 //     try {
 //       const token = localStorage.getItem('token');
-      
+
 //       const res = await fetch(`/api/consignment-note?id=${noteId}`, {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       if (!res.ok) {
 //         throw new Error(`HTTP error! status: ${res.status}`);
 //       }
-      
+
 //       const data = await res.json();
-      
+
 //       if (!data.success) {
 //         throw new Error(data.message || 'Failed to fetch consignment note');
 //       }
 
 //       const note = data.data;
 //       console.log("📦 Consignment Note Data:", note);
-      
+
 //       // Set header data
 //       setHeader({
 //         orderNo: note.header?.orderNo || "",
@@ -593,12 +593,12 @@
 //    ========================= */
 //   const handleOrderSearch = (query) => {
 //     setHeader(prev => ({ ...prev, orderNo: query }));
-    
+
 //     if (!allOrders || allOrders.length === 0) {
 //       setFilteredOrders([]);
 //       return;
 //     }
-    
+
 //     if (query.trim() === "") {
 //       setFilteredOrders(allOrders);
 //     } else {
@@ -612,43 +612,43 @@
 
 //   const handleSelectOrder = async (order) => {
 //     setFetchingData(true);
-    
+
 //     try {
 //       const token = localStorage.getItem('token');
 //       const orderId = order._id || order.originalOrderId;
-      
+
 //       let fullOrder = order;
-      
+
 //       if (orderId) {
 //         const res = await fetch(`/api/order-panel?id=${orderId}`, {
 //           headers: { Authorization: `Bearer ${token}` },
 //         });
-        
+
 //         const data = await res.json();
 //         if (data.success && data.data) {
 //           fullOrder = data.data;
 //         }
 //       }
-      
+
 //       const orderNo = fullOrder.orderPanelNo || fullOrder.orderNo || order.orderNo || '';
 //       const partyName = fullOrder.partyName || fullOrder.customerName || order.partyName || '';
-      
+
 //       let plantCode = '';
 //       let plantName = '';
-      
+
 //       if (fullOrder.plantRows && fullOrder.plantRows.length > 0) {
 //         const firstRow = fullOrder.plantRows[0];
 //         plantCode = firstRow.plantCodeValue || firstRow.plantCode || '';
 //         plantName = firstRow.plantName || '';
 //       }
-      
+
 //       let fromLocation = fullOrder.from || order.from || '';
 //       let fromState = '';
 //       let toLocation = fullOrder.to || order.to || '';
 //       let taluka = fullOrder.taluka || order.taluka || '';
 //       let district = fullOrder.district || order.district || '';
 //       let state = fullOrder.state || order.state || '';
-      
+
 //       if (fullOrder.plantRows && fullOrder.plantRows.length > 0) {
 //         const firstRow = fullOrder.plantRows[0];
 //         fromLocation = firstRow.fromName || firstRow.from || fromLocation;
@@ -658,10 +658,10 @@
 //         district = firstRow.districtName || firstRow.district || district;
 //         state = firstRow.stateName || firstRow.state || state;
 //       }
-      
+
 //       // Fetch vehicle negotiation data for this order
 //       const vehicleData = await fetchVehicleNegotiationByOrder(orderNo);
-      
+
 //       if (vehicleData && vehicleData.approval) {
 //         setHeader(prev => ({
 //           ...prev,
@@ -695,14 +695,14 @@
 //           state: state,
 //         }));
 //       }
-      
+
 //       setConsignor(prev => ({
 //         ...prev,
 //         name: partyName
 //       }));
-      
+
 //       setIsReadOnly(true);
-      
+
 //       if (fullOrder.packData) {
 //         if (fullOrder.packData.PALLETIZATION && fullOrder.packData.PALLETIZATION.length > 0) {
 //           const palletRows = fullOrder.packData.PALLETIZATION.map(item => ({
@@ -723,7 +723,7 @@
 //           }));
 //           setPalletizationRows(palletRows);
 //         }
-        
+
 //         if (fullOrder.packData['UNIFORM - BAGS/BOXES'] && fullOrder.packData['UNIFORM - BAGS/BOXES'].length > 0) {
 //           const uniformRowsData = fullOrder.packData['UNIFORM - BAGS/BOXES'].map(item => ({
 //             _id: uid(),
@@ -741,7 +741,7 @@
 //           }));
 //           setUniformRows(uniformRowsData);
 //         }
-        
+
 //         if (fullOrder.packData['LOOSE - CARGO'] && fullOrder.packData['LOOSE - CARGO'].length > 0) {
 //           const looseRowsData = fullOrder.packData['LOOSE - CARGO'].map(item => ({
 //             _id: uid(),
@@ -753,7 +753,7 @@
 //           }));
 //           setLooseCargoRows(looseRowsData);
 //         }
-        
+
 //         if (fullOrder.packData['NON-UNIFORM - GENERAL CARGO'] && fullOrder.packData['NON-UNIFORM - GENERAL CARGO'].length > 0) {
 //           const nonUniformRowsData = fullOrder.packData['NON-UNIFORM - GENERAL CARGO'].map(item => ({
 //             _id: uid(),
@@ -770,9 +770,9 @@
 //           setNonUniformRows(nonUniformRowsData);
 //         }
 //       }
-      
+
 //       alert(`✅ Order ${orderNo} loaded successfully! Data is now read-only.`);
-      
+
 //     } catch (error) {
 //       console.error('Error fetching order details:', error);
 //       alert(`❌ Failed to load order details: ${error.message}`);
@@ -804,12 +804,12 @@
 //    ========================= */
 //   const handleConsignorSearch = (query) => {
 //     setConsignor(prev => ({ ...prev, name: query }));
-    
+
 //     if (!customers || customers.length === 0) {
 //       setFilteredConsignors([]);
 //       return;
 //     }
-    
+
 //     if (query.trim() === "") {
 //       setFilteredConsignors(customers);
 //     } else {
@@ -823,14 +823,14 @@
 
 //   const handleSelectConsignor = (customer) => {
 //     const addresses = extractAddressesFromCustomer(customer);
-    
+
 //     setConsignor({
 //       name: customer.customerName,
 //       address: addresses.length > 0 ? addresses[0].address : '',
 //       customerId: customer._id,
 //       selectedAddressTitle: addresses.length > 0 ? addresses[0].title : ''
 //     });
-    
+
 //     setConsignorAddresses(addresses);
 //     setShowConsignorDropdown(false);
 //   };
@@ -865,12 +865,12 @@
 
 //   const handleConsigneeSearch = (query) => {
 //     setConsignee(prev => ({ ...prev, name: query }));
-    
+
 //     if (!customers || customers.length === 0) {
 //       setFilteredConsignees([]);
 //       return;
 //     }
-    
+
 //     if (query.trim() === "") {
 //       setFilteredConsignees(customers);
 //     } else {
@@ -884,14 +884,14 @@
 
 //   const handleSelectConsignee = (customer) => {
 //     const addresses = extractAddressesFromCustomer(customer);
-    
+
 //     setConsignee({
 //       name: customer.customerName,
 //       address: addresses.length > 0 ? addresses[0].address : '',
 //       customerId: customer._id,
 //       selectedAddressTitle: addresses.length > 0 ? addresses[0].title : ''
 //     });
-    
+
 //     setConsigneeAddresses(addresses);
 //     setShowConsigneeDropdown(false);
 //   };
@@ -1012,7 +1012,7 @@
 //       if (!token) {
 //         throw new Error("No authentication token found");
 //       }
-      
+
 //       const payload = {
 //         id: noteId,
 //         header,
@@ -1052,11 +1052,11 @@
 //       }
 
 //       const data = await res.json();
-      
+
 //       alert(`✅ Consignment Note updated successfully!\nLR No: ${header.lrNo}`);
-      
+
 //       router.push('/admin/Consignment-Note');
-      
+
 //     } catch (error) {
 //       console.error('Error updating consignment note:', error);
 //       alert(`❌ Error: ${error.message}`);
@@ -1068,7 +1068,7 @@
 //   // Get vehicle negotiation summary for display
 //   const getVehicleSummary = () => {
 //     if (!vehicleNegotiationData?.approval) return null;
-    
+
 //     const approval = vehicleNegotiationData.approval;
 //     return {
 //       vehicleNo: approval.vehicleNo || 'N/A',
@@ -1581,7 +1581,7 @@
 //                               filteredConsignors.map((customer) => {
 //                                 const addresses = extractAddressesFromCustomer(customer);
 //                                 const addressCount = addresses.length;
-                                
+
 //                                 return (
 //                                   <div
 //                                     key={customer._id}
@@ -1610,7 +1610,7 @@
 //                       </div>
 //                     </div>
 //                   </div>
-                  
+
 //                   {/* Address Title Dropdown */}
 //                   <div className="relative" ref={consignorAddressRef}>
 //                     <label className="text-xs font-bold text-slate-600">Select Address Title</label>
@@ -1647,7 +1647,7 @@
 //                       )}
 //                     </div>
 //                   </div>
-                  
+
 //                   <div>
 //                     <label className="text-xs font-bold text-slate-600">Consignor Address</label>
 //                     <textarea
@@ -1698,7 +1698,7 @@
 //                               filteredConsignees.map((customer) => {
 //                                 const addresses = extractAddressesFromCustomer(customer);
 //                                 const addressCount = addresses.length;
-                                
+
 //                                 return (
 //                                   <div
 //                                     key={customer._id}
@@ -1727,7 +1727,7 @@
 //                       </div>
 //                     </div>
 //                   </div>
-                  
+
 //                   {/* Address Title Dropdown for Consignee */}
 //                   <div className="relative" ref={consigneeAddressRef}>
 //                     <label className="text-xs font-bold text-slate-600">Select Address Title</label>
@@ -1764,7 +1764,7 @@
 //                       )}
 //                     </div>
 //                   </div>
-                  
+
 //                   <div>
 //                     <label className="text-xs font-bold text-slate-600">Consignee Address</label>
 //                     <textarea
@@ -1883,7 +1883,7 @@
 //         </div>
 
 //         {/* ===== Product Details - All 4 Pack Types ===== */}
-        
+
 //         {/* PALLETIZATION Section */}
 //         <div className="mt-4">
 //           <Card 
@@ -2441,7 +2441,7 @@
 //                 />
 //                 <div className="text-xs text-slate-400 mt-1">Date when vehicle was unloaded</div>
 //               </div>
-              
+
 //               <div className="col-span-12 md:col-span-8">
 //                 <label className="text-xs font-bold text-slate-600">Remarks / Notes</label>
 //                 <textarea
@@ -2610,13 +2610,13 @@ const UNIT_OPTIONS = ["MT", "KG", "LTR", "TON", "M3", "PCS"];
 const PKGS_TYPE_OPTIONS = ["Drum", "Boxes", "Bags", "Cartons", "Crates", "Pallets", "Box"];
 const UOM_OPTIONS = ["KG", "LTR", "TON", "M3", "PCS", "Kgs", "Ltr", "MT"];
 const PRODUCT_NAME_OPTIONS = [
-  "CALCIUM NITRATE 20KG", 
-  "CALCIUM NITRATE 10KG", 
-  "CALCIUM NITRATE 1KG", 
-  "Chromite Sand", 
-  "Bud Builder", 
-  "Di-Betic Easter", 
-  "Polysulphate - Premium", 
+  "CALCIUM NITRATE 20KG",
+  "CALCIUM NITRATE 10KG",
+  "CALCIUM NITRATE 1KG",
+  "Chromite Sand",
+  "Bud Builder",
+  "Di-Betic Easter",
+  "Polysulphate - Premium",
   "YaraVita Stopit 1Ltr",
   "CN 25 Kgs"
 ];
@@ -2701,6 +2701,16 @@ function defaultNonUniformRow() {
     chargedWt: "",
   };
 }
+
+const PACK_IGNORE_KEYS = ['_id', 'packType', 'uom', 'wtUom'];
+const hasRowData = (rows = []) =>
+  rows.some(row =>
+    Object.entries(row).some(([key, val]) => {
+      if (PACK_IGNORE_KEYS.includes(key)) return false;
+      const s = String(val ?? '').trim();
+      return s !== '' && s !== '0';
+    })
+  );
 
 export default function EditConsignmentNote() {
   const router = useRouter();
@@ -2869,17 +2879,17 @@ export default function EditConsignmentNote() {
         setSubCompanies([]);
         return;
       }
-      
+
       const res = await fetch('/api/subcompanies', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       if (!res.ok) {
         throw new Error(`API returned ${res.status}`);
       }
-      
+
       const data = await res.json();
-      
+
       if (data.success && Array.isArray(data.data)) {
         setSubCompanies(data.data);
       } else {
@@ -2905,17 +2915,17 @@ export default function EditConsignmentNote() {
         setAllOrders([]);
         return;
       }
-      
+
       const res = await fetch('/api/order-panel?format=table', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       if (!res.ok) {
         throw new Error(`API returned ${res.status}`);
       }
-      
+
       const data = await res.json();
-      
+
       if (data.success && Array.isArray(data.data)) {
         setAllOrders(data.data);
         setFilteredOrders(data.data);
@@ -2944,17 +2954,17 @@ export default function EditConsignmentNote() {
         setCustomers([]);
         return;
       }
-      
+
       const res = await fetch('/api/customers', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       if (!res.ok) {
         throw new Error(`API returned ${res.status}`);
       }
-      
+
       const data = await res.json();
-      
+
       if (data.success && Array.isArray(data.data)) {
         const customersWithAddress = data.data.map(customer => ({
           ...customer,
@@ -2983,7 +2993,7 @@ export default function EditConsignmentNote() {
    ========================= */
   const extractAddressesFromCustomer = (customer) => {
     const addresses = [];
-    
+
     if (customer.billingAddresses && Array.isArray(customer.billingAddresses)) {
       customer.billingAddresses.forEach((addr, idx) => {
         if (addr.address1 || addr.address2 || addr.city) {
@@ -2999,7 +3009,7 @@ export default function EditConsignmentNote() {
         }
       });
     }
-    
+
     if (customer.shippingAddresses && Array.isArray(customer.shippingAddresses)) {
       customer.shippingAddresses.forEach((addr, idx) => {
         if (addr.address1 || addr.address2 || addr.city) {
@@ -3015,7 +3025,7 @@ export default function EditConsignmentNote() {
         }
       });
     }
-    
+
     if (addresses.length === 0) {
       const oldAddress = customer.address || customer.billingAddress || customer.shippingAddress || customer.customerAddress || '';
       if (oldAddress) {
@@ -3027,7 +3037,7 @@ export default function EditConsignmentNote() {
         });
       }
     }
-    
+
     return addresses;
   };
 
@@ -3039,32 +3049,32 @@ export default function EditConsignmentNote() {
     try {
       const token = localStorage.getItem('token');
       if (!token) return null;
-      
+
       const res = await fetch('/api/vehicle-negotiation?format=table', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       if (!res.ok) return null;
-      
+
       const data = await res.json();
-      
+
       if (data.success && Array.isArray(data.data)) {
         const matchingRecord = data.data.find(record => record.order === orderNo);
-        
+
         if (matchingRecord && matchingRecord.vnId) {
           const detailRes = await fetch(`/api/vehicle-negotiation?id=${matchingRecord.vnId}`, {
             headers: { Authorization: `Bearer ${token}` },
           });
-          
+
           const detailData = await detailRes.json();
-          
+
           if (detailData.success && detailData.data) {
             setVehicleNegotiationData(detailData.data);
             return detailData.data;
           }
         }
       }
-      
+
       setVehicleNegotiationData(null);
       return null;
     } catch (error) {
@@ -3083,29 +3093,29 @@ export default function EditConsignmentNote() {
     setFetchLoading(true);
     try {
       const token = localStorage.getItem('token');
-      
+
       const res = await fetch(`/api/consignment-note?id=${noteId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       if (!res.ok) {
         throw new Error(`HTTP error! status: ${res.status}`);
       }
-      
+
       const data = await res.json();
-      
+
       if (!data.success) {
         throw new Error(data.message || 'Failed to fetch consignment note');
       }
 
       const note = data.data;
       console.log("📦 Consignment Note Data:", note);
-      
+
       // ✅ Set sub-company from note
       const subCompanyId = note.subCompanyId || note.header?.subCompanyId || '';
       const subCompanyName = note.subCompanyName || note.header?.subCompanyName || '';
       const subCompanyCode = note.subCompanyCode || note.header?.subCompanyCode || '';
-      
+
       // Set header data with sub-company
       setHeader({
         orderNo: note.header?.orderNo || "",
@@ -3245,12 +3255,12 @@ export default function EditConsignmentNote() {
    ========================= */
   const handleOrderSearch = (query) => {
     setHeader(prev => ({ ...prev, orderNo: query }));
-    
+
     if (!allOrders || allOrders.length === 0) {
       setFilteredOrders([]);
       return;
     }
-    
+
     if (query.trim() === "") {
       setFilteredOrders(allOrders);
     } else {
@@ -3264,43 +3274,43 @@ export default function EditConsignmentNote() {
 
   const handleSelectOrder = async (order) => {
     setFetchingData(true);
-    
+
     try {
       const token = localStorage.getItem('token');
       const orderId = order._id || order.originalOrderId;
-      
+
       let fullOrder = order;
-      
+
       if (orderId) {
         const res = await fetch(`/api/order-panel?id=${orderId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        
+
         const data = await res.json();
         if (data.success && data.data) {
           fullOrder = data.data;
         }
       }
-      
+
       const orderNo = fullOrder.orderPanelNo || fullOrder.orderNo || order.orderNo || '';
       const partyName = fullOrder.partyName || fullOrder.customerName || order.partyName || '';
-      
+
       let plantCode = '';
       let plantName = '';
-      
+
       if (fullOrder.plantRows && fullOrder.plantRows.length > 0) {
         const firstRow = fullOrder.plantRows[0];
         plantCode = firstRow.plantCodeValue || firstRow.plantCode || '';
         plantName = firstRow.plantName || '';
       }
-      
+
       let fromLocation = fullOrder.from || order.from || '';
       let fromState = '';
       let toLocation = fullOrder.to || order.to || '';
       let taluka = fullOrder.taluka || order.taluka || '';
       let district = fullOrder.district || order.district || '';
       let state = fullOrder.state || order.state || '';
-      
+
       if (fullOrder.plantRows && fullOrder.plantRows.length > 0) {
         const firstRow = fullOrder.plantRows[0];
         fromLocation = firstRow.fromName || firstRow.from || fromLocation;
@@ -3310,15 +3320,15 @@ export default function EditConsignmentNote() {
         district = firstRow.districtName || firstRow.district || district;
         state = firstRow.stateName || firstRow.state || state;
       }
-      
+
       // ✅ Get sub-company from order
       const subCompanyName = fullOrder.subCompanyName || '';
       const subCompanyCode = fullOrder.subCompanyCode || '';
       const subCompanyId = fullOrder.subCompanyId || '';
-      
+
       // Fetch vehicle negotiation data for this order
       const vehicleData = await fetchVehicleNegotiationByOrder(orderNo);
-      
+
       if (vehicleData && vehicleData.approval) {
         setHeader(prev => ({
           ...prev,
@@ -3360,14 +3370,14 @@ export default function EditConsignmentNote() {
           subCompanyCode: subCompanyCode || prev.subCompanyCode
         }));
       }
-      
+
       setConsignor(prev => ({
         ...prev,
         name: partyName
       }));
-      
+
       setIsReadOnly(true);
-      
+
       if (fullOrder.packData) {
         if (fullOrder.packData.PALLETIZATION && fullOrder.packData.PALLETIZATION.length > 0) {
           const palletRows = fullOrder.packData.PALLETIZATION.map(item => ({
@@ -3388,7 +3398,7 @@ export default function EditConsignmentNote() {
           }));
           setPalletizationRows(palletRows);
         }
-        
+
         if (fullOrder.packData['UNIFORM - BAGS/BOXES'] && fullOrder.packData['UNIFORM - BAGS/BOXES'].length > 0) {
           const uniformRowsData = fullOrder.packData['UNIFORM - BAGS/BOXES'].map(item => ({
             _id: uid(),
@@ -3406,7 +3416,7 @@ export default function EditConsignmentNote() {
           }));
           setUniformRows(uniformRowsData);
         }
-        
+
         if (fullOrder.packData['LOOSE - CARGO'] && fullOrder.packData['LOOSE - CARGO'].length > 0) {
           const looseRowsData = fullOrder.packData['LOOSE - CARGO'].map(item => ({
             _id: uid(),
@@ -3418,7 +3428,7 @@ export default function EditConsignmentNote() {
           }));
           setLooseCargoRows(looseRowsData);
         }
-        
+
         if (fullOrder.packData['NON-UNIFORM - GENERAL CARGO'] && fullOrder.packData['NON-UNIFORM - GENERAL CARGO'].length > 0) {
           const nonUniformRowsData = fullOrder.packData['NON-UNIFORM - GENERAL CARGO'].map(item => ({
             _id: uid(),
@@ -3435,10 +3445,10 @@ export default function EditConsignmentNote() {
           setNonUniformRows(nonUniformRowsData);
         }
       }
-      
+
       const subCompanyInfo = subCompanyName ? `\n🏢 Sub-Company: ${subCompanyName} (${subCompanyCode})` : '';
       alert(`✅ Order ${orderNo} loaded successfully!${subCompanyInfo}\nData is now read-only.`);
-      
+
     } catch (error) {
       console.error('Error fetching order details:', error);
       alert(`❌ Failed to load order details: ${error.message}`);
@@ -3470,12 +3480,12 @@ export default function EditConsignmentNote() {
    ========================= */
   const handleConsignorSearch = (query) => {
     setConsignor(prev => ({ ...prev, name: query }));
-    
+
     if (!customers || customers.length === 0) {
       setFilteredConsignors([]);
       return;
     }
-    
+
     if (query.trim() === "") {
       setFilteredConsignors(customers);
     } else {
@@ -3489,14 +3499,14 @@ export default function EditConsignmentNote() {
 
   const handleSelectConsignor = (customer) => {
     const addresses = extractAddressesFromCustomer(customer);
-    
+
     setConsignor({
       name: customer.customerName,
       address: addresses.length > 0 ? addresses[0].address : '',
       customerId: customer._id,
       selectedAddressTitle: addresses.length > 0 ? addresses[0].title : ''
     });
-    
+
     setConsignorAddresses(addresses);
     setShowConsignorDropdown(false);
   };
@@ -3531,12 +3541,12 @@ export default function EditConsignmentNote() {
 
   const handleConsigneeSearch = (query) => {
     setConsignee(prev => ({ ...prev, name: query }));
-    
+
     if (!customers || customers.length === 0) {
       setFilteredConsignees([]);
       return;
     }
-    
+
     if (query.trim() === "") {
       setFilteredConsignees(customers);
     } else {
@@ -3550,14 +3560,14 @@ export default function EditConsignmentNote() {
 
   const handleSelectConsignee = (customer) => {
     const addresses = extractAddressesFromCustomer(customer);
-    
+
     setConsignee({
       name: customer.customerName,
       address: addresses.length > 0 ? addresses[0].address : '',
       customerId: customer._id,
       selectedAddressTitle: addresses.length > 0 ? addresses[0].title : ''
     });
-    
+
     setConsigneeAddresses(addresses);
     setShowConsigneeDropdown(false);
   };
@@ -3596,7 +3606,7 @@ export default function EditConsignmentNote() {
   // Palletization
   const addPalletizationRow = () => setPalletizationRows([...palletizationRows, defaultPalletizationRow()]);
   const updatePalletizationRow = (id, field, value) => {
-    setPalletizationRows(prev => prev.map(row => 
+    setPalletizationRows(prev => prev.map(row =>
       row._id === id ? { ...row, [field]: value } : row
     ));
   };
@@ -3609,7 +3619,7 @@ export default function EditConsignmentNote() {
   // Uniform
   const addUniformRow = () => setUniformRows([...uniformRows, defaultUniformRow()]);
   const updateUniformRow = (id, field, value) => {
-    setUniformRows(prev => prev.map(row => 
+    setUniformRows(prev => prev.map(row =>
       row._id === id ? { ...row, [field]: value } : row
     ));
   };
@@ -3622,7 +3632,7 @@ export default function EditConsignmentNote() {
   // Loose Cargo
   const addLooseCargoRow = () => setLooseCargoRows([...looseCargoRows, defaultLooseCargoRow()]);
   const updateLooseCargoRow = (id, field, value) => {
-    setLooseCargoRows(prev => prev.map(row => 
+    setLooseCargoRows(prev => prev.map(row =>
       row._id === id ? { ...row, [field]: value } : row
     ));
   };
@@ -3635,7 +3645,7 @@ export default function EditConsignmentNote() {
   // Non-Uniform
   const addNonUniformRow = () => setNonUniformRows([...nonUniformRows, defaultNonUniformRow()]);
   const updateNonUniformRow = (id, field, value) => {
-    setNonUniformRows(prev => prev.map(row => 
+    setNonUniformRows(prev => prev.map(row =>
       row._id === id ? { ...row, [field]: value } : row
     ));
   };
@@ -3678,7 +3688,7 @@ export default function EditConsignmentNote() {
       if (!token) {
         throw new Error("No authentication token found");
       }
-      
+
       const payload = {
         id: noteId,
         header: {
@@ -3728,12 +3738,12 @@ export default function EditConsignmentNote() {
       }
 
       const data = await res.json();
-      
+
       const subCompanyMsg = header.subCompanyName ? `\n🏢 Sub-Company: ${header.subCompanyName}` : '';
       alert(`✅ Consignment Note updated successfully!\nLR No: ${header.lrNo}${subCompanyMsg}`);
-      
+
       router.push('/admin/Consignment-Note');
-      
+
     } catch (error) {
       console.error('Error updating consignment note:', error);
       alert(`❌ Error: ${error.message}`);
@@ -3745,7 +3755,7 @@ export default function EditConsignmentNote() {
   // Get vehicle negotiation summary for display
   const getVehicleSummary = () => {
     if (!vehicleNegotiationData?.approval) return null;
-    
+
     const approval = vehicleNegotiationData.approval;
     return {
       vehicleNo: approval.vehicleNo || 'N/A',
@@ -3831,11 +3841,10 @@ export default function EditConsignmentNote() {
             <button
               onClick={handleUpdate}
               disabled={saving || fetchingData || isReadOnly}
-              className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${
-                saving || fetchingData || isReadOnly
-                  ? 'bg-gray-400 cursor-not-allowed' 
-                  : 'bg-emerald-600 hover:bg-emerald-700'
-              }`}
+              className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${saving || fetchingData || isReadOnly
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-emerald-600 hover:bg-emerald-700'
+                }`}
             >
               {saving ? (
                 <span className="flex items-center gap-2">
@@ -3906,8 +3915,8 @@ export default function EditConsignmentNote() {
                     ))
                   ) : (
                     <div className="p-3 text-center text-sm text-slate-500">
-                      {header.orderNo.trim() ? 
-                        `No orders found for "${header.orderNo}"` : 
+                      {header.orderNo.trim() ?
+                        `No orders found for "${header.orderNo}"` :
                         "No orders available. Please create orders first."
                       }
                     </div>
@@ -3967,11 +3976,10 @@ export default function EditConsignmentNote() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                 </svg>
                 <h3 className="text-sm font-extrabold text-green-800">Vehicle Negotiation Data Found</h3>
-                <span className={`ml-auto text-xs px-2 py-0.5 rounded-full ${
-                  vehicleSummary.approvalStatus === 'Approved' ? 'bg-green-100 text-green-700' :
+                <span className={`ml-auto text-xs px-2 py-0.5 rounded-full ${vehicleSummary.approvalStatus === 'Approved' ? 'bg-green-100 text-green-700' :
                   vehicleSummary.approvalStatus === 'Reject' ? 'bg-red-100 text-red-700' :
-                  'bg-yellow-100 text-yellow-700'
-                }`}>
+                    'bg-yellow-100 text-yellow-700'
+                  }`}>
                   {vehicleSummary.approvalStatus}
                 </span>
               </div>
@@ -4309,7 +4317,7 @@ export default function EditConsignmentNote() {
                               filteredConsignors.map((customer) => {
                                 const addresses = extractAddressesFromCustomer(customer);
                                 const addressCount = addresses.length;
-                                
+
                                 return (
                                   <div
                                     key={customer._id}
@@ -4327,8 +4335,8 @@ export default function EditConsignmentNote() {
                               })
                             ) : (
                               <div className="p-3 text-center text-sm text-slate-500">
-                                {consignor.name.trim() ? 
-                                  `No customers found for "${consignor.name}"` : 
+                                {consignor.name.trim() ?
+                                  `No customers found for "${consignor.name}"` :
                                   "No customers available"
                                 }
                               </div>
@@ -4338,7 +4346,7 @@ export default function EditConsignmentNote() {
                       </div>
                     </div>
                   </div>
-                  
+
                   {/* Address Title Dropdown */}
                   <div className="relative" ref={consignorAddressRef}>
                     <label className="text-xs font-bold text-slate-600">Select Address Title</label>
@@ -4375,7 +4383,7 @@ export default function EditConsignmentNote() {
                       )}
                     </div>
                   </div>
-                  
+
                   <div>
                     <label className="text-xs font-bold text-slate-600">Consignor Address</label>
                     <textarea
@@ -4426,7 +4434,7 @@ export default function EditConsignmentNote() {
                               filteredConsignees.map((customer) => {
                                 const addresses = extractAddressesFromCustomer(customer);
                                 const addressCount = addresses.length;
-                                
+
                                 return (
                                   <div
                                     key={customer._id}
@@ -4444,8 +4452,8 @@ export default function EditConsignmentNote() {
                               })
                             ) : (
                               <div className="p-3 text-center text-sm text-slate-500">
-                                {consignee.name.trim() ? 
-                                  `No customers found for "${consignee.name}"` : 
+                                {consignee.name.trim() ?
+                                  `No customers found for "${consignee.name}"` :
                                   "No customers available"
                                 }
                               </div>
@@ -4455,7 +4463,7 @@ export default function EditConsignmentNote() {
                       </div>
                     </div>
                   </div>
-                  
+
                   {/* Address Title Dropdown for Consignee */}
                   <div className="relative" ref={consigneeAddressRef}>
                     <label className="text-xs font-bold text-slate-600">Select Address Title</label>
@@ -4492,7 +4500,7 @@ export default function EditConsignmentNote() {
                       )}
                     </div>
                   </div>
-                  
+
                   <div>
                     <label className="text-xs font-bold text-slate-600">Consignee Address</label>
                     <textarea
@@ -4612,546 +4620,554 @@ export default function EditConsignmentNote() {
 
         {/* ===== Product Details - All 4 Pack Types ===== */}
         {/* PALLETIZATION Section */}
-        <div className="mt-4">
-          <Card 
-            title="Palletization"
-            right={
-              !isReadOnly && (
-                <button
-                  onClick={addPalletizationRow}
-                  className="rounded-xl bg-yellow-600 px-4 py-1.5 text-xs font-bold text-white hover:bg-yellow-700 transition"
-                >
-                  + Add Row
-                </button>
-              )
-            }
-          >
-            <div className="overflow-auto rounded-xl border border-yellow-300">
-              <table className="min-w-full w-full text-sm">
-                <thead className="sticky top-0 bg-yellow-400">
-                  <tr>
-                    <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">NO OF PALLETS</th>
-                    <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">UNIT PER PALLETS</th>
-                    <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">TOTAL PKGS</th>
-                    <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">PKG TYPE</th>
-                    <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">UOM</th>
-                    <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">SKU - SIZE</th>
-                    <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">PACK - WEIGHT</th>
-                    <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">PRODUCT NAME</th>
-                    <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">WT (LTR)</th>
-                    <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">ACTUAL - WT</th>
-                    <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">CHARGED - WT</th>
-                    <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">WT UOM</th>
-                    {!isReadOnly && <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">Actions</th>}
-                  </tr>
-                </thead>
-                <tbody>
-                  {palletizationRows.map((row) => (
-                    <tr key={row._id} className="hover:bg-yellow-50 even:bg-slate-50">
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <input
-                          type="text"
-                          value={row.noOfPallets}
-                          onChange={(e) => updatePalletizationRow(row._id, 'noOfPallets', e.target.value)}
-                          readOnly={isReadOnly}
-                          className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
-                        />
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <input
-                          type="text"
-                          value={row.unitPerPallets}
-                          onChange={(e) => updatePalletizationRow(row._id, 'unitPerPallets', e.target.value)}
-                          readOnly={isReadOnly}
-                          className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
-                        />
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <input
-                          type="text"
-                          value={row.totalPkgs}
-                          onChange={(e) => updatePalletizationRow(row._id, 'totalPkgs', e.target.value)}
-                          readOnly={isReadOnly}
-                          className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
-                        />
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <select
-                          value={row.pkgsType}
-                          onChange={(e) => updatePalletizationRow(row._id, 'pkgsType', e.target.value)}
-                          disabled={isReadOnly}
-                          className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
-                        >
-                          <option value="">Select</option>
-                          {PKGS_TYPE_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                        </select>
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <select
-                          value={row.uom}
-                          onChange={(e) => updatePalletizationRow(row._id, 'uom', e.target.value)}
-                          disabled={isReadOnly}
-                          className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
-                        >
-                          {UOM_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                        </select>
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <select
-                          value={row.skuSize}
-                          onChange={(e) => updatePalletizationRow(row._id, 'skuSize', e.target.value)}
-                          disabled={isReadOnly}
-                          className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
-                        >
-                          <option value="">Select</option>
-                          {SKU_SIZE_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                        </select>
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <input
-                          type="text"
-                          value={row.packWeight}
-                          onChange={(e) => updatePalletizationRow(row._id, 'packWeight', e.target.value)}
-                          readOnly={isReadOnly}
-                          className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
-                        />
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <select
-                          value={row.productName}
-                          onChange={(e) => updatePalletizationRow(row._id, 'productName', e.target.value)}
-                          disabled={isReadOnly}
-                          className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
-                        >
-                          <option value="">Select</option>
-                          {PRODUCT_NAME_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                        </select>
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <input
-                          type="text"
-                          value={row.wtLtr}
-                          onChange={(e) => updatePalletizationRow(row._id, 'wtLtr', e.target.value)}
-                          readOnly={isReadOnly}
-                          className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
-                        />
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <input
-                          type="text"
-                          value={row.actualWt}
-                          onChange={(e) => updatePalletizationRow(row._id, 'actualWt', e.target.value)}
-                          readOnly={isReadOnly}
-                          className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
-                        />
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <input
-                          type="text"
-                          value={row.chargedWt}
-                          onChange={(e) => updatePalletizationRow(row._id, 'chargedWt', e.target.value)}
-                          readOnly={isReadOnly}
-                          className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
-                        />
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <select
-                          value={row.wtUom}
-                          onChange={(e) => updatePalletizationRow(row._id, 'wtUom', e.target.value)}
-                          disabled={isReadOnly}
-                          className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
-                        >
-                          {UOM_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                        </select>
-                      </td>
-                      {!isReadOnly && (
-                        <td className="border border-yellow-300 px-2 py-2 text-center">
-                          {palletizationRows.length > 1 && (
-                            <button
-                              onClick={() => removePalletizationRow(row._id)}
-                              className="rounded-lg bg-red-500 px-2 py-1.5 text-xs font-bold text-white hover:bg-red-600"
-                            >
-                              Remove
-                            </button>
-                          )}
-                        </td>
-                      )}
+        {(!isReadOnly || hasRowData(palletizationRows)) && (
+          <div className="mt-4">
+            <Card
+              title="Palletization"
+              right={
+                !isReadOnly && (
+                  <button
+                    onClick={addPalletizationRow}
+                    className="rounded-xl bg-yellow-600 px-4 py-1.5 text-xs font-bold text-white hover:bg-yellow-700 transition"
+                  >
+                    + Add Row
+                  </button>
+                )
+              }
+            >
+              <div className="overflow-auto rounded-xl border border-yellow-300">
+                <table className="min-w-full w-full text-sm">
+                  <thead className="sticky top-0 bg-yellow-400">
+                    <tr>
+                      <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">NO OF PALLETS</th>
+                      <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">UNIT PER PALLETS</th>
+                      <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">TOTAL PKGS</th>
+                      <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">PKG TYPE</th>
+                      <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">UOM</th>
+                      <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">SKU - SIZE</th>
+                      <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">PACK - WEIGHT</th>
+                      <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">PRODUCT NAME</th>
+                      <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">WT (LTR)</th>
+                      <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">ACTUAL - WT</th>
+                      <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">CHARGED - WT</th>
+                      <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">WT UOM</th>
+                      {!isReadOnly && <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">Actions</th>}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </Card>
-        </div>
+                  </thead>
+                  <tbody>
+                    {palletizationRows.map((row) => (
+                      <tr key={row._id} className="hover:bg-yellow-50 even:bg-slate-50">
+                        <td className="border border-yellow-300 px-2 py-2">
+                          <input
+                            type="text"
+                            value={row.noOfPallets}
+                            onChange={(e) => updatePalletizationRow(row._id, 'noOfPallets', e.target.value)}
+                            readOnly={isReadOnly}
+                            className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
+                          />
+                        </td>
+                        <td className="border border-yellow-300 px-2 py-2">
+                          <input
+                            type="text"
+                            value={row.unitPerPallets}
+                            onChange={(e) => updatePalletizationRow(row._id, 'unitPerPallets', e.target.value)}
+                            readOnly={isReadOnly}
+                            className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
+                          />
+                        </td>
+                        <td className="border border-yellow-300 px-2 py-2">
+                          <input
+                            type="text"
+                            value={row.totalPkgs}
+                            onChange={(e) => updatePalletizationRow(row._id, 'totalPkgs', e.target.value)}
+                            readOnly={isReadOnly}
+                            className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
+                          />
+                        </td>
+                        <td className="border border-yellow-300 px-2 py-2">
+                          <select
+                            value={row.pkgsType}
+                            onChange={(e) => updatePalletizationRow(row._id, 'pkgsType', e.target.value)}
+                            disabled={isReadOnly}
+                            className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
+                          >
+                            <option value="">Select</option>
+                            {PKGS_TYPE_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                          </select>
+                        </td>
+                        <td className="border border-yellow-300 px-2 py-2">
+                          <select
+                            value={row.uom}
+                            onChange={(e) => updatePalletizationRow(row._id, 'uom', e.target.value)}
+                            disabled={isReadOnly}
+                            className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
+                          >
+                            {UOM_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                          </select>
+                        </td>
+                        <td className="border border-yellow-300 px-2 py-2">
+                          <select
+                            value={row.skuSize}
+                            onChange={(e) => updatePalletizationRow(row._id, 'skuSize', e.target.value)}
+                            disabled={isReadOnly}
+                            className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
+                          >
+                            <option value="">Select</option>
+                            {SKU_SIZE_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                          </select>
+                        </td>
+                        <td className="border border-yellow-300 px-2 py-2">
+                          <input
+                            type="text"
+                            value={row.packWeight}
+                            onChange={(e) => updatePalletizationRow(row._id, 'packWeight', e.target.value)}
+                            readOnly={isReadOnly}
+                            className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
+                          />
+                        </td>
+                        <td className="border border-yellow-300 px-2 py-2">
+                          <select
+                            value={row.productName}
+                            onChange={(e) => updatePalletizationRow(row._id, 'productName', e.target.value)}
+                            disabled={isReadOnly}
+                            className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
+                          >
+                            <option value="">Select</option>
+                            {PRODUCT_NAME_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                          </select>
+                        </td>
+                        <td className="border border-yellow-300 px-2 py-2">
+                          <input
+                            type="text"
+                            value={row.wtLtr}
+                            onChange={(e) => updatePalletizationRow(row._id, 'wtLtr', e.target.value)}
+                            readOnly={isReadOnly}
+                            className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
+                          />
+                        </td>
+                        <td className="border border-yellow-300 px-2 py-2">
+                          <input
+                            type="text"
+                            value={row.actualWt}
+                            onChange={(e) => updatePalletizationRow(row._id, 'actualWt', e.target.value)}
+                            readOnly={isReadOnly}
+                            className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
+                          />
+                        </td>
+                        <td className="border border-yellow-300 px-2 py-2">
+                          <input
+                            type="text"
+                            value={row.chargedWt}
+                            onChange={(e) => updatePalletizationRow(row._id, 'chargedWt', e.target.value)}
+                            readOnly={isReadOnly}
+                            className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
+                          />
+                        </td>
+                        <td className="border border-yellow-300 px-2 py-2">
+                          <select
+                            value={row.wtUom}
+                            onChange={(e) => updatePalletizationRow(row._id, 'wtUom', e.target.value)}
+                            disabled={isReadOnly}
+                            className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
+                          >
+                            {UOM_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                          </select>
+                        </td>
+                        {!isReadOnly && (
+                          <td className="border border-yellow-300 px-2 py-2 text-center">
+                            {palletizationRows.length > 1 && (
+                              <button
+                                onClick={() => removePalletizationRow(row._id)}
+                                className="rounded-lg bg-red-500 px-2 py-1.5 text-xs font-bold text-white hover:bg-red-600"
+                              >
+                                Remove
+                              </button>
+                            )}
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          </div>
+        )}
 
         {/* UNIFORM - BAGS/BOXES Section */}
-        <div className="mt-4">
-          <Card 
-            title="Uniform - Bags/Boxes"
-            right={
-              !isReadOnly && (
-                <button
-                  onClick={addUniformRow}
-                  className="rounded-xl bg-yellow-600 px-4 py-1.5 text-xs font-bold text-white hover:bg-yellow-700 transition"
-                >
-                  + Add Row
-                </button>
-              )
-            }
-          >
-            <div className="overflow-auto rounded-xl border border-yellow-300">
-              <table className="min-w-full w-full text-sm">
-                <thead className="sticky top-0 bg-yellow-400">
-                  <tr>
-                    <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">TOTAL PKGS</th>
-                    <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">PKG TYPE</th>
-                    <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">UOM</th>
-                    <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">SKU - SIZE</th>
-                    <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">PACK - WEIGHT</th>
-                    <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">PRODUCT NAME</th>
-                    <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">WT (LTR)</th>
-                    <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">ACTUAL - WT</th>
-                    <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">CHARGED - WT</th>
-                    <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">WT UOM</th>
-                    {!isReadOnly && <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">Actions</th>}
-                  </tr>
-                </thead>
-                <tbody>
-                  {uniformRows.map((row) => (
-                    <tr key={row._id} className="hover:bg-yellow-50 even:bg-slate-50">
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <input
-                          type="text"
-                          value={row.totalPkgs}
-                          onChange={(e) => updateUniformRow(row._id, 'totalPkgs', e.target.value)}
-                          readOnly={isReadOnly}
-                          className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
-                        />
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <select
-                          value={row.pkgsType}
-                          onChange={(e) => updateUniformRow(row._id, 'pkgsType', e.target.value)}
-                          disabled={isReadOnly}
-                          className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
-                        >
-                          <option value="">Select</option>
-                          {PKGS_TYPE_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                        </select>
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <select
-                          value={row.uom}
-                          onChange={(e) => updateUniformRow(row._id, 'uom', e.target.value)}
-                          disabled={isReadOnly}
-                          className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
-                        >
-                          {UOM_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                        </select>
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <select
-                          value={row.skuSize}
-                          onChange={(e) => updateUniformRow(row._id, 'skuSize', e.target.value)}
-                          disabled={isReadOnly}
-                          className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
-                        >
-                          <option value="">Select</option>
-                          {SKU_SIZE_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                        </select>
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <input
-                          type="text"
-                          value={row.packWeight}
-                          onChange={(e) => updateUniformRow(row._id, 'packWeight', e.target.value)}
-                          readOnly={isReadOnly}
-                          className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
-                        />
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <select
-                          value={row.productName}
-                          onChange={(e) => updateUniformRow(row._id, 'productName', e.target.value)}
-                          disabled={isReadOnly}
-                          className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
-                        >
-                          <option value="">Select</option>
-                          {PRODUCT_NAME_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                        </select>
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <input
-                          type="text"
-                          value={row.wtLtr}
-                          onChange={(e) => updateUniformRow(row._id, 'wtLtr', e.target.value)}
-                          readOnly={isReadOnly}
-                          className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
-                        />
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <input
-                          type="text"
-                          value={row.actualWt}
-                          onChange={(e) => updateUniformRow(row._id, 'actualWt', e.target.value)}
-                          readOnly={isReadOnly}
-                          className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
-                        />
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <input
-                          type="text"
-                          value={row.chargedWt}
-                          onChange={(e) => updateUniformRow(row._id, 'chargedWt', e.target.value)}
-                          readOnly={isReadOnly}
-                          className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
-                        />
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <select
-                          value={row.wtUom}
-                          onChange={(e) => updateUniformRow(row._id, 'wtUom', e.target.value)}
-                          disabled={isReadOnly}
-                          className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
-                        >
-                          {UOM_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                        </select>
-                      </td>
-                      {!isReadOnly && (
-                        <td className="border border-yellow-300 px-2 py-2 text-center">
-                          {uniformRows.length > 1 && (
-                            <button
-                              onClick={() => removeUniformRow(row._id)}
-                              className="rounded-lg bg-red-500 px-2 py-1.5 text-xs font-bold text-white hover:bg-red-600"
-                            >
-                              Remove
-                            </button>
-                          )}
-                        </td>
-                      )}
+        {(!isReadOnly || hasRowData(uniformRows)) && (
+          <div className="mt-4">
+            <Card
+              title="Uniform - Bags/Boxes"
+              right={
+                !isReadOnly && (
+                  <button
+                    onClick={addUniformRow}
+                    className="rounded-xl bg-yellow-600 px-4 py-1.5 text-xs font-bold text-white hover:bg-yellow-700 transition"
+                  >
+                    + Add Row
+                  </button>
+                )
+              }
+            >
+              <div className="overflow-auto rounded-xl border border-yellow-300">
+                <table className="min-w-full w-full text-sm">
+                  <thead className="sticky top-0 bg-yellow-400">
+                    <tr>
+                      <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">TOTAL PKGS</th>
+                      <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">PKG TYPE</th>
+                      <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">UOM</th>
+                      <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">SKU - SIZE</th>
+                      <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">PACK - WEIGHT</th>
+                      <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">PRODUCT NAME</th>
+                      <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">WT (LTR)</th>
+                      <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">ACTUAL - WT</th>
+                      <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">CHARGED - WT</th>
+                      <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">WT UOM</th>
+                      {!isReadOnly && <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">Actions</th>}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </Card>
-        </div>
+                  </thead>
+                  <tbody>
+                    {uniformRows.map((row) => (
+                      <tr key={row._id} className="hover:bg-yellow-50 even:bg-slate-50">
+                        <td className="border border-yellow-300 px-2 py-2">
+                          <input
+                            type="text"
+                            value={row.totalPkgs}
+                            onChange={(e) => updateUniformRow(row._id, 'totalPkgs', e.target.value)}
+                            readOnly={isReadOnly}
+                            className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
+                          />
+                        </td>
+                        <td className="border border-yellow-300 px-2 py-2">
+                          <select
+                            value={row.pkgsType}
+                            onChange={(e) => updateUniformRow(row._id, 'pkgsType', e.target.value)}
+                            disabled={isReadOnly}
+                            className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
+                          >
+                            <option value="">Select</option>
+                            {PKGS_TYPE_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                          </select>
+                        </td>
+                        <td className="border border-yellow-300 px-2 py-2">
+                          <select
+                            value={row.uom}
+                            onChange={(e) => updateUniformRow(row._id, 'uom', e.target.value)}
+                            disabled={isReadOnly}
+                            className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
+                          >
+                            {UOM_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                          </select>
+                        </td>
+                        <td className="border border-yellow-300 px-2 py-2">
+                          <select
+                            value={row.skuSize}
+                            onChange={(e) => updateUniformRow(row._id, 'skuSize', e.target.value)}
+                            disabled={isReadOnly}
+                            className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
+                          >
+                            <option value="">Select</option>
+                            {SKU_SIZE_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                          </select>
+                        </td>
+                        <td className="border border-yellow-300 px-2 py-2">
+                          <input
+                            type="text"
+                            value={row.packWeight}
+                            onChange={(e) => updateUniformRow(row._id, 'packWeight', e.target.value)}
+                            readOnly={isReadOnly}
+                            className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
+                          />
+                        </td>
+                        <td className="border border-yellow-300 px-2 py-2">
+                          <select
+                            value={row.productName}
+                            onChange={(e) => updateUniformRow(row._id, 'productName', e.target.value)}
+                            disabled={isReadOnly}
+                            className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
+                          >
+                            <option value="">Select</option>
+                            {PRODUCT_NAME_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                          </select>
+                        </td>
+                        <td className="border border-yellow-300 px-2 py-2">
+                          <input
+                            type="text"
+                            value={row.wtLtr}
+                            onChange={(e) => updateUniformRow(row._id, 'wtLtr', e.target.value)}
+                            readOnly={isReadOnly}
+                            className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
+                          />
+                        </td>
+                        <td className="border border-yellow-300 px-2 py-2">
+                          <input
+                            type="text"
+                            value={row.actualWt}
+                            onChange={(e) => updateUniformRow(row._id, 'actualWt', e.target.value)}
+                            readOnly={isReadOnly}
+                            className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
+                          />
+                        </td>
+                        <td className="border border-yellow-300 px-2 py-2">
+                          <input
+                            type="text"
+                            value={row.chargedWt}
+                            onChange={(e) => updateUniformRow(row._id, 'chargedWt', e.target.value)}
+                            readOnly={isReadOnly}
+                            className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
+                          />
+                        </td>
+                        <td className="border border-yellow-300 px-2 py-2">
+                          <select
+                            value={row.wtUom}
+                            onChange={(e) => updateUniformRow(row._id, 'wtUom', e.target.value)}
+                            disabled={isReadOnly}
+                            className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
+                          >
+                            {UOM_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                          </select>
+                        </td>
+                        {!isReadOnly && (
+                          <td className="border border-yellow-300 px-2 py-2 text-center">
+                            {uniformRows.length > 1 && (
+                              <button
+                                onClick={() => removeUniformRow(row._id)}
+                                className="rounded-lg bg-red-500 px-2 py-1.5 text-xs font-bold text-white hover:bg-red-600"
+                              >
+                                Remove
+                              </button>
+                            )}
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          </div>
+        )}
 
         {/* LOOSE - CARGO Section */}
-        <div className="mt-4">
-          <Card 
-            title="Loose - Cargo"
-            right={
-              !isReadOnly && (
-                <button
-                  onClick={addLooseCargoRow}
-                  className="rounded-xl bg-yellow-600 px-4 py-1.5 text-xs font-bold text-white hover:bg-yellow-700 transition"
-                >
-                  + Add Row
-                </button>
-              )
-            }
-          >
-            <div className="overflow-auto rounded-xl border border-yellow-300">
-              <table className="min-w-full w-full text-sm">
-                <thead className="sticky top-0 bg-yellow-400">
-                  <tr>
-                    <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">UOM</th>
-                    <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">PRODUCT NAME</th>
-                    <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">ACTUAL - WT</th>
-                    <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">CHARGED - WT</th>
-                    {!isReadOnly && <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">Actions</th>}
-                  </tr>
-                </thead>
-                <tbody>
-                  {looseCargoRows.map((row) => (
-                    <tr key={row._id} className="hover:bg-yellow-50 even:bg-slate-50">
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <select
-                          value={row.uom}
-                          onChange={(e) => updateLooseCargoRow(row._id, 'uom', e.target.value)}
-                          disabled={isReadOnly}
-                          className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
-                        >
-                          {UOM_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                        </select>
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <select
-                          value={row.productName}
-                          onChange={(e) => updateLooseCargoRow(row._id, 'productName', e.target.value)}
-                          disabled={isReadOnly}
-                          className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
-                        >
-                          <option value="">Select</option>
-                          {PRODUCT_NAME_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                        </select>
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <input
-                          type="text"
-                          value={row.actualWt}
-                          onChange={(e) => updateLooseCargoRow(row._id, 'actualWt', e.target.value)}
-                          readOnly={isReadOnly}
-                          className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
-                        />
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <input
-                          type="text"
-                          value={row.chargedWt}
-                          onChange={(e) => updateLooseCargoRow(row._id, 'chargedWt', e.target.value)}
-                          readOnly={isReadOnly}
-                          className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
-                        />
-                      </td>
-                      {!isReadOnly && (
-                        <td className="border border-yellow-300 px-2 py-2 text-center">
-                          {looseCargoRows.length > 1 && (
-                            <button
-                              onClick={() => removeLooseCargoRow(row._id)}
-                              className="rounded-lg bg-red-500 px-2 py-1.5 text-xs font-bold text-white hover:bg-red-600"
-                            >
-                              Remove
-                            </button>
-                          )}
-                        </td>
-                      )}
+        {(!isReadOnly || hasRowData(looseCargoRows)) && (
+          <div className="mt-4">
+            <Card
+              title="Loose - Cargo"
+              right={
+                !isReadOnly && (
+                  <button
+                    onClick={addLooseCargoRow}
+                    className="rounded-xl bg-yellow-600 px-4 py-1.5 text-xs font-bold text-white hover:bg-yellow-700 transition"
+                  >
+                    + Add Row
+                  </button>
+                )
+              }
+            >
+              <div className="overflow-auto rounded-xl border border-yellow-300">
+                <table className="min-w-full w-full text-sm">
+                  <thead className="sticky top-0 bg-yellow-400">
+                    <tr>
+                      <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">UOM</th>
+                      <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">PRODUCT NAME</th>
+                      <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">ACTUAL - WT</th>
+                      <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">CHARGED - WT</th>
+                      {!isReadOnly && <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">Actions</th>}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </Card>
-        </div>
+                  </thead>
+                  <tbody>
+                    {looseCargoRows.map((row) => (
+                      <tr key={row._id} className="hover:bg-yellow-50 even:bg-slate-50">
+                        <td className="border border-yellow-300 px-2 py-2">
+                          <select
+                            value={row.uom}
+                            onChange={(e) => updateLooseCargoRow(row._id, 'uom', e.target.value)}
+                            disabled={isReadOnly}
+                            className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
+                          >
+                            {UOM_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                          </select>
+                        </td>
+                        <td className="border border-yellow-300 px-2 py-2">
+                          <select
+                            value={row.productName}
+                            onChange={(e) => updateLooseCargoRow(row._id, 'productName', e.target.value)}
+                            disabled={isReadOnly}
+                            className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
+                          >
+                            <option value="">Select</option>
+                            {PRODUCT_NAME_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                          </select>
+                        </td>
+                        <td className="border border-yellow-300 px-2 py-2">
+                          <input
+                            type="text"
+                            value={row.actualWt}
+                            onChange={(e) => updateLooseCargoRow(row._id, 'actualWt', e.target.value)}
+                            readOnly={isReadOnly}
+                            className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
+                          />
+                        </td>
+                        <td className="border border-yellow-300 px-2 py-2">
+                          <input
+                            type="text"
+                            value={row.chargedWt}
+                            onChange={(e) => updateLooseCargoRow(row._id, 'chargedWt', e.target.value)}
+                            readOnly={isReadOnly}
+                            className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
+                          />
+                        </td>
+                        {!isReadOnly && (
+                          <td className="border border-yellow-300 px-2 py-2 text-center">
+                            {looseCargoRows.length > 1 && (
+                              <button
+                                onClick={() => removeLooseCargoRow(row._id)}
+                                className="rounded-lg bg-red-500 px-2 py-1.5 text-xs font-bold text-white hover:bg-red-600"
+                              >
+                                Remove
+                              </button>
+                            )}
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          </div>
+        )}
 
         {/* NON-UNIFORM - GENERAL CARGO Section */}
-        <div className="mt-4">
-          <Card 
-            title="Non-uniform - General Cargo"
-            right={
-              !isReadOnly && (
-                <button
-                  onClick={addNonUniformRow}
-                  className="rounded-xl bg-yellow-600 px-4 py-1.5 text-xs font-bold text-white hover:bg-yellow-700 transition"
-                >
-                  + Add Row
-                </button>
-              )
-            }
-          >
-            <div className="overflow-auto rounded-xl border border-yellow-300">
-              <table className="min-w-full w-full text-sm">
-                <thead className="sticky top-0 bg-yellow-400">
-                  <tr>
-                    <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">NOS</th>
-                    <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">PRODUCT NAME</th>
-                    <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">UOM</th>
-                    <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">LENGTH</th>
-                    <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">WIDTH</th>
-                    <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">HEIGHT</th>
-                    <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">ACTUAL - WT</th>
-                    <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">CHARGED - WT</th>
-                    {!isReadOnly && <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">Actions</th>}
-                  </tr>
-                </thead>
-                <tbody>
-                  {nonUniformRows.map((row) => (
-                    <tr key={row._id} className="hover:bg-yellow-50 even:bg-slate-50">
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <input
-                          type="text"
-                          value={row.nos}
-                          onChange={(e) => updateNonUniformRow(row._id, 'nos', e.target.value)}
-                          readOnly={isReadOnly}
-                          className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
-                        />
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <select
-                          value={row.productName}
-                          onChange={(e) => updateNonUniformRow(row._id, 'productName', e.target.value)}
-                          disabled={isReadOnly}
-                          className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
-                        >
-                          <option value="">Select</option>
-                          {PRODUCT_NAME_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                        </select>
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <select
-                          value={row.uom}
-                          onChange={(e) => updateNonUniformRow(row._id, 'uom', e.target.value)}
-                          disabled={isReadOnly}
-                          className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
-                        >
-                          {UOM_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                        </select>
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <input
-                          type="text"
-                          value={row.length}
-                          onChange={(e) => updateNonUniformRow(row._id, 'length', e.target.value)}
-                          readOnly={isReadOnly}
-                          className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
-                        />
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <input
-                          type="text"
-                          value={row.width}
-                          onChange={(e) => updateNonUniformRow(row._id, 'width', e.target.value)}
-                          readOnly={isReadOnly}
-                          className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
-                        />
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <input
-                          type="text"
-                          value={row.height}
-                          onChange={(e) => updateNonUniformRow(row._id, 'height', e.target.value)}
-                          readOnly={isReadOnly}
-                          className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
-                        />
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <input
-                          type="text"
-                          value={row.actualWt}
-                          onChange={(e) => updateNonUniformRow(row._id, 'actualWt', e.target.value)}
-                          readOnly={isReadOnly}
-                          className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
-                        />
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <input
-                          type="text"
-                          value={row.chargedWt}
-                          onChange={(e) => updateNonUniformRow(row._id, 'chargedWt', e.target.value)}
-                          readOnly={isReadOnly}
-                          className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
-                        />
-                      </td>
-                      {!isReadOnly && (
-                        <td className="border border-yellow-300 px-2 py-2 text-center">
-                          {nonUniformRows.length > 1 && (
-                            <button
-                              onClick={() => removeNonUniformRow(row._id)}
-                              className="rounded-lg bg-red-500 px-2 py-1.5 text-xs font-bold text-white hover:bg-red-600"
-                            >
-                              Remove
-                            </button>
-                          )}
-                        </td>
-                      )}
+        {(!isReadOnly || hasRowData(nonUniformRows)) && (
+          <div className="mt-4">
+            <Card
+              title="Non-uniform - General Cargo"
+              right={
+                !isReadOnly && (
+                  <button
+                    onClick={addNonUniformRow}
+                    className="rounded-xl bg-yellow-600 px-4 py-1.5 text-xs font-bold text-white hover:bg-yellow-700 transition"
+                  >
+                    + Add Row
+                  </button>
+                )
+              }
+            >
+              <div className="overflow-auto rounded-xl border border-yellow-300">
+                <table className="min-w-full w-full text-sm">
+                  <thead className="sticky top-0 bg-yellow-400">
+                    <tr>
+                      <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">NOS</th>
+                      <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">PRODUCT NAME</th>
+                      <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">UOM</th>
+                      <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">LENGTH</th>
+                      <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">WIDTH</th>
+                      <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">HEIGHT</th>
+                      <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">ACTUAL - WT</th>
+                      <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">CHARGED - WT</th>
+                      {!isReadOnly && <th className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">Actions</th>}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </Card>
-        </div>
+                  </thead>
+                  <tbody>
+                    {nonUniformRows.map((row) => (
+                      <tr key={row._id} className="hover:bg-yellow-50 even:bg-slate-50">
+                        <td className="border border-yellow-300 px-2 py-2">
+                          <input
+                            type="text"
+                            value={row.nos}
+                            onChange={(e) => updateNonUniformRow(row._id, 'nos', e.target.value)}
+                            readOnly={isReadOnly}
+                            className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
+                          />
+                        </td>
+                        <td className="border border-yellow-300 px-2 py-2">
+                          <select
+                            value={row.productName}
+                            onChange={(e) => updateNonUniformRow(row._id, 'productName', e.target.value)}
+                            disabled={isReadOnly}
+                            className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
+                          >
+                            <option value="">Select</option>
+                            {PRODUCT_NAME_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                          </select>
+                        </td>
+                        <td className="border border-yellow-300 px-2 py-2">
+                          <select
+                            value={row.uom}
+                            onChange={(e) => updateNonUniformRow(row._id, 'uom', e.target.value)}
+                            disabled={isReadOnly}
+                            className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
+                          >
+                            {UOM_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                          </select>
+                        </td>
+                        <td className="border border-yellow-300 px-2 py-2">
+                          <input
+                            type="text"
+                            value={row.length}
+                            onChange={(e) => updateNonUniformRow(row._id, 'length', e.target.value)}
+                            readOnly={isReadOnly}
+                            className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
+                          />
+                        </td>
+                        <td className="border border-yellow-300 px-2 py-2">
+                          <input
+                            type="text"
+                            value={row.width}
+                            onChange={(e) => updateNonUniformRow(row._id, 'width', e.target.value)}
+                            readOnly={isReadOnly}
+                            className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
+                          />
+                        </td>
+                        <td className="border border-yellow-300 px-2 py-2">
+                          <input
+                            type="text"
+                            value={row.height}
+                            onChange={(e) => updateNonUniformRow(row._id, 'height', e.target.value)}
+                            readOnly={isReadOnly}
+                            className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
+                          />
+                        </td>
+                        <td className="border border-yellow-300 px-2 py-2">
+                          <input
+                            type="text"
+                            value={row.actualWt}
+                            onChange={(e) => updateNonUniformRow(row._id, 'actualWt', e.target.value)}
+                            readOnly={isReadOnly}
+                            className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
+                          />
+                        </td>
+                        <td className="border border-yellow-300 px-2 py-2">
+                          <input
+                            type="text"
+                            value={row.chargedWt}
+                            onChange={(e) => updateNonUniformRow(row._id, 'chargedWt', e.target.value)}
+                            readOnly={isReadOnly}
+                            className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
+                          />
+                        </td>
+                        {!isReadOnly && (
+                          <td className="border border-yellow-300 px-2 py-2 text-center">
+                            {nonUniformRows.length > 1 && (
+                              <button
+                                onClick={() => removeNonUniformRow(row._id)}
+                                className="rounded-lg bg-red-500 px-2 py-1.5 text-xs font-bold text-white hover:bg-red-600"
+                              >
+                                Remove
+                              </button>
+                            )}
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          </div>
+        )}
 
         {/* ===== Vehicle Unloaded Date & Remarks Section ===== */}
         <div className="mt-4">
@@ -5168,7 +5184,7 @@ export default function EditConsignmentNote() {
                 />
                 <div className="text-xs text-slate-400 mt-1">Date when vehicle was unloaded</div>
               </div>
-              
+
               <div className="col-span-12 md:col-span-8">
                 <label className="text-xs font-bold text-slate-600">Remarks / Notes</label>
                 <textarea
@@ -5293,12 +5309,11 @@ export default function EditConsignmentNote() {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-slate-600">Status:</span>
-                      <span className={`font-bold px-2 py-0.5 rounded-full text-xs ${
-                        header.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                      <span className={`font-bold px-2 py-0.5 rounded-full text-xs ${header.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
                         header.status === 'Approved' ? 'bg-green-100 text-green-800' :
-                        header.status === 'Completed' ? 'bg-blue-100 text-blue-800' :
-                        'bg-red-100 text-red-800'
-                      }`}>
+                          header.status === 'Completed' ? 'bg-blue-100 text-blue-800' :
+                            'bg-red-100 text-red-800'
+                        }`}>
                         {header.status}
                       </span>
                     </div>
