@@ -11,6 +11,10 @@ import SubCompany from "@/models/SubCompany";
 const selectableStatuses = ["Approved", "Completed"];
 
 function loadingInfoReference(panel) {
+  const orderNumbers = [...new Set(
+    (panel.orderRows || []).map((row) => row.orderNo).filter(Boolean),
+  )];
+
   return {
     _id: panel._id,
     vehicleArrivalNo: panel.vehicleArrivalNo || "",
@@ -25,6 +29,7 @@ function loadingInfoReference(panel) {
     driverNo: panel.vehicleInfo?.driverMobileNo || "",
     vehicleInfo: panel.vehicleInfo || {},
     orderRows: panel.orderRows || [],
+    orderNumbers,
   };
 }
 
