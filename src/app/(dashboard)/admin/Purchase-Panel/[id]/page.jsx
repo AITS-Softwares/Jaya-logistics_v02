@@ -4042,7 +4042,10 @@ export default function EditPurchasePanel() {
       const filtered = loadingInfoHook.loadingInfos.filter(info =>
         info.vehicleArrivalNo?.toLowerCase().includes(query.toLowerCase()) ||
         info.vehicleNo?.toLowerCase().includes(query.toLowerCase()) ||
-        info.branch?.toLowerCase().includes(query.toLowerCase())
+        info.branch?.toLowerCase().includes(query.toLowerCase()) ||
+        (info.orderNumbers || info.orderRows?.map((row) => row.orderNo) || []).some((orderNo) =>
+          orderNo?.toLowerCase().includes(query.toLowerCase())
+        )
       );
       setFilteredLoadingInfos(filtered);
     }
@@ -4855,6 +4858,9 @@ export default function EditPurchasePanel() {
                         >
                           <div className="font-medium text-slate-800">
                             {info.vehicleArrivalNo}
+                          </div>
+                          <div className="text-xs text-indigo-600 mt-1 font-medium">
+                            Order No: {(info.orderNumbers || info.orderRows?.map((row) => row.orderNo).filter(Boolean) || []).join(', ') || 'N/A'}
                           </div>
                           <div className="text-xs text-slate-500 mt-1">
                             Vehicle: {info.vehicleNo || 'N/A'} • VNN: {info.vehicleNegotiationNo || 'N/A'}

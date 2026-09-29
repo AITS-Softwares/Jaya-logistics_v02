@@ -1189,6 +1189,7 @@ export default function PurchasePanelList() {
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">S.No</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Date</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Purchase No</th>
+                  <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Order No</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Pricing Serial</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Vendor</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Vehicle</th>
@@ -1201,7 +1202,7 @@ export default function PurchasePanelList() {
               <tbody className="divide-y divide-slate-200">
                 {loading ? (
                   <tr>
-                    <td colSpan="10" className="px-4 py-12 text-center">
+                    <td colSpan="11" className="px-4 py-12 text-center">
                       <div className="flex items-center justify-center">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500"></div>
                       </div>
@@ -1213,6 +1214,7 @@ export default function PurchasePanelList() {
                       <td className="px-4 py-3 text-slate-600">{index + 1}</td>
                       <td className="px-4 py-3 text-slate-600">{item.date}</td>
                       <td className="px-4 py-3 font-medium text-slate-900">{item.purchaseNo}</td>
+                      <td className="px-4 py-3 text-slate-600">{[...new Set((item.orderRows || []).map((row) => row.orderNo).filter(Boolean))].join(', ') || '-'}</td>
                       <td className="px-4 py-3 text-slate-600">{item.pricingSerialNo || '-'}</td>
                       <td className="px-4 py-3">
                         <div>
