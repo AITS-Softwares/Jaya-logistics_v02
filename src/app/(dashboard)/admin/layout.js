@@ -2002,6 +2002,7 @@ const Item = ({ href, icon, label, onClick, isActive }) => (
 
 export default function Layout({ children }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [openMenu, setOpenMenu] = useState(null);
   const [openSubmenus, setOpenSubmenus] = useState({});
   const [session, setSession] = useState(null);
@@ -2051,6 +2052,12 @@ export default function Layout({ children }) {
   }, [pathname]);
 
   useEffect(() => {
+    try {
+      setIsSidebarCollapsed(localStorage.getItem("sidebarCollapsed") === "1");
+    } catch { }
+  }, []);
+
+  useEffect(() => {
     const handler = (e) => {
       if (e.key === "Escape") setIsSidebarOpen(false);
     };
@@ -2080,6 +2087,11 @@ export default function Layout({ children }) {
   const toggleMenu = (m) => setOpenMenu(openMenu === m ? null : m);
   const closeSidebar = () => setIsSidebarOpen(false);
   const isActive = (path) => pathname === path;
+  const toggleDesktopSidebar = () => {
+    const next = !isSidebarCollapsed;
+    setIsSidebarCollapsed(next);
+    try { localStorage.setItem("sidebarCollapsed", next ? "1" : "0"); } catch { }
+  };
 
   // Check if user can access a module
   const canAccessModule = (moduleName) => {
@@ -2104,7 +2116,7 @@ export default function Layout({ children }) {
         ref={sidebarRef}
         aria-label="Sidebar navigation"
         className={`fixed inset-y-0 left-0 z-50 w-64 lg:w-72 bg-[#1e293b] text-white transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-          } flex flex-col shadow-2xl`}
+          } ${isSidebarCollapsed ? "md:hidden" : ""} flex flex-col shadow-2xl`}
       >
         {/* Logo */}
         <div className="h-16 flex items-center justify-between px-4 lg:px-6 bg-[#0f172a] border-b border-gray-700 shrink-0">
@@ -3212,6 +3224,16 @@ export default function Layout({ children }) {
                 className="md:hidden p-2 -ml-2 text-gray-400 hover:text-white transition-colors"
               >
                 {isSidebarOpen ? <HiX size={24} /> : <HiMenu size={24} />}
+              </button>
+
+              {/* Desktop: hide / show sidebar */}
+              <button
+                onClick={toggleDesktopSidebar}
+                title={isSidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
+                aria-label={isSidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
+                className="hidden md:block p-2 -ml-2 text-gray-400 hover:text-white transition-colors"
+              >
+                <HiMenu size={24} />
               </button>
 
               <h1 className="text-sm md:text-base font-bold text-white truncate tracking-tight">
