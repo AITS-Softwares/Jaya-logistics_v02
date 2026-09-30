@@ -9,6 +9,7 @@ import StockMovement from '@/models/StockMovement';
 import { getTokenFromHeader, verifyJWT } from '@/lib/auth';
 import { v2 as cloudinary } from 'cloudinary';
 import Counter from '@/models/Counter';
+import { companyPrefix } from "@/lib/documentSequence";
 
 export const config = { api: { bodyParser: false } };
 
@@ -114,8 +115,8 @@ export async function POST(req) {
       fyEnd = currentYear;
     }
     const financialYear = `${fyStart}-${String(fyEnd).slice(-2)}`;
-    const key = "SalesOrder";
-
+    // const key = "SalesOrder";
+    const key = `SalesOrder_${companyPrefix(user)}`;
     let counter = await Counter.findOne({ id: key, companyId: user.companyId }).session(mongoSession);
     if (!counter) {
       const [created] = await Counter.create([{ id: key, companyId: user.companyId, seq: 1 }], { session: mongoSession });
@@ -126,7 +127,7 @@ export async function POST(req) {
     }
 
     const paddedSeq = String(counter.seq).padStart(5, "0");
-    orderData.documentNumberOrder = `SALES-ORD/${financialYear}/${paddedSeq}`;
+    orderData.documentNumberOrder = `${companyPrefix(user)}/SALES-ORD/${financialYear}/${paddedSeq}`;
 
     const [order] = await SalesOrder.create([orderData], { session: mongoSession });
 

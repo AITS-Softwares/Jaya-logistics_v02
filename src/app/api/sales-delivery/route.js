@@ -11,34 +11,35 @@ import { NextResponse } from "next/server";
 import formidable from "formidable";
 import { Readable } from "stream";
 import { v2 as cloudinary } from "cloudinary";
+import { companyPrefix } from "@/lib/documentSequence";
 
 // --- Configuration ---
 export const config = { api: { bodyParser: false } };
 
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
 const { Types } = mongoose;
 
 // --- Helper Functions for File Parsing ---
 async function toNodeReq(request) {
-  const buf = Buffer.from(await request.arrayBuffer());
-  const nodeReq = new Readable({
-    read() { this.push(buf); this.push(null); },
-  });
-  nodeReq.headers = Object.fromEntries(request.headers.entries());
-  return nodeReq;
+    const buf = Buffer.from(await request.arrayBuffer());
+    const nodeReq = new Readable({
+        read() { this.push(buf); this.push(null); },
+    });
+    nodeReq.headers = Object.fromEntries(request.headers.entries());
+    return nodeReq;
 }
 
 async function parseMultipart(request) {
-  const nodeReq = await toNodeReq(request);
-  const form = formidable({ multiples: true, keepExtensions: true });
-  return new Promise((res, rej) =>
-    form.parse(nodeReq, (err, fields, files) => (err ? rej(err) : res({ fields, files })))
-  );
+    const nodeReq = await toNodeReq(request);
+    const form = formidable({ multiples: true, keepExtensions: true });
+    return new Promise((res, rej) =>
+        form.parse(nodeReq, (err, fields, files) => (err ? rej(err) : res({ fields, files })))
+    );
 }
 
 /**
@@ -48,7 +49,7 @@ async function validateStockAvailability(items) {
     for (const item of items) {
         const warehouseDoc = await Warehouse.findById(item.warehouse).lean();
         if (!warehouseDoc) throw new Error(`Warehouse '${item.warehouseName}' not found.`);
-        
+
         const useBins = warehouseDoc.binLocations && warehouseDoc.binLocations.length > 0;
         const query = {
             item: new Types.ObjectId(item.item),
@@ -78,7 +79,7 @@ async function validateStockAvailability(items) {
 async function processItem(item, session, delivery, decoded, isCopiedSO) {
     const warehouseDoc = await Warehouse.findById(item.warehouse).session(session).lean();
     if (!warehouseDoc) throw new Error(`Warehouse '${item.warehouseName}' not found.`);
-    
+
     const useBins = warehouseDoc.binLocations && warehouseDoc.binLocations.length > 0;
     const query = {
         item: new Types.ObjectId(item.item),
@@ -178,11 +179,12 @@ export async function POST(req) {
         const now = new Date();
         const financialYear = now.getMonth() >= 3 ? `${now.getFullYear()}-${String(now.getFullYear() + 1).slice(-2)}` : `${now.getFullYear() - 1}-${String(now.getFullYear()).slice(-2)}`;
         const counter = await Counter.findOneAndUpdate(
-            { id: "Sales Delivery", companyId: decoded.companyId },
+            // { id: "Sales Delivery", companyId: decoded.companyId },
+            { id: `Sales Delivery_${companyPrefix(decoded)}`, companyId: decoded.companyId },
             { $inc: { seq: 1 } },
             { new: true, upsert: true, session: session }
         );
-        deliveryData.documentNumberDelivery = `SALES-DEL/${financialYear}/${String(counter.seq).padStart(5, "0")}`;
+        deliveryData.documentNumberDelivery = `${companyPrefix(decoded)}/SALES-DEL/${financialYear}/${String(counter.seq).padStart(5, "0")}`;
 
         const [delivery] = await Delivery.create([deliveryData], { session });
         const isCopiedSO = !!deliveryData.sourceId; // Assuming sourceId is used for SO link
@@ -461,38 +463,38 @@ export async function POST(req) {
 
 
 export async function GET(req) {
-  try {
-    // ✅ Step 1: Extract and verify the JWT
-    const token = getTokenFromHeader(req);
-    if (!token) {
-      return new Response(JSON.stringify({ message: "Unauthorized: No token provided" }), {
-        status: 401,
-        headers: { "Content-Type": "application/json" },
-      });
+    try {
+        // ✅ Step 1: Extract and verify the JWT
+        const token = getTokenFromHeader(req);
+        if (!token) {
+            return new Response(JSON.stringify({ message: "Unauthorized: No token provided" }), {
+                status: 401,
+                headers: { "Content-Type": "application/json" },
+            });
+        }
+
+        const user = verifyJWT(token); // Throws error if token is invalid
+        if (!user) {
+            return new Response(JSON.stringify({ message: "Unauthorized: Invalid token" }), {
+                status: 401,
+                headers: { "Content-Type": "application/json" },
+            });
+        }
+
+        // ✅ Step 2: DB connection and data fetch
+        await dbConnect();
+        const salesDeliveries = await Delivery.find({ companyId: user.companyId });
+
+        return new Response(JSON.stringify(salesDeliveries), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+        });
+
+    } catch (error) {
+        console.error("Error fetching SalesDeliveries:", error);
+        return new Response(
+            JSON.stringify({ message: "Error fetching SalesDeliveries", error: error.message }),
+            { status: 500, headers: { "Content-Type": "application/json" } }
+        );
     }
-
-    const user = verifyJWT(token); // Throws error if token is invalid
-    if (!user) {
-      return new Response(JSON.stringify({ message: "Unauthorized: Invalid token" }), {
-        status: 401,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-
-    // ✅ Step 2: DB connection and data fetch
-    await dbConnect();
-    const salesDeliveries = await Delivery.find({companyId: user.companyId});
-
-    return new Response(JSON.stringify(salesDeliveries), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
-
-  } catch (error) {
-    console.error("Error fetching SalesDeliveries:", error);
-    return new Response(
-      JSON.stringify({ message: "Error fetching SalesDeliveries", error: error.message }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
-  }
 }

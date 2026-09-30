@@ -39,4 +39,27 @@ export async function nextCompanyDocumentNumber({ companyId, subCompanyId, subCo
   return `${safeCode}-${documentType}-${financialYear}-${String(counter.sequence).padStart(width, "0")}`;
 }
 
+// Simple per-company running number, no year, never resets:  JGL-ORD-0001
+export async function nextSimpleDocumentNumber({ companyId, subCompanyId, subCompanyCode, documentType, width = 4 }) {
+  if (!companyId || !subCompanyId || !subCompanyCode || !documentType) {
+    throw new Error("Company-specific document sequence requires company and operating-company details.");
+  }
+  const code = String(subCompanyCode).trim().toUpperCase();
+  const financialYear = "ALL"; // fixed value = one continuous series, no year
+  const key = `${companyId}:${subCompanyId}:${documentType}:${financialYear}`;
+  const counter = await DocumentSequence.findOneAndUpdate(
+    { _id: key },
+    { $inc: { sequence: 1 }, $setOnInsert: { companyId, subCompanyId, documentType, financialYear } },
+    { new: true, upsert: true, setDefaultsOnInsert: true }
+  );
+  return `${code}-${documentType}-${String(counter.sequence).padStart(width, "0")}`;
+}
+
+
+export function companyPrefix(user) {
+  const code = String(user?.activeOperatingCompanyCode || "").trim().toUpperCase();
+  if (!code) throw new Error("An operating company must be selected before creating a document.");
+  return code;
+}
+
 export default DocumentSequence;

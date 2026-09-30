@@ -200,7 +200,7 @@
 // //     }
 
 // //     const body = await req.json();
-    
+
 // //     console.log("📝 Creating new consignment note");
 
 // //     // Generate LR number if not provided
@@ -212,7 +212,7 @@
 // //         loadingInfoNo: body.loadingInfoNo,
 // //         companyId: user.companyId
 // //       });
-      
+
 // //       if (existing) {
 // //         return NextResponse.json({ 
 // //           success: false, 
@@ -380,7 +380,7 @@
 
 // //     const body = await req.json();
 // //     const { id } = body;
-    
+
 // //     if (!id) {
 // //       return NextResponse.json({ 
 // //         success: false, 
@@ -414,7 +414,7 @@
 // //         companyId: user.companyId,
 // //         _id: { $ne: id }
 // //       });
-      
+
 // //       if (existing) {
 // //         return NextResponse.json({ 
 // //           success: false, 
@@ -539,7 +539,7 @@
 
 // //   } catch (error) {
 // //     console.error("❌ PUT /consignment-note error:", error);
-    
+
 // //     if (error.name === 'ValidationError') {
 // //       const messages = Object.values(error.errors).map(err => err.message);
 // //       return NextResponse.json({ 
@@ -568,7 +568,7 @@
 
 // //     const url = new URL(req.url);
 // //     const id = url.searchParams.get("id");
-    
+
 // //     if (!id) {
 // //       return NextResponse.json({ 
 // //         success: false, 
@@ -641,19 +641,19 @@
 
 // function isAuthorized(user) {
 //   if (!user) return false;
-  
+
 //   // Company admins have full access
 //   if (user.type === "company") return true;
-  
+
 //   // Admin role has full access
 //   if (user.roles && user.roles.includes("Admin")) return true;
-  
+
 //   // Check module-based permissions for "Consignment Note"
 //   const modules = user.modules || {};
 //   const moduleData = modules["Consignment Note"];
-  
+
 //   if (!moduleData || !moduleData.selected) return false;
-  
+
 //   return true;
 // }
 
@@ -661,12 +661,12 @@
 //   if (!user) return false;
 //   if (user.type === "company") return true;
 //   if (user.roles && user.roles.includes("Admin")) return true;
-  
+
 //   const modules = user.modules || {};
 //   const moduleData = modules["Consignment Note"];
-  
+
 //   if (!moduleData || !moduleData.selected) return false;
-  
+
 //   const permissions = moduleData.permissions || {};
 //   return permissions[action] === true;
 // }
@@ -678,21 +678,21 @@
 //   try {
 //     const user = verifyJWT(token);
 //     if (!user) return { error: "Invalid or expired token. Please login again.", status: 401 };
-    
+
 //     if (!isAuthorized(user)) {
 //       return { 
 //         error: "Access denied. You don't have permission to access Consignment Notes.", 
 //         status: 403 
 //       };
 //     }
-    
+
 //     if (requiredAction && !hasPermission(user, requiredAction)) {
 //       return { 
 //         error: `Permission denied: ${requiredAction} action not allowed for Consignment Notes.`, 
 //         status: 403 
 //       };
 //     }
-    
+
 //     return { user, error: null, status: 200 };
 //   } catch (err) {
 //     console.error("JWT Verification Failed:", err?.message || err);
@@ -883,7 +883,7 @@
 //     }
 
 //     const body = await req.json();
-    
+
 //     console.log("📝 Creating new consignment note");
 
 //     // Generate LR number if not provided
@@ -895,7 +895,7 @@
 //         loadingInfoNo: body.loadingInfoNo,
 //         companyId: user.companyId
 //       });
-      
+
 //       if (existing) {
 //         return NextResponse.json({ 
 //           success: false, 
@@ -1067,7 +1067,7 @@
 
 //     const body = await req.json();
 //     const { id } = body;
-    
+
 //     if (!id) {
 //       return NextResponse.json({ 
 //         success: false, 
@@ -1101,7 +1101,7 @@
 //         companyId: user.companyId,
 //         _id: { $ne: id }
 //       });
-      
+
 //       if (existing) {
 //         return NextResponse.json({ 
 //           success: false, 
@@ -1226,7 +1226,7 @@
 
 //   } catch (error) {
 //     console.error("❌ PUT /consignment-note error:", error);
-    
+
 //     if (error.name === 'ValidationError') {
 //       const messages = Object.values(error.errors).map(err => err.message);
 //       return NextResponse.json({ 
@@ -1259,7 +1259,7 @@
 
 //     const url = new URL(req.url);
 //     const id = url.searchParams.get("id");
-    
+
 //     if (!id) {
 //       return NextResponse.json({ 
 //         success: false, 
@@ -1339,7 +1339,7 @@
 
 //     const body = await req.json();
 //     const { id, action } = body;
-    
+
 //     if (!id || !isValidObjectId(id)) {
 //       return NextResponse.json({ 
 //         success: false, 
@@ -1348,7 +1348,7 @@
 //     }
 
 //     console.log(`📝 Updating consignment note status: ${id} - ${action}`);
-    
+
 //     const note = await ConsignmentNote.findOne({
 //       _id: id,
 //       companyId: user.companyId
@@ -1378,12 +1378,12 @@
 //     // Update status
 //     note.header.status = statusMap[action];
 //     note.updatedAt = Date.now();
-    
+
 //     // Also update the overall status if you have a top-level status field
 //     if (note.status) {
 //       note.status = statusMap[action];
 //     }
-    
+
 //     await note.save();
 
 //     return NextResponse.json({ 
@@ -1417,19 +1417,19 @@ import { activeOperatingCompanyId, companyScopeFilter } from "@/lib/companyScope
 
 function isAuthorized(user) {
   if (!user) return false;
-  
+
   // Company admins have full access
   if (user.type === "company") return true;
-  
+
   // Admin role has full access
   if (user.roles && user.roles.includes("Admin")) return true;
-  
+
   // Check module-based permissions for "Consignment Note"
   const modules = user.modules || {};
   const moduleData = modules["Consignment Note"];
-  
+
   if (!moduleData || !moduleData.selected) return false;
-  
+
   return true;
 }
 
@@ -1437,12 +1437,12 @@ function hasPermission(user, action) {
   if (!user) return false;
   if (user.type === "company") return true;
   if (user.roles && user.roles.includes("Admin")) return true;
-  
+
   const modules = user.modules || {};
   const moduleData = modules["Consignment Note"];
-  
+
   if (!moduleData || !moduleData.selected) return false;
-  
+
   const permissions = moduleData.permissions || {};
   return permissions[action] === true;
 }
@@ -1455,21 +1455,21 @@ async function validateUser(req, requiredAction = null) {
     const user = verifyJWT(token);
     if (!user) return { error: "Invalid or expired token. Please login again.", status: 401 };
     try { activeOperatingCompanyId(user); } catch (error) { return { error: error.message, status: 401 }; }
-    
+
     if (!isAuthorized(user)) {
-      return { 
-        error: "Access denied. You don't have permission to access Consignment Notes.", 
-        status: 403 
+      return {
+        error: "Access denied. You don't have permission to access Consignment Notes.",
+        status: 403
       };
     }
-    
+
     if (requiredAction && !hasPermission(user, requiredAction)) {
-      return { 
-        error: `Permission denied: ${requiredAction} action not allowed for Consignment Notes.`, 
-        status: 403 
+      return {
+        error: `Permission denied: ${requiredAction} action not allowed for Consignment Notes.`,
+        status: 403
       };
     }
-    
+
     return { user, error: null, status: 200 };
   } catch (err) {
     console.error("JWT Verification Failed:", err?.message || err);
@@ -1497,8 +1497,8 @@ export async function GET(req) {
     await connectDb();
     const { user, error, status } = await validateUser(req, 'view');
     if (error) {
-      return NextResponse.json({ 
-        success: false, 
+      return NextResponse.json({
+        success: false,
         message: error,
         code: status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN'
       }, { status });
@@ -1516,24 +1516,24 @@ export async function GET(req) {
     // ============ CASE 1: GET SINGLE BY ID ============
     if (id) {
       if (!isValidObjectId(id)) {
-        return NextResponse.json({ 
-          success: false, 
-          message: "Invalid consignment note ID format" 
+        return NextResponse.json({
+          success: false,
+          message: "Invalid consignment note ID format"
         }, { status: 400 });
       }
 
       const note = await ConsignmentNote.findOne(companyScopeFilter(user, { _id: id })).lean();
 
       if (!note) {
-        return NextResponse.json({ 
-          success: false, 
-          message: "Consignment note not found" 
+        return NextResponse.json({
+          success: false,
+          message: "Consignment note not found"
         }, { status: 404 });
       }
 
-      return NextResponse.json({ 
-        success: true, 
-        data: note 
+      return NextResponse.json({
+        success: true,
+        data: note
       }, { status: 200 });
     }
 
@@ -1542,15 +1542,15 @@ export async function GET(req) {
       const note = await ConsignmentNote.findOne(companyScopeFilter(user, { lrNo })).lean();
 
       if (!note) {
-        return NextResponse.json({ 
-          success: false, 
-          message: "Consignment note not found" 
+        return NextResponse.json({
+          success: false,
+          message: "Consignment note not found"
         }, { status: 404 });
       }
 
-      return NextResponse.json({ 
-        success: true, 
-        data: note 
+      return NextResponse.json({
+        success: true,
+        data: note
       }, { status: 200 });
     }
 
@@ -1622,9 +1622,9 @@ export async function GET(req) {
 
     // ============ CASE 4: LIST FOR DROPDOWNS ============
     const notes = await ConsignmentNote.find(companyScopeFilter(user))
-    .select('lrNo loadingInfoNo vnnNo subCompanyName subCompanyCode header.partyName header.orderNo header.status')
-    .sort({ createdAt: -1 })
-    .lean();
+      .select('lrNo loadingInfoNo vnnNo subCompanyName subCompanyCode header.partyName header.orderNo header.status')
+      .sort({ createdAt: -1 })
+      .lean();
 
     return NextResponse.json({
       success: true,
@@ -1633,8 +1633,8 @@ export async function GET(req) {
 
   } catch (error) {
     console.error("❌ GET /consignment-note error:", error);
-    return NextResponse.json({ 
-      success: false, 
+    return NextResponse.json({
+      success: false,
       message: error.message || "Failed to fetch consignment notes"
     }, { status: 500 });
   }
@@ -1648,28 +1648,30 @@ export async function POST(req) {
     await connectDb();
     const { user, error, status } = await validateUser(req, 'create');
     if (error) {
-      return NextResponse.json({ 
-        success: false, 
+      return NextResponse.json({
+        success: false,
         message: error,
         code: status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN'
       }, { status });
     }
 
     const body = await req.json();
-    
+
     console.log("📝 Creating new consignment note");
 
     // Generate LR number if not provided
     let lrNo = body.header?.lrNo || await getNextLRNumber(user.companyId, user.activeOperatingCompanyId, user.activeOperatingCompanyCode);
+    const lrCode = String(user.activeOperatingCompanyCode || "").trim().toUpperCase();
+    if (lrCode && !lrNo.startsWith(`${lrCode}-`)) lrNo = `${lrCode}-${lrNo}`;
 
     // Check if loadingInfoNo is already used (if provided)
     if (body.loadingInfoNo) {
       const existing = await ConsignmentNote.findOne(companyScopeFilter(user, { loadingInfoNo: body.loadingInfoNo }));
-      
+
       if (existing) {
-        return NextResponse.json({ 
-          success: false, 
-          message: `Loading Info ${body.loadingInfoNo} is already used in consignment note ${existing.lrNo}` 
+        return NextResponse.json({
+          success: false,
+          message: `Loading Info ${body.loadingInfoNo} is already used in consignment note ${existing.lrNo}`
         }, { status: 400 });
       }
     }
@@ -1739,12 +1741,12 @@ export async function POST(req) {
       vnnNo: body.vnnNo || '',
       vehicleNegotiationRef: body.vehicleNegotiationRef || null,
       loadingInfoNo: body.loadingInfoNo || '',
-      
+
       // ✅ Sub-Company at root level
       subCompanyId,
       subCompanyName,
       subCompanyCode,
-      
+
       // LC Status
       lcStatus: body.lcStatus || body.header?.lcStatus || 'Not LC',
       lrType: body.lrType || body.header?.lrType || 'Normal',
@@ -1752,7 +1754,7 @@ export async function POST(req) {
       verification: body.verification || body.header?.verification || 'Not Verified',
       vehicleUnloadedDate: body.vehicleUnloadedDate || body.header?.vehicleUnloadedDate || '',
       remarks: body.remarks || body.header?.remarks || '',
-      
+
       header: {
         orderNo: body.header?.orderNo || '',
         partyName: body.header?.partyName || '',
@@ -1770,7 +1772,7 @@ export async function POST(req) {
         state: body.header?.state || '',
         vehicleNo: body.header?.vehicleNo || '',
         partyNo: body.header?.partyNo || '',
-        lrNo: body.header?.lrNo || lrNo,
+        lrNo,
         lrDate: body.header?.lrDate || '',
         unit: body.header?.unit || 'MT',
         status: body.header?.status || 'Pending',
@@ -1814,8 +1816,8 @@ export async function POST(req) {
 
     await consignmentNote.save();
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       message: "Consignment note created successfully",
       data: {
         _id: consignmentNote._id,
@@ -1829,22 +1831,22 @@ export async function POST(req) {
     console.error("❌ POST /consignment-note error:", error);
 
     if (error.code === 11000) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "LR number already exists" 
+      return NextResponse.json({
+        success: false,
+        message: "LR number already exists"
       }, { status: 400 });
     }
 
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(err => err.message);
-      return NextResponse.json({ 
-        success: false, 
-        message: messages.join(', ') 
+      return NextResponse.json({
+        success: false,
+        message: messages.join(', ')
       }, { status: 400 });
     }
 
-    return NextResponse.json({ 
-      success: false, 
+    return NextResponse.json({
+      success: false,
       message: error.message || "Failed to create consignment note"
     }, { status: 500 });
   }
@@ -1858,8 +1860,8 @@ export async function PUT(req) {
     await connectDb();
     const { user, error, status } = await validateUser(req, 'edit');
     if (error) {
-      return NextResponse.json({ 
-        success: false, 
+      return NextResponse.json({
+        success: false,
         message: error,
         code: status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN'
       }, { status });
@@ -1867,27 +1869,27 @@ export async function PUT(req) {
 
     const body = await req.json();
     const { id } = body;
-    
+
     if (!id) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Consignment note ID is required" 
+      return NextResponse.json({
+        success: false,
+        message: "Consignment note ID is required"
       }, { status: 400 });
     }
 
     if (!isValidObjectId(id)) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Invalid consignment note ID format" 
+      return NextResponse.json({
+        success: false,
+        message: "Invalid consignment note ID format"
       }, { status: 400 });
     }
 
     const note = await ConsignmentNote.findOne(companyScopeFilter(user, { _id: id }));
 
     if (!note) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Consignment note not found" 
+      return NextResponse.json({
+        success: false,
+        message: "Consignment note not found"
       }, { status: 404 });
     }
 
@@ -1897,11 +1899,11 @@ export async function PUT(req) {
         loadingInfoNo: body.loadingInfoNo,
         _id: { $ne: id },
       }));
-      
+
       if (existing) {
-        return NextResponse.json({ 
-          success: false, 
-          message: `Loading Info ${body.loadingInfoNo} is already used in consignment note ${existing.lrNo}` 
+        return NextResponse.json({
+          success: false,
+          message: `Loading Info ${body.loadingInfoNo} is already used in consignment note ${existing.lrNo}`
         }, { status: 400 });
       }
     }
@@ -2026,8 +2028,8 @@ export async function PUT(req) {
     note.updatedAt = Date.now();
     await note.save();
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       message: "Consignment note updated successfully",
       data: {
         _id: note._id,
@@ -2039,17 +2041,17 @@ export async function PUT(req) {
 
   } catch (error) {
     console.error("❌ PUT /consignment-note error:", error);
-    
+
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(err => err.message);
-      return NextResponse.json({ 
-        success: false, 
-        message: messages.join(', ') 
+      return NextResponse.json({
+        success: false,
+        message: messages.join(', ')
       }, { status: 400 });
     }
 
-    return NextResponse.json({ 
-      success: false, 
+    return NextResponse.json({
+      success: false,
       message: error.message || "Failed to update consignment note"
     }, { status: 500 });
   }
@@ -2063,8 +2065,8 @@ export async function DELETE(req) {
     await connectDb();
     const { user, error, status } = await validateUser(req, 'delete');
     if (error) {
-      return NextResponse.json({ 
-        success: false, 
+      return NextResponse.json({
+        success: false,
         message: error,
         code: status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN'
       }, { status });
@@ -2072,18 +2074,18 @@ export async function DELETE(req) {
 
     const url = new URL(req.url);
     const id = url.searchParams.get("id");
-    
+
     if (!id) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Consignment note ID is required" 
+      return NextResponse.json({
+        success: false,
+        message: "Consignment note ID is required"
       }, { status: 400 });
     }
 
     if (!isValidObjectId(id)) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Invalid consignment note ID format" 
+      return NextResponse.json({
+        success: false,
+        message: "Invalid consignment note ID format"
       }, { status: 400 });
     }
 
@@ -2091,17 +2093,17 @@ export async function DELETE(req) {
     const note = await ConsignmentNote.findOne(companyScopeFilter(user, { _id: id }));
 
     if (!note) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Consignment note not found" 
+      return NextResponse.json({
+        success: false,
+        message: "Consignment note not found"
       }, { status: 404 });
     }
 
     // Don't delete approved/completed notes
     if (note.header?.status === 'Approved' || note.header?.status === 'Completed') {
-      return NextResponse.json({ 
-        success: false, 
-        message: `Cannot delete ${note.header.status} consignment note` 
+      return NextResponse.json({
+        success: false,
+        message: `Cannot delete ${note.header.status} consignment note`
       }, { status: 400 });
     }
 
@@ -2110,8 +2112,8 @@ export async function DELETE(req) {
 
     console.log(`✅ Consignment note deleted: ${note.lrNo}`);
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       message: "Consignment note deleted successfully",
       data: {
         lrNo: note.lrNo,
@@ -2121,8 +2123,8 @@ export async function DELETE(req) {
 
   } catch (error) {
     console.error("❌ DELETE /consignment-note error:", error);
-    return NextResponse.json({ 
-      success: false, 
+    return NextResponse.json({
+      success: false,
       message: error.message || "Failed to delete consignment note"
     }, { status: 500 });
   }
@@ -2137,8 +2139,8 @@ export async function PATCH(req) {
     await connectDb();
     const { user, error, status } = await validateUser(req, 'approve');
     if (error) {
-      return NextResponse.json({ 
-        success: false, 
+      return NextResponse.json({
+        success: false,
         message: error,
         code: status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN'
       }, { status });
@@ -2146,30 +2148,30 @@ export async function PATCH(req) {
 
     const body = await req.json();
     const { id, action } = body;
-    
+
     if (!id || !isValidObjectId(id)) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Valid ID is required" 
+      return NextResponse.json({
+        success: false,
+        message: "Valid ID is required"
       }, { status: 400 });
     }
 
     console.log(`📝 Updating consignment note status: ${id} - ${action}`);
-    
+
     const note = await ConsignmentNote.findOne(companyScopeFilter(user, { _id: id }));
 
     if (!note) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Consignment note not found" 
+      return NextResponse.json({
+        success: false,
+        message: "Consignment note not found"
       }, { status: 404 });
     }
 
     const allowedActions = ['approve', 'reject', 'complete'];
     if (!allowedActions.includes(action)) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Invalid action. Allowed: approve, reject, complete" 
+      return NextResponse.json({
+        success: false,
+        message: "Invalid action. Allowed: approve, reject, complete"
       }, { status: 400 });
     }
 
@@ -2182,11 +2184,11 @@ export async function PATCH(req) {
     // Update status
     note.header.status = statusMap[action];
     note.updatedAt = Date.now();
-    
+
     await note.save();
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       message: `Consignment note ${action}d successfully`,
       data: {
         _id: note._id,
@@ -2197,8 +2199,8 @@ export async function PATCH(req) {
 
   } catch (error) {
     console.error("❌ PATCH /consignment-note error:", error);
-    return NextResponse.json({ 
-      success: false, 
+    return NextResponse.json({
+      success: false,
       message: error.message || "Failed to update consignment note status"
     }, { status: 500 });
   }

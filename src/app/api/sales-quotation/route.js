@@ -8,12 +8,13 @@ import SalesQuotation from "@/models/SalesQuotationModel";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import Counter from "@/models/Counter";
 import { checkPermission } from "@/lib/checkPermission";
+import { companyPrefix } from "@/lib/documentSequence";
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+}); 
 
 export const config = { api: { bodyParser: false } };
 
@@ -97,8 +98,8 @@ export async function POST(req) {
       fyEnd = currentYear;
     }
     const financialYear = `${fyStart}-${String(fyEnd).slice(-2)}`;
-    const key = "SalesQuotation";
-
+    // const key = "SalesQuotation";
+    const key = `SalesQuotation_${companyPrefix(decoded)}`;
     let counter = await Counter.findOne({ id: key, companyId }).session(session);
     if (!counter) {
       const [created] = await Counter.create([{ id: key, companyId, seq: 1 }], { session });
@@ -109,8 +110,7 @@ export async function POST(req) {
     }
 
     const paddedSeq = String(counter.seq).padStart(5, "0");
-    jsonData.documentNumberQuatation = `SALES-QUA/${financialYear}/${paddedSeq}`;
-
+    jsonData.documentNumberQuatation = `${companyPrefix(decoded)}/SALES-QUA/${financialYear}/${paddedSeq}`;
     const [quotation] = await SalesQuotation.create([{ ...jsonData, companyId, attachments: finalAttachments, createdBy: decoded.id }], { session });
 
     await session.commitTransaction();

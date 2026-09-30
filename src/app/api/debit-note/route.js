@@ -11,60 +11,61 @@ import StockMovement from "@/models/StockMovement";
 import Warehouse from "@/models/warehouseModels"; // Import the Warehouse model
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import Counter from "@/models/Counter";
+import { companyPrefix } from "@/lib/documentSequence";
 
 const { Types } = mongoose;
 
 // --- Configuration ---
 cloudinary.config({
- cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
- api_key: process.env.CLOUDINARY_API_KEY,
- api_secret: process.env.CLOUDINARY_API_SECRET,
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
 export const dynamic = 'force-dynamic';
 
 // --- Helper Functions for File Parsing and Uploading ---
 function requestToNodeStream(req) {
- if (!req.body) throw new Error("Request body is undefined.");
- return Readable.fromWeb(req.body);
+    if (!req.body) throw new Error("Request body is undefined.");
+    return Readable.fromWeb(req.body);
 }
 
 async function parseForm(req) {
- const form = formidable({ multiples: true });
- const headers = {};
- for (const [key, value] of req.headers.entries()) headers[key.toLowerCase()] = value;
- return new Promise((resolve, reject) => {
-  const nodeReq = Object.assign(requestToNodeStream(req), { headers, method: req.method });
-  form.parse(nodeReq, (err, fields, files) => {
-   if (err) return reject(err);
-   const parsedFields = {};
-   for (const key in fields) parsedFields[key] = Array.isArray(fields[key]) ? fields[key][0] : fields[key];
-   const parsedFiles = {};
-   for (const key in files) parsedFiles[key] = Array.isArray(files[key]) ? files[key] : [files[key]];
-   resolve({ fields: parsedFields, files: parsedFiles });
-  });
- });
+    const form = formidable({ multiples: true });
+    const headers = {};
+    for (const [key, value] of req.headers.entries()) headers[key.toLowerCase()] = value;
+    return new Promise((resolve, reject) => {
+        const nodeReq = Object.assign(requestToNodeStream(req), { headers, method: req.method });
+        form.parse(nodeReq, (err, fields, files) => {
+            if (err) return reject(err);
+            const parsedFields = {};
+            for (const key in fields) parsedFields[key] = Array.isArray(fields[key]) ? fields[key][0] : fields[key];
+            const parsedFiles = {};
+            for (const key in files) parsedFiles[key] = Array.isArray(files[key]) ? files[key] : [files[key]];
+            resolve({ fields: parsedFields, files: parsedFiles });
+        });
+    });
 }
 
 async function uploadFiles(fileObjects, folderName, companyId) {
- const uploadedFiles = [];
- if (!fileObjects?.length) return uploadedFiles;
- for (const file of fileObjects) {
-  if (!file?.filepath) continue;
-  const result = await cloudinary.uploader.upload(file.filepath, {
-   folder: `${folderName}/${companyId || 'default_company_attachments'}`,
-   resource_type: "auto",
-    original_filename: file.originalFilename,
-  });
-  uploadedFiles.push({
-   fileName: file.originalFilename,
-   fileUrl: result.secure_url,
-   fileType: file.mimetype,
-   uploadedAt: new Date(),
-   publicId: result.public_id,
-  });
- }
- return uploadedFiles;
+    const uploadedFiles = [];
+    if (!fileObjects?.length) return uploadedFiles;
+    for (const file of fileObjects) {
+        if (!file?.filepath) continue;
+        const result = await cloudinary.uploader.upload(file.filepath, {
+            folder: `${folderName}/${companyId || 'default_company_attachments'}`,
+            resource_type: "auto",
+            original_filename: file.originalFilename,
+        });
+        uploadedFiles.push({
+            fileName: file.originalFilename,
+            fileUrl: result.secure_url,
+            fileType: file.mimetype,
+            uploadedAt: new Date(),
+            publicId: result.public_id,
+        });
+    }
+    return uploadedFiles;
 }
 
 
@@ -75,7 +76,7 @@ async function validateStockAvailability(items, companyId) {
     for (const item of items) {
         const warehouseDoc = await Warehouse.findById(item.warehouse).lean();
         if (!warehouseDoc) throw new Error(`Warehouse '${item.warehouseName}' not found.`);
-        
+
         const useBins = warehouseDoc.binLocations && warehouseDoc.binLocations.length > 0;
         const query = {
             item: new Types.ObjectId(item.item),
@@ -106,7 +107,7 @@ async function validateStockAvailability(items, companyId) {
 async function processItemForDebitNote(item, session, debitNote, decoded) {
     const warehouseDoc = await Warehouse.findById(item.warehouse).session(session).lean();
     if (!warehouseDoc) throw new Error(`Warehouse '${item.warehouseName}' not found.`);
-    
+
     const useBins = warehouseDoc.binLocations && warehouseDoc.binLocations.length > 0;
     const query = {
         item: new Types.ObjectId(item.item),
@@ -134,7 +135,7 @@ async function processItemForDebitNote(item, session, debitNote, decoded) {
     }
 
     inventoryDoc.quantity -= item.quantity;
-    
+
     await StockMovement.create([{
         item: item.item,
         warehouse: item.warehouse,
@@ -174,7 +175,7 @@ export async function POST(req) {
 
         // ✅ 1. PRE-VALIDATION: Check stock availability BEFORE starting the transaction.
         await validateStockAvailability(debitNoteData.items, companyId);
-        
+
         // ✅ 2. START TRANSACTION: If stock is available, begin the database transaction.
         session.startTransaction();
 
@@ -184,14 +185,15 @@ export async function POST(req) {
 
         const newUploadedFiles = await uploadFiles(files.newAttachments || [], 'debit-notes', companyId);
         let existingAttachments = [];
-        try { existingAttachments = JSON.parse(fields.existingFiles || '[]'); } catch {}
+        try { existingAttachments = JSON.parse(fields.existingFiles || '[]'); } catch { }
         debitNoteData.attachments = [...existingAttachments, ...newUploadedFiles];
 
         const now = new Date();
         const fyStart = now.getMonth() + 1 < 4 ? now.getFullYear() - 1 : now.getFullYear();
         const fyEnd = fyStart + 1;
         const financialYear = `${fyStart}-${String(fyEnd).slice(-2)}`;
-        const key = "PurchaseDebitNote";
+        // const key = "PurchaseDebitNote";
+        const key = `PurchaseDebitNote_${companyPrefix(decoded)}`;
         let counter = await Counter.findOne({ id: key, companyId }).session(session);
         if (!counter) [counter] = await Counter.create([{ id: key, companyId, seq: 1 }], { session });
         else {
@@ -199,7 +201,7 @@ export async function POST(req) {
             await counter.save({ session });
         }
         const paddedSeq = String(counter.seq).padStart(5, "0");
-        debitNoteData.documentNumberDebitNote = `PURCH-DEBIT/${financialYear}/${paddedSeq}`;
+        debitNoteData.documentNumberDebitNote = `${companyPrefix(decoded)}/PURCH-DEBIT/${financialYear}/${paddedSeq}`;
 
         const [debitNote] = await DebitNote.create([debitNoteData], { session });
 
@@ -416,25 +418,25 @@ export async function POST(req) {
 
 // GET - Fetch all Debit Notes
 export async function GET(req) {
-  await dbConnect();
-  try {
-    const token = getTokenFromHeader(req);
-    if (!token) throw new Error("Unauthorized: No token provided");
-    const decoded = verifyJWT(token);
-    // Ensure companyId is present in decoded token for filtering
-    if (!decoded || !decoded.companyId) {
-      console.error("Authentication Error (DebitNote GET): Decoded JWT is missing 'companyId' claim.", { decoded });
-      throw new Error("Unauthorized: Invalid token (missing companyId).");
+    await dbConnect();
+    try {
+        const token = getTokenFromHeader(req);
+        if (!token) throw new Error("Unauthorized: No token provided");
+        const decoded = verifyJWT(token);
+        // Ensure companyId is present in decoded token for filtering
+        if (!decoded || !decoded.companyId) {
+            console.error("Authentication Error (DebitNote GET): Decoded JWT is missing 'companyId' claim.", { decoded });
+            throw new Error("Unauthorized: Invalid token (missing companyId).");
+        }
+
+        // Filter by companyId
+        const debitNotes = await DebitNote.find({ companyId: decoded.companyId })
+            .populate("supplier")
+            .sort({ createdAt: -1 });
+
+        return NextResponse.json({ success: true, data: debitNotes }, { status: 200 });
+    } catch (error) {
+        console.error("Error fetching all Debit Notes:", error);
+        return NextResponse.json({ success: false, message: error.message }, { status: 500 });
     }
-
-    // Filter by companyId
-    const debitNotes = await DebitNote.find({ companyId: decoded.companyId })
-      .populate("supplier")
-      .sort({ createdAt: -1 });
-
-    return NextResponse.json({ success: true, data: debitNotes }, { status: 200 });
-  } catch (error) {
-    console.error("Error fetching all Debit Notes:", error);
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
-  }
 }

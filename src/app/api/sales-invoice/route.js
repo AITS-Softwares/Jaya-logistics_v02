@@ -10,6 +10,7 @@ import Warehouse from "@/models/warehouseModels";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import { v2 as cloudinary } from "cloudinary";
 import Counter from "@/models/Counter";
+import { companyPrefix } from "@/lib/documentSequence";
 
 export const config = { api: { bodyParser: false } };
 
@@ -142,12 +143,13 @@ export async function POST(req) {
 
       // --- Generate invoice number atomically using Counter only ---
       const counterDoc = await Counter.findOneAndUpdate(
-        { id: "SalesInvoice", companyId: user.companyId },
+        // { id: "SalesInvoice", companyId: user.companyId },
+        { id: `SalesInvoice_${companyPrefix(user)}`, companyId: user.companyId },
         { $inc: { seq: 1 } },
         { new: true, upsert: true, session }
       );
 
-      invoiceData.invoiceNumber = `SALES-INV/${financialYear}/${String(counterDoc.seq).padStart(5, "0")}`;
+      invoiceData.invoiceNumber = `${companyPrefix(user)}/SALES-INV/${financialYear}/${String(counterDoc.seq).padStart(5, "0")}`;
       invoiceData.companyId = user.companyId;
 
       const [invoice] = await SalesInvoice.create([invoiceData], { session });

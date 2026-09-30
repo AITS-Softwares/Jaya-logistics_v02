@@ -10,6 +10,7 @@ import StockMovement from "@/models/StockMovement";
 import Warehouse from "@/models/warehouseModels";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import Counter from "@/models/Counter";
+import { companyPrefix } from "@/lib/documentSequence";
 
 const { Types } = mongoose;
 
@@ -222,14 +223,15 @@ export async function POST(req) {
 
     const newUploadedFiles = await uploadFiles(files.newAttachments || [], 'credit-notes', companyId);
     let existingAttachments = [];
-    try { existingAttachments = JSON.parse(fields.existingFiles || '[]'); } catch {}
+    try { existingAttachments = JSON.parse(fields.existingFiles || '[]'); } catch { }
     creditNoteData.attachments = [...existingAttachments, ...newUploadedFiles];
 
     const now = new Date();
     const fyStart = now.getMonth() + 1 < 4 ? now.getFullYear() - 1 : now.getFullYear();
     const fyEnd = fyStart + 1;
     const financialYear = `${fyStart}-${String(fyEnd).slice(-2)}`;
-    const key = "PurchaseCreditNote";
+    // const key = "PurchaseCreditNote";
+    const key = `PurchaseCreditNote_${companyPrefix(decoded)}`;
 
     let counter = await Counter.findOne({ id: key, companyId }).session(session);
     if (!counter) [counter] = await Counter.create([{ id: key, companyId, seq: 1 }], { session });
@@ -239,7 +241,7 @@ export async function POST(req) {
     }
 
     const paddedSeq = String(counter.seq).padStart(5, "0");
-    creditNoteData.documentNumberCreditNote = `SALES-CREDIT/${financialYear}/${paddedSeq}`;
+    creditNoteData.documentNumberCreditNote = `${companyPrefix(decoded)}/SALES-CREDIT/${financialYear}/${paddedSeq}`;
 
     const [creditNote] = await CreditNote.create([creditNoteData], { session });
 

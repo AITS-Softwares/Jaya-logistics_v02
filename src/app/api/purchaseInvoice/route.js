@@ -12,6 +12,7 @@ import Inventory from "@/models/Inventory";
 import StockMovement from "@/models/StockMovement";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import Counter from "@/models/Counter";
+import { companyPrefix } from "@/lib/documentSequence";
 
 
 export const dynamic = 'force-dynamic';
@@ -160,7 +161,7 @@ async function deleteFilesByPublicIds(publicIds) {
 
 
 
- async function processInvoiceItem(item, invoiceId, decoded, session, linkedToPO = false) {
+async function processInvoiceItem(item, invoiceId, decoded, session, linkedToPO = false) {
   const qty = Number(item.quantity);
   const itemId = item.item?._id || item.item;
   const warehouseId = item.warehouse;
@@ -168,7 +169,7 @@ async function deleteFilesByPublicIds(publicIds) {
 
   // !warehouseId
 
-  if (!itemId ||   qty <= 0) {
+  if (!itemId || qty <= 0) {
     throw new Error(`Invalid item data for ${item.itemCode || 'unknown item'}`);
   }
 
@@ -303,43 +304,44 @@ export async function POST(req) {
 
 
     const grandTotal = Number(invoiceData.grandTotal) || 0;
-const paidAmount = Number(invoiceData.paidAmount) || 0;
+    const paidAmount = Number(invoiceData.paidAmount) || 0;
 
-if (invoiceData.remainingAmount < 0) {
-  invoiceData.remainingAmount = 0;
-}
+    if (invoiceData.remainingAmount < 0) {
+      invoiceData.remainingAmount = 0;
+    }
 
-// Calculate remaining amount
-invoiceData.remainingAmount = grandTotal - paidAmount;
+    // Calculate remaining amount
+    invoiceData.remainingAmount = grandTotal - paidAmount;
 
 
     const now = new Date();
-        const currentYear = now.getFullYear();
-        const currentMonth = now.getMonth() + 1;
-    
-        let fyStart = currentYear;
-        let fyEnd = currentYear + 1;
-        if (currentMonth < 4) {
-          fyStart = currentYear - 1;
-          fyEnd = currentYear;
-        }
-    
-        const financialYear = `${fyStart}-${String(fyEnd).slice(-2)}`;
-        const key = "PurchaseInvoice";
-    
-        let counter = await Counter.findOne({ id: key, companyId }).session(session);
-        if (!counter) {
-          const [created] = await Counter.create([{ id: key, companyId, seq: 1 }], { session });
-          counter = created;
-        } else {
-          counter.seq += 1;
-          await counter.save({ session });
-        }
-    
-        const paddedSeq = String(counter.seq).padStart(5, "0");
-        invoiceData.documentNumberPurchaseInvoice = `PURCH-INV/${financialYear}/${paddedSeq}`;
-    
-     
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
+
+    let fyStart = currentYear;
+    let fyEnd = currentYear + 1;
+    if (currentMonth < 4) {
+      fyStart = currentYear - 1;
+      fyEnd = currentYear;
+    }
+
+    const financialYear = `${fyStart}-${String(fyEnd).slice(-2)}`;
+    // const key = "PurchaseInvoice";
+    const key = `PurchaseInvoice_${companyPrefix(decoded)}`;
+
+    let counter = await Counter.findOne({ id: key, companyId }).session(session);
+    if (!counter) {
+      const [created] = await Counter.create([{ id: key, companyId, seq: 1 }], { session });
+      counter = created;
+    } else {
+      counter.seq += 1;
+      await counter.save({ session });
+    }
+
+    const paddedSeq = String(counter.seq).padStart(5, "0");
+    invoiceData.documentNumberPurchaseInvoice = `${companyPrefix(decoded)}/PURCH-INV/${financialYear}/${paddedSeq}`;
+
+
     // ✅ Save Invoice
     const [invoice] = await PurchaseInvoice.create([invoiceData], { session });
 
@@ -351,26 +353,26 @@ invoiceData.remainingAmount = grandTotal - paidAmount;
 
     const linkedToPO = !!invoiceData.purchaseOrderId;
 
-// ✅ Step: Update GRN or Inventory based on invoiceType
-if ( invoiceData.invoiceType?.trim().toLowerCase() === "grncopy" ) {
-  const grnDoc = await GRN.findById(invoiceData.grn).session(session);
-  if (grnDoc) {
-    grnDoc.status = "Close";
-    grnDoc.invoiceId = invoice._id;
-    await grnDoc.save({ session });
-    console.log(`✅ GRN ${grnDoc._id} marked as Invoiced`);
-  } else {
-    console.warn(`⚠️ GRN not found for ID: ${invoiceData.grn}`);
-  }
-  console.log(`⛔ Skipping stock update because invoice is GRN-based`);
-} else {
-  for (const item of invoiceData.items) {
-    await processInvoiceItem(item, invoice._id, decoded, session, linkedToPO);
-  }
-}
+    // ✅ Step: Update GRN or Inventory based on invoiceType
+    if (invoiceData.invoiceType?.trim().toLowerCase() === "grncopy") {
+      const grnDoc = await GRN.findById(invoiceData.grn).session(session);
+      if (grnDoc) {
+        grnDoc.status = "Close";
+        grnDoc.invoiceId = invoice._id;
+        await grnDoc.save({ session });
+        console.log(`✅ GRN ${grnDoc._id} marked as Invoiced`);
+      } else {
+        console.warn(`⚠️ GRN not found for ID: ${invoiceData.grn}`);
+      }
+      console.log(`⛔ Skipping stock update because invoice is GRN-based`);
+    } else {
+      for (const item of invoiceData.items) {
+        await processInvoiceItem(item, invoice._id, decoded, session, linkedToPO);
+      }
+    }
 
 
-    
+
 
     // ✅ Update linked Purchase Order
     if (invoiceData.purchaseOrderId) {

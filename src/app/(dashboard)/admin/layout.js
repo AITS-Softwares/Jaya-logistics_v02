@@ -2103,6 +2103,13 @@ export default function Layout({ children }) {
   const moduleRouteOverrides = {
     'Purchase Panel': '/admin/Purchase-Panel',
     'Consignment Note': '/admin/Consignment-Note',
+    'Advance Payment': '/admin/Advance-Payment',
+    'Balance-Payment': '/admin/Balance-Payment',
+    'Proof Of Delivery': '/admin/ProofofDelivery',
+    'GRN': '/admin/GRN',
+    'Billing': '/admin/Billing',
+    'Suppliers': '/admin/supplier',
+    'Items': '/admin/item',
   };
 
   const toggleSubmenu = (k) => setOpenSubmenus((p) => ({ ...p, [k]: !p[k] }));
