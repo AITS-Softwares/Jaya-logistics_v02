@@ -3927,6 +3927,7 @@ export default function CreateConsignmentNote() {
   const [allOrders, setAllOrders] = useState([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
   const orderDropdownRef = useRef(null);
+  const autoLoadingInfoOrderRef = useRef(false);
 
   /** =========================
    * VEHICLE NEGOTIATION STATE
@@ -4306,6 +4307,40 @@ export default function CreateConsignmentNote() {
     fetchSubCompanies();
   }, []);
 
+  // When LR is opened from Loading Info, resolve its source order and run the
+  // same order-selection path used by the normal dropdown.
+  useEffect(() => {
+    const loadingInfoNo = new URLSearchParams(window.location.search).get('loadingInfoNo');
+    if (!loadingInfoNo || autoLoadingInfoOrderRef.current || !allOrders.length) return;
+
+    const loadSourceOrder = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`/api/loading-panel?vehicleArrivalNo=${encodeURIComponent(loadingInfoNo)}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success) throw new Error(data.message || 'Loading Info could not be loaded');
+
+        const sourceOrderNo = data.data?.orderRows?.[0]?.orderNo || data.data?.orderRows?.[0]?.orderPanelNo;
+        if (!sourceOrderNo) throw new Error('The selected Loading Info has no order number');
+
+        const sourceOrder = allOrders.find((order) =>
+          String(order.orderNo || order.orderPanelNo || '').trim().toLowerCase() === String(sourceOrderNo).trim().toLowerCase()
+        );
+        if (!sourceOrder) throw new Error(`Order ${sourceOrderNo} is not available for LR creation`);
+
+        autoLoadingInfoOrderRef.current = true;
+        await handleSelectOrder(sourceOrder, { silent: true });
+      } catch (error) {
+        console.error('Unable to auto-load the Loading Info order:', error);
+        setApiError(error.message);
+      }
+    };
+
+    loadSourceOrder();
+  }, [allOrders]);
+
   /** =========================
    * ORDER SEARCH HANDLERS
    ========================= */
@@ -4328,7 +4363,7 @@ export default function CreateConsignmentNote() {
     }
   };
 
-  const handleSelectOrder = async (order) => {
+  const handleSelectOrder = async (order, { silent = false } = {}) => {
     setFetchingOrder(true);
 
     try {
@@ -4511,7 +4546,9 @@ export default function CreateConsignmentNote() {
 
       const subCompanyInfo = subCompanyName ? `\n🏢 Sub-Company: ${subCompanyName} (${subCompanyCode})` : '';
 
-      alert(`✅ Order ${orderNo} loaded successfully!${vehicleInfo}${subCompanyInfo}\nData is now read-only.`);
+      if (!silent) {
+        alert(`✅ Order ${orderNo} loaded successfully!${vehicleInfo}${subCompanyInfo}\nData is now read-only.`);
+      }
 
     } catch (error) {
       console.error('Error fetching order details:', error);
@@ -4699,6 +4736,7 @@ export default function CreateConsignmentNote() {
       }
 
       const payload = {
+        loadingInfoNo: new URLSearchParams(window.location.search).get('loadingInfoNo') || '',
         header: {
           ...header,
           // ✅ Include sub-company in header

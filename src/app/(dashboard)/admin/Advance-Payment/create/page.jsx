@@ -2390,6 +2390,10 @@ export default function CreateAdvancePayment() {
   };
 
   const handleGenerateQueue = () => {
+    if (!memoFileInfo?.filePath) {
+      alert("Attach a MEMO in the linked Purchase Panel before generating the payment queue.");
+      return;
+    }
     const finalAmount = num(paymentDetails.finalAmount || vendorDetails.advance);
     alert(`✅ Payment queue ready to generate for ${paymentDetails.vendorNameDebit}\nAmount: ₹${finalAmount.toLocaleString()}`);
   };
@@ -2826,6 +2830,8 @@ export default function CreateAdvancePayment() {
           </Card>
         </div>
 
+        {/* Purchase adjustments are carried from Purchase Panel and are not editable here. */}
+        {false && <>
         {/* Additions Section - EDITABLE */}
         <div className="mt-4">
           <Card title="Additions (+) - Extra Charges" right={<button onClick={addAdditionItem} className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-green-700">+ Add Addition</button>}>
@@ -2846,11 +2852,12 @@ export default function CreateAdvancePayment() {
           </Card>
         </div>
 
+        </>}
         {/* Balance & Final Amount */}
         <div className="mt-4">
           <div className="grid grid-cols-12 gap-4">
             <div className="col-span-12 md:col-span-6"><div className="bg-purple-50 p-6 rounded-xl border border-purple-200"><h3 className="text-sm font-bold text-purple-800 mb-3">Balance Calculation</h3><div className="space-y-2"><div className="flex justify-between text-sm"><span className="text-slate-600">Purchase Amount (A x B):</span><span className="font-bold text-purple-800">₹{purchaseAmountFromVNN.toLocaleString()}</span></div><div className="flex justify-between text-sm"><span className="text-slate-600">Advance Payment:</span><span className="font-bold text-blue-600">- ₹{num(vendorDetails.advance).toLocaleString()}</span></div><div className="flex justify-between text-sm"><span className="text-slate-600">Total Additions:</span><span className="font-bold text-green-600">+ ₹{num(additions.totalAddition).toLocaleString()}</span></div><div className="flex justify-between text-sm"><span className="text-slate-600">Total Deductions:</span><span className="font-bold text-red-600">- ₹{num(deductions.totalDeduction).toLocaleString()}</span></div><div className="border-t border-purple-200 pt-2 mt-2"><div className="flex justify-between font-bold"><span className="text-purple-800">Calculated Balance:</span><span className="text-xl text-purple-700">₹{calculateBalance().toLocaleString()}</span></div></div></div></div></div>
-            <div className="col-span-12 md:col-span-6"><div className="bg-blue-50 p-6 rounded-xl border border-blue-200 h-full flex items-center justify-center"><div className="text-center w-full"><h3 className="text-sm font-bold text-blue-800 mb-2">Final Payment Amount</h3><div className="text-4xl font-bold text-blue-700 bg-white border border-blue-300 rounded-lg px-4 py-4 text-center">₹{calculateBalance().toLocaleString()}</div><p className="text-xs text-blue-600 mt-2">Balance amount to be paid after adjustments</p><p className="text-xs text-slate-500 mt-1">(Purchase Amount - Advance + Additions - Deductions)</p></div></div></div>
+            <div className="col-span-12 md:col-span-6"><div className="bg-blue-50 p-6 rounded-xl border border-blue-200 h-full flex items-center justify-center"><div className="text-center w-full"><h3 className="text-sm font-bold text-blue-800 mb-2">Final Advance Amount</h3><div className="text-4xl font-bold text-blue-700 bg-white border border-blue-300 rounded-lg px-4 py-4 text-center">₹{calculateBalance().toLocaleString()}</div><p className="text-xs text-blue-600 mt-2">Balance amount to be paid after adjustments</p><p className="text-xs text-slate-500 mt-1">(Purchase Amount - Advance + Additions - Deductions)</p></div></div></div>
           </div>
         </div>
 
@@ -2951,7 +2958,9 @@ export default function CreateAdvancePayment() {
                 <label className="text-xs font-bold text-slate-600">Generate Queue</label>
                 <button
                   onClick={handleGenerateQueue}
-                  className="mt-1 w-full rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-700 transition"
+                  disabled={!memoFileInfo?.filePath}
+                  title={!memoFileInfo?.filePath ? "A Purchase Panel MEMO is required" : "Generate Queue"}
+                  className={`mt-1 w-full rounded-xl px-4 py-2 text-sm font-bold text-white transition ${memoFileInfo?.filePath ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-400 cursor-not-allowed'}`}
                 >
                   Generate Queue
                 </button>

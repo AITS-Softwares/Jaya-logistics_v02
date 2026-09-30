@@ -1408,6 +1408,7 @@
 import { NextResponse } from "next/server";
 import connectDb from "@/lib/db";
 import ConsignmentNote from "./ConsignmentNote";
+import LoadingPanel from "../loading-panel/LoadingPanel";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import { getNextLRNumber } from "./ConsignmentCounter";
 import mongoose from 'mongoose';
@@ -1487,6 +1488,23 @@ function num(value) {
 
 function isValidObjectId(id) {
   return id && mongoose.Types.ObjectId.isValid(id);
+}
+
+function formatIndiaDateTime(timestamp) {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+    hourCycle: 'h23'
+  }).formatToParts(timestamp).reduce((result, part) => {
+    result[part.type] = part.value;
+    return result;
+  }, {});
+
+  return {
+    date: `${parts.year}-${parts.month}-${parts.day}`,
+    time: `${parts.hour}:${parts.minute}:${parts.second}`
+  };
 }
 
 /* ========================================
@@ -1665,6 +1683,7 @@ export async function POST(req) {
     if (lrCode && !lrNo.startsWith(`${lrCode}-`)) lrNo = `${lrCode}-${lrNo}`;
 
     // Check if loadingInfoNo is already used (if provided)
+    let linkedLoadingInfo = null;
     if (body.loadingInfoNo) {
       const existing = await ConsignmentNote.findOne(companyScopeFilter(user, { loadingInfoNo: body.loadingInfoNo }));
 
@@ -1673,6 +1692,16 @@ export async function POST(req) {
           success: false,
           message: `Loading Info ${body.loadingInfoNo} is already used in consignment note ${existing.lrNo}`
         }, { status: 400 });
+      }
+
+      linkedLoadingInfo = await LoadingPanel.findOne(companyScopeFilter(user, {
+        vehicleArrivalNo: body.loadingInfoNo
+      }));
+      if (!linkedLoadingInfo) {
+        return NextResponse.json({
+          success: false,
+          message: `Loading Info ${body.loadingInfoNo} was not found.`
+        }, { status: 404 });
       }
     }
 
@@ -1816,6 +1845,19 @@ export async function POST(req) {
 
     await consignmentNote.save();
 
+    // A Loading Info can have one LR only.  Use the LR's persisted server
+    // timestamp as the shared source for the vehicle Out Date and Out Time.
+    if (linkedLoadingInfo) {
+      const lrGeneratedAt = consignmentNote.createdAt;
+      const { date: outDate, time: outTime } = formatIndiaDateTime(lrGeneratedAt);
+
+      linkedLoadingInfo.arrivalDetails = linkedLoadingInfo.arrivalDetails || {};
+      linkedLoadingInfo.arrivalDetails.outDate = new Date(`${outDate}T00:00:00.000Z`);
+      linkedLoadingInfo.arrivalDetails.outTime = outTime;
+      linkedLoadingInfo.consignmentNote = consignmentNote.lrNo;
+      await linkedLoadingInfo.save();
+    }
+
     return NextResponse.json({
       success: true,
       message: "Consignment note created successfully",
@@ -1823,6 +1865,7 @@ export async function POST(req) {
         _id: consignmentNote._id,
         lrNo: consignmentNote.lrNo,
         loadingInfoNo: consignmentNote.loadingInfoNo,
+        lrGeneratedAt: consignmentNote.createdAt,
         subCompanyName: consignmentNote.subCompanyName
       }
     }, { status: 201 });

@@ -1327,7 +1327,6 @@ export default function AdvancePaymentList() {
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Advance</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Balance</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Final</th>
-                  <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Status</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Queue</th>
                   <th className="px-4 py-3 text-center text-xs font-extrabold text-slate-900 uppercase tracking-wider">Actions</th>
                 </tr>
@@ -1364,11 +1363,6 @@ export default function AdvancePaymentList() {
                       <td className="px-4 py-3 font-medium text-blue-600">{formatCurrency(item.advance)}</td>
                       <td className="px-4 py-3 font-medium text-purple-600">{formatCurrency(item.balance)}</td>
                       <td className="px-4 py-3 font-bold text-emerald-600">{formatCurrency(item.finalAmount)}</td>
-                      <td className="px-4 py-3">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(item.status)}`}>
-                          {item.status}
-                        </span>
-                      </td>
                       <td className="px-4 py-3">
                         {item.queueGenerated ? (
                           <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">

@@ -3,6 +3,7 @@ import { withAuth } from "@/lib/auth";
 import connectDb from "@/lib/db";
 import { companyScopeFilter } from "@/lib/companyScope";
 import PurchasePanel from "../PurchasePanel";
+import ConsignmentNote from "@/app/api/consignment-note/ConsignmentNote";
 import LoadingPanel from "@/app/api/loading-panel/LoadingPanel";
 import VehicleNegotiation from "@/app/api/vehicle-negotiation/VehicleNegotiation";
 import PricingPanel from "@/app/api/pricing-panel/PricingPanel";
@@ -82,15 +83,16 @@ export const GET = withAuth(async (req, context, user) => {
       });
     }
 
-    const [loadingInfos, purchases] = await Promise.all([
+    const [loadingInfos, purchases, consignmentNotes] = await Promise.all([
       LoadingPanel.find(
         companyScopeFilter(user, { panelStatus: { $in: selectableStatuses } }),
       ).sort({ createdAt: -1 }).lean(),
       PurchasePanel.find(companyScopeFilter(user), { loadingInfoNo: 1 }).lean(),
+      ConsignmentNote.find(companyScopeFilter(user), { loadingInfoNo: 1 }).lean(),
     ]);
 
     const usedLoadingInfoNumbers = new Set(
-      purchases.map((purchase) => purchase.loadingInfoNo).filter(Boolean),
+      [...purchases, ...consignmentNotes].map((record) => record.loadingInfoNo).filter(Boolean),
     );
     const availableLoadingInfos = loadingInfos
       .filter((panel) => panel.vehicleNegotiationNo && !usedLoadingInfoNumbers.has(panel.vehicleArrivalNo))

@@ -2028,15 +2028,30 @@ export default function EditAdvancePayment() {
     return (amount - advance + totalAdditions - totalDeductions).toFixed(2);
   };
 
-  const handleGenerateQueue = () => {
+  const handleGenerateQueue = async () => {
     if (queueGenerated) {
       alert("Queue already generated for this payment");
       return;
     }
+    if (!memoFileInfo?.filePath) {
+      alert("Attach a MEMO in the linked Purchase Panel before generating the payment queue.");
+      return;
+    }
     
-    const finalAmount = calculateBalance();
-    alert(`✅ Payment queue ready to generate for ${paymentDetails.vendorNameDebit}\nAmount: ₹${num(finalAmount).toLocaleString()}`);
-    setQueueGenerated(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/Advance-Payment?id=${paymentId}&action=generate-queue`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.message || 'Failed to generate payment queue');
+
+      setQueueGenerated(true);
+      alert(`✅ Payment queue generated for ${paymentDetails.vendorNameDebit}\nAmount: ₹${num(calculateBalance()).toLocaleString()}`);
+    } catch (error) {
+      alert(`❌ ${error.message}`);
+    }
   };
 
   const handleUpdate = async () => {
@@ -2603,6 +2618,8 @@ export default function EditAdvancePayment() {
           </Card>
         </div>
 
+        {/* Purchase adjustments are carried from Purchase Panel and are not editable here. */}
+        {false && <>
         {/* Additions Section - EDITABLE */}
         <div className="mt-4">
           <Card 
@@ -2755,6 +2772,7 @@ export default function EditAdvancePayment() {
           </Card>
         </div>
 
+        </>}
         {/* Balance & Final Amount */}
         <div className="mt-4">
           <div className="grid grid-cols-12 gap-4">
@@ -2909,9 +2927,10 @@ export default function EditAdvancePayment() {
                 <label className="text-xs font-bold text-slate-600">Generate Queue</label>
                 <button
                   onClick={handleGenerateQueue}
-                  disabled={queueGenerated}
+                  disabled={queueGenerated || !memoFileInfo?.filePath}
+                  title={!memoFileInfo?.filePath ? "A Purchase Panel MEMO is required" : "Generate Queue"}
                   className={`mt-1 w-full rounded-xl px-4 py-2 text-sm font-bold text-white transition ${
-                    queueGenerated 
+                    queueGenerated || !memoFileInfo?.filePath
                       ? 'bg-gray-400 cursor-not-allowed' 
                       : 'bg-blue-600 hover:bg-blue-700'
                   }`}
