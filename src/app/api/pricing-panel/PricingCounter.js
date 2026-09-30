@@ -1,5 +1,6 @@
 // /utils/PricingCounter.js
 import mongoose from 'mongoose';
+import { nextCompanyDocumentNumber } from '@/lib/documentSequence';
 
 const pricingCounterSchema = new mongoose.Schema({
   _id: {
@@ -16,29 +17,8 @@ const PricingCounter = mongoose.models.PricingCounter ||
   mongoose.model('PricingCounter', pricingCounterSchema);
 
 // Function to get next pricing serial number
-export async function getNextPricingSerialNumber(companyId) {
-  const counterId = `pricing_panel_${companyId}`;
-  
-  try {
-    const counter = await PricingCounter.findOneAndUpdate(
-      { _id: counterId },
-      { $inc: { sequence_value: 1 } },
-      { 
-        new: true, 
-        upsert: true,
-        returnDocument: 'after'
-      }
-    );
-    
-    // Format: PSN-0001, PSN-0002, etc.
-    const sequenceNumber = String(counter.sequence_value).padStart(4, '0');
-    return `PSN-${sequenceNumber}`;
-  } catch (error) {
-    console.error('Error generating pricing serial number:', error);
-    // Fallback: timestamp-based number
-    const timestamp = Date.now().toString().slice(-6);
-    return `PSN-FB-${timestamp}`;
-  }
+export async function getNextPricingSerialNumber(companyId, subCompanyId, subCompanyCode) {
+  return nextCompanyDocumentNumber({ companyId, subCompanyId, subCompanyCode, documentType: 'PRC', width: 5 });
 }
 
 export default PricingCounter;

@@ -36,9 +36,8 @@ const CompanyUserSchema = new mongoose.Schema(
 
     password: { type: String, required: true },
     roles: [{ type: String }],
-    // A user keeps one credential set, but may work in one or more operating
-    // companies of the parent company. Empty legacy access is granted to all
-    // confirmed operating companies at first successful login.
+    // A user keeps one credential set, but may work only in explicitly assigned
+    // operating companies. An empty assignment grants no transaction access.
     operatingCompanyIds: [{ type: mongoose.Schema.Types.ObjectId, ref: "SubCompany" }],
     defaultOperatingCompanyId: { type: mongoose.Schema.Types.ObjectId, ref: "SubCompany", default: null },
     accessAllOperatingCompanies: { type: Boolean, default: false },

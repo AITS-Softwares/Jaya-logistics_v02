@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { nextCompanyDocumentNumber } from '@/lib/documentSequence';
 
 const loadingCounterSchema = new mongoose.Schema({
   companyId: {
@@ -23,30 +24,8 @@ const loadingCounterSchema = new mongoose.Schema({
   timestamps: true
 });
 
-export async function getNextLoadingNumber(companyId) {
-  const currentYear = new Date().getFullYear();
-  
-  const counter = await LoadingCounter.findOneAndUpdate(
-    { companyId },
-    { 
-      $inc: { sequence: 1 },
-      $setOnInsert: { prefix: 'LD', year: currentYear }
-    },
-    { 
-      new: true, 
-      upsert: true,
-      setDefaultsOnInsert: true
-    }
-  );
-
-  if (counter.year !== currentYear) {
-    counter.sequence = 1;
-    counter.year = currentYear;
-    await counter.save();
-  }
-
-  const sequenceStr = String(counter.sequence).padStart(4, '0');
-  return `${counter.prefix}-${currentYear}-${sequenceStr}`;
+export async function getNextLoadingNumber(companyId, subCompanyId, subCompanyCode) {
+  return nextCompanyDocumentNumber({ companyId, subCompanyId, subCompanyCode, documentType: 'LOD', width: 5 });
 }
 
 const LoadingCounter = mongoose.models.LoadingCounter || 

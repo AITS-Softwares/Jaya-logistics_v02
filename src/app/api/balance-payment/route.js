@@ -1098,7 +1098,7 @@ export async function POST(req) {
     console.log("📝 Creating Balance Payment with body:", body);
     
     // Generate payment number
-    const balancePaymentNo = await getNextBalancePaymentNumber(user.companyId);
+    const balancePaymentNo = await getNextBalancePaymentNumber(user.companyId, user.activeOperatingCompanyId, user.activeOperatingCompanyCode);
     
     // ✅ Extract company information from body
     const companyName = body.companyName || body.header?.companyName || '';

@@ -3,15 +3,14 @@ import dbConnect from '@/lib/db';
 import Company from '@/models/Company';
 import bcrypt from 'bcryptjs';
 import { signToken } from '@/lib/auth';
-import { ensureOperatingCompanies } from '@/lib/companyScope';
 
 export async function POST(req) {
   try {
     const body = await req.json();
-    const { email, password, operatingCompanyCode } = body;
+    const { email, password } = body;
 
-    if (!email || !password || !operatingCompanyCode) {
-      return NextResponse.json({ message: 'Email, password, and company selection are required' }, { status: 400 });
+    if (!email || !password) {
+      return NextResponse.json({ message: 'Email and password are required' }, { status: 400 });
     }
 
     await dbConnect();
@@ -26,27 +25,16 @@ export async function POST(req) {
       return NextResponse.json({ message: 'Invalid email or password' }, { status: 401 });
     }
 
-    const operatingCompanies = await ensureOperatingCompanies(company._id);
-    const selectedOperatingCompany = operatingCompanies.find(
-      (item) => item.code === String(operatingCompanyCode).trim().toUpperCase()
-    );
-    if (!selectedOperatingCompany) {
-      return NextResponse.json({ message: 'Selected company is unavailable' }, { status: 400 });
-    }
-
     const token = signToken(
       { ...company.toObject(), type: 'company', accessAllOperatingCompanies: true },
-      { activeOperatingCompany: selectedOperatingCompany }
+      { isGroupAdmin: true, groupName: 'JAYA GROUP' }
     );
     const safeCompany = company.toObject();
     delete safeCompany.password;
     safeCompany.type = 'company';
     safeCompany.accessAllOperatingCompanies = true;
-    safeCompany.activeOperatingCompany = {
-      _id: selectedOperatingCompany._id,
-      name: selectedOperatingCompany.name,
-      code: selectedOperatingCompany.code,
-    };
+    safeCompany.isGroupAdmin = true;
+    safeCompany.groupName = 'JAYA GROUP';
     const response = NextResponse.json({ token, company: safeCompany }, { status: 200 });
     response.cookies.set({ name: 'token', value: '', maxAge: 0, path: '/' });
     return response;

@@ -11,19 +11,19 @@
 
 // function isAuthorized(user) {
 //   if (!user) return false;
-  
+
 //   // Company admins have full access
 //   if (user.type === "company") return true;
-  
+
 //   // Admin role has full access
 //   if (user.roles && user.roles.includes("Admin")) return true;
-  
+
 //   // Check module-based permissions for "Loading Info"
 //   const modules = user.modules || {};
 //   const moduleData = modules["Loading Info"];
-  
+
 //   if (!moduleData || !moduleData.selected) return false;
-  
+
 //   return true;
 // }
 
@@ -31,12 +31,12 @@
 //   if (!user) return false;
 //   if (user.type === "company") return true;
 //   if (user.roles && user.roles.includes("Admin")) return true;
-  
+
 //   const modules = user.modules || {};
 //   const moduleData = modules["Loading Info"];
-  
+
 //   if (!moduleData || !moduleData.selected) return false;
-  
+
 //   const permissions = moduleData.permissions || {};
 //   return permissions[action] === true;
 // }
@@ -48,21 +48,21 @@
 //   try {
 //     const user = verifyJWT(token);
 //     if (!user) return { error: "Invalid or expired token. Please login again.", status: 401 };
-    
+
 //     if (!isAuthorized(user)) {
 //       return { 
 //         error: "Access denied. You don't have permission to access Loading Info.", 
 //         status: 403 
 //       };
 //     }
-    
+
 //     if (requiredAction && !hasPermission(user, requiredAction)) {
 //       return { 
 //         error: `Permission denied: ${requiredAction} action not allowed for Loading Info.`, 
 //         status: 403 
 //       };
 //     }
-    
+
 //     return { user, error: null, status: 200 };
 //   } catch (err) {
 //     console.error("JWT Verification Failed:", err?.message || err);
@@ -104,13 +104,13 @@
 //     const search = url.searchParams.get("search");
 //     const fromDate = url.searchParams.get("fromDate");
 //     const toDate = url.searchParams.get("toDate");
-    
+
 //     // ============ CASE 1: GET SINGLE LOADING PANEL ============
 //     if (id || vehicleArrivalNo) {
 //       console.log(`📄 Fetching loading panel: ${id || vehicleArrivalNo}`);
-      
+
 //       let query = { companyId: user.companyId };
-      
+
 //       if (id && isValidObjectId(id)) {
 //         query._id = id;
 //       } else if (vehicleArrivalNo) {
@@ -121,7 +121,7 @@
 //           message: "Invalid ID format" 
 //         }, { status: 400 });
 //       }
-      
+
 //       const loadingPanel = await LoadingPanel.findOne(query).lean();
 
 //       if (!loadingPanel) {
@@ -153,13 +153,13 @@
 //         data: formattedPanel 
 //       }, { status: 200 });
 //     }
-    
+
 //     // ============ CASE 2: GET LIST OF LOADING PANELS ============
 //     console.log("📋 Fetching loading panel list");
-    
+
 //     // Build query with filters
 //     let query = { companyId: user.companyId };
-    
+
 //     // Add search filter
 //     if (search) {
 //       query.$or = [
@@ -171,7 +171,7 @@
 //         { branchName: { $regex: search, $options: 'i' } }
 //       ];
 //     }
-    
+
 //     // Add date filters
 //     if (fromDate || toDate) {
 //       query.date = {};
@@ -182,7 +182,7 @@
 //         query.date.$lte = new Date(toDate + 'T23:59:59');
 //       }
 //     }
-    
+
 //     const loadingPanels = await LoadingPanel.find(query)
 //       .sort({ createdAt: -1 })
 //       .lean();
@@ -199,7 +199,7 @@
 //           panel.vlUploads?.vl13, panel.vlUploads?.vl14, panel.vlUploads?.vl15,
 //           panel.vlUploads?.videoVl
 //         ].filter(v => v && v !== '' && v !== 'Not Set');
-        
+
 //         return {
 //           _id: panel._id,
 //           date: panel.date ? new Date(panel.date).toISOString().split('T')[0] : '',
@@ -219,29 +219,29 @@
 //           vlPhotoCount: vlPhotos.length,
 //           vehicleSlipCount: panel.vehicleSlips?.length || 0,
 //           loadedVehicleSlipCount: panel.loadedVehicleSlips?.length || 0,
-          
+
 //           // Approval statuses
 //           vbpStatus: panel.vbpUploads?.approval || 'Not Set',
 //           vbpApproval: panel.vbpUploads?.approval || 'Not Set',
 //           vbpRemark: panel.vbpUploads?.remark || '',
-          
+
 //           vftStatus: panel.vftUploads?.approval || 'Not Set',
 //           vftApproval: panel.vftUploads?.approval || 'Not Set',
-          
+
 //           vlStatus: panel.vlUploads?.approval || 'Not Set',
 //           vlApproval: panel.vlUploads?.approval || 'Not Set',
 //           vlLoadingStatus: panel.vlUploads?.loadingStatus || 'Not Set',
-          
+
 //           votStatus: panel.votUploads?.approval || 'Not Set',
 //           votApproval: panel.votUploads?.approval || 'Not Set',
-          
+
 //           weighmentApproval: panel.loadedWeighment?.approval || 'Not Set',
-          
+
 //           // Document fields
 //           consignmentNote: panel.consignmentNote || '',
 //           invoice: panel.invoice || '',
 //           ewaybill: panel.ewaybill || '',
-          
+
 //           panelStatus: panel.panelStatus || 'Draft'
 //         };
 //       });
@@ -295,18 +295,18 @@
 
 //   try {
 //     const body = await req.json();
-    
+
 //     console.log("📝 Creating new loading panel");
-    
+
 //     // Generate vehicle arrival number
 //     let vehicleArrivalNo = await getNextLoadingNumber(user.companyId);
-    
+
 //     // Check if vehicle arrival number already exists
 //     const existing = await LoadingPanel.findOne({ 
 //       vehicleArrivalNo, 
 //       companyId: user.companyId 
 //     });
-    
+
 //     if (existing) {
 //       vehicleArrivalNo = `LD-${Date.now().toString().slice(-8)}`;
 //     }
@@ -506,14 +506,14 @@
 //     const loadingPanelData = {
 //       vehicleArrivalNo,
 //       vehicleNegotiationNo: body.vehicleNegotiationNo || body.header?.vehicleNegotiationNo || '',
-      
+
 //       // Header
 //       branch: branchId,
 //       branchName: body.header?.branchName || '',
 //       branchCode: body.header?.branchCode || '',
 //       date: body.header?.date ? new Date(body.header.date) : new Date(),
 //       delivery: body.header?.delivery || 'Normal',
-      
+
 //       // Billing
 //       billingType: body.header?.billingType || 'Multi - Order',
 //       noOfLoadingPoints: parseInt(body.header?.noOfLoadingPoints) || 0,
@@ -522,10 +522,10 @@
 //       cancellationCharges: body.header?.cancellationCharges || '',
 //       loadingCharges: body.header?.loadingCharges || '',
 //       otherCharges: body.header?.otherCharges || '',
-      
+
 //       // Orders
 //       orderRows: processedOrderRows,
-      
+
 //       // Vehicle Info
 //       vehicleInfo: {
 //         vehicleNo: body.vehicleInfo?.vehicleNo || '',
@@ -552,35 +552,35 @@
 //         driverPhoto: body.vehicleInfo?.driverPhoto || '',
 //         aadharDocument: body.vehicleInfo?.aadharDocument || ''
 //       },
-      
+
 //       // Helper / Co-Driver
 //       hasHelper: body.hasHelper || false,
 //       helperInfo: processedHelperInfo,
-      
+
 //       // Vehicle Photos
 //       vehiclePhotos: body.vehiclePhotos || [],
-      
+
 //       // Detention Information
 //       detentionDays: body.detentionDays || '',
 //       detentionNumber: body.detentionNumber || '',
-      
+
 //       // Vehicle Slips
 //       vehicleSlips: body.vehicleSlips || [],
-      
+
 //       // Loaded Vehicle Slip
 //       loadedVehicleSlips: body.loadedVehicleSlips || [],
-      
+
 //       // VL Photo Details
 //       vlPhotoDetails: processedVlPhotoDetails,
-      
+
 //       // Pack Data
 //       packData: processPackData(body.packData),
 //       activePack: body.activePack || 'PALLETIZATION',
-      
+
 //       // Deductions
 //       deductionRows: processedDeductionRows,
 //       totalQuantity: body.totalQuantity || '',
-      
+
 //       // Upload sections - VBP
 //       vbpUploads: {
 //         vbp1: body.vbpUploads?.vbp1 || '',
@@ -594,7 +594,7 @@
 //         approval: body.vbpUploads?.approval || '',
 //         remark: body.vbpUploads?.remark || ''
 //       },
-      
+
 //       // Upload sections - VFT
 //       vftUploads: {
 //         vft1: body.vftUploads?.vft1 || '',
@@ -607,7 +607,7 @@
 //         videoVft: body.vftUploads?.videoVft || '',
 //         approval: body.vftUploads?.approval || ''
 //       },
-      
+
 //       // Upload sections - VOT
 //       votUploads: {
 //         vot1: body.votUploads?.vot1 || '',
@@ -620,10 +620,10 @@
 //         videoVot: body.votUploads?.videoVot || '',
 //         approval: body.votUploads?.approval || ''
 //       },
-      
+
 //       // Upload sections - VL
 //       vlUploads: processedVlUploads,
-      
+
 //       // Loaded weighment
 //       loadedWeighment: {
 //         weighSlip: body.loadedWeighment?.weighSlip || '',
@@ -634,13 +634,13 @@
 //         vehicleFloorTarpaulin: num(body.loadedWeighment?.vehicleFloorTarpaulin),
 //         vehicleOuterTarpaulin: num(body.loadedWeighment?.vehicleOuterTarpaulin)
 //       },
-      
+
 //       // GPS Tracking
 //       gpsTracking: {
 //         driverMobileNumber: body.gpsTracking?.driverMobileNumber || '',
 //         isTrackingActive: body.gpsTracking?.isTrackingActive || false
 //       },
-      
+
 //       // Arrival details
 //       arrivalDetails: {
 //         date: body.arrivalDetails?.date ? new Date(body.arrivalDetails.date) : null,
@@ -648,21 +648,21 @@
 //         outDate: body.arrivalDetails?.outDate ? new Date(body.arrivalDetails.outDate) : null,
 //         outTime: body.arrivalDetails?.outTime || ''
 //       },
-      
+
 //       // Totals
 //       totalWeight,
 //       totalActualWeight,
 //       totalCharges,
-      
+
 //       // Document fields
 //       consignmentNote: body.consignmentNote || '',
 //       invoice: body.invoice || '',
 //       ewaybill: body.ewaybill || '',
-      
+
 //       // Selected references
 //       selectedVehicle: body.selectedVehicle || null,
 //       selectedVehicleNegotiation: body.selectedVehicleNegotiation || null,
-      
+
 //       // Company & User
 //       companyId: new mongoose.Types.ObjectId(user.companyId),
 //       createdBy: new mongoose.Types.ObjectId(user.id),
@@ -672,7 +672,7 @@
 //     // Create and save
 //     const newLoadingPanel = new LoadingPanel(loadingPanelData);
 //     const savedPanel = await newLoadingPanel.save();
-    
+
 //     console.log("✅ Loading panel saved successfully, ID:", savedPanel._id);
 
 //     return NextResponse.json({ 
@@ -686,14 +686,14 @@
 
 //   } catch (error) {
 //     console.error("❌ POST /loading-panel error:", error);
-    
+
 //     if (error.code === 11000) {
 //       return NextResponse.json({ 
 //         success: false, 
 //         message: "Vehicle arrival number already exists. Please try again." 
 //       }, { status: 400 });
 //     }
-    
+
 //     if (error.name === 'ValidationError') {
 //       const messages = Object.values(error.errors).map(err => err.message);
 //       return NextResponse.json({ 
@@ -701,7 +701,7 @@
 //         message: messages.join(', ') 
 //       }, { status: 400 });
 //     }
-    
+
 //     return NextResponse.json({ 
 //       success: false, 
 //       message: `Failed to create loading panel: ${error.message}` 
@@ -726,7 +726,7 @@
 //   try {
 //     const body = await req.json();
 //     const { id, ...updateData } = body;
-    
+
 //     if (!id || !isValidObjectId(id)) {
 //       return NextResponse.json({ 
 //         success: false, 
@@ -912,7 +912,7 @@
 
 //   } catch (error) {
 //     console.error("❌ PUT /loading-panel error:", error);
-    
+
 //     if (error.name === 'ValidationError') {
 //       const messages = Object.values(error.errors).map(err => err.message);
 //       return NextResponse.json({ 
@@ -920,7 +920,7 @@
 //         message: messages.join(', ') 
 //       }, { status: 400 });
 //     }
-    
+
 //     return NextResponse.json({ 
 //       success: false, 
 //       message: `Failed to update loading panel: ${error.message}` 
@@ -945,7 +945,7 @@
 //   try {
 //     const url = new URL(req.url);
 //     const id = url.searchParams.get("id");
-    
+
 //     if (!id || !isValidObjectId(id)) {
 //       return NextResponse.json({ 
 //         success: false, 
@@ -997,7 +997,7 @@
 //   try {
 //     const body = await req.json();
 //     const { id, action, ...updateFields } = body;
-    
+
 //     if (!id || !isValidObjectId(id)) {
 //       return NextResponse.json({ 
 //         success: false, 
@@ -1006,7 +1006,7 @@
 //     }
 
 //     console.log(`📝 Updating loading panel status: ${id} - ${action}`);
-    
+
 //     const loadingPanel = await LoadingPanel.findOne({
 //       _id: id,
 //       companyId: user.companyId
@@ -1167,19 +1167,19 @@ import VehicleNegotiation from '@/app/api/vehicle-negotiation/VehicleNegotiation
 
 function isAuthorized(user) {
   if (!user) return false;
-  
+
   // Company admins have full access
   if (user.type === "company") return true;
-  
+
   // Admin role has full access
   if (user.roles && user.roles.includes("Admin")) return true;
-  
+
   // Check module-based permissions for "Loading Info"
   const modules = user.modules || {};
   const moduleData = modules["Loading Info"];
-  
+
   if (!moduleData || !moduleData.selected) return false;
-  
+
   return true;
 }
 
@@ -1187,12 +1187,12 @@ function hasPermission(user, action) {
   if (!user) return false;
   if (user.type === "company") return true;
   if (user.roles && user.roles.includes("Admin")) return true;
-  
+
   const modules = user.modules || {};
   const moduleData = modules["Loading Info"];
-  
+
   if (!moduleData || !moduleData.selected) return false;
-  
+
   const permissions = moduleData.permissions || {};
   return permissions[action] === true;
 }
@@ -1205,21 +1205,21 @@ async function validateUser(req, requiredAction = null) {
     const user = verifyJWT(token);
     if (!user) return { error: "Invalid or expired token. Please login again.", status: 401 };
     try { activeOperatingCompanyId(user); } catch (error) { return { error: error.message, status: 401 }; }
-    
+
     if (!isAuthorized(user)) {
-      return { 
-        error: "Access denied. You don't have permission to access Loading Info.", 
-        status: 403 
+      return {
+        error: "Access denied. You don't have permission to access Loading Info.",
+        status: 403
       };
     }
-    
+
     if (requiredAction && !hasPermission(user, requiredAction)) {
-      return { 
-        error: `Permission denied: ${requiredAction} action not allowed for Loading Info.`, 
-        status: 403 
+      return {
+        error: `Permission denied: ${requiredAction} action not allowed for Loading Info.`,
+        status: 403
       };
     }
-    
+
     return { user, error: null, status: 200 };
   } catch (err) {
     console.error("JWT Verification Failed:", err?.message || err);
@@ -1246,8 +1246,8 @@ export async function GET(req) {
   await connectDb();
   const { user, error, status } = await validateUser(req, 'view');
   if (error) {
-    return NextResponse.json({ 
-      success: false, 
+    return NextResponse.json({
+      success: false,
       message: error,
       code: status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN'
     }, { status });
@@ -1261,30 +1261,30 @@ export async function GET(req) {
     const search = url.searchParams.get("search");
     const fromDate = url.searchParams.get("fromDate");
     const toDate = url.searchParams.get("toDate");
-    
+
     // ============ CASE 1: GET SINGLE LOADING PANEL ============
     if (id || vehicleArrivalNo) {
       console.log(`📄 Fetching loading panel: ${id || vehicleArrivalNo}`);
-      
+
       let query = {};
-      
+
       if (id && isValidObjectId(id)) {
         query._id = id;
       } else if (vehicleArrivalNo) {
         query.vehicleArrivalNo = vehicleArrivalNo;
       } else {
-        return NextResponse.json({ 
-          success: false, 
-          message: "Invalid ID format" 
+        return NextResponse.json({
+          success: false,
+          message: "Invalid ID format"
         }, { status: 400 });
       }
-      
+
       const loadingPanel = await LoadingPanel.findOne(companyScopeFilter(user, query)).lean();
 
       if (!loadingPanel) {
-        return NextResponse.json({ 
-          success: false, 
-          message: "Loading panel not found" 
+        return NextResponse.json({
+          success: false,
+          message: "Loading panel not found"
         }, { status: 404 });
       }
 
@@ -1294,29 +1294,29 @@ export async function GET(req) {
         date: loadingPanel.date ? new Date(loadingPanel.date).toISOString().split('T')[0] : '',
         arrivalDetails: {
           ...loadingPanel.arrivalDetails,
-          date: loadingPanel.arrivalDetails?.date ? 
+          date: loadingPanel.arrivalDetails?.date ?
             new Date(loadingPanel.arrivalDetails.date).toISOString().split('T')[0] : '',
-          outDate: loadingPanel.arrivalDetails?.outDate ? 
+          outDate: loadingPanel.arrivalDetails?.outDate ?
             new Date(loadingPanel.arrivalDetails.outDate).toISOString().split('T')[0] : ''
         },
         // Convert Map to object for frontend
-        vlPhotoDetails: loadingPanel.vlPhotoDetails instanceof Map 
-          ? Object.fromEntries(loadingPanel.vlPhotoDetails) 
+        vlPhotoDetails: loadingPanel.vlPhotoDetails instanceof Map
+          ? Object.fromEntries(loadingPanel.vlPhotoDetails)
           : (loadingPanel.vlPhotoDetails || {})
       };
 
-      return NextResponse.json({ 
-        success: true, 
-        data: formattedPanel 
+      return NextResponse.json({
+        success: true,
+        data: formattedPanel
       }, { status: 200 });
     }
-    
+
     // ============ CASE 2: GET LIST OF LOADING PANELS ============
     console.log("📋 Fetching loading panel list");
-    
+
     // Build query with filters
     let query = {};
-    
+
     // Add search filter
     if (search) {
       query.$or = [
@@ -1330,7 +1330,7 @@ export async function GET(req) {
         { subCompanyCode: { $regex: search, $options: 'i' } }
       ];
     }
-    
+
     // Add date filters
     if (fromDate || toDate) {
       query.date = {};
@@ -1341,7 +1341,7 @@ export async function GET(req) {
         query.date.$lte = new Date(toDate + 'T23:59:59');
       }
     }
-    
+
     const loadingPanels = await LoadingPanel.find(companyScopeFilter(user, query))
       .sort({ createdAt: -1 })
       .lean();
@@ -1358,7 +1358,7 @@ export async function GET(req) {
           panel.vlUploads?.vl13, panel.vlUploads?.vl14, panel.vlUploads?.vl15,
           panel.vlUploads?.videoVl
         ].filter(v => v && v !== '' && v !== 'Not Set');
-        
+
         const vnnNo = panel.selectedVehicleNegotiation?.vnnNo || panel.vehicleNegotiationNo || '';
 
         return {
@@ -1385,29 +1385,29 @@ export async function GET(req) {
           vlPhotoCount: vlPhotos.length,
           vehicleSlipCount: panel.vehicleSlips?.length || 0,
           loadedVehicleSlipCount: panel.loadedVehicleSlips?.length || 0,
-          
+
           // Approval statuses
           vbpStatus: panel.vbpUploads?.approval || 'Not Set',
           vbpApproval: panel.vbpUploads?.approval || 'Not Set',
           vbpRemark: panel.vbpUploads?.remark || '',
-          
+
           vftStatus: panel.vftUploads?.approval || 'Not Set',
           vftApproval: panel.vftUploads?.approval || 'Not Set',
-          
+
           vlStatus: panel.vlUploads?.approval || 'Not Set',
           vlApproval: panel.vlUploads?.approval || 'Not Set',
           vlLoadingStatus: panel.vlUploads?.loadingStatus || 'Not Set',
-          
+
           votStatus: panel.votUploads?.approval || 'Not Set',
           votApproval: panel.votUploads?.approval || 'Not Set',
-          
+
           weighmentApproval: panel.loadedWeighment?.approval || 'Not Set',
-          
+
           // Document fields
           consignmentNote: panel.consignmentNote || '',
           invoice: panel.invoice || '',
           ewaybill: panel.ewaybill || '',
-          
+
           panelStatus: panel.panelStatus || 'Draft'
         };
       });
@@ -1419,72 +1419,72 @@ export async function GET(req) {
     }
 
     // Default format (simple list)
-  if (format === 'table') {
-  const formattedPanels = loadingPanels.map(panel => {
-    // Calculate VL photo count
-    const vlPhotos = [
-      panel.vlUploads?.vl1, panel.vlUploads?.vl2, panel.vlUploads?.vl3,
-      panel.vlUploads?.vl4, panel.vlUploads?.vl5, panel.vlUploads?.vl6,
-      panel.vlUploads?.vl7, panel.vlUploads?.vl8, panel.vlUploads?.vl9,
-      panel.vlUploads?.vl10, panel.vlUploads?.vl11, panel.vlUploads?.vl12,
-      panel.vlUploads?.vl13, panel.vlUploads?.vl14, panel.vlUploads?.vl15,
-      panel.vlUploads?.videoVl
-    ].filter(v => v && v !== '' && v !== 'Not Set');
-    
-    return {
-      _id: panel._id,
-      date: panel.date ? new Date(panel.date).toISOString().split('T')[0] : '',
-      vehicleArrivalNo: panel.vehicleArrivalNo || 'N/A',
-      vehicleNegotiationNo: panel.vehicleNegotiationNo || 'N/A',
-      branch: panel.branchName || panel.branchCode || 'N/A',
-      subCompanyId: panel.subCompanyId || '',        // ✅ ADD THIS LINE
-      subCompanyName: panel.subCompanyName || '',    // ✅ Already exists
-      subCompanyCode: panel.subCompanyCode || '',    // ✅ Already exists
-      delivery: panel.delivery || 'Normal',
-      vehicleNo: panel.vehicleInfo?.vehicleNo || 'N/A',
-      driverNo: panel.vehicleInfo?.driverMobileNo || 'N/A',
-      supervisorName: panel.vehicleInfo?.driverName || 'N/A',
-      totalWeight: panel.totalWeight || 0,
-      detentionDays: panel.detentionDays || '',
-      detentionNumber: panel.detentionNumber || '',
-      hasHelper: panel.hasHelper || false,
-      outTime: panel.arrivalDetails?.outTime || '',
-      outDate: panel.arrivalDetails?.outDate ? new Date(panel.arrivalDetails.outDate).toISOString().split('T')[0] : '',
-      vlPhotoCount: vlPhotos.length,
-      vehicleSlipCount: panel.vehicleSlips?.length || 0,
-      loadedVehicleSlipCount: panel.loadedVehicleSlips?.length || 0,
-      
-      // Approval statuses
-      vbpStatus: panel.vbpUploads?.approval || 'Not Set',
-      vbpApproval: panel.vbpUploads?.approval || 'Not Set',
-      vbpRemark: panel.vbpUploads?.remark || '',
-      
-      vftStatus: panel.vftUploads?.approval || 'Not Set',
-      vftApproval: panel.vftUploads?.approval || 'Not Set',
-      
-      vlStatus: panel.vlUploads?.approval || 'Not Set',
-      vlApproval: panel.vlUploads?.approval || 'Not Set',
-      vlLoadingStatus: panel.vlUploads?.loadingStatus || 'Not Set',
-      
-      votStatus: panel.votUploads?.approval || 'Not Set',
-      votApproval: panel.votUploads?.approval || 'Not Set',
-      
-      weighmentApproval: panel.loadedWeighment?.approval || 'Not Set',
-      
-      // Document fields
-      consignmentNote: panel.consignmentNote || '',
-      invoice: panel.invoice || '',
-      ewaybill: panel.ewaybill || '',
-      
-      panelStatus: panel.panelStatus || 'Draft'
-    };
-  });
+    if (format === 'table') {
+      const formattedPanels = loadingPanels.map(panel => {
+        // Calculate VL photo count
+        const vlPhotos = [
+          panel.vlUploads?.vl1, panel.vlUploads?.vl2, panel.vlUploads?.vl3,
+          panel.vlUploads?.vl4, panel.vlUploads?.vl5, panel.vlUploads?.vl6,
+          panel.vlUploads?.vl7, panel.vlUploads?.vl8, panel.vlUploads?.vl9,
+          panel.vlUploads?.vl10, panel.vlUploads?.vl11, panel.vlUploads?.vl12,
+          panel.vlUploads?.vl13, panel.vlUploads?.vl14, panel.vlUploads?.vl15,
+          panel.vlUploads?.videoVl
+        ].filter(v => v && v !== '' && v !== 'Not Set');
 
-  return NextResponse.json({
-    success: true,
-    data: formattedPanels
-  }, { status: 200 });
-}
+        return {
+          _id: panel._id,
+          date: panel.date ? new Date(panel.date).toISOString().split('T')[0] : '',
+          vehicleArrivalNo: panel.vehicleArrivalNo || 'N/A',
+          vehicleNegotiationNo: panel.vehicleNegotiationNo || 'N/A',
+          branch: panel.branchName || panel.branchCode || 'N/A',
+          subCompanyId: panel.subCompanyId || '',        // ✅ ADD THIS LINE
+          subCompanyName: panel.subCompanyName || '',    // ✅ Already exists
+          subCompanyCode: panel.subCompanyCode || '',    // ✅ Already exists
+          delivery: panel.delivery || 'Normal',
+          vehicleNo: panel.vehicleInfo?.vehicleNo || 'N/A',
+          driverNo: panel.vehicleInfo?.driverMobileNo || 'N/A',
+          supervisorName: panel.vehicleInfo?.driverName || 'N/A',
+          totalWeight: panel.totalWeight || 0,
+          detentionDays: panel.detentionDays || '',
+          detentionNumber: panel.detentionNumber || '',
+          hasHelper: panel.hasHelper || false,
+          outTime: panel.arrivalDetails?.outTime || '',
+          outDate: panel.arrivalDetails?.outDate ? new Date(panel.arrivalDetails.outDate).toISOString().split('T')[0] : '',
+          vlPhotoCount: vlPhotos.length,
+          vehicleSlipCount: panel.vehicleSlips?.length || 0,
+          loadedVehicleSlipCount: panel.loadedVehicleSlips?.length || 0,
+
+          // Approval statuses
+          vbpStatus: panel.vbpUploads?.approval || 'Not Set',
+          vbpApproval: panel.vbpUploads?.approval || 'Not Set',
+          vbpRemark: panel.vbpUploads?.remark || '',
+
+          vftStatus: panel.vftUploads?.approval || 'Not Set',
+          vftApproval: panel.vftUploads?.approval || 'Not Set',
+
+          vlStatus: panel.vlUploads?.approval || 'Not Set',
+          vlApproval: panel.vlUploads?.approval || 'Not Set',
+          vlLoadingStatus: panel.vlUploads?.loadingStatus || 'Not Set',
+
+          votStatus: panel.votUploads?.approval || 'Not Set',
+          votApproval: panel.votUploads?.approval || 'Not Set',
+
+          weighmentApproval: panel.loadedWeighment?.approval || 'Not Set',
+
+          // Document fields
+          consignmentNote: panel.consignmentNote || '',
+          invoice: panel.invoice || '',
+          ewaybill: panel.ewaybill || '',
+
+          panelStatus: panel.panelStatus || 'Draft'
+        };
+      });
+
+      return NextResponse.json({
+        success: true,
+        data: formattedPanels
+      }, { status: 200 });
+    }
 
     return NextResponse.json({
       success: true,
@@ -1493,10 +1493,10 @@ export async function GET(req) {
 
   } catch (error) {
     console.error("❌ GET /loading-panel error:", error);
-    return NextResponse.json({ 
-      success: false, 
+    return NextResponse.json({
+      success: false,
       message: "Failed to fetch loading panels",
-      error: error.message 
+      error: error.message
     }, { status: 500 });
   }
 }
@@ -1508,8 +1508,8 @@ export async function POST(req) {
   await connectDb();
   const { user, error, status } = await validateUser(req, 'create');
   if (error) {
-    return NextResponse.json({ 
-      success: false, 
+    return NextResponse.json({
+      success: false,
       message: error,
       code: status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN'
     }, { status });
@@ -1534,17 +1534,17 @@ export async function POST(req) {
         return NextResponse.json({ success: false, message: 'Only Part 3 approved Vehicle Negotiations with completed vehicle placement can be used for Loading.' }, { status: 409 });
       }
     }
-    
+
     console.log("📝 Creating new loading panel");
-    
+
     // Generate vehicle arrival number
-    let vehicleArrivalNo = await getNextLoadingNumber(user.companyId);
-    
+    let vehicleArrivalNo = await getNextLoadingNumber(user.companyId, user.activeOperatingCompanyId, user.activeOperatingCompanyCode);
+
     // Check if vehicle arrival number already exists
     const existing = await LoadingPanel.findOne(companyScopeFilter(user, { vehicleArrivalNo }));
-    
+
     if (existing) {
-      vehicleArrivalNo = `LD-${Date.now().toString().slice(-8)}`;
+      vehicleArrivalNo = `${String(user.activeOperatingCompanyCode || "").trim().toUpperCase()}-LD-${Date.now().toString().slice(-8)}`;
     }
 
     const subCompanyId = user.activeOperatingCompanyId;
@@ -1748,8 +1748,8 @@ export async function POST(req) {
       vl15: body.vlUploads?.vl15 || '',
       videoVl: body.vlUploads?.videoVl || '',
       approval: body.vlUploads?.approval || '',
-      loadingStatus: body.vlUploads?.loadingStatus && body.vlUploads.loadingStatus !== '' 
-        ? body.vlUploads.loadingStatus 
+      loadingStatus: body.vlUploads?.loadingStatus && body.vlUploads.loadingStatus !== ''
+        ? body.vlUploads.loadingStatus
         : 'Not Loaded'
     };
 
@@ -1757,7 +1757,7 @@ export async function POST(req) {
     const loadingPanelData = {
       vehicleArrivalNo,
       vehicleNegotiationNo: body.vehicleNegotiationNo || body.header?.vehicleNegotiationNo || '',
-      
+
       // Header
       branch: branchId,
       branchName: body.header?.branchName || '',
@@ -1768,7 +1768,7 @@ export async function POST(req) {
       subCompanyCode: subCompanyCode || body.header?.subCompanyCode || '',
       date: body.header?.date ? new Date(body.header.date) : new Date(),
       delivery: body.header?.delivery || 'Normal',
-      
+
       // Billing
       billingType: body.header?.billingType || 'Multi - Order',
       noOfLoadingPoints: parseInt(body.header?.noOfLoadingPoints) || 0,
@@ -1777,10 +1777,10 @@ export async function POST(req) {
       cancellationCharges: body.header?.cancellationCharges || '',
       loadingCharges: body.header?.loadingCharges || '',
       otherCharges: body.header?.otherCharges || '',
-      
+
       // Orders
       orderRows: processedOrderRows,
-      
+
       // Vehicle Info with sub-company
       vehicleInfo: {
         vehicleNo: body.vehicleInfo?.vehicleNo || '',
@@ -1811,35 +1811,35 @@ export async function POST(req) {
         subCompanyName: subCompanyName,
         subCompanyCode: subCompanyCode
       },
-      
+
       // Helper / Co-Driver
       hasHelper: body.hasHelper || false,
       helperInfo: processedHelperInfo,
-      
+
       // Vehicle Photos
       vehiclePhotos: body.vehiclePhotos || [],
-      
+
       // Detention Information
       detentionDays: body.detentionDays || '',
       detentionNumber: body.detentionNumber || '',
-      
+
       // Vehicle Slips
       vehicleSlips: body.vehicleSlips || [],
-      
+
       // Loaded Vehicle Slip
       loadedVehicleSlips: body.loadedVehicleSlips || [],
-      
+
       // VL Photo Details
       vlPhotoDetails: processedVlPhotoDetails,
-      
+
       // Pack Data
       packData: processPackData(body.packData),
       activePack: body.activePack || 'PALLETIZATION',
-      
+
       // Deductions
       deductionRows: processedDeductionRows,
       totalQuantity: body.totalQuantity || '',
-      
+
       // Upload sections - VBP
       vbpUploads: {
         vbp1: body.vbpUploads?.vbp1 || '',
@@ -1853,7 +1853,7 @@ export async function POST(req) {
         approval: body.vbpUploads?.approval || '',
         remark: body.vbpUploads?.remark || ''
       },
-      
+
       // Upload sections - VFT
       vftUploads: {
         vft1: body.vftUploads?.vft1 || '',
@@ -1866,7 +1866,7 @@ export async function POST(req) {
         videoVft: body.vftUploads?.videoVft || '',
         approval: body.vftUploads?.approval || ''
       },
-      
+
       // Upload sections - VOT
       votUploads: {
         vot1: body.votUploads?.vot1 || '',
@@ -1879,10 +1879,10 @@ export async function POST(req) {
         videoVot: body.votUploads?.videoVot || '',
         approval: body.votUploads?.approval || ''
       },
-      
+
       // Upload sections - VL
       vlUploads: processedVlUploads,
-      
+
       // Loaded weighment
       loadedWeighment: {
         weighSlip: body.loadedWeighment?.weighSlip || '',
@@ -1893,13 +1893,13 @@ export async function POST(req) {
         vehicleFloorTarpaulin: num(body.loadedWeighment?.vehicleFloorTarpaulin),
         vehicleOuterTarpaulin: num(body.loadedWeighment?.vehicleOuterTarpaulin)
       },
-      
+
       // GPS Tracking
       gpsTracking: {
         driverMobileNumber: body.gpsTracking?.driverMobileNumber || '',
         isTrackingActive: body.gpsTracking?.isTrackingActive || false
       },
-      
+
       // Arrival details
       arrivalDetails: {
         date: body.arrivalDetails?.date ? new Date(body.arrivalDetails.date) : null,
@@ -1907,21 +1907,21 @@ export async function POST(req) {
         outDate: body.arrivalDetails?.outDate ? new Date(body.arrivalDetails.outDate) : null,
         outTime: body.arrivalDetails?.outTime || ''
       },
-      
+
       // Totals
       totalWeight,
       totalActualWeight,
       totalCharges,
-      
+
       // Document fields
       consignmentNote: body.consignmentNote || '',
       invoice: body.invoice || '',
       ewaybill: body.ewaybill || '',
-      
+
       // Selected references
       selectedVehicle: body.selectedVehicle || null,
       selectedVehicleNegotiation: body.selectedVehicleNegotiation || null,
-      
+
       // Company & User
       companyId: new mongoose.Types.ObjectId(user.companyId),
       createdBy: new mongoose.Types.ObjectId(user.id),
@@ -1931,11 +1931,11 @@ export async function POST(req) {
     // Create and save
     const newLoadingPanel = new LoadingPanel(loadingPanelData);
     const savedPanel = await newLoadingPanel.save();
-    
+
     console.log("✅ Loading panel saved successfully, ID:", savedPanel._id);
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       message: "Loading panel created successfully",
       data: {
         _id: savedPanel._id,
@@ -1945,25 +1945,25 @@ export async function POST(req) {
 
   } catch (error) {
     console.error("❌ POST /loading-panel error:", error);
-    
+
     if (error.code === 11000) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Vehicle arrival number already exists. Please try again." 
+      return NextResponse.json({
+        success: false,
+        message: "Vehicle arrival number already exists. Please try again."
       }, { status: 400 });
     }
-    
+
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(err => err.message);
-      return NextResponse.json({ 
-        success: false, 
-        message: messages.join(', ') 
+      return NextResponse.json({
+        success: false,
+        message: messages.join(', ')
       }, { status: 400 });
     }
-    
-    return NextResponse.json({ 
-      success: false, 
-      message: `Failed to create loading panel: ${error.message}` 
+
+    return NextResponse.json({
+      success: false,
+      message: `Failed to create loading panel: ${error.message}`
     }, { status: 500 });
   }
 }
@@ -1975,8 +1975,8 @@ export async function PUT(req) {
   await connectDb();
   const { user, error, status } = await validateUser(req, 'edit');
   if (error) {
-    return NextResponse.json({ 
-      success: false, 
+    return NextResponse.json({
+      success: false,
       message: error,
       code: status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN'
     }, { status });
@@ -1985,11 +1985,11 @@ export async function PUT(req) {
   try {
     const body = await req.json();
     const { id, ...updateData } = body;
-    
+
     if (!id || !isValidObjectId(id)) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Valid ID is required" 
+      return NextResponse.json({
+        success: false,
+        message: "Valid ID is required"
       }, { status: 400 });
     }
 
@@ -1997,9 +1997,9 @@ export async function PUT(req) {
     const existingPanel = await LoadingPanel.findOne(companyScopeFilter(user, { _id: id }));
 
     if (!existingPanel) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Loading panel not found" 
+      return NextResponse.json({
+        success: false,
+        message: "Loading panel not found"
       }, { status: 404 });
     }
 
@@ -2015,8 +2015,8 @@ export async function PUT(req) {
     // Process order rows if present
     if (updateData.orderRows) {
       updateData.orderRows = updateData.orderRows.map(row => ({
-        _id: row._id && isValidObjectId(row._id) 
-          ? new mongoose.Types.ObjectId(row._id) 
+        _id: row._id && isValidObjectId(row._id)
+          ? new mongoose.Types.ObjectId(row._id)
           : new mongoose.Types.ObjectId(),
         orderNo: row.orderNo || '',
         partyName: row.partyName || '',
@@ -2117,8 +2117,8 @@ export async function PUT(req) {
     if (updateData.packData) {
       updateData.packData = {
         PALLETIZATION: (updateData.packData.PALLETIZATION || []).map(item => ({
-          _id: item._id && isValidObjectId(item._id) 
-            ? new mongoose.Types.ObjectId(item._id) 
+          _id: item._id && isValidObjectId(item._id)
+            ? new mongoose.Types.ObjectId(item._id)
             : new mongoose.Types.ObjectId(),
           noOfPallets: num(item.noOfPallets),
           unitPerPallets: num(item.unitPerPallets),
@@ -2135,8 +2135,8 @@ export async function PUT(req) {
           isUniform: item.isUniform || false
         })),
         'UNIFORM - BAGS/BOXES': (updateData.packData['UNIFORM - BAGS/BOXES'] || []).map(item => ({
-          _id: item._id && isValidObjectId(item._id) 
-            ? new mongoose.Types.ObjectId(item._id) 
+          _id: item._id && isValidObjectId(item._id)
+            ? new mongoose.Types.ObjectId(item._id)
             : new mongoose.Types.ObjectId(),
           totalPkgs: num(item.totalPkgs),
           pkgsType: item.pkgsType || '',
@@ -2150,8 +2150,8 @@ export async function PUT(req) {
           wtUom: item.wtUom || ''
         })),
         'LOOSE - CARGO': (updateData.packData['LOOSE - CARGO'] || []).map(item => ({
-          _id: item._id && isValidObjectId(item._id) 
-            ? new mongoose.Types.ObjectId(item._id) 
+          _id: item._id && isValidObjectId(item._id)
+            ? new mongoose.Types.ObjectId(item._id)
             : new mongoose.Types.ObjectId(),
           uom: item.uom || '',
           productName: item.productName || '',
@@ -2159,8 +2159,8 @@ export async function PUT(req) {
           chargedWt: num(item.chargedWt)
         })),
         'NON-UNIFORM - GENERAL CARGO': (updateData.packData['NON-UNIFORM - GENERAL CARGO'] || []).map(item => ({
-          _id: item._id && isValidObjectId(item._id) 
-            ? new mongoose.Types.ObjectId(item._id) 
+          _id: item._id && isValidObjectId(item._id)
+            ? new mongoose.Types.ObjectId(item._id)
             : new mongoose.Types.ObjectId(),
           nos: num(item.nos),
           productName: item.productName || '',
@@ -2188,8 +2188,8 @@ export async function PUT(req) {
       { new: true, runValidators: true }
     );
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       message: "Loading panel updated successfully",
       data: {
         _id: updatedPanel._id,
@@ -2199,18 +2199,18 @@ export async function PUT(req) {
 
   } catch (error) {
     console.error("❌ PUT /loading-panel error:", error);
-    
+
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(err => err.message);
-      return NextResponse.json({ 
-        success: false, 
-        message: messages.join(', ') 
+      return NextResponse.json({
+        success: false,
+        message: messages.join(', ')
       }, { status: 400 });
     }
-    
-    return NextResponse.json({ 
-      success: false, 
-      message: `Failed to update loading panel: ${error.message}` 
+
+    return NextResponse.json({
+      success: false,
+      message: `Failed to update loading panel: ${error.message}`
     }, { status: 500 });
   }
 }
@@ -2222,8 +2222,8 @@ export async function DELETE(req) {
   await connectDb();
   const { user, error, status } = await validateUser(req, 'delete');
   if (error) {
-    return NextResponse.json({ 
-      success: false, 
+    return NextResponse.json({
+      success: false,
       message: error,
       code: status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN'
     }, { status });
@@ -2232,33 +2232,33 @@ export async function DELETE(req) {
   try {
     const url = new URL(req.url);
     const id = url.searchParams.get("id");
-    
+
     if (!id || !isValidObjectId(id)) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Valid ID is required" 
+      return NextResponse.json({
+        success: false,
+        message: "Valid ID is required"
       }, { status: 400 });
     }
 
     const deletedPanel = await LoadingPanel.findOneAndDelete(companyScopeFilter(user, { _id: id }));
 
     if (!deletedPanel) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Loading panel not found" 
+      return NextResponse.json({
+        success: false,
+        message: "Loading panel not found"
       }, { status: 404 });
     }
 
-    return NextResponse.json({ 
-      success: true, 
-      message: "Loading panel deleted successfully" 
+    return NextResponse.json({
+      success: true,
+      message: "Loading panel deleted successfully"
     }, { status: 200 });
 
   } catch (error) {
     console.error("❌ DELETE /loading-panel error:", error);
-    return NextResponse.json({ 
-      success: false, 
-      message: `Failed to delete loading panel: ${error.message}` 
+    return NextResponse.json({
+      success: false,
+      message: `Failed to delete loading panel: ${error.message}`
     }, { status: 500 });
   }
 }
@@ -2270,8 +2270,8 @@ export async function PATCH(req) {
   await connectDb();
   const { user, error, status } = await validateUser(req, 'approve');
   if (error) {
-    return NextResponse.json({ 
-      success: false, 
+    return NextResponse.json({
+      success: false,
       message: error,
       code: status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN'
     }, { status });
@@ -2280,31 +2280,31 @@ export async function PATCH(req) {
   try {
     const body = await req.json();
     const { id, action, ...updateFields } = body;
-    
+
     if (!id || !isValidObjectId(id)) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Valid ID is required" 
+      return NextResponse.json({
+        success: false,
+        message: "Valid ID is required"
       }, { status: 400 });
     }
 
     console.log(`📝 Updating loading panel status: ${id} - ${action}`);
-    
+
     const loadingPanel = await LoadingPanel.findOne(companyScopeFilter(user, { _id: id }));
 
     if (!loadingPanel) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Loading panel not found" 
+      return NextResponse.json({
+        success: false,
+        message: "Loading panel not found"
       }, { status: 404 });
     }
 
     // Handle different actions
     const allowedActions = ['approve', 'reject', 'complete'];
     if (!allowedActions.includes(action)) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Invalid action. Allowed: approve, reject, complete" 
+      return NextResponse.json({
+        success: false,
+        message: "Invalid action. Allowed: approve, reject, complete"
       }, { status: 400 });
     }
 
@@ -2408,14 +2408,14 @@ export async function PATCH(req) {
     }
 
     // Update panel status
-    loadingPanel.panelStatus = action === 'complete' ? 'Completed' : 
-                               action === 'approve' ? 'Approved' : 
-                               'Rejected';
+    loadingPanel.panelStatus = action === 'complete' ? 'Completed' :
+      action === 'approve' ? 'Approved' :
+        'Rejected';
 
     await loadingPanel.save();
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       message: `Loading panel ${action}d successfully with all updates`,
       data: {
         _id: loadingPanel._id,
@@ -2426,8 +2426,8 @@ export async function PATCH(req) {
 
   } catch (error) {
     console.error("❌ PATCH /loading-panel error:", error);
-    return NextResponse.json({ 
-      success: false, 
+    return NextResponse.json({
+      success: false,
       message: error.message || "Failed to update loading panel"
     }, { status: 500 });
   }

@@ -1454,6 +1454,7 @@ import connectDb from "@/lib/db";
 import POD from "./POD";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import { getNextPODNumber } from "./PODCounter";
+import { activeOperatingCompanyId, companyScopeFilter } from "@/lib/companyScope";
 import mongoose from 'mongoose';
 
 // ── PERMISSION FUNCTIONS ──
@@ -1494,6 +1495,7 @@ async function validateUser(req, requiredAction = null) {
   try {
     const user = verifyJWT(token);
     if (!user) return { error: "Invalid or expired token. Please login again.", status: 401 };
+    activeOperatingCompanyId(user);
     
     if (!isAuthorized(user)) {
       return { 
@@ -1561,10 +1563,7 @@ export async function GET(req) {
         }, { status: 400 });
       }
 
-      const pod = await POD.findOne({
-        _id: id,
-        companyId: user.companyId
-      }).lean();
+      const pod = await POD.findOne(companyScopeFilter(user, { _id: id })).lean();
 
       if (!pod) {
         return NextResponse.json({ 
@@ -1581,10 +1580,7 @@ export async function GET(req) {
 
     // CASE 2: GET SINGLE POD BY POD NUMBER
     if (podNo) {
-      const pod = await POD.findOne({
-        podNo: podNo,
-        companyId: user.companyId
-      }).lean();
+      const pod = await POD.findOne(companyScopeFilter(user, { podNo })).lean();
 
       if (!pod) {
         return NextResponse.json({ 
@@ -1601,7 +1597,7 @@ export async function GET(req) {
 
     // CASE 3: TABLE FORMAT FOR LIST VIEW
     if (format === 'table') {
-      let query = { companyId: user.companyId };
+      let query = companyScopeFilter(user);
 
       if (search) {
         query.$or = [
@@ -1668,9 +1664,7 @@ export async function GET(req) {
     }
 
     // CASE 4: LIST FOR DROPDOWNS
-    const pods = await POD.find({ 
-      companyId: user.companyId 
-    })
+    const pods = await POD.find(companyScopeFilter(user))
     .select('podNo purchaseNo podStatus companyName subCompanyName')
     .sort({ createdAt: -1 })
     .lean();
@@ -1708,14 +1702,15 @@ export async function POST(req) {
     
     console.log("📝 Creating new POD");
 
-    const podNo = await getNextPODNumber(user.companyId);
+    const podNo = await getNextPODNumber(user.companyId, user.activeOperatingCompanyId, user.activeOperatingCompanyCode);
 
     // ✅ Extract company information from body or purchase data
     const companyName = body.companyName || body.header?.companyName || '';
     const companyCode = body.companyCode || body.header?.companyCode || '';
-    const subCompanyId = body.subCompanyId || body.header?.subCompanyId || null;
-    const subCompanyName = body.subCompanyName || body.header?.subCompanyName || '';
-    const subCompanyCode = body.subCompanyCode || body.header?.subCompanyCode || '';
+    // Never accept a company identity from the browser.
+    const subCompanyId = user.activeOperatingCompanyId;
+    const subCompanyName = user.activeOperatingCompanyName || '';
+    const subCompanyCode = user.activeOperatingCompanyCode || '';
 
     const purchaseOrders = (body.purchaseOrders || []).map(order => ({
       orderNo: order.orderNo || '',
@@ -1917,10 +1912,7 @@ export async function PUT(req) {
       }, { status: 400 });
     }
 
-    const pod = await POD.findOne({
-      _id: id,
-      companyId: user.companyId
-    });
+    const pod = await POD.findOne(companyScopeFilter(user, { _id: id }));
 
     if (!pod) {
       return NextResponse.json({ 
@@ -1932,9 +1924,9 @@ export async function PUT(req) {
     // ✅ Update company information
     if (body.companyName !== undefined) pod.companyName = body.companyName;
     if (body.companyCode !== undefined) pod.companyCode = body.companyCode;
-    if (body.subCompanyId !== undefined) pod.subCompanyId = body.subCompanyId;
-    if (body.subCompanyName !== undefined) pod.subCompanyName = body.subCompanyName;
-    if (body.subCompanyCode !== undefined) pod.subCompanyCode = body.subCompanyCode;
+    pod.subCompanyId = user.activeOperatingCompanyId;
+    pod.subCompanyName = user.activeOperatingCompanyName || '';
+    pod.subCompanyCode = user.activeOperatingCompanyCode || '';
 
     // Update header with company info
     if (body.header) {
@@ -1944,8 +1936,8 @@ export async function PUT(req) {
         date: body.header.date ? new Date(body.header.date) : pod.header.date,
         companyName: body.header.companyName || pod.companyName,
         companyCode: body.header.companyCode || pod.companyCode,
-        subCompanyName: body.header.subCompanyName || pod.subCompanyName,
-        subCompanyCode: body.header.subCompanyCode || pod.subCompanyCode
+        subCompanyName: pod.subCompanyName,
+        subCompanyCode: pod.subCompanyCode
       };
     }
 
@@ -2106,10 +2098,7 @@ export async function DELETE(req) {
       }, { status: 400 });
     }
 
-    const pod = await POD.findOne({
-      _id: id,
-      companyId: user.companyId
-    });
+    const pod = await POD.findOne(companyScopeFilter(user, { _id: id }));
 
     if (!pod) {
       return NextResponse.json({ 
@@ -2166,10 +2155,7 @@ export async function PATCH(req) {
       }, { status: 400 });
     }
 
-    const pod = await POD.findOne({
-      _id: id,
-      companyId: user.companyId
-    });
+    const pod = await POD.findOne(companyScopeFilter(user, { _id: id }));
 
     if (!pod) {
       return NextResponse.json({ 

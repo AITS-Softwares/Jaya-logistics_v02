@@ -8,6 +8,7 @@ import Counter from "@/models/Counter";
 import Warehouse from "@/models/warehouseModels";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import { NextResponse } from "next/server";
+import { companyPrefix } from "@/lib/documentSequence";
 
 const { Types } = mongoose;
 
@@ -62,9 +63,9 @@ async function validateStockAvailability(items) {
 async function processItem(item, session, delivery, decoded, isCopiedSO) {
     const warehouseDoc = await Warehouse.findById(item.warehouse).session(session).lean();
     if (!warehouseDoc) throw new Error(`Warehouse '${item.warehouseName}' could not be found.`);
-    
+
     const useBins = warehouseDoc.binLocations && warehouseDoc.binLocations.length > 0;
-    
+
     const query = {
         item: new Types.ObjectId(item.item),
         warehouse: new Types.ObjectId(item.warehouse),
@@ -113,7 +114,7 @@ async function processItem(item, session, delivery, decoded, isCopiedSO) {
 /* ------------------------------------------- */
 export async function POST(req) {
     await dbConnect();
-    
+
     try {
         const token = getTokenFromHeader(req);
         if (!token) throw new Error("Unauthorized: No token provided");
@@ -124,7 +125,7 @@ export async function POST(req) {
         const formData = await req.formData();
         const deliveryDataString = formData.get("deliveryData");
         if (!deliveryDataString) throw new Error("Missing deliveryData in submission.");
-        
+
         const deliveryData = JSON.parse(deliveryDataString);
 
         console.log("Received Delivery Data:", deliveryData);
@@ -153,7 +154,8 @@ export async function POST(req) {
 
             const now = new Date();
             const financialYear = now.getMonth() >= 3 ? `${now.getFullYear()}-${String(now.getFullYear() + 1).slice(-2)}` : `${now.getFullYear() - 1}-${String(now.getFullYear()).slice(-2)}`;
-            const key = "Sales Delivery";
+            // const key = "Sales Delivery";
+            const key = `Sales Delivery_${companyPrefix(decoded)}`;
 
             const counter = await Counter.findOneAndUpdate(
                 { id: key, companyId: decoded.companyId },
@@ -161,10 +163,10 @@ export async function POST(req) {
                 { new: true, upsert: true, session: session }
             );
 
-            deliveryData.documentNumberDelivery = `SALES-DEL/${financialYear}/${String(counter.seq).padStart(5, "0")}`;
+            deliveryData.documentNumberDelivery = `${companyPrefix(decoded)}/SALES-DEL/${financialYear}/${String(counter.seq).padStart(5, "0")}`;
 
             const [delivery] = await Delivery.create([deliveryData], { session });
-            
+
             const isCopiedSO = !!deliveryData.salesOrderId;
 
             for (const item of deliveryData.items) {
@@ -211,7 +213,7 @@ export async function GET(req) {
         if (!user) {
             return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
         }
-        
+
         const deliveries = await Delivery.find({ companyId: user.companyId }).populate('customer', 'customerName').sort({ createdAt: -1 });
         return NextResponse.json({ success: true, data: deliveries }, { status: 200 });
 

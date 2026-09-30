@@ -6189,6 +6189,7 @@ export default function EditLoadingInfoPanel() {
     loadingCharges: "",
     otherCharges: "",
   });
+  const [linkedLRNo, setLinkedLRNo] = useState("");
 
   /** =========================
    * ORDERS TABLE STATE
@@ -6428,6 +6429,7 @@ export default function EditLoadingInfoPanel() {
       }
 
       const panel = data.data;
+      setLinkedLRNo(panel.consignmentNote || "");
       
       if (panel.panelStatus === 'Approved' || panel.panelStatus === 'Completed') {
         setIsReadOnly(true);
@@ -7607,19 +7609,15 @@ export default function EditLoadingInfoPanel() {
     }
   };
 
-  // Generate LR function
+  // Start the real LR workflow. The server sets Out Date/Time only after the
+  // linked LR has been successfully created, using its server timestamp.
   const handleGenerateLR = () => {
-    const now = new Date();
-    const outTime = now.toLocaleTimeString();
-    const outDate = now.toISOString().split('T')[0];
-    
-    setArrivalDetails(prev => ({
-      ...prev,
-      outDate: outDate,
-      outTime: outTime,
-    }));
-    
-    alert(`✅ Consignment Note (LR) Generated!\n📅 Out Date: ${outDate}\n⏰ Out Time: ${outTime}`);
+    if (linkedLRNo) return;
+    if (!header.vehicleArrivalNo) {
+      alert('Save Loading Info before generating its LR.');
+      return;
+    }
+    router.push(`/admin/Consignment-Note/create?loadingInfoNo=${encodeURIComponent(header.vehicleArrivalNo)}`);
   };
 
   const getTotalVlPhotosCount = () => {
@@ -10268,20 +10266,14 @@ export default function EditLoadingInfoPanel() {
               <div className="col-span-12 md:col-span-4">
                 <div className="bg-white p-4 rounded-xl border border-slate-200">
                   <h3 className="text-sm font-bold text-slate-800 mb-2">Consignment Note (LR)</h3>
-                  {!isReadOnly && (
-                    <button 
-                      onClick={handleGenerateLR}
-                      className="w-full rounded-lg bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700"
-                    >
-                      Generate LR
-                    </button>
-                  )}
-                  {isReadOnly && (
-                    <button className="w-full rounded-lg bg-gray-400 px-4 py-2 text-xs font-bold text-white cursor-not-allowed" disabled>
-                      Generate LR
-                    </button>
-                  )}
-                  <p className="text-xs text-slate-500 mt-2">Click to generate LR and auto-fill Out Time & Date</p>
+                  <button
+                    onClick={handleGenerateLR}
+                    disabled={Boolean(linkedLRNo)}
+                    className={`w-full rounded-lg px-4 py-2 text-xs font-bold text-white ${linkedLRNo ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
+                  >
+                    {linkedLRNo ? `LR Generated: ${linkedLRNo}` : 'Generate LR'}
+                  </button>
+                  <p className="text-xs text-slate-500 mt-2">Out Date and Out Time are saved from the generated LR timestamp.</p>
                 </div>
               </div>
               <div className="col-span-12 md:col-span-4">

@@ -1620,6 +1620,7 @@
 import { NextResponse } from "next/server";
 import connectDb from "@/lib/db";
 import AdvancePayment from "./AdvancePayment";
+import PurchasePanel from "../purchase-panel/PurchasePanel";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import { getNextAdvancePaymentNumber } from "./AdvancePaymentCounter";
 import mongoose from 'mongoose';
@@ -1882,7 +1883,11 @@ export async function POST(req) {
     
     console.log("📝 Creating new advance payment");
 
-    let paymentNo = await getNextAdvancePaymentNumber(user.companyId);
+    if (!body.purchaseNo && !body.purchaseDataId) {
+      return NextResponse.json({ success: false, message: "A Purchase Panel is required." }, { status: 400 });
+    }
+
+    let paymentNo = await getNextAdvancePaymentNumber(user.companyId, user.activeOperatingCompanyId, user.activeOperatingCompanyCode);
 
     if (body.purchaseNo) {
       const existing = await AdvancePayment.findOne(companyScopeFilter(user, { purchaseNo: body.purchaseNo }));
@@ -1893,6 +1898,15 @@ export async function POST(req) {
           message: `Advance payment already exists for Purchase No: ${body.purchaseNo}` 
         }, { status: 400 });
       }
+    }
+
+    // Purchase remains the source of truth for the MEMO and adjustments.
+    const purchaseLookup = body.purchaseDataId
+      ? { _id: body.purchaseDataId }
+      : { purchaseNo: body.purchaseNo };
+    const sourcePurchase = await PurchasePanel.findOne(companyScopeFilter(user, purchaseLookup)).lean();
+    if (!sourcePurchase) {
+      return NextResponse.json({ success: false, message: "A valid Purchase Panel is required." }, { status: 400 });
     }
 
     // ✅ Get sub-company from body
@@ -1932,13 +1946,13 @@ export async function POST(req) {
       subCompanyCode
     }));
 
-    const processedAdditionItems = (body.additions?.items || []).map(item => ({
+    const processedAdditionItems = (sourcePurchase.additions || []).map(item => ({
       _id: new mongoose.Types.ObjectId(),
       description: item.description || 'Addition',
       amount: num(item.amount)
     }));
 
-    const processedDeductionItems = (body.deductions?.items || []).map(item => ({
+    const processedDeductionItems = (sourcePurchase.deductions || []).map(item => ({
       _id: new mongoose.Types.ObjectId(),
       description: item.description || 'Deduction',
       amount: num(item.amount)
@@ -1968,8 +1982,8 @@ export async function POST(req) {
 
     const advancePayment = new AdvancePayment({
       paymentNo,
-      purchaseNo: body.purchaseNo || body.header?.purchaseNo || '',
-      purchaseId: body.purchaseDataId || null,
+      purchaseNo: sourcePurchase.purchaseNo || body.purchaseNo || body.header?.purchaseNo || '',
+      purchaseId: sourcePurchase._id,
       pricingSerialNo: body.pricingSerialNo || body.header?.pricingSerialNo || '',
       purchaseAmountFromVNN,
       
@@ -2048,7 +2062,7 @@ export async function POST(req) {
         paymentStatus: body.paymentDetails?.paymentStatus || 'Pending'
       },
       
-      memoFile: body.memoFile || null,
+      memoFile: sourcePurchase.memoFile || null,
       
       balance,
       totalOrderAmount,
@@ -2409,6 +2423,21 @@ export async function PATCH(req) {
 
     // Handle different actions
     if (action === 'generate-queue') {
+      if (payment.queueGenerated) {
+        return NextResponse.json({ success: false, message: "Payment queue has already been generated." }, { status: 409 });
+      }
+
+      const purchaseLookup = payment.purchaseId
+        ? { _id: payment.purchaseId }
+        : { purchaseNo: payment.purchaseNo };
+      const sourcePurchase = await PurchasePanel.findOne(companyScopeFilter(user, purchaseLookup)).lean();
+      if (!sourcePurchase?.memoFile?.filePath || !payment.memoFile?.filePath) {
+        return NextResponse.json({
+          success: false,
+          message: "Generate Queue requires the MEMO attached in Purchase Panel and available in Advance Payment."
+        }, { status: 400 });
+      }
+
       payment.queueGenerated = true;
       payment.queueDate = new Date();
       payment.paymentDetails.paymentStatus = 'Paid';

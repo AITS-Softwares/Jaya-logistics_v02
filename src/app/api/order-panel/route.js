@@ -923,7 +923,7 @@ export const POST = withAuth(async (req, context, user) => {
   try {
     const body = await req.json();
     
-    let orderPanelNo = await getNextOrderPanelNumber(user.companyId);
+    let orderPanelNo = await getNextOrderPanelNumber(user.companyId, user.activeOperatingCompanyId, user.activeOperatingCompanyCode);
     
     const existingOrderPanel = await OrderPanel.findOne(companyScopeFilter(user, { orderPanelNo }));
     

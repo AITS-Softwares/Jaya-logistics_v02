@@ -2002,9 +2002,11 @@ const Item = ({ href, icon, label, onClick, isActive }) => (
 
 export default function Layout({ children }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [openMenu, setOpenMenu] = useState(null);
   const [openSubmenus, setOpenSubmenus] = useState({});
   const [session, setSession] = useState(null);
+  const [operatingCompanies, setOperatingCompanies] = useState([]);
   const router = useRouter();
   const pathname = usePathname();
   const sidebarRef = useRef(null);
@@ -2047,8 +2049,35 @@ export default function Layout({ children }) {
   }, [router]);
 
   useEffect(() => {
+    if (!session?.isGroupAdmin) return;
+    fetch("/api/auth/operating-companies")
+      .then((response) => response.json())
+      .then((data) => setOperatingCompanies(data?.data || []))
+      .catch(() => setOperatingCompanies([]));
+  }, [session?.isGroupAdmin]);
+
+  useEffect(() => {
     setIsSidebarOpen(false);
   }, [pathname]);
+
+  // A JAYA GROUP token has intentionally no active legal-company scope. Keep
+  // it out of operational pages until the administrator explicitly selects a
+  // workspace; otherwise those APIs correctly reject the request.
+  useEffect(() => {
+    if (!session?.isGroupAdmin || session?.activeOperatingCompany || pathname === "/admin/group-overview") return;
+    const transactionPrefixes = [
+      "/admin/order-panel", "/admin/vehicle-negotiation", "/admin/rate-target-vehicle-negotiation",
+      "/admin/pricing-panel", "/admin/Loading-Info", "/admin/Purchase-Panel",
+      "/admin/Consignment-Note", "/admin/Advance-Payment", "/admin/ProofofDelivery", "/admin/Balance-Payment",
+    ];
+    if (transactionPrefixes.some((prefix) => pathname.startsWith(prefix))) router.replace("/admin/group-overview");
+  }, [pathname, router, session]);
+
+  useEffect(() => {
+    try {
+      setIsSidebarCollapsed(localStorage.getItem("sidebarCollapsed") === "1");
+    } catch { }
+  }, []);
 
   useEffect(() => {
     const handler = (e) => {
@@ -2074,12 +2103,48 @@ export default function Layout({ children }) {
   const moduleRouteOverrides = {
     'Purchase Panel': '/admin/Purchase-Panel',
     'Consignment Note': '/admin/Consignment-Note',
+    'Advance Payment': '/admin/Advance-Payment',
+    'Balance-Payment': '/admin/Balance-Payment',
+    'Proof Of Delivery': '/admin/ProofofDelivery',
+    'GRN': '/admin/GRN',
+    'Billing': '/admin/Billing',
+    'Suppliers': '/admin/supplier',
+    'Items': '/admin/item',
   };
 
   const toggleSubmenu = (k) => setOpenSubmenus((p) => ({ ...p, [k]: !p[k] }));
   const toggleMenu = (m) => setOpenMenu(openMenu === m ? null : m);
   const closeSidebar = () => setIsSidebarOpen(false);
   const isActive = (path) => pathname === path;
+  const toggleDesktopSidebar = () => {
+    const next = !isSidebarCollapsed;
+    setIsSidebarCollapsed(next);
+    try { localStorage.setItem("sidebarCollapsed", next ? "1" : "0"); } catch { }
+  };
+  const selectAdminWorkspace = async (event) => {
+    const code = event.target.value;
+    if (!code) {
+      const groupToken = localStorage.getItem("groupToken");
+      if (groupToken) {
+        localStorage.setItem("token", groupToken);
+        window.location.assign("/admin/group-overview");
+      }
+      return;
+    }
+    try {
+      const response = await fetch("/api/company/workspace", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("token")}` },
+        body: JSON.stringify({ operatingCompanyCode: code }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message);
+      localStorage.setItem("token", data.token);
+      window.location.assign("/admin");
+    } catch (error) {
+      window.alert(error.message || "Unable to select company workspace.");
+    }
+  };
 
   // Check if user can access a module
   const canAccessModule = (moduleName) => {
@@ -2104,7 +2169,7 @@ export default function Layout({ children }) {
         ref={sidebarRef}
         aria-label="Sidebar navigation"
         className={`fixed inset-y-0 left-0 z-50 w-64 lg:w-72 bg-[#1e293b] text-white transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-          } flex flex-col shadow-2xl`}
+          } ${isSidebarCollapsed ? "md:hidden" : ""} flex flex-col shadow-2xl`}
       >
         {/* Logo */}
         <div className="h-16 flex items-center justify-between px-4 lg:px-6 bg-[#0f172a] border-b border-gray-700 shrink-0">
@@ -3214,9 +3279,19 @@ export default function Layout({ children }) {
                 {isSidebarOpen ? <HiX size={24} /> : <HiMenu size={24} />}
               </button>
 
+              {/* Desktop: hide / show sidebar */}
+              <button
+                onClick={toggleDesktopSidebar}
+                title={isSidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
+                aria-label={isSidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
+                className="hidden md:block p-2 -ml-2 text-gray-400 hover:text-white transition-colors"
+              >
+                <HiMenu size={24} />
+              </button>
+
               <h1 className="text-sm md:text-base font-bold text-white truncate tracking-tight">
                 {isCompany
-                  ? "Company Administrator"
+                  ? (session.groupName || "JAYA GROUP")
                   : isAdminUser
                     ? "Admin Dashboard"
                     : "Dashboard"}
@@ -3234,6 +3309,12 @@ export default function Layout({ children }) {
                 >
                   {session.activeOperatingCompany.name}
                 </div>
+              )}
+              {session.isGroupAdmin && (
+                <select value={session.activeOperatingCompany?.code || ""} onChange={selectAdminWorkspace} className="max-w-44 rounded-lg border border-amber-400/30 bg-amber-500/10 px-2.5 py-1 text-[10px] font-semibold text-amber-100 outline-none">
+                  <option value="" className="bg-slate-900">JAYA GROUP · Consolidated</option>
+                  {operatingCompanies.map((company) => <option key={company.code} value={company.code} className="bg-slate-900">Workspace · {company.name}</option>)}
+                </select>
               )}
 
               <div

@@ -14,6 +14,7 @@ import Inventory from "@/models/Inventory";
 import StockMovement from "@/models/StockMovement";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth"; // Your auth helpers
 import Counter from "@/models/Counter";
+import { companyPrefix } from "@/lib/documentSequence";
 
 export const dynamic = 'force-dynamic';
 
@@ -45,7 +46,7 @@ async function parseForm(req) {
       keepExtensions: true,
       maxFileSize: 10 * 1024 * 1024,
     });
-    
+
     const nodeReq = createNodeCompatibleRequest(req);
 
     form.parse(nodeReq, (err, fields, files) => {
@@ -53,7 +54,7 @@ async function parseForm(req) {
         console.error("Formidable parse error:", err);
         return reject(err);
       }
-      
+
       const parsedFields = {};
       for (const key in fields) {
         parsedFields[key] = Array.isArray(fields[key]) ? fields[key][0] : fields[key];
@@ -74,7 +75,7 @@ async function parseForm(req) {
  */
 async function uploadFiles(fileObjects, folderName, companyId) {
   const uploadedFiles = [];
-  const fileArray = Array.isArray(fileObjects) ? fileObjects : []; 
+  const fileArray = Array.isArray(fileObjects) ? fileObjects : [];
 
   if (fileArray.length > 0) {
     for (const file of fileArray) {
@@ -391,7 +392,8 @@ export async function POST(req) {
     }
 
     const financialYear = `${fyStart}-${String(fyEnd).slice(-2)}`;
-    const key = "PurchaseGrn";
+    // const key = "PurchaseGrn";
+    const key = `PurchaseGrn_${companyPrefix(decoded)}`;
 
     let counter = await Counter.findOne({ id: key, companyId }).session(session);
     if (!counter) {
@@ -403,7 +405,7 @@ export async function POST(req) {
     }
 
     const paddedSeq = String(counter.seq).padStart(5, "0");
-    grnData.documentNumberGrn = `PURCH-GRN/${financialYear}/${paddedSeq}`;
+    grnData.documentNumberGrn = `${companyPrefix(decoded)}/PURCH-GRN/${financialYear}/${paddedSeq}`;
 
     // ✅ 5. Save GRN
     const [grn] = await GRN.create([grnData], { session });

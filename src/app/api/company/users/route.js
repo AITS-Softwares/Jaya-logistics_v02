@@ -116,7 +116,7 @@ export async function POST(req) {
     const company = verifyCompany(req); // ✅ POST ke liye company-only
     const {
       employeeId, name, email, password, roles = [], modules = {},
-      operatingCompanyIds = [], accessAllOperatingCompanies = true, defaultOperatingCompanyId = null,
+      operatingCompanyIds = [], accessAllOperatingCompanies = false, defaultOperatingCompanyId = null,
     } = await req.json();
 
     if (!name || !email || !password) {

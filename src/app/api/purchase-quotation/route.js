@@ -7,6 +7,7 @@ import dbConnect from "@/lib/db";
 import PurchaseQuotation from "@/models/PurchaseQuotationModel";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import Counter from "@/models/Counter";
+import { companyPrefix } from "@/lib/documentSequence";
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -81,7 +82,8 @@ export async function POST(req) {
     }
 
     const financialYear = `${fyStart}-${String(fyEnd).slice(-2)}`;
-    const key = `PurchaseQuatation`;
+    // const key = `PurchaseQuatation`;
+    const key = `PurchaseQuatation_${companyPrefix(decoded)}`;
 
     // ✅ Get or create counter per company
     let counter = await Counter.findOne({ id: key, companyId }).session(session);
@@ -98,7 +100,7 @@ export async function POST(req) {
     }
 
     const paddedSeq = String(counter.seq).padStart(5, "0");
-    const documentNumber = `PURCH-QUA/${financialYear}/${paddedSeq}`;
+    const documentNumber = `${companyPrefix(decoded)}/PURCH-QUA/${financialYear}/${paddedSeq}`;
 
     jsonData.documentNumber = documentNumber;
 

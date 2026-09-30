@@ -3701,12 +3701,12 @@ export async function POST(req) {
     console.log("📝 Creating new vehicle negotiation");
     
     // Generate vehicle negotiation number
-    let vnnNo = await getNextVehicleNegotiationNumber(user.companyId);
+    let vnnNo = await getNextVehicleNegotiationNumber(user.companyId, user.activeOperatingCompanyId, user.activeOperatingCompanyCode);
     
     // Check if VNN number already exists
     const existing = await VehicleNegotiation.findOne(companyScopeFilter(user, { vnnNo }));
     if (existing) {
-      vnnNo = await getNextVehicleNegotiationNumber(user.companyId);
+      vnnNo = await getNextVehicleNegotiationNumber(user.companyId, user.activeOperatingCompanyId, user.activeOperatingCompanyCode);
     }
 
     // Process orders with proper null handling for ObjectId fields and sub-company

@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import connectDb from "@/lib/db";
 import PurchasePanel from "./PurchasePanel";
 import ConsignmentNote from "../consignment-note/ConsignmentNote";
+import LoadingPanel from "../loading-panel/LoadingPanel";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import { getNextPurchaseNumber } from "./PurchaseCounter";
 import mongoose from 'mongoose';
@@ -349,7 +350,33 @@ export async function POST(req) {
     
     console.log("📝 Creating new purchase");
 
-    let purchaseNo = await getNextPurchaseNumber(user.companyId);
+    // A Loading Info can create one purchase only, and only before it has
+    // progressed to a consignment note. A hard-deleted purchase is absent from
+    // this check, which automatically releases its Loading Info for reuse.
+    if (!body.loadingInfoNo) {
+      return NextResponse.json({ success: false, message: "Loading Info is required." }, { status: 400 });
+    }
+
+    const eligibleLoadingInfo = await LoadingPanel.findOne(companyScopeFilter(user, {
+      vehicleArrivalNo: body.loadingInfoNo,
+      panelStatus: { $in: ['Approved', 'Completed'] },
+    })).lean();
+    if (!eligibleLoadingInfo) {
+      return NextResponse.json({ success: false, message: "Select an approved or completed Loading Info." }, { status: 400 });
+    }
+
+    const [existingPurchase, existingConsignment] = await Promise.all([
+      PurchasePanel.findOne(companyScopeFilter(user, { loadingInfoNo: body.loadingInfoNo })).lean(),
+      ConsignmentNote.findOne(companyScopeFilter(user, { loadingInfoNo: body.loadingInfoNo })).lean(),
+    ]);
+    if (existingPurchase) {
+      return NextResponse.json({ success: false, message: `Loading Info ${body.loadingInfoNo} is already used in purchase ${existingPurchase.purchaseNo}.` }, { status: 409 });
+    }
+    if (existingConsignment) {
+      return NextResponse.json({ success: false, message: `Loading Info ${body.loadingInfoNo} is already used in consignment note ${existingConsignment.lrNo}; a purchase cannot be created after consignment.` }, { status: 409 });
+    }
+
+    let purchaseNo = await getNextPurchaseNumber(user.companyId, user.activeOperatingCompanyId, user.activeOperatingCompanyCode);
 
     const subCompanyId = user.activeOperatingCompanyId;
     const subCompanyName = user.activeOperatingCompanyName || '';

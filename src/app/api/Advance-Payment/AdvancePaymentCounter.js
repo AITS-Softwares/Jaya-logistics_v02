@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { nextCompanyDocumentNumber } from '@/lib/documentSequence';
 
 const advancePaymentCounterSchema = new mongoose.Schema({
   _id: {
@@ -24,38 +25,8 @@ const advancePaymentCounterSchema = new mongoose.Schema({
 const AdvancePaymentCounter = mongoose.models.AdvancePaymentCounter || 
   mongoose.model('AdvancePaymentCounter', advancePaymentCounterSchema);
 
-export async function getNextAdvancePaymentNumber(companyId) {
-  const counterId = `advance_payment_${companyId}`;
-  const currentYear = new Date().getFullYear();
-  
-  try {
-    const counter = await AdvancePaymentCounter.findOneAndUpdate(
-      { _id: counterId },
-      { 
-        $inc: { sequence_value: 1 },
-        $setOnInsert: { prefix: 'ADV', year: currentYear }
-      },
-      { 
-        new: true, 
-        upsert: true,
-        setDefaultsOnInsert: true
-      }
-    );
-    
-    // Reset sequence if year changed
-    if (counter.year !== currentYear) {
-      counter.sequence_value = 1;
-      counter.year = currentYear;
-      await counter.save();
-    }
-    
-    const sequenceNumber = String(counter.sequence_value).padStart(5, '0');
-    return `${counter.prefix}-${currentYear}-${sequenceNumber}`;
-  } catch (error) {
-    console.error('Error generating advance payment number:', error);
-    const timestamp = Date.now().toString().slice(-6);
-    return `ADV-${timestamp}`;
-  }
+export async function getNextAdvancePaymentNumber(companyId, subCompanyId, subCompanyCode) {
+  return nextCompanyDocumentNumber({ companyId, subCompanyId, subCompanyCode, documentType: 'ADV', width: 5 });
 }
 
 export default AdvancePaymentCounter;

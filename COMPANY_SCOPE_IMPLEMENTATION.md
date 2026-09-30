@@ -14,10 +14,9 @@ They are created lazily and idempotently on the first Company or User sign-in. T
 
 ## Session and access behaviour
 
-- Company and User sign-in now require an operating-company selection. Customer sign-in is unchanged.
+- User sign-in requires an operating-company selection. Customer sign-in is unchanged; the Company account signs into the JAYA GROUP administrator context. The Company Admin selects an explicit JGL/JL/NK workspace from the header before entering transactional screens.
 - The chosen company id, name, and code are signed into the JWT session.
-- Existing users receive access to all three operating companies on their first sign-in, matching the confirmed shared-credentials requirement.
-- User Management can restrict a user to selected companies, or deliberately grant all-company access. This makes a future policy change reversible without changing credentials or transaction data.
+- Users receive no implicit operating-company access. User Management must assign one or more companies, or deliberately grant all-company access to an exceptional user.
 - The dashboard header displays the active operating company. Switching company is intentionally done by sign-out/sign-in, so there is no hidden context change while a form is open.
 
 ## Enforced transaction boundary
@@ -44,7 +43,7 @@ When the client approves final data migration, update missing `subCompanyId`, `s
 ## Intentionally deferred decisions
 
 - Shared versus company-specific masters remains shared; no master records were duplicated or hidden.
-- Legal-profile fields exist on `SubCompany` for future GST, address, bank, and document prefix details. PDFs and numbering are unchanged until the client supplies and approves those values.
+- Legal-profile fields exist on `SubCompany` for future GST, address, bank, and document prefix details. New logistics numbers are allocated independently by company, document type, and financial year.
 - No combined group reporting is added.
 - The existing VNN split remains unchanged: Part 1 and Part 3 remain in Vehicle Negotiation, while Part 2 remains the separately permissioned Rate Target workspace. Company scope is independent of those part permissions.
 

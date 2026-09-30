@@ -33,7 +33,7 @@ export default function LoginPage() {
   const submit = async (e) => {
     e.preventDefault();
     if (!form.email || !form.password) return toast.error("Credentials required");
-    if (mode !== 'Customer' && !form.operatingCompanyCode) {
+    if (mode === 'User' && !form.operatingCompanyCode) {
       return toast.error("Select a company before signing in");
     }
 
@@ -56,6 +56,8 @@ export default function LoginPage() {
 
       localStorage.setItem("token", token);
       localStorage.setItem("user", JSON.stringify(finalUser));
+      if (mode === "Company") localStorage.setItem("groupToken", token);
+      else localStorage.removeItem("groupToken");
 
       // Verify the newly-created session before announcing success. This makes
       // a header/session failure visible on the login screen instead of leaving
@@ -79,7 +81,7 @@ export default function LoginPage() {
         customer: "/customer-dashboard",
       };
 
-      let redirect = "/admin";
+      let redirect = mode === "Company" ? "/admin/group-overview" : "/admin";
       if (mode === "Customer") {
         redirect = "/customer-dashboard";
       } else if (mode === "User") {
@@ -167,7 +169,7 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              {mode !== 'Customer' && (
+              {mode === 'User' && (
                 <div className="group">
                   <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1 transition-colors group-focus-within:text-indigo-400">Operating Company</label>
                   <div className="relative">
