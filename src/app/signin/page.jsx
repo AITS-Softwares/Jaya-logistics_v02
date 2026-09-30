@@ -56,6 +56,8 @@ export default function LoginPage() {
 
       localStorage.setItem("token", token);
       localStorage.setItem("user", JSON.stringify(finalUser));
+      if (mode === "Company") localStorage.setItem("groupToken", token);
+      else localStorage.removeItem("groupToken");
 
       // Verify the newly-created session before announcing success. This makes
       // a header/session failure visible on the login screen instead of leaving

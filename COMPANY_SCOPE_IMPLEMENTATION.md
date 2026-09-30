@@ -14,7 +14,7 @@ They are created lazily and idempotently on the first Company or User sign-in. T
 
 ## Session and access behaviour
 
-- User sign-in requires an operating-company selection. Customer sign-in is unchanged; the Company account signs into the JAYA GROUP administrator context.
+- User sign-in requires an operating-company selection. Customer sign-in is unchanged; the Company account signs into the JAYA GROUP administrator context. The Company Admin selects an explicit JGL/JL/NK workspace from the header before entering transactional screens.
 - The chosen company id, name, and code are signed into the JWT session.
 - Users receive no implicit operating-company access. User Management must assign one or more companies, or deliberately grant all-company access to an exceptional user.
 - The dashboard header displays the active operating company. Switching company is intentionally done by sign-out/sign-in, so there is no hidden context change while a form is open.

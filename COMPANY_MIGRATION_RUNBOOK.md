@@ -9,6 +9,10 @@
 7. Create one record of each type in JGL, JL and NK. Confirm the generated numbers start with the correct code and do not overlap.
 8. Disable the temporary JGL legacy fallback in `src/lib/companyScope.js` only after the migration reconciliation is signed off.
 
+## JAYA GROUP administrator workflow
+
+Company login opens **JAYA GROUP · Consolidated**, which is read-only. Before opening an Order, VNN, Pricing, Loading, Purchase, LR, POD or payment screen, select **Workspace · Jaya Global Logistics**, **Jaya Logistics**, or **Neelkanth** from the header selector. This securely renews the admin token with that one operating-company scope. Selecting **JAYA GROUP · Consolidated** again returns to the read-only group overview.
+
 The migration command is:
 
 ```powershell

@@ -2006,6 +2006,7 @@ export default function Layout({ children }) {
   const [openMenu, setOpenMenu] = useState(null);
   const [openSubmenus, setOpenSubmenus] = useState({});
   const [session, setSession] = useState(null);
+  const [operatingCompanies, setOperatingCompanies] = useState([]);
   const router = useRouter();
   const pathname = usePathname();
   const sidebarRef = useRef(null);
@@ -2048,8 +2049,29 @@ export default function Layout({ children }) {
   }, [router]);
 
   useEffect(() => {
+    if (!session?.isGroupAdmin) return;
+    fetch("/api/auth/operating-companies")
+      .then((response) => response.json())
+      .then((data) => setOperatingCompanies(data?.data || []))
+      .catch(() => setOperatingCompanies([]));
+  }, [session?.isGroupAdmin]);
+
+  useEffect(() => {
     setIsSidebarOpen(false);
   }, [pathname]);
+
+  // A JAYA GROUP token has intentionally no active legal-company scope. Keep
+  // it out of operational pages until the administrator explicitly selects a
+  // workspace; otherwise those APIs correctly reject the request.
+  useEffect(() => {
+    if (!session?.isGroupAdmin || session?.activeOperatingCompany || pathname === "/admin/group-overview") return;
+    const transactionPrefixes = [
+      "/admin/order-panel", "/admin/vehicle-negotiation", "/admin/rate-target-vehicle-negotiation",
+      "/admin/pricing-panel", "/admin/Loading-Info", "/admin/Purchase-Panel",
+      "/admin/Consignment-Note", "/admin/Advance-Payment", "/admin/ProofofDelivery", "/admin/Balance-Payment",
+    ];
+    if (transactionPrefixes.some((prefix) => pathname.startsWith(prefix))) router.replace("/admin/group-overview");
+  }, [pathname, router, session]);
 
   useEffect(() => {
     try {
@@ -2091,6 +2113,30 @@ export default function Layout({ children }) {
     const next = !isSidebarCollapsed;
     setIsSidebarCollapsed(next);
     try { localStorage.setItem("sidebarCollapsed", next ? "1" : "0"); } catch { }
+  };
+  const selectAdminWorkspace = async (event) => {
+    const code = event.target.value;
+    if (!code) {
+      const groupToken = localStorage.getItem("groupToken");
+      if (groupToken) {
+        localStorage.setItem("token", groupToken);
+        window.location.assign("/admin/group-overview");
+      }
+      return;
+    }
+    try {
+      const response = await fetch("/api/company/workspace", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("token")}` },
+        body: JSON.stringify({ operatingCompanyCode: code }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message);
+      localStorage.setItem("token", data.token);
+      window.location.assign("/admin");
+    } catch (error) {
+      window.alert(error.message || "Unable to select company workspace.");
+    }
   };
 
   // Check if user can access a module
@@ -3258,9 +3304,10 @@ export default function Layout({ children }) {
                 </div>
               )}
               {session.isGroupAdmin && (
-                <div className="hidden sm:block rounded-lg border border-amber-400/30 bg-amber-500/10 px-2.5 py-1 text-[10px] font-semibold text-amber-100" title="Group administrator context. Transaction screens require an operating-company user session.">
-                  Consolidated administrator
-                </div>
+                <select value={session.activeOperatingCompany?.code || ""} onChange={selectAdminWorkspace} className="max-w-44 rounded-lg border border-amber-400/30 bg-amber-500/10 px-2.5 py-1 text-[10px] font-semibold text-amber-100 outline-none">
+                  <option value="" className="bg-slate-900">JAYA GROUP · Consolidated</option>
+                  {operatingCompanies.map((company) => <option key={company.code} value={company.code} className="bg-slate-900">Workspace · {company.name}</option>)}
+                </select>
               )}
 
               <div
