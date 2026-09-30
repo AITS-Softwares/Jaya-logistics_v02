@@ -1660,7 +1660,7 @@ export async function POST(req) {
     console.log("📝 Creating new consignment note");
 
     // Generate LR number if not provided
-    let lrNo = body.header?.lrNo || await getNextLRNumber(user.companyId);
+    let lrNo = body.header?.lrNo || await getNextLRNumber(user.companyId, user.activeOperatingCompanyId, user.activeOperatingCompanyCode);
 
     // Check if loadingInfoNo is already used (if provided)
     if (body.loadingInfoNo) {

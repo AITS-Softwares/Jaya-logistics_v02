@@ -1,5 +1,6 @@
 
 import mongoose from 'mongoose';
+import { nextCompanyDocumentNumber } from '@/lib/documentSequence';
 
 const consignmentCounterSchema = new mongoose.Schema({
   _id: {
@@ -25,39 +26,8 @@ const consignmentCounterSchema = new mongoose.Schema({
 const ConsignmentCounter = mongoose.models.ConsignmentCounter || 
   mongoose.model('ConsignmentCounter', consignmentCounterSchema);
 
-export async function getNextLRNumber(companyId) {
-  const counterId = `consignment_${companyId}`;
-  const currentYear = new Date().getFullYear();
-  
-  try {
-    let counter = await ConsignmentCounter.findOne({ _id: counterId });
-    
-    if (!counter) {
-      counter = new ConsignmentCounter({
-        _id: counterId,
-        sequence_value: 1,
-        prefix: 'LR',
-        year: currentYear
-      });
-      await counter.save();
-    } else {
-      // Reset sequence if year changed
-      if (counter.year !== currentYear) {
-        counter.sequence_value = 1;
-        counter.year = currentYear;
-      } else {
-        counter.sequence_value += 1;
-      }
-      await counter.save();
-    }
-    
-    const sequenceNumber = String(counter.sequence_value).padStart(5, '0');
-    return `${counter.prefix}-${currentYear}-${sequenceNumber}`;
-  } catch (error) {
-    console.error('Error generating LR number:', error);
-    const timestamp = Date.now().toString().slice(-6);
-    return `LR-${timestamp}`;
-  }
+export async function getNextLRNumber(companyId, subCompanyId, subCompanyCode) {
+  return nextCompanyDocumentNumber({ companyId, subCompanyId, subCompanyCode, documentType: 'LR', width: 5 });
 }
 
 export default ConsignmentCounter;

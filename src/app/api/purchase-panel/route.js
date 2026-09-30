@@ -349,7 +349,7 @@ export async function POST(req) {
     
     console.log("📝 Creating new purchase");
 
-    let purchaseNo = await getNextPurchaseNumber(user.companyId);
+    let purchaseNo = await getNextPurchaseNumber(user.companyId, user.activeOperatingCompanyId, user.activeOperatingCompanyCode);
 
     const subCompanyId = user.activeOperatingCompanyId;
     const subCompanyName = user.activeOperatingCompanyName || '';

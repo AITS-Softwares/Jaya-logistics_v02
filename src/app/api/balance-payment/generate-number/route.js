@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import connectDb from "@/lib/db";
 import { getNextBalancePaymentNumber } from "../BalancePaymentCounter";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
+import { activeOperatingCompanyId } from "@/lib/companyScope";
 
 export async function GET(req) {
   try {
@@ -17,7 +18,8 @@ export async function GET(req) {
       return NextResponse.json({ success: false, message: "Invalid token" }, { status: 401 });
     }
     
-    const paymentNo = await getNextBalancePaymentNumber(user.companyId);
+    activeOperatingCompanyId(user);
+    const paymentNo = await getNextBalancePaymentNumber(user.companyId, user.activeOperatingCompanyId, user.activeOperatingCompanyCode);
     
     return NextResponse.json({ success: true, paymentNo });
     

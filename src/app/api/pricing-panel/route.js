@@ -1410,11 +1410,11 @@ export async function POST(req) {
     
     console.log("📝 Creating new pricing panel");
     
-    let pricingSerialNo = await getNextPricingSerialNumber(user.companyId);
+    let pricingSerialNo = await getNextPricingSerialNumber(user.companyId, user.activeOperatingCompanyId, user.activeOperatingCompanyCode);
     
     const existing = await PricingPanel.findOne(companyScopeFilter(user, { pricingSerialNo }));
     if (existing) {
-      pricingSerialNo = await getNextPricingSerialNumber(user.companyId);
+      pricingSerialNo = await getNextPricingSerialNumber(user.companyId, user.activeOperatingCompanyId, user.activeOperatingCompanyCode);
     }
 
     // Resolve the branch on the server instead of relying on the browser's

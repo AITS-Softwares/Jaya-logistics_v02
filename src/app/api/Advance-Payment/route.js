@@ -1882,7 +1882,7 @@ export async function POST(req) {
     
     console.log("📝 Creating new advance payment");
 
-    let paymentNo = await getNextAdvancePaymentNumber(user.companyId);
+    let paymentNo = await getNextAdvancePaymentNumber(user.companyId, user.activeOperatingCompanyId, user.activeOperatingCompanyCode);
 
     if (body.purchaseNo) {
       const existing = await AdvancePayment.findOne(companyScopeFilter(user, { purchaseNo: body.purchaseNo }));

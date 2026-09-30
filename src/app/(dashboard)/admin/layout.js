@@ -3238,7 +3238,7 @@ export default function Layout({ children }) {
 
               <h1 className="text-sm md:text-base font-bold text-white truncate tracking-tight">
                 {isCompany
-                  ? "Company Administrator"
+                  ? (session.groupName || "JAYA GROUP")
                   : isAdminUser
                     ? "Admin Dashboard"
                     : "Dashboard"}
@@ -3255,6 +3255,11 @@ export default function Layout({ children }) {
                   title="Data is limited to the company selected when you signed in. Sign out and select another company to switch."
                 >
                   {session.activeOperatingCompany.name}
+                </div>
+              )}
+              {session.isGroupAdmin && (
+                <div className="hidden sm:block rounded-lg border border-amber-400/30 bg-amber-500/10 px-2.5 py-1 text-[10px] font-semibold text-amber-100" title="Group administrator context. Transaction screens require an operating-company user session.">
+                  Consolidated administrator
                 </div>
               )}
 

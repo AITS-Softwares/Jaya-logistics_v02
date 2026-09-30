@@ -1538,7 +1538,7 @@ export async function POST(req) {
     console.log("📝 Creating new loading panel");
     
     // Generate vehicle arrival number
-    let vehicleArrivalNo = await getNextLoadingNumber(user.companyId);
+    let vehicleArrivalNo = await getNextLoadingNumber(user.companyId, user.activeOperatingCompanyId, user.activeOperatingCompanyCode);
     
     // Check if vehicle arrival number already exists
     const existing = await LoadingPanel.findOne(companyScopeFilter(user, { vehicleArrivalNo }));

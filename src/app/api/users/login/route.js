@@ -127,14 +127,6 @@ export async function POST(req) {
       return NextResponse.json({ message: 'Selected company is unavailable' }, { status: 400 });
     }
 
-    // Existing users pre-date legal-company access. The confirmed requirement is
-    // one credential set across all legal companies, so they start with access
-    // to all three. An administrator can later restrict this in User Management.
-    if (!user.accessAllOperatingCompanies && (!user.operatingCompanyIds || user.operatingCompanyIds.length === 0)) {
-      user.accessAllOperatingCompanies = true;
-      user.defaultOperatingCompanyId = operatingCompanies.find((company) => company.code === 'JGL')?._id || null;
-    }
-
     const allowedCompanyIds = (user.operatingCompanyIds || []).map((id) => id.toString());
     if (!user.accessAllOperatingCompanies && !allowedCompanyIds.includes(selectedOperatingCompany._id.toString())) {
       return NextResponse.json(

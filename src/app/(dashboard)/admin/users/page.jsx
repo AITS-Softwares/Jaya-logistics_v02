@@ -203,7 +203,7 @@ const defaultColor = { bg: "bg-gray-50", text: "text-gray-600", border: "border-
 
 const emptyForm = () => ({
   employeeId: "", name: "", email: "", password: "", roles: [], modules: {},
-  operatingCompanyIds: [], defaultOperatingCompanyId: "", accessAllOperatingCompanies: true,
+  operatingCompanyIds: [], defaultOperatingCompanyId: "", accessAllOperatingCompanies: false,
 });
 
 export default function UsersPage() {

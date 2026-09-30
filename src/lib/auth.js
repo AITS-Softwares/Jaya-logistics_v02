@@ -159,6 +159,11 @@ export function signToken(user, session = {}) {
         null,
       operatingCompanyIds: (user.operatingCompanyIds || []).map((id) => id.toString()),
       accessAllOperatingCompanies: user.accessAllOperatingCompanies === true,
+      // A Company account is the JAYA GROUP administrator. It deliberately
+      // has no operating-company id and therefore cannot call scoped
+      // transaction APIs as though it were a normal user.
+      isGroupAdmin: session.isGroupAdmin === true,
+      groupName: session.groupName || null,
     },
     SECRET,
     { expiresIn: "7d" }

@@ -44,6 +44,8 @@ export async function GET(req) {
       if (rawUser) {
         user = rawUser.toObject();
         user.type = "company";
+        user.isGroupAdmin = decoded.isGroupAdmin === true;
+        user.groupName = decoded.groupName || "JAYA GROUP";
       }
     } else {
       // ✅ CompanyUser model se uthao — .toObject() use karo lean() nahi
