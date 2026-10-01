@@ -2103,6 +2103,7 @@ export default function Layout({ children }) {
   const moduleRouteOverrides = {
     'Purchase Panel': '/admin/Purchase-Panel',
     'Consignment Note': '/admin/Consignment-Note',
+    'Tracking Plan': '/admin/Tracking-Plan',
     'Advance Payment': '/admin/Advance-Payment',
     'Balance-Payment': '/admin/Balance-Payment',
     'Proof Of Delivery': '/admin/ProofofDelivery',

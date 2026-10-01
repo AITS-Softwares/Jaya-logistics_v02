@@ -54,6 +54,7 @@ const MODULE_PERMISSIONS = {
   "Loading Info": ['view', 'create', 'edit', 'delete'],
   "Purchase Panel": ['view', 'create', 'edit', 'delete'],
   "Consignment Note": ['view', 'create', 'edit', 'delete'],
+  "Tracking Plan": ['view'],
   "Advance Payment": ['view', 'create', 'edit', 'delete', 'approve'],
   "Proof Of Delivery": ['view', 'create', 'edit', 'delete'],
   "Balance-Payment": ['view', 'create', 'edit', 'delete'],
@@ -163,10 +164,10 @@ function createDefaultModules(roles = []) {
   // For non-admin users, only enable modules based on their roles
   const roleModuleMap = {
     'Sales': ['Order Panel', 'Vehicle Negotiation', 'Rate Target (Vehicle Negotiation)', 'Pricing Panel', 'Loading Info',
-              'Purchase Panel', 'Consignment Note', 'Advance Payment', 'Proof Of Delivery',
+              'Purchase Panel', 'Consignment Note', 'Tracking Plan', 'Advance Payment', 'Proof Of Delivery',
               'Balance-Payment', 'Billing', 'order-full-report'],
     'Sales Manager': ['Order Panel', 'Vehicle Negotiation', 'Rate Target (Vehicle Negotiation)', 'Pricing Panel', 'Loading Info',
-                      'Purchase Panel', 'Consignment Note', 'Advance Payment', 'Proof Of Delivery',
+                      'Purchase Panel', 'Consignment Note', 'Tracking Plan', 'Advance Payment', 'Proof Of Delivery',
                       'Balance-Payment', 'Billing', 'order-full-report'],
     'Purchase Manager': ['Purchase Quotation', 'Purchase Order', 'GRN', 'Purchase Invoice', 
                          'Debit Notes', 'Purchase Report'],
