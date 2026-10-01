@@ -2455,6 +2455,13 @@ export default function Layout({ children }) {
                     isActive={isActive("/admin/Consignment-Note")}
                   />
                   <Item
+                    href="/admin/Tracking-Plan"
+                    icon={<HiLocationMarker />}
+                    label="Add Tracking Plan"
+                    onClick={closeSidebar}
+                    isActive={isActive("/admin/Tracking-Plan")}
+                  />
+                  <Item
                     href="/admin/Advance-Payment"
                     icon={<HiCash />}
                     label="Advance Payment"

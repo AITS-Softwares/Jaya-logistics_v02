@@ -2146,6 +2146,7 @@ export default function CreateAdvancePayment() {
     } else if (purchaseData.purchaseDetails?.amount) {
       setPurchaseAmountFromVNN(num(purchaseData.purchaseDetails.amount));
     }
+    setPaymentDetails(prev => ({ ...prev, finalAmount: num(purchaseData.netEffect).toString() }));
 
     // Set Memo from VNN
     if (purchaseData.memoFile) {
@@ -2380,13 +2381,18 @@ export default function CreateAdvancePayment() {
     }, 0);
   };
 
-  // Balance calculation: Purchase Amount - Advance + Additions - Deductions (NO office/warehouse deductions)
+  // Purchase balance excludes adjustments; queue amount is the Purchase Net Effect.
   const calculateBalance = () => {
     const amount = purchaseAmountFromVNN;
     const advance = num(vendorDetails.advance);
+    return (amount - advance).toFixed(2);
+  };
+
+  const calculateAdvanceWithAdjustment = () => {
+    const advance = num(vendorDetails.advance);
     const totalAdditions = num(additions.totalAddition);
     const totalDeductions = num(deductions.totalDeduction);
-    return (amount - advance + totalAdditions - totalDeductions).toFixed(2);
+    return (advance + totalAdditions - totalDeductions).toFixed(2);
   };
 
   const handleGenerateQueue = () => {
@@ -2856,8 +2862,9 @@ export default function CreateAdvancePayment() {
         {/* Balance & Final Amount */}
         <div className="mt-4">
           <div className="grid grid-cols-12 gap-4">
-            <div className="col-span-12 md:col-span-6"><div className="bg-purple-50 p-6 rounded-xl border border-purple-200"><h3 className="text-sm font-bold text-purple-800 mb-3">Balance Calculation</h3><div className="space-y-2"><div className="flex justify-between text-sm"><span className="text-slate-600">Purchase Amount (A x B):</span><span className="font-bold text-purple-800">₹{purchaseAmountFromVNN.toLocaleString()}</span></div><div className="flex justify-between text-sm"><span className="text-slate-600">Advance Payment:</span><span className="font-bold text-blue-600">- ₹{num(vendorDetails.advance).toLocaleString()}</span></div><div className="flex justify-between text-sm"><span className="text-slate-600">Total Additions:</span><span className="font-bold text-green-600">+ ₹{num(additions.totalAddition).toLocaleString()}</span></div><div className="flex justify-between text-sm"><span className="text-slate-600">Total Deductions:</span><span className="font-bold text-red-600">- ₹{num(deductions.totalDeduction).toLocaleString()}</span></div><div className="border-t border-purple-200 pt-2 mt-2"><div className="flex justify-between font-bold"><span className="text-purple-800">Calculated Balance:</span><span className="text-xl text-purple-700">₹{calculateBalance().toLocaleString()}</span></div></div></div></div></div>
-            <div className="col-span-12 md:col-span-6"><div className="bg-blue-50 p-6 rounded-xl border border-blue-200 h-full flex items-center justify-center"><div className="text-center w-full"><h3 className="text-sm font-bold text-blue-800 mb-2">Final Advance Amount</h3><div className="text-4xl font-bold text-blue-700 bg-white border border-blue-300 rounded-lg px-4 py-4 text-center">₹{calculateBalance().toLocaleString()}</div><p className="text-xs text-blue-600 mt-2">Balance amount to be paid after adjustments</p><p className="text-xs text-slate-500 mt-1">(Purchase Amount - Advance + Additions - Deductions)</p></div></div></div>
+            <div className="col-span-12 md:col-span-4"><div className="bg-purple-50 p-6 rounded-xl border border-purple-200"><h3 className="text-sm font-bold text-purple-800 mb-3">Balance Calculation</h3><div className="space-y-2"><div className="flex justify-between text-sm"><span>Purchase Amount (A x B):</span><span className="font-bold">₹{purchaseAmountFromVNN.toLocaleString()}</span></div><div className="flex justify-between text-sm"><span>Advance Payment:</span><span className="font-bold text-blue-600">- ₹{num(vendorDetails.advance).toLocaleString()}</span></div><div className="border-t border-purple-200 pt-2 flex justify-between font-bold"><span>Calculated Balance:</span><span>₹{num(calculateBalance()).toLocaleString()}</span></div></div></div></div>
+            <div className="col-span-12 md:col-span-4"><div className="bg-amber-50 p-6 rounded-xl border border-amber-200"><h3 className="text-sm font-bold text-amber-800 mb-3">Advance Amount with Adjustment</h3><div className="space-y-2 text-sm"><div className="flex justify-between"><span>Advance Amount:</span><span className="font-bold">₹{num(vendorDetails.advance).toLocaleString()}</span></div><div className="flex justify-between"><span>Additions:</span><span className="font-bold text-green-600">+ ₹{num(additions.totalAddition).toLocaleString()}</span></div><div className="flex justify-between"><span>Deductions:</span><span className="font-bold text-red-600">- ₹{num(deductions.totalDeduction).toLocaleString()}</span></div><div className="border-t border-amber-200 pt-2 flex justify-between font-bold"><span>Advance (Generate Queue):</span><span>₹{num(calculateAdvanceWithAdjustment()).toLocaleString()}</span></div></div></div></div>
+            <div className="col-span-12 md:col-span-4"><div className="bg-blue-50 p-6 rounded-xl border border-blue-200 h-full flex items-center justify-center"><div className="text-center w-full"><h3 className="text-sm font-bold text-blue-800 mb-2">Final Advance Amount</h3><div className="text-4xl font-bold text-blue-700 bg-white border border-blue-300 rounded-lg px-4 py-4 text-center">₹{num(paymentDetails.finalAmount).toLocaleString()}</div><p className="text-xs text-blue-600 mt-2">Mapped from Purchase Panel Net Effect</p></div></div></div>
           </div>
         </div>
 
