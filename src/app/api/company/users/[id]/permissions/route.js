@@ -16,6 +16,7 @@ const MODULE_PERMISSIONS = {
   "Loading Info": ['view', 'create', 'edit', 'delete', 'approve'],
   "Purchase Panel": ['view', 'create', 'edit', 'delete', 'approve'],
   "Consignment Note": ['view', 'create', 'edit', 'delete', 'approve'],
+  "Tracking Plan": ['view'],
   "Advance Payment": ['view', 'create', 'edit', 'delete', 'approve'],
   "Proof Of Delivery": ['view', 'create', 'edit', 'delete', 'approve'],
   "Balance-Payment": ['view', 'create', 'edit', 'delete', 'approve'],

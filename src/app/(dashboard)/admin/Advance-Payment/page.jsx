@@ -1327,6 +1327,7 @@ export default function AdvancePaymentList() {
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Advance</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Balance</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Final</th>
+                  <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Transaction ID</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Queue</th>
                   <th className="px-4 py-3 text-center text-xs font-extrabold text-slate-900 uppercase tracking-wider">Actions</th>
                 </tr>
@@ -1334,7 +1335,7 @@ export default function AdvancePaymentList() {
               <tbody className="divide-y divide-slate-200">
                 {loading ? (
                   <tr>
-                    <td colSpan="13" className="px-4 py-12 text-center">
+                    <td colSpan="14" className="px-4 py-12 text-center">
                       <div className="flex items-center justify-center">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500"></div>
                       </div>
@@ -1363,6 +1364,7 @@ export default function AdvancePaymentList() {
                       <td className="px-4 py-3 font-medium text-blue-600">{formatCurrency(item.advance)}</td>
                       <td className="px-4 py-3 font-medium text-purple-600">{formatCurrency(item.balance)}</td>
                       <td className="px-4 py-3 font-bold text-emerald-600">{formatCurrency(item.finalAmount)}</td>
+                      <td className="px-4 py-3 font-medium">{item.transactionId || <span className="text-amber-700">Not Paid</span>}</td>
                       <td className="px-4 py-3">
                         {item.queueGenerated ? (
                           <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
@@ -1461,7 +1463,7 @@ export default function AdvancePaymentList() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="13" className="px-4 py-12 text-center text-slate-500">
+                    <td colSpan="14" className="px-4 py-12 text-center text-slate-500">
                       <div className="flex flex-col items-center">
                         <svg className="w-16 h-16 text-slate-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />

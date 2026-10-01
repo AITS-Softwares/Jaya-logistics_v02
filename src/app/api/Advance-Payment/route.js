@@ -1831,8 +1831,9 @@ export async function GET(req) {
         vehicleNo: payment.vendorDetails?.vehicleNo || 'N/A',
         amount: payment.purchaseAmountFromVNN || 0,
         advance: payment.vendorDetails?.advance || 0,
-        balance: payment.balance || 0,
+        balance: (payment.purchaseAmountFromVNN || 0) - (payment.vendorDetails?.advance || 0),
         finalAmount: payment.paymentDetails?.finalAmount || 0,
+        transactionId: payment.paymentDetails?.transactionId || payment.vendorDetails?.transactionId || '',
         status: payment.paymentDetails?.paymentStatus || 'Draft',
         queueGenerated: payment.queueGenerated || false
       }));
@@ -1971,7 +1972,10 @@ export async function POST(req) {
     const advance = num(body.vendorDetails?.advance);
     const totalAdditions = processedAdditionItems.reduce((sum, item) => sum + (item.amount || 0), 0);
     const totalDeductions = processedDeductionItems.reduce((sum, item) => sum + (item.amount || 0), 0);
-    const balance = purchaseAmountFromVNN - advance + totalAdditions - totalDeductions;
+    // Balance is independent of adjustments.  The payment to queue is the
+    // Purchase Panel's Net Effect, which includes its approved adjustments.
+    const balance = purchaseAmountFromVNN - advance;
+    const finalAdvanceAmount = num(sourcePurchase.netEffect);
 
     let branchId = null;
     if (body.header?.branch) {
@@ -2054,7 +2058,7 @@ export async function POST(req) {
       paymentDetails: {
         vendorNameDebit: body.paymentDetails?.vendorNameDebit || body.vendorDetails?.vendorName || '',
         accountNoCredit: body.paymentDetails?.accountNoCredit || body.vendorDetails?.accountNo || '',
-        finalAmount: num(body.paymentDetails?.finalAmount) || advance,
+        finalAmount: finalAdvanceAmount,
         remarks: body.paymentDetails?.remarks || 'ADV Payment',
         transactionId: body.paymentDetails?.transactionId || '',
         bankVendorCode: body.paymentDetails?.bankVendorCode || body.vendorDetails?.vendorCode || '',
@@ -2272,10 +2276,13 @@ export async function PUT(req) {
     }
 
     if (body.paymentDetails) {
+      const sourcePurchase = payment.purchaseId
+        ? await PurchasePanel.findOne(companyScopeFilter(user, { _id: payment.purchaseId })).lean()
+        : await PurchasePanel.findOne(companyScopeFilter(user, { purchaseNo: payment.purchaseNo })).lean();
       payment.paymentDetails = {
         ...payment.paymentDetails,
         ...body.paymentDetails,
-        finalAmount: num(body.paymentDetails.finalAmount),
+        finalAmount: sourcePurchase ? num(sourcePurchase.netEffect) : payment.paymentDetails.finalAmount,
         paymentDate: body.paymentDetails.paymentDate ? new Date(body.paymentDetails.paymentDate) : payment.paymentDetails.paymentDate
       };
     }

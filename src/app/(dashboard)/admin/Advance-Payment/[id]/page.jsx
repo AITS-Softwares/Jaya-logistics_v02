@@ -2023,9 +2023,14 @@ export default function EditAdvancePayment() {
   const calculateBalance = () => {
     const amount = purchaseAmountFromVNN;
     const advance = num(vendorDetails.advance);
+    return (amount - advance).toFixed(2);
+  };
+
+  const calculateAdvanceWithAdjustment = () => {
+    const advance = num(vendorDetails.advance);
     const totalAdditions = num(additions.totalAddition);
     const totalDeductions = num(deductions.totalDeduction);
-    return (amount - advance + totalAdditions - totalDeductions).toFixed(2);
+    return (advance + totalAdditions - totalDeductions).toFixed(2);
   };
 
   const handleGenerateQueue = async () => {
@@ -2114,7 +2119,7 @@ export default function EditAdvancePayment() {
         },
         paymentDetails: {
           ...paymentDetails,
-          finalAmount: num(calculateBalance()),
+          finalAmount: num(paymentDetails.finalAmount),
         },
         purchaseAmountFromVNN,
         memoFile: memoFileInfo,
@@ -2788,14 +2793,6 @@ export default function EditAdvancePayment() {
                     <span className="text-slate-600">Advance Payment:</span>
                     <span className="font-bold text-blue-600">- ₹{num(vendorDetails.advance).toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-600">Total Additions:</span>
-                    <span className="font-bold text-green-600">+ ₹{num(additions.totalAddition).toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-600">Total Deductions:</span>
-                    <span className="font-bold text-red-600">- ₹{num(deductions.totalDeduction).toLocaleString()}</span>
-                  </div>
                   <div className="border-t border-purple-200 pt-2 mt-2">
                     <div className="flex justify-between font-bold">
                       <span className="text-purple-800">Calculated Balance:</span>
@@ -2807,15 +2804,27 @@ export default function EditAdvancePayment() {
             </div>
 
             <div className="col-span-12 md:col-span-6">
+              <div className="bg-amber-50 p-6 rounded-xl border border-amber-200 h-full">
+                <h3 className="text-sm font-bold text-amber-800 mb-3">Advance Amount with Adjustment</h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between"><span className="text-slate-600">Advance Amount:</span><span className="font-bold">₹{num(vendorDetails.advance).toLocaleString()}</span></div>
+                  <div className="flex justify-between"><span className="text-slate-600">Additions:</span><span className="font-bold text-green-600">+ ₹{num(additions.totalAddition).toLocaleString()}</span></div>
+                  <div className="flex justify-between"><span className="text-slate-600">Deductions:</span><span className="font-bold text-red-600">- ₹{num(deductions.totalDeduction).toLocaleString()}</span></div>
+                  <div className="border-t border-amber-200 pt-2 mt-2 flex justify-between font-bold"><span className="text-amber-800">Advance (Generate Queue):</span><span className="text-xl text-amber-700">₹{num(calculateAdvanceWithAdjustment()).toLocaleString()}</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div className="col-span-12 md:col-span-6">
               <div className="bg-blue-50 p-6 rounded-xl border border-blue-200 h-full flex items-center justify-center">
                 <div className="text-center w-full">
-                  <h3 className="text-sm font-bold text-blue-800 mb-2">Final Payment Amount</h3>
+                  <h3 className="text-sm font-bold text-blue-800 mb-2">Final Advance Amount</h3>
                   <div className="text-4xl font-bold text-blue-700 bg-white border border-blue-300 rounded-lg px-4 py-4 text-center">
-                    ₹{calculateBalance().toLocaleString()}
+                    ₹{num(paymentDetails.finalAmount).toLocaleString()}
                   </div>
-                  <p className="text-xs text-blue-600 mt-2">Balance amount to be paid after adjustments</p>
+                  <p className="text-xs text-blue-600 mt-2">Mapped from Purchase Panel Net Effect</p>
                   <p className="text-xs text-slate-500 mt-1">
-                    (Purchase Amount - Advance + Additions - Deductions)
+                    (Purchase Net Effect)
                   </p>
                   {queueGenerated && (
                     <p className="text-xs text-green-600 mt-2 font-bold">

@@ -2103,6 +2103,7 @@ export default function Layout({ children }) {
   const moduleRouteOverrides = {
     'Purchase Panel': '/admin/Purchase-Panel',
     'Consignment Note': '/admin/Consignment-Note',
+    'Tracking Plan': '/admin/Tracking-Plan',
     'Advance Payment': '/admin/Advance-Payment',
     'Balance-Payment': '/admin/Balance-Payment',
     'Proof Of Delivery': '/admin/ProofofDelivery',
@@ -2453,6 +2454,13 @@ export default function Layout({ children }) {
                     label="Consignment Note"
                     onClick={closeSidebar}
                     isActive={isActive("/admin/Consignment-Note")}
+                  />
+                  <Item
+                    href="/admin/Tracking-Plan"
+                    icon={<HiLocationMarker />}
+                    label="Add Tracking Plan"
+                    onClick={closeSidebar}
+                    isActive={isActive("/admin/Tracking-Plan")}
                   />
                   <Item
                     href="/admin/Advance-Payment"

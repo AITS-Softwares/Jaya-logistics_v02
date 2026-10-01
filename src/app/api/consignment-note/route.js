@@ -1425,9 +1425,9 @@ function isAuthorized(user) {
   // Admin role has full access
   if (user.roles && user.roles.includes("Admin")) return true;
 
-  // Check module-based permissions for "Consignment Note"
+  // Tracking Plan may read LR context but cannot modify consignment notes.
   const modules = user.modules || {};
-  const moduleData = modules["Consignment Note"];
+  const moduleData = modules["Consignment Note"] || modules["Tracking Plan"];
 
   if (!moduleData || !moduleData.selected) return false;
 
@@ -1441,6 +1441,12 @@ function hasPermission(user, action) {
 
   const modules = user.modules || {};
   const moduleData = modules["Consignment Note"];
+
+  // Tracking Plan is intentionally read-only and can only fetch LR context.
+  if (action === 'view' && (!moduleData || !moduleData.selected)) {
+    const trackingPlan = modules["Tracking Plan"];
+    if (trackingPlan?.selected) return trackingPlan.permissions?.view === true;
+  }
 
   if (!moduleData || !moduleData.selected) return false;
 
