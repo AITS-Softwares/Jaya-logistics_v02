@@ -8,7 +8,9 @@ import Groq from "groq-sdk";
 /* --------------------------------------------
    1. GROQ CLIENT (FREE AI)
 -------------------------------------------- */
-const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
+const client = process.env.GROQ_API_KEY
+  ? new Groq({ apiKey: process.env.GROQ_API_KEY })
+  : null;
 
 // USE VERIFIED MODEL FROM YOUR ACCOUNT
 const MODEL = process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
