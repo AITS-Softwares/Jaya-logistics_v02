@@ -2463,6 +2463,13 @@ export default function Layout({ children }) {
                     isActive={isActive("/admin/Tracking-Plan")}
                   />
                   <Item
+                    href="/admin/Detention-Rule-Master"
+                    icon={<HiCog />}
+                    label="Detention Rule Master"
+                    onClick={closeSidebar}
+                    isActive={isActive("/admin/Detention-Rule-Master")}
+                  />
+                  <Item
                     href="/admin/Advance-Payment"
                     icon={<HiCash />}
                     label="Advance Payment"

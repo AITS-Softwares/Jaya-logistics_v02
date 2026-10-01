@@ -1409,6 +1409,9 @@ import { NextResponse } from "next/server";
 import connectDb from "@/lib/db";
 import ConsignmentNote from "./ConsignmentNote";
 import LoadingPanel from "../loading-panel/LoadingPanel";
+import PurchasePanel from "../purchase-panel/PurchasePanel";
+import DetentionRule from "../detention-rules/DetentionRule";
+import { calculateDetention, selectDetentionRule } from "@/lib/detentionCalculation";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import { getNextLRNumber } from "./ConsignmentCounter";
 import mongoose from 'mongoose';
@@ -1511,6 +1514,30 @@ function formatIndiaDateTime(timestamp) {
     date: `${parts.year}-${parts.month}-${parts.day}`,
     time: `${parts.hour}:${parts.minute}:${parts.second}`
   };
+}
+
+async function synchronizePurchaseDetention(user, loadingInfo, outDate, outTime) {
+  const purchase = await PurchasePanel.findOne(companyScopeFilter(user, {
+    loadingInfoNo: loadingInfo.vehicleArrivalNo
+  }));
+  if (!purchase) return;
+
+  const inDate = loadingInfo.arrivalDetails?.date;
+  const inTime = loadingInfo.arrivalDetails?.time || '';
+  const localStatus = purchase.orderRows?.[0]?.localStatus || 'unknown';
+  const rules = await DetentionRule.find(companyScopeFilter(user, {
+    active: true, effectiveFrom: { $lte: new Date() }
+  })).sort({ priority: 1, effectiveFrom: -1 }).lean();
+  const rule = selectDetentionRule(rules, localStatus, inTime);
+  const result = calculateDetention({ inDate, inTime, outDate, outTime, localStatus, rule });
+
+  purchase.arrivalDetails = purchase.arrivalDetails || {};
+  purchase.arrivalDetails.inDate = inDate || purchase.arrivalDetails.inDate;
+  purchase.arrivalDetails.inTime = inTime;
+  purchase.arrivalDetails.outDate = new Date(`${outDate}T00:00:00.000Z`);
+  purchase.arrivalDetails.outTime = outTime;
+  if (result) Object.assign(purchase.arrivalDetails, result);
+  await purchase.save();
 }
 
 /* ========================================
@@ -1862,6 +1889,9 @@ export async function POST(req) {
       linkedLoadingInfo.arrivalDetails.outTime = outTime;
       linkedLoadingInfo.consignmentNote = consignmentNote.lrNo;
       await linkedLoadingInfo.save();
+      // LR generation is the approved departure event.  Copy both source timestamps
+      // and the master-rule calculation to the linked Purchase record.
+      await synchronizePurchaseDetention(user, linkedLoadingInfo, outDate, outTime);
     }
 
     return NextResponse.json({

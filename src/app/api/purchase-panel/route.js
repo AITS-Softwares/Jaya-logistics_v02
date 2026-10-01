@@ -4,6 +4,8 @@ import connectDb from "@/lib/db";
 import PurchasePanel from "./PurchasePanel";
 import ConsignmentNote from "../consignment-note/ConsignmentNote";
 import LoadingPanel from "../loading-panel/LoadingPanel";
+import DetentionRule from "../detention-rules/DetentionRule";
+import { calculateDetention, selectDetentionRule } from "@/lib/detentionCalculation";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import { getNextPurchaseNumber } from "./PurchaseCounter";
 import mongoose from 'mongoose';
@@ -460,11 +462,16 @@ export async function POST(req) {
       }
     }
 
+    // Loading Info is the source of truth for gate arrival/departure timestamps.
+    const linkedLoadingInfo = body.loadingInfoNo
+      ? await LoadingPanel.findOne(companyScopeFilter(user, { vehicleArrivalNo: body.loadingInfoNo })).lean()
+      : null;
+    const loadingArrival = linkedLoadingInfo?.arrivalDetails || {};
     const arrivalDetails = {
-      inDate: body.arrivalDetails?.inDate ? new Date(body.arrivalDetails.inDate) : new Date(),
-      inTime: body.arrivalDetails?.inTime || '',
-      outDate: body.arrivalDetails?.outDate ? new Date(body.arrivalDetails.outDate) : new Date(),
-      outTime: body.arrivalDetails?.outTime || '',
+      inDate: loadingArrival.date ? new Date(loadingArrival.date) : (body.arrivalDetails?.inDate ? new Date(body.arrivalDetails.inDate) : new Date()),
+      inTime: loadingArrival.time || body.arrivalDetails?.inTime || '',
+      outDate: loadingArrival.outDate ? new Date(loadingArrival.outDate) : (body.arrivalDetails?.outDate ? new Date(body.arrivalDetails.outDate) : new Date()),
+      outTime: loadingArrival.outTime || body.arrivalDetails?.outTime || '',
       remarks: body.arrivalDetails?.remarks || '',
       detentionDays: num(body.arrivalDetails?.detentionDays),
       detentionAmount: num(body.arrivalDetails?.detentionAmount)
@@ -571,6 +578,15 @@ export async function POST(req) {
       createdBy: user.id,
       panelStatus: 'Draft'
     });
+
+    // Covers the rare case where a Purchase is created after its LR already exists.
+    if (loadingArrival.date && loadingArrival.time && loadingArrival.outDate && loadingArrival.outTime) {
+      const rules = await DetentionRule.find(companyScopeFilter(user, { active: true, effectiveFrom: { $lte: new Date() } })).sort({ priority: 1, effectiveFrom: -1 }).lean();
+      const localStatus = processedOrderRows[0]?.localStatus || 'unknown';
+      const rule = selectDetentionRule(rules, localStatus, loadingArrival.time);
+      const result = calculateDetention({ inDate: loadingArrival.date, inTime: loadingArrival.time, outDate: loadingArrival.outDate, outTime: loadingArrival.outTime, localStatus, rule });
+      if (result) Object.assign(purchase.arrivalDetails, result);
+    }
 
     await purchase.save();
 
@@ -819,17 +835,18 @@ export async function PUT(req) {
       };
     }
 
-    // Update arrival details
+    // Keep Loading Info/LR timestamps and detention result server-controlled.
     if (body.arrivalDetails) {
-      purchase.arrivalDetails = {
-        inDate: body.arrivalDetails.inDate ? new Date(body.arrivalDetails.inDate) : purchase.arrivalDetails.inDate,
-        inTime: body.arrivalDetails.inTime || purchase.arrivalDetails.inTime,
-        outDate: body.arrivalDetails.outDate ? new Date(body.arrivalDetails.outDate) : purchase.arrivalDetails.outDate,
-        outTime: body.arrivalDetails.outTime || purchase.arrivalDetails.outTime,
-        remarks: body.arrivalDetails.remarks !== undefined ? body.arrivalDetails.remarks : purchase.arrivalDetails.remarks,
-        detentionDays: body.arrivalDetails.detentionDays !== undefined ? num(body.arrivalDetails.detentionDays) : purchase.arrivalDetails.detentionDays,
-        detentionAmount: body.arrivalDetails.detentionAmount !== undefined ? num(body.arrivalDetails.detentionAmount) : purchase.arrivalDetails.detentionAmount
-      };
+      const source = purchase.loadingInfoNo
+        ? await LoadingPanel.findOne(companyScopeFilter(user, { vehicleArrivalNo: purchase.loadingInfoNo })).lean()
+        : null;
+      if (source?.arrivalDetails) {
+        purchase.arrivalDetails.inDate = source.arrivalDetails.date || purchase.arrivalDetails.inDate;
+        purchase.arrivalDetails.inTime = source.arrivalDetails.time || purchase.arrivalDetails.inTime;
+        purchase.arrivalDetails.outDate = source.arrivalDetails.outDate || purchase.arrivalDetails.outDate;
+        purchase.arrivalDetails.outTime = source.arrivalDetails.outTime || purchase.arrivalDetails.outTime;
+      }
+      purchase.arrivalDetails.remarks = body.arrivalDetails.remarks !== undefined ? body.arrivalDetails.remarks : purchase.arrivalDetails.remarks;
     }
 
     // Update memo file

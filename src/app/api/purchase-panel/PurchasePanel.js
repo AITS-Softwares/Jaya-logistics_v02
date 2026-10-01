@@ -481,7 +481,21 @@ const purchasePanelSchema = new mongoose.Schema({
     outTime: { type: String, default: '' },
     remarks: { type: String, default: '' },
     detentionDays: { type: Number, default: 0 },
-    detentionAmount: { type: Number, default: 0 }
+    detentionAmount: { type: Number, default: 0 },
+    // Snapshot of the exact rule used.  Master changes must never rewrite history.
+    detentionCalculation: {
+      ruleId: { type: String, default: '' },
+      ruleName: { type: String, default: '' },
+      ruleType: { type: String, default: '' },
+      movementType: { type: String, default: '' },
+      cutoffTime: { type: String, default: '' },
+      graceDays: { type: Number, default: 0 },
+      additionalDayMethod: { type: String, default: '' },
+      ratePerDay: { type: Number, default: 0 },
+      calculatedAt: { type: Date },
+      chargeStart: { type: Date },
+      explanation: { type: String, default: '' }
+    }
   },
 
   // Memo File
