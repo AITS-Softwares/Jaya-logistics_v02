@@ -3792,7 +3792,7 @@ export default function EditConsignmentNote() {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => router.push('/admin/Consignment-Note')}
-                className="text-purple-600 hover:text-purple-800 font-medium text-sm flex items-center gap-1"
+                className="text-purple-600 hover:text-purple-800 font-medium text- flex items-center gap-1"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -4010,7 +4010,7 @@ export default function EditConsignmentNote() {
 
         {/* ===== Party Information ===== */}
         <Card title="Party Information">
-          <div className="grid grid-cols-12 gap-4">
+          <div className="lr-party-fields grid grid-cols-12 gap-4">
             {/* All existing party fields... */}
             <div className="col-span-12 md:col-span-3">
               <label className="text-xs font-bold text-slate-600">Party Name *</label>
@@ -4122,7 +4122,7 @@ export default function EditConsignmentNote() {
               />
             </div>
 
-            <div className="col-span-12 md:col-span-1">
+            <div className="col-span-12 md:col-span-2">
               <label className="text-xs font-bold text-slate-600">Hired/Owned</label>
               <select
                 value={header.hiredOwned}
@@ -5169,44 +5169,12 @@ export default function EditConsignmentNote() {
           </div>
         )}
 
-        {/* ===== Vehicle Unloaded Date & Remarks Section ===== */}
-        <div className="mt-4">
-          <Card title="Vehicle Unloaded & Remarks">
-            <div className="grid grid-cols-12 gap-4">
-              <div className="col-span-12 md:col-span-4">
-                <label className="text-xs font-bold text-slate-600">Vehicle Unloaded Date</label>
-                <input
-                  type="date"
-                  value={header.vehicleUnloadedDate}
-                  onChange={(e) => setHeader({ ...header, vehicleUnloadedDate: e.target.value })}
-                  readOnly={isReadOnly}
-                  className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 ${isReadOnly ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
-                />
-                <div className="text-xs text-slate-400 mt-1">Date when vehicle was unloaded</div>
-              </div>
-
-              <div className="col-span-12 md:col-span-8">
-                <label className="text-xs font-bold text-slate-600">Remarks / Notes</label>
-                <textarea
-                  value={header.remarks}
-                  onChange={(e) => setHeader({ ...header, remarks: e.target.value })}
-                  readOnly={isReadOnly}
-                  rows={3}
-                  className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 ${isReadOnly ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
-                  placeholder="Enter any additional remarks or notes..."
-                />
-                <div className="text-xs text-slate-400 mt-1">Optional: Add any special instructions or notes</div>
-              </div>
-            </div>
-          </Card>
-        </div>
-
         {/* ===== Summary Card ===== */}
         <div className="mt-4">
           <Card title="Summary">
             <div className="grid grid-cols-12 gap-4">
               <div className="col-span-12 md:col-span-3">
-                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-200">
+                <div className="lr-summary-card bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-200">
                   <h3 className="text-sm font-bold text-slate-800 mb-3">Order Summary</h3>
                   <div className="space-y-2">
                     <div className="flex justify-between">
@@ -5242,7 +5210,7 @@ export default function EditConsignmentNote() {
               </div>
 
               <div className="col-span-12 md:col-span-3">
-                <div className="bg-gradient-to-br from-amber-50 to-yellow-50 p-4 rounded-xl border border-amber-200">
+                <div className="lr-summary-card bg-gradient-to-br from-amber-50 to-yellow-50 p-4 rounded-xl border border-amber-200">
                   <h3 className="text-sm font-bold text-slate-800 mb-3">Vehicle Summary</h3>
                   <div className="space-y-2">
                     <div className="flex justify-between">
@@ -5280,23 +5248,19 @@ export default function EditConsignmentNote() {
               </div>
 
               <div className="col-span-12 md:col-span-3">
-                <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-4 rounded-xl border border-purple-200">
+                <div className="lr-summary-card bg-gradient-to-br from-purple-50 to-pink-50 p-4 rounded-xl border border-purple-200">
                   <h3 className="text-sm font-bold text-slate-800 mb-3">Weight Summary</h3>
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span className="text-sm text-slate-600">Total Weight:</span>
                       <span className="text-xl font-bold text-purple-800">{calculateTotalActualWt().toFixed(2)} {header.unit}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-slate-600">Vehicle Unloaded:</span>
-                      <span className="font-bold text-purple-800">{header.vehicleUnloadedDate || 'N/A'}</span>
-                    </div>
                   </div>
                 </div>
               </div>
 
               <div className="col-span-12 md:col-span-3">
-                <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-4 rounded-xl border border-green-200">
+                <div className="lr-summary-card bg-gradient-to-br from-green-50 to-emerald-50 p-4 rounded-xl border border-green-200">
                   <h3 className="text-sm font-bold text-slate-800 mb-3">Status</h3>
                   <div className="space-y-2">
                     <div className="flex justify-between">

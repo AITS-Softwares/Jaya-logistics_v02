@@ -214,6 +214,38 @@ input[type="number"] {
   width: max-content;
 }
 
+/* LR edit form: compact controls and summary rows without clipping values. */
+.lr-party-fields input,
+.lr-party-fields select {
+  min-width: 0;
+  font-size: 13px;
+  line-height: 1.25rem;
+}
+
+.lr-party-fields label {
+  font-size: 12px;
+  letter-spacing: -0.01em;
+}
+
+.lr-summary-card .space-y-2 > div {
+  display: grid;
+  grid-template-columns: minmax(82px, 0.8fr) minmax(0, 1.2fr);
+  align-items: start;
+  gap: 10px;
+}
+
+.lr-summary-card .space-y-2 > div > span:first-child {
+  font-size: 13px;
+  line-height: 1.35rem;
+}
+
+.lr-summary-card .space-y-2 > div > span:last-child {
+  min-width: 0;
+  text-align: right;
+  line-height: 1.35rem;
+  overflow-wrap: anywhere;
+}
+
 @layer base {
   * {
     @apply border-border;

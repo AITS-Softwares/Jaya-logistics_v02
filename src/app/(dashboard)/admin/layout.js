@@ -2008,6 +2008,7 @@ export default function Layout({ children }) {
   const [openSubmenus, setOpenSubmenus] = useState({});
   const [session, setSession] = useState(null);
   const [operatingCompanies, setOperatingCompanies] = useState([]);
+  const [isWorkspaceMenuOpen, setIsWorkspaceMenuOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
   const sidebarRef = useRef(null);
@@ -2130,8 +2131,8 @@ export default function Layout({ children }) {
     setIsSidebarCollapsed(next);
     try { localStorage.setItem("sidebarCollapsed", next ? "1" : "0"); } catch { }
   };
-  const selectAdminWorkspace = async (event) => {
-    const code = event.target.value;
+  const selectAdminWorkspace = async (code) => {
+    setIsWorkspaceMenuOpen(false);
     if (!code) {
       const groupToken = localStorage.getItem("groupToken");
       if (groupToken) {
@@ -3349,10 +3350,46 @@ export default function Layout({ children }) {
                 </div>
               )}
               {session.isGroupAdmin && (
-                <select value={session.activeOperatingCompany?.code || ""} onChange={selectAdminWorkspace} className="max-w-44 rounded-lg border border-amber-400/30 bg-amber-500/10 px-2.5 py-1 text-[10px] font-semibold text-amber-100 outline-none">
-                  <option value="" className="bg-slate-900">JAYA GROUP · Consolidated</option>
-                  {operatingCompanies.map((company) => <option key={company.code} value={company.code} className="bg-slate-900">Workspace · {company.name}</option>)}
-                </select>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setIsWorkspaceMenuOpen((open) => !open)}
+                    aria-expanded={isWorkspaceMenuOpen}
+                    className="flex max-w-52 items-center gap-2 rounded-lg border border-amber-400/40 bg-amber-500/10 px-3 py-1.5 text-left text-[11px] font-semibold text-amber-100 shadow-sm transition hover:border-amber-300 hover:bg-amber-500/20 focus:outline-none focus:ring-2 focus:ring-amber-400/50"
+                  >
+                    <span className="min-w-0 truncate">{session.activeOperatingCompany ? `Workspace · ${session.activeOperatingCompany.name}` : "JAYA GROUP · Consolidated"}</span>
+                    <span className={`shrink-0 text-amber-300 transition-transform ${isWorkspaceMenuOpen ? 'rotate-180' : ''}`}>⌄</span>
+                  </button>
+                  {isWorkspaceMenuOpen && (
+                    <div className="absolute right-0 z-50 mt-2 w-72 overflow-hidden rounded-xl border border-slate-700 bg-slate-950 shadow-2xl ring-1 ring-black/40">
+                      <div className="border-b border-slate-800 px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">Switch workspace</div>
+                      <button
+                        type="button"
+                        onClick={() => selectAdminWorkspace("")}
+                        className={`flex w-full items-center gap-2 px-3 py-2.5 text-left text-xs transition ${!session.activeOperatingCompany ? 'bg-amber-400/15 text-amber-200' : 'text-slate-200 hover:bg-slate-800'}`}
+                      >
+                        <span className="h-2 w-2 rounded-full bg-amber-400" />
+                        <span>JAYA GROUP · Consolidated</span>
+                      </button>
+                      <div className="max-h-64 overflow-y-auto py-1">
+                        {operatingCompanies.map((company) => {
+                          const active = session.activeOperatingCompany?.code === company.code;
+                          return (
+                            <button
+                              type="button"
+                              key={company.code}
+                              onClick={() => selectAdminWorkspace(company.code)}
+                              className={`flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left text-xs transition ${active ? 'bg-blue-600 text-white' : 'text-slate-200 hover:bg-slate-800'}`}
+                            >
+                              <span className="truncate">Workspace · {company.name}</span>
+                              {active && <span className="text-[10px] font-bold uppercase text-blue-100">Active</span>}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
               )}
 
               <div
