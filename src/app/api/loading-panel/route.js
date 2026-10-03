@@ -1176,7 +1176,7 @@ function isAuthorized(user) {
 
   // Check module-based permissions for "Loading Info"
   const modules = user.modules || {};
-  const moduleData = modules["Loading Info"];
+  const moduleData = modules["Loading Info"] || modules["Tracking Plan"];
 
   if (!moduleData || !moduleData.selected) return false;
 
@@ -1190,6 +1190,12 @@ function hasPermission(user, action) {
 
   const modules = user.modules || {};
   const moduleData = modules["Loading Info"];
+
+  // Tracking Plan is read-only: it may only view Loading Info
+  if (action === 'view' && (!moduleData || !moduleData.selected)) {
+    const trackingPlan = modules["Tracking Plan"];
+    if (trackingPlan?.selected) return trackingPlan.permissions?.view === true;
+  }
 
   if (!moduleData || !moduleData.selected) return false;
 

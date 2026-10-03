@@ -1516,10 +1516,12 @@ function formatIndiaDateTime(timestamp) {
   };
 }
 
+
 async function synchronizePurchaseDetention(user, loadingInfo, outDate, outTime) {
   const purchase = await PurchasePanel.findOne(companyScopeFilter(user, {
     loadingInfoNo: loadingInfo.vehicleArrivalNo
   }));
+
   if (!purchase) return;
 
   const inDate = loadingInfo.arrivalDetails?.date;
@@ -1558,6 +1560,7 @@ export async function GET(req) {
     const url = new URL(req.url);
     const id = url.searchParams.get("id");
     const lrNo = url.searchParams.get("lrNo");
+    const loadingInfoNo = url.searchParams.get("loadingInfoNo");
     const format = url.searchParams.get("format");
     const search = url.searchParams.get("search");
     const fromDate = url.searchParams.get("fromDate");
@@ -1603,6 +1606,14 @@ export async function GET(req) {
         success: true,
         data: note
       }, { status: 200 });
+    }
+
+    // ============ CASE 2B: GET BY LOADING INFO NO (LR may not exist yet) ============
+    if (loadingInfoNo) {
+      const note = await ConsignmentNote.findOne(
+        companyScopeFilter(user, { loadingInfoNo })
+      ).lean();
+      return NextResponse.json({ success: true, data: note || null }, { status: 200 });
     }
 
     // ============ CASE 3: TABLE FORMAT FOR LIST VIEW ============

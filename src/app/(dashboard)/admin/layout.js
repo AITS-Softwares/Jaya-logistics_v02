@@ -1935,7 +1935,8 @@ import {
   HiPuzzle, HiViewGrid, HiUser, HiDocumentText, HiOutlineOfficeBuilding,
   HiCube, HiShoppingCart, HiCog, HiMenu, HiX, HiHome, HiClipboardList,
   HiTruck, HiCurrencyRupee, HiInformationCircle, HiDocumentReport, HiCash,
-  HiOfficeBuilding, HiLocationMarker, HiMail, HiShieldCheck
+  HiOfficeBuilding, HiLocationMarker, HiMail, HiShieldCheck,
+  HiChevronDoubleLeft
 } from "react-icons/hi";
 import { GiStockpiles } from "react-icons/gi";
 import { SiCivicrm } from "react-icons/si";
@@ -2112,6 +2113,13 @@ export default function Layout({ children }) {
     'Suppliers': '/admin/supplier',
     'Items': '/admin/item',
   };
+  const handleMainClick = () => {
+    if (isSidebarOpen) {
+      setIsSidebarOpen(false);
+    } else if (!isSidebarCollapsed && window.matchMedia("(min-width: 768px)").matches) {
+      setIsSidebarCollapsed(true);
+    }
+  };
 
   const toggleSubmenu = (k) => setOpenSubmenus((p) => ({ ...p, [k]: !p[k] }));
   const toggleMenu = (m) => setOpenMenu(openMenu === m ? null : m);
@@ -2159,7 +2167,7 @@ export default function Layout({ children }) {
       {/* Overlay */}
       {isSidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/60 z-40 md:hidden"
+          className="fixed inset-0 bg-black/60 z-[55] md:hidden"
           onClick={closeSidebar}
           aria-hidden="true"
         />
@@ -2169,7 +2177,7 @@ export default function Layout({ children }) {
       <aside
         ref={sidebarRef}
         aria-label="Sidebar navigation"
-        className={`fixed inset-y-0 left-0 z-50 w-64 lg:w-72 bg-[#1e293b] text-white transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+        className={`fixed inset-y-0 left-0 z-[60] w-64 lg:w-72 bg-[#1e293b] text-white transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"
           } ${isSidebarCollapsed ? "md:hidden" : ""} flex flex-col shadow-2xl`}
       >
         {/* Logo */}
@@ -2186,6 +2194,14 @@ export default function Layout({ children }) {
               <HiX size={24} />
             </button>
           )}
+          <button
+            onClick={toggleDesktopSidebar}
+            title="Hide sidebar"
+            aria-label="Hide sidebar"
+            className="hidden md:block p-2 rounded hover:bg-gray-700 transition-colors"
+          >
+            <HiChevronDoubleLeft size={20} />
+          </button>
         </div>
 
         {/* Nav */}
@@ -2458,7 +2474,7 @@ export default function Layout({ children }) {
                   <Item
                     href="/admin/Tracking-Plan"
                     icon={<HiLocationMarker />}
-                    label="Add Tracking Plan"
+                    label="Vehicle Tracking Plan"
                     onClick={closeSidebar}
                     isActive={isActive("/admin/Tracking-Plan")}
                   />
@@ -3287,19 +3303,26 @@ export default function Layout({ children }) {
 
           <div className="flex items-center justify-between px-4 h-14">
             <div className="flex items-center gap-3 min-w-0">
-              <button
+              {/* <button
                 onClick={() => setIsSidebarOpen(!isSidebarOpen)}
                 className="md:hidden p-2 -ml-2 text-gray-400 hover:text-white transition-colors"
               >
                 {isSidebarOpen ? <HiX size={24} /> : <HiMenu size={24} />}
-              </button>
+              </button> */}
+
+              {!isSidebarOpen && (
+                <button onClick={() => setIsSidebarOpen(true)} aria-label="Open sidebar"
+                  className="md:hidden p-2 -ml-2 text-gray-400 hover:text-white transition-colors">
+                  <HiMenu size={24} />
+                </button>
+              )}
 
               {/* Desktop: hide / show sidebar */}
               <button
                 onClick={toggleDesktopSidebar}
                 title={isSidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
                 aria-label={isSidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
-                className="hidden md:block p-2 -ml-2 text-gray-400 hover:text-white transition-colors"
+                className={`${isSidebarCollapsed ? "hidden md:block" : "hidden"} p-2 -ml-2 text-gray-400 hover:text-white transition-colors`}
               >
                 <HiMenu size={24} />
               </button>
@@ -3342,10 +3365,10 @@ export default function Layout({ children }) {
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto bg-[#f8fafc]">
+        <main onClick={handleMainClick} className="flex-1 overflow-y-auto bg-[#f8fafc]">
           {children}
         </main>
-      </div>
-    </div>
+      </div >
+    </div >
   );
 }
