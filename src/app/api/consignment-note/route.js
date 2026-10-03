@@ -1560,12 +1560,12 @@ export async function GET(req) {
     const url = new URL(req.url);
     const id = url.searchParams.get("id");
     const lrNo = url.searchParams.get("lrNo");
-    const loadingInfoNo = url.searchParams.get("loadingInfoNo");
     const format = url.searchParams.get("format");
     const search = url.searchParams.get("search");
     const fromDate = url.searchParams.get("fromDate");
     const toDate = url.searchParams.get("toDate");
     const statusFilter = url.searchParams.get("status");
+    const loadingInfoNo = url.searchParams.get("loadingInfoNo");
 
     // ============ CASE 1: GET SINGLE BY ID ============
     if (id) {
@@ -1608,12 +1608,12 @@ export async function GET(req) {
       }, { status: 200 });
     }
 
-    // ============ CASE 2B: GET BY LOADING INFO NO (LR may not exist yet) ============
+    // ============ CASE 2B: GET ALL LRs OF A LOADING INFO (may be empty) ============
     if (loadingInfoNo) {
-      const note = await ConsignmentNote.findOne(
+      const notes = await ConsignmentNote.find(
         companyScopeFilter(user, { loadingInfoNo })
-      ).lean();
-      return NextResponse.json({ success: true, data: note || null }, { status: 200 });
+      ).sort({ createdAt: 1 }).lean();
+      return NextResponse.json({ success: true, data: notes }, { status: 200 });
     }
 
     // ============ CASE 3: TABLE FORMAT FOR LIST VIEW ============
@@ -1688,24 +1688,24 @@ export async function GET(req) {
           : (sourceBreakdown.length ? sourceBreakdown : fallbackBreakdown);
 
         return {
-        _id: note._id,
-        date: note.createdAt ? new Date(note.createdAt).toLocaleDateString('en-GB').replace(/\//g, '.') : '',
-        lrNo: note.lrNo || 'N/A',
-        loadingInfoNo: note.loadingInfoNo || '',
-        vnnNo: note.vnnNo || '',
-        subCompanyName: note.subCompanyName || '',
-        subCompanyCode: note.subCompanyCode || '',
-        partyName: note.header?.partyName || 'N/A',
-        orderNo: note.header?.orderNo || 'N/A',
-        vendorName: note.header?.vendorName || 'N/A',
-        vendorCode: note.header?.vendorCode || 'N/A',
-        from: note.header?.from || 'N/A',
-        to: note.header?.to || 'N/A',
-        vehicleNo: note.header?.vehicleNo || 'N/A',
-        totalWeight: note.totalWeight || 0,
-        unit: note.header?.unit || 'MT',
-        consignmentBreakdown,
-        status: note.header?.status || 'Pending'
+          _id: note._id,
+          date: note.createdAt ? new Date(note.createdAt).toLocaleDateString('en-GB').replace(/\//g, '.') : '',
+          lrNo: note.lrNo || 'N/A',
+          loadingInfoNo: note.loadingInfoNo || '',
+          vnnNo: note.vnnNo || '',
+          subCompanyName: note.subCompanyName || '',
+          subCompanyCode: note.subCompanyCode || '',
+          partyName: note.header?.partyName || 'N/A',
+          orderNo: note.header?.orderNo || 'N/A',
+          vendorName: note.header?.vendorName || 'N/A',
+          vendorCode: note.header?.vendorCode || 'N/A',
+          from: note.header?.from || 'N/A',
+          to: note.header?.to || 'N/A',
+          vehicleNo: note.header?.vehicleNo || 'N/A',
+          totalWeight: note.totalWeight || 0,
+          unit: note.header?.unit || 'MT',
+          consignmentBreakdown,
+          status: note.header?.status || 'Pending'
         };
       });
 
@@ -1718,8 +1718,7 @@ export async function GET(req) {
 
     // ============ CASE 4: LIST FOR DROPDOWNS ============
     const notes = await ConsignmentNote.find(companyScopeFilter(user))
-      .select('lrNo loadingInfoNo vnnNo subCompanyName subCompanyCode header.partyName header.orderNo header.status')
-      .sort({ createdAt: -1 })
+      .select('lrNo loadingInfoNo vnnNo subCompanyName subCompanyCode header.partyName header.orderNo header.to header.status orderRowId').sort({ createdAt: -1 })
       .lean();
 
     return NextResponse.json({
@@ -1760,17 +1759,27 @@ export async function POST(req) {
     const lrCode = String(user.activeOperatingCompanyCode || "").trim().toUpperCase();
     if (lrCode && !lrNo.startsWith(`${lrCode}-`)) lrNo = `${lrCode}-${lrNo}`;
 
+    const orderRowId = String(body.orderRowId || '').trim();
+    if (orderRowId) {
+      const rowTaken = await ConsignmentNote.findOne(companyScopeFilter(user, { orderRowId })).select('lrNo').lean();
+      if (rowTaken) {
+        return NextResponse.json({
+          success: false,
+          message: `This order row already has consignment note ${rowTaken.lrNo}`
+        }, { status: 400 });
+      }
+    }
     // Check if loadingInfoNo is already used (if provided)
     let linkedLoadingInfo = null;
     if (body.loadingInfoNo) {
-      const existing = await ConsignmentNote.findOne(companyScopeFilter(user, { loadingInfoNo: body.loadingInfoNo }));
-
+      const existing = orderRowId ? null : await ConsignmentNote.findOne(companyScopeFilter(user, { loadingInfoNo: body.loadingInfoNo }));
       if (existing) {
         return NextResponse.json({
           success: false,
           message: `Loading Info ${body.loadingInfoNo} is already used in consignment note ${existing.lrNo}`
         }, { status: 400 });
       }
+
 
       linkedLoadingInfo = await LoadingPanel.findOne(companyScopeFilter(user, {
         vehicleArrivalNo: body.loadingInfoNo
@@ -1780,6 +1789,18 @@ export async function POST(req) {
           success: false,
           message: `Loading Info ${body.loadingInfoNo} was not found.`
         }, { status: 404 });
+      }
+      if (orderRowId) {
+        const wanted = String(body.header?.orderNo || '').trim().toLowerCase();
+        const inLoading = (linkedLoadingInfo.orderRows || []).some(
+          (r) => String(r.orderNo || '').trim().toLowerCase() === wanted
+        );
+        if (!inLoading) {
+          return NextResponse.json({
+            success: false,
+            message: `Order ${body.header?.orderNo || ''} is not part of Loading Info ${body.loadingInfoNo}`
+          }, { status: 400 });
+        }
       }
     }
 
@@ -1846,7 +1867,7 @@ export async function POST(req) {
     // weights remain available even if the source record is changed later.
     const sourceOrderRows = Array.isArray(body.consignmentBreakdown) && body.consignmentBreakdown.length
       ? body.consignmentBreakdown
-      : (linkedLoadingInfo?.orderRows || []);
+      : (orderRowId ? [] : (linkedLoadingInfo?.orderRows || []));
     const consignmentBreakdown = sourceOrderRows
       .map((row) => ({
         orderNo: row.orderNo || body.header?.orderNo || '',
@@ -1863,6 +1884,7 @@ export async function POST(req) {
       vnnNo: body.vnnNo || '',
       vehicleNegotiationRef: body.vehicleNegotiationRef || null,
       loadingInfoNo: body.loadingInfoNo || '',
+      orderRowId,
 
       // ✅ Sub-Company at root level
       subCompanyId,
@@ -1950,7 +1972,7 @@ export async function POST(req) {
 
     // A Loading Info can have one LR only.  Use the LR's persisted server
     // timestamp as the shared source for the vehicle Out Date and Out Time.
-    if (linkedLoadingInfo) {
+    if (linkedLoadingInfo && !linkedLoadingInfo.consignmentNote) {
       const lrGeneratedAt = consignmentNote.createdAt;
       const { date: outDate, time: outTime } = formatIndiaDateTime(lrGeneratedAt);
 

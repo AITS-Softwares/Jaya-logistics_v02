@@ -3829,6 +3829,7 @@ const VEHICLE_REACH_OPTIONS = ["Reach", "Not Reach"];
 const VERIFICATION_OPTIONS = ["Verified", "Not Verified"];
 // Orders that already have an LR in one of these statuses are hidden from the order picker
 const HIDE_ORDER_IF_LR_STATUS = ['Approved'];
+const normText = (v) => String(v ?? '').trim().toLowerCase();
 
 function uid() {
   return Math.random().toString(36).slice(2, 10);
@@ -3928,6 +3929,9 @@ export default function CreateConsignmentNote() {
   const [ordersLoading, setOrdersLoading] = useState(false);
   const orderDropdownRef = useRef(null);
   const autoLoadingInfoOrderRef = useRef(false);
+  const [orderRows, setOrderRows] = useState([]);        // rows of the selected order
+  const [selectedRowId, setSelectedRowId] = useState('');
+  const [existingLrs, setExistingLrs] = useState([]);    // to know which rows already have an LR
 
   /** =========================
    * VEHICLE NEGOTIATION STATE
@@ -4009,6 +4013,21 @@ export default function CreateConsignmentNote() {
     subCompanyName: "",
     subCompanyCode: ""
   });
+
+  const orderRowInfo = useMemo(() => {
+    const used = new Set();
+    return orderRows.map((row) => {
+      let lr = existingLrs.find((l) => l.orderRowId && String(l.orderRowId) === String(row._id)) || null;
+      if (!lr) {
+        // Older LR without a row id: covers the first row with the same order and destination
+        lr = existingLrs.find((l) => !l.orderRowId && !used.has(l._id)
+          && normText(l.header?.orderNo) === normText(header.orderNo)
+          && normText(l.header?.to) === normText(row.toName || row.to)) || null;
+        if (lr) used.add(lr._id);
+      }
+      return { row, lr };
+    });
+  }, [orderRows, existingLrs, header.orderNo]);
 
   /** =========================
    * CONSIGNOR/CONSIGNEE STATE
@@ -4118,18 +4137,17 @@ export default function CreateConsignmentNote() {
       console.log('Orders API response:', data);
 
       // Collect order numbers that already have an approved/completed LR
-      const usedOrderNos = new Set();
+      const approvedRowIds = new Set();
+      const legacyKeys = new Set();
       try {
-        const lrRes = await fetch('/api/consignment-note', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const lrRes = await fetch('/api/consignment-note', { headers: { Authorization: `Bearer ${token}` } });
         if (lrRes.ok) {
           const lrData = await lrRes.json();
+          setExistingLrs(lrData.data || []);
           (lrData.data || []).forEach((n) => {
-            const no = n.header?.orderNo;
-            if (no && HIDE_ORDER_IF_LR_STATUS.includes(n.header?.status)) {
-              usedOrderNos.add(String(no).trim().toLowerCase());
-            }
+            if (!HIDE_ORDER_IF_LR_STATUS.includes(n.header?.status)) return;
+            if (n.orderRowId) approvedRowIds.add(String(n.orderRowId));
+            else legacyKeys.add(`${normText(n.header?.orderNo)}|${normText(n.header?.to)}`);
           });
         }
       } catch (e) {
@@ -4137,13 +4155,17 @@ export default function CreateConsignmentNote() {
       }
 
       if (data.success && Array.isArray(data.data)) {
+        const seen = new Set();
         const availableOrders = data.data.filter((o) => {
-          const no = String(o.orderNo || o.orderPanelNo || '').trim().toLowerCase();
-          return !usedOrderNos.has(no);
+          const no = normText(o.orderNo || o.orderPanelNo);
+          const covered = (o.originalRowId && approvedRowIds.has(String(o.originalRowId)))
+            || legacyKeys.has(`${no}|${normText(o.to)}`);
+          if (covered || seen.has(no)) return false;
+          seen.add(no);
+          return true;
         });
         setAllOrders(availableOrders);
         setFilteredOrders(availableOrders);
-        console.log(`✅ Loaded ${availableOrders.length} orders (${data.data.length - availableOrders.length} hidden, LR already exists)`);
       } else {
         setAllOrders([]);
         setFilteredOrders([]);
@@ -4388,11 +4410,26 @@ export default function CreateConsignmentNote() {
       const orderNo = fullOrder.orderPanelNo || fullOrder.orderNo || order.orderNo || '';
       const partyName = fullOrder.partyName || fullOrder.customerName || order.partyName || '';
 
+      const planRows = Array.isArray(fullOrder.plantRows) ? fullOrder.plantRows : [];
+      setOrderRows(planRows);
+      const isTaken = (r) => existingLrs.some((l) =>
+        (l.orderRowId && String(l.orderRowId) === String(r._id)) ||
+        (!l.orderRowId && normText(l.header?.orderNo) === normText(orderNo) && normText(l.header?.to) === normText(r.toName || r.to)));
+      const pickedRow =
+        planRows.find((r) => String(r._id) === String(order.originalRowId) && !isTaken(r)) ||
+        planRows.find((r) => !isTaken(r)) ||
+        planRows[0];
+      setSelectedRowId(pickedRow ? String(pickedRow._id) : '');
+      const orderTotalWt = planRows.reduce((s, r) => s + (Number(r.weight) || 0), 0);
+      const rowWt = Number(pickedRow?.weight) || 0;
+      const packFactor = orderTotalWt > 0 && rowWt > 0 ? rowWt / orderTotalWt : 1;
+      const scaleWt = (v) => (v === undefined || v === null || v === '') ? '' : String(Math.round((parseFloat(v) || 0) * packFactor * 1000) / 1000);
+
       let plantCode = '';
       let plantName = '';
 
       if (fullOrder.plantRows && fullOrder.plantRows.length > 0) {
-        const firstRow = fullOrder.plantRows[0];
+        const firstRow = pickedRow;;
         plantCode = firstRow.plantCodeValue || firstRow.plantCode || '';
         plantName = firstRow.plantName || '';
       }
@@ -4487,8 +4524,8 @@ export default function CreateConsignmentNote() {
             packWeight: item.packWeight?.toString() || "",
             productName: item.productName || "",
             wtLtr: item.wtLtr?.toString() || "",
-            actualWt: item.actualWt?.toString() || "",
-            chargedWt: item.chargedWt?.toString() || "",
+            actualWt: scaleWt(item.actualWt),
+            chargedWt: scaleWt(item.chargedWt),
             wtUom: item.wtUom || "MT",
           }));
           setPalletizationRows(palletRows);
@@ -4505,8 +4542,8 @@ export default function CreateConsignmentNote() {
             packWeight: item.packWeight?.toString() || "",
             productName: item.productName || "",
             wtLtr: item.wtLtr?.toString() || "",
-            actualWt: item.actualWt?.toString() || "",
-            chargedWt: item.chargedWt?.toString() || "",
+            actualWt: scaleWt(item.actualWt),
+            chargedWt: scaleWt(item.chargedWt),
             wtUom: item.wtUom || "MT",
           }));
           setUniformRows(uniformRowsData);
@@ -4518,8 +4555,8 @@ export default function CreateConsignmentNote() {
             packType: "LOOSE - CARGO",
             uom: item.uom || "MT",
             productName: item.productName || "",
-            actualWt: item.actualWt?.toString() || "",
-            chargedWt: item.chargedWt?.toString() || "",
+            actualWt: scaleWt(item.actualWt),
+            chargedWt: scaleWt(item.chargedWt),
           }));
           setLooseCargoRows(looseRowsData);
         }
@@ -4534,8 +4571,8 @@ export default function CreateConsignmentNote() {
             length: item.length?.toString() || "",
             width: item.width?.toString() || "",
             height: item.height?.toString() || "",
-            actualWt: item.actualWt?.toString() || "",
-            chargedWt: item.chargedWt?.toString() || "",
+            actualWt: scaleWt(item.actualWt),
+            chargedWt: scaleWt(item.chargedWt),
           }));
           setNonUniformRows(nonUniformRowsData);
         }
@@ -4559,6 +4596,28 @@ export default function CreateConsignmentNote() {
     }
   };
 
+  const chooseOrderRow = (row) => {
+    const prev = orderRows.find((r) => String(r._id) === selectedRowId);
+    const f = Number(prev?.weight) > 0 && Number(row.weight) > 0 ? Number(row.weight) / Number(prev.weight) : 1;
+    const sc = (v) => (v === undefined || v === null || v === '') ? '' : String(Math.round((parseFloat(v) || 0) * f * 1000) / 1000);
+    const rescale = (rows) => rows.map((r) => ({ ...r, actualWt: sc(r.actualWt), chargedWt: sc(r.chargedWt) }));
+    setPalletizationRows(rescale);
+    setUniformRows(rescale);
+    setLooseCargoRows(rescale);
+    setNonUniformRows(rescale);
+    setSelectedRowId(String(row._id));
+    setHeader((p) => ({
+      ...p,
+      plantCode: row.plantCodeValue || row.plantCode || p.plantCode,
+      plantName: row.plantName || p.plantName,
+      from: row.fromName || row.from || p.from,
+      fromState: row.fromState || '',
+      to: row.toName || row.to || p.to,
+      taluka: row.talukaName || row.taluka || '',
+      district: row.districtName || row.district || '',
+      state: row.stateName || row.state || '',
+    }));
+  };
   const handleOrderInputFocus = () => {
     if (!showOrderDropdown && allOrders && allOrders.length > 0) {
       setFilteredOrders(allOrders);
@@ -4727,6 +4786,11 @@ export default function CreateConsignmentNote() {
       return;
     }
 
+    if (orderRows.length) {
+      const info = orderRowInfo.find((x) => String(x.row._id) === selectedRowId);
+      if (!info) { alert("Please choose which order row this LR is for"); return; }
+      if (info.lr) { alert(`This row already has LR ${info.lr.lrNo}`); return; }
+    }
     setSaving(true);
 
     try {
@@ -4737,6 +4801,11 @@ export default function CreateConsignmentNote() {
 
       const payload = {
         loadingInfoNo: new URLSearchParams(window.location.search).get('loadingInfoNo') || '',
+        orderRowId: selectedRowId || '',
+        consignmentBreakdown: (() => {
+          const r = orderRows.find((x) => String(x._id) === selectedRowId);
+          return r ? [{ orderNo: header.orderNo, from: r.fromName || r.from || header.from, to: r.toName || r.to || header.to, weight: Number(r.weight) || 0, unit: header.unit || 'MT' }] : undefined;
+        })(),
         header: {
           ...header,
           // ✅ Include sub-company in header
@@ -4993,6 +5062,43 @@ export default function CreateConsignmentNote() {
             </div>
           </div>
         </Card>
+        {orderRows.length > 0 && (
+          <Card title={`Order ${header.orderNo} — choose the row for this LR`}>
+            <div className="overflow-auto rounded-xl border border-yellow-300">
+              <table className="min-w-full w-full text-sm">
+                <thead className="sticky top-0 bg-yellow-400">
+                  <tr>
+                    {['', 'FROM', 'TO', 'TALUKA', 'DISTRICT', 'WEIGHT', 'ROW STATUS', 'LR'].map((h) => (
+                      <th key={h} className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {orderRowInfo.map(({ row, lr }) => {
+                    const chosen = String(row._id) === selectedRowId;
+                    return (
+                      <tr key={row._id} className={chosen ? 'bg-yellow-100' : 'hover:bg-yellow-50'}>
+                        <td className="border border-yellow-300 px-2 py-2 text-center">
+                          <input type="radio" name="order-row" checked={chosen} disabled={Boolean(lr) || fetchingOrder} onChange={() => chooseOrderRow(row)} />
+                        </td>
+                        <td className="border border-yellow-300 px-2 py-2">{row.fromName || row.from}</td>
+                        <td className="border border-yellow-300 px-2 py-2">{row.toName || row.to}</td>
+                        <td className="border border-yellow-300 px-2 py-2">{row.talukaName || row.taluka}</td>
+                        <td className="border border-yellow-300 px-2 py-2">{row.districtName || row.district}</td>
+                        <td className="border border-yellow-300 px-2 py-2 font-semibold">{row.weight || 0} MT</td>
+                        <td className="border border-yellow-300 px-2 py-2">{row.status || 'Open'}</td>
+                        <td className="border border-yellow-300 px-2 py-2">{lr ? `${lr.lrNo} (${lr.header?.status || 'Pending'})` : '—'}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <p className="mt-2 text-xs text-slate-600">
+              Selected row weight: {Number(orderRows.find((r) => String(r._id) === selectedRowId)?.weight) || 0} MT • LR total from pack data: {calculateTotalActualWt()} MT
+            </p>
+          </Card>
+        )}
 
         {/* ===== Party Information ===== */}
         <Card title="Party Information">
