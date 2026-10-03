@@ -3378,7 +3378,8 @@ function OrdersTable({
   headerSubCompanyName,
   headerSubCompanyCode,
   onFetchDistricts,
-  onFetchTalukas
+  onFetchTalukas,
+  canViewFinancialRates
 }) {
  const columns = [
   { key: "orderNo", label: "Order No *", width: "100px" },
@@ -3500,7 +3501,8 @@ function OrdersTable({
 
   return (
     <div className="overflow-auto rounded-xl border border-yellow-300 max-h-[600px]">
-      <table className="min-w-max w-full text-sm">
+      <style jsx>{`.hide-pricing-financial th:nth-child(16),.hide-pricing-financial td:nth-child(16),.hide-pricing-financial th:nth-child(17),.hide-pricing-financial td:nth-child(17),.hide-pricing-financial th:nth-child(18),.hide-pricing-financial td:nth-child(18),.hide-pricing-financial th:nth-child(19),.hide-pricing-financial td:nth-child(19){display:none}`}</style>
+      <table className={`min-w-max w-full text-sm ${canViewFinancialRates ? '' : 'hide-pricing-financial'}`}>
         <thead className="sticky top-0 bg-yellow-400 z-10">
           <tr>
             {columns.map((col) => (
@@ -3878,7 +3880,7 @@ export default function EditPricingPanel() {
   const router = useRouter();
   const params = useParams();
   const panelId = params.id;
-  const { canApprove, canCreate, canEdit } = usePermission();
+  const { canApprove, canCreate, canEdit, canViewFinancialRates } = usePermission();
   const PART2_APPROVAL_MODULE = 'Pricing Panel - Part 2 Approval';
 
   const [branches, setBranches] = useState([]);
@@ -4683,6 +4685,7 @@ export default function EditPricingPanel() {
               headerSubCompanyCode={header.subCompanyCode}
               onFetchDistricts={locationData.fetchDistrictsByState}
               onFetchTalukas={locationData.fetchTalukasByDistrict}
+              canViewFinancialRates={canViewFinancialRates('Pricing Panel')}
             />
           </div>
 

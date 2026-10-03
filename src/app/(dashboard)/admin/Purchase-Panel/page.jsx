@@ -1183,7 +1183,7 @@ export default function PurchasePanelList() {
         {/* Purchases Table */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm compact-list-table">
               <thead className="bg-yellow-400 border-b border-yellow-500">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">S.No</th>
@@ -1195,6 +1195,7 @@ export default function PurchasePanelList() {
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Vehicle</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Amount</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Balance</th>
+                  <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Memo</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Status</th>
                   <th className="px-4 py-3 text-center text-xs font-extrabold text-slate-900 uppercase tracking-wider">Actions</th>
                 </tr>
@@ -1202,7 +1203,7 @@ export default function PurchasePanelList() {
               <tbody className="divide-y divide-slate-200">
                 {loading ? (
                   <tr>
-                    <td colSpan="11" className="px-4 py-12 text-center">
+                    <td colSpan="12" className="px-4 py-12 text-center">
                       <div className="flex items-center justify-center">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500"></div>
                       </div>
@@ -1225,6 +1226,7 @@ export default function PurchasePanelList() {
                       <td className="px-4 py-3">{item.vehicleNo || '-'}</td>
                       <td className="px-4 py-3 font-medium">₹{item.amount?.toLocaleString() || 0}</td>
                       <td className="px-4 py-3 font-medium text-purple-700">₹{item.balance?.toLocaleString() || 0}</td>
+                      <td className="px-4 py-3"><span className={`rounded-full px-2 py-1 text-xs font-medium ${item.memoStatus === 'Uploaded' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>{item.memoStatus === 'Uploaded' ? 'Uploaded' : 'Pending'}</span></td>
                       <td className="px-4 py-3">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(item.status)}`}>
                           {item.status}

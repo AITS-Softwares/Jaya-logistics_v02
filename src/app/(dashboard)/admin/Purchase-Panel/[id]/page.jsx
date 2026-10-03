@@ -6185,9 +6185,9 @@ export default function EditPurchasePanel() {
                     <input
                       type="number"
                       value={arrivalDetails.detentionDays}
-                      onChange={(e) => setArrivalDetails({ ...arrivalDetails, detentionDays: e.target.value })}
-                      className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
-                      placeholder="Number of days"
+                      readOnly
+                      className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-sm outline-none"
+                      placeholder="Calculated from detention rule"
                     />
                   </div>
                 </div>
@@ -6197,9 +6197,9 @@ export default function EditPurchasePanel() {
                     <input
                       type="number"
                       value={arrivalDetails.detentionAmount}
-                      onChange={(e) => setArrivalDetails({ ...arrivalDetails, detentionAmount: e.target.value })}
-                      className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
-                      placeholder="Amount"
+                      readOnly
+                      className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-sm outline-none"
+                      placeholder="Calculated from detention rule"
                     />
                   </div>
                 </div>

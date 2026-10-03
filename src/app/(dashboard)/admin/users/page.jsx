@@ -159,26 +159,18 @@ const ROLE_OPTIONS = {
 };
 
 const PERMISSIONS = [
-  "create", "view", "edit", "delete",
+  "create", "view", "edit",
+  "view_financial_rates",
   "approve", "reject", "copy", "print",
   "export", "import", "upload", "download",
   "email", "whatsapp",
 ];
 
-// Master records are governed by create/edit/approval permissions.  Users
-// must never receive a delete control for these modules.
-const MASTER_PERMISSION_MODULES = new Set([
-  'Master Data', 'Rate Master', 'Company', 'Customers', 'Suppliers',
-  'Items', 'Employees', 'Accounts',
-]);
-const permissionsForModule = (moduleName) => (
-  MASTER_PERMISSION_MODULES.has(moduleName)
-    ? PERMISSIONS.filter((permission) => permission !== 'delete')
-    : PERMISSIONS
-);
+// Delete is deliberately omitted for every non-admin user and module.
+const permissionsForModule = () => PERMISSIONS;
 
 const PERM_ICONS = {
-  create: "✦", view: "👁", edit: "✎", delete: "⌫",
+  create: "✦", view: "👁", edit: "✎", view_financial_rates: "₹", delete: "⌫",
   approve: "✓", reject: "✗", copy: "⎘", print: "⎙",
   export: "↑", import: "↓", upload: "⬆", download: "⬇",
   email: "✉", whatsapp: "💬",
@@ -333,7 +325,7 @@ export default function UsersPage() {
     try {
       const safeModules = Object.fromEntries(Object.entries(form.modules || {}).map(([moduleName, data]) => {
         const permissions = { ...(data?.permissions || {}) };
-        if (MASTER_PERMISSION_MODULES.has(moduleName)) delete permissions.delete;
+        delete permissions.delete;
         return [moduleName, { ...data, permissions }];
       }));
       const safeForm = { ...form, modules: safeModules };

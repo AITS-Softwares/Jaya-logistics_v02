@@ -123,11 +123,33 @@ function serializeModules(modules) {
   }, {});
 }
 
+// Deletion is an administrator-only operation.  Keep this rule in the token
+// boundary as well as the UI so previously saved user permissions cannot be
+// used to call a transaction DELETE endpoint directly.
+function removeDeletePermissionsForNonAdmin(user) {
+  if (!user || user.type === 'company' || user.roles?.includes('Admin')) return user;
+  const modules = user.modules || {};
+  // CompanyUser.modules is a Mongoose Map while signing in, but a plain object
+  // after JWT decoding. Handle both; Object.entries(Map) would silently erase
+  // every module and cause unrelated 403 errors.
+  const entries = typeof modules.entries === 'function'
+    ? Array.from(modules.entries())
+    : Object.entries(modules);
+  const safeModules = Object.fromEntries(entries.map(([name, value]) => {
+    const plainValue = value && typeof value.toObject === 'function' ? value.toObject() : value;
+    const permissions = { ...(plainValue?.permissions || {}) };
+    delete permissions.delete;
+    return [name, { ...plainValue, permissions }];
+  }));
+  return { ...user, modules: safeModules };
+}
+
 // --------------------------------------------
 // 1. Sign token for both company and user
 // --------------------------------------------
 export function signToken(user, session = {}) {
-  const modulesObj = serializeModules(user.modules);
+  const permittedUser = removeDeletePermissionsForNonAdmin(user);
+  const modulesObj = serializeModules(permittedUser.modules);
 
   return jwt.sign(
     {
@@ -175,7 +197,7 @@ export function signToken(user, session = {}) {
 // --------------------------------------------
 export function verifyJWT(token) {
   try {
-    return jwt.verify(token, SECRET);
+    return removeDeletePermissionsForNonAdmin(jwt.verify(token, SECRET));
   } catch (error) {
     console.error("JWT verify error:", error.message);
     return null;
@@ -230,6 +252,8 @@ export function verifyCompany(req) {
 // --------------------------------------------
 export function hasPermission(user, moduleName, action) {
   if (!user) return false;
+
+  if (action === 'delete' && user.type !== 'company' && !user.roles?.includes('Admin')) return false;
   
   // Company admins have full access
   if (user.type === "company") return true;

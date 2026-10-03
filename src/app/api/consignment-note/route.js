@@ -1409,6 +1409,9 @@ import { NextResponse } from "next/server";
 import connectDb from "@/lib/db";
 import ConsignmentNote from "./ConsignmentNote";
 import LoadingPanel from "../loading-panel/LoadingPanel";
+import PurchasePanel from "../purchase-panel/PurchasePanel";
+import DetentionRule from "../detention-rules/DetentionRule";
+import { calculateDetention, selectDetentionRule } from "@/lib/detentionCalculation";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import { getNextLRNumber } from "./ConsignmentCounter";
 import mongoose from 'mongoose';
@@ -1513,6 +1516,32 @@ function formatIndiaDateTime(timestamp) {
   };
 }
 
+
+async function synchronizePurchaseDetention(user, loadingInfo, outDate, outTime) {
+  const purchase = await PurchasePanel.findOne(companyScopeFilter(user, {
+    loadingInfoNo: loadingInfo.vehicleArrivalNo
+  }));
+
+  if (!purchase) return;
+
+  const inDate = loadingInfo.arrivalDetails?.date;
+  const inTime = loadingInfo.arrivalDetails?.time || '';
+  const localStatus = purchase.orderRows?.[0]?.localStatus || 'unknown';
+  const rules = await DetentionRule.find(companyScopeFilter(user, {
+    active: true, effectiveFrom: { $lte: new Date() }
+  })).sort({ priority: 1, effectiveFrom: -1 }).lean();
+  const rule = selectDetentionRule(rules, localStatus, inTime);
+  const result = calculateDetention({ inDate, inTime, outDate, outTime, localStatus, rule });
+
+  purchase.arrivalDetails = purchase.arrivalDetails || {};
+  purchase.arrivalDetails.inDate = inDate || purchase.arrivalDetails.inDate;
+  purchase.arrivalDetails.inTime = inTime;
+  purchase.arrivalDetails.outDate = new Date(`${outDate}T00:00:00.000Z`);
+  purchase.arrivalDetails.outTime = outTime;
+  if (result) Object.assign(purchase.arrivalDetails, result);
+  await purchase.save();
+}
+
 /* ========================================
    GET /api/consignment-note - Requires 'view' permission
 ======================================== */
@@ -1531,6 +1560,7 @@ export async function GET(req) {
     const url = new URL(req.url);
     const id = url.searchParams.get("id");
     const lrNo = url.searchParams.get("lrNo");
+    const loadingInfoNo = url.searchParams.get("loadingInfoNo");
     const format = url.searchParams.get("format");
     const search = url.searchParams.get("search");
     const fromDate = url.searchParams.get("fromDate");
@@ -1578,6 +1608,14 @@ export async function GET(req) {
       }, { status: 200 });
     }
 
+    // ============ CASE 2B: GET BY LOADING INFO NO (LR may not exist yet) ============
+    if (loadingInfoNo) {
+      const note = await ConsignmentNote.findOne(
+        companyScopeFilter(user, { loadingInfoNo })
+      ).lean();
+      return NextResponse.json({ success: true, data: note || null }, { status: 200 });
+    }
+
     // ============ CASE 3: TABLE FORMAT FOR LIST VIEW ============
     if (format === 'table') {
       let query = {};
@@ -1617,7 +1655,39 @@ export async function GET(req) {
         .sort({ createdAt: -1 })
         .lean();
 
-      const tableData = notes.map(note => ({
+      // Older LRs (and LRs created before a server restart during development)
+      // may not yet contain the saved split. Resolve it once from Loading Info.
+      const missingBreakdownLoadingNos = notes
+        .filter((note) => !note.consignmentBreakdown?.length && note.loadingInfoNo)
+        .map((note) => note.loadingInfoNo);
+      const loadingInfos = missingBreakdownLoadingNos.length
+        ? await LoadingPanel.find(companyScopeFilter(user, {
+          vehicleArrivalNo: { $in: missingBreakdownLoadingNos }
+        })).select('vehicleArrivalNo orderRows').lean()
+        : [];
+      const loadingInfoByNo = new Map(loadingInfos.map((info) => [info.vehicleArrivalNo, info]));
+
+      const tableData = notes.map(note => {
+        const sourceRows = loadingInfoByNo.get(note.loadingInfoNo)?.orderRows || [];
+        const sourceBreakdown = sourceRows.map((row) => ({
+          orderNo: row.orderNo || note.header?.orderNo || 'N/A',
+          from: row.fromName || row.from || note.header?.from || 'N/A',
+          to: row.toName || row.to || note.header?.to || 'N/A',
+          weight: Number(row.weight) || 0,
+          unit: row.unit || note.header?.unit || 'MT'
+        }));
+        const fallbackBreakdown = [{
+          orderNo: note.header?.orderNo || 'N/A',
+          from: note.header?.from || 'N/A',
+          to: note.header?.to || 'N/A',
+          weight: note.totalWeight || 0,
+          unit: note.header?.unit || 'MT'
+        }];
+        const consignmentBreakdown = note.consignmentBreakdown?.length
+          ? note.consignmentBreakdown
+          : (sourceBreakdown.length ? sourceBreakdown : fallbackBreakdown);
+
+        return {
         _id: note._id,
         date: note.createdAt ? new Date(note.createdAt).toLocaleDateString('en-GB').replace(/\//g, '.') : '',
         lrNo: note.lrNo || 'N/A',
@@ -1634,8 +1704,10 @@ export async function GET(req) {
         vehicleNo: note.header?.vehicleNo || 'N/A',
         totalWeight: note.totalWeight || 0,
         unit: note.header?.unit || 'MT',
+        consignmentBreakdown,
         status: note.header?.status || 'Pending'
-      }));
+        };
+      });
 
       return NextResponse.json({
         success: true,
@@ -1770,6 +1842,21 @@ export async function POST(req) {
       }))
     };
 
+    // Store the Loading Info rows on the LR so individual order/destination
+    // weights remain available even if the source record is changed later.
+    const sourceOrderRows = Array.isArray(body.consignmentBreakdown) && body.consignmentBreakdown.length
+      ? body.consignmentBreakdown
+      : (linkedLoadingInfo?.orderRows || []);
+    const consignmentBreakdown = sourceOrderRows
+      .map((row) => ({
+        orderNo: row.orderNo || body.header?.orderNo || '',
+        from: row.fromName || row.from || body.header?.from || '',
+        to: row.toName || row.to || body.header?.to || '',
+        weight: Number(row.weight) || 0,
+        unit: row.unit || body.header?.unit || 'MT'
+      }))
+      .filter((row) => row.orderNo || row.from || row.to || row.weight);
+
     // Create consignment note with sub-company
     const consignmentNote = new ConsignmentNote({
       lrNo,
@@ -1845,11 +1932,21 @@ export async function POST(req) {
         containerNo: body.ewaybill?.containerNo || ''
       },
       packData: packData,
+      consignmentBreakdown,
       companyId: user.companyId,
       createdBy: user.id
     });
 
     await consignmentNote.save();
+
+    // Bypass a stale Mongoose model cache in a running development server so
+    // the new field is persisted immediately without requiring a restart.
+    if (consignmentBreakdown.length) {
+      await ConsignmentNote.collection.updateOne(
+        { _id: consignmentNote._id },
+        { $set: { consignmentBreakdown } }
+      );
+    }
 
     // A Loading Info can have one LR only.  Use the LR's persisted server
     // timestamp as the shared source for the vehicle Out Date and Out Time.
@@ -1862,6 +1959,9 @@ export async function POST(req) {
       linkedLoadingInfo.arrivalDetails.outTime = outTime;
       linkedLoadingInfo.consignmentNote = consignmentNote.lrNo;
       await linkedLoadingInfo.save();
+      // LR generation is the approved departure event.  Copy both source timestamps
+      // and the master-rule calculation to the linked Purchase record.
+      await synchronizePurchaseDetention(user, linkedLoadingInfo, outDate, outTime);
     }
 
     return NextResponse.json({

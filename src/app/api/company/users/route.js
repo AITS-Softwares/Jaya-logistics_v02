@@ -7,6 +7,14 @@ import { ensureOperatingCompanies } from "@/lib/companyScope";
 
 const SECRET = process.env.JWT_SECRET;
 
+function withoutDeletePermissions(modules = {}) {
+  return Object.fromEntries(Object.entries(modules || {}).map(([name, value]) => {
+    const permissions = { ...(value?.permissions || {}) };
+    delete permissions.delete;
+    return [name, { ...value, permissions }];
+  }));
+}
+
 const VALID_ROLES = [
   "Admin",
   "crm",
@@ -157,7 +165,7 @@ export async function POST(req) {
       employeeId: employeeId || undefined,
       name, email,
       password: hash,
-      roles, modules,
+      roles, modules: withoutDeletePermissions(modules),
       ...companyAccess,
     });
 

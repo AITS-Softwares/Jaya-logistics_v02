@@ -1935,7 +1935,8 @@ import {
   HiPuzzle, HiViewGrid, HiUser, HiDocumentText, HiOutlineOfficeBuilding,
   HiCube, HiShoppingCart, HiCog, HiMenu, HiX, HiHome, HiClipboardList,
   HiTruck, HiCurrencyRupee, HiInformationCircle, HiDocumentReport, HiCash,
-  HiOfficeBuilding, HiLocationMarker, HiMail, HiShieldCheck
+  HiOfficeBuilding, HiLocationMarker, HiMail, HiShieldCheck,
+  HiChevronDoubleLeft
 } from "react-icons/hi";
 import { GiStockpiles } from "react-icons/gi";
 import { SiCivicrm } from "react-icons/si";
@@ -2007,6 +2008,7 @@ export default function Layout({ children }) {
   const [openSubmenus, setOpenSubmenus] = useState({});
   const [session, setSession] = useState(null);
   const [operatingCompanies, setOperatingCompanies] = useState([]);
+  const [isWorkspaceMenuOpen, setIsWorkspaceMenuOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
   const sidebarRef = useRef(null);
@@ -2112,6 +2114,13 @@ export default function Layout({ children }) {
     'Suppliers': '/admin/supplier',
     'Items': '/admin/item',
   };
+  const handleMainClick = () => {
+    if (isSidebarOpen) {
+      setIsSidebarOpen(false);
+    } else if (!isSidebarCollapsed && window.matchMedia("(min-width: 768px)").matches) {
+      setIsSidebarCollapsed(true);
+    }
+  };
 
   const toggleSubmenu = (k) => setOpenSubmenus((p) => ({ ...p, [k]: !p[k] }));
   const toggleMenu = (m) => setOpenMenu(openMenu === m ? null : m);
@@ -2122,8 +2131,8 @@ export default function Layout({ children }) {
     setIsSidebarCollapsed(next);
     try { localStorage.setItem("sidebarCollapsed", next ? "1" : "0"); } catch { }
   };
-  const selectAdminWorkspace = async (event) => {
-    const code = event.target.value;
+  const selectAdminWorkspace = async (code) => {
+    setIsWorkspaceMenuOpen(false);
     if (!code) {
       const groupToken = localStorage.getItem("groupToken");
       if (groupToken) {
@@ -2159,7 +2168,7 @@ export default function Layout({ children }) {
       {/* Overlay */}
       {isSidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/60 z-40 md:hidden"
+          className="fixed inset-0 bg-black/60 z-[55] md:hidden"
           onClick={closeSidebar}
           aria-hidden="true"
         />
@@ -2169,7 +2178,7 @@ export default function Layout({ children }) {
       <aside
         ref={sidebarRef}
         aria-label="Sidebar navigation"
-        className={`fixed inset-y-0 left-0 z-50 w-64 lg:w-72 bg-[#1e293b] text-white transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+        className={`fixed inset-y-0 left-0 z-[60] w-64 lg:w-72 bg-[#1e293b] text-white transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"
           } ${isSidebarCollapsed ? "md:hidden" : ""} flex flex-col shadow-2xl`}
       >
         {/* Logo */}
@@ -2186,6 +2195,14 @@ export default function Layout({ children }) {
               <HiX size={24} />
             </button>
           )}
+          <button
+            onClick={toggleDesktopSidebar}
+            title="Hide sidebar"
+            aria-label="Hide sidebar"
+            className="hidden md:block p-2 rounded hover:bg-gray-700 transition-colors"
+          >
+            <HiChevronDoubleLeft size={20} />
+          </button>
         </div>
 
         {/* Nav */}
@@ -2458,9 +2475,16 @@ export default function Layout({ children }) {
                   <Item
                     href="/admin/Tracking-Plan"
                     icon={<HiLocationMarker />}
-                    label="Add Tracking Plan"
+                    label="Vehicle Tracking Plan"
                     onClick={closeSidebar}
                     isActive={isActive("/admin/Tracking-Plan")}
+                  />
+                  <Item
+                    href="/admin/Detention-Rule-Master"
+                    icon={<HiCog />}
+                    label="Detention Rule Master"
+                    onClick={closeSidebar}
+                    isActive={isActive("/admin/Detention-Rule-Master")}
                   />
                   <Item
                     href="/admin/Advance-Payment"
@@ -3280,19 +3304,26 @@ export default function Layout({ children }) {
 
           <div className="flex items-center justify-between px-4 h-14">
             <div className="flex items-center gap-3 min-w-0">
-              <button
+              {/* <button
                 onClick={() => setIsSidebarOpen(!isSidebarOpen)}
                 className="md:hidden p-2 -ml-2 text-gray-400 hover:text-white transition-colors"
               >
                 {isSidebarOpen ? <HiX size={24} /> : <HiMenu size={24} />}
-              </button>
+              </button> */}
+
+              {!isSidebarOpen && (
+                <button onClick={() => setIsSidebarOpen(true)} aria-label="Open sidebar"
+                  className="md:hidden p-2 -ml-2 text-gray-400 hover:text-white transition-colors">
+                  <HiMenu size={24} />
+                </button>
+              )}
 
               {/* Desktop: hide / show sidebar */}
               <button
                 onClick={toggleDesktopSidebar}
                 title={isSidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
                 aria-label={isSidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
-                className="hidden md:block p-2 -ml-2 text-gray-400 hover:text-white transition-colors"
+                className={`${isSidebarCollapsed ? "hidden md:block" : "hidden"} p-2 -ml-2 text-gray-400 hover:text-white transition-colors`}
               >
                 <HiMenu size={24} />
               </button>
@@ -3319,10 +3350,46 @@ export default function Layout({ children }) {
                 </div>
               )}
               {session.isGroupAdmin && (
-                <select value={session.activeOperatingCompany?.code || ""} onChange={selectAdminWorkspace} className="max-w-44 rounded-lg border border-amber-400/30 bg-amber-500/10 px-2.5 py-1 text-[10px] font-semibold text-amber-100 outline-none">
-                  <option value="" className="bg-slate-900">JAYA GROUP · Consolidated</option>
-                  {operatingCompanies.map((company) => <option key={company.code} value={company.code} className="bg-slate-900">Workspace · {company.name}</option>)}
-                </select>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setIsWorkspaceMenuOpen((open) => !open)}
+                    aria-expanded={isWorkspaceMenuOpen}
+                    className="flex max-w-52 items-center gap-2 rounded-lg border border-amber-400/40 bg-amber-500/10 px-3 py-1.5 text-left text-[11px] font-semibold text-amber-100 shadow-sm transition hover:border-amber-300 hover:bg-amber-500/20 focus:outline-none focus:ring-2 focus:ring-amber-400/50"
+                  >
+                    <span className="min-w-0 truncate">{session.activeOperatingCompany ? `Workspace · ${session.activeOperatingCompany.name}` : "JAYA GROUP · Consolidated"}</span>
+                    <span className={`shrink-0 text-amber-300 transition-transform ${isWorkspaceMenuOpen ? 'rotate-180' : ''}`}>⌄</span>
+                  </button>
+                  {isWorkspaceMenuOpen && (
+                    <div className="absolute right-0 z-50 mt-2 w-72 overflow-hidden rounded-xl border border-slate-700 bg-slate-950 shadow-2xl ring-1 ring-black/40">
+                      <div className="border-b border-slate-800 px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">Switch workspace</div>
+                      <button
+                        type="button"
+                        onClick={() => selectAdminWorkspace("")}
+                        className={`flex w-full items-center gap-2 px-3 py-2.5 text-left text-xs transition ${!session.activeOperatingCompany ? 'bg-amber-400/15 text-amber-200' : 'text-slate-200 hover:bg-slate-800'}`}
+                      >
+                        <span className="h-2 w-2 rounded-full bg-amber-400" />
+                        <span>JAYA GROUP · Consolidated</span>
+                      </button>
+                      <div className="max-h-64 overflow-y-auto py-1">
+                        {operatingCompanies.map((company) => {
+                          const active = session.activeOperatingCompany?.code === company.code;
+                          return (
+                            <button
+                              type="button"
+                              key={company.code}
+                              onClick={() => selectAdminWorkspace(company.code)}
+                              className={`flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left text-xs transition ${active ? 'bg-blue-600 text-white' : 'text-slate-200 hover:bg-slate-800'}`}
+                            >
+                              <span className="truncate">Workspace · {company.name}</span>
+                              {active && <span className="text-[10px] font-bold uppercase text-blue-100">Active</span>}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
               )}
 
               <div
@@ -3335,10 +3402,10 @@ export default function Layout({ children }) {
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto bg-[#f8fafc]">
+        <main onClick={handleMainClick} className="flex-1 overflow-y-auto bg-[#f8fafc]">
           {children}
         </main>
-      </div>
-    </div>
+      </div >
+    </div >
   );
 }

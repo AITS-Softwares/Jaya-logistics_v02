@@ -14,7 +14,7 @@
 // 1) Deploy the code edits (counter keys "<Type>_<CODE>")  2) DRY_RUN = true, read the output  3) stop the app, DRY_RUN = false, run ONCE.
 
 // ================= SETTINGS =================
-const DRY_RUN = false;
+const DRY_RUN = true;
 const VERBOSE = false;
 const BACKUP = true;
 const DEFAULT_CODE = "JGL";                 // company for old records that record none
@@ -45,7 +45,7 @@ const SM_RULES = [
     { coll: "consignmentnotes", field: "lrNo" }, { coll: "advancepayments", field: "paymentNo" },
 ];
 const LABELS = "VNN|PSN|LD|PUR|LR|ADV";
-const SM_OLD_DOC = new RegExp(`^(${LABELS})-(?:(\\d{4})-)?(\\d+)$`);                 // VNN-0023 , LD-2025-0012
+const SM_OLD_DOC = new RegExp(`^(${LABELS})-(?:(\\d{4}|\\d{6})-)?(\\d+)$`);                // VNN-0023 , LD-2025-0012
 const SM_PREFIXED = new RegExp(`^([A-Z]{1,10})-(${LABELS})-(?:(\\d{4})-)?(\\d+)$`);   // NK-VNN-0023 (done by an earlier run); the app's own NK-VNN-2026-27-00001 does not match
 const SM_RE = new RegExp(`(?<![A-Za-z0-9-])(?:${LABELS})-\\d+(?:-\\d+)?(?![0-9])`, "g");
 const ORDER_TOKEN = /(?<![A-Za-z0-9-])(?:([A-Z]{1,10})-OP-\d+|OP-\d+|[A-Z]{1,10}-ORD-(?:\d{4}-\d{2}-)?\d+)(?![0-9])/g;
@@ -202,7 +202,7 @@ for (const r of ERP) {
         for (const [, list] of groupBy(items, (x) => `${hex(x.d.companyId)}:${x.code}:${x.label}:${x.year}`)) {
             const code = list[0].code, keep = isKeep(code); list.sort(cmp);
             list.forEach((it, i) => {
-                const n = keep ? it.seq : i + 1;
+                const n = (keep || it.label === "LR") ? it.seq : i + 1;
                 const finalNo = keep && !it.old ? it.cur : `${code}-${it.label}-${it.year ? it.year + "-" : ""}${pad(n, it.w)}`;
                 if (finalNo !== it.cur) { addPlan(r.coll, it.d, r.field, it.cur, finalNo, "legacyDocumentNumber", it.old ? it.cur : (it.d.legacyDocumentNumber || it.cur)); renamed++; }
                 if (it.d.legacyDocumentNumber && it.d.legacyDocumentNumber !== it.cur && !map.has(it.d.legacyDocumentNumber)) map.set(it.d.legacyDocumentNumber, finalNo);

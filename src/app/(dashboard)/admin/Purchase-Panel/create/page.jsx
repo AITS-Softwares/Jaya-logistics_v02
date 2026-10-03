@@ -3686,16 +3686,16 @@ export default function CreatePurchasePanel() {
         console.log("✅ Memo file loaded from VNN:", approvalData.memoFile.originalName);
       }
 
-      // Set arrival details if available from VNN
-      if (vnnData.arrivalDetails) {
+      // Loading Info is the authoritative source for arrival and LR departure timestamps.
+      if (loadingPanelData?.arrivalDetails) {
         setArrivalDetails({
-          inDate: vnnData.arrivalDetails.inDate || arrivalDetails.inDate,
-          inTime: vnnData.arrivalDetails.inTime || "",
-          outDate: vnnData.arrivalDetails.outDate || arrivalDetails.outDate,
-          outTime: vnnData.arrivalDetails.outTime || "",
-          remarks: vnnData.arrivalDetails.remarks || "",
-          detentionDays: vnnData.arrivalDetails.detentionDays || "",
-          detentionAmount: vnnData.arrivalDetails.detentionAmount || "",
+          inDate: loadingPanelData.arrivalDetails.date || arrivalDetails.inDate,
+          inTime: loadingPanelData.arrivalDetails.time || "",
+          outDate: loadingPanelData.arrivalDetails.outDate || arrivalDetails.outDate,
+          outTime: loadingPanelData.arrivalDetails.outTime || "",
+          remarks: "",
+          detentionDays: "",
+          detentionAmount: "",
         });
       }
 
@@ -5553,9 +5553,9 @@ export default function CreatePurchasePanel() {
                     <input
                       type="number"
                       value={arrivalDetails.detentionDays}
-                      onChange={(e) => setArrivalDetails({ ...arrivalDetails, detentionDays: e.target.value })}
-                      className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
-                      placeholder="Number of days"
+                      readOnly
+                      className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-sm outline-none"
+                      placeholder="Calculated from detention rule"
                     />
                   </div>
                 </div>
@@ -5565,9 +5565,9 @@ export default function CreatePurchasePanel() {
                     <input
                       type="number"
                       value={arrivalDetails.detentionAmount}
-                      onChange={(e) => setArrivalDetails({ ...arrivalDetails, detentionAmount: e.target.value })}
-                      className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
-                      placeholder="Amount"
+                      readOnly
+                      className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-sm outline-none"
+                      placeholder="Calculated from detention rule"
                     />
                   </div>
                 </div>

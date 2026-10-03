@@ -8,6 +8,14 @@ import { ensureOperatingCompanies } from "@/lib/companyScope";
 
 const SECRET = process.env.JWT_SECRET;
 
+function withoutDeletePermissions(modules = {}) {
+  return Object.fromEntries(Object.entries(modules || {}).map(([name, value]) => {
+    const permissions = { ...(value?.permissions || {}) };
+    delete permissions.delete;
+    return [name, { ...value, permissions }];
+  }));
+}
+
 const VALID_ROLES = [
   "Admin", "crm", "masters", "Sales Manager", 
   "Purchase Manager", "Inventory Manager", "Accounts Manager", 
@@ -155,9 +163,10 @@ export async function PUT(req, { params }) {
 
     // Handle modules if provided
     if (body.modules && typeof body.modules === 'object') {
+      const modulesWithoutDelete = withoutDeletePermissions(body.modules);
       // Convert modules to Map if needed
       if (user.modules instanceof Map) {
-        for (const [key, value] of Object.entries(body.modules)) {
+        for (const [key, value] of Object.entries(modulesWithoutDelete)) {
           user.modules.set(key, {
             selected: value.selected || false,
             permissions: value.permissions || {}
@@ -165,7 +174,7 @@ export async function PUT(req, { params }) {
         }
         updateData.modules = user.modules;
       } else {
-        updateData.modules = body.modules;
+        updateData.modules = modulesWithoutDelete;
       }
     }
 

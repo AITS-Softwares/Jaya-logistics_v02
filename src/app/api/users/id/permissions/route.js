@@ -9,7 +9,7 @@ const MODULE_PERMISSIONS = {
   // Sales Modules
   "Order Panel": ['view', 'create', 'edit', 'delete', 'approve', 'reject'],
   "Vehicle Negotiation": ['view', 'create', 'edit', 'delete', 'approve'],
-  "Pricing Panel": ['view', 'create', 'edit', 'delete'],
+  "Pricing Panel": ['view', 'create', 'edit', 'delete', 'view_financial_rates'],
   "Pricing Panel - Part 2 Approval": ['view', 'approve'],
   "Loading Info": ['view', 'create', 'edit', 'delete'],
   "Purchase Panel": ['view', 'create', 'edit', 'delete'],
@@ -18,7 +18,7 @@ const MODULE_PERMISSIONS = {
   "Advance Payment": ['view', 'create', 'edit', 'delete', 'approve'],
   "Proof Of Delivery": ['view', 'create', 'edit', 'delete'],
   "Balance-Payment": ['view', 'create', 'edit', 'delete'],
-  "Billing": ['view', 'create', 'edit', 'delete', 'approve'],
+  "Billing": ['view', 'create', 'edit', 'delete', 'approve', 'view_financial_rates'],
   "order-full-report": ['view', 'export', 'print'],
 
   // Purchase Modules
@@ -153,7 +153,8 @@ export async function PUT(req, { params }) {
       const providedPerms = moduleData.permissions || {};
 
       availablePerms.forEach(perm => {
-        validPermissions[perm] = providedPerms[perm] === true;
+        // Delete is administrator-only and never delegated through this API.
+        validPermissions[perm] = perm === 'delete' ? false : providedPerms[perm] === true;
       });
 
       moduleMap.set(moduleName, {

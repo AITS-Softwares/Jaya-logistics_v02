@@ -68,11 +68,18 @@ export function usePermission() {
   const canView = useCallback((moduleName) => hasPermission(moduleName, 'view'), [hasPermission]);
   const canCreate = useCallback((moduleName) => hasPermission(moduleName, 'create'), [hasPermission]);
   const canEdit = useCallback((moduleName) => hasPermission(moduleName, 'edit'), [hasPermission]);
-  const canDelete = useCallback((moduleName) => hasPermission(moduleName, 'delete'), [hasPermission]);
+  // Deletion is intentionally unavailable to every non-admin user, even if an
+  // old stored permission payload still contains delete: true.
+  const canDelete = useCallback((moduleName) => (
+    (isAdmin || isCompany) && hasPermission(moduleName, 'delete')
+  ), [hasPermission, isAdmin, isCompany]);
   const canApprove = useCallback((moduleName) => hasPermission(moduleName, 'approve'), [hasPermission]);
   const canReject = useCallback((moduleName) => hasPermission(moduleName, 'reject'), [hasPermission]);
   const canExport = useCallback((moduleName) => hasPermission(moduleName, 'export'), [hasPermission]);
   const canPrint = useCallback((moduleName) => hasPermission(moduleName, 'print'), [hasPermission]);
+  const canViewFinancialRates = useCallback((moduleName) => (
+    isAdmin || isCompany || hasPermission(moduleName, 'view_financial_rates')
+  ), [hasPermission, isAdmin, isCompany]);
 
   return {
     user,
@@ -88,5 +95,6 @@ export function usePermission() {
     canReject,
     canExport,
     canPrint
+    ,canViewFinancialRates
   };
 }

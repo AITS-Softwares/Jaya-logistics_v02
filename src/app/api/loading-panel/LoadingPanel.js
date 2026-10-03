@@ -606,6 +606,7 @@ const loadingPanelSchema = new mongoose.Schema({
   
   // Vehicle Slip files
   vehicleSlips: [String],
+  vehicleSlipUploadedAt: { type: Date, default: null },
   
   // Loaded Vehicle Slip
   loadedVehicleSlips: [String],

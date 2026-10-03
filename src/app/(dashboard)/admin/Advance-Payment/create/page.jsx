@@ -1562,6 +1562,10 @@ function num(v) {
   return Number.isFinite(n) ? n : 0;
 }
 
+function getPurchaseOrderNumbers(purchase) {
+  return [...new Set((purchase?.orderRows || []).map((row) => row.orderNo).filter(Boolean))];
+}
+
 /* =======================
   Data Fetching Hooks
 ========================= */
@@ -1738,7 +1742,8 @@ function PurchaseDropdown({
   };
 
   const handleSelectPurchase = async (purchase) => {
-    setSearchQuery(purchase.purchaseNo);
+    const orderNumbers = getPurchaseOrderNumbers(purchase);
+    setSearchQuery(orderNumbers.join(', ') || purchase.purchaseNo);
     setShowDropdown(false);
     
     try {
@@ -1799,7 +1804,8 @@ function PurchaseDropdown({
     return purchaseList.filter(p =>
       p.purchaseNo?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.vendorName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.vehicleNo?.toLowerCase().includes(searchQuery.toLowerCase())
+      p.vehicleNo?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      getPurchaseOrderNumbers(p).some((orderNo) => orderNo.toLowerCase().includes(searchQuery.toLowerCase()))
     );
   }, [purchaseList, searchQuery]);
 
@@ -1872,7 +1878,13 @@ function PurchaseDropdown({
                       {/* Card Content */}
                       <div className="p-4">
                         <div className="flex items-center justify-between mb-2">
-                          <span className="font-bold text-emerald-700 text-sm">{p.purchaseNo}</span>
+                          <div className="min-w-0">
+                            <div className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Order No</div>
+                            <div className="truncate text-base font-extrabold text-blue-700" title={getPurchaseOrderNumbers(p).join(', ')}>
+                              {getPurchaseOrderNumbers(p).join(', ') || 'Order not available'}
+                            </div>
+                            <div className="mt-0.5 text-xs font-semibold text-emerald-700">Purchase: {p.purchaseNo}</div>
+                          </div>
                           <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${
                             (p.status || '').toLowerCase() === 'completed' ? 'bg-green-100 text-green-800' :
                             (p.status || '').toLowerCase() === 'paid' ? 'bg-blue-100 text-blue-800' :
@@ -2607,14 +2619,15 @@ export default function CreateAdvancePayment() {
           <Card title="Load from Purchase Panel">
             <div className="grid grid-cols-12 gap-4">
               <div className="col-span-12 md:col-span-4">
-                <label className="text-xs font-bold text-slate-600">Search Purchase No</label>
-                <PurchaseDropdown onSelect={handlePurchaseSelect} placeholder="Search by Purchase No, Vendor or Vehicle..." />
-                <p className="text-xs text-slate-400 mt-1">Select a purchase to auto-fill all data</p>
+                <label className="text-xs font-bold text-slate-600">Search Order No</label>
+                <PurchaseDropdown onSelect={handlePurchaseSelect} placeholder="Search by Order No, Purchase No, Vendor or Vehicle..." />
+                <p className="text-xs text-slate-400 mt-1">Select an order-linked purchase to auto-fill all data</p>
               </div>
               {purchaseData && (
                 <div className="col-span-12 md:col-span-8">
                   <div className="bg-green-50 p-3 rounded-lg border border-green-200">
                     <div className="grid grid-cols-2 gap-4">
+                      <div><span className="text-xs font-bold text-slate-600">Order No:</span><span className="ml-2 text-sm font-bold text-blue-800">{getPurchaseOrderNumbers(purchaseData).join(', ') || 'N/A'}</span></div>
                       <div><span className="text-xs font-bold text-slate-600">Loaded Purchase:</span><span className="ml-2 text-sm font-bold text-green-800">{purchaseData.purchaseNo}</span></div>
                       <div><span className="text-xs font-bold text-slate-600">Vendor:</span><span className="ml-2 text-sm text-slate-700">{purchaseData.purchaseDetails?.vendorName || 'N/A'}</span></div>
                       <div><span className="text-xs font-bold text-slate-600">Purchase Amount (A x B):</span><span className="ml-2 text-sm font-bold text-purple-800">₹{purchaseAmountFromVNN.toLocaleString()}</span></div>

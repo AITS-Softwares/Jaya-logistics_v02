@@ -406,6 +406,16 @@ const consignmentNoteSchema = new mongoose.Schema({
   // Pack Data (all pack types)
   packData: packDataSchema,
 
+  // Immutable order/destination split captured when this LR is created.
+  // This keeps the list view historically correct if the source order changes later.
+  consignmentBreakdown: [{
+    orderNo: { type: String, default: '' },
+    from: { type: String, default: '' },
+    to: { type: String, default: '' },
+    weight: { type: Number, default: 0 },
+    unit: { type: String, default: 'MT' }
+  }],
+
   // Total Weight Calculation
   totalWeight: {
     type: Number,
