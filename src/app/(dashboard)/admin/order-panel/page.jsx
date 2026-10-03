@@ -1293,7 +1293,7 @@ export default function OrderPanelList() {
         {/* Orders Table */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="max-h-[calc(100vh-280px)] overflow-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm compact-list-table">
               <thead className="bg-yellow-400 border-b border-yellow-500">
                 <tr>
                   <th className="px-4 py-3 text-left">

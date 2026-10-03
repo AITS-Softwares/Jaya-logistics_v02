@@ -327,7 +327,7 @@ export default function VehicleNegotiationList() {
         {/* Negotiations Table */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm compact-list-table">
               <thead className="bg-yellow-400 border-b border-yellow-500">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">S.No</th>

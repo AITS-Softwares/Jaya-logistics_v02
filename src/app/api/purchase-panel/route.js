@@ -273,6 +273,7 @@ export async function GET(req) {
           lrCode: lrCode,
           amount: purchase.purchaseAmountFromVNN || purchase.purchaseDetails?.amount || 0,
           balance: purchase.balance || 0,
+          memoStatus: purchase.memoFile?.filePath || purchase.memoFile?.filename ? 'Uploaded' : 'Pending',
           status: purchase.approval?.status || 'Draft',
           orderRows: purchase.orderRows || [],
           subCompanyName: purchase.subCompanyName || '',

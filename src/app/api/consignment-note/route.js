@@ -1644,7 +1644,39 @@ export async function GET(req) {
         .sort({ createdAt: -1 })
         .lean();
 
-      const tableData = notes.map(note => ({
+      // Older LRs (and LRs created before a server restart during development)
+      // may not yet contain the saved split. Resolve it once from Loading Info.
+      const missingBreakdownLoadingNos = notes
+        .filter((note) => !note.consignmentBreakdown?.length && note.loadingInfoNo)
+        .map((note) => note.loadingInfoNo);
+      const loadingInfos = missingBreakdownLoadingNos.length
+        ? await LoadingPanel.find(companyScopeFilter(user, {
+          vehicleArrivalNo: { $in: missingBreakdownLoadingNos }
+        })).select('vehicleArrivalNo orderRows').lean()
+        : [];
+      const loadingInfoByNo = new Map(loadingInfos.map((info) => [info.vehicleArrivalNo, info]));
+
+      const tableData = notes.map(note => {
+        const sourceRows = loadingInfoByNo.get(note.loadingInfoNo)?.orderRows || [];
+        const sourceBreakdown = sourceRows.map((row) => ({
+          orderNo: row.orderNo || note.header?.orderNo || 'N/A',
+          from: row.fromName || row.from || note.header?.from || 'N/A',
+          to: row.toName || row.to || note.header?.to || 'N/A',
+          weight: Number(row.weight) || 0,
+          unit: row.unit || note.header?.unit || 'MT'
+        }));
+        const fallbackBreakdown = [{
+          orderNo: note.header?.orderNo || 'N/A',
+          from: note.header?.from || 'N/A',
+          to: note.header?.to || 'N/A',
+          weight: note.totalWeight || 0,
+          unit: note.header?.unit || 'MT'
+        }];
+        const consignmentBreakdown = note.consignmentBreakdown?.length
+          ? note.consignmentBreakdown
+          : (sourceBreakdown.length ? sourceBreakdown : fallbackBreakdown);
+
+        return {
         _id: note._id,
         date: note.createdAt ? new Date(note.createdAt).toLocaleDateString('en-GB').replace(/\//g, '.') : '',
         lrNo: note.lrNo || 'N/A',
@@ -1661,8 +1693,10 @@ export async function GET(req) {
         vehicleNo: note.header?.vehicleNo || 'N/A',
         totalWeight: note.totalWeight || 0,
         unit: note.header?.unit || 'MT',
+        consignmentBreakdown,
         status: note.header?.status || 'Pending'
-      }));
+        };
+      });
 
       return NextResponse.json({
         success: true,
@@ -1797,6 +1831,21 @@ export async function POST(req) {
       }))
     };
 
+    // Store the Loading Info rows on the LR so individual order/destination
+    // weights remain available even if the source record is changed later.
+    const sourceOrderRows = Array.isArray(body.consignmentBreakdown) && body.consignmentBreakdown.length
+      ? body.consignmentBreakdown
+      : (linkedLoadingInfo?.orderRows || []);
+    const consignmentBreakdown = sourceOrderRows
+      .map((row) => ({
+        orderNo: row.orderNo || body.header?.orderNo || '',
+        from: row.fromName || row.from || body.header?.from || '',
+        to: row.toName || row.to || body.header?.to || '',
+        weight: Number(row.weight) || 0,
+        unit: row.unit || body.header?.unit || 'MT'
+      }))
+      .filter((row) => row.orderNo || row.from || row.to || row.weight);
+
     // Create consignment note with sub-company
     const consignmentNote = new ConsignmentNote({
       lrNo,
@@ -1872,11 +1921,21 @@ export async function POST(req) {
         containerNo: body.ewaybill?.containerNo || ''
       },
       packData: packData,
+      consignmentBreakdown,
       companyId: user.companyId,
       createdBy: user.id
     });
 
     await consignmentNote.save();
+
+    // Bypass a stale Mongoose model cache in a running development server so
+    // the new field is persisted immediately without requiring a restart.
+    if (consignmentBreakdown.length) {
+      await ConsignmentNote.collection.updateOne(
+        { _id: consignmentNote._id },
+        { $set: { consignmentBreakdown } }
+      );
+    }
 
     // A Loading Info can have one LR only.  Use the LR's persisted server
     // timestamp as the shared source for the vehicle Out Date and Out Time.

@@ -116,6 +116,12 @@ const MODULE_PERMISSIONS = {
   "PPC": ['view', 'create', 'edit', 'delete']
 };
 
+function withoutDeletePermission(permissions = {}) {
+  const safe = { ...permissions };
+  delete safe.delete;
+  return safe;
+}
+
 // ── HELPER FUNCTIONS ──
 
 function validateUser(req) {
@@ -190,7 +196,9 @@ function createDefaultModules(roles = []) {
         const permissions = {};
         // Default permissions: view and create for all, edit/delete/approve only for managers
         MODULE_PERMISSIONS[moduleName].forEach(perm => {
-          if (perm === 'view' || perm === 'create') {
+          if (perm === 'delete') {
+            permissions[perm] = false;
+          } else if (perm === 'view' || perm === 'create') {
             permissions[perm] = true;
           } else if (role.includes('Manager') || role === 'Admin' || role === 'Production Head' || role === 'Project Manager') {
             permissions[perm] = true;
@@ -301,13 +309,13 @@ export async function POST(req) {
             selected: moduleData.selected !== undefined ? moduleData.selected : existing.selected,
             permissions: {
               ...existing.permissions,
-              ...(moduleData.permissions || {})
+              ...withoutDeletePermission(moduleData.permissions)
             }
           });
         } else {
           moduleMap.set(moduleName, {
             selected: moduleData.selected || false,
-            permissions: moduleData.permissions || {}
+            permissions: withoutDeletePermission(moduleData.permissions)
           });
         }
       });
@@ -421,7 +429,7 @@ export async function PUT(req) {
       Object.entries(modules).forEach(([moduleName, moduleData]) => {
         moduleMap.set(moduleName, {
           selected: moduleData.selected || false,
-          permissions: moduleData.permissions || {}
+          permissions: withoutDeletePermission(moduleData.permissions)
         });
       });
       targetUser.modules = moduleMap;

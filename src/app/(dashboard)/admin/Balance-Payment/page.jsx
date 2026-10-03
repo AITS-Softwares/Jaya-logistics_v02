@@ -1088,7 +1088,7 @@ export default function BalancePaymentList() {
         {/* Payments Table */}
         <div className="bg-white rounded-2xl border border-yellow-400 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm compact-list-table">
               <thead className="bg-yellow-400 border-b-2 border-yellow-500">
                 <tr>
                   <th className="px-3 py-3 text-left text-xs font-extrabold text-slate-900">S.No</th>

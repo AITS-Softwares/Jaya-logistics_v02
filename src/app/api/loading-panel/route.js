@@ -1235,6 +1235,12 @@ function num(value) {
   return Number.isFinite(n) ? n : 0;
 }
 
+function indiaUploadDateTime(timestamp = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+    .formatToParts(timestamp).reduce((result, part) => ({ ...result, [part.type]: part.value }), {});
+  return { date: `${parts.year}-${parts.month}-${parts.day}`, time: `${parts.hour}:${parts.minute}` };
+}
+
 function isValidObjectId(id) {
   return id && mongoose.Types.ObjectId.isValid(id);
 }
@@ -1825,6 +1831,7 @@ export async function POST(req) {
 
       // Vehicle Slips
       vehicleSlips: body.vehicleSlips || [],
+      vehicleSlipUploadedAt: body.vehicleSlips?.length ? new Date() : null,
 
       // Loaded Vehicle Slip
       loadedVehicleSlips: body.loadedVehicleSlips || [],
@@ -1902,8 +1909,8 @@ export async function POST(req) {
 
       // Arrival details
       arrivalDetails: {
-        date: body.arrivalDetails?.date ? new Date(body.arrivalDetails.date) : null,
-        time: body.arrivalDetails?.time || '',
+        date: body.arrivalDetails?.date ? new Date(body.arrivalDetails.date) : (body.vehicleSlips?.length ? new Date(indiaUploadDateTime().date) : null),
+        time: body.arrivalDetails?.time || (body.vehicleSlips?.length ? indiaUploadDateTime().time : ''),
         outDate: body.arrivalDetails?.outDate ? new Date(body.arrivalDetails.outDate) : null,
         outTime: body.arrivalDetails?.outTime || ''
       },
@@ -2001,6 +2008,15 @@ export async function PUT(req) {
         success: false,
         message: "Loading panel not found"
       }, { status: 404 });
+    }
+
+    // First vehicle-slip upload is the authoritative vehicle-arrival event.
+    // Later replacement uploads must not overwrite the original arrival time.
+    const isFirstVehicleSlip = Array.isArray(updateData.vehicleSlips) && updateData.vehicleSlips.length > 0 && !(existingPanel.vehicleSlips || []).length;
+    if (isFirstVehicleSlip && !existingPanel.arrivalDetails?.date) {
+      const captured = indiaUploadDateTime();
+      updateData.vehicleSlipUploadedAt = new Date();
+      updateData.arrivalDetails = { ...(updateData.arrivalDetails || {}), date: captured.date, time: captured.time };
     }
 
     updateData.subCompanyId = user.activeOperatingCompanyId;

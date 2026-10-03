@@ -1266,7 +1266,11 @@ export async function GET(req) {
               vnn: vnnNumber,
               orderNo: order.orderNo || '',
               partyName: order.partyName || panel.partyName || '',
-              plantCode: order.plantName || '',
+              // Preserve the plant ID/code; plantName is display-only and must
+              // never overwrite the value later reused by downstream forms.
+              plantCode: order.plantCode || '',
+              plantCodeValue: order.plantCodeValue || '',
+              plantName: order.plantName || '',
               orderType: order.orderType || '',
               pinCode: order.pinCode || '',
               taluka: order.talukaName || order.taluka || '-',

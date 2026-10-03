@@ -194,6 +194,26 @@ input[type="number"] {
   }
 }
 
+/* Management/list tables only: keep wide transaction tables readable. */
+.compact-list-table th,
+.compact-list-table td {
+  /* Standard list cells use px-4 py-3 (16px / 12px); reduce each by 3px. */
+  padding: 9px 13px !important;
+  white-space: nowrap;
+}
+
+/* Keep list action buttons on one line so they do not increase row height. */
+.compact-list-table th:last-child,
+.compact-list-table td:last-child {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.compact-list-table td:last-child > div {
+  flex-wrap: nowrap !important;
+  width: max-content;
+}
+
 @layer base {
   * {
     @apply border-border;
