@@ -7834,7 +7834,7 @@ export default function EditVehicleNegotiation() {
       if (!res.ok) throw new Error(data.message || 'Workflow update failed.');
       if (action === 'amend-part1') {
         await fetchNegotiationData();
-        alert('Part 1 amendment opened. Rate Target and Part 3 approval have been reset.');
+        alert('Part 1 amendment opened. All approvals have been reset and must be completed again.');
       } else {
         setWorkflow(data.data.workflow);
         alert('Part 1 is locked. Continue with Rate Target (Vehicle Negotiation).');

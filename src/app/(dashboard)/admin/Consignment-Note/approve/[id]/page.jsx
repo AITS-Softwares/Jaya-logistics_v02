@@ -1808,8 +1808,14 @@ export default function ApproveConsignmentNote() {
   };
 
   const handleApprove = async () => {
-    if (!header.status) {
-      alert("Please select status");
+    const actionByStatus = {
+      Approved: 'approve',
+      Rejected: 'reject',
+      Completed: 'complete'
+    };
+    const action = actionByStatus[header.status];
+    if (!action) {
+      alert("Select Approved, Rejected, or Completed before updating the status.");
       return;
     }
 
@@ -1817,28 +1823,14 @@ export default function ApproveConsignmentNote() {
     try {
       const token = localStorage.getItem('token');
       
-      // Prepare update payload - update status and sub-company if needed
-      const payload = {
-        id: noteId,
-        header: {
-          status: header.status,
-          subCompanyId: header.subCompanyId || '',
-          subCompanyName: header.subCompanyName || '',
-          subCompanyCode: header.subCompanyCode || ''
-        },
-        subCompanyId: header.subCompanyId || '',
-        subCompanyName: header.subCompanyName || '',
-        subCompanyCode: header.subCompanyCode || ''
-      };
-      
-      // Send update
+      // Status changes are approval actions, not ordinary LR edits.
       const res = await fetch('/api/consignment-note', {
-        method: 'PUT',
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ id: noteId, action }),
       });
 
       const data = await res.json();

@@ -3408,6 +3408,27 @@ function defaultDeductionRow() {
   };
 }
 
+async function openPurchaseMemo(purchaseId, filePath) {
+  if (!purchaseId || !filePath) return;
+  const previewWindow = window.open("", "_blank");
+  try {
+    const token = localStorage.getItem("token");
+    const response = await fetch(
+      `/api/purchase-panel/${encodeURIComponent(purchaseId)}/attachment?path=${encodeURIComponent(filePath)}`,
+      { headers: { Authorization: `Bearer ${token}` } },
+    );
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const objectUrl = URL.createObjectURL(await response.blob());
+    if (previewWindow) previewWindow.location.replace(objectUrl);
+    else window.open(objectUrl, "_blank");
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 5 * 60 * 1000);
+  } catch (error) {
+    console.error("Unable to open Purchase MEMO:", error);
+    if (previewWindow) previewWindow.close();
+    alert("The MEMO could not be opened. It may no longer be present on the server.");
+  }
+}
+
 export default function EditPurchasePanel() {
   const router = useRouter();
   const params = useParams();
@@ -5585,10 +5606,9 @@ export default function EditPurchasePanel() {
                         </div>
                         <div className="flex gap-2">
                           {memoFileInfo.filePath && (
-                            <a
-                              href={memoFileInfo.filePath}
-                              target="_blank"
-                              rel="noopener noreferrer"
+                            <button
+                              type="button"
+                              onClick={() => openPurchaseMemo(purchaseId, memoFileInfo.filePath)}
                               className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
                               title="View File"
                             >
@@ -5596,7 +5616,7 @@ export default function EditPurchasePanel() {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                               </svg>
-                            </a>
+                            </button>
                           )}
                           <button
                             onClick={() => setMemoFileInfo(null)}

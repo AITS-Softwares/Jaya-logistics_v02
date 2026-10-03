@@ -4347,10 +4347,14 @@ export async function PATCH(req) {
 
       const rateTargetCompleted = Boolean(vehicleNegotiation.workflow?.rateTargetCompletedAt) ||
         (Number(vehicleNegotiation.negotiation?.maxRate) > 0 && Number(vehicleNegotiation.negotiation?.targetRate) > 0);
-      if (partToUpdate === 'part3' && (!vehicleNegotiation.workflow?.part1Locked || !rateTargetCompleted)) {
+      if (partToUpdate === 'part3' && (
+        vehicleNegotiation.approval?.part1Status !== 'Approved' ||
+        !vehicleNegotiation.workflow?.part1Locked ||
+        !rateTargetCompleted
+      )) {
         return NextResponse.json({
           success: false,
-          message: 'Part 3 can be approved only after Part 1 is locked and Rate Target is completed.'
+          message: 'Part 3 can be approved only after Part 1 is approved and locked, and Rate Target is completed.'
         }, { status: 409 });
       }
       

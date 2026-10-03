@@ -65,12 +65,16 @@ export async function PATCH(req, { params }) {
     record.workflow.rateTargetLastSavedAt = null;
     record.workflow.placementCompletedAt = null;
     record.workflow.placementCompletedBy = null;
+    record.approval.part1Status = 'Pending';
+    record.approval.part1Remarks = '';
     record.approval.part3Status = 'Pending';
     record.approval.part3Remarks = '';
     record.approval.vehicleNo = '';
     record.approval.mobile = '';
     record.approval.purchaseType = '';
     record.approval.paymentTerms = '';
+    record.panelStatus = 'Submitted';
+    record.workflow.audit.push({ action: 'reapproval-required', reason, by: auth.user.id || null, at: new Date() });
   }
 
   await record.save();

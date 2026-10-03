@@ -11,6 +11,26 @@ import SubCompany from "@/models/SubCompany";
 
 const selectableStatuses = ["Approved", "Completed"];
 
+function withVehicleSlipArrival(panel) {
+  if (!panel?.vehicleSlipUploadedAt) return panel;
+
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Kolkata",
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+  }).formatToParts(new Date(panel.vehicleSlipUploadedAt))
+    .reduce((result, part) => ({ ...result, [part.type]: part.value }), {});
+
+  return {
+    ...panel,
+    arrivalDetails: {
+      ...panel.arrivalDetails,
+      date: `${parts.year}-${parts.month}-${parts.day}`,
+      time: `${parts.hour}:${parts.minute}`,
+    },
+  };
+}
+
 function loadingInfoReference(panel) {
   const orderNumbers = [...new Set(
     (panel.orderRows || []).map((row) => row.orderNo).filter(Boolean),
@@ -79,7 +99,7 @@ export const GET = withAuth(async (req, context, user) => {
 
       return NextResponse.json({
         success: true,
-        data: { loadingInfo, vehicleNegotiation, pricingPanel },
+        data: { loadingInfo: withVehicleSlipArrival(loadingInfo), vehicleNegotiation, pricingPanel },
       });
     }
 

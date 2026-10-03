@@ -5402,11 +5402,10 @@ export default function CreateConsignmentNote() {
               <div className="col-span-12 md:col-span-3">
                 <label className="text-xs font-bold text-slate-600">BOE / Invoice Date</label>
                 <input
-                  type="text"
+                  type="date"
                   value={invoice.boeInvoiceDate}
                   onChange={(e) => setInvoice({ ...invoice, boeInvoiceDate: e.target.value })}
                   className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200"
-                  placeholder="DD.MM.YYYY"
                 />
               </div>
 
@@ -5442,11 +5441,10 @@ export default function CreateConsignmentNote() {
               <div className="col-span-12 md:col-span-4">
                 <label className="text-xs font-bold text-slate-600">Expiry Date</label>
                 <input
-                  type="text"
+                  type="date"
                   value={ewaybill.expiryDate}
                   onChange={(e) => setEwaybill({ ...ewaybill, expiryDate: e.target.value })}
                   className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200"
-                  placeholder="DD.MM.YYYY"
                 />
               </div>
 

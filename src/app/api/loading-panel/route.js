@@ -1765,6 +1765,14 @@ export async function POST(req) {
         : 'Not Loaded'
     };
 
+    // The first vehicle-slip upload is the recorded vehicle-arrival event. Keep
+    // one timestamp for both fields so a request crossing midnight cannot save
+    // a date and time from two different moments.
+    const vehicleSlipUploadedAt = body.vehicleSlips?.length ? new Date() : null;
+    const vehicleSlipArrival = vehicleSlipUploadedAt
+      ? indiaUploadDateTime(vehicleSlipUploadedAt)
+      : null;
+
     // Create loading panel document
     const loadingPanelData = {
       vehicleArrivalNo,
@@ -1837,7 +1845,7 @@ export async function POST(req) {
 
       // Vehicle Slips
       vehicleSlips: body.vehicleSlips || [],
-      vehicleSlipUploadedAt: body.vehicleSlips?.length ? new Date() : null,
+      vehicleSlipUploadedAt,
 
       // Loaded Vehicle Slip
       loadedVehicleSlips: body.loadedVehicleSlips || [],
@@ -1915,8 +1923,10 @@ export async function POST(req) {
 
       // Arrival details
       arrivalDetails: {
-        date: body.arrivalDetails?.date ? new Date(body.arrivalDetails.date) : (body.vehicleSlips?.length ? new Date(indiaUploadDateTime().date) : null),
-        time: body.arrivalDetails?.time || (body.vehicleSlips?.length ? indiaUploadDateTime().time : ''),
+        // A vehicle slip is authoritative; do not allow client-supplied arrival
+        // values to replace its upload timestamp.
+        date: vehicleSlipArrival ? new Date(vehicleSlipArrival.date) : (body.arrivalDetails?.date ? new Date(body.arrivalDetails.date) : null),
+        time: vehicleSlipArrival?.time || body.arrivalDetails?.time || '',
         outDate: body.arrivalDetails?.outDate ? new Date(body.arrivalDetails.outDate) : null,
         outTime: body.arrivalDetails?.outTime || ''
       },
@@ -2019,9 +2029,10 @@ export async function PUT(req) {
     // First vehicle-slip upload is the authoritative vehicle-arrival event.
     // Later replacement uploads must not overwrite the original arrival time.
     const isFirstVehicleSlip = Array.isArray(updateData.vehicleSlips) && updateData.vehicleSlips.length > 0 && !(existingPanel.vehicleSlips || []).length;
-    if (isFirstVehicleSlip && !existingPanel.arrivalDetails?.date) {
-      const captured = indiaUploadDateTime();
-      updateData.vehicleSlipUploadedAt = new Date();
+    if (isFirstVehicleSlip) {
+      const uploadedAt = new Date();
+      const captured = indiaUploadDateTime(uploadedAt);
+      updateData.vehicleSlipUploadedAt = uploadedAt;
       updateData.arrivalDetails = { ...(updateData.arrivalDetails || {}), date: captured.date, time: captured.time };
     }
 

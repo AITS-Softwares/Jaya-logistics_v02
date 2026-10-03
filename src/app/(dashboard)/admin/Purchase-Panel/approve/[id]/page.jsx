@@ -1363,6 +1363,27 @@ function ChargesTable({ rows, type }) {
 /* =======================
   MAIN APPROVE PAGE
 ========================= */
+async function openPurchaseMemo(purchaseId, filePath) {
+  if (!purchaseId || !filePath) return;
+  const previewWindow = window.open("", "_blank");
+  try {
+    const token = localStorage.getItem("token");
+    const response = await fetch(
+      `/api/purchase-panel/${encodeURIComponent(purchaseId)}/attachment?path=${encodeURIComponent(filePath)}`,
+      { headers: { Authorization: `Bearer ${token}` } },
+    );
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const objectUrl = URL.createObjectURL(await response.blob());
+    if (previewWindow) previewWindow.location.replace(objectUrl);
+    else window.open(objectUrl, "_blank");
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 5 * 60 * 1000);
+  } catch (error) {
+    console.error("Unable to open Purchase MEMO:", error);
+    if (previewWindow) previewWindow.close();
+    alert("The MEMO could not be opened. It may no longer be present on the server.");
+  }
+}
+
 export default function ApprovePurchasePanel() {
   const router = useRouter();
   const params = useParams();
@@ -1936,7 +1957,7 @@ export default function ApprovePurchasePanel() {
                       className="relative group cursor-pointer overflow-hidden rounded-xl border-2 border-green-300 bg-white shadow-lg hover:shadow-xl transition-all duration-300"
                       onClick={() => {
                         if (memoFileInfo.filePath) {
-                          window.open(memoFileInfo.filePath, '_blank');
+                          openPurchaseMemo(purchaseId, memoFileInfo.filePath);
                         }
                       }}
                     >

@@ -12,8 +12,10 @@ const detentionRuleSchema = new mongoose.Schema({
   effectiveFrom: { type: Date, default: Date.now },
   priority: { type: Number, default: 100 },
   companyId: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
+  // Rules are configured separately for each operating company.
+  subCompanyId: { type: mongoose.Schema.Types.ObjectId, ref: 'SubCompany', required: true, index: true },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'CompanyUser' }
 }, { timestamps: true });
 
-detentionRuleSchema.index({ companyId: 1, active: 1, movementType: 1, priority: 1 });
+detentionRuleSchema.index({ companyId: 1, subCompanyId: 1, active: 1, movementType: 1, priority: 1 });
 export default mongoose.models.DetentionRule || mongoose.model('DetentionRule', detentionRuleSchema);

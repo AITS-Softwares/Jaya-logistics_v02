@@ -87,6 +87,37 @@ function isValidObjectId(id) {
   return id && mongoose.Types.ObjectId.isValid(id);
 }
 
+// The upload timestamp is the source of truth for Purchase arrival-in. Older
+// Loading Info records may not have it, so retain their saved arrival values as
+// a backward-compatible fallback.
+function arrivalFromLoadingInfo(loadingInfo) {
+  if (!loadingInfo) return null;
+
+  if (loadingInfo.vehicleSlipUploadedAt) {
+    const parts = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Asia/Kolkata',
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+    }).formatToParts(new Date(loadingInfo.vehicleSlipUploadedAt))
+      .reduce((result, part) => ({ ...result, [part.type]: part.value }), {});
+
+    return {
+      date: new Date(`${parts.year}-${parts.month}-${parts.day}`),
+      time: `${parts.hour}:${parts.minute}`,
+      outDate: loadingInfo.arrivalDetails?.outDate || null,
+      outTime: loadingInfo.arrivalDetails?.outTime || ''
+    };
+  }
+
+  const arrival = loadingInfo.arrivalDetails || {};
+  return {
+    date: arrival.date || null,
+    time: arrival.time || '',
+    outDate: arrival.outDate || null,
+    outTime: arrival.outTime || ''
+  };
+}
+
 async function getLRCodeByOrderNo(orderNo, companyId) {
   if (!orderNo) return '';
   
@@ -150,9 +181,23 @@ export async function GET(req) {
       }
       
       const lrCode = await getLRCodeForPurchase(purchase, user.companyId);
+      const loadingInfo = purchase.loadingInfoNo
+        ? await LoadingPanel.findOne(companyScopeFilter(user, { vehicleArrivalNo: purchase.loadingInfoNo })).lean()
+        : null;
+      const loadingArrival = arrivalFromLoadingInfo(loadingInfo);
+      const arrivalDetails = loadingArrival
+        ? {
+            ...purchase.arrivalDetails,
+            inDate: loadingArrival.date || purchase.arrivalDetails?.inDate || null,
+            inTime: loadingArrival.time || purchase.arrivalDetails?.inTime || '',
+            outDate: loadingArrival.outDate || purchase.arrivalDetails?.outDate || null,
+            outTime: loadingArrival.outTime || purchase.arrivalDetails?.outTime || '',
+          }
+        : purchase.arrivalDetails;
       
       return {
         ...purchase,
+        arrivalDetails,
         fromLocation,
         toLocation,
         lrCode
@@ -467,11 +512,11 @@ export async function POST(req) {
     const linkedLoadingInfo = body.loadingInfoNo
       ? await LoadingPanel.findOne(companyScopeFilter(user, { vehicleArrivalNo: body.loadingInfoNo })).lean()
       : null;
-    const loadingArrival = linkedLoadingInfo?.arrivalDetails || {};
+    const loadingArrival = arrivalFromLoadingInfo(linkedLoadingInfo) || {};
     const arrivalDetails = {
-      inDate: loadingArrival.date ? new Date(loadingArrival.date) : (body.arrivalDetails?.inDate ? new Date(body.arrivalDetails.inDate) : new Date()),
+      inDate: loadingArrival.date ? new Date(loadingArrival.date) : (body.arrivalDetails?.inDate ? new Date(body.arrivalDetails.inDate) : null),
       inTime: loadingArrival.time || body.arrivalDetails?.inTime || '',
-      outDate: loadingArrival.outDate ? new Date(loadingArrival.outDate) : (body.arrivalDetails?.outDate ? new Date(body.arrivalDetails.outDate) : new Date()),
+      outDate: loadingArrival.outDate ? new Date(loadingArrival.outDate) : (body.arrivalDetails?.outDate ? new Date(body.arrivalDetails.outDate) : null),
       outTime: loadingArrival.outTime || body.arrivalDetails?.outTime || '',
       remarks: body.arrivalDetails?.remarks || '',
       detentionDays: num(body.arrivalDetails?.detentionDays),
@@ -841,11 +886,12 @@ export async function PUT(req) {
       const source = purchase.loadingInfoNo
         ? await LoadingPanel.findOne(companyScopeFilter(user, { vehicleArrivalNo: purchase.loadingInfoNo })).lean()
         : null;
-      if (source?.arrivalDetails) {
-        purchase.arrivalDetails.inDate = source.arrivalDetails.date || purchase.arrivalDetails.inDate;
-        purchase.arrivalDetails.inTime = source.arrivalDetails.time || purchase.arrivalDetails.inTime;
-        purchase.arrivalDetails.outDate = source.arrivalDetails.outDate || purchase.arrivalDetails.outDate;
-        purchase.arrivalDetails.outTime = source.arrivalDetails.outTime || purchase.arrivalDetails.outTime;
+      const loadingArrival = arrivalFromLoadingInfo(source);
+      if (loadingArrival) {
+        purchase.arrivalDetails.inDate = loadingArrival.date || purchase.arrivalDetails.inDate;
+        purchase.arrivalDetails.inTime = loadingArrival.time || purchase.arrivalDetails.inTime;
+        purchase.arrivalDetails.outDate = loadingArrival.outDate || purchase.arrivalDetails.outDate;
+        purchase.arrivalDetails.outTime = loadingArrival.outTime || purchase.arrivalDetails.outTime;
       }
       purchase.arrivalDetails.remarks = body.arrivalDetails.remarks !== undefined ? body.arrivalDetails.remarks : purchase.arrivalDetails.remarks;
     }

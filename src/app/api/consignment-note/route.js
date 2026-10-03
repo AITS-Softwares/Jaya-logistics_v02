@@ -2064,6 +2064,16 @@ export async function PUT(req) {
       }, { status: 404 });
     }
 
+    // Status transitions are approval actions. An editor may save LR details,
+    // but may not approve, reject, or complete an LR through the edit endpoint.
+    const currentStatus = note.header?.status || 'Pending';
+    if (body.header?.status !== undefined && body.header.status !== currentStatus) {
+      return NextResponse.json({
+        success: false,
+        message: 'Status can only be changed through the approval action.'
+      }, { status: 403 });
+    }
+
     // Check if loadingInfoNo is being changed and if new one is already used
     if (body.loadingInfoNo && body.loadingInfoNo !== note.loadingInfoNo) {
       const existing = await ConsignmentNote.findOne(companyScopeFilter(user, {
@@ -2099,9 +2109,10 @@ export async function PUT(req) {
 
     // Update header with sub-company
     if (body.header) {
+      const { status: _status, ...editableHeader } = body.header;
       note.header = {
         ...note.header,
-        ...body.header,
+        ...editableHeader,
         subCompanyId: user.activeOperatingCompanyId,
         subCompanyName: user.activeOperatingCompanyName || '',
         subCompanyCode: user.activeOperatingCompanyCode || ''
