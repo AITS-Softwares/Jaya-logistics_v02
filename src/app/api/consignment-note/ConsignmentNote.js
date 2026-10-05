@@ -32,7 +32,7 @@
 // const packDataItemSchema = new mongoose.Schema({
 //   _id: { type: String, required: true },
 //   packType: { type: String, enum: ['PALLETIZATION', 'UNIFORM - BAGS/BOXES', 'LOOSE - CARGO', 'NON-UNIFORM - GENERAL CARGO'] },
-  
+
 //   // Palletization fields
 //   noOfPallets: { type: String, default: '' },
 //   unitPerPallets: { type: String, default: '' },
@@ -46,13 +46,13 @@
 //   actualWt: { type: String, default: '' },
 //   chargedWt: { type: String, default: '' },
 //   wtUom: { type: String, default: 'MT' },
-  
+
 //   // Uniform fields
 //   // (same as above, using same fields)
-  
+
 //   // Loose Cargo fields
 //   // (using uom, productName, actualWt, chargedWt)
-  
+
 //   // Non-Uniform fields
 //   nos: { type: String, default: '' },
 //   length: { type: String, default: '' },
@@ -75,7 +75,7 @@
 //     required: true,
 //     index: true
 //   },
-  
+
 //   // Reference fields
 //   vnnNo: {
 //     type: String,
@@ -83,20 +83,20 @@
 //     index: true,
 //     sparse: true
 //   },
-  
+
 //   vehicleNegotiationRef: {
 //     type: mongoose.Schema.Types.ObjectId,
 //     ref: 'VehicleNegotiation',
 //     index: true,
 //     sparse: true
 //   },
-  
+
 //   loadingInfoNo: {
 //     type: String,
 //     default: '',
 //     index: true
 //   },
-  
+
 //   // Header Information
 //   header: {
 //     orderNo: { type: String, default: '' },
@@ -168,40 +168,40 @@
 // // Pre-save middleware
 // consignmentNoteSchema.pre('save', function(next) {
 //   this.updatedAt = Date.now();
-  
+
 //   // Calculate total weight from all pack types
 //   let total = 0;
-  
+
 //   // Palletization
 //   if (this.packData?.PALLETIZATION) {
 //     this.packData.PALLETIZATION.forEach(row => {
 //       total += parseFloat(row.actualWt) || 0;
 //     });
 //   }
-  
+
 //   // Uniform
 //   if (this.packData?.['UNIFORM - BAGS/BOXES']) {
 //     this.packData['UNIFORM - BAGS/BOXES'].forEach(row => {
 //       total += parseFloat(row.actualWt) || 0;
 //     });
 //   }
-  
+
 //   // Loose Cargo
 //   if (this.packData?.['LOOSE - CARGO']) {
 //     this.packData['LOOSE - CARGO'].forEach(row => {
 //       total += parseFloat(row.actualWt) || 0;
 //     });
 //   }
-  
+
 //   // Non-Uniform
 //   if (this.packData?.['NON-UNIFORM - GENERAL CARGO']) {
 //     this.packData['NON-UNIFORM - GENERAL CARGO'].forEach(row => {
 //       total += parseFloat(row.actualWt) || 0;
 //     });
 //   }
-  
+
 //   this.totalWeight = total;
-  
+
 //   next();
 // });
 
@@ -222,10 +222,10 @@ const addressSchema = new mongoose.Schema({
 
 // Invoice Schema
 const invoiceSchema = new mongoose.Schema({
-  boeInvoice: { 
-    type: String, 
-    enum: ['As Per Invoice', 'As Per Bill Of Entry', 'NA'], 
-    default: 'As Per Invoice' 
+  boeInvoice: {
+    type: String,
+    enum: ['As Per Invoice', 'As Per Bill Of Entry', 'NA'],
+    default: 'As Per Invoice'
   },
   boeInvoiceNo: { type: String, default: '' },
   boeInvoiceDate: { type: String, default: '' },
@@ -243,7 +243,7 @@ const ewaybillSchema = new mongoose.Schema({
 const packDataItemSchema = new mongoose.Schema({
   _id: { type: String, required: true },
   packType: { type: String, enum: ['PALLETIZATION', 'UNIFORM - BAGS/BOXES', 'LOOSE - CARGO', 'NON-UNIFORM - GENERAL CARGO'] },
-  
+
   // Palletization fields
   noOfPallets: { type: String, default: '' },
   unitPerPallets: { type: String, default: '' },
@@ -257,13 +257,13 @@ const packDataItemSchema = new mongoose.Schema({
   actualWt: { type: String, default: '' },
   chargedWt: { type: String, default: '' },
   wtUom: { type: String, default: 'MT' },
-  
+
   // Uniform fields
   // (same as above, using same fields)
-  
+
   // Loose Cargo fields
   // (using uom, productName, actualWt, chargedWt)
-  
+
   // Non-Uniform fields
   nos: { type: String, default: '' },
   length: { type: String, default: '' },
@@ -286,7 +286,7 @@ const consignmentNoteSchema = new mongoose.Schema({
     required: true,
     index: true
   },
-  
+
   // Reference fields
   vnnNo: {
     type: String,
@@ -294,60 +294,64 @@ const consignmentNoteSchema = new mongoose.Schema({
     index: true,
     sparse: true
   },
-  
+
   vehicleNegotiationRef: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'VehicleNegotiation',
     index: true,
     sparse: true
   },
-  
+
   loadingInfoNo: {
     type: String,
     default: '',
     index: true
   },
-  
+  orderRowId: {
+    type: String,
+    default: '',
+    index: true
+  },
   // LC Status
   lcStatus: {
     type: String,
     enum: ['LC', 'Not LC'],
     default: 'Not LC'
   },
-  
+
   // LR Type
   lrType: {
     type: String,
     enum: ['Export', 'Import', 'Normal'],
     default: 'Normal'
   },
-  
+
   // Vehicle Reach
   vehicleReach: {
     type: String,
     enum: ['Reach', 'Not Reach'],
     default: 'Not Reach'
   },
-  
+
   // Verification
   verification: {
     type: String,
     enum: ['Verified', 'Not Verified'],
     default: 'Not Verified'
   },
-  
+
   // Vehicle Unloaded Date
   vehicleUnloadedDate: {
     type: String,
     default: ''
   },
-  
+
   // Remarks
   remarks: {
     type: String,
     default: ''
   },
-    subCompanyId: {
+  subCompanyId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'SubCompany',
     required: false
@@ -447,46 +451,51 @@ const consignmentNoteSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Pre-save middleware
-consignmentNoteSchema.pre('save', function(next) {
+consignmentNoteSchema.pre('save', function (next) {
   this.updatedAt = Date.now();
-  
+
   // Calculate total weight from all pack types
   let total = 0;
-  
+
   // Palletization
   if (this.packData?.PALLETIZATION) {
     this.packData.PALLETIZATION.forEach(row => {
       total += parseFloat(row.actualWt) || 0;
     });
   }
-  
+
   // Uniform
   if (this.packData?.['UNIFORM - BAGS/BOXES']) {
     this.packData['UNIFORM - BAGS/BOXES'].forEach(row => {
       total += parseFloat(row.actualWt) || 0;
     });
   }
-  
+
   // Loose Cargo
   if (this.packData?.['LOOSE - CARGO']) {
     this.packData['LOOSE - CARGO'].forEach(row => {
       total += parseFloat(row.actualWt) || 0;
     });
   }
-  
+
   // Non-Uniform
   if (this.packData?.['NON-UNIFORM - GENERAL CARGO']) {
     this.packData['NON-UNIFORM - GENERAL CARGO'].forEach(row => {
       total += parseFloat(row.actualWt) || 0;
     });
   }
-  
+
   this.totalWeight = total;
-  
+
   next();
 });
 
-const ConsignmentNote = mongoose.models.ConsignmentNote || 
+consignmentNoteSchema.index(
+  { companyId: 1, orderRowId: 1 },
+  { unique: true, partialFilterExpression: { orderRowId: { $type: 'string', $gt: '' } } }
+);
+
+const ConsignmentNote = mongoose.models.ConsignmentNote ||
   mongoose.model('ConsignmentNote', consignmentNoteSchema);
 
 export default ConsignmentNote;

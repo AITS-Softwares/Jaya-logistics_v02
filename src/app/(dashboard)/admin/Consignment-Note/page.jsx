@@ -881,6 +881,7 @@ export default function ConsignmentNoteList() {
   const [error, setError] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(null);
   const [approveLoading, setApproveLoading] = useState(null);
+  const [orderWeights, setOrderWeights] = useState({});
   const [filters, setFilters] = useState({
     search: "",
     fromDate: "",
@@ -936,6 +937,39 @@ export default function ConsignmentNoteList() {
       }
     }
   }, [permissionLoading, canView, fetchNotes]);
+
+  // Total weight of each order, from the Order Panel (sum of its rows). Loaded once; if it fails the list keeps showing the LR weight.
+  useEffect(() => {
+    if (permissionLoading || !canView(MODULE_NAME)) return;
+    let alive = true;
+    (async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch('/api/order-panel?table=true', { headers: { Authorization: `Bearer ${token}` } });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!alive || !data.success) return;
+        const totals = {};
+        (data.data || []).forEach((row) => {
+          const no = String(row.orderNo || '').trim();
+          if (no && no !== 'N/A') totals[no] = (totals[no] || 0) + (Number(row.weight) || 0);
+        });
+        setOrderWeights(totals);
+      } catch {
+        /* keep the LR weight */
+      }
+    })();
+    return () => { alive = false; };
+  }, [permissionLoading, canView]);
+
+  // Weight to show: total of the order(s) on this LR, or the LR weight if an order's total is not available
+  const orderTotalWeight = (item) => {
+    const orderNos = [...new Set([item.orderNo, ...(item.consignmentBreakdown || []).map((line) => line.orderNo)]
+      .map((no) => String(no || '').trim())
+      .filter((no) => no && no !== 'N/A'))];
+    if (!orderNos.length || orderNos.some((no) => orderWeights[no] === undefined)) return item.totalWeight;
+    return Math.round(orderNos.reduce((sum, no) => sum + orderWeights[no], 0) * 1000) / 1000;
+  };
 
   const handleFilterChange = (key, value) => {
     setFilters(prev => ({ ...prev, [key]: value }));
@@ -1280,7 +1314,8 @@ export default function ConsignmentNoteList() {
                           ))}
                         </div>
                       </td>
-                      <td className="px-4 py-3 font-medium">{item.totalWeight} {item.unit}</td>
+                      
+                      <td className="px-4 py-3 font-medium">{orderTotalWeight(item)} {item.unit}</td>
                       <td className="px-4 py-3">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(item.status)}`}>
                           {item.status}

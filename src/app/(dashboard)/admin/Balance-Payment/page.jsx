@@ -1221,8 +1221,8 @@ export default function BalancePaymentList() {
                 ) : (
                   <tr>
                     <td colSpan="22" className="px-4 py-12 text-center text-slate-500">
-                      <div className="flex flex-col items-center">
-                        <svg className="w-16 h-16 text-slate-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="w-full text-center" style={{ width: "100%" }}>
+                        <svg className="mx-auto mb-4 h-16 w-16 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
                         </svg>
                         <p className="text-lg font-medium mb-2">No balance payments found</p>

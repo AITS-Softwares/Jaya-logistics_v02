@@ -4274,9 +4274,9 @@ export default function EditConsignmentNote() {
               <label className="text-xs font-bold text-slate-600">Status</label>
               <select
                 value={header.status}
-                onChange={(e) => setHeader({ ...header, status: e.target.value })}
-                disabled={isReadOnly}
-                className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 ${isReadOnly ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
+                disabled
+                title="Status is changed from the approval screen."
+                className="mt-1 w-full cursor-not-allowed rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm"
               >
                 {STATUS_OPTIONS.map((opt) => (
                   <option key={opt} value={opt}>{opt}</option>
@@ -4556,11 +4556,10 @@ export default function EditConsignmentNote() {
               <div className="col-span-12 md:col-span-3">
                 <label className="text-xs font-bold text-slate-600">BOE / Invoice Date</label>
                 <input
-                  type="text"
+                  type="date"
                   value={invoice.boeInvoiceDate}
                   onChange={(e) => setInvoice({ ...invoice, boeInvoiceDate: e.target.value })}
                   className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 `}
-                  placeholder="DD.MM.YYYY"
                 />
               </div>
 
@@ -4596,11 +4595,10 @@ export default function EditConsignmentNote() {
               <div className="col-span-12 md:col-span-4">
                 <label className="text-xs font-bold text-slate-600">Expiry Date</label>
                 <input
-                  type="text"
+                  type="date"
                   value={ewaybill.expiryDate}
                   onChange={(e) => setEwaybill({ ...ewaybill, expiryDate: e.target.value })}
                   className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 `}
-                  placeholder="DD.MM.YYYY"
                 />
               </div>
 
