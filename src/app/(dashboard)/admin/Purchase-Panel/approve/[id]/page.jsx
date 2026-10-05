@@ -158,7 +158,7 @@
 //   const isAddition = type === 'addition';
 //   const bgColor = isAddition ? 'green' : 'red';
 //   const total = rows.reduce((sum, row) => sum + num(row.amount), 0);
-  
+
 //   return (
 //     <div className={`overflow-auto rounded-xl border border-${bgColor}-300`}>
 //       <table className="min-w-full w-full text-sm">
@@ -223,7 +223,7 @@
 //   const [loadingInfoNo, setLoadingInfoNo] = useState("");
 //   const [purchaseAmountFromVNN, setPurchaseAmountFromVNN] = useState(0);
 //   const [memoFileInfo, setMemoFileInfo] = useState(null);
-  
+
 //   // EDITABLE: Approval State
 //   const [approval, setApproval] = useState({
 //     status: "",
@@ -306,38 +306,38 @@
 //     setLoading(true);
 //     try {
 //       const token = localStorage.getItem('token');
-      
+
 //       const res = await fetch(`/api/purchase-panel?id=${purchaseId}`, {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       if (!res.ok) {
 //         throw new Error(`HTTP error! status: ${res.status}`);
 //       }
-      
+
 //       const data = await res.json();
-      
+
 //       if (!data.success) {
 //         throw new Error(data.message || 'Failed to fetch purchase');
 //       }
 
 //       const purchase = data.data;
 //       console.log("📦 Purchase Data for Approval:", purchase);
-      
+
 //       // Set loading info
 //       if (purchase.loadingInfoNo) setLoadingInfoNo(purchase.loadingInfoNo);
-      
+
 //       // Set reference data
 //       if (purchase.vnnNo) setVnnNo(purchase.vnnNo);
 //       if (purchase.vehicleNegotiationId) setSelectedVNN({ _id: purchase.vehicleNegotiationId, vnnNo: purchase.vnnNo });
-      
+
 //       // Set purchase amount from VNN
 //       if (purchase.purchaseAmountFromVNN) {
 //         setPurchaseAmountFromVNN(purchase.purchaseAmountFromVNN);
 //       } else if (purchase.purchaseDetails?.amount) {
 //         setPurchaseAmountFromVNN(num(purchase.purchaseDetails.amount));
 //       }
-      
+
 //       // Set header data
 //       setHeader({
 //         purchaseNo: purchase.purchaseNo || "",
@@ -474,7 +474,7 @@
 //     setSaving(true);
 //     try {
 //       const token = localStorage.getItem('token');
-      
+
 //       const res = await fetch('/api/purchase-panel', {
 //         method: 'PUT',
 //         headers: {
@@ -582,7 +582,7 @@
 
 //       {/* Main Content */}
 //       <div className="mx-auto max-w-full p-4">
-        
+
 //         {/* Loading Info Section */}
 //         <div className="mb-4">
 //           <Card title="Loading Information">
@@ -718,7 +718,7 @@
 //                     <InfoRow label="Rate Type" value={purchaseDetails.rateType} />
 //                     <InfoRow label="Rate (₹)" value={`₹${num(purchaseDetails.rate).toLocaleString()}`} />
 //                     <InfoRow label="Weight (MT)" value={purchaseDetails.weight} />
-                    
+
 //                     {/* Purchase Amount from VNN */}
 //                     <div className="bg-purple-50 p-3 rounded-lg border border-purple-200 mt-2">
 //                       <div className="flex justify-between items-center">
@@ -727,7 +727,7 @@
 //                       </div>
 //                       <p className="text-xs text-purple-600 mt-1">Auto-calculated from Vehicle Negotiation</p>
 //                     </div>
-                    
+
 //                     <InfoRow label="Advance (₹)" value={`₹${num(purchaseDetails.advance).toLocaleString()}`} />
 //                   </div>
 //                 </div>
@@ -742,7 +742,7 @@
 //                     </svg>
 //                     MEMO from Vehicle Negotiation
 //                   </h3>
-                  
+
 //                   {memoFileInfo ? (
 //                     <div 
 //                       className="relative group cursor-pointer overflow-hidden rounded-xl border-2 border-green-300 bg-white shadow-lg hover:shadow-xl transition-all duration-300"
@@ -805,7 +805,7 @@
 //                   Will be deducted from Total Amount
 //                 </div>
 //               </div>
-              
+
 //               <div className="space-y-3">
 //                 <InfoRow label="Loading Charges" value={`₹${num(loadingExpenses.loadingCharges).toLocaleString()}`} />
 //                 <InfoRow label="Loading Staff Munshiyana" value={`₹${num(loadingExpenses.loadingStaffMunshiyana).toLocaleString()}`} />
@@ -831,7 +831,7 @@
 //                   Will be deducted at Warehouse
 //                 </div>
 //               </div>
-              
+
 //               <div className="space-y-3">
 //                 <InfoRow label={`W-Vehicle - Floor Tarpaulin (${purchaseDetails.vehicleType || "Truck"})`} value={`₹${num(warehouseExpenses.wVehicleFloorTarpaulin).toLocaleString()}`} />
 //                 <InfoRow label={`W-Vehicle - Outer Tarpaulin (${purchaseDetails.vehicleType || "Truck"})`} value={`₹${num(warehouseExpenses.wVehicleOuterTarpaulin).toLocaleString()}`} />
@@ -1054,7 +1054,7 @@
 //                           ))}
 //                         </select>
 //                       </div>
-                      
+
 //                       <div>
 //                         <label className="text-xs font-bold text-slate-600">Remarks</label>
 //                         <textarea
@@ -1168,6 +1168,7 @@
 
 import { useMemo, useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { usePermission } from "../../../hooks/usePermission";
 
 /** =========================
  * CONSTANTS
@@ -1234,11 +1235,11 @@ function OrdersTable({ rows }) {
     { key: "country", label: "Country" },
     { key: "from", label: "From" },
     { key: "to", label: "To" },
-    { key: "locationRate", label: "Location Rate" },
-    { key: "priceList", label: "Price List" },
+    // { key: "locationRate", label: "Location Rate" },
+    // { key: "priceList", label: "Price List" },
     { key: "weight", label: "Weight (MT)" },
-    { key: "rate", label: "Rate (₹)" },
-    { key: "totalAmount", label: "Total Amount" },
+    // { key: "rate", label: "Rate (₹)" },
+    // { key: "totalAmount", label: "Total Amount" },
     { key: "collectionCharges", label: "Collection Charges" },
     { key: "cancellationCharges", label: "Cancellation Charges" },
     { key: "loadingCharges", label: "Loading Charges" },
@@ -1250,9 +1251,8 @@ function OrdersTable({ rows }) {
     if (row.fromState && row.state) {
       const isLocal = row.fromState.trim().toUpperCase() === row.state.trim().toUpperCase();
       return (
-        <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${
-          isLocal ? 'bg-green-100 text-green-800 border border-green-300' : 'bg-red-100 text-red-800 border border-red-300'
-        }`}>
+        <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${isLocal ? 'bg-green-100 text-green-800 border border-green-300' : 'bg-red-100 text-red-800 border border-red-300'
+          }`}>
           {isLocal ? '✅ Local' : '❌ Not Local'}
         </span>
       );
@@ -1292,11 +1292,11 @@ function OrdersTable({ rows }) {
                 <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.country || '-'}</td>
                 <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.from || '-'}</td>
                 <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.to || '-'}</td>
-                <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.locationRate || '-'}</td>
-                <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.priceList || '-'}</td>
+                {/* <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.locationRate || '-'}</td> */}
+                {/* <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.priceList || '-'}</td> */}
                 <td className="border border-yellow-300 px-2 py-2 text-slate-700 text-right">{row.weight || '0'}</td>
-                <td className="border border-yellow-300 px-2 py-2 text-slate-700 text-right">₹{num(row.rate).toLocaleString()}</td>
-                <td className="border border-yellow-300 px-2 py-2 text-slate-700 text-right font-medium">₹{num(row.totalAmount).toLocaleString()}</td>
+                {/* <td className="border border-yellow-300 px-2 py-2 text-slate-700 text-right">₹{num(row.rate).toLocaleString()}</td> */}
+                {/* <td className="border border-yellow-300 px-2 py-2 text-slate-700 text-right font-medium">₹{num(row.totalAmount).toLocaleString()}</td> */}
                 <td className="border border-yellow-300 px-2 py-2 text-slate-700 text-right">₹{num(row.collectionCharges).toLocaleString()}</td>
                 <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.cancellationCharges || '-'}</td>
                 <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.loadingCharges || '-'}</td>
@@ -1323,7 +1323,7 @@ function ChargesTable({ rows, type }) {
   const isAddition = type === 'addition';
   const bgColor = isAddition ? 'green' : 'red';
   const total = rows.reduce((sum, row) => sum + num(row.amount), 0);
-  
+
   return (
     <div className={`overflow-auto rounded-xl border border-${bgColor}-300`}>
       <table className="min-w-full w-full text-sm">
@@ -1389,6 +1389,9 @@ export default function ApprovePurchasePanel() {
   const params = useParams();
   const purchaseId = params.id;
 
+  const { hasPermission } = usePermission();
+  const canApproveHere = hasPermission("Purchase Panel", "approve");
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -1409,11 +1412,11 @@ export default function ApprovePurchasePanel() {
   const [loadingInfoNo, setLoadingInfoNo] = useState("");
   const [purchaseAmountFromVNN, setPurchaseAmountFromVNN] = useState(0);
   const [memoFileInfo, setMemoFileInfo] = useState(null);
-  
+
   // ✅ ADD SUB-COMPANY STATE
   const [subCompanyName, setSubCompanyName] = useState("");
   const [subCompanyCode, setSubCompanyCode] = useState("");
-  
+
   // EDITABLE: Approval State
   const [approval, setApproval] = useState({
     status: "",
@@ -1469,7 +1472,7 @@ export default function ApprovePurchasePanel() {
   // Get status badge color
   const getStatusBadgeColor = (status) => {
     if (!status) return 'bg-gray-100 text-gray-600';
-    switch(status) {
+    switch (status) {
       case 'Approved':
         return 'bg-green-100 text-green-800';
       case 'Rejected':
@@ -1496,50 +1499,50 @@ export default function ApprovePurchasePanel() {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      
+
       const res = await fetch(`/api/purchase-panel?id=${purchaseId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       if (!res.ok) {
         throw new Error(`HTTP error! status: ${res.status}`);
       }
-      
+
       const data = await res.json();
-      
+
       if (!data.success) {
         throw new Error(data.message || 'Failed to fetch purchase');
       }
 
       const purchase = data.data;
       console.log("📦 Purchase Data for Approval:", purchase);
-      
+
       // Set loading info
       if (purchase.loadingInfoNo) setLoadingInfoNo(purchase.loadingInfoNo);
-      
+
       // Set reference data
       if (purchase.vnnNo) setVnnNo(purchase.vnnNo);
       if (purchase.vehicleNegotiationId) setSelectedVNN({ _id: purchase.vehicleNegotiationId, vnnNo: purchase.vnnNo });
-      
+
       // ✅ Set sub-company data
       if (purchase.subCompanyName) setSubCompanyName(purchase.subCompanyName);
       if (purchase.subCompanyCode) setSubCompanyCode(purchase.subCompanyCode);
-      
+
       // Set purchase amount from VNN
       if (purchase.purchaseAmountFromVNN) {
         setPurchaseAmountFromVNN(purchase.purchaseAmountFromVNN);
       } else if (purchase.purchaseDetails?.amount) {
         setPurchaseAmountFromVNN(num(purchase.purchaseDetails.amount));
       }
-      
+
       // Set header data
       setHeader({
         purchaseNo: purchase.purchaseNo || "",
         pricingSerialNo: purchase.pricingSerialNo || purchase.header?.pricingSerialNo || "",
         branch: purchase.header?.branchName || purchase.branchName || "",
         branchCode: purchase.header?.branchCode || purchase.branchCode || "",
-        date: purchase.header?.date ? new Date(purchase.header.date).toISOString().split('T')[0] : 
-              purchase.date ? new Date(purchase.date).toISOString().split('T')[0] : "",
+        date: purchase.header?.date ? new Date(purchase.header.date).toISOString().split('T')[0] :
+          purchase.date ? new Date(purchase.date).toISOString().split('T')[0] : "",
         delivery: purchase.header?.delivery || purchase.delivery || "",
         subCompanyName: purchase.subCompanyName || purchase.header?.subCompanyName || "",
         subCompanyCode: purchase.subCompanyCode || purchase.header?.subCompanyCode || "",
@@ -1581,7 +1584,7 @@ export default function ApprovePurchasePanel() {
           vehicleOuterTarpaulin: purchase.purchaseDetails.vehicleOuterTarpaulin || "",
           vehicleType: purchase.purchaseDetails.vehicleType || "",
           driverMobileNo: purchase.purchaseDetails.driverMobileNo || "",
-          purchaseDate: purchase.purchaseDetails.purchaseDate ? 
+          purchaseDate: purchase.purchaseDetails.purchaseDate ?
             new Date(purchase.purchaseDetails.purchaseDate).toISOString().split('T')[0] : "",
           subCompanyName: purchase.purchaseDetails.subCompanyName || "",
           subCompanyCode: purchase.purchaseDetails.subCompanyCode || "",
@@ -1629,10 +1632,10 @@ export default function ApprovePurchasePanel() {
       // Set arrival details with new fields
       if (purchase.arrivalDetails) {
         setArrivalDetails({
-          inDate: purchase.arrivalDetails.inDate ? 
+          inDate: purchase.arrivalDetails.inDate ?
             new Date(purchase.arrivalDetails.inDate).toISOString().split('T')[0] : "",
           inTime: purchase.arrivalDetails.inTime || "",
-          outDate: purchase.arrivalDetails.outDate ? 
+          outDate: purchase.arrivalDetails.outDate ?
             new Date(purchase.arrivalDetails.outDate).toISOString().split('T')[0] : "",
           outTime: purchase.arrivalDetails.outTime || "",
           remarks: purchase.arrivalDetails.remarks || "",
@@ -1664,6 +1667,11 @@ export default function ApprovePurchasePanel() {
   };
 
   const handleApprove = async () => {
+
+    if (!canApproveHere) {
+      alert("You do not have approve permission.");
+      return;
+    }
     if (!approval.status) {
       alert("Please select approval status");
       return;
@@ -1672,7 +1680,7 @@ export default function ApprovePurchasePanel() {
     setSaving(true);
     try {
       const token = localStorage.getItem('token');
-      
+
       const res = await fetch('/api/purchase-panel', {
         method: 'PUT',
         headers: {
@@ -1763,12 +1771,11 @@ export default function ApprovePurchasePanel() {
           <div className="flex items-center gap-3">
             <button
               onClick={handleApprove}
-              disabled={saving}
-              className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${
-                saving 
-                  ? 'bg-gray-400 cursor-not-allowed' 
-                  : 'bg-emerald-600 hover:bg-emerald-700'
-              }`}
+              disabled={saving || !canApproveHere}
+              className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${saving
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-emerald-600 hover:bg-emerald-700'
+                }`}
             >
               {saving ? (
                 <span className="flex items-center gap-2">
@@ -1786,7 +1793,7 @@ export default function ApprovePurchasePanel() {
 
       {/* Main Content */}
       <div className="mx-auto max-w-full p-4">
-        
+
         {/* Loading Info Section */}
         <div className="mb-4">
           <Card title="Loading Information">
@@ -1888,12 +1895,12 @@ export default function ApprovePurchasePanel() {
         <div className="mt-4">
           <Card title="Order Details (Read Only)">
             <OrdersTable rows={orderRows} />
-            <div className="flex justify-end mt-4">
+            {/* <div className="flex justify-end mt-4">
               <div className="flex items-center gap-3 border border-yellow-300 px-6 py-3 bg-yellow-50 rounded-xl">
                 <div className="text-sm font-extrabold text-slate-900">Total Order Amount:</div>
                 <div className="text-xl font-extrabold text-emerald-700">₹{totalOrderAmount.toLocaleString()}</div>
               </div>
-            </div>
+            </div> */}
           </Card>
         </div>
 
@@ -1927,7 +1934,7 @@ export default function ApprovePurchasePanel() {
                     <InfoRow label="Rate Type" value={purchaseDetails.rateType} />
                     <InfoRow label="Rate (₹)" value={`₹${num(purchaseDetails.rate).toLocaleString()}`} />
                     <InfoRow label="Weight (MT)" value={purchaseDetails.weight} />
-                    
+
                     {/* Purchase Amount from VNN */}
                     <div className="bg-purple-50 p-3 rounded-lg border border-purple-200 mt-2">
                       <div className="flex justify-between items-center">
@@ -1936,7 +1943,7 @@ export default function ApprovePurchasePanel() {
                       </div>
                       <p className="text-xs text-purple-600 mt-1">Auto-calculated from Vehicle Negotiation</p>
                     </div>
-                    
+
                     <InfoRow label="Advance (₹)" value={`₹${num(purchaseDetails.advance).toLocaleString()}`} />
                   </div>
                 </div>
@@ -1951,9 +1958,9 @@ export default function ApprovePurchasePanel() {
                     </svg>
                     MEMO from Vehicle Negotiation
                   </h3>
-                  
+
                   {memoFileInfo ? (
-                    <div 
+                    <div
                       className="relative group cursor-pointer overflow-hidden rounded-xl border-2 border-green-300 bg-white shadow-lg hover:shadow-xl transition-all duration-300"
                       onClick={() => {
                         if (memoFileInfo.filePath) {
@@ -1963,8 +1970,8 @@ export default function ApprovePurchasePanel() {
                     >
                       <div className="relative w-full min-h-[200px] bg-gray-100">
                         {memoFileInfo.mimeType?.includes('image') ? (
-                          <img 
-                            src={memoFileInfo.filePath} 
+                          <img
+                            src={memoFileInfo.filePath}
                             alt={memoFileInfo.originalName}
                             className="w-full h-full min-h-[200px] object-contain transition-transform duration-300 group-hover:scale-105"
                           />
@@ -2014,7 +2021,7 @@ export default function ApprovePurchasePanel() {
                   Will be deducted from Total Amount
                 </div>
               </div>
-              
+
               <div className="space-y-3">
                 <InfoRow label="Loading Charges" value={`₹${num(loadingExpenses.loadingCharges).toLocaleString()}`} />
                 <InfoRow label="Loading Staff Munshiyana" value={`₹${num(loadingExpenses.loadingStaffMunshiyana).toLocaleString()}`} />
@@ -2040,7 +2047,7 @@ export default function ApprovePurchasePanel() {
                   Will be deducted at Warehouse
                 </div>
               </div>
-              
+
               <div className="space-y-3">
                 <InfoRow label={`W-Vehicle - Floor Tarpaulin (${purchaseDetails.vehicleType || "Truck"})`} value={`₹${num(warehouseExpenses.wVehicleFloorTarpaulin).toLocaleString()}`} />
                 <InfoRow label={`W-Vehicle - Outer Tarpaulin (${purchaseDetails.vehicleType || "Truck"})`} value={`₹${num(warehouseExpenses.wVehicleOuterTarpaulin).toLocaleString()}`} />
@@ -2263,7 +2270,7 @@ export default function ApprovePurchasePanel() {
                           ))}
                         </select>
                       </div>
-                      
+
                       <div>
                         <label className="text-xs font-bold text-slate-600">Remarks</label>
                         <textarea
@@ -2278,24 +2285,24 @@ export default function ApprovePurchasePanel() {
                       {/* Current Status Display */}
                       {approval.status && (
                         <div className="mt-3 p-3 rounded-lg border" style={{
-                          backgroundColor: approval.status === 'Approved' ? '#f0fdf4' : 
-                                         approval.status === 'Rejected' ? '#fef2f2' :
-                                         approval.status === 'Pending' ? '#fefce8' :
-                                         approval.status === 'Pending from Customer' ? '#eff6ff' :
-                                         approval.status === 'Pending from Team' ? '#f3e8ff' : '#f9fafb',
-                          borderColor: approval.status === 'Approved' ? '#86efac' : 
-                                       approval.status === 'Rejected' ? '#fca5a5' :
-                                       approval.status === 'Pending' ? '#fde047' :
-                                       approval.status === 'Pending from Customer' ? '#93c5fd' :
-                                       approval.status === 'Pending from Team' ? '#c4b5fd' : '#e5e7eb'
+                          backgroundColor: approval.status === 'Approved' ? '#f0fdf4' :
+                            approval.status === 'Rejected' ? '#fef2f2' :
+                              approval.status === 'Pending' ? '#fefce8' :
+                                approval.status === 'Pending from Customer' ? '#eff6ff' :
+                                  approval.status === 'Pending from Team' ? '#f3e8ff' : '#f9fafb',
+                          borderColor: approval.status === 'Approved' ? '#86efac' :
+                            approval.status === 'Rejected' ? '#fca5a5' :
+                              approval.status === 'Pending' ? '#fde047' :
+                                approval.status === 'Pending from Customer' ? '#93c5fd' :
+                                  approval.status === 'Pending from Team' ? '#c4b5fd' : '#e5e7eb'
                         }}>
                           <p className="text-sm font-medium">
                             Current Status: <span className={`
-                              ${approval.status === 'Approved' ? 'text-green-700' : 
+                              ${approval.status === 'Approved' ? 'text-green-700' :
                                 approval.status === 'Rejected' ? 'text-red-700' :
-                                approval.status === 'Pending' ? 'text-yellow-700' :
-                                approval.status === 'Pending from Customer' ? 'text-blue-700' :
-                                approval.status === 'Pending from Team' ? 'text-purple-700' : 'text-gray-700'}
+                                  approval.status === 'Pending' ? 'text-yellow-700' :
+                                    approval.status === 'Pending from Customer' ? 'text-blue-700' :
+                                      approval.status === 'Pending from Team' ? 'text-purple-700' : 'text-gray-700'}
                             `}>
                               {approval.status}
                             </span>

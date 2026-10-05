@@ -55,17 +55,17 @@
 //     try {
 //       const token = localStorage.getItem('token');
 //       const url = query ? `/api/vehicles?search=${encodeURIComponent(query)}` : '/api/vehicles';
-      
+
 //       const res = await fetch(url, {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       if (!res.ok) {
 //         throw new Error(`HTTP error! status: ${res.status}`);
 //       }
-      
+
 //       const data = await res.json();
-      
+
 //       if (data.success && Array.isArray(data.data)) {
 //         setVehicles(data.data);
 //       } else {
@@ -105,13 +105,13 @@
 //       const res = await fetch(`/api/vehicles?id=${id}`, {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       if (!res.ok) {
 //         throw new Error(`HTTP error! status: ${res.status}`);
 //       }
-      
+
 //       const data = await res.json();
-      
+
 //       if (data.success && data.data) {
 //         return data.data;
 //       } else {
@@ -148,12 +148,12 @@
 //     try {
 //       const token = localStorage.getItem('token');
 //       const url = vehicleNumber ? `/api/owners?search=${encodeURIComponent(vehicleNumber)}` : '/api/owners';
-      
+
 //       const res = await fetch(url, {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
 //       const data = await res.json();
-      
+
 //       if (data.success && Array.isArray(data.data)) {
 //         setOwners(data.data);
 //       } else {
@@ -185,23 +185,23 @@
 //     setError(null);
 //     try {
 //       const token = localStorage.getItem('token');
-      
+
 //       const vnRes = await fetch('/api/vehicle-negotiation', {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       if (!vnRes.ok) {
 //         throw new Error(`HTTP error! status: ${vnRes.status}`);
 //       }
-      
+
 //       const vnData = await vnRes.json();
-      
+
 //       const loadingRes = await fetch('/api/loading-panel?format=table', {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       const loadingData = await loadingRes.json();
-      
+
 //       const usedVnns = new Set();
 //       if (loadingData.success && Array.isArray(loadingData.data)) {
 //         loadingData.data.forEach(item => {
@@ -210,7 +210,7 @@
 //           }
 //         });
 //       }
-      
+
 //       if (vnData.success && Array.isArray(vnData.data)) {
 //         const availableVNs = vnData.data.filter(vn => !usedVnns.has(vn.vnnNo));
 //         setNegotiations(availableVNs);
@@ -236,13 +236,13 @@
 //       const res = await fetch(`/api/vehicle-negotiation?id=${id}`, {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       if (!res.ok) {
 //         throw new Error(`HTTP error! status: ${res.status}`);
 //       }
-      
+
 //       const data = await res.json();
-      
+
 //       if (data.success && data.data) {
 //         return data.data;
 //       } else {
@@ -281,9 +281,9 @@
 //       const res = await fetch('/api/loading-panel?format=table', {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       const data = await res.json();
-      
+
 //       if (data.success && Array.isArray(data.data)) {
 //         setLoadingInfos(data.data);
 //       } else {
@@ -407,7 +407,7 @@
 
 // function FileUploadItem({ file, onRemove, index, label, isExisting = false, readOnly = false, isCameraPhoto = false, photoTime = null }) {
 //   const [imagePreview, setImagePreview] = useState(null);
-  
+
 //   useEffect(() => {
 //     if (file && file.type && file.type.startsWith('image/') && !isExisting) {
 //       const reader = new FileReader();
@@ -488,7 +488,7 @@
 //   const handleSearch = (query) => {
 //     if (readOnly) return;
 //     setSearchQuery(query);
-    
+
 //     if (query.trim() === "") {
 //       setFilteredVehicles(vehicleSearch.vehicles);
 //     } else {
@@ -499,7 +499,7 @@
 //       );
 //       setFilteredVehicles(filtered);
 //     }
-    
+
 //     if (!showDropdown) {
 //       setShowDropdown(true);
 //     }
@@ -537,7 +537,7 @@
 //         autoComplete="off"
 //         readOnly={readOnly}
 //       />
-      
+
 //       {showDropdown && !readOnly && (
 //         <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
 //           {vehicleSearch.loading ? (
@@ -1100,7 +1100,7 @@
 //     photo: [],
 //     aadharPhoto: []
 //   });
-  
+
 //   /** =========================
 //    * VL PHOTO DETAILS STATE (Height, Width, Nose)
 //    ========================= */
@@ -1185,7 +1185,7 @@
 //    * READONLY MODE STATE
 //    ========================= */
 //   const [isReadOnly, setIsReadOnly] = useState(false);
-  
+
 //   /** =========================
 //    * CAMERA PHOTO CAPTURE STATE
 //    ========================= */
@@ -1211,23 +1211,23 @@
 //     setFetchLoading(true);
 //     try {
 //       const token = localStorage.getItem('token');
-      
+
 //       const res = await fetch(`/api/loading-panel?id=${panelId}`, {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       const data = await res.json();
-      
+
 //       if (!data.success) {
 //         throw new Error(data.message || 'Failed to fetch loading panel');
 //       }
 
 //       const panel = data.data;
-      
+
 //       if (panel.panelStatus === 'Approved' || panel.panelStatus === 'Completed') {
 //         setIsReadOnly(true);
 //       }
-      
+
 //       // Set header data
 //       setHeader({
 //         vehicleArrivalNo: panel.vehicleArrivalNo || "",
@@ -1323,7 +1323,7 @@
 
 //       // Set detention info
 //       if (panel.detentionDays) setDetentionDays(panel.detentionDays);
-      
+
 //       // Set helper info
 //       if (panel.hasHelper !== undefined) setHasHelper(panel.hasHelper);
 //       if (panel.helperInfo) {
@@ -1334,7 +1334,7 @@
 //           aadharPhoto: panel.helperInfo.aadharPhoto || []
 //         });
 //       }
-      
+
 //       // Set vehicle photos
 //       if (panel.vehiclePhotos && panel.vehiclePhotos.length > 0) {
 //         setExistingFiles(prev => ({
@@ -1342,7 +1342,7 @@
 //           vehiclePhotos: panel.vehiclePhotos.map(path => ({ name: 'Vehicle Photo', path }))
 //         }));
 //       }
-      
+
 //       // Set vehicle slips
 //       if (panel.vehicleSlips && panel.vehicleSlips.length > 0) {
 //         setExistingFiles(prev => ({
@@ -1350,7 +1350,7 @@
 //           vehicleSlips: panel.vehicleSlips.map(path => ({ name: 'Vehicle Slip', path }))
 //         }));
 //       }
-      
+
 //       // Set loaded vehicle slips
 //       if (panel.loadedVehicleSlips && panel.loadedVehicleSlips.length > 0) {
 //         setExistingFiles(prev => ({
@@ -1411,7 +1411,7 @@
 //             chargedWt: row.chargedWt?.toString() || "",
 //           })),
 //         };
-        
+
 //         if (processedPackData.PALLETIZATION.length === 0) {
 //           processedPackData.PALLETIZATION.push(defaultPackRow('PALLETIZATION'));
 //         }
@@ -1424,9 +1424,9 @@
 //         if (processedPackData['NON-UNIFORM - GENERAL CARGO'].length === 0) {
 //           processedPackData['NON-UNIFORM - GENERAL CARGO'].push(defaultPackRow('NON-UNIFORM - GENERAL CARGO'));
 //         }
-        
+
 //         setPackData(processedPackData);
-        
+
 //         if (panel.activePack) {
 //           setActivePack(panel.activePack);
 //         }
@@ -1438,7 +1438,7 @@
 //           approval: panel.vbpUploads.approval || "",
 //           remark: panel.vbpUploads.remark || "",
 //         });
-        
+
 //         const vbpExisting = {};
 //         ['vbp1','vbp2','vbp3','vbp4','vbp5','vbp6','vbp7','videoVbp'].forEach(key => {
 //           if (panel.vbpUploads[key]) {
@@ -1452,7 +1452,7 @@
 //         setVftUploads({
 //           approval: panel.vftUploads.approval || "",
 //         });
-        
+
 //         const vftExisting = {};
 //         ['vft1','vft2','vft3','vft4','vft5','vft6','vft7','videoVft'].forEach(key => {
 //           if (panel.vftUploads[key]) {
@@ -1466,7 +1466,7 @@
 //         setVotUploads({
 //           approval: panel.votUploads.approval || "",
 //         });
-        
+
 //         const votExisting = {};
 //         ['vot1','vot2','vot3','vot4','vot5','vot6','vot7','videoVot'].forEach(key => {
 //           if (panel.votUploads[key]) {
@@ -1481,7 +1481,7 @@
 //           approval: panel.vlUploads.approval || "",
 //           loadingStatus: panel.vlUploads.loadingStatus || "",
 //         });
-        
+
 //         const vlExisting = {};
 //         for (let i = 1; i <= 15; i++) {
 //           const key = `vl${i}`;
@@ -1504,7 +1504,7 @@
 //           vehicleFloorTarpaulin: panel.loadedWeighment.vehicleFloorTarpaulin?.toString() || "",
 //           vehicleOuterTarpaulin: panel.loadedWeighment.vehicleOuterTarpaulin?.toString() || "",
 //         });
-        
+
 //         if (panel.loadedWeighment.weighSlip) {
 //           setExistingFiles(prev => ({
 //             ...prev,
@@ -1548,15 +1548,15 @@
 //         setBranches([]);
 //         return;
 //       }
-      
+
 //       const res = await fetch('/api/branches', {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       if (!res.ok) {
 //         throw new Error(`HTTP error! status: ${res.status}`);
 //       }
-      
+
 //       const data = await res.json();
 //       if (data.success && Array.isArray(data.data)) {
 //         setBranches(data.data);
@@ -1579,15 +1579,15 @@
 //         setPlants([]);
 //         return;
 //       }
-      
+
 //       const res = await fetch('/api/plants', {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       if (!res.ok) {
 //         throw new Error(`HTTP error! status: ${res.status}`);
 //       }
-      
+
 //       const data = await res.json();
 //       if (data.success && Array.isArray(data.data)) {
 //         setPlants(data.data);
@@ -1607,15 +1607,15 @@
 //         setOrders([]);
 //         return;
 //       }
-      
+
 //       const res = await fetch('/api/order-panel', {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       if (!res.ok) {
 //         throw new Error(`HTTP error! status: ${res.status}`);
 //       }
-      
+
 //       const data = await res.json();
 //       if (data.success && Array.isArray(data.data)) {
 //         setOrders(data.data);
@@ -1631,14 +1631,14 @@
 //   /** =========================
 //    * HANDLER FUNCTIONS
 //    ========================= */
-  
+
 //   const handleVehiclePhotoSelect = () => {
 //     if (isReadOnly) return;
 //     const input = document.createElement('input');
 //     input.type = 'file';
 //     input.accept = 'image/*';
 //     input.multiple = true;
-    
+
 //     input.onchange = async (e) => {
 //       const files = Array.from(e.target.files);
 //       const newTotalPhotos = vehiclePhotoFiles.length + files.length;
@@ -1648,7 +1648,7 @@
 //       }
 //       setVehiclePhotoFiles(prev => [...prev, ...files]);
 //     };
-    
+
 //     input.click();
 //   };
 
@@ -1670,12 +1670,12 @@
 //     input.type = 'file';
 //     input.accept = 'image/*,.pdf';
 //     input.multiple = true;
-    
+
 //     input.onchange = async (e) => {
 //       const files = Array.from(e.target.files);
 //       setVehicleSlipFiles(prev => [...prev, ...files]);
 //     };
-    
+
 //     input.click();
 //   };
 
@@ -1697,12 +1697,12 @@
 //     input.type = 'file';
 //     input.accept = 'image/*,.pdf';
 //     input.multiple = true;
-    
+
 //     input.onchange = async (e) => {
 //       const files = Array.from(e.target.files);
 //       setLoadedVehicleSlipFiles(prev => [...prev, ...files]);
 //     };
-    
+
 //     input.click();
 //   };
 
@@ -1724,25 +1724,25 @@
 //     input.type = 'file';
 //     input.accept = 'image/*';
 //     input.multiple = false;
-    
+
 //     input.onchange = async (e) => {
 //       const file = e.target.files[0];
 //       if (!file) return;
-      
+
 //       setHelperInfo(prev => ({
 //         ...prev,
 //         [field]: [...prev[field], file]
 //       }));
 //     };
-    
+
 //     input.click();
 //   };
 
 //   const handleVehicleSelect = (vehicle) => {
 //     if (isReadOnly) return;
-    
+
 //     setSelectedVehicle(vehicle);
-    
+
 //     setVehicleInfo({
 //       ...vehicleInfo,
 //       vehicleNo: vehicle.vehicleNumber || "",
@@ -1783,7 +1783,7 @@
 //  const handleVehicleNegotiationSearch = (query) => {
 //   if (isReadOnly) return;
 //   setVehicleNegotiationNo(query);
-  
+
 //   if (query.trim() === "") {
 //     setFilteredVehicleNegotiations(vehicleNegotiation.negotiations);
 //   } else {
@@ -1804,10 +1804,10 @@
 //     setVehicleNegotiationNo(negotiation.vnnNo);
 //     setShowVehicleNegotiationDropdown(false);
 //     setFetchingNegotiationData(true);
-    
+
 //     try {
 //       const fullNegotiation = await vehicleNegotiation.getNegotiationById(negotiation._id);
-      
+
 //       if (fullNegotiation) {
 //         setHeader({
 //           ...header,
@@ -1894,7 +1894,7 @@
 //           'LOOSE - CARGO': [],
 //           'NON-UNIFORM - GENERAL CARGO': []
 //         };
-        
+
 //         let packDataFound = false;
 //         const token = localStorage.getItem('token');
 //         const selectedOrderPanels = fullNegotiation.selectedOrderPanels || [];
@@ -1907,14 +1907,14 @@
 //                 const orderRes = await fetch(`/api/order-panel?id=${orderPanelId}`, {
 //                   headers: { Authorization: `Bearer ${token}` },
 //                 });
-                
+
 //                 if (orderRes.ok) {
 //                   const orderData = await orderRes.json();
-                  
+
 //                   if (orderData.success && orderData.data && orderData.data.packData) {
 //                     const orderPackData = orderData.data.packData;
 //                     packDataFound = true;
-                    
+
 //                     if (orderPackData.PALLETIZATION && orderPackData.PALLETIZATION.length > 0) {
 //                       const newPalletRows = orderPackData.PALLETIZATION.map(item => ({
 //                         _id: uid(),
@@ -1934,7 +1934,7 @@
 //                       }));
 //                       mergedPackData.PALLETIZATION = [...mergedPackData.PALLETIZATION, ...newPalletRows];
 //                     }
-                    
+
 //                     if (orderPackData['UNIFORM - BAGS/BOXES'] && orderPackData['UNIFORM - BAGS/BOXES'].length > 0) {
 //                       const newUniformRows = orderPackData['UNIFORM - BAGS/BOXES'].map(item => ({
 //                         _id: uid(),
@@ -1951,7 +1951,7 @@
 //                       }));
 //                       mergedPackData['UNIFORM - BAGS/BOXES'] = [...mergedPackData['UNIFORM - BAGS/BOXES'], ...newUniformRows];
 //                     }
-                    
+
 //                     if (orderPackData['LOOSE - CARGO'] && orderPackData['LOOSE - CARGO'].length > 0) {
 //                       const newLooseRows = orderPackData['LOOSE - CARGO'].map(item => ({
 //                         _id: uid(),
@@ -1962,7 +1962,7 @@
 //                       }));
 //                       mergedPackData['LOOSE - CARGO'] = [...mergedPackData['LOOSE - CARGO'], ...newLooseRows];
 //                     }
-                    
+
 //                     if (orderPackData['NON-UNIFORM - GENERAL CARGO'] && orderPackData['NON-UNIFORM - GENERAL CARGO'].length > 0) {
 //                       const newNonUniformRows = orderPackData['NON-UNIFORM - GENERAL CARGO'].map(item => ({
 //                         _id: uid(),
@@ -1985,7 +1985,7 @@
 //             }
 //           }
 //         }
-        
+
 //         if (!packDataFound) {
 //           mergedPackData = {
 //             PALLETIZATION: [defaultPackRow('PALLETIZATION')],
@@ -1999,9 +1999,9 @@
 //           if (mergedPackData['LOOSE - CARGO'].length === 0) mergedPackData['LOOSE - CARGO'].push(defaultPackRow('LOOSE - CARGO'));
 //           if (mergedPackData['NON-UNIFORM - GENERAL CARGO'].length === 0) mergedPackData['NON-UNIFORM - GENERAL CARGO'].push(defaultPackRow('NON-UNIFORM - GENERAL CARGO'));
 //         }
-        
+
 //         setPackData(mergedPackData);
-        
+
 //         if (fullNegotiation.approval) {
 //           setVbpUploads({
 //             approval: fullNegotiation.approval.vbpApproval || "",
@@ -2094,7 +2094,7 @@
 //         const updatedPack = prev[activePack].map((r) => {
 //           if (r._id === rowId) {
 //             const updatedRow = { ...r, [key]: value };
-            
+
 //             if (activePack === "PALLETIZATION") {
 //               if (key === "noOfPallets" || key === "unitPerPallets") {
 //                 const noOfPallets = num(updatedRow.noOfPallets);
@@ -2103,25 +2103,25 @@
 //                 updatedRow.totalPkgs = totalPkgs > 0 ? String(totalPkgs) : "";
 //               }
 //             }
-            
+
 //             if (activePack === "UNIFORM - BAGS/BOXES") {
 //               if (key === "totalPkgs" || key === "packWeight") {
 //                 const totalPkgs = num(updatedRow.totalPkgs);
 //                 const packWeight = num(updatedRow.packWeight);
 //                 updatedRow.wtLtr = totalPkgs * packWeight;
 //               }
-              
+
 //               if (key === "wtLtr" || key === "totalPkgs" || key === "packWeight") {
 //                 const wtLtr = num(updatedRow.wtLtr);
 //                 updatedRow.actualWt = wtLtr * 2 / 1000;
 //               }
 //             }
-            
+
 //             return updatedRow;
 //           }
 //           return r;
 //         });
-        
+
 //         return {
 //           ...prev,
 //           [activePack]: updatedPack,
@@ -2173,7 +2173,7 @@
 //           }
 //           return r;
 //         });
-        
+
 //         return {
 //           ...prev,
 //           [activePack]: updatedPack,
@@ -2221,12 +2221,12 @@
 //    ========================= */
 //   const handleFileSelect = (section, field, isVideo = false) => {
 //     if (isReadOnly) return;
-    
+
 //     const input = document.createElement('input');
 //     input.type = 'file';
 //     input.accept = isVideo ? 'video/*' : 'image/*';
 //     input.multiple = false;
-    
+
 //     input.onchange = async (e) => {
 //       const file = e.target.files[0];
 //       if (!file) return;
@@ -2270,13 +2270,13 @@
 //           break;
 //       }
 //     };
-    
+
 //     input.click();
 //   };
 
 //   const removeFile = (section, field, index, isExisting = false) => {
 //     if (isReadOnly) return;
-    
+
 //     if (isExisting) {
 //       setExistingFiles(prev => ({
 //         ...prev,
@@ -2285,7 +2285,7 @@
 //           [field]: prev[section][field].filter((_, i) => i !== index)
 //         }
 //       }));
-      
+
 //       if (section === 'vehicle') {
 //         if (field === 'rc') setVehicleInfo(prev => ({ ...prev, rcDocument: '' }));
 //         if (field === 'pan') setVehicleInfo(prev => ({ ...prev, panDocument: '' }));
@@ -2363,30 +2363,30 @@
 //       const video = videoRef.current;
 //       const canvas = canvasRef.current;
 //       const context = canvas.getContext('2d');
-      
+
 //       canvas.width = video.videoWidth;
 //       canvas.height = video.videoHeight;
-      
+
 //       context.drawImage(video, 0, 0, canvas.width, canvas.height);
-      
+
 //       canvas.toBlob((blob) => {
 //         const now = new Date();
 //         const filename = `driver_photo_${now.getTime()}.jpg`;
 //         const file = new File([blob], filename, { type: 'image/jpeg' });
-        
+
 //         setVehicleFiles(prev => ({
 //           ...prev,
 //           photo: [...prev.photo, file]
 //         }));
-        
+
 //         setArrivalDetails(prev => ({
 //           ...prev,
 //           date: now.toISOString().split('T')[0],
 //           time: now.toLocaleTimeString(),
 //         }));
-        
+
 //         alert(`✅ Driver photo captured successfully!\n📅 Date: ${now.toLocaleDateString()}\n⏰ Time: ${now.toLocaleTimeString()}`);
-        
+
 //         stopCamera();
 //       }, 'image/jpeg', 0.9);
 //     }
@@ -2397,13 +2397,13 @@
 //     const now = new Date();
 //     const outTime = now.toLocaleTimeString();
 //     const outDate = now.toISOString().split('T')[0];
-    
+
 //     setArrivalDetails(prev => ({
 //       ...prev,
 //       outDate: outDate,
 //       outTime: outTime,
 //     }));
-    
+
 //     alert(`✅ Consignment Note (LR) Generated!\n📅 Out Date: ${outDate}\n⏰ Out Time: ${outTime}`);
 //   };
 
@@ -2421,7 +2421,7 @@
 //     if (vlFields.length < 15) {
 //       const nextNumber = vlFields.length + 1;
 //       setVlFields([...vlFields, nextNumber]);
-      
+
 //       if (!vlFiles[`vl${nextNumber}`]) {
 //         setVlFiles(prev => ({
 //           ...prev,
@@ -2439,22 +2439,22 @@
 //       alert("Cannot remove first 5 VL fields (VL-1 to VL-5)");
 //       return;
 //     }
-    
+
 //     const currentCount = (vlFiles[`vl${fieldNum}`]?.length || 0) + (existingFiles.vl?.[`vl${fieldNum}`]?.length || 0);
 //     if (currentCount > 0) {
 //       if (!confirm(`Field VL-${fieldNum} has ${currentCount} photo(s). Removing this field will delete all its photos. Are you sure?`)) {
 //         return;
 //       }
 //     }
-    
+
 //     setVlFields(prev => prev.filter(num => num !== fieldNum));
-    
+
 //     setVlFiles(prev => {
 //       const newFiles = { ...prev };
 //       delete newFiles[`vl${fieldNum}`];
 //       return newFiles;
 //     });
-    
+
 //     setExistingFiles(prev => ({
 //       ...prev,
 //       vl: Object.keys(prev.vl).reduce((acc, key) => {
@@ -2464,7 +2464,7 @@
 //         return acc;
 //       }, {})
 //     }));
-    
+
 //     setVlPhotoDetails(prev => {
 //       const newDetails = { ...prev };
 //       Object.keys(newDetails).forEach(key => {
@@ -2474,7 +2474,7 @@
 //       });
 //       return newDetails;
 //     });
-    
+
 //     alert(`✅ VL-${fieldNum} field removed successfully`);
 //   };
 
@@ -2734,7 +2734,7 @@
 
 //     try {
 //       const token = localStorage.getItem('token');
-      
+
 //       setUploading(true);
 //       const uploadedPaths = await uploadAllFiles(token);
 //       setUploading(false);
@@ -2786,7 +2786,7 @@
 //       const finalVlUploads = {
 //         ...vlUploads,
 //       };
-      
+
 //       // Add all vl fields up to 15
 //       for (let i = 1; i <= 15; i++) {
 //         const key = `vl${i}`;
@@ -2881,13 +2881,13 @@
 //       }
 
 //       const data = await res.json();
-      
+
 //       alert(`✅ Loading Info updated successfully!\nVehicle Arrival No: ${header.vehicleArrivalNo}`);
-      
+
 //       setTimeout(() => {
 //         router.push('/admin/Loading-Info');
 //       }, 2000);
-      
+
 //     } catch (error) {
 //       console.error('Error updating loading info:', error);
 //       alert(`❌ Error: ${error.message}`);
@@ -3110,7 +3110,7 @@
 //                   </div>
 //                 )}
 //               </div>
-              
+
 //               {showVehicleNegotiationDropdown && !isReadOnly && (
 //                 <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
 //                   {vehicleNegotiation.loading ? (
@@ -3500,13 +3500,13 @@
 //                                   message: `Vehicle Owner: ${owner.ownerName}\nContact: ${owner.mobileNumber1 || owner.mobileNumber2}\nRC Number: ${owner.rcNumber || ''}`,
 //                                   remarks: `Pan Card: ${owner.ownerPanCard || 'N/A'}`
 //                                 }));
-                                
+
 //                                 setSelectedVehicle({
 //                                   _id: owner._id,
 //                                   vehicleNumber: owner.vehicleNumber,
 //                                   ownerName: owner.ownerName
 //                                 });
-                                
+
 //                                 setExistingFiles(prev => ({
 //                                   ...prev,
 //                                   vehicle: {
@@ -3515,7 +3515,7 @@
 //                                     pan: owner.panCardDocuments?.map(doc => ({ name: 'PAN Document', path: doc })) || [],
 //                                   }
 //                                 }));
-                                
+
 //                                 alert(`✅ Owner ${owner.ownerName} loaded!\nVehicle: ${owner.vehicleNumber}`);
 //                               }
 //                             }}
@@ -3523,7 +3523,7 @@
 //                             readOnly={isReadOnly}
 //                           />
 //                         </div>
-                        
+
 //                         {!isReadOnly && (
 //                           <button
 //                             onClick={handleCreateVehicle}
@@ -3532,7 +3532,7 @@
 //                             + Create New Vehicle
 //                           </button>
 //                         )}
-                        
+
 //                         {selectedVehicle && (
 //                           <div className="mt-2 p-2 bg-green-50 rounded-lg border border-green-200">
 //                             <div className="text-xs font-medium text-green-800">Selected Vehicle:</div>
@@ -4029,7 +4029,7 @@
 //                 </select>
 //               </div>
 //             </div>
-            
+
 //             <PackTypeTable
 //               key={activePack}
 //               packType={activePack}
@@ -4398,14 +4398,14 @@
 //           )}
 //         </div>
 //       </div>
-      
+
 //       <div className="grid grid-cols-12 gap-4">
 //         {vlFields.map((fieldNum) => {
 //           const currentCount = (vlFiles[`vl${fieldNum}`]?.length || 0) + (existingFiles.vl?.[`vl${fieldNum}`]?.length || 0);
 //           const totalCount = getTotalVlPhotosCount();
 //           const isMaxReached = totalCount >= 25;
 //           const isDisabled = isMaxReached && currentCount === 0;
-          
+
 //           return (
 //             <div key={fieldNum} className="col-span-12 lg:col-span-6">
 //               <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
@@ -4430,7 +4430,7 @@
 //                     )}
 //                   </div>
 //                 </div>
-                
+
 //                 <button 
 //                   onClick={() => handleFileSelect('vl', `vl${fieldNum}`)}
 //                   disabled={isDisabled || isReadOnly}
@@ -4470,7 +4470,7 @@
 //                   const height = parseFloat(vlPhotoDetails[`vl${fieldNum}_${idx}_height`]) || 0;
 //                   const nose = parseFloat(vlPhotoDetails[`vl${fieldNum}_${idx}_nose`]) || 0;
 //                   const total = (width * height) + nose;
-                  
+
 //                   return (
 //                     <div key={`existing-vl-${fieldNum}-${idx}`} className="mt-2">
 //                       <FileUploadItem 
@@ -4555,7 +4555,7 @@
 //                       const height = parseFloat(vlPhotoDetails[`vl${fieldNum}_${fileIdx}_height`]) || 0;
 //                       const nose = parseFloat(vlPhotoDetails[`vl${fieldNum}_${fileIdx}_nose`]) || 0;
 //                       const total = (width * height) + nose;
-                      
+
 //                       return (
 //                         <div key={fileIdx} className="bg-slate-50 rounded-lg p-3 border border-slate-200">
 //                           <FileUploadItem 
@@ -4565,7 +4565,7 @@
 //                             label={`VL(stack)-${fieldNum}`}
 //                             readOnly={isReadOnly}
 //                           />
-                          
+
 //                           <div className="grid grid-cols-4 gap-2 mt-2">
 //                             <div>
 //                               <label className="text-xs font-bold text-slate-600">Width (ft)</label>
@@ -4698,7 +4698,7 @@
 //           {vlUploads.loadingStatus || 'Not Set'}
 //         </span>
 //       </div>
-      
+
 //       {getTotalVlPhotosCount() > 0 && getTotalVlPhotosCount() < 5 && (
 //         <div className="mt-3 p-3 bg-red-50 rounded-lg border border-red-200">
 //           <p className="text-xs text-red-600 flex items-center gap-2">
@@ -4709,7 +4709,7 @@
 //           </p>
 //         </div>
 //       )}
-      
+
 //       {getTotalVlPhotosCount() >= 5 && (
 //         <div className="mt-3 p-3 bg-green-50 rounded-lg border border-green-200">
 //           <p className="text-xs text-green-600 flex items-center gap-2">
@@ -4730,7 +4730,7 @@
 //               <div className="col-span-12 md:col-span-6">
 //                 <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-200">
 //                   <h3 className="text-sm font-bold text-slate-800 mb-3">Weighment & Approval</h3>
-                  
+
 //                   <div className="space-y-3">
 //                     <div className="flex items-center justify-between">
 //                       <span className="text-xs font-bold text-slate-600">Loaded Vehicle - Weigh Slip:</span>
@@ -4774,7 +4774,7 @@
 //                         readOnly={isReadOnly}
 //                       />
 //                     ))}
-                    
+
 //                     <div className="flex items-center gap-3">
 //                       <span className="text-xs font-bold text-slate-600">Approval:</span>
 //                       <span className={`text-sm px-3 py-1 rounded-full ${loadedWeighment.approval === 'Approved' ? 'bg-green-100 text-green-800' : loadedWeighment.approval === 'Rejected' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}`}>
@@ -4783,7 +4783,7 @@
 //                     </div>
 //                   </div>
 //                 </div>
-                
+
 //                 {/* Detention Days */}
 //                 <div className="bg-orange-50 p-4 rounded-xl border border-orange-200 mt-4">
 //                   <label className="text-xs font-bold text-orange-700">Detention Days</label>
@@ -4810,7 +4810,7 @@
 //                       Deduct at Office
 //                     </div>
 //                   </div>
-                  
+
 //                   <div className="space-y-2">
 //                     <div className="flex justify-between items-center">
 //                       <span className="text-sm text-slate-700">Loading Charges:</span>
@@ -5149,6 +5149,7 @@
 import { useMemo, useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
+import LoadingInfoLRViewer, { LoadingInfoInvoiceViewer } from "@/components/LoadingInfoLRViewer";
 
 /** =========================
  * CONSTANTS
@@ -5165,13 +5166,13 @@ const ORDER_TYPES = ["Sales", "STO Order", "Export", "Import"];
 const PKGS_TYPE_OPTIONS = ["Drum", "Boxes", "Bags", "Cartons", "Crates", "Pallets", "Box"];
 const UOM_OPTIONS = ["KG", "LTR", "TON", "M3", "PCS", "Kgs", "Ltr", "MT"];
 const PRODUCT_NAME_OPTIONS = [
-  "CALCIUM NITRATE 20KG", 
-  "CALCIUM NITRATE 10KG", 
-  "CALCIUM NITRATE 1KG", 
-  "Chromite Sand", 
-  "Bud Builder", 
-  "Di-Betic Easter", 
-  "Polysulphate - Premium", 
+  "CALCIUM NITRATE 20KG",
+  "CALCIUM NITRATE 10KG",
+  "CALCIUM NITRATE 1KG",
+  "Chromite Sand",
+  "Bud Builder",
+  "Di-Betic Easter",
+  "Polysulphate - Premium",
   "YaraVita Stopit 1Ltr"
 ];
 const SKU_SIZE_OPTIONS = ["20 Kgs", "10 Kgs", "1 Kgs", "100 Ltr", "200 Kgs", "1 Ltr", "20"];
@@ -5233,17 +5234,17 @@ function useVehicleSearch() {
       const url = query
         ? `/api/loading-panel/reference-data?lookup=vehicles&search=${encodeURIComponent(query)}`
         : '/api/loading-panel/reference-data?lookup=vehicles';
-      
+
       const res = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       if (!res.ok) {
         throw new Error(`HTTP error! status: ${res.status}`);
       }
-      
+
       const data = await res.json();
-      
+
       if (data.success && Array.isArray(data.data?.vehicles)) {
         setVehicles(data.data.vehicles);
       } else {
@@ -5267,13 +5268,13 @@ function useVehicleSearch() {
       const res = await fetch('/api/loading-panel/reference-data?lookup=vehicles', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       if (!res.ok) {
         throw new Error(`HTTP error! status: ${res.status}`);
       }
-      
+
       const data = await res.json();
-      
+
       const vehicle = data.data?.vehicles?.find((item) => item._id === id);
       if (data.success && vehicle) {
         return vehicle;
@@ -5309,12 +5310,12 @@ function useOwnerSearch() {
       const url = vehicleNumber
         ? `/api/loading-panel/reference-data?lookup=owners&search=${encodeURIComponent(vehicleNumber)}`
         : '/api/loading-panel/reference-data?lookup=owners';
-      
+
       const res = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-      
+
       if (data.success && Array.isArray(data.data?.owners)) {
         setOwners(data.data.owners);
       } else {
@@ -5404,9 +5405,9 @@ function useLoadingInfo() {
       const res = await fetch('/api/loading-panel?format=table', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       const data = await res.json();
-      
+
       if (data.success && Array.isArray(data.data)) {
         setLoadingInfos(data.data);
       } else {
@@ -5588,7 +5589,7 @@ async function openLoadingAttachment(filePath) {
 
 function FileUploadItem({ file, onRemove, index, label, isExisting = false, readOnly = false, isCameraPhoto = false, photoTime = null }) {
   const [imagePreview, setImagePreview] = useState(null);
-  
+
   useEffect(() => {
     if (file && file.type && file.type.startsWith('image/') && !isExisting) {
       const reader = new FileReader();
@@ -5669,7 +5670,7 @@ function VehicleSearchDropdown({ onSelect, placeholder = "Search vehicle...", se
   const handleSearch = (query) => {
     if (readOnly) return;
     setSearchQuery(query);
-    
+
     if (query.trim() === "") {
       setFilteredVehicles(vehicleSearch.vehicles);
     } else {
@@ -5680,7 +5681,7 @@ function VehicleSearchDropdown({ onSelect, placeholder = "Search vehicle...", se
       );
       setFilteredVehicles(filtered);
     }
-    
+
     if (!showDropdown) {
       setShowDropdown(true);
     }
@@ -5711,14 +5712,13 @@ function VehicleSearchDropdown({ onSelect, placeholder = "Search vehicle...", se
         onChange={(e) => handleSearch(e.target.value)}
         onFocus={handleInputFocus}
         onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
-        className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${
-          readOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
-        }`}
+        className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${readOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+          }`}
         placeholder={placeholder}
         autoComplete="off"
         readOnly={readOnly}
       />
-      
+
       {showDropdown && !readOnly && (
         <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
           {vehicleSearch.loading ? (
@@ -5748,8 +5748,8 @@ function VehicleSearchDropdown({ onSelect, placeholder = "Search vehicle...", se
             ))
           ) : (
             <div className="p-3 text-center text-sm text-slate-500">
-              {searchQuery.trim() ? 
-                `No vehicles found for "${searchQuery}"` : 
+              {searchQuery.trim() ?
+                `No vehicles found for "${searchQuery}"` :
                 "No vehicles available"
               }
             </div>
@@ -5780,9 +5780,8 @@ function Select({ label, value, onChange, options = [], col = "", readOnly = fal
         value={value}
         onChange={(e) => onChange?.(e.target.value)}
         disabled={readOnly}
-        className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${
-          readOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
-        }`}
+        className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${readOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+          }`}
       >
         <option value="">Select {label}</option>
         {options.map((o) => (
@@ -5851,9 +5850,8 @@ function SearchableDropdown({ items, selectedId, onSelect, placeholder = "Search
         onChange={(e) => handleSearch(e.target.value)}
         onFocus={() => !disabled && setShowDropdown(true)}
         onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
-        className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${
-          disabled ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
-        }`}
+        className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${disabled ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+          }`}
         placeholder={placeholder}
         disabled={disabled}
       />
@@ -5864,9 +5862,8 @@ function SearchableDropdown({ items, selectedId, onSelect, placeholder = "Search
               <div
                 key={item._id}
                 onMouseDown={() => handleSelectItem(item)}
-                className={`p-2 hover:bg-slate-50 cursor-pointer border-b border-slate-100 ${
-                  selectedItem?._id === item._id ? 'bg-sky-50' : ''
-                }`}
+                className={`p-2 hover:bg-slate-50 cursor-pointer border-b border-slate-100 ${selectedItem?._id === item._id ? 'bg-sky-50' : ''
+                  }`}
               >
                 <div className="font-medium text-slate-800 text-sm">
                   {item[displayField]}
@@ -5950,9 +5947,8 @@ function OwnerSearchDropdown({ onSelect, placeholder = "Search owner...", readOn
         onChange={(e) => handleSearch(e.target.value)}
         onFocus={() => !readOnly && setShowDropdown(true)}
         onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
-        className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${
-          readOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
-        }`}
+        className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${readOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+          }`}
         placeholder={placeholder}
         autoComplete="off"
         readOnly={readOnly}
@@ -6285,7 +6281,7 @@ export default function EditLoadingInfoPanel() {
     photo: [],
     aadharPhoto: []
   });
-  
+
   /** =========================
    * VL PHOTO DETAILS STATE (Height, Width, Nose)
    ========================= */
@@ -6370,7 +6366,7 @@ export default function EditLoadingInfoPanel() {
    * READONLY MODE STATE
    ========================= */
   const [isReadOnly, setIsReadOnly] = useState(false);
-  
+
   /** =========================
    * CAMERA PHOTO CAPTURE STATE
    ========================= */
@@ -6417,24 +6413,24 @@ export default function EditLoadingInfoPanel() {
     setFetchLoading(true);
     try {
       const token = localStorage.getItem('token');
-      
+
       const res = await fetch(`/api/loading-panel?id=${panelId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       const data = await res.json();
-      
+
       if (!data.success) {
         throw new Error(data.message || 'Failed to fetch loading panel');
       }
 
       const panel = data.data;
       setLinkedLRNo(panel.consignmentNote || "");
-      
+
       if (panel.panelStatus === 'Approved' || panel.panelStatus === 'Completed') {
         setIsReadOnly(true);
       }
-      
+
       // Set header data
       setHeader({
         vehicleArrivalNo: panel.vehicleArrivalNo || "",
@@ -6474,7 +6470,7 @@ export default function EditLoadingInfoPanel() {
         }));
         setOrderRows(processedOrderRows);
       }
-      
+
       // Set vehicle info
       if (panel.vehicleInfo) {
         setVehicleInfo({
@@ -6530,7 +6526,7 @@ export default function EditLoadingInfoPanel() {
 
       // Set detention info
       if (panel.detentionDays) setDetentionDays(panel.detentionDays);
-      
+
       // Set helper info
       if (panel.hasHelper !== undefined) setHasHelper(panel.hasHelper);
       if (panel.helperInfo) {
@@ -6541,7 +6537,7 @@ export default function EditLoadingInfoPanel() {
           aadharPhoto: panel.helperInfo.aadharPhoto || []
         });
       }
-      
+
       // Set vehicle photos
       if (panel.vehiclePhotos && panel.vehiclePhotos.length > 0) {
         setExistingFiles(prev => ({
@@ -6549,7 +6545,7 @@ export default function EditLoadingInfoPanel() {
           vehiclePhotos: panel.vehiclePhotos.map(path => ({ name: 'Vehicle Photo', path }))
         }));
       }
-      
+
       // Set vehicle slips
       if (panel.vehicleSlips && panel.vehicleSlips.length > 0) {
         setExistingFiles(prev => ({
@@ -6557,7 +6553,7 @@ export default function EditLoadingInfoPanel() {
           vehicleSlips: panel.vehicleSlips.map(path => ({ name: 'Vehicle Slip', path }))
         }));
       }
-      
+
       // Set loaded vehicle slips
       if (panel.loadedVehicleSlips && panel.loadedVehicleSlips.length > 0) {
         setExistingFiles(prev => ({
@@ -6618,7 +6614,7 @@ export default function EditLoadingInfoPanel() {
             chargedWt: row.chargedWt?.toString() || "",
           })),
         };
-        
+
         if (processedPackData.PALLETIZATION.length === 0) {
           processedPackData.PALLETIZATION.push(defaultPackRow('PALLETIZATION'));
         }
@@ -6631,9 +6627,9 @@ export default function EditLoadingInfoPanel() {
         if (processedPackData['NON-UNIFORM - GENERAL CARGO'].length === 0) {
           processedPackData['NON-UNIFORM - GENERAL CARGO'].push(defaultPackRow('NON-UNIFORM - GENERAL CARGO'));
         }
-        
+
         setPackData(processedPackData);
-        
+
         if (panel.activePack) {
           setActivePack(panel.activePack);
         }
@@ -6645,9 +6641,9 @@ export default function EditLoadingInfoPanel() {
           approval: panel.vbpUploads.approval || "",
           remark: panel.vbpUploads.remark || "",
         });
-        
+
         const vbpExisting = {};
-        ['vbp1','vbp2','vbp3','vbp4','vbp5','vbp6','vbp7','videoVbp'].forEach(key => {
+        ['vbp1', 'vbp2', 'vbp3', 'vbp4', 'vbp5', 'vbp6', 'vbp7', 'videoVbp'].forEach(key => {
           if (panel.vbpUploads[key]) {
             vbpExisting[key] = [{ name: `VBP ${key}`, path: panel.vbpUploads[key] }];
           }
@@ -6659,9 +6655,9 @@ export default function EditLoadingInfoPanel() {
         setVftUploads({
           approval: panel.vftUploads.approval || "",
         });
-        
+
         const vftExisting = {};
-        ['vft1','vft2','vft3','vft4','vft5','vft6','vft7','videoVft'].forEach(key => {
+        ['vft1', 'vft2', 'vft3', 'vft4', 'vft5', 'vft6', 'vft7', 'videoVft'].forEach(key => {
           if (panel.vftUploads[key]) {
             vftExisting[key] = [{ name: `VFT ${key}`, path: panel.vftUploads[key] }];
           }
@@ -6673,9 +6669,9 @@ export default function EditLoadingInfoPanel() {
         setVotUploads({
           approval: panel.votUploads.approval || "",
         });
-        
+
         const votExisting = {};
-        ['vot1','vot2','vot3','vot4','vot5','vot6','vot7','videoVot'].forEach(key => {
+        ['vot1', 'vot2', 'vot3', 'vot4', 'vot5', 'vot6', 'vot7', 'videoVot'].forEach(key => {
           if (panel.votUploads[key]) {
             votExisting[key] = [{ name: `VOT ${key}`, path: panel.votUploads[key] }];
           }
@@ -6688,7 +6684,7 @@ export default function EditLoadingInfoPanel() {
           approval: panel.vlUploads.approval || "",
           loadingStatus: panel.vlUploads.loadingStatus || "",
         });
-        
+
         const vlExisting = {};
         for (let i = 1; i <= 15; i++) {
           const key = `vl${i}`;
@@ -6711,7 +6707,7 @@ export default function EditLoadingInfoPanel() {
           vehicleFloorTarpaulin: panel.loadedWeighment.vehicleFloorTarpaulin?.toString() || "",
           vehicleOuterTarpaulin: panel.loadedWeighment.vehicleOuterTarpaulin?.toString() || "",
         });
-        
+
         if (panel.loadedWeighment.weighSlip) {
           setExistingFiles(prev => ({
             ...prev,
@@ -6755,15 +6751,15 @@ export default function EditLoadingInfoPanel() {
         setBranches([]);
         return;
       }
-      
+
       const res = await fetch('/api/branches', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       if (!res.ok) {
         throw new Error(`HTTP error! status: ${res.status}`);
       }
-      
+
       const data = await res.json();
       if (data.success && Array.isArray(data.data)) {
         setBranches(data.data);
@@ -6786,15 +6782,15 @@ export default function EditLoadingInfoPanel() {
         setPlants([]);
         return;
       }
-      
+
       const res = await fetch('/api/plants', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       if (!res.ok) {
         throw new Error(`HTTP error! status: ${res.status}`);
       }
-      
+
       const data = await res.json();
       if (data.success && Array.isArray(data.data)) {
         setPlants(data.data);
@@ -6814,15 +6810,15 @@ export default function EditLoadingInfoPanel() {
         setOrders([]);
         return;
       }
-      
+
       const res = await fetch('/api/order-panel', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       if (!res.ok) {
         throw new Error(`HTTP error! status: ${res.status}`);
       }
-      
+
       const data = await res.json();
       if (data.success && Array.isArray(data.data)) {
         setOrders(data.data);
@@ -6838,14 +6834,14 @@ export default function EditLoadingInfoPanel() {
   /** =========================
    * HANDLER FUNCTIONS
    ========================= */
-  
+
   const handleVehiclePhotoSelect = () => {
     if (isReadOnly) return;
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
     input.multiple = true;
-    
+
     input.onchange = async (e) => {
       const files = Array.from(e.target.files);
       const newTotalPhotos = vehiclePhotoFiles.length + files.length;
@@ -6855,7 +6851,7 @@ export default function EditLoadingInfoPanel() {
       }
       setVehiclePhotoFiles(prev => [...prev, ...files]);
     };
-    
+
     input.click();
   };
 
@@ -6877,12 +6873,12 @@ export default function EditLoadingInfoPanel() {
     input.type = 'file';
     input.accept = 'image/*,.pdf';
     input.multiple = true;
-    
+
     input.onchange = async (e) => {
       const files = Array.from(e.target.files);
       setVehicleSlipFiles(prev => [...prev, ...files]);
     };
-    
+
     input.click();
   };
 
@@ -6904,12 +6900,12 @@ export default function EditLoadingInfoPanel() {
     input.type = 'file';
     input.accept = 'image/*,.pdf';
     input.multiple = true;
-    
+
     input.onchange = async (e) => {
       const files = Array.from(e.target.files);
       setLoadedVehicleSlipFiles(prev => [...prev, ...files]);
     };
-    
+
     input.click();
   };
 
@@ -6931,25 +6927,25 @@ export default function EditLoadingInfoPanel() {
     input.type = 'file';
     input.accept = 'image/*';
     input.multiple = false;
-    
+
     input.onchange = async (e) => {
       const file = e.target.files[0];
       if (!file) return;
-      
+
       setHelperInfo(prev => ({
         ...prev,
         [field]: [...prev[field], file]
       }));
     };
-    
+
     input.click();
   };
 
   const handleVehicleSelect = (vehicle) => {
     if (isReadOnly) return;
-    
+
     setSelectedVehicle(vehicle);
-    
+
     setVehicleInfo({
       ...vehicleInfo,
       vehicleNo: vehicle.vehicleNumber || "",
@@ -6990,7 +6986,7 @@ export default function EditLoadingInfoPanel() {
   const handleVehicleNegotiationSearch = (query) => {
     if (isReadOnly) return;
     setVehicleNegotiationNo(query);
-    
+
     if (query.trim() === "") {
       setFilteredVehicleNegotiations(vehicleNegotiation.negotiations);
     } else {
@@ -7011,13 +7007,13 @@ export default function EditLoadingInfoPanel() {
     setVehicleNegotiationNo(negotiation.vnnNo);
     setShowVehicleNegotiationDropdown(false);
     setFetchingNegotiationData(true);
-    
+
     try {
       // The dropdown is populated by the scoped Loading Info reference API.
       // Do not call the broader VNN API here: that API is intentionally
       // restricted to Vehicle Negotiation users.
       const fullNegotiation = negotiation;
-      
+
       if (fullNegotiation) {
         setHeader({
           ...header,
@@ -7105,7 +7101,7 @@ export default function EditLoadingInfoPanel() {
           'LOOSE - CARGO': [],
           'NON-UNIFORM - GENERAL CARGO': []
         };
-        
+
         let packDataFound = false;
         const token = localStorage.getItem('token');
         const selectedOrderPanels = fullNegotiation.selectedOrderPanels || [];
@@ -7118,14 +7114,14 @@ export default function EditLoadingInfoPanel() {
                 const orderRes = await fetch(`/api/order-panel?id=${orderPanelId}`, {
                   headers: { Authorization: `Bearer ${token}` },
                 });
-                
+
                 if (orderRes.ok) {
                   const orderData = await orderRes.json();
-                  
+
                   if (orderData.success && orderData.data && orderData.data.packData) {
                     const orderPackData = orderData.data.packData;
                     packDataFound = true;
-                    
+
                     if (orderPackData.PALLETIZATION && orderPackData.PALLETIZATION.length > 0) {
                       const newPalletRows = orderPackData.PALLETIZATION.map(item => ({
                         _id: uid(),
@@ -7145,7 +7141,7 @@ export default function EditLoadingInfoPanel() {
                       }));
                       mergedPackData.PALLETIZATION = [...mergedPackData.PALLETIZATION, ...newPalletRows];
                     }
-                    
+
                     if (orderPackData['UNIFORM - BAGS/BOXES'] && orderPackData['UNIFORM - BAGS/BOXES'].length > 0) {
                       const newUniformRows = orderPackData['UNIFORM - BAGS/BOXES'].map(item => ({
                         _id: uid(),
@@ -7162,7 +7158,7 @@ export default function EditLoadingInfoPanel() {
                       }));
                       mergedPackData['UNIFORM - BAGS/BOXES'] = [...mergedPackData['UNIFORM - BAGS/BOXES'], ...newUniformRows];
                     }
-                    
+
                     if (orderPackData['LOOSE - CARGO'] && orderPackData['LOOSE - CARGO'].length > 0) {
                       const newLooseRows = orderPackData['LOOSE - CARGO'].map(item => ({
                         _id: uid(),
@@ -7173,7 +7169,7 @@ export default function EditLoadingInfoPanel() {
                       }));
                       mergedPackData['LOOSE - CARGO'] = [...mergedPackData['LOOSE - CARGO'], ...newLooseRows];
                     }
-                    
+
                     if (orderPackData['NON-UNIFORM - GENERAL CARGO'] && orderPackData['NON-UNIFORM - GENERAL CARGO'].length > 0) {
                       const newNonUniformRows = orderPackData['NON-UNIFORM - GENERAL CARGO'].map(item => ({
                         _id: uid(),
@@ -7196,7 +7192,7 @@ export default function EditLoadingInfoPanel() {
             }
           }
         }
-        
+
         if (!packDataFound) {
           mergedPackData = {
             PALLETIZATION: [defaultPackRow('PALLETIZATION')],
@@ -7210,9 +7206,9 @@ export default function EditLoadingInfoPanel() {
           if (mergedPackData['LOOSE - CARGO'].length === 0) mergedPackData['LOOSE - CARGO'].push(defaultPackRow('LOOSE - CARGO'));
           if (mergedPackData['NON-UNIFORM - GENERAL CARGO'].length === 0) mergedPackData['NON-UNIFORM - GENERAL CARGO'].push(defaultPackRow('NON-UNIFORM - GENERAL CARGO'));
         }
-        
+
         setPackData(mergedPackData);
-        
+
         if (fullNegotiation.approval) {
           setVbpUploads({
             approval: fullNegotiation.approval.vbpApproval || "",
@@ -7311,7 +7307,7 @@ export default function EditLoadingInfoPanel() {
         const updatedPack = prev[activePack].map((r) => {
           if (r._id === rowId) {
             const updatedRow = { ...r, [key]: value };
-            
+
             if (activePack === "PALLETIZATION") {
               if (key === "noOfPallets" || key === "unitPerPallets") {
                 const noOfPallets = num(updatedRow.noOfPallets);
@@ -7320,25 +7316,25 @@ export default function EditLoadingInfoPanel() {
                 updatedRow.totalPkgs = totalPkgs > 0 ? String(totalPkgs) : "";
               }
             }
-            
+
             if (activePack === "UNIFORM - BAGS/BOXES") {
               if (key === "totalPkgs" || key === "packWeight") {
                 const totalPkgs = num(updatedRow.totalPkgs);
                 const packWeight = num(updatedRow.packWeight);
                 updatedRow.wtLtr = totalPkgs * packWeight;
               }
-              
+
               if (key === "wtLtr" || key === "totalPkgs" || key === "packWeight") {
                 const wtLtr = num(updatedRow.wtLtr);
                 updatedRow.actualWt = wtLtr * 2 / 1000;
               }
             }
-            
+
             return updatedRow;
           }
           return r;
         });
-        
+
         return {
           ...prev,
           [activePack]: updatedPack,
@@ -7390,7 +7386,7 @@ export default function EditLoadingInfoPanel() {
           }
           return r;
         });
-        
+
         return {
           ...prev,
           [activePack]: updatedPack,
@@ -7438,17 +7434,17 @@ export default function EditLoadingInfoPanel() {
    ========================= */
   const handleFileSelect = (section, field, isVideo = false) => {
     if (isReadOnly) return;
-    
+
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = isVideo ? 'video/*' : 'image/*';
     input.multiple = false;
-    
+
     input.onchange = async (e) => {
       const file = e.target.files[0];
       if (!file) return;
 
-      switch(section) {
+      switch (section) {
         case 'vehicle':
           setVehicleFiles(prev => ({
             ...prev,
@@ -7487,13 +7483,13 @@ export default function EditLoadingInfoPanel() {
           break;
       }
     };
-    
+
     input.click();
   };
 
   const removeFile = (section, field, index, isExisting = false) => {
     if (isReadOnly) return;
-    
+
     if (isExisting) {
       setExistingFiles(prev => ({
         ...prev,
@@ -7502,7 +7498,7 @@ export default function EditLoadingInfoPanel() {
           [field]: prev[section][field].filter((_, i) => i !== index)
         }
       }));
-      
+
       if (section === 'vehicle') {
         if (field === 'rc') setVehicleInfo(prev => ({ ...prev, rcDocument: '' }));
         if (field === 'pan') setVehicleInfo(prev => ({ ...prev, panDocument: '' }));
@@ -7510,7 +7506,7 @@ export default function EditLoadingInfoPanel() {
         if (field === 'photo') setVehicleInfo(prev => ({ ...prev, driverPhoto: '' }));
       }
     } else {
-      switch(section) {
+      switch (section) {
         case 'vehicle':
           setVehicleFiles(prev => ({
             ...prev,
@@ -7580,30 +7576,30 @@ export default function EditLoadingInfoPanel() {
       const video = videoRef.current;
       const canvas = canvasRef.current;
       const context = canvas.getContext('2d');
-      
+
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
-      
+
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
-      
+
       canvas.toBlob((blob) => {
         const now = new Date();
         const filename = `driver_photo_${now.getTime()}.jpg`;
         const file = new File([blob], filename, { type: 'image/jpeg' });
-        
+
         setVehicleFiles(prev => ({
           ...prev,
           photo: [...prev.photo, file]
         }));
-        
+
         setArrivalDetails(prev => ({
           ...prev,
           date: now.toISOString().split('T')[0],
           time: now.toLocaleTimeString(),
         }));
-        
+
         alert(`✅ Driver photo captured successfully!\n📅 Date: ${now.toLocaleDateString()}\n⏰ Time: ${now.toLocaleTimeString()}`);
-        
+
         stopCamera();
       }, 'image/jpeg', 0.9);
     }
@@ -7611,14 +7607,14 @@ export default function EditLoadingInfoPanel() {
 
   // Start the real LR workflow. The server sets Out Date/Time only after the
   // linked LR has been successfully created, using its server timestamp.
-  const handleGenerateLR = () => {
-    if (linkedLRNo) return;
-    if (!header.vehicleArrivalNo) {
-      alert('Save Loading Info before generating its LR.');
-      return;
-    }
-    router.push(`/admin/Consignment-Note/create?loadingInfoNo=${encodeURIComponent(header.vehicleArrivalNo)}`);
-  };
+  // const handleGenerateLR = () => {
+  //   if (linkedLRNo) return;
+  //   if (!header.vehicleArrivalNo) {
+  //     alert('Save Loading Info before generating its LR.');
+  //     return;
+  //   }
+  //   router.push(`/admin/Consignment-Note/create?loadingInfoNo=${encodeURIComponent(header.vehicleArrivalNo)}`);
+  // };
 
   const getTotalVlPhotosCount = () => {
     let total = 0;
@@ -7634,7 +7630,7 @@ export default function EditLoadingInfoPanel() {
     if (vlFields.length < 15) {
       const nextNumber = vlFields.length + 1;
       setVlFields([...vlFields, nextNumber]);
-      
+
       if (!vlFiles[`vl${nextNumber}`]) {
         setVlFiles(prev => ({
           ...prev,
@@ -7652,22 +7648,22 @@ export default function EditLoadingInfoPanel() {
       alert("Cannot remove first 5 VL fields (VL-1 to VL-5)");
       return;
     }
-    
+
     const currentCount = (vlFiles[`vl${fieldNum}`]?.length || 0) + (existingFiles.vl?.[`vl${fieldNum}`]?.length || 0);
     if (currentCount > 0) {
       if (!confirm(`Field VL-${fieldNum} has ${currentCount} photo(s). Removing this field will delete all its photos. Are you sure?`)) {
         return;
       }
     }
-    
+
     setVlFields(prev => prev.filter(num => num !== fieldNum));
-    
+
     setVlFiles(prev => {
       const newFiles = { ...prev };
       delete newFiles[`vl${fieldNum}`];
       return newFiles;
     });
-    
+
     setExistingFiles(prev => ({
       ...prev,
       vl: Object.keys(prev.vl).reduce((acc, key) => {
@@ -7677,7 +7673,7 @@ export default function EditLoadingInfoPanel() {
         return acc;
       }, {})
     }));
-    
+
     setVlPhotoDetails(prev => {
       const newDetails = { ...prev };
       Object.keys(newDetails).forEach(key => {
@@ -7687,7 +7683,7 @@ export default function EditLoadingInfoPanel() {
       });
       return newDetails;
     });
-    
+
     alert(`✅ VL-${fieldNum} field removed successfully`);
   };
 
@@ -7947,7 +7943,7 @@ export default function EditLoadingInfoPanel() {
 
     try {
       const token = localStorage.getItem('token');
-      
+
       setUploading(true);
       const uploadedPaths = await uploadAllFiles(token);
       setUploading(false);
@@ -7999,7 +7995,7 @@ export default function EditLoadingInfoPanel() {
       const finalVlUploads = {
         ...vlUploads,
       };
-      
+
       // Add all vl fields up to 15
       for (let i = 1; i <= 15; i++) {
         const key = `vl${i}`;
@@ -8097,13 +8093,13 @@ export default function EditLoadingInfoPanel() {
       }
 
       const data = await res.json();
-      
+
       alert(`✅ Loading Info updated successfully!\nVehicle Arrival No: ${header.vehicleArrivalNo}`);
-      
+
       setTimeout(() => {
         router.push('/admin/Loading-Info');
       }, 2000);
-      
+
     } catch (error) {
       console.error('Error updating loading info:', error);
       alert(`❌ Error: ${error.message}`);
@@ -8182,11 +8178,10 @@ export default function EditLoadingInfoPanel() {
               <button
                 onClick={handleUpdate}
                 disabled={saving || uploading}
-                className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${
-                  saving || uploading
-                    ? 'bg-gray-400 cursor-not-allowed' 
-                    : 'bg-emerald-600 hover:bg-emerald-700'
-                }`}
+                className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${saving || uploading
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-emerald-600 hover:bg-emerald-700'
+                  }`}
               >
                 {saving || uploading ? (
                   <span className="flex items-center gap-2">
@@ -8253,7 +8248,7 @@ export default function EditLoadingInfoPanel() {
             <label className="text-xs font-bold text-slate-600">Vehicle Slip</label>
             <p className="text-xs text-slate-400 mb-1">Upload vehicle slip (Image/PDF)</p>
             {!isReadOnly && (
-              <button 
+              <button
                 onClick={handleVehicleSlipSelect}
                 className="w-full rounded-lg bg-slate-100 px-3 py-2 text-xs font-bold text-slate-700 border border-slate-300 hover:bg-slate-200 transition flex items-center justify-center gap-2"
               >
@@ -8265,7 +8260,7 @@ export default function EditLoadingInfoPanel() {
             )}
             <div className="mt-2">
               {existingFiles.vehicleSlips?.map((file, idx) => (
-                <FileUploadItem 
+                <FileUploadItem
                   key={`existing-vehicleSlip-${idx}`}
                   file={file}
                   index={idx}
@@ -8276,7 +8271,7 @@ export default function EditLoadingInfoPanel() {
                 />
               ))}
               {vehicleSlipFiles.map((file, idx) => (
-                <FileUploadItem 
+                <FileUploadItem
                   key={`new-vehicleSlip-${idx}`}
                   file={file}
                   index={idx}
@@ -8311,9 +8306,8 @@ export default function EditLoadingInfoPanel() {
                   onChange={(e) => handleVehicleNegotiationSearch(e.target.value)}
                   onFocus={handleVehicleNegotiationInputFocus}
                   onBlur={handleVehicleNegotiationInputBlur}
-                  className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 pr-8 ${
-                    isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
-                  }`}
+                  className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 pr-8 ${isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+                    }`}
                   placeholder="Search vehicle negotiation..."
                   readOnly={isReadOnly}
                 />
@@ -8326,7 +8320,7 @@ export default function EditLoadingInfoPanel() {
                   </div>
                 )}
               </div>
-              
+
               {showVehicleNegotiationDropdown && !isReadOnly && (
                 <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
                   {vehicleNegotiation.loading ? (
@@ -8358,8 +8352,8 @@ export default function EditLoadingInfoPanel() {
                     })
                   ) : (
                     <div className="p-3 text-center text-sm text-slate-500">
-                      {vehicleNegotiationNo.trim() ? 
-                        `No available vehicle negotiations found for "${vehicleNegotiationNo}"` : 
+                      {vehicleNegotiationNo.trim() ?
+                        `No available vehicle negotiations found for "${vehicleNegotiationNo}"` :
                         "No vehicle negotiations available"
                       }
                     </div>
@@ -8387,9 +8381,8 @@ export default function EditLoadingInfoPanel() {
                 value={vehicleInfo.driverMobileNo}
                 onChange={(e) => !isReadOnly && setVehicleInfo({ ...vehicleInfo, driverMobileNo: e.target.value })}
                 readOnly={isReadOnly}
-                className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none ${
-                  isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
-                }`}
+                className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none ${isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+                  }`}
                 placeholder="Enter mobile number"
               />
             </div>
@@ -8399,8 +8392,8 @@ export default function EditLoadingInfoPanel() {
               <SearchableDropdown
                 items={branches}
                 selectedId={header.branch}
-                onSelect={(branch) => !isReadOnly && setHeader({ 
-                  ...header, 
+                onSelect={(branch) => !isReadOnly && setHeader({
+                  ...header,
                   branch: branch?._id || '',
                   branchName: branch?.name || '',
                   branchCode: branch?.code || ''
@@ -8435,7 +8428,7 @@ export default function EditLoadingInfoPanel() {
                       subCompanyCode: selected?.code || ''
                     }));
                     // Also update order rows with sub-company
-                    setOrderRows(prevOrders => 
+                    setOrderRows(prevOrders =>
                       prevOrders.map(order => ({
                         ...order,
                         subCompanyName: selected?.name || '',
@@ -8465,9 +8458,8 @@ export default function EditLoadingInfoPanel() {
                 value={header.date}
                 onChange={(e) => !isReadOnly && setHeader({ ...header, date: e.target.value })}
                 readOnly={isReadOnly}
-                className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none ${
-                  isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
-                }`}
+                className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none ${isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+                  }`}
               />
             </div>
 
@@ -8489,13 +8481,12 @@ export default function EditLoadingInfoPanel() {
                   value={vehicleInfo.drivingLicense}
                   onChange={(e) => !isReadOnly && setVehicleInfo({ ...vehicleInfo, drivingLicense: e.target.value })}
                   readOnly={isReadOnly}
-                  className={`mt-1 flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none ${
-                    isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
-                  }`}
+                  className={`mt-1 flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none ${isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+                    }`}
                   placeholder="Enter License Number"
                 />
                 {!isReadOnly && (
-                  <button 
+                  <button
                     onClick={() => handleFileSelect('vehicle', 'license')}
                     className="mt-1 rounded-lg bg-purple-50 px-3 py-2 text-xs font-bold text-purple-700 border border-purple-200 hover:bg-purple-100 whitespace-nowrap"
                   >
@@ -8504,7 +8495,7 @@ export default function EditLoadingInfoPanel() {
                 )}
               </div>
               {existingFiles.vehicle?.license?.map((file, idx) => (
-                <FileUploadItem 
+                <FileUploadItem
                   key={`existing-license-${idx}`}
                   file={file}
                   index={idx}
@@ -8515,7 +8506,7 @@ export default function EditLoadingInfoPanel() {
                 />
               ))}
               {vehicleFiles.license.map((file, idx) => (
-                <FileUploadItem 
+                <FileUploadItem
                   key={`new-license-${idx}`}
                   file={file}
                   index={idx}
@@ -8634,11 +8625,10 @@ export default function EditLoadingInfoPanel() {
                       </td>
                       <td className="border border-yellow-300 px-2 py-2 text-center">
                         {row.fromState && row.stateName ? (
-                          <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${
-                            row.fromState.trim().toUpperCase() === row.stateName.trim().toUpperCase()
-                              ? 'bg-green-100 text-green-800 border border-green-300'
-                              : 'bg-red-100 text-red-800 border border-red-300'
-                          }`}>
+                          <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${row.fromState.trim().toUpperCase() === row.stateName.trim().toUpperCase()
+                            ? 'bg-green-100 text-green-800 border border-green-300'
+                            : 'bg-red-100 text-red-800 border border-red-300'
+                            }`}>
                             {row.fromState.trim().toUpperCase() === row.stateName.trim().toUpperCase() ? '✅ Local' : '❌ Not Local'}
                           </span>
                         ) : (
@@ -8665,7 +8655,7 @@ export default function EditLoadingInfoPanel() {
                 </tbody>
                 <tfoot className="bg-yellow-100">
                   <tr>
-                    <td colSpan="10" className="border border-yellow-300 px-3 py-2 text-right font-bold">Total Quantity (MT):</td>
+                    <td colSpan="11" className="border border-yellow-300 px-3 py-2 text-right font-bold">Total Quantity (MT):</td>
                     <td className="border border-yellow-300 px-3 py-2 font-bold">{calculateTotalWeight()}</td>
                     <td colSpan="4" className="border border-yellow-300 px-3 py-2"></td>
                   </tr>
@@ -8719,13 +8709,13 @@ export default function EditLoadingInfoPanel() {
                                   message: `Vehicle Owner: ${owner.ownerName}\nContact: ${owner.mobileNumber1 || owner.mobileNumber2}\nRC Number: ${owner.rcNumber || ''}`,
                                   remarks: `Pan Card: ${owner.ownerPanCard || 'N/A'}`
                                 }));
-                                
+
                                 setSelectedVehicle({
                                   _id: owner._id,
                                   vehicleNumber: owner.vehicleNumber,
                                   ownerName: owner.ownerName
                                 });
-                                
+
                                 setExistingFiles(prev => ({
                                   ...prev,
                                   vehicle: {
@@ -8734,7 +8724,7 @@ export default function EditLoadingInfoPanel() {
                                     pan: owner.panCardDocuments?.map(doc => ({ name: 'PAN Document', path: doc })) || [],
                                   }
                                 }));
-                                
+
                                 alert(`✅ Owner ${owner.ownerName} loaded!\nVehicle: ${owner.vehicleNumber}`);
                               }
                             }}
@@ -8742,7 +8732,7 @@ export default function EditLoadingInfoPanel() {
                             readOnly={isReadOnly}
                           />
                         </div>
-                        
+
                         {!isReadOnly && (
                           <button
                             onClick={handleCreateVehicle}
@@ -8751,7 +8741,7 @@ export default function EditLoadingInfoPanel() {
                             + Create New Vehicle
                           </button>
                         )}
-                        
+
                         {selectedVehicle && (
                           <div className="mt-2 p-2 bg-green-50 rounded-lg border border-green-200">
                             <div className="text-xs font-medium text-green-800">Selected Vehicle:</div>
@@ -8765,7 +8755,7 @@ export default function EditLoadingInfoPanel() {
                           <label className="text-xs font-bold text-slate-600">Vehicle Photos</label>
                           <p className="text-xs text-slate-400 mb-1">Upload vehicle photos (Max 10)</p>
                           {!isReadOnly && (
-                            <button 
+                            <button
                               onClick={handleVehiclePhotoSelect}
                               className="w-full rounded-lg bg-cyan-50 px-3 py-2 text-xs font-bold text-cyan-700 border border-cyan-200 hover:bg-cyan-100 transition flex items-center justify-center gap-2"
                             >
@@ -8778,7 +8768,7 @@ export default function EditLoadingInfoPanel() {
                           )}
                           <div className="mt-2 max-h-40 overflow-y-auto">
                             {existingFiles.vehiclePhotos?.map((file, idx) => (
-                              <FileUploadItem 
+                              <FileUploadItem
                                 key={`existing-vehiclePhoto-${idx}`}
                                 file={file}
                                 index={idx}
@@ -8789,7 +8779,7 @@ export default function EditLoadingInfoPanel() {
                               />
                             ))}
                             {vehiclePhotoFiles.map((file, idx) => (
-                              <FileUploadItem 
+                              <FileUploadItem
                                 key={`new-vehiclePhoto-${idx}`}
                                 file={file}
                                 index={idx}
@@ -8801,7 +8791,7 @@ export default function EditLoadingInfoPanel() {
                           </div>
                           {vehiclePhotoFiles.length > 0 && (
                             <div className="w-full bg-slate-200 rounded-full h-1.5 mt-2">
-                              <div 
+                              <div
                                 className="bg-cyan-500 h-1.5 rounded-full transition-all"
                                 style={{ width: `${(vehiclePhotoFiles.length / 10) * 100}%` }}
                               />
@@ -8922,7 +8912,7 @@ export default function EditLoadingInfoPanel() {
                           <div>
                             <label className="text-xs font-bold text-slate-600">Owner RC Doc</label>
                             {!isReadOnly && (
-                              <button 
+                              <button
                                 onClick={() => handleFileSelect('vehicle', 'rc')}
                                 className="mt-1 w-full rounded-lg bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700 border border-blue-200 hover:bg-blue-100"
                               >
@@ -8930,7 +8920,7 @@ export default function EditLoadingInfoPanel() {
                               </button>
                             )}
                             {existingFiles.vehicle?.rc?.map((file, idx) => (
-                              <FileUploadItem 
+                              <FileUploadItem
                                 key={`existing-rc-${idx}`}
                                 file={file}
                                 index={idx}
@@ -8941,7 +8931,7 @@ export default function EditLoadingInfoPanel() {
                               />
                             ))}
                             {vehicleFiles.rc.map((file, idx) => (
-                              <FileUploadItem 
+                              <FileUploadItem
                                 key={`new-rc-${idx}`}
                                 file={file}
                                 index={idx}
@@ -8954,7 +8944,7 @@ export default function EditLoadingInfoPanel() {
                           <div>
                             <label className="text-xs font-bold text-slate-600">Owner Pan Doc</label>
                             {!isReadOnly && (
-                              <button 
+                              <button
                                 onClick={() => handleFileSelect('vehicle', 'pan')}
                                 className="mt-1 w-full rounded-lg bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700 border border-blue-200 hover:bg-blue-100"
                               >
@@ -8962,7 +8952,7 @@ export default function EditLoadingInfoPanel() {
                               </button>
                             )}
                             {existingFiles.vehicle?.pan?.map((file, idx) => (
-                              <FileUploadItem 
+                              <FileUploadItem
                                 key={`existing-pan-${idx}`}
                                 file={file}
                                 index={idx}
@@ -8973,7 +8963,7 @@ export default function EditLoadingInfoPanel() {
                               />
                             ))}
                             {vehicleFiles.pan.map((file, idx) => (
-                              <FileUploadItem 
+                              <FileUploadItem
                                 key={`new-pan-${idx}`}
                                 file={file}
                                 index={idx}
@@ -9009,9 +8999,8 @@ export default function EditLoadingInfoPanel() {
                             value={vehicleInfo.driverName}
                             onChange={(e) => !isReadOnly && setVehicleInfo({ ...vehicleInfo, driverName: e.target.value })}
                             readOnly={isReadOnly}
-                            className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none ${
-                              isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
-                            }`}
+                            className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none ${isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+                              }`}
                             placeholder="Enter driver name"
                           />
                         </div>
@@ -9023,9 +9012,8 @@ export default function EditLoadingInfoPanel() {
                             value={vehicleInfo.driverMobileNo}
                             onChange={(e) => !isReadOnly && setVehicleInfo({ ...vehicleInfo, driverMobileNo: e.target.value })}
                             readOnly={isReadOnly}
-                            className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none ${
-                              isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
-                            }`}
+                            className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none ${isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+                              }`}
                             placeholder="Enter mobile number"
                           />
                         </div>
@@ -9037,9 +9025,8 @@ export default function EditLoadingInfoPanel() {
                             value={vehicleInfo.drivingLicense}
                             onChange={(e) => !isReadOnly && setVehicleInfo({ ...vehicleInfo, drivingLicense: e.target.value })}
                             readOnly={isReadOnly}
-                            className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none ${
-                              isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
-                            }`}
+                            className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none ${isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+                              }`}
                             placeholder="License No"
                           />
                         </div>
@@ -9047,7 +9034,7 @@ export default function EditLoadingInfoPanel() {
                         <div>
                           <label className="text-xs font-bold text-slate-600">Driver Photo</label>
                           {!isReadOnly && (
-                            <button 
+                            <button
                               onClick={() => handleFileSelect('vehicle', 'photo')}
                               className="mt-1 w-full rounded-lg bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700 border border-blue-200 hover:bg-blue-100"
                             >
@@ -9055,7 +9042,7 @@ export default function EditLoadingInfoPanel() {
                             </button>
                           )}
                           {existingFiles.vehicle?.photo?.map((file, idx) => (
-                            <FileUploadItem 
+                            <FileUploadItem
                               key={`existing-photo-${idx}`}
                               file={file}
                               index={idx}
@@ -9066,7 +9053,7 @@ export default function EditLoadingInfoPanel() {
                             />
                           ))}
                           {vehicleFiles.photo.map((file, idx) => (
-                            <FileUploadItem 
+                            <FileUploadItem
                               key={`new-photo-${idx}`}
                               file={file}
                               index={idx}
@@ -9107,9 +9094,8 @@ export default function EditLoadingInfoPanel() {
                                 value={helperInfo.name}
                                 onChange={(e) => !isReadOnly && setHelperInfo({ ...helperInfo, name: e.target.value })}
                                 readOnly={isReadOnly}
-                                className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none ${
-                                  isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
-                                }`}
+                                className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none ${isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+                                  }`}
                                 placeholder="Enter helper name"
                               />
                             </div>
@@ -9121,9 +9107,8 @@ export default function EditLoadingInfoPanel() {
                                 value={helperInfo.mobileNo}
                                 onChange={(e) => !isReadOnly && setHelperInfo({ ...helperInfo, mobileNo: e.target.value })}
                                 readOnly={isReadOnly}
-                                className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none ${
-                                  isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
-                                }`}
+                                className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none ${isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+                                  }`}
                                 placeholder="Enter mobile number"
                               />
                             </div>
@@ -9131,7 +9116,7 @@ export default function EditLoadingInfoPanel() {
                             <div>
                               <label className="text-xs font-bold text-slate-600">Helper Photo</label>
                               {!isReadOnly && (
-                                <button 
+                                <button
                                   onClick={() => handleHelperFileSelect('photo')}
                                   className="mt-1 w-full rounded-lg bg-green-50 px-3 py-2 text-xs font-bold text-green-700 border border-green-200 hover:bg-green-100"
                                 >
@@ -9139,7 +9124,7 @@ export default function EditLoadingInfoPanel() {
                                 </button>
                               )}
                               {helperInfo.photo.map((file, idx) => (
-                                <FileUploadItem 
+                                <FileUploadItem
                                   key={`helper-photo-${idx}`}
                                   file={file}
                                   index={idx}
@@ -9153,7 +9138,7 @@ export default function EditLoadingInfoPanel() {
                             <div>
                               <label className="text-xs font-bold text-slate-600">Helper Aadhar Photo</label>
                               {!isReadOnly && (
-                                <button 
+                                <button
                                   onClick={() => handleHelperFileSelect('aadharPhoto')}
                                   className="mt-1 w-full rounded-lg bg-purple-50 px-3 py-2 text-xs font-bold text-purple-700 border border-purple-200 hover:bg-purple-100"
                                 >
@@ -9161,7 +9146,7 @@ export default function EditLoadingInfoPanel() {
                                 </button>
                               )}
                               {helperInfo.aadharPhoto.map((file, idx) => (
-                                <FileUploadItem 
+                                <FileUploadItem
                                   key={`helper-aadhar-${idx}`}
                                   file={file}
                                   index={idx}
@@ -9186,9 +9171,8 @@ export default function EditLoadingInfoPanel() {
                             onChange={(e) => !isReadOnly && setVehicleInfo({ ...vehicleInfo, message: e.target.value })}
                             readOnly={isReadOnly}
                             rows={3}
-                            className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none ${
-                              isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
-                            }`}
+                            className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none ${isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+                              }`}
                             placeholder="Enter message"
                           />
                         </div>
@@ -9200,9 +9184,8 @@ export default function EditLoadingInfoPanel() {
                             onChange={(e) => !isReadOnly && setVehicleInfo({ ...vehicleInfo, remarks: e.target.value })}
                             readOnly={isReadOnly}
                             rows={4}
-                            className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none ${
-                              isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
-                            }`}
+                            className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none ${isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+                              }`}
                             placeholder="Enter remarks"
                           />
                         </div>
@@ -9234,7 +9217,7 @@ export default function EditLoadingInfoPanel() {
                 </select>
               </div>
             </div>
-            
+
             <PackTypeTable
               key={activePack}
               packType={activePack}
@@ -9253,29 +9236,28 @@ export default function EditLoadingInfoPanel() {
           <Card title="VBP - PANEL (Vehicle Body Pictures)">
             <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-200">
               <div className="grid grid-cols-8 gap-3">
-                {[1,2,3,4,5,6,7].map((num) => (
+                {[1, 2, 3, 4, 5, 6, 7].map((num) => (
                   <div key={num} className="col-span-1">
                     <div className="text-xs font-bold text-slate-600 mb-1">VBP - {num}</div>
                     {!isReadOnly && (
-                      <button 
+                      <button
                         onClick={() => handleFileSelect('vbp', `vbp${num}`)}
-                        className={`w-full rounded-lg px-2 py-3 text-xs font-bold border hover:bg-opacity-80 ${
-                          vbpFiles[`vbp${num}`].length > 0 
-                            ? 'bg-green-50 text-green-700 border-green-200' 
-                            : existingFiles.vbp?.[`vbp${num}`]?.length > 0
-                              ? 'bg-blue-50 text-blue-700 border-blue-200'
-                              : 'bg-gray-50 text-gray-700 border-gray-200'
-                        }`}
+                        className={`w-full rounded-lg px-2 py-3 text-xs font-bold border hover:bg-opacity-80 ${vbpFiles[`vbp${num}`].length > 0
+                          ? 'bg-green-50 text-green-700 border-green-200'
+                          : existingFiles.vbp?.[`vbp${num}`]?.length > 0
+                            ? 'bg-blue-50 text-blue-700 border-blue-200'
+                            : 'bg-gray-50 text-gray-700 border-gray-200'
+                          }`}
                       >
-                        {vbpFiles[`vbp${num}`].length > 0 
-                          ? `✓ ${vbpFiles[`vbp${num}`].length} new` 
+                        {vbpFiles[`vbp${num}`].length > 0
+                          ? `✓ ${vbpFiles[`vbp${num}`].length} new`
                           : existingFiles.vbp?.[`vbp${num}`]?.length > 0
                             ? '✓ Existing'
                             : 'Select'}
                       </button>
                     )}
                     {existingFiles.vbp?.[`vbp${num}`]?.map((file, idx) => (
-                      <FileUploadItem 
+                      <FileUploadItem
                         key={`existing-vbp${num}-${idx}`}
                         file={file}
                         index={idx}
@@ -9286,7 +9268,7 @@ export default function EditLoadingInfoPanel() {
                       />
                     ))}
                     {vbpFiles[`vbp${num}`].map((file, idx) => (
-                      <FileUploadItem 
+                      <FileUploadItem
                         key={`new-vbp${num}-${idx}`}
                         file={file}
                         index={idx}
@@ -9300,25 +9282,24 @@ export default function EditLoadingInfoPanel() {
                 <div className="col-span-1">
                   <div className="text-xs font-bold text-slate-600 mb-1">Video - VBP</div>
                   {!isReadOnly && (
-                    <button 
+                    <button
                       onClick={() => handleFileSelect('vbp', 'videoVbp', true)}
-                      className={`w-full rounded-lg px-2 py-3 text-xs font-bold border hover:bg-opacity-80 ${
-                        vbpFiles.videoVbp.length > 0 
-                          ? 'bg-green-50 text-green-700 border-green-200' 
-                          : existingFiles.vbp?.videoVbp?.length > 0
-                            ? 'bg-blue-50 text-blue-700 border-blue-200'
-                            : 'bg-purple-50 text-purple-700 border-purple-200'
-                      }`}
+                      className={`w-full rounded-lg px-2 py-3 text-xs font-bold border hover:bg-opacity-80 ${vbpFiles.videoVbp.length > 0
+                        ? 'bg-green-50 text-green-700 border-green-200'
+                        : existingFiles.vbp?.videoVbp?.length > 0
+                          ? 'bg-blue-50 text-blue-700 border-blue-200'
+                          : 'bg-purple-50 text-purple-700 border-purple-200'
+                        }`}
                     >
-                      {vbpFiles.videoVbp.length > 0 
-                        ? `✓ ${vbpFiles.videoVbp.length} new` 
+                      {vbpFiles.videoVbp.length > 0
+                        ? `✓ ${vbpFiles.videoVbp.length} new`
                         : existingFiles.vbp?.videoVbp?.length > 0
                           ? '✓ Existing'
                           : 'Select'}
                     </button>
                   )}
                   {existingFiles.vbp?.videoVbp?.map((file, idx) => (
-                    <FileUploadItem 
+                    <FileUploadItem
                       key={`existing-videoVbp-${idx}`}
                       file={file}
                       index={idx}
@@ -9329,7 +9310,7 @@ export default function EditLoadingInfoPanel() {
                     />
                   ))}
                   {vbpFiles.videoVbp.map((file, idx) => (
-                    <FileUploadItem 
+                    <FileUploadItem
                       key={`new-videoVbp-${idx}`}
                       file={file}
                       index={idx}
@@ -9368,29 +9349,28 @@ export default function EditLoadingInfoPanel() {
           <Card title="VFT - PANEL (Vehicle Floor Tarpaulin Pictures)">
             <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
               <div className="grid grid-cols-8 gap-3">
-                {[1,2,3,4,5,6,7].map((num) => (
+                {[1, 2, 3, 4, 5, 6, 7].map((num) => (
                   <div key={num} className="col-span-1">
                     <div className="text-xs font-bold text-slate-600 mb-1">VFT - {num}</div>
                     {!isReadOnly && (
-                      <button 
+                      <button
                         onClick={() => handleFileSelect('vft', `vft${num}`)}
-                        className={`w-full rounded-lg px-2 py-3 text-xs font-bold border hover:bg-opacity-80 ${
-                          vftFiles[`vft${num}`].length > 0 
-                            ? 'bg-green-50 text-green-700 border-green-200' 
-                            : existingFiles.vft?.[`vft${num}`]?.length > 0
-                              ? 'bg-blue-50 text-blue-700 border-blue-200'
-                              : 'bg-gray-50 text-gray-700 border-gray-200'
-                        }`}
+                        className={`w-full rounded-lg px-2 py-3 text-xs font-bold border hover:bg-opacity-80 ${vftFiles[`vft${num}`].length > 0
+                          ? 'bg-green-50 text-green-700 border-green-200'
+                          : existingFiles.vft?.[`vft${num}`]?.length > 0
+                            ? 'bg-blue-50 text-blue-700 border-blue-200'
+                            : 'bg-gray-50 text-gray-700 border-gray-200'
+                          }`}
                       >
-                        {vftFiles[`vft${num}`].length > 0 
-                          ? `✓ ${vftFiles[`vft${num}`].length} new` 
+                        {vftFiles[`vft${num}`].length > 0
+                          ? `✓ ${vftFiles[`vft${num}`].length} new`
                           : existingFiles.vft?.[`vft${num}`]?.length > 0
                             ? '✓ Existing'
                             : 'Select'}
                       </button>
                     )}
                     {existingFiles.vft?.[`vft${num}`]?.map((file, idx) => (
-                      <FileUploadItem 
+                      <FileUploadItem
                         key={`existing-vft${num}-${idx}`}
                         file={file}
                         index={idx}
@@ -9401,7 +9381,7 @@ export default function EditLoadingInfoPanel() {
                       />
                     ))}
                     {vftFiles[`vft${num}`].map((file, idx) => (
-                      <FileUploadItem 
+                      <FileUploadItem
                         key={`new-vft${num}-${idx}`}
                         file={file}
                         index={idx}
@@ -9415,25 +9395,24 @@ export default function EditLoadingInfoPanel() {
                 <div className="col-span-1">
                   <div className="text-xs font-bold text-slate-600 mb-1">Video - VFT</div>
                   {!isReadOnly && (
-                    <button 
+                    <button
                       onClick={() => handleFileSelect('vft', 'videoVft', true)}
-                      className={`w-full rounded-lg px-2 py-3 text-xs font-bold border hover:bg-opacity-80 ${
-                        vftFiles.videoVft.length > 0 
-                          ? 'bg-green-50 text-green-700 border-green-200' 
-                          : existingFiles.vft?.videoVft?.length > 0
-                            ? 'bg-blue-50 text-blue-700 border-blue-200'
-                            : 'bg-purple-50 text-purple-700 border-purple-200'
-                      }`}
+                      className={`w-full rounded-lg px-2 py-3 text-xs font-bold border hover:bg-opacity-80 ${vftFiles.videoVft.length > 0
+                        ? 'bg-green-50 text-green-700 border-green-200'
+                        : existingFiles.vft?.videoVft?.length > 0
+                          ? 'bg-blue-50 text-blue-700 border-blue-200'
+                          : 'bg-purple-50 text-purple-700 border-purple-200'
+                        }`}
                     >
-                      {vftFiles.videoVft.length > 0 
-                        ? `✓ ${vftFiles.videoVft.length} new` 
+                      {vftFiles.videoVft.length > 0
+                        ? `✓ ${vftFiles.videoVft.length} new`
                         : existingFiles.vft?.videoVft?.length > 0
                           ? '✓ Existing'
                           : 'Select'}
                     </button>
                   )}
                   {existingFiles.vft?.videoVft?.map((file, idx) => (
-                    <FileUploadItem 
+                    <FileUploadItem
                       key={`existing-videoVft-${idx}`}
                       file={file}
                       index={idx}
@@ -9444,7 +9423,7 @@ export default function EditLoadingInfoPanel() {
                     />
                   ))}
                   {vftFiles.videoVft.map((file, idx) => (
-                    <FileUploadItem 
+                    <FileUploadItem
                       key={`new-videoVft-${idx}`}
                       file={file}
                       index={idx}
@@ -9471,29 +9450,28 @@ export default function EditLoadingInfoPanel() {
           <Card title="VOT - PANEL (Vehicle Outer Tarpaulin Pictures)">
             <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-200">
               <div className="grid grid-cols-8 gap-3">
-                {[1,2,3,4,5,6,7].map((num) => (
+                {[1, 2, 3, 4, 5, 6, 7].map((num) => (
                   <div key={num} className="col-span-1">
                     <div className="text-xs font-bold text-slate-600 mb-1">VOT - {num}</div>
                     {!isReadOnly && (
-                      <button 
+                      <button
                         onClick={() => handleFileSelect('vot', `vot${num}`)}
-                        className={`w-full rounded-lg px-2 py-3 text-xs font-bold border hover:bg-opacity-80 ${
-                          votFiles[`vot${num}`].length > 0 
-                            ? 'bg-green-50 text-green-700 border-green-200' 
-                            : existingFiles.vot?.[`vot${num}`]?.length > 0
-                              ? 'bg-blue-50 text-blue-700 border-blue-200'
-                              : 'bg-gray-50 text-gray-700 border-gray-200'
-                        }`}
+                        className={`w-full rounded-lg px-2 py-3 text-xs font-bold border hover:bg-opacity-80 ${votFiles[`vot${num}`].length > 0
+                          ? 'bg-green-50 text-green-700 border-green-200'
+                          : existingFiles.vot?.[`vot${num}`]?.length > 0
+                            ? 'bg-blue-50 text-blue-700 border-blue-200'
+                            : 'bg-gray-50 text-gray-700 border-gray-200'
+                          }`}
                       >
-                        {votFiles[`vot${num}`].length > 0 
-                          ? `✓ ${votFiles[`vot${num}`].length} new` 
+                        {votFiles[`vot${num}`].length > 0
+                          ? `✓ ${votFiles[`vot${num}`].length} new`
                           : existingFiles.vot?.[`vot${num}`]?.length > 0
                             ? '✓ Existing'
                             : 'Select'}
                       </button>
                     )}
                     {existingFiles.vot?.[`vot${num}`]?.map((file, idx) => (
-                      <FileUploadItem 
+                      <FileUploadItem
                         key={`existing-vot${num}-${idx}`}
                         file={file}
                         index={idx}
@@ -9504,7 +9482,7 @@ export default function EditLoadingInfoPanel() {
                       />
                     ))}
                     {votFiles[`vot${num}`].map((file, idx) => (
-                      <FileUploadItem 
+                      <FileUploadItem
                         key={`new-vot${num}-${idx}`}
                         file={file}
                         index={idx}
@@ -9518,25 +9496,24 @@ export default function EditLoadingInfoPanel() {
                 <div className="col-span-1">
                   <div className="text-xs font-bold text-slate-600 mb-1">Video - VOT</div>
                   {!isReadOnly && (
-                    <button 
+                    <button
                       onClick={() => handleFileSelect('vot', 'videoVot', true)}
-                      className={`w-full rounded-lg px-2 py-3 text-xs font-bold border hover:bg-opacity-80 ${
-                        votFiles.videoVot.length > 0 
-                          ? 'bg-green-50 text-green-700 border-green-200' 
-                          : existingFiles.vot?.videoVot?.length > 0
-                            ? 'bg-blue-50 text-blue-700 border-blue-200'
-                            : 'bg-purple-50 text-purple-700 border-purple-200'
-                      }`}
+                      className={`w-full rounded-lg px-2 py-3 text-xs font-bold border hover:bg-opacity-80 ${votFiles.videoVot.length > 0
+                        ? 'bg-green-50 text-green-700 border-green-200'
+                        : existingFiles.vot?.videoVot?.length > 0
+                          ? 'bg-blue-50 text-blue-700 border-blue-200'
+                          : 'bg-purple-50 text-purple-700 border-purple-200'
+                        }`}
                     >
-                      {votFiles.videoVot.length > 0 
-                        ? `✓ ${votFiles.videoVot.length} new` 
+                      {votFiles.videoVot.length > 0
+                        ? `✓ ${votFiles.videoVot.length} new`
                         : existingFiles.vot?.videoVot?.length > 0
                           ? '✓ Existing'
                           : 'Select'}
                     </button>
                   )}
                   {existingFiles.vot?.videoVot?.map((file, idx) => (
-                    <FileUploadItem 
+                    <FileUploadItem
                       key={`existing-videoVot-${idx}`}
                       file={file}
                       index={idx}
@@ -9547,7 +9524,7 @@ export default function EditLoadingInfoPanel() {
                     />
                   ))}
                   {votFiles.videoVot.map((file, idx) => (
-                    <FileUploadItem 
+                    <FileUploadItem
                       key={`new-videoVot-${idx}`}
                       file={file}
                       index={idx}
@@ -9602,14 +9579,14 @@ export default function EditLoadingInfoPanel() {
                   )}
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-12 gap-4">
                 {vlFields.map((fieldNum) => {
                   const currentCount = (vlFiles[`vl${fieldNum}`]?.length || 0) + (existingFiles.vl?.[`vl${fieldNum}`]?.length || 0);
                   const totalCount = getTotalVlPhotosCount();
                   const isMaxReached = totalCount >= 25;
                   const isDisabled = isMaxReached && currentCount === 0;
-                  
+
                   return (
                     <div key={fieldNum} className="col-span-12 lg:col-span-6">
                       <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
@@ -9634,32 +9611,31 @@ export default function EditLoadingInfoPanel() {
                             )}
                           </div>
                         </div>
-                        
-                        <button 
+
+                        <button
                           onClick={() => handleFileSelect('vl', `vl${fieldNum}`)}
                           disabled={isDisabled || isReadOnly}
-                          className={`w-full rounded-lg py-2.5 text-sm font-bold border transition-all ${
-                            currentCount > 0 
-                              ? 'bg-green-50 text-green-700 border-green-300 hover:bg-green-100' 
-                              : isDisabled 
-                                ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
-                                : isReadOnly
-                                  ? 'bg-slate-100 text-slate-500 border-slate-200 cursor-not-allowed'
-                                  : 'bg-blue-50 text-blue-700 border-blue-300 hover:bg-blue-100'
-                          }`}
+                          className={`w-full rounded-lg py-2.5 text-sm font-bold border transition-all ${currentCount > 0
+                            ? 'bg-green-50 text-green-700 border-green-300 hover:bg-green-100'
+                            : isDisabled
+                              ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                              : isReadOnly
+                                ? 'bg-slate-100 text-slate-500 border-slate-200 cursor-not-allowed'
+                                : 'bg-blue-50 text-blue-700 border-blue-300 hover:bg-blue-100'
+                            }`}
                           title={isDisabled ? "Maximum 25 photos reached" : `Upload VL(stack)-${fieldNum} photos`}
                         >
-                          {currentCount > 0 
-                            ? `📸 + Add More Photos (${currentCount} uploaded)` 
-                            : isDisabled 
-                              ? 'Max Reached' 
+                          {currentCount > 0
+                            ? `📸 + Add More Photos (${currentCount} uploaded)`
+                            : isDisabled
+                              ? 'Max Reached'
                               : '+ Select Photos'}
                         </button>
 
                         {currentCount > 0 && (
                           <div className="mt-2">
                             <div className="w-full bg-slate-200 rounded-full h-1.5">
-                              <div 
+                              <div
                                 className="bg-green-500 h-1.5 rounded-full transition-all"
                                 style={{ width: `${(currentCount / 25) * 100}%` }}
                               />
@@ -9674,10 +9650,10 @@ export default function EditLoadingInfoPanel() {
                           const height = parseFloat(vlPhotoDetails[`vl${fieldNum}_${idx}_height`]) || 0;
                           const nose = parseFloat(vlPhotoDetails[`vl${fieldNum}_${idx}_nose`]) || 0;
                           const total = (width * height) + nose;
-                          
+
                           return (
                             <div key={`existing-vl-${fieldNum}-${idx}`} className="mt-2">
-                              <FileUploadItem 
+                              <FileUploadItem
                                 file={file}
                                 index={idx}
                                 onRemove={() => removeFile('vl', `vl${fieldNum}`, idx, true)}
@@ -9697,9 +9673,8 @@ export default function EditLoadingInfoPanel() {
                                       [`vl${fieldNum}_${idx}_width`]: e.target.value
                                     }))}
                                     readOnly={isReadOnly}
-                                    className={`mt-1 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs outline-none focus:border-emerald-500 ${
-                                      isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
-                                    }`}
+                                    className={`mt-1 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs outline-none focus:border-emerald-500 ${isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+                                      }`}
                                     placeholder="Width in ft"
                                   />
                                 </div>
@@ -9714,9 +9689,8 @@ export default function EditLoadingInfoPanel() {
                                       [`vl${fieldNum}_${idx}_height`]: e.target.value
                                     }))}
                                     readOnly={isReadOnly}
-                                    className={`mt-1 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs outline-none focus:border-emerald-500 ${
-                                      isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
-                                    }`}
+                                    className={`mt-1 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs outline-none focus:border-emerald-500 ${isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+                                      }`}
                                     placeholder="Height in ft"
                                   />
                                 </div>
@@ -9731,9 +9705,8 @@ export default function EditLoadingInfoPanel() {
                                       [`vl${fieldNum}_${idx}_nose`]: e.target.value
                                     }))}
                                     readOnly={isReadOnly}
-                                    className={`mt-1 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs outline-none focus:border-emerald-500 ${
-                                      isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
-                                    }`}
+                                    className={`mt-1 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs outline-none focus:border-emerald-500 ${isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+                                      }`}
                                     placeholder="Nose in ft"
                                   />
                                 </div>
@@ -9758,17 +9731,17 @@ export default function EditLoadingInfoPanel() {
                               const height = parseFloat(vlPhotoDetails[`vl${fieldNum}_${fileIdx}_height`]) || 0;
                               const nose = parseFloat(vlPhotoDetails[`vl${fieldNum}_${fileIdx}_nose`]) || 0;
                               const total = (width * height) + nose;
-                              
+
                               return (
                                 <div key={fileIdx} className="bg-slate-50 rounded-lg p-3 border border-slate-200">
-                                  <FileUploadItem 
-                                    file={file} 
+                                  <FileUploadItem
+                                    file={file}
                                     index={fileIdx}
                                     onRemove={() => removeFile('vl', `vl${fieldNum}`, fileIdx)}
                                     label={`VL(stack)-${fieldNum}`}
                                     readOnly={isReadOnly}
                                   />
-                                  
+
                                   <div className="grid grid-cols-4 gap-2 mt-2">
                                     <div>
                                       <label className="text-xs font-bold text-slate-600">Width (ft)</label>
@@ -9781,9 +9754,8 @@ export default function EditLoadingInfoPanel() {
                                           [`vl${fieldNum}_${fileIdx}_width`]: e.target.value
                                         }))}
                                         readOnly={isReadOnly}
-                                        className={`mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs outline-none focus:border-emerald-500 ${
-                                          isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
-                                        }`}
+                                        className={`mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs outline-none focus:border-emerald-500 ${isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+                                          }`}
                                         placeholder="Width in ft"
                                       />
                                     </div>
@@ -9798,9 +9770,8 @@ export default function EditLoadingInfoPanel() {
                                           [`vl${fieldNum}_${fileIdx}_height`]: e.target.value
                                         }))}
                                         readOnly={isReadOnly}
-                                        className={`mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs outline-none focus:border-emerald-500 ${
-                                          isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
-                                        }`}
+                                        className={`mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs outline-none focus:border-emerald-500 ${isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+                                          }`}
                                         placeholder="Height in ft"
                                       />
                                     </div>
@@ -9815,9 +9786,8 @@ export default function EditLoadingInfoPanel() {
                                           [`vl${fieldNum}_${fileIdx}_nose`]: e.target.value
                                         }))}
                                         readOnly={isReadOnly}
-                                        className={`mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs outline-none focus:border-emerald-500 ${
-                                          isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
-                                        }`}
+                                        className={`mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs outline-none focus:border-emerald-500 ${isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+                                          }`}
                                         placeholder="Nose in ft"
                                       />
                                     </div>
@@ -9847,18 +9817,17 @@ export default function EditLoadingInfoPanel() {
                       <p className="text-xs text-slate-500">Upload video of vehicle loading (Optional)</p>
                     </div>
                     {!isReadOnly && (
-                      <button 
+                      <button
                         onClick={() => handleFileSelect('vl', 'videoVl', true)}
-                        className={`rounded-lg px-4 py-2 text-xs font-bold border hover:bg-opacity-80 ${
-                          vlFiles.videoVl && vlFiles.videoVl.length > 0
-                            ? 'bg-green-50 text-green-700 border-green-300' 
-                            : existingFiles.vl?.videoVl?.length > 0
-                              ? 'bg-blue-50 text-blue-700 border-blue-300'
-                              : 'bg-purple-100 text-purple-700 border-purple-300 hover:bg-purple-200'
-                        }`}
+                        className={`rounded-lg px-4 py-2 text-xs font-bold border hover:bg-opacity-80 ${vlFiles.videoVl && vlFiles.videoVl.length > 0
+                          ? 'bg-green-50 text-green-700 border-green-300'
+                          : existingFiles.vl?.videoVl?.length > 0
+                            ? 'bg-blue-50 text-blue-700 border-blue-300'
+                            : 'bg-purple-100 text-purple-700 border-purple-300 hover:bg-purple-200'
+                          }`}
                       >
-                        {vlFiles.videoVl && vlFiles.videoVl.length > 0 
-                          ? `✓ ${vlFiles.videoVl.length} new` 
+                        {vlFiles.videoVl && vlFiles.videoVl.length > 0
+                          ? `✓ ${vlFiles.videoVl.length} new`
                           : existingFiles.vl?.videoVl?.length > 0
                             ? '✓ Existing'
                             : '+ Upload Video'}
@@ -9866,7 +9835,7 @@ export default function EditLoadingInfoPanel() {
                     )}
                   </div>
                   {existingFiles.vl?.videoVl?.map((file, idx) => (
-                    <FileUploadItem 
+                    <FileUploadItem
                       key={`existing-videoVl-${idx}`}
                       file={file}
                       index={idx}
@@ -9877,7 +9846,7 @@ export default function EditLoadingInfoPanel() {
                     />
                   ))}
                   {vlFiles.videoVl && vlFiles.videoVl.map((file, idx) => (
-                    <FileUploadItem 
+                    <FileUploadItem
                       key={`new-videoVl-${idx}`}
                       file={file}
                       index={idx}
@@ -9901,7 +9870,7 @@ export default function EditLoadingInfoPanel() {
                   {vlUploads.loadingStatus || 'Not Set'}
                 </span>
               </div>
-              
+
               {getTotalVlPhotosCount() > 0 && getTotalVlPhotosCount() < 5 && (
                 <div className="mt-3 p-3 bg-red-50 rounded-lg border border-red-200">
                   <p className="text-xs text-red-600 flex items-center gap-2">
@@ -9912,7 +9881,7 @@ export default function EditLoadingInfoPanel() {
                   </p>
                 </div>
               )}
-              
+
               {getTotalVlPhotosCount() >= 5 && (
                 <div className="mt-3 p-3 bg-green-50 rounded-lg border border-green-200">
                   <p className="text-xs text-green-600 flex items-center gap-2">
@@ -9934,23 +9903,22 @@ export default function EditLoadingInfoPanel() {
               <div className="col-span-12 md:col-span-6">
                 <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-200">
                   <h3 className="text-sm font-bold text-slate-800 mb-3">Weighment & Approval</h3>
-                  
+
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-slate-600">Loaded Vehicle - Weigh Slip:</span>
                       {!isReadOnly && (
-                        <button 
+                        <button
                           onClick={() => handleFileSelect('weighment', 'weighSlip')}
-                          className={`rounded-lg px-4 py-2 text-xs font-bold border hover:bg-opacity-80 ${
-                            weighmentFiles.weighSlip.length > 0 
-                              ? 'bg-green-50 text-green-700 border-green-200' 
-                              : existingFiles.weighment?.weighSlip?.length > 0
-                                ? 'bg-blue-50 text-blue-700 border-blue-200'
-                                : 'bg-gray-50 text-gray-700 border-gray-200'
-                          }`}
+                          className={`rounded-lg px-4 py-2 text-xs font-bold border hover:bg-opacity-80 ${weighmentFiles.weighSlip.length > 0
+                            ? 'bg-green-50 text-green-700 border-green-200'
+                            : existingFiles.weighment?.weighSlip?.length > 0
+                              ? 'bg-blue-50 text-blue-700 border-blue-200'
+                              : 'bg-gray-50 text-gray-700 border-gray-200'
+                            }`}
                         >
-                          {weighmentFiles.weighSlip.length > 0 
-                            ? `✓ ${weighmentFiles.weighSlip.length} new` 
+                          {weighmentFiles.weighSlip.length > 0
+                            ? `✓ ${weighmentFiles.weighSlip.length} new`
                             : existingFiles.weighment?.weighSlip?.length > 0
                               ? '✓ Existing'
                               : 'Select'}
@@ -9958,7 +9926,7 @@ export default function EditLoadingInfoPanel() {
                       )}
                     </div>
                     {existingFiles.weighment?.weighSlip?.map((file, idx) => (
-                      <FileUploadItem 
+                      <FileUploadItem
                         key={`existing-weighSlip-${idx}`}
                         file={file}
                         index={idx}
@@ -9969,7 +9937,7 @@ export default function EditLoadingInfoPanel() {
                       />
                     ))}
                     {weighmentFiles.weighSlip.map((file, idx) => (
-                      <FileUploadItem 
+                      <FileUploadItem
                         key={`new-weighSlip-${idx}`}
                         file={file}
                         index={idx}
@@ -9978,7 +9946,7 @@ export default function EditLoadingInfoPanel() {
                         readOnly={isReadOnly}
                       />
                     ))}
-                    
+
                     <div className="flex items-center gap-3">
                       <span className="text-xs font-bold text-slate-600">Approval:</span>
                       <span className={`text-sm px-3 py-1 rounded-full ${loadedWeighment.approval === 'Approved' ? 'bg-green-100 text-green-800' : loadedWeighment.approval === 'Rejected' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}`}>
@@ -9987,7 +9955,7 @@ export default function EditLoadingInfoPanel() {
                     </div>
                   </div>
                 </div>
-                
+
                 {/* Detention Days */}
                 <div className="bg-orange-50 p-4 rounded-xl border border-orange-200 mt-4">
                   <label className="text-xs font-bold text-orange-700">Detention Days</label>
@@ -9996,9 +9964,8 @@ export default function EditLoadingInfoPanel() {
                     value={detentionDays}
                     onChange={(e) => !isReadOnly && setDetentionDays(e.target.value)}
                     readOnly={isReadOnly}
-                    className={`mt-1 w-full rounded-lg border border-orange-200 px-3 py-2 text-sm outline-none ${
-                      isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
-                    }`}
+                    className={`mt-1 w-full rounded-lg border border-orange-200 px-3 py-2 text-sm outline-none ${isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+                      }`}
                     placeholder="Enter number of detention days"
                     min="0"
                   />
@@ -10014,7 +9981,7 @@ export default function EditLoadingInfoPanel() {
                       Deduct at Office
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-slate-700">Loading Charges:</span>
@@ -10023,9 +9990,8 @@ export default function EditLoadingInfoPanel() {
                         value={loadedWeighment.loadingCharges}
                         onChange={(e) => !isReadOnly && setLoadedWeighment({ ...loadedWeighment, loadingCharges: e.target.value })}
                         readOnly={isReadOnly}
-                        className={`w-32 rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-right ${
-                          isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
-                        }`}
+                        className={`w-32 rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-right ${isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+                          }`}
                         placeholder="0"
                       />
                     </div>
@@ -10036,9 +10002,8 @@ export default function EditLoadingInfoPanel() {
                         value={loadedWeighment.loadingStaffMunshiyana}
                         onChange={(e) => !isReadOnly && setLoadedWeighment({ ...loadedWeighment, loadingStaffMunshiyana: e.target.value })}
                         readOnly={isReadOnly}
-                        className={`w-32 rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-right ${
-                          isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
-                        }`}
+                        className={`w-32 rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-right ${isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+                          }`}
                         placeholder="0"
                       />
                     </div>
@@ -10049,9 +10014,8 @@ export default function EditLoadingInfoPanel() {
                         value={loadedWeighment.otherExpenses}
                         onChange={(e) => !isReadOnly && setLoadedWeighment({ ...loadedWeighment, otherExpenses: e.target.value })}
                         readOnly={isReadOnly}
-                        className={`w-32 rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-right ${
-                          isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
-                        }`}
+                        className={`w-32 rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-right ${isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+                          }`}
                         placeholder="0"
                       />
                     </div>
@@ -10062,9 +10026,8 @@ export default function EditLoadingInfoPanel() {
                         value={loadedWeighment.vehicleFloorTarpaulin}
                         onChange={(e) => !isReadOnly && setLoadedWeighment({ ...loadedWeighment, vehicleFloorTarpaulin: e.target.value })}
                         readOnly={isReadOnly}
-                        className={`w-32 rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-right ${
-                          isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
-                        }`}
+                        className={`w-32 rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-right ${isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+                          }`}
                         placeholder="0"
                       />
                     </div>
@@ -10075,9 +10038,8 @@ export default function EditLoadingInfoPanel() {
                         value={loadedWeighment.vehicleOuterTarpaulin}
                         onChange={(e) => !isReadOnly && setLoadedWeighment({ ...loadedWeighment, vehicleOuterTarpaulin: e.target.value })}
                         readOnly={isReadOnly}
-                        className={`w-32 rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-right ${
-                          isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
-                        }`}
+                        className={`w-32 rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-right ${isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+                          }`}
                         placeholder="0"
                       />
                     </div>
@@ -10105,9 +10067,8 @@ export default function EditLoadingInfoPanel() {
                         value={arrivalDetails.date}
                         onChange={(e) => !isReadOnly && setArrivalDetails({ ...arrivalDetails, date: e.target.value })}
                         readOnly={isReadOnly}
-                        className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none ${
-                          isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
-                        }`}
+                        className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none ${isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+                          }`}
                       />
                       <p className="text-xs text-green-600 mt-1">Auto-filled from camera capture</p>
                     </div>
@@ -10120,9 +10081,8 @@ export default function EditLoadingInfoPanel() {
                         value={arrivalDetails.time}
                         onChange={(e) => !isReadOnly && setArrivalDetails({ ...arrivalDetails, time: e.target.value })}
                         readOnly={isReadOnly}
-                        className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none ${
-                          isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
-                        }`}
+                        className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none ${isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+                          }`}
                         placeholder="HH:MM"
                       />
                       <p className="text-xs text-green-600 mt-1">Auto-filled from camera capture</p>
@@ -10136,9 +10096,8 @@ export default function EditLoadingInfoPanel() {
                         value={arrivalDetails.outDate || ""}
                         onChange={(e) => !isReadOnly && setArrivalDetails({ ...arrivalDetails, outDate: e.target.value })}
                         readOnly={isReadOnly}
-                        className={`mt-1 w-full rounded-lg border border-orange-200 px-3 py-2 text-sm outline-none ${
-                          isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
-                        }`}
+                        className={`mt-1 w-full rounded-lg border border-orange-200 px-3 py-2 text-sm outline-none ${isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+                          }`}
                       />
                       <p className="text-xs text-orange-600 mt-1">Auto-filled when generating LR</p>
                     </div>
@@ -10151,9 +10110,8 @@ export default function EditLoadingInfoPanel() {
                         value={arrivalDetails.outTime}
                         onChange={(e) => !isReadOnly && setArrivalDetails({ ...arrivalDetails, outTime: e.target.value })}
                         readOnly={isReadOnly}
-                        className={`mt-1 w-full rounded-lg border border-orange-200 px-3 py-2 text-sm outline-none ${
-                          isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
-                        }`}
+                        className={`mt-1 w-full rounded-lg border border-orange-200 px-3 py-2 text-sm outline-none ${isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+                          }`}
                         placeholder="HH:MM"
                       />
                       <p className="text-xs text-orange-600 mt-1">Auto-filled when generating LR</p>
@@ -10191,12 +10149,11 @@ export default function EditLoadingInfoPanel() {
                         value={gpsTracking.driverMobileNumber}
                         onChange={(e) => !isReadOnly && setGpsTracking({ ...gpsTracking, driverMobileNumber: e.target.value })}
                         readOnly={isReadOnly}
-                        className={`rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500 ${
-                          isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
-                        }`}
+                        className={`rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500 ${isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+                          }`}
                       />
                       {!isReadOnly && (
-                        <button 
+                        <button
                           onClick={handleActivateTracking}
                           className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700"
                         >
@@ -10241,9 +10198,9 @@ export default function EditLoadingInfoPanel() {
                     <div className="mt-3">
                       <p className="text-xs font-bold text-slate-600 mb-2">Captured Photos:</p>
                       {vehicleFiles.photo.map((file, idx) => (
-                        <FileUploadItem 
-                          key={idx} 
-                          file={file} 
+                        <FileUploadItem
+                          key={idx}
+                          file={file}
                           index={idx}
                           onRemove={() => removeFile('vehicle', 'photo', idx)}
                           label="Driver Photo"
@@ -10266,14 +10223,15 @@ export default function EditLoadingInfoPanel() {
               <div className="col-span-12 md:col-span-4">
                 <div className="bg-white p-4 rounded-xl border border-slate-200">
                   <h3 className="text-sm font-bold text-slate-800 mb-2">Consignment Note (LR)</h3>
-                  <button
-                    onClick={handleGenerateLR}
-                    disabled={Boolean(linkedLRNo)}
-                    className={`w-full rounded-lg px-4 py-2 text-xs font-bold text-white ${linkedLRNo ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
-                  >
-                    {linkedLRNo ? `LR Generated: ${linkedLRNo}` : 'Generate LR'}
-                  </button>
-                  <p className="text-xs text-slate-500 mt-2">Out Date and Out Time are saved from the generated LR timestamp.</p>
+                  {/* <button
+                    onClick={handleGenerateLR}
+                    disabled={Boolean(linkedLRNo)}
+                    className={`w-full rounded-lg px-4 py-2 text-xs font-bold text-white ${linkedLRNo ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
+                  >
+                    {linkedLRNo ? `LR Generated: ${linkedLRNo}` : 'Generate LR'}
+                  </button>
+                  <p className="text-xs text-slate-500 mt-2">Out Date and Out Time are saved from the generated LR timestamp.</p> */}
+                  <LoadingInfoLRViewer panelId={panelId} />
                 </div>
               </div>
               <div className="col-span-12 md:col-span-4">
@@ -10287,9 +10245,7 @@ export default function EditLoadingInfoPanel() {
               <div className="col-span-12 md:col-span-4">
                 <div className="bg-white p-4 rounded-xl border border-slate-200">
                   <h3 className="text-sm font-bold text-slate-800 mb-2">Invoice</h3>
-                  <button className="w-full rounded-lg bg-purple-600 px-4 py-2 text-xs font-bold text-white hover:bg-purple-700">
-                    View Invoice
-                  </button>
+                  <LoadingInfoInvoiceViewer panelId={panelId} />
                 </div>
               </div>
             </div>
@@ -10302,7 +10258,7 @@ export default function EditLoadingInfoPanel() {
             <label className="text-xs font-bold text-indigo-700">Loaded Vehicle Slip</label>
             <p className="text-xs text-slate-400 mb-1">Upload loaded vehicle slip after loading (Image/PDF)</p>
             {!isReadOnly && (
-              <button 
+              <button
                 onClick={handleLoadedVehicleSlipSelect}
                 className="w-full rounded-lg bg-indigo-100 px-3 py-2 text-xs font-bold text-indigo-700 border border-indigo-300 hover:bg-indigo-200 transition flex items-center justify-center gap-2"
               >
@@ -10314,7 +10270,7 @@ export default function EditLoadingInfoPanel() {
             )}
             <div className="mt-2">
               {existingFiles.loadedVehicleSlips?.map((file, idx) => (
-                <FileUploadItem 
+                <FileUploadItem
                   key={`existing-loadedSlip-${idx}`}
                   file={file}
                   index={idx}
@@ -10325,7 +10281,7 @@ export default function EditLoadingInfoPanel() {
                 />
               ))}
               {loadedVehicleSlipFiles.map((file, idx) => (
-                <FileUploadItem 
+                <FileUploadItem
                   key={`new-loadedSlip-${idx}`}
                   file={file}
                   index={idx}
@@ -10340,4 +10296,4 @@ export default function EditLoadingInfoPanel() {
       </div>
     </div>
   );
-}
+} 

@@ -3801,6 +3801,7 @@
 
 import { useMemo, useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import LRInvoiceUpload from "@/components/LRInvoiceUpload";
 
 /** =========================
  * CONSTANTS
@@ -3839,6 +3840,13 @@ function num(v) {
   const n = Number(v);
   return Number.isFinite(n) ? n : 0;
 }
+
+const TO_KG = { KG: 1, KGS: 1, MT: 1000, TON: 1000 };
+const patchPkgs = (r) => {
+  const actual = parseFloat(r.actualWt) * TO_KG[String(r.wtUom || "MT").toUpperCase()];
+  const pack = parseFloat(r.packWeight);
+  return actual > 0 && pack > 0 ? { ...r, totalPkgs: String(Math.round(actual / pack)) } : r;
+};
 
 /** =========================
  * DEFAULT EMPTY ROWS FOR EACH PACK TYPE
@@ -4054,6 +4062,7 @@ export default function CreateConsignmentNote() {
     boeInvoiceNo: "",
     boeInvoiceDate: "",
     invoiceValue: "",
+    file: null
   });
 
   /** =========================
@@ -4512,7 +4521,7 @@ export default function CreateConsignmentNote() {
 
       if (fullOrder.packData) {
         if (fullOrder.packData.PALLETIZATION && fullOrder.packData.PALLETIZATION.length > 0) {
-          const palletRows = fullOrder.packData.PALLETIZATION.map(item => ({
+          const palletRows = fullOrder.packData.PALLETIZATION.map(item => patchPkgs({
             _id: uid(),
             packType: "PALLETIZATION",
             noOfPallets: item.noOfPallets?.toString() || "",
@@ -4532,7 +4541,7 @@ export default function CreateConsignmentNote() {
         }
 
         if (fullOrder.packData['UNIFORM - BAGS/BOXES'] && fullOrder.packData['UNIFORM - BAGS/BOXES'].length > 0) {
-          const uniformRowsData = fullOrder.packData['UNIFORM - BAGS/BOXES'].map(item => ({
+          const uniformRowsData = fullOrder.packData['UNIFORM - BAGS/BOXES'].map(item => patchPkgs({
             _id: uid(),
             packType: "UNIFORM - BAGS/BOXES",
             totalPkgs: item.totalPkgs?.toString() || "",
@@ -4600,7 +4609,7 @@ export default function CreateConsignmentNote() {
     const prev = orderRows.find((r) => String(r._id) === selectedRowId);
     const f = Number(prev?.weight) > 0 && Number(row.weight) > 0 ? Number(row.weight) / Number(prev.weight) : 1;
     const sc = (v) => (v === undefined || v === null || v === '') ? '' : String(Math.round((parseFloat(v) || 0) * f * 1000) / 1000);
-    const rescale = (rows) => rows.map((r) => ({ ...r, actualWt: sc(r.actualWt), chargedWt: sc(r.chargedWt) }));
+    const rescale = (rows) => rows.map((r) => patchPkgs({ ...r, actualWt: sc(r.actualWt), chargedWt: sc(r.chargedWt) }));
     setPalletizationRows(rescale);
     setUniformRows(rescale);
     setLooseCargoRows(rescale);
@@ -4770,6 +4779,35 @@ export default function CreateConsignmentNote() {
     looseCargoRows.forEach(row => total += num(row.actualWt));
     nonUniformRows.forEach(row => total += num(row.actualWt));
     return total;
+  };
+
+  const handleInvoiceFile = async (e) => {
+    const file = e.target.files?.[0]; e.target.value = "";
+    if (!file) return;
+    try {
+      const fd = new FormData(); fd.append("file", file);
+      const res = await fetch("/api/consignment-note/upload-invoice", {
+        method: "POST", headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }, body: fd
+      });
+      const d = await res.json().catch(() => null);
+      if (!res.ok || !d?.success) return alert(d?.message || `Upload failed (HTTP ${res.status})`);
+      setInvoice(p => ({ ...p, file: d.data }));
+    } catch (err) {
+      alert(`Upload failed: ${err.message}`);
+    }
+  };
+
+  const viewInvoiceFile = async () => {
+    const w = window.open("", "_blank"); // open first so pop-up blockers allow it
+    try {
+      const name = invoice.file.filePath.split("/").pop();
+      const res = await fetch(`/api/consignment-note/upload-invoice?name=${encodeURIComponent(name)}`,
+        { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } });
+      if (!res.ok) throw new Error();
+      const u = URL.createObjectURL(await res.blob());
+      w ? w.location.replace(u) : window.open(u);
+      setTimeout(() => URL.revokeObjectURL(u), 300000);
+    } catch { w?.close(); alert("Invoice could not be opened."); }
   };
 
   /** =========================
@@ -5419,6 +5457,13 @@ export default function CreateConsignmentNote() {
                   placeholder="1589233"
                 />
               </div>
+
+              <div className="col-span-12 md:col-span-6">
+                <LRInvoiceUpload
+                  file={invoice.file}
+                  onChange={(f) => setInvoice((p) => ({ ...p, file: f }))}
+                />
+              </div>
             </div>
           </Card>
         </div>
@@ -5826,7 +5871,7 @@ export default function CreateConsignmentNote() {
         </div>
 
         {/* ===== Vehicle Unloaded Date & Remarks Section ===== */}
-        <div className="mt-4">
+        {/* <div className="mt-4">
           <Card title="Vehicle Unloaded & Remarks">
             <div className="grid grid-cols-12 gap-4">
               <div className="col-span-12 md:col-span-4">
@@ -5855,7 +5900,7 @@ export default function CreateConsignmentNote() {
               </div>
             </div>
           </Card>
-        </div>
+        </div> */}
       </div>
     </div>
   );

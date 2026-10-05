@@ -2600,6 +2600,7 @@
 
 import { useMemo, useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
+import LRInvoiceUpload from "@/components/LRInvoiceUpload";
 
 /** =========================
  * CONSTANTS
@@ -2636,6 +2637,13 @@ function num(v) {
   const n = Number(v);
   return Number.isFinite(n) ? n : 0;
 }
+
+const TO_KG = { KG: 1, KGS: 1, MT: 1000, TON: 1000 };
+const patchPkgs = (r) => {
+  const actual = parseFloat(r.actualWt) * TO_KG[String(r.wtUom || "MT").toUpperCase()];
+  const pack = parseFloat(r.packWeight);
+  return actual > 0 && pack > 0 ? { ...r, totalPkgs: String(Math.round(actual / pack)) } : r;
+};
 
 /** =========================
  * DEFAULT EMPTY ROWS FOR EACH PACK TYPE
@@ -2848,6 +2856,7 @@ export default function EditConsignmentNote() {
     boeInvoiceNo: "",
     boeInvoiceDate: "",
     invoiceValue: "",
+    file: null
   });
 
   /** =========================
@@ -3171,7 +3180,8 @@ export default function EditConsignmentNote() {
         boeInvoice: note.invoice?.boeInvoice || "As Per Invoice",
         boeInvoiceNo: note.invoice?.boeInvoiceNo || "",
         boeInvoiceDate: note.invoice?.boeInvoiceDate || "",
-        invoiceValue: note.invoice?.invoiceValue || ""
+        invoiceValue: note.invoice?.invoiceValue || "",
+        file: note.invoice?.file || null
       });
 
       // Set ewaybill
@@ -3185,7 +3195,7 @@ export default function EditConsignmentNote() {
       if (note.packData) {
         // Palletization
         if (note.packData.PALLETIZATION && note.packData.PALLETIZATION.length > 0) {
-          setPalletizationRows(note.packData.PALLETIZATION.map(row => ({
+          setPalletizationRows(note.packData.PALLETIZATION.map(row => patchPkgs({
             ...row,
             _id: row._id || uid()
           })));
@@ -3195,7 +3205,7 @@ export default function EditConsignmentNote() {
 
         // Uniform
         if (note.packData['UNIFORM - BAGS/BOXES'] && note.packData['UNIFORM - BAGS/BOXES'].length > 0) {
-          setUniformRows(note.packData['UNIFORM - BAGS/BOXES'].map(row => ({
+          setUniformRows(note.packData['UNIFORM - BAGS/BOXES'].map(row => patchPkgs({
             ...row,
             _id: row._id || uid()
           })));
@@ -3380,7 +3390,7 @@ export default function EditConsignmentNote() {
 
       if (fullOrder.packData) {
         if (fullOrder.packData.PALLETIZATION && fullOrder.packData.PALLETIZATION.length > 0) {
-          const palletRows = fullOrder.packData.PALLETIZATION.map(item => ({
+          const palletRows = fullOrder.packData.PALLETIZATION.map(item => patchPkgs({
             _id: uid(),
             packType: "PALLETIZATION",
             noOfPallets: item.noOfPallets?.toString() || "",
@@ -3400,7 +3410,7 @@ export default function EditConsignmentNote() {
         }
 
         if (fullOrder.packData['UNIFORM - BAGS/BOXES'] && fullOrder.packData['UNIFORM - BAGS/BOXES'].length > 0) {
-          const uniformRowsData = fullOrder.packData['UNIFORM - BAGS/BOXES'].map(item => ({
+          const uniformRowsData = fullOrder.packData['UNIFORM - BAGS/BOXES'].map(item => patchPkgs({
             _id: uid(),
             packType: "UNIFORM - BAGS/BOXES",
             totalPkgs: item.totalPkgs?.toString() || "",
@@ -3605,11 +3615,8 @@ export default function EditConsignmentNote() {
    ========================= */
   // Palletization
   const addPalletizationRow = () => setPalletizationRows([...palletizationRows, defaultPalletizationRow()]);
-  const updatePalletizationRow = (id, field, value) => {
-    setPalletizationRows(prev => prev.map(row =>
-      row._id === id ? { ...row, [field]: value } : row
-    ));
-  };
+  const updatePalletizationRow = (id, f, v) =>
+    setPalletizationRows(p => p.map(r => (r._id === id ? patchPkgs({ ...r, [f]: v }) : r)));
   const removePalletizationRow = (id) => {
     if (palletizationRows.length > 1) {
       setPalletizationRows(prev => prev.filter(row => row._id !== id));
@@ -3618,11 +3625,8 @@ export default function EditConsignmentNote() {
 
   // Uniform
   const addUniformRow = () => setUniformRows([...uniformRows, defaultUniformRow()]);
-  const updateUniformRow = (id, field, value) => {
-    setUniformRows(prev => prev.map(row =>
-      row._id === id ? { ...row, [field]: value } : row
-    ));
-  };
+  const updateUniformRow = (id, f, v) =>
+    setUniformRows(p => p.map(r => (r._id === id ? patchPkgs({ ...r, [f]: v }) : r)));
   const removeUniformRow = (id) => {
     if (uniformRows.length > 1) {
       setUniformRows(prev => prev.filter(row => row._id !== id));
@@ -3665,6 +3669,35 @@ export default function EditConsignmentNote() {
     looseCargoRows.forEach(row => total += num(row.actualWt));
     nonUniformRows.forEach(row => total += num(row.actualWt));
     return total;
+  };
+
+  const handleInvoiceFile = async (e) => {
+    const file = e.target.files?.[0]; e.target.value = "";
+    if (!file) return;
+    try {
+      const fd = new FormData(); fd.append("file", file);
+      const res = await fetch("/api/consignment-note/upload-invoice", {
+        method: "POST", headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }, body: fd
+      });
+      const d = await res.json().catch(() => null);
+      if (!res.ok || !d?.success) return alert(d?.message || `Upload failed (HTTP ${res.status})`);
+      setInvoice(p => ({ ...p, file: d.data }));
+    } catch (err) {
+      alert(`Upload failed: ${err.message}`);
+    }
+  };
+
+  const viewInvoiceFile = async () => {
+    const w = window.open("", "_blank"); // open first so pop-up blockers allow it
+    try {
+      const name = invoice.file.filePath.split("/").pop();
+      const res = await fetch(`/api/consignment-note/upload-invoice?name=${encodeURIComponent(name)}`,
+        { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } });
+      if (!res.ok) throw new Error();
+      const u = URL.createObjectURL(await res.blob());
+      w ? w.location.replace(u) : window.open(u);
+      setTimeout(() => URL.revokeObjectURL(u), 300000);
+    } catch { w?.close(); alert("Invoice could not be opened."); }
   };
 
   /** =========================
@@ -3840,8 +3873,8 @@ export default function EditConsignmentNote() {
           <div className="flex items-center gap-3">
             <button
               onClick={handleUpdate}
-              disabled={saving || fetchingData || isReadOnly}
-              className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${saving || fetchingData || isReadOnly
+              disabled={saving || fetchingData}
+              className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${saving || fetchingData
                 ? 'bg-gray-400 cursor-not-allowed'
                 : 'bg-emerald-600 hover:bg-emerald-700'
                 }`}
@@ -4573,6 +4606,13 @@ export default function EditConsignmentNote() {
                   placeholder="1589233"
                 />
               </div>
+
+              <div className="col-span-12 md:col-span-6">
+  <LRInvoiceUpload
+    file={invoice.file}
+    onChange={(f) => setInvoice((p) => ({ ...p, file: f }))}
+  />
+</div>
             </div>
           </Card>
         </div>
@@ -4677,9 +4717,8 @@ export default function EditConsignmentNote() {
                           <input
                             type="text"
                             value={row.totalPkgs}
-                            onChange={(e) => updatePalletizationRow(row._id, 'totalPkgs', e.target.value)}
-                            readOnly={isReadOnly}
-                            className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
+                            readOnly
+                            className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm"
                           />
                         </td>
                         <td className="border border-yellow-300 px-2 py-2">
@@ -4832,9 +4871,8 @@ export default function EditConsignmentNote() {
                           <input
                             type="text"
                             value={row.totalPkgs}
-                            onChange={(e) => updateUniformRow(row._id, 'totalPkgs', e.target.value)}
-                            readOnly={isReadOnly}
-                            className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm ${isReadOnly ? 'bg-gray-100' : 'bg-white'}`}
+                            readOnly
+                            className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm"
                           />
                         </td>
                         <td className="border border-yellow-300 px-2 py-2">

@@ -229,7 +229,8 @@ const invoiceSchema = new mongoose.Schema({
   },
   boeInvoiceNo: { type: String, default: '' },
   boeInvoiceDate: { type: String, default: '' },
-  invoiceValue: { type: String, default: '' }
+  invoiceValue: { type: String, default: '' },
+  file: { fileName: String, filePath: String, mimeType: String, fileSize: Number },
 }, { _id: false });
 
 // E-waybill Schema

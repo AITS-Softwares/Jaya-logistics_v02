@@ -1499,6 +1499,11 @@ function isValidObjectId(id) {
   return id && mongoose.Types.ObjectId.isValid(id);
 }
 
+const cleanInvoiceFile = (f) =>
+  f?.filePath?.startsWith("uploads/lr-invoice/") && !f.filePath.includes("..")
+    ? { fileName: String(f.fileName || "").slice(0, 200), filePath: f.filePath, mimeType: f.mimeType || "", fileSize: Number(f.fileSize) || 0 }
+    : undefined;
+
 function formatIndiaDateTime(timestamp) {
   const parts = new Intl.DateTimeFormat('en-GB', {
     timeZone: 'Asia/Kolkata',
@@ -1946,7 +1951,8 @@ export async function POST(req) {
         boeInvoice: body.invoice?.boeInvoice || 'As Per Invoice',
         boeInvoiceNo: body.invoice?.boeInvoiceNo || '',
         boeInvoiceDate: body.invoice?.boeInvoiceDate || '',
-        invoiceValue: body.invoice?.invoiceValue || ''
+        invoiceValue: body.invoice?.invoiceValue || '',
+        file: cleanInvoiceFile(body.invoice?.file)
       },
       ewaybill: {
         ewaybillNo: body.ewaybill?.ewaybillNo || '',
@@ -2137,10 +2143,9 @@ export async function PUT(req) {
 
     // Update invoice
     if (body.invoice) {
-      note.invoice = {
-        ...note.invoice,
-        ...body.invoice
-      };
+      const { file, ...rest } = body.invoice;
+      note.invoice = { ...(note.invoice?.toObject?.() ?? note.invoice), ...rest };
+      if (file !== undefined) note.invoice.file = cleanInvoiceFile(file);
     }
 
     // Update ewaybill

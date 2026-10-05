@@ -46,17 +46,17 @@
 // ========================= */
 // function FileDisplayItem({ file, label }) {
 //   const [showModal, setShowModal] = useState(false);
-  
+
 //   const isImage = (filePath) => {
 //     if (!filePath) return false;
 //     return filePath.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i);
 //   };
-  
+
 //   const isVideo = (filePath) => {
 //     if (!filePath) return false;
 //     return filePath.match(/\.(mp4|webm|ogg|mov|avi|mkv)$/i);
 //   };
-  
+
 //   const getFileName = () => {
 //     if (file.originalName) return file.originalName;
 //     if (file.name) return file.name;
@@ -118,7 +118,7 @@
 //               <span className="text-xs mt-1">{getFileTypeLabel()}</span>
 //             </div>
 //           )}
-          
+
 //           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all flex items-center justify-center">
 //             <svg className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 //               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -126,7 +126,7 @@
 //             </svg>
 //           </div>
 //         </div>
-        
+
 //         <div className="p-2 border-t border-slate-100">
 //           <p className="text-xs font-medium text-slate-700 truncate" title={getFileName()}>
 //             {getFileName()}
@@ -149,7 +149,7 @@
 //             >
 //               ✕
 //             </button>
-            
+
 //             <a
 //               href={file.path}
 //               download
@@ -161,7 +161,7 @@
 //               </svg>
 //               Download
 //             </a>
-            
+
 //             {isImage(file.path) && (
 //               <img 
 //                 src={file.path} 
@@ -170,7 +170,7 @@
 //                 onClick={(e) => e.stopPropagation()}
 //               />
 //             )}
-            
+
 //             {isVideo(file.path) && (
 //               <video 
 //                 src={file.path} 
@@ -182,7 +182,7 @@
 //                 Your browser does not support the video tag.
 //               </video>
 //             )}
-            
+
 //             <div className="absolute bottom-4 left-0 right-0 text-center text-white text-sm bg-black/60 py-2 rounded-lg mx-auto w-max px-4">
 //               {getFileName()}
 //             </div>
@@ -499,7 +499,7 @@
 //     "LOOSE - CARGO": [],
 //     "NON-UNIFORM - GENERAL CARGO": [],
 //   });
-  
+
 //   // New fields state
 //   const [detentionDays, setDetentionDays] = useState("");
 //   const [hasHelper, setHasHelper] = useState(false);
@@ -509,7 +509,7 @@
 //     photo: [],
 //     aadharPhoto: []
 //   });
-  
+
 //   // File states
 //   const [existingFiles, setExistingFiles] = useState({
 //     vehicle: {
@@ -581,19 +581,19 @@
 //     setLoading(true);
 //     try {
 //       const token = localStorage.getItem('token');
-      
+
 //       const res = await fetch(`/api/loading-panel?id=${panelId}`, {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       const data = await res.json();
-      
+
 //       if (!data.success) {
 //         throw new Error(data.message || 'Failed to fetch loading panel');
 //       }
 
 //       const panel = data.data;
-      
+
 //       // Set header data
 //       setHeader({
 //         vehicleArrivalNo: panel.vehicleArrivalNo || "",
@@ -660,7 +660,7 @@
 
 //       // Set detention info
 //       if (panel.detentionDays) setDetentionDays(panel.detentionDays);
-      
+
 //       // Set helper info
 //       if (panel.hasHelper !== undefined) setHasHelper(panel.hasHelper);
 //       if (panel.helperInfo) {
@@ -874,20 +874,20 @@
 //   setSaving(true);
 //   try {
 //     const token = localStorage.getItem('token');
-    
+
 //     // Fetch current data
 //     const fetchRes = await fetch(`/api/loading-panel?id=${panelId}`, {
 //       headers: { Authorization: `Bearer ${token}` },
 //     });
-    
+
 //     const fetchData = await fetchRes.json();
-    
+
 //     if (!fetchData.success) {
 //       throw new Error('Failed to fetch loading panel data');
 //     }
-    
+
 //     const currentData = fetchData.data;
-    
+
 //     // Update only the editable sections
 //     const updatedData = {
 //       ...currentData,
@@ -945,7 +945,7 @@
 //         aadharPhoto: helperInfo.aadharPhoto
 //       }
 //     };
-    
+
 //     // Send update
 //     const res = await fetch('/api/loading-panel', {
 //       method: 'PUT',
@@ -1188,7 +1188,7 @@
 //                       <Input label="Driver Name" value={vehicleInfo.driverName} />
 //                       <Input label="Driver Mobile No" value={vehicleInfo.driverMobileNo} />
 //                       <Input label="Driving License No" value={vehicleInfo.drivingLicense} />
-                      
+
 //                       {/* Driver Photo */}
 //                       {existingFiles.vehicle?.photo && existingFiles.vehicle.photo.length > 0 && (
 //                         <div className="mt-3">
@@ -1200,7 +1200,7 @@
 //                           </div>
 //                         </div>
 //                       )}
-                      
+
 //                       {/* Helper Section */}
 //                       {hasHelper && (
 //                         <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
@@ -1327,7 +1327,7 @@
 //                   <span className="font-bold">Note:</span> Click on any image to view full size
 //                 </div>
 //               </div>
-              
+
 //               <FileGridGroup 
 //                 title="Vehicle Body Pictures"
 //                 files={existingFiles.vbp}
@@ -1357,7 +1357,7 @@
 //                   options={APPROVAL_STATUS}
 //                 />
 //               </div>
-              
+
 //               <FileGridGroup 
 //                 title="Vehicle Floor Tarpaulin Pictures"
 //                 files={existingFiles.vft}
@@ -1379,7 +1379,7 @@
 //                   options={APPROVAL_STATUS}
 //                 />
 //               </div>
-              
+
 //               <FileGridGroup 
 //                 title="Vehicle Outer Tarpaulin Pictures"
 //                 files={existingFiles.vot}
@@ -1398,7 +1398,7 @@
 //                   Total Photos: {getTotalVlPhotosCount()} 
 //                 </p>
 //               </div>
-              
+
 //               <div className="flex items-center gap-3 mb-3">
 //                 <span className="text-xs font-bold text-slate-600">Approval:</span>
 //                 <EditableSelect
@@ -1415,7 +1415,7 @@
 //                   options={LOADING_STATUS}
 //                 />
 //               </div>
-              
+
 //               <FileGridGroup 
 //                 title="Vehicle Loading Pictures"
 //                 files={existingFiles.vl}
@@ -1433,7 +1433,7 @@
 //           Total Photos: {getTotalVlPhotosCount()} 
 //         </p>
 //       </div>
-      
+
 //       <div className="flex items-center gap-3 mb-3">
 //         <span className="text-xs font-bold text-slate-600">Approval:</span>
 //         <EditableSelect
@@ -1450,14 +1450,14 @@
 //           options={LOADING_STATUS}
 //         />
 //       </div>
-      
+
 //       {/* VL Photos with Width, Height, Nose, Total */}
 //       {Object.keys(existingFiles.vl).length > 0 ? (
 //         <div className="space-y-6">
 //           {Object.entries(existingFiles.vl).map(([key, fileList]) => {
 //             // Skip video key
 //             if (key === 'videoVl') return null;
-            
+
 //             return fileList.map((file, idx) => {
 //               // Get dimensions from vlPhotoDetails
 //               const fileKey = `${key}_${idx}`;
@@ -1465,7 +1465,7 @@
 //               const height = parseFloat(vlPhotoDetails[`${fileKey}_height`]) || 0;
 //               const nose = parseFloat(vlPhotoDetails[`${fileKey}_nose`]) || 0;
 //               const total = (width * height) + nose;
-              
+
 //               return (
 //                 <div key={`${key}-${idx}`} className="bg-white p-4 rounded-lg border border-slate-200">
 //                   <div className="text-xs font-bold text-slate-700 mb-2">{key.toUpperCase()} - Photo {idx + 1}</div>
@@ -1510,7 +1510,7 @@
 //           <p className="text-sm text-gray-500">No VL images uploaded</p>
 //         </div>
 //       )}
-      
+
 //       {/* Video VL */}
 //       {existingFiles.vl?.videoVl && existingFiles.vl.videoVl.length > 0 && (
 //         <div className="mt-4">
@@ -1540,7 +1540,7 @@
 //                       options={APPROVAL_STATUS}
 //                     />
 //                   </div>
-                  
+
 //                   {existingFiles.weighment?.weighSlip?.length > 0 && (
 //                     <div>
 //                       <h4 className="text-xs font-bold text-slate-600 mb-2">Weigh Slip:</h4>
@@ -1754,6 +1754,7 @@
 
 import { useMemo, useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { LoadingInfoInvoiceViewer } from "@/components/LoadingInfoLRViewer";
 
 /* =======================
   HELPERS / CONSTANTS
@@ -1763,13 +1764,13 @@ const ORDER_TYPES = ["Sales", "STO Order", "Export", "Import"];
 const PKGS_TYPE_OPTIONS = ["Drum", "Boxes", "Bags", "Cartons", "Crates", "Pallets", "Box"];
 const UOM_OPTIONS = ["KG", "LTR", "TON", "M3", "PCS", "Kgs", "Ltr", "MT"];
 const PRODUCT_NAME_OPTIONS = [
-  "CALCIUM NITRATE 20KG", 
-  "CALCIUM NITRATE 10KG", 
-  "CALCIUM NITRATE 1KG", 
-  "Chromite Sand", 
-  "Bud Builder", 
-  "Di-Betic Easter", 
-  "Polysulphate - Premium", 
+  "CALCIUM NITRATE 20KG",
+  "CALCIUM NITRATE 10KG",
+  "CALCIUM NITRATE 1KG",
+  "Chromite Sand",
+  "Bud Builder",
+  "Di-Betic Easter",
+  "Polysulphate - Premium",
   "YaraVita Stopit 1Ltr"
 ];
 const SKU_SIZE_OPTIONS = ["20 Kgs", "10 Kgs", "1 Kgs", "100 Ltr", "200 Kgs", "1 Ltr", "20"];
@@ -1837,17 +1838,17 @@ function FileDisplayItem({ file, label }) {
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
   }, [file.path, file.previewPath]);
-  
+
   const isImage = (filePath) => {
     if (!filePath) return false;
     return filePath.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i);
   };
-  
+
   const isVideo = (filePath) => {
     if (!filePath) return false;
     return filePath.match(/\.(mp4|webm|ogg|mov|avi|mkv)$/i);
   };
-  
+
   const getFileName = () => {
     if (file.originalName) return file.originalName;
     if (file.name) return file.name;
@@ -1870,13 +1871,13 @@ function FileDisplayItem({ file, label }) {
 
   return (
     <>
-      <div 
+      <div
         onClick={handleClick}
         className="group relative bg-white rounded-lg border border-slate-200 overflow-hidden hover:shadow-lg hover:border-blue-400 transition-all cursor-pointer"
       >
         <div className="aspect-video bg-gray-100 flex items-center justify-center relative overflow-hidden">
           {isImage(fileNameForType) && displayPath ? (
-            <img 
+            <img
               src={displayPath}
               alt={getFileName()}
               className="w-full h-full object-cover transition-transform group-hover:scale-105"
@@ -1895,7 +1896,7 @@ function FileDisplayItem({ file, label }) {
           ) : isVideo(fileNameForType) && displayPath ? (
             <div className="relative w-full h-full bg-gray-800 flex items-center justify-center">
               <svg className="w-16 h-16 text-white opacity-80 group-hover:opacity-100 transition-opacity" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M8 5v14l11-7z"/>
+                <path d="M8 5v14l11-7z" />
               </svg>
               <span className="absolute bottom-2 right-2 text-xs text-white bg-black/50 px-2 py-1 rounded">
                 Video
@@ -1909,7 +1910,7 @@ function FileDisplayItem({ file, label }) {
               <span className="text-xs mt-1">{getFileTypeLabel()}</span>
             </div>
           )}
-          
+
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all flex items-center justify-center">
             <svg className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -1917,7 +1918,7 @@ function FileDisplayItem({ file, label }) {
             </svg>
           </div>
         </div>
-        
+
         <div className="p-2 border-t border-slate-100">
           <p className="text-xs font-medium text-slate-700 truncate" title={getFileName()}>
             {getFileName()}
@@ -1929,7 +1930,7 @@ function FileDisplayItem({ file, label }) {
       </div>
 
       {showModal && (
-        <div 
+        <div
           className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4"
           onClick={() => setShowModal(false)}
         >
@@ -1940,7 +1941,7 @@ function FileDisplayItem({ file, label }) {
             >
               ✕
             </button>
-            
+
             <a
               href={displayPath}
               download
@@ -1952,20 +1953,20 @@ function FileDisplayItem({ file, label }) {
               </svg>
               Download
             </a>
-            
+
             {isImage(fileNameForType) && displayPath && (
-              <img 
+              <img
                 src={displayPath}
                 alt={getFileName()}
                 className="w-full h-full object-contain"
                 onClick={(e) => e.stopPropagation()}
               />
             )}
-            
+
             {isVideo(fileNameForType) && displayPath && (
-              <video 
+              <video
                 src={displayPath}
-                controls 
+                controls
                 autoPlay
                 className="w-full h-full object-contain"
                 onClick={(e) => e.stopPropagation()}
@@ -1973,7 +1974,7 @@ function FileDisplayItem({ file, label }) {
                 Your browser does not support the video tag.
               </video>
             )}
-            
+
             <div className="absolute bottom-4 left-0 right-0 text-center text-white text-sm bg-black/60 py-2 rounded-lg mx-auto w-max px-4">
               {getFileName()}
             </div>
@@ -1988,7 +1989,7 @@ function FileDisplayItem({ file, label }) {
   File Grid Group Component
 ========================= */
 function FileGridGroup({ title, files, emptyMessage = "No files uploaded" }) {
-  const fileArray = Object.entries(files).flatMap(([key, fileList]) => 
+  const fileArray = Object.entries(files).flatMap(([key, fileList]) =>
     fileList.map(file => ({ ...file, key }))
   );
 
@@ -2008,7 +2009,7 @@ function FileGridGroup({ title, files, emptyMessage = "No files uploaded" }) {
       {title && <h4 className="text-xs font-bold text-slate-600 mb-3">{title}</h4>}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
         {fileArray.map((file, idx) => (
-          <FileDisplayItem 
+          <FileDisplayItem
             key={`${file.key}-${idx}`}
             file={file}
             label={file.key}
@@ -2038,9 +2039,8 @@ function Input({ label, value, col = "", type = "text", readOnly = true }) {
   return (
     <div className={col}>
       <label className="text-xs font-bold text-slate-600">{label}</label>
-      <div className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm ${
-        readOnly ? 'bg-slate-50 text-slate-700' : 'bg-white'
-      }`}>
+      <div className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm ${readOnly ? 'bg-slate-50 text-slate-700' : 'bg-white'
+        }`}>
         {value || "-"}
       </div>
     </div>
@@ -2128,11 +2128,10 @@ function OrdersTable({ rows }) {
                 <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.stateName || row.state || '-'}</td>
                 <td className="border border-yellow-300 px-2 py-2 text-center">
                   {row.fromState && row.stateName ? (
-                    <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${
-                      row.fromState.trim().toUpperCase() === row.stateName.trim().toUpperCase()
-                        ? 'bg-green-100 text-green-800 border border-green-300'
-                        : 'bg-red-100 text-red-800 border border-red-300'
-                    }`}>
+                    <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${row.fromState.trim().toUpperCase() === row.stateName.trim().toUpperCase()
+                      ? 'bg-green-100 text-green-800 border border-green-300'
+                      : 'bg-red-100 text-red-800 border border-red-300'
+                      }`}>
                       {row.fromState.trim().toUpperCase() === row.stateName.trim().toUpperCase() ? '✅ Local' : '❌ Not Local'}
                     </span>
                   ) : (
@@ -2289,7 +2288,7 @@ export default function ApproveLoadingPanel() {
     "LOOSE - CARGO": [],
     "NON-UNIFORM - GENERAL CARGO": [],
   });
-  
+
   // New fields state
   const [detentionDays, setDetentionDays] = useState("");
   const [hasHelper, setHasHelper] = useState(false);
@@ -2299,7 +2298,7 @@ export default function ApproveLoadingPanel() {
     photo: [],
     aadharPhoto: []
   });
-  
+
   // File states
   const [existingFiles, setExistingFiles] = useState({
     vehicle: {
@@ -2371,19 +2370,19 @@ export default function ApproveLoadingPanel() {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      
+
       const res = await fetch(`/api/loading-panel?id=${panelId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       const data = await res.json();
-      
+
       if (!data.success) {
         throw new Error(data.message || 'Failed to fetch loading panel');
       }
 
       const panel = data.data;
-      
+
       // Set header data
       setHeader({
         vehicleArrivalNo: panel.vehicleArrivalNo || "",
@@ -2457,7 +2456,7 @@ export default function ApproveLoadingPanel() {
 
       // Set detention info
       if (panel.detentionDays) setDetentionDays(panel.detentionDays);
-      
+
       // Set helper info
       if (panel.hasHelper !== undefined) setHasHelper(panel.hasHelper);
       if (panel.helperInfo) {
@@ -2499,7 +2498,7 @@ export default function ApproveLoadingPanel() {
       // VBP Files
       const vbpFiles = {};
       if (panel.vbpUploads) {
-        ['vbp1','vbp2','vbp3','vbp4','vbp5','vbp6','vbp7','videoVbp'].forEach(key => {
+        ['vbp1', 'vbp2', 'vbp3', 'vbp4', 'vbp5', 'vbp6', 'vbp7', 'videoVbp'].forEach(key => {
           if (panel.vbpUploads[key]) {
             vbpFiles[key] = [{
               path: panel.vbpUploads[key],
@@ -2513,7 +2512,7 @@ export default function ApproveLoadingPanel() {
       // VFT Files
       const vftFiles = {};
       if (panel.vftUploads) {
-        ['vft1','vft2','vft3','vft4','vft5','vft6','vft7','videoVft'].forEach(key => {
+        ['vft1', 'vft2', 'vft3', 'vft4', 'vft5', 'vft6', 'vft7', 'videoVft'].forEach(key => {
           if (panel.vftUploads[key]) {
             vftFiles[key] = [{
               path: panel.vftUploads[key],
@@ -2527,7 +2526,7 @@ export default function ApproveLoadingPanel() {
       // VOT Files
       const votFiles = {};
       if (panel.votUploads) {
-        ['vot1','vot2','vot3','vot4','vot5','vot6','vot7','videoVot'].forEach(key => {
+        ['vot1', 'vot2', 'vot3', 'vot4', 'vot5', 'vot6', 'vot7', 'videoVot'].forEach(key => {
           if (panel.votUploads[key]) {
             votFiles[key] = [{
               path: panel.votUploads[key],
@@ -2681,20 +2680,20 @@ export default function ApproveLoadingPanel() {
     setSaving(true);
     try {
       const token = localStorage.getItem('token');
-      
+
       // Fetch current data
       const fetchRes = await fetch(`/api/loading-panel?id=${panelId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       const fetchData = await fetchRes.json();
-      
+
       if (!fetchData.success) {
         throw new Error('Failed to fetch loading panel data');
       }
-      
+
       const currentData = fetchData.data;
-      
+
       // Update only the editable sections
       const updatedData = {
         ...currentData,
@@ -2754,7 +2753,7 @@ export default function ApproveLoadingPanel() {
           aadharPhoto: helperInfo.aadharPhoto
         }
       };
-      
+
       // Send update
       const res = await fetch('/api/loading-panel', {
         method: 'PUT',
@@ -2866,11 +2865,10 @@ export default function ApproveLoadingPanel() {
             <button
               onClick={handleApprove}
               disabled={saving}
-              className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${
-                saving 
-                  ? 'bg-gray-400 cursor-not-allowed' 
-                  : 'bg-emerald-600 hover:bg-emerald-700'
-              }`}
+              className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${saving
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-emerald-600 hover:bg-emerald-700'
+                }`}
             >
               {saving ? (
                 <span className="flex items-center gap-2">
@@ -3029,7 +3027,7 @@ export default function ApproveLoadingPanel() {
                       <Input label="Driver Name" value={vehicleInfo.driverName} />
                       <Input label="Driver Mobile No" value={vehicleInfo.driverMobileNo} />
                       <Input label="Driving License No" value={vehicleInfo.drivingLicense} />
-                      
+
                       {/* Driver Photo */}
                       {existingFiles.vehicle?.photo && existingFiles.vehicle.photo.length > 0 && (
                         <div className="mt-3">
@@ -3041,7 +3039,7 @@ export default function ApproveLoadingPanel() {
                           </div>
                         </div>
                       )}
-                      
+
                       {/* Helper Section */}
                       {hasHelper && (
                         <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
@@ -3135,8 +3133,8 @@ export default function ApproveLoadingPanel() {
                   <span className="font-bold">Note:</span> Click on any image to view full size
                 </div>
               </div>
-              
-              <FileGridGroup 
+
+              <FileGridGroup
                 title="Vehicle Body Pictures"
                 files={existingFiles.vbp}
                 emptyMessage="No VBP images uploaded"
@@ -3165,8 +3163,8 @@ export default function ApproveLoadingPanel() {
                   options={APPROVAL_STATUS}
                 />
               </div>
-              
-              <FileGridGroup 
+
+              <FileGridGroup
                 title="Vehicle Floor Tarpaulin Pictures"
                 files={existingFiles.vft}
                 emptyMessage="No VFT images uploaded"
@@ -3187,8 +3185,8 @@ export default function ApproveLoadingPanel() {
                   options={APPROVAL_STATUS}
                 />
               </div>
-              
-              <FileGridGroup 
+
+              <FileGridGroup
                 title="Vehicle Outer Tarpaulin Pictures"
                 files={existingFiles.vot}
                 emptyMessage="No VOT images uploaded"
@@ -3203,10 +3201,10 @@ export default function ApproveLoadingPanel() {
             <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
               <div className="mb-3">
                 <p className="text-xs text-slate-500">
-                  Total Photos: {getTotalVlPhotosCount()} 
+                  Total Photos: {getTotalVlPhotosCount()}
                 </p>
               </div>
-              
+
               <div className="flex items-center gap-3 mb-3">
                 <span className="text-xs font-bold text-slate-600">Approval:</span>
                 <EditableSelect
@@ -3223,14 +3221,14 @@ export default function ApproveLoadingPanel() {
                   options={LOADING_STATUS}
                 />
               </div>
-              
+
               {/* VL Photos with Width, Height, Nose, Total */}
               {Object.keys(existingFiles.vl).length > 0 ? (
                 <div className="space-y-6">
                   {Object.entries(existingFiles.vl).map(([key, fileList]) => {
                     // Skip video key
                     if (key === 'videoVl') return null;
-                    
+
                     return fileList.map((file, idx) => {
                       // Get dimensions from vlPhotoDetails
                       const fileKey = `${key}_${idx}`;
@@ -3241,7 +3239,7 @@ export default function ApproveLoadingPanel() {
                       const height = parseFloat(dimensions.height ?? vlPhotoDetails[`${fileKey}_height`]) || 0;
                       const nose = parseFloat(dimensions.nose ?? vlPhotoDetails[`${fileKey}_nose`]) || 0;
                       const total = (width * height) + nose;
-                      
+
                       return (
                         <div key={`${key}-${idx}`} className="bg-white p-4 rounded-lg border border-slate-200">
                           <div className="text-xs font-bold text-slate-700 mb-2">{key.toUpperCase()} - Photo {idx + 1}</div>
@@ -3286,7 +3284,7 @@ export default function ApproveLoadingPanel() {
                   <p className="text-sm text-gray-500">No VL images uploaded</p>
                 </div>
               )}
-              
+
               {/* Video VL */}
               {existingFiles.vl?.videoVl && existingFiles.vl.videoVl.length > 0 && (
                 <div className="mt-4">
@@ -3317,7 +3315,7 @@ export default function ApproveLoadingPanel() {
                       options={APPROVAL_STATUS}
                     />
                   </div>
-                  
+
                   {existingFiles.weighment?.weighSlip?.length > 0 && (
                     <div>
                       <h4 className="text-xs font-bold text-slate-600 mb-2">Weigh Slip:</h4>
@@ -3467,7 +3465,7 @@ export default function ApproveLoadingPanel() {
               <div className="col-span-12 md:col-span-4">
                 <div className="bg-white p-4 rounded-xl border border-slate-200">
                   <h3 className="text-sm font-bold text-slate-800 mb-2">Consignment Note (LR)</h3>
-                  <button 
+                  <button
                     onClick={() => window.open(`/api/loading-panel/${panelId}/generate-lr`, '_blank')}
                     className="w-full rounded-lg bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700"
                   >
@@ -3479,7 +3477,7 @@ export default function ApproveLoadingPanel() {
               <div className="col-span-12 md:col-span-4">
                 <div className="bg-white p-4 rounded-xl border border-slate-200">
                   <h3 className="text-sm font-bold text-slate-800 mb-2">E-waybill</h3>
-                  <button 
+                  <button
                     onClick={() => window.open(`/api/loading-panel/${panelId}/generate-ewaybill`, '_blank')}
                     className="w-full rounded-lg bg-green-600 px-4 py-2 text-xs font-bold text-white hover:bg-green-700"
                   >
@@ -3491,12 +3489,13 @@ export default function ApproveLoadingPanel() {
               <div className="col-span-12 md:col-span-4">
                 <div className="bg-white p-4 rounded-xl border border-slate-200">
                   <h3 className="text-sm font-bold text-slate-800 mb-2">Invoice</h3>
-                  <button 
+                  {/* <button
                     onClick={() => window.open(`/api/loading-panel/${panelId}/invoice`, '_blank')}
                     className="w-full rounded-lg bg-purple-600 px-4 py-2 text-xs font-bold text-white hover:bg-purple-700"
                   >
                     View Invoice
-                  </button>
+                  </button> */}
+                  <LoadingInfoInvoiceViewer panelId={panelId} />
                   <p className="text-xs text-slate-500 mt-2">View and download invoice</p>
                 </div>
               </div>
