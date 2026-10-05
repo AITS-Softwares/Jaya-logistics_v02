@@ -54,17 +54,17 @@
 //     try {
 //       const token = localStorage.getItem('token');
 //       const url = query ? `/api/vehicles?search=${encodeURIComponent(query)}` : '/api/vehicles';
-      
+
 //       const res = await fetch(url, {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       if (!res.ok) {
 //         throw new Error(`HTTP error! status: ${res.status}`);
 //       }
-      
+
 //       const data = await res.json();
-      
+
 //       if (data.success && Array.isArray(data.data)) {
 //         setVehicles(data.data);
 //       } else {
@@ -88,13 +88,13 @@
 //       const res = await fetch(`/api/vehicles?id=${id}`, {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       if (!res.ok) {
 //         throw new Error(`HTTP error! status: ${res.status}`);
 //       }
-      
+
 //       const data = await res.json();
-      
+
 //       if (data.success && data.data) {
 //         return data.data;
 //       } else {
@@ -131,12 +131,12 @@
 //     try {
 //       const token = localStorage.getItem('token');
 //       const url = vehicleNumber ? `/api/owners?search=${encodeURIComponent(vehicleNumber)}` : '/api/owners';
-      
+
 //       const res = await fetch(url, {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
 //       const data = await res.json();
-      
+
 //       if (data.success && Array.isArray(data.data)) {
 //         setOwners(data.data);
 //       } else {
@@ -168,23 +168,23 @@
 //     setError(null);
 //     try {
 //       const token = localStorage.getItem('token');
-      
+
 //       const vnRes = await fetch('/api/vehicle-negotiation', {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       if (!vnRes.ok) {
 //         throw new Error(`HTTP error! status: ${vnRes.status}`);
 //       }
-      
+
 //       const vnData = await vnRes.json();
-      
+
 //       const loadingRes = await fetch('/api/loading-panel?format=table', {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       const loadingData = await loadingRes.json();
-      
+
 //       const usedVnns = new Set();
 //       if (loadingData.success && Array.isArray(loadingData.data)) {
 //         loadingData.data.forEach(item => {
@@ -193,7 +193,7 @@
 //           }
 //         });
 //       }
-      
+
 //       if (vnData.success && Array.isArray(vnData.data)) {
 //         const availableVNs = vnData.data.filter(vn => !usedVnns.has(vn.vnnNo));
 //         setNegotiations(availableVNs);
@@ -219,13 +219,13 @@
 //       const res = await fetch(`/api/vehicle-negotiation?id=${id}`, {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       if (!res.ok) {
 //         throw new Error(`HTTP error! status: ${res.status}`);
 //       }
-      
+
 //       const data = await res.json();
-      
+
 //       if (data.success && data.data) {
 //         return data.data;
 //       } else {
@@ -264,9 +264,9 @@
 //       const res = await fetch('/api/loading-panel?format=table', {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       const data = await res.json();
-      
+
 //       if (data.success && Array.isArray(data.data)) {
 //         setLoadingInfos(data.data);
 //       } else {
@@ -389,7 +389,7 @@
 
 // function FileUploadItem({ file, onRemove, index, label, isCameraPhoto = false, photoTime = null, isExisting = false }) {
 //   const [imagePreview, setImagePreview] = useState(null);
-  
+
 //   useEffect(() => {
 //     if (file && file.type && file.type.startsWith('image/') && !isExisting) {
 //       const reader = new FileReader();
@@ -450,7 +450,7 @@
 
 //   const handleSearch = (query) => {
 //     setSearchQuery(query);
-    
+
 //     if (query.trim() === "") {
 //       setFilteredVehicles(vehicleSearch.vehicles);
 //     } else {
@@ -461,7 +461,7 @@
 //       );
 //       setFilteredVehicles(filtered);
 //     }
-    
+
 //     if (!showDropdown) {
 //       setShowDropdown(true);
 //     }
@@ -493,7 +493,7 @@
 //         placeholder={placeholder}
 //         autoComplete="off"
 //       />
-      
+
 //       {showDropdown && (
 //         <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
 //           {vehicleSearch.loading ? (
@@ -953,13 +953,13 @@
 //   const [vehiclePhotoFiles, setVehiclePhotoFiles] = useState([]);
 //   const [detentionDays, setDetentionDays] = useState("");
 //   const [detentionNumber, setDetentionNumber] = useState("");
-  
+
 //   /** =========================
 //    * STATE FOR SLIP FILES
 //    ========================= */
 //   const [vehicleSlipFiles, setVehicleSlipFiles] = useState([]);
 //   const [loadedVehicleSlipFiles, setLoadedVehicleSlipFiles] = useState([]);
-  
+
 //   /** =========================
 //    * VL PHOTO DETAILS STATE (Height, Width, Nose)
 //    ========================= */
@@ -1053,12 +1053,12 @@
 //     input.type = 'file';
 //     input.accept = 'image/*,.pdf';
 //     input.multiple = true;
-    
+
 //     input.onchange = async (e) => {
 //       const files = Array.from(e.target.files);
 //       setVehicleSlipFiles(prev => [...prev, ...files]);
 //     };
-    
+
 //     input.click();
 //   };
 
@@ -1111,7 +1111,7 @@
 //     input.type = 'file';
 //     input.accept = 'image/*';
 //     input.multiple = true;
-    
+
 //     input.onchange = async (e) => {
 //       const files = Array.from(e.target.files);
 //       const newTotalPhotos = vehiclePhotoFiles.length + files.length;
@@ -1121,7 +1121,7 @@
 //       }
 //       setVehiclePhotoFiles(prev => [...prev, ...files]);
 //     };
-    
+
 //     input.click();
 //   };
 
@@ -1134,12 +1134,12 @@
 //     input.type = 'file';
 //     input.accept = 'image/*,.pdf';
 //     input.multiple = true;
-    
+
 //     input.onchange = async (e) => {
 //       const files = Array.from(e.target.files);
 //       setLoadedVehicleSlipFiles(prev => [...prev, ...files]);
 //     };
-    
+
 //     input.click();
 //   };
 
@@ -1247,7 +1247,7 @@
 //     approval: "",
 //     loadingStatus: "Not Loaded",
 //   });
-  
+
 //   const [loadedWeighment, setLoadedWeighment] = useState({
 //     approval: "",
 //     loadingCharges: "",
@@ -1274,7 +1274,7 @@
 //     outDate: "",
 //     outTime: "",
 //   });
-  
+
 //   /** =========================
 //    * CAMERA PHOTO CAPTURE STATE
 //    ========================= */
@@ -1397,15 +1397,15 @@
 //         setBranches([]);
 //         return;
 //       }
-      
+
 //       const res = await fetch('/api/branches', {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       if (!res.ok) {
 //         throw new Error(`HTTP error! status: ${res.status}`);
 //       }
-      
+
 //       const data = await res.json();
 //       if (data.success && Array.isArray(data.data)) {
 //         setBranches(data.data);
@@ -1428,15 +1428,15 @@
 //         setPlants([]);
 //         return;
 //       }
-      
+
 //       const res = await fetch('/api/plants', {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       if (!res.ok) {
 //         throw new Error(`HTTP error! status: ${res.status}`);
 //       }
-      
+
 //       const data = await res.json();
 //       if (data.success && Array.isArray(data.data)) {
 //         setPlants(data.data);
@@ -1456,15 +1456,15 @@
 //         setOrders([]);
 //         return;
 //       }
-      
+
 //       const res = await fetch('/api/order-panel', {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       if (!res.ok) {
 //         throw new Error(`HTTP error! status: ${res.status}`);
 //       }
-      
+
 //       const data = await res.json();
 //       if (data.success && Array.isArray(data.data)) {
 //         setOrders(data.data);
@@ -1507,30 +1507,30 @@
 //       const video = videoRef.current;
 //       const canvas = canvasRef.current;
 //       const context = canvas.getContext('2d');
-      
+
 //       canvas.width = video.videoWidth;
 //       canvas.height = video.videoHeight;
-      
+
 //       context.drawImage(video, 0, 0, canvas.width, canvas.height);
-      
+
 //       canvas.toBlob((blob) => {
 //         const now = new Date();
 //         const filename = `driver_photo_${now.getTime()}.jpg`;
 //         const file = new File([blob], filename, { type: 'image/jpeg' });
-        
+
 //         setVehicleFiles(prev => ({
 //           ...prev,
 //           photo: [...prev.photo, file]
 //         }));
-        
+
 //         setArrivalDetails(prev => ({
 //           ...prev,
 //           date: now.toISOString().split('T')[0],
 //           time: now.toLocaleTimeString(),
 //         }));
-        
+
 //         alert(`✅ Driver photo captured successfully!\n📅 Date: ${now.toLocaleDateString()}\n⏰ Time: ${now.toLocaleTimeString()}`);
-        
+
 //         stopCamera();
 //       }, 'image/jpeg', 0.9);
 //     }
@@ -1543,13 +1543,13 @@
 //     const now = new Date();
 //     const outTime = now.toLocaleTimeString();
 //     const outDate = now.toISOString().split('T')[0];
-    
+
 //     setArrivalDetails(prev => ({
 //       ...prev,
 //       outDate: outDate,
 //       outTime: outTime,
 //     }));
-    
+
 //     alert(`✅ Consignment Note (LR) Generated!\n📅 Out Date: ${outDate}\n⏰ Out Time: ${outTime}`);
 //   };
 
@@ -1558,7 +1558,7 @@
 //    ========================= */
 //   const handleVehicleSelect = async (vehicle) => {
 //     setSelectedVehicle(vehicle);
-    
+
 //     setVehicleInfo(prev => ({
 //       ...prev,
 //       vehicleNo: vehicle.vehicleNumber || "",
@@ -1581,10 +1581,10 @@
 //           headers: { Authorization: `Bearer ${token}` },
 //         });
 //         const data = await res.json();
-        
+
 //         if (data.success && Array.isArray(data.data) && data.data.length > 0) {
 //           const owner = data.data[0];
-          
+
 //           setVehicleInfo(prev => ({
 //             ...prev,
 //             vehicleOwnerName: owner.ownerName || "",
@@ -1593,7 +1593,7 @@
 //             message: `Vehicle Owner: ${owner.ownerName}\nContact: ${owner.mobileNumber1 || owner.mobileNumber2}\nRC Number: ${owner.rcNumber || ''}`,
 //             remarks: `Pan Card: ${owner.ownerPanCard || 'N/A'}\nAdhar Card: ${owner.adharCardNumber || 'N/A'}`
 //           }));
-          
+
 //           setExistingFiles(prev => ({
 //             ...prev,
 //             vehicle: {
@@ -1602,7 +1602,7 @@
 //               pan: owner.panCardDocuments?.map(doc => ({ name: 'PAN Document', path: doc })) || [],
 //             }
 //           }));
-          
+
 //           alert(`✅ Vehicle ${vehicle.vehicleNumber} loaded successfully!\nOwner: ${owner.ownerName}`);
 //         } else {
 //           alert(`✅ Vehicle ${vehicle.vehicleNumber} loaded successfully!`);
@@ -1627,7 +1627,7 @@
 //     if (vlFields.length < 15) {
 //       const nextNumber = vlFields.length + 1;
 //       setVlFields([...vlFields, nextNumber]);
-      
+
 //       if (!vlFiles[`vl${nextNumber}`]) {
 //         setVlFiles(prev => ({
 //           ...prev,
@@ -1644,22 +1644,22 @@
 //       alert("Cannot remove first 5 VL fields (VL-1 to VL-5)");
 //       return;
 //     }
-    
+
 //     const currentCount = vlFiles[`vl${fieldNum}`]?.length || 0;
 //     if (currentCount > 0) {
 //       if (!confirm(`Field VL-${fieldNum} has ${currentCount} photo(s). Removing this field will delete all its photos. Are you sure?`)) {
 //         return;
 //       }
 //     }
-    
+
 //     setVlFields(prev => prev.filter(num => num !== fieldNum));
-    
+
 //     setVlFiles(prev => {
 //       const newFiles = { ...prev };
 //       delete newFiles[`vl${fieldNum}`];
 //       return newFiles;
 //     });
-    
+
 //     setVlPhotoDetails(prev => {
 //       const newDetails = { ...prev };
 //       Object.keys(newDetails).forEach(key => {
@@ -1669,7 +1669,7 @@
 //       });
 //       return newDetails;
 //     });
-    
+
 //     alert(`✅ VL-${fieldNum} field removed successfully`);
 //   };
 
@@ -1686,7 +1686,7 @@
 //    ========================= */
 //   const handleVehicleNegotiationSearch = (query) => {
 //     setVehicleNegotiationNo(query);
-    
+
 //     if (query.trim() === "") {
 //       setFilteredVehicleNegotiations(vehicleNegotiation.negotiations);
 //     } else {
@@ -1704,10 +1704,10 @@
 //     setVehicleNegotiationNo(negotiation.vnnNo);
 //     setShowVehicleNegotiationDropdown(false);
 //     setFetchingNegotiationData(true);
-    
+
 //     try {
 //       const fullNegotiation = await vehicleNegotiation.getNegotiationById(negotiation._id);
-      
+
 //       if (fullNegotiation) {
 //         setHeader({
 //           ...header,
@@ -1730,7 +1730,7 @@
 
 //         if (fullNegotiation.approval) {
 //           const vehicleNumber = fullNegotiation.approval.vehicleNo || "";
-          
+
 //           setVehicleInfo(prev => ({
 //             ...prev,
 //             vehicleNo: vehicleNumber,
@@ -1751,7 +1751,7 @@
 //             fitnessNumber: fullNegotiation.approval.fitnessNumber || "",
 //             pucNumber: fullNegotiation.approval.pucNumber || ""
 //           }));
-          
+
 //           if (vehicleNumber) {
 //             setSelectedVehicle({
 //               _id: fullNegotiation.approval.vehicleId,
@@ -1806,20 +1806,20 @@
 //         if (selectedOrderPanels.length > 0) {
 //           for (const panel of selectedOrderPanels) {
 //             const orderPanelId = panel._id;
-            
+
 //             if (orderPanelId) {
 //               try {
 //                 const orderRes = await fetch(`/api/order-panel?id=${orderPanelId}`, {
 //                   headers: { Authorization: `Bearer ${token}` },
 //                 });
-                
+
 //                 if (orderRes.ok) {
 //                   const orderData = await orderRes.json();
-                  
+
 //                   if (orderData.success && orderData.data && orderData.data.packData) {
 //                     const orderPackData = orderData.data.packData;
 //                     packDataFound = true;
-                    
+
 //                     if (orderPackData.PALLETIZATION && orderPackData.PALLETIZATION.length > 0) {
 //                       const newPalletRows = orderPackData.PALLETIZATION.map(item => ({
 //                         _id: uid(),
@@ -1839,7 +1839,7 @@
 //                       }));
 //                       mergedPackData.PALLETIZATION = [...mergedPackData.PALLETIZATION, ...newPalletRows];
 //                     }
-                    
+
 //                     if (orderPackData['UNIFORM - BAGS/BOXES'] && orderPackData['UNIFORM - BAGS/BOXES'].length > 0) {
 //                       const newUniformRows = orderPackData['UNIFORM - BAGS/BOXES'].map(item => ({
 //                         _id: uid(),
@@ -1856,7 +1856,7 @@
 //                       }));
 //                       mergedPackData['UNIFORM - BAGS/BOXES'] = [...mergedPackData['UNIFORM - BAGS/BOXES'], ...newUniformRows];
 //                     }
-                    
+
 //                     if (orderPackData['LOOSE - CARGO'] && orderPackData['LOOSE - CARGO'].length > 0) {
 //                       const newLooseRows = orderPackData['LOOSE - CARGO'].map(item => ({
 //                         _id: uid(),
@@ -1875,7 +1875,7 @@
 //             }
 //           }
 //         }
-        
+
 //         if (!packDataFound || 
 //             (mergedPackData.PALLETIZATION.length === 0 && 
 //              mergedPackData['UNIFORM - BAGS/BOXES'].length === 0 && 
@@ -1957,7 +1957,7 @@
 //       const updatedPack = prev[activePack].map((r) => {
 //         if (r._id === rowId) {
 //           const updatedRow = { ...r, [key]: value };
-          
+
 //           if (activePack === "PALLETIZATION") {
 //             if (key === "noOfPallets" || key === "unitPerPallets") {
 //               const noOfPallets = num(updatedRow.noOfPallets);
@@ -1966,25 +1966,25 @@
 //               updatedRow.totalPkgs = totalPkgs > 0 ? String(totalPkgs) : "";
 //             }
 //           }
-          
+
 //           if (activePack === "UNIFORM - BAGS/BOXES") {
 //             if (key === "totalPkgs" || key === "packWeight") {
 //               const totalPkgs = num(updatedRow.totalPkgs);
 //               const packWeight = num(updatedRow.packWeight);
 //               updatedRow.wtLtr = totalPkgs * packWeight;
 //             }
-            
+
 //             if (key === "wtLtr" || key === "totalPkgs" || key === "packWeight") {
 //               const wtLtr = num(updatedRow.wtLtr);
 //               updatedRow.actualWt = wtLtr * 2 / 1000;
 //             }
 //           }
-          
+
 //           return updatedRow;
 //         }
 //         return r;
 //       });
-      
+
 //       return {
 //         ...prev,
 //         [activePack]: updatedPack,
@@ -2028,7 +2028,7 @@
 //         }
 //         return r;
 //       });
-      
+
 //       return {
 //         ...prev,
 //         [activePack]: updatedPack,
@@ -2078,7 +2078,7 @@
 //     input.type = 'file';
 //     input.accept = isVideo ? 'video/*' : 'image/*';
 //     input.multiple = false;
-    
+
 //     input.onchange = async (e) => {
 //       const file = e.target.files[0];
 //       if (!file) return;
@@ -2122,7 +2122,7 @@
 //           break;
 //       }
 //     };
-    
+
 //     input.click();
 //   };
 
@@ -2131,17 +2131,17 @@
 //     input.type = 'file';
 //     input.accept = isVideo ? 'video/*' : 'image/*';
 //     input.multiple = false;
-    
+
 //     input.onchange = async (e) => {
 //       const file = e.target.files[0];
 //       if (!file) return;
-      
+
 //       setHelperInfo(prev => ({
 //         ...prev,
 //         [field]: [...prev[field], file]
 //       }));
 //     };
-    
+
 //     input.click();
 //   };
 
@@ -2154,7 +2154,7 @@
 //           [field]: prev[section][field].filter((_, i) => i !== index)
 //         }
 //       }));
-      
+
 //       if (section === 'vehicle') {
 //         if (field === 'rc') setVehicleInfo(prev => ({ ...prev, rcDocument: '' }));
 //         if (field === 'pan') setVehicleInfo(prev => ({ ...prev, panDocument: '' }));
@@ -2450,7 +2450,7 @@
 
 //     try {
 //       const token = localStorage.getItem('token');
-      
+
 //       setUploading(true);
 //       const uploadedPaths = await uploadAllFiles(token);
 //       setUploading(false);
@@ -2544,7 +2544,7 @@
 //           districtName: order.districtName || order.district,
 //           state: order.state || order.stateName,
 //           stateName: order.stateName || order.state,
-          
+
 //           from: order.from || order.fromName,
 //           fromName: order.fromName || order.from,
 //           fromState: order.fromState || '',
@@ -2644,11 +2644,11 @@
 //       }
 
 //       const data = await res.json();
-      
+
 //       alert(`✅ Loading Info saved successfully!\nVehicle Arrival No: ${data.data?.vehicleArrivalNo || 'Generated'}`);
-      
+
 //       resetForm();
-      
+
 //     } catch (error) {
 //       console.error('Error saving loading info:', error);
 //       alert(`❌ Error: ${error.message}`);
@@ -2714,16 +2714,16 @@
 //       fitnessNumber: "",
 //       pucNumber: ""
 //     });
-    
+
 //     setSelectedVehicle(null);
-    
+
 //     setPackData({
 //       PALLETIZATION: [defaultPackRow("PALLETIZATION")],
 //       "UNIFORM - BAGS/BOXES": [defaultPackRow("UNIFORM - BAGS/BOXES")],
 //       "LOOSE - CARGO": [defaultPackRow("LOOSE - CARGO")],
 //       "NON-UNIFORM - GENERAL CARGO": [defaultPackRow("NON-UNIFORM - GENERAL CARGO")],
 //     });
-    
+
 //     setExistingFiles({
 //       vehicle: { rc: [], pan: [], license: [], photo: [] },
 //       vbp: {},
@@ -2732,11 +2732,11 @@
 //       vl: {},
 //       weighment: { weighSlip: [] }
 //     });
-    
+
 //     setActivePack("PALLETIZATION");
 //     setDeductionRows([]);
 //     setTotalQuantity("");
-    
+
 //     setVbpFiles({
 //       vbp1: [], vbp2: [], vbp3: [], vbp4: [],
 //       vbp5: [], vbp6: [], vbp7: [], videoVbp: [],
@@ -2759,7 +2759,7 @@
 //     setWeighmentFiles({
 //       weighSlip: []
 //     });
-    
+
 //     setVbpUploads({ approval: "", remark: "" });
 //     setVftUploads({ approval: "" });
 //     setVotUploads({ approval: "" });
@@ -2772,14 +2772,14 @@
 //       vehicleFloorTarpaulin: "", 
 //       vehicleOuterTarpaulin: "" 
 //     });
-    
+
 //     setGpsTracking({
 //       driverMobileNumber: "",
 //       isTrackingActive: false,
 //     });
-    
+
 //     setArrivalDetails({ date: new Date().toISOString().split('T')[0], time: "", outDate: "", outTime: "" });
-    
+
 //     if (stream) {
 //       stream.getTracks().forEach(track => track.stop());
 //       setStream(null);
@@ -2982,7 +2982,7 @@
 //                   </div>
 //                 )}
 //               </div>
-              
+
 //               {showVehicleNegotiationDropdown && !selectedVehicleNegotiation && (
 //                 <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
 //                   {vehicleNegotiation.loading ? (
@@ -3596,13 +3596,13 @@
 //               message: `Vehicle Owner: ${owner.ownerName}\nContact: ${owner.mobileNumber1 || owner.mobileNumber2}\nRC Number: ${owner.rcNumber || ''}`,
 //               remarks: `Pan Card: ${owner.ownerPanCard || 'N/A'}\nAdhar Card: ${owner.adharCardNumber || 'N/A'}`
 //             }));
-            
+
 //             setSelectedVehicle({
 //               _id: owner._id,
 //               vehicleNumber: owner.vehicleNumber,
 //               ownerName: owner.ownerName
 //             });
-            
+
 //             setExistingFiles(prev => ({
 //               ...prev,
 //               vehicle: {
@@ -3611,7 +3611,7 @@
 //                 pan: owner.panCardDocuments?.map(doc => ({ name: 'PAN Document', path: doc })) || [],
 //               }
 //             }));
-            
+
 //             alert(`✅ Owner ${owner.ownerName} loaded!\nVehicle: ${owner.vehicleNumber}`);
 //           }
 //         }}
@@ -3625,7 +3625,7 @@
 //     >
 //       + Create New Vehicle
 //     </button>
-    
+
 //     {selectedVehicle && (
 //       <div className="mt-2 p-2 bg-green-50 rounded-lg border border-green-200">
 //         <div className="text-xs font-medium text-green-800">Selected Vehicle:</div>
@@ -3856,7 +3856,7 @@
 //           )}
 //         </div>
 //       </div>
-      
+
 //       <div>
 //         <label className="text-xs font-bold text-slate-600">Owner Pan Doc</label>
 //         <div className="mt-1 space-y-2">
@@ -4152,7 +4152,7 @@
 //       </div>
 //       {/* Remove the Add Row button */}
 //     </div>
-    
+
 //     <PackTypeTable
 //       key={activePack}
 //       packType={activePack}
@@ -4172,7 +4172,7 @@
 //               <div className="col-span-12">
 //                 <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-200">
 //                   <h3 className="text-sm font-bold text-slate-800 mb-3">Vehicle - Body Pictures (VBP)</h3>
-                  
+
 //                   <div className="grid grid-cols-8 gap-3">
 //                     {[1,2,3,4,5,6,7].map((num) => (
 //                       <div key={num} className="col-span-1">
@@ -4342,14 +4342,14 @@
 //                   )}
 //                 </div>
 //               </div>
-              
+
 //               <div className="grid grid-cols-12 gap-4">
 //                 {vlFields.map((fieldNum) => {
 //                   const currentCount = vlFiles[`vl${fieldNum}`]?.length || 0;
 //                   const totalCount = getTotalVlPhotosCount();
 //                   const isMaxReached = totalCount >= 25;
 //                   const isDisabled = isMaxReached && currentCount === 0;
-                  
+
 //                   return (
 //                     <div key={fieldNum} className="col-span-12 lg:col-span-6">
 //                       <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
@@ -4374,7 +4374,7 @@
 //                             )}
 //                           </div>
 //                         </div>
-                        
+
 //                         <button 
 //                           onClick={() => handleFileSelect('vl', `vl${fieldNum}`)}
 //                           disabled={isDisabled}
@@ -4416,7 +4416,7 @@
 //                                   onRemove={() => removeFile('vl', `vl${fieldNum}`, fileIdx)}
 //                                   label={`VL(stack)-${fieldNum}`}
 //                                 />
-                                
+
 //                                 <div className="grid grid-cols-3 gap-2 mt-2">
 //                                   <div>
 //                                     <label className="text-xs font-bold text-slate-600">Height (ft)</label>
@@ -4538,7 +4538,7 @@
 //                   {vlUploads.loadingStatus || 'Not Set'}
 //                 </span>
 //               </div>
-              
+
 //               {getTotalVlPhotosCount() > 0 && getTotalVlPhotosCount() < 5 && (
 //                 <div className="mt-3 p-3 bg-red-50 rounded-lg border border-red-200">
 //                   <p className="text-xs text-red-600 flex items-center gap-2">
@@ -4549,7 +4549,7 @@
 //                   </p>
 //                 </div>
 //               )}
-              
+
 //               {getTotalVlPhotosCount() >= 5 && (
 //                 <div className="mt-3 p-3 bg-green-50 rounded-lg border border-green-200">
 //                   <p className="text-xs text-green-600 flex items-center gap-2">
@@ -4596,14 +4596,14 @@
 //           )}
 //         </div>
 //       </div>
-      
+
 //       <div className="grid grid-cols-12 gap-4">
 //         {vlFields.map((fieldNum) => {
 //           const currentCount = vlFiles[`vl${fieldNum}`]?.length || 0;
 //           const totalCount = getTotalVlPhotosCount();
 //           const isMaxReached = totalCount >= 25;
 //           const isDisabled = isMaxReached && currentCount === 0;
-          
+
 //           return (
 //             <div key={fieldNum} className="col-span-12 lg:col-span-6">
 //               <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
@@ -4628,7 +4628,7 @@
 //                     )}
 //                   </div>
 //                 </div>
-                
+
 //                 <button 
 //                   onClick={() => handleFileSelect('vl', `vl${fieldNum}`)}
 //                   disabled={isDisabled}
@@ -4668,7 +4668,7 @@
 //                       const height = parseFloat(vlPhotoDetails[`vl${fieldNum}_${fileIdx}_height`]) || 0;
 //                       const nose = parseFloat(vlPhotoDetails[`vl${fieldNum}_${fileIdx}_nose`]) || 0;
 //                       const total = (width * height) + nose;
-                      
+
 //                       return (
 //                         <div key={fileIdx} className="bg-slate-50 rounded-lg p-3 border border-slate-200">
 //                           <FileUploadItem 
@@ -4677,7 +4677,7 @@
 //                             onRemove={() => removeFile('vl', `vl${fieldNum}`, fileIdx)}
 //                             label={`VL(stack)-${fieldNum}`}
 //                           />
-                          
+
 //                           <div className="grid grid-cols-4 gap-2 mt-2">
 //                             <div>
 //                               <label className="text-xs font-bold text-slate-600">Width (ft)</label>
@@ -4815,7 +4815,7 @@
 //           {vlUploads.loadingStatus || 'Not Set'}
 //         </span>
 //       </div>
-      
+
 //       {getTotalVlPhotosCount() > 0 && getTotalVlPhotosCount() < 5 && (
 //         <div className="mt-3 p-3 bg-red-50 rounded-lg border border-red-200">
 //           <p className="text-xs text-red-600 flex items-center gap-2">
@@ -4826,7 +4826,7 @@
 //           </p>
 //         </div>
 //       )}
-      
+
 //       {getTotalVlPhotosCount() >= 5 && (
 //         <div className="mt-3 p-3 bg-green-50 rounded-lg border border-green-200">
 //           <p className="text-xs text-green-600 flex items-center gap-2">
@@ -4909,7 +4909,7 @@
 //       <div className="col-span-12 md:col-span-6">
 //         <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-200 h-full">
 //           <h3 className="text-sm font-bold text-slate-800 mb-3">Weighment & Approval</h3>
-          
+
 //           <div className="space-y-3">
 //             <div className="flex items-center justify-between">
 //               <span className="text-xs font-bold text-slate-600">Loaded Vehicle - Weigh Slip:</span>
@@ -4933,7 +4933,7 @@
 //                 label="Weigh Slip"
 //               />
 //             ))}
-            
+
 //             <div className="flex items-center gap-3">
 //               <span className="text-xs font-bold text-slate-600">Approval:</span>
 //               <span className={`text-sm px-3 py-1 rounded-full ${getStatusBadge(loadedWeighment.approval)}`}>
@@ -4942,7 +4942,7 @@
 //             </div>
 //           </div>
 //         </div>
-        
+
 //         <div className="mt-4">
 //           {/* <div className="bg-orange-50 p-4 rounded-xl border border-orange-200">
 //             <label className="text-xs font-bold text-orange-700">Detention Days</label>
@@ -4967,7 +4967,7 @@
 //               Deduct at Office
 //             </div>
 //           </div>
-          
+
 //           <div className="space-y-2">
 //             <div className="flex justify-between items-center">
 //               <span className="text-sm text-slate-700">Loading Charges:</span>
@@ -5091,7 +5091,7 @@
 //   </Card>
 // </div>
 
-        
+
 
 //         {/* Documents & Consignment Note Card */}
 //         <div className="mt-4">
@@ -5182,13 +5182,13 @@ const ORDER_TYPES = ["Sales", "STO Order", "Export", "Import"];
 const PKGS_TYPE_OPTIONS = ["Drum", "Boxes", "Bags", "Cartons", "Crates", "Pallets", "Box"];
 const UOM_OPTIONS = ["KG", "LTR", "TON", "M3", "PCS", "Kgs", "Ltr", "MT"];
 const PRODUCT_NAME_OPTIONS = [
-  "CALCIUM NITRATE 20KG", 
-  "CALCIUM NITRATE 10KG", 
-  "CALCIUM NITRATE 1KG", 
-  "Chromite Sand", 
-  "Bud Builder", 
-  "Di-Betic Easter", 
-  "Polysulphate - Premium", 
+  "CALCIUM NITRATE 20KG",
+  "CALCIUM NITRATE 10KG",
+  "CALCIUM NITRATE 1KG",
+  "Chromite Sand",
+  "Bud Builder",
+  "Di-Betic Easter",
+  "Polysulphate - Premium",
   "YaraVita Stopit 1Ltr"
 ];
 const SKU_SIZE_OPTIONS = ["20 Kgs", "10 Kgs", "1 Kgs", "100 Ltr", "200 Kgs", "1 Ltr", "20"];
@@ -5220,17 +5220,17 @@ function useVehicleSearch() {
       const url = query
         ? `/api/loading-panel/reference-data?lookup=vehicles&search=${encodeURIComponent(query)}`
         : '/api/loading-panel/reference-data?lookup=vehicles';
-      
+
       const res = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       if (!res.ok) {
         throw new Error(`HTTP error! status: ${res.status}`);
       }
-      
+
       const data = await res.json();
-      
+
       if (data.success && Array.isArray(data.data?.vehicles)) {
         setVehicles(data.data.vehicles);
       } else {
@@ -5254,13 +5254,13 @@ function useVehicleSearch() {
       const res = await fetch('/api/loading-panel/reference-data?lookup=vehicles', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       if (!res.ok) {
         throw new Error(`HTTP error! status: ${res.status}`);
       }
-      
+
       const data = await res.json();
-      
+
       const vehicle = data.data?.vehicles?.find((item) => item._id === id);
       if (data.success && vehicle) {
         return vehicle;
@@ -5296,12 +5296,12 @@ function useOwnerSearch() {
       const url = vehicleNumber
         ? `/api/loading-panel/reference-data?lookup=owners&search=${encodeURIComponent(vehicleNumber)}`
         : '/api/loading-panel/reference-data?lookup=owners';
-      
+
       const res = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-      
+
       if (data.success && Array.isArray(data.data?.owners)) {
         setOwners(data.data.owners);
       } else {
@@ -5507,7 +5507,7 @@ function hasMeaningfulPackRows(rows) {
 
 function FileUploadItem({ file, onRemove, index, label, isCameraPhoto = false, photoTime = null, isExisting = false }) {
   const [imagePreview, setImagePreview] = useState(null);
-  
+
   useEffect(() => {
     if (file && file.type && file.type.startsWith('image/') && !isExisting) {
       const reader = new FileReader();
@@ -5572,7 +5572,7 @@ function VehicleSearchDropdown({ onSelect, placeholder = "Search vehicle...", se
 
   const handleSearch = (query) => {
     setSearchQuery(query);
-    
+
     if (query.trim() === "") {
       setFilteredVehicles(vehicleSearch.vehicles);
     } else {
@@ -5583,7 +5583,7 @@ function VehicleSearchDropdown({ onSelect, placeholder = "Search vehicle...", se
       );
       setFilteredVehicles(filtered);
     }
-    
+
     if (!showDropdown) {
       setShowDropdown(true);
     }
@@ -5615,7 +5615,7 @@ function VehicleSearchDropdown({ onSelect, placeholder = "Search vehicle...", se
         placeholder={placeholder}
         autoComplete="off"
       />
-      
+
       {showDropdown && (
         <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
           {vehicleSearch.loading ? (
@@ -5645,8 +5645,8 @@ function VehicleSearchDropdown({ onSelect, placeholder = "Search vehicle...", se
             ))
           ) : (
             <div className="p-3 text-center text-sm text-slate-500">
-              {searchQuery.trim() ? 
-                `No vehicles found for "${searchQuery}"` : 
+              {searchQuery.trim() ?
+                `No vehicles found for "${searchQuery}"` :
                 "No vehicles available"
               }
             </div>
@@ -5677,9 +5677,8 @@ function Select({ label, value, onChange, options = [], col = "", readOnly = fal
         value={value}
         onChange={(e) => onChange?.(e.target.value)}
         disabled={readOnly}
-        className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${
-          readOnly ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-        }`}
+        className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${readOnly ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+          }`}
       >
         <option value="">Select {label}</option>
         {options.map((o) => (
@@ -5757,9 +5756,8 @@ function SearchableDropdown({ items, selectedId, onSelect, placeholder = "Search
               <div
                 key={item._id}
                 onMouseDown={() => handleSelectItem(item)}
-                className={`p-2 hover:bg-slate-50 cursor-pointer border-b border-slate-100 ${
-                  selectedItem?._id === item._id ? 'bg-sky-50' : ''
-                }`}
+                className={`p-2 hover:bg-slate-50 cursor-pointer border-b border-slate-100 ${selectedItem?._id === item._id ? 'bg-sky-50' : ''
+                  }`}
               >
                 <div className="font-medium text-slate-800 text-sm">
                   {item[displayField]}
@@ -5857,7 +5855,7 @@ function TableSearchableDropdown({ items, selectedId, onSelect, placeholder = "S
         />
       </div>
       {showDropdown && (
-        <div 
+        <div
           ref={dropdownRef}
           className="fixed z-[9999] bg-white border border-slate-200 rounded-lg shadow-lg overflow-y-auto max-h-60"
           style={{
@@ -5886,7 +5884,7 @@ function TableSearchableDropdown({ items, selectedId, onSelect, placeholder = "S
           )}
         </div>
       )}
-    </> 
+    </>
   );
 }
 
@@ -6073,13 +6071,13 @@ export default function CreateLoadingInfoPanel() {
   const [vehiclePhotoFiles, setVehiclePhotoFiles] = useState([]);
   const [detentionDays, setDetentionDays] = useState("");
   const [detentionNumber, setDetentionNumber] = useState("");
-  
+
   /** =========================
    * STATE FOR SLIP FILES
    ========================= */
   const [vehicleSlipFiles, setVehicleSlipFiles] = useState([]);
   const [loadedVehicleSlipFiles, setLoadedVehicleSlipFiles] = useState([]);
-  
+
   /** =========================
    * VL PHOTO DETAILS STATE (Height, Width, Nose)
    ========================= */
@@ -6114,12 +6112,12 @@ export default function CreateLoadingInfoPanel() {
     input.type = 'file';
     input.accept = 'image/*,.pdf';
     input.multiple = true;
-    
+
     input.onchange = async (e) => {
       const files = Array.from(e.target.files);
       setVehicleSlipFiles(prev => [...prev, ...files]);
     };
-    
+
     input.click();
   };
 
@@ -6172,7 +6170,7 @@ export default function CreateLoadingInfoPanel() {
     input.type = 'file';
     input.accept = 'image/*';
     input.multiple = true;
-    
+
     input.onchange = async (e) => {
       const files = Array.from(e.target.files);
       const newTotalPhotos = vehiclePhotoFiles.length + files.length;
@@ -6182,7 +6180,7 @@ export default function CreateLoadingInfoPanel() {
       }
       setVehiclePhotoFiles(prev => [...prev, ...files]);
     };
-    
+
     input.click();
   };
 
@@ -6195,12 +6193,12 @@ export default function CreateLoadingInfoPanel() {
     input.type = 'file';
     input.accept = 'image/*,.pdf';
     input.multiple = true;
-    
+
     input.onchange = async (e) => {
       const files = Array.from(e.target.files);
       setLoadedVehicleSlipFiles(prev => [...prev, ...files]);
     };
-    
+
     input.click();
   };
 
@@ -6308,7 +6306,7 @@ export default function CreateLoadingInfoPanel() {
     approval: "",
     loadingStatus: "Not Loaded",
   });
-  
+
   const [loadedWeighment, setLoadedWeighment] = useState({
     approval: "",
     loadingCharges: "",
@@ -6335,7 +6333,7 @@ export default function CreateLoadingInfoPanel() {
     outDate: "",
     outTime: "",
   });
-  
+
   /** =========================
    * CAMERA PHOTO CAPTURE STATE
    ========================= */
@@ -6516,19 +6514,19 @@ export default function CreateLoadingInfoPanel() {
       const video = videoRef.current;
       const canvas = canvasRef.current;
       const context = canvas.getContext('2d');
-      
+
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
-      
+
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
-      
+
       canvas.toBlob((blob) => {
         const now = new Date();
         const filename = `${cameraTarget?.field || "driver_photo"}_${now.getTime()}.jpg`;
         const file = new File([blob], filename, { type: 'image/jpeg' });
-        
+
         appendUploadFile(cameraTarget?.section || 'vehicle', cameraTarget?.field || 'photo', file);
-        
+
         if (cameraTarget?.section === "vehicle") {
           setArrivalDetails(prev => ({
             ...prev,
@@ -6536,9 +6534,9 @@ export default function CreateLoadingInfoPanel() {
             time: now.toLocaleTimeString(),
           }));
         }
-        
+
         alert(`✅ ${cameraTarget?.label || "Photo"} captured successfully!`);
-        
+
         stopCamera();
       }, 'image/jpeg', 0.9);
     }
@@ -6551,13 +6549,13 @@ export default function CreateLoadingInfoPanel() {
     const now = new Date();
     const outTime = now.toLocaleTimeString();
     const outDate = now.toISOString().split('T')[0];
-    
+
     setArrivalDetails(prev => ({
       ...prev,
       outDate: outDate,
       outTime: outTime,
     }));
-    
+
     alert(`✅ Consignment Note (LR) Generated!\n📅 Out Date: ${outDate}\n⏰ Out Time: ${outTime}`);
   };
 
@@ -6566,7 +6564,7 @@ export default function CreateLoadingInfoPanel() {
    ========================= */
   const handleVehicleSelect = async (vehicle) => {
     setSelectedVehicle(vehicle);
-    
+
     setVehicleInfo(prev => ({
       ...prev,
       vehicleNo: vehicle.vehicleNumber || "",
@@ -6589,10 +6587,10 @@ export default function CreateLoadingInfoPanel() {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
-        
+
         if (data.success && Array.isArray(data.data?.owners) && data.data.owners.length > 0) {
           const owner = data.data.owners[0];
-          
+
           setVehicleInfo(prev => ({
             ...prev,
             vehicleOwnerName: owner.ownerName || "",
@@ -6603,7 +6601,7 @@ export default function CreateLoadingInfoPanel() {
             // identifiers into this free-text field when a vehicle is selected.
             remarks: ''
           }));
-          
+
           setExistingFiles(prev => ({
             ...prev,
             vehicle: {
@@ -6612,7 +6610,7 @@ export default function CreateLoadingInfoPanel() {
               pan: owner.panCardDocuments?.map(doc => ({ name: 'PAN Document', path: doc })) || [],
             }
           }));
-          
+
           alert(`✅ Vehicle ${vehicle.vehicleNumber} loaded successfully!\nOwner: ${owner.ownerName}`);
         } else {
           alert(`✅ Vehicle ${vehicle.vehicleNumber} loaded successfully!`);
@@ -6637,7 +6635,7 @@ export default function CreateLoadingInfoPanel() {
     if (vlFields.length < 15) {
       const nextNumber = vlFields.length + 1;
       setVlFields([...vlFields, nextNumber]);
-      
+
       if (!vlFiles[`vl${nextNumber}`]) {
         setVlFiles(prev => ({
           ...prev,
@@ -6654,22 +6652,22 @@ export default function CreateLoadingInfoPanel() {
       alert("Cannot remove first 5 VL fields (VL-1 to VL-5)");
       return;
     }
-    
+
     const currentCount = vlFiles[`vl${fieldNum}`]?.length || 0;
     if (currentCount > 0) {
       if (!confirm(`Field VL-${fieldNum} has ${currentCount} photo(s). Removing this field will delete all its photos. Are you sure?`)) {
         return;
       }
     }
-    
+
     setVlFields(prev => prev.filter(num => num !== fieldNum));
-    
+
     setVlFiles(prev => {
       const newFiles = { ...prev };
       delete newFiles[`vl${fieldNum}`];
       return newFiles;
     });
-    
+
     setVlPhotoDetails(prev => {
       const newDetails = { ...prev };
       Object.keys(newDetails).forEach(key => {
@@ -6679,7 +6677,7 @@ export default function CreateLoadingInfoPanel() {
       });
       return newDetails;
     });
-    
+
     alert(`✅ VL-${fieldNum} field removed successfully`);
   };
 
@@ -6696,7 +6694,7 @@ export default function CreateLoadingInfoPanel() {
    ========================= */
   const handleVehicleNegotiationSearch = (query) => {
     setVehicleNegotiationNo(query);
-    
+
     if (query.trim() === "") {
       setFilteredVehicleNegotiations(vehicleNegotiation.negotiations);
     } else {
@@ -6710,114 +6708,114 @@ export default function CreateLoadingInfoPanel() {
     }
   };
 
-const handleSelectVehicleNegotiation = async (negotiation) => {
-  setSelectedVehicleNegotiation(negotiation);
-  setVehicleNegotiationNo(negotiation.vnnNo);
-  setShowVehicleNegotiationDropdown(false);
-  setFetchingNegotiationData(true);
-  
-  try {
-    // The selected entry already contains the restricted reference fields
-    // returned by the Loading Info reference-data endpoint.
-    const fullNegotiation = negotiation;
-    
-    if (fullNegotiation) {
-      // Debug: Log the sub-company data
-      console.log("Sub-Company from VN:", {
-        subCompanyId: fullNegotiation.subCompanyId,
-        subCompanyName: fullNegotiation.subCompanyName,
-        subCompanyCode: fullNegotiation.subCompanyCode
-      });
-      
-      setHeader({
-        ...header,
-        vehicleNegotiationNo: negotiation.vnnNo,
-        branch: fullNegotiation.branch || "",
-        branchName: fullNegotiation.branchName || "",
-        branchCode: fullNegotiation.branchCode || "",
-        subCompanyId: fullNegotiation.subCompanyId || "",
-        subCompanyName: fullNegotiation.subCompanyName || "",
-        subCompanyCode: fullNegotiation.subCompanyCode || "",
-        delivery: fullNegotiation.delivery || "",
-        billingType: fullNegotiation.billingType || "",
-        noOfLoadingPoints: fullNegotiation.loadingPoints?.toString() || "",
-        noOfDroppingPoint: fullNegotiation.dropPoints?.toString() || "",
-        collectionCharges: fullNegotiation.collectionCharges?.toString() || "",
-        cancellationCharges: fullNegotiation.cancellationCharges || "",
-        loadingCharges: fullNegotiation.loadingCharges || "",
-        otherCharges: fullNegotiation.otherCharges || "",
-      });
+  const handleSelectVehicleNegotiation = async (negotiation) => {
+    setSelectedVehicleNegotiation(negotiation);
+    setVehicleNegotiationNo(negotiation.vnnNo);
+    setShowVehicleNegotiationDropdown(false);
+    setFetchingNegotiationData(true);
 
-      // The Loading Info reference endpoint exposes only these safe vehicle
-      // placement snapshots. They are read-only after VNN selection.
-      setVehicleInfo((previous) => ({
-        ...previous,
-        vehicleNo: fullNegotiation.vehicleNo || "",
-        driverMobileNo: fullNegotiation.driverMobileNo || "",
-      }));
+    try {
+      // The selected entry already contains the restricted reference fields
+      // returned by the Loading Info reference-data endpoint.
+      const fullNegotiation = negotiation;
 
-      if (Array.isArray(fullNegotiation.orders) && fullNegotiation.orders.length > 0) {
-        setOrderRows(fullNegotiation.orders.map((order) => ({
-          _id: uid(),
-          orderNo: order.orderNo || '',
-          partyName: order.partyName || fullNegotiation.customerName || '',
-          plantCode: order.plantCode || '',
-          plantCodeValue: order.plantCodeValue || '',
-          plantName: order.plantName || '',
-          orderType: order.orderType || '',
-          pinCode: order.pinCode || '',
-          taluka: order.talukaName || order.taluka || '',
-          talukaName: order.talukaName || order.taluka || '',
-          district: order.districtName || order.district || '',
-          districtName: order.districtName || order.district || '',
-          state: order.stateName || order.state || '',
-          stateName: order.stateName || order.state || '',
-          from: order.from || '',
-          fromName: order.fromName || order.from || '',
-          fromState: order.fromState || '',
-          to: order.to || '',
-          toName: order.toName || order.to || '',
-          weight: order.weight?.toString() || '',
-          collectionCharges: order.collectionCharges?.toString() || '',
-          cancellationCharges: order.cancellationCharges || 'Nil',
-          loadingCharges: order.loadingCharges || 'Nil',
-          otherCharges: order.otherCharges?.toString() || '',
-          localStatus: order.localStatus || 'unknown',
-          localStatusLabel: order.localStatusLabel || 'Unknown',
-          subCompanyName: fullNegotiation.subCompanyName || '',
-          subCompanyCode: fullNegotiation.subCompanyCode || '',
-        })));
+      if (fullNegotiation) {
+        // Debug: Log the sub-company data
+        console.log("Sub-Company from VN:", {
+          subCompanyId: fullNegotiation.subCompanyId,
+          subCompanyName: fullNegotiation.subCompanyName,
+          subCompanyCode: fullNegotiation.subCompanyCode
+        });
+
+        setHeader({
+          ...header,
+          vehicleNegotiationNo: negotiation.vnnNo,
+          branch: fullNegotiation.branch || "",
+          branchName: fullNegotiation.branchName || "",
+          branchCode: fullNegotiation.branchCode || "",
+          subCompanyId: fullNegotiation.subCompanyId || "",
+          subCompanyName: fullNegotiation.subCompanyName || "",
+          subCompanyCode: fullNegotiation.subCompanyCode || "",
+          delivery: fullNegotiation.delivery || "",
+          billingType: fullNegotiation.billingType || "",
+          noOfLoadingPoints: fullNegotiation.loadingPoints?.toString() || "",
+          noOfDroppingPoint: fullNegotiation.dropPoints?.toString() || "",
+          collectionCharges: fullNegotiation.collectionCharges?.toString() || "",
+          cancellationCharges: fullNegotiation.cancellationCharges || "",
+          loadingCharges: fullNegotiation.loadingCharges || "",
+          otherCharges: fullNegotiation.otherCharges || "",
+        });
+
+        // The Loading Info reference endpoint exposes only these safe vehicle
+        // placement snapshots. They are read-only after VNN selection.
+        setVehicleInfo((previous) => ({
+          ...previous,
+          vehicleNo: fullNegotiation.vehicleNo || "",
+          driverMobileNo: fullNegotiation.driverMobileNo || "",
+        }));
+
+        if (Array.isArray(fullNegotiation.orders) && fullNegotiation.orders.length > 0) {
+          setOrderRows(fullNegotiation.orders.map((order) => ({
+            _id: uid(),
+            orderNo: order.orderNo || '',
+            partyName: order.partyName || fullNegotiation.customerName || '',
+            plantCode: order.plantCode || '',
+            plantCodeValue: order.plantCodeValue || '',
+            plantName: order.plantName || '',
+            orderType: order.orderType || '',
+            pinCode: order.pinCode || '',
+            taluka: order.talukaName || order.taluka || '',
+            talukaName: order.talukaName || order.taluka || '',
+            district: order.districtName || order.district || '',
+            districtName: order.districtName || order.district || '',
+            state: order.stateName || order.state || '',
+            stateName: order.stateName || order.state || '',
+            from: order.from || '',
+            fromName: order.fromName || order.from || '',
+            fromState: order.fromState || '',
+            to: order.to || '',
+            toName: order.toName || order.to || '',
+            weight: order.weight?.toString() || '',
+            collectionCharges: order.collectionCharges?.toString() || '',
+            cancellationCharges: order.cancellationCharges || 'Nil',
+            loadingCharges: order.loadingCharges || 'Nil',
+            otherCharges: order.otherCharges?.toString() || '',
+            localStatus: order.localStatus || 'unknown',
+            localStatusLabel: order.localStatusLabel || 'Unknown',
+            subCompanyName: fullNegotiation.subCompanyName || '',
+            subCompanyCode: fullNegotiation.subCompanyCode || '',
+          })));
+        }
+
+        const token = localStorage.getItem('token');
+        const packResponse = await fetch(
+          `/api/loading-panel/reference-data?vnnId=${encodeURIComponent(fullNegotiation._id)}`,
+          { headers: { Authorization: `Bearer ${token}` } },
+        );
+        const packResult = await packResponse.json();
+
+        if (!packResponse.ok || !packResult.success) {
+          throw new Error(packResult.message || "Unable to load the selected orders' pack details");
+        }
+
+        const sourcePackData = packResult.data?.packData || {};
+        setPackData(packDataForForm(sourcePackData));
+
+        // Open the pack type that contains the selected VNN's actual Order Panel
+        // rows. The form otherwise defaults to Palletization even when, for
+        // example, only Uniform Bags/Boxes was entered on the source order.
+        const selectedPack =
+          PACK_TYPES.find(({ key }) => hasMeaningfulPackRows(sourcePackData[key])) ||
+          PACK_TYPES.find(({ key }) => Array.isArray(sourcePackData[key]) && sourcePackData[key].length > 0);
+        setActivePack(selectedPack?.key || "PALLETIZATION");
       }
-
-      const token = localStorage.getItem('token');
-      const packResponse = await fetch(
-        `/api/loading-panel/reference-data?vnnId=${encodeURIComponent(fullNegotiation._id)}`,
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
-      const packResult = await packResponse.json();
-
-      if (!packResponse.ok || !packResult.success) {
-        throw new Error(packResult.message || "Unable to load the selected orders' pack details");
-      }
-
-      const sourcePackData = packResult.data?.packData || {};
-      setPackData(packDataForForm(sourcePackData));
-
-      // Open the pack type that contains the selected VNN's actual Order Panel
-      // rows. The form otherwise defaults to Palletization even when, for
-      // example, only Uniform Bags/Boxes was entered on the source order.
-      const selectedPack =
-        PACK_TYPES.find(({ key }) => hasMeaningfulPackRows(sourcePackData[key])) ||
-        PACK_TYPES.find(({ key }) => Array.isArray(sourcePackData[key]) && sourcePackData[key].length > 0);
-      setActivePack(selectedPack?.key || "PALLETIZATION");
+    } catch (error) {
+      console.error("Error loading vehicle negotiation:", error);
+      alert(`❌ Failed to load data: ${error.message}`);
+    } finally {
+      setFetchingNegotiationData(false);
     }
-  } catch (error) {
-    console.error("Error loading vehicle negotiation:", error);
-    alert(`❌ Failed to load data: ${error.message}`);
-  } finally {
-    setFetchingNegotiationData(false);
-  }
-};
+  };
 
   const handleVehicleNegotiationInputFocus = () => {
     if (!showVehicleNegotiationDropdown) {
@@ -6843,15 +6841,15 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
   /** =========================
    * ORDER ROW FUNCTIONS
    ========================= */
- const addOrderRow = () => {
-  const newRow = defaultOrderRow();
-  // Inherit sub-company from header
-  if (header.subCompanyId) {
-    newRow.subCompanyName = header.subCompanyName;
-    newRow.subCompanyCode = header.subCompanyCode;
-  }
-  setOrderRows([...orderRows, newRow]);
-};
+  const addOrderRow = () => {
+    const newRow = defaultOrderRow();
+    // Inherit sub-company from header
+    if (header.subCompanyId) {
+      newRow.subCompanyName = header.subCompanyName;
+      newRow.subCompanyCode = header.subCompanyCode;
+    }
+    setOrderRows([...orderRows, newRow]);
+  };
 
   const updateOrderRow = (rowId, key, value) => {
     setOrderRows((prev) =>
@@ -6879,7 +6877,7 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
       const updatedPack = prev[activePack].map((r) => {
         if (r._id === rowId) {
           const updatedRow = { ...r, [key]: value };
-          
+
           if (activePack === "PALLETIZATION") {
             if (key === "noOfPallets" || key === "unitPerPallets") {
               const noOfPallets = num(updatedRow.noOfPallets);
@@ -6888,25 +6886,25 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
               updatedRow.totalPkgs = totalPkgs > 0 ? String(totalPkgs) : "";
             }
           }
-          
+
           if (activePack === "UNIFORM - BAGS/BOXES") {
             if (key === "totalPkgs" || key === "packWeight") {
               const totalPkgs = num(updatedRow.totalPkgs);
               const packWeight = num(updatedRow.packWeight);
               updatedRow.wtLtr = totalPkgs * packWeight;
             }
-            
+
             if (key === "wtLtr" || key === "totalPkgs" || key === "packWeight") {
               const wtLtr = num(updatedRow.wtLtr);
               updatedRow.actualWt = wtLtr * 2 / 1000;
             }
           }
-          
+
           return updatedRow;
         }
         return r;
       });
-      
+
       return {
         ...prev,
         [activePack]: updatedPack,
@@ -6950,7 +6948,7 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
         }
         return r;
       });
-      
+
       return {
         ...prev,
         [activePack]: updatedPack,
@@ -7000,14 +6998,14 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
     input.type = 'file';
     input.accept = isVideo ? 'video/*' : 'image/*';
     input.multiple = false;
-    
+
     input.onchange = async (e) => {
       const file = e.target.files[0];
       if (!file) return;
 
       appendUploadFile(section, field, file);
     };
-    
+
     input.click();
   };
 
@@ -7016,17 +7014,17 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
     input.type = 'file';
     input.accept = isVideo ? 'video/*' : 'image/*';
     input.multiple = false;
-    
+
     input.onchange = async (e) => {
       const file = e.target.files[0];
       if (!file) return;
-      
+
       setHelperInfo(prev => ({
         ...prev,
         [field]: [...prev[field], file]
       }));
     };
-    
+
     input.click();
   };
 
@@ -7039,7 +7037,7 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
           [field]: prev[section][field].filter((_, i) => i !== index)
         }
       }));
-      
+
       if (section === 'vehicle') {
         if (field === 'rc') setVehicleInfo(prev => ({ ...prev, rcDocument: '' }));
         if (field === 'pan') setVehicleInfo(prev => ({ ...prev, panDocument: '' }));
@@ -7047,7 +7045,7 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
         if (field === 'photo') setVehicleInfo(prev => ({ ...prev, driverPhoto: '' }));
       }
     } else {
-      switch(section) {
+      switch (section) {
         case 'vehicle':
           setVehicleFiles(prev => ({
             ...prev,
@@ -7335,7 +7333,7 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
 
     try {
       const token = localStorage.getItem('token');
-      
+
       setUploading(true);
       const uploadedPaths = await uploadAllFiles(token);
       setUploading(false);
@@ -7534,11 +7532,11 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
       }
 
       const data = await res.json();
-      
+
       alert(`✅ Loading Info saved successfully!\nVehicle Arrival No: ${data.data?.vehicleArrivalNo || 'Generated'}`);
-      
+
       resetForm();
-      
+
     } catch (error) {
       console.error('Error saving loading info:', error);
       alert(`❌ Error: ${error.message}`);
@@ -7607,16 +7605,16 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
       fitnessNumber: "",
       pucNumber: ""
     });
-    
+
     setSelectedVehicle(null);
-    
+
     setPackData({
       PALLETIZATION: [defaultPackRow("PALLETIZATION")],
       "UNIFORM - BAGS/BOXES": [defaultPackRow("UNIFORM - BAGS/BOXES")],
       "LOOSE - CARGO": [defaultPackRow("LOOSE - CARGO")],
       "NON-UNIFORM - GENERAL CARGO": [defaultPackRow("NON-UNIFORM - GENERAL CARGO")],
     });
-    
+
     setExistingFiles({
       vehicle: { rc: [], pan: [], license: [], photo: [] },
       vbp: {},
@@ -7625,11 +7623,11 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
       vl: {},
       weighment: { weighSlip: [] }
     });
-    
+
     setActivePack("PALLETIZATION");
     setDeductionRows([]);
     setTotalQuantity("");
-    
+
     setVbpFiles({
       vbp1: [], vbp2: [], vbp3: [], vbp4: [],
       vbp5: [], vbp6: [], vbp7: [], videoVbp: [],
@@ -7652,27 +7650,27 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
     setWeighmentFiles({
       weighSlip: []
     });
-    
+
     setVbpUploads({ approval: "", remark: "" });
     setVftUploads({ approval: "" });
     setVotUploads({ approval: "" });
     setVlUploads({ approval: "", loadingStatus: "" });
-    setLoadedWeighment({ 
-      approval: "", 
-      loadingCharges: "", 
-      loadingStaffMunshiyana: "", 
-      otherExpenses: "", 
-      vehicleFloorTarpaulin: "", 
-      vehicleOuterTarpaulin: "" 
+    setLoadedWeighment({
+      approval: "",
+      loadingCharges: "",
+      loadingStaffMunshiyana: "",
+      otherExpenses: "",
+      vehicleFloorTarpaulin: "",
+      vehicleOuterTarpaulin: ""
     });
-    
+
     setGpsTracking({
       driverMobileNumber: "",
       isTrackingActive: false,
     });
-    
+
     setArrivalDetails({ date: new Date().toISOString().split('T')[0], time: "", outDate: "", outTime: "" });
-    
+
     if (stream) {
       stream.getTracks().forEach(track => track.stop());
       setStream(null);
@@ -7742,11 +7740,10 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
             <button
               onClick={handleSave}
               disabled={saving || uploading}
-              className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${
-                saving || uploading
-                  ? 'bg-gray-400 cursor-not-allowed' 
+              className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${saving || uploading
+                  ? 'bg-gray-400 cursor-not-allowed'
                   : 'bg-emerald-600 hover:bg-emerald-700'
-              }`}
+                }`}
             >
               {saving || uploading ? (
                 <span className="flex items-center gap-2">
@@ -7849,7 +7846,7 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
           <div className="bg-white p-4 rounded-xl border-2 border-dashed border-slate-300">
             <label className="text-xs font-bold text-slate-600">Empty Vehicle Slip</label>
             <p className="text-xs text-slate-400 mb-1">Upload vehicle slip (Image/PDF)</p>
-            <button 
+            <button
               onClick={handleVehicleSlipSelect}
               className="w-full rounded-lg bg-slate-100 px-3 py-2 text-xs font-bold text-slate-700 border border-slate-300 hover:bg-slate-200 transition flex items-center justify-center gap-2"
             >
@@ -7860,9 +7857,9 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
             </button>
             <div className="mt-2">
               {vehicleSlipFiles.map((file, idx) => (
-                <FileUploadItem 
-                  key={idx} 
-                  file={file} 
+                <FileUploadItem
+                  key={idx}
+                  file={file}
                   index={idx}
                   onRemove={removeVehicleSlip}
                   label="Vehicle Slip"
@@ -7907,7 +7904,7 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
                   </div>
                 )}
               </div>
-              
+
               {showVehicleNegotiationDropdown && !selectedVehicleNegotiation && (
                 <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
                   {vehicleNegotiation.loading ? (
@@ -7939,8 +7936,8 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
                     })
                   ) : (
                     <div className="p-3 text-center text-sm text-slate-500">
-                      {vehicleNegotiationNo.trim() ? 
-                        `No available vehicle negotiations found for "${vehicleNegotiationNo}"` : 
+                      {vehicleNegotiationNo.trim() ?
+                        `No available vehicle negotiations found for "${vehicleNegotiationNo}"` :
                         "No vehicle negotiations available"
                       }
                     </div>
@@ -7956,9 +7953,8 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
                 type="text"
                 value={vehicleInfo.vehicleNo}
                 onChange={(e) => setVehicleInfo({ ...vehicleInfo, vehicleNo: e.target.value })}
-                className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 ${
-                  selectedVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-                }`}
+                className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 ${selectedVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+                  }`}
                 placeholder="Enter vehicle number"
                 readOnly={!!selectedVehicleNegotiation}
               />
@@ -7973,9 +7969,8 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
                 type="text"
                 value={vehicleInfo.driverMobileNo}
                 onChange={(e) => setVehicleInfo({ ...vehicleInfo, driverMobileNo: e.target.value })}
-                className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 ${
-                  selectedVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-                }`}
+                className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 ${selectedVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+                  }`}
                 placeholder="Enter mobile number"
                 readOnly={!!selectedVehicleNegotiation}
               />
@@ -7989,8 +7984,8 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
               <SearchableDropdown
                 items={branches}
                 selectedId={header.branch}
-                onSelect={(branch) => setHeader({ 
-                  ...header, 
+                onSelect={(branch) => setHeader({
+                  ...header,
                   branch: branch?._id || '',
                   branchName: branch?.name || '',
                   branchCode: branch?.code || ''
@@ -8003,54 +7998,54 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
             </div>
 
             {/* Sub-Company Dropdown */}
-          {/* Sub-Company Dropdown */}
-<div className="col-span-12 md:col-span-2">
-  <label className="text-xs font-bold text-slate-600">Sub-Company</label>
-  {selectedVehicleNegotiation ? (
-    <div className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
-      {header.subCompanyName || 'No sub-company assigned'}
-      {header.subCompanyCode && (
-        <span className="text-xs text-gray-500 ml-1">({header.subCompanyCode})</span>
-      )}
-    </div>
-  ) : (
-    <select
-      value={header.subCompanyId || ''}
-      onChange={(e) => {
-        const subCompanyId = e.target.value;
-        const selected = subCompanies.find(sc => sc._id === subCompanyId);
-        setHeader(prev => ({
-          ...prev,
-          subCompanyId: subCompanyId,
-          subCompanyName: selected?.name || '',
-          subCompanyCode: selected?.code || ''
-        }));
-        // Also update orders with sub-company if needed
-        setOrderRows(prevOrders => 
-          prevOrders.map(order => ({
-            ...order,
-            subCompanyName: selected?.name || '',
-            subCompanyCode: selected?.code || ''
-          }))
-        );
-      }}
-      className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
-    >
-      <option value="">Select Sub-Company</option>
-      {subCompanies.map((sc) => (
-        <option key={sc._id} value={sc._id}>
-          {sc.name} ({sc.code})
-        </option>
-      ))}
-    </select>
-  )}
-  {selectedVehicleNegotiation && header.subCompanyName && (
-    <div className="text-xs text-green-600 mt-0.5">✓ Auto-filled from negotiation</div>
-  )}
-  {!selectedVehicleNegotiation && header.subCompanyName && (
-    <div className="text-xs text-blue-600 mt-0.5">✓ Selected: {header.subCompanyName} ({header.subCompanyCode})</div>
-  )}
-</div>
+            {/* Sub-Company Dropdown */}
+            <div className="col-span-12 md:col-span-2">
+              <label className="text-xs font-bold text-slate-600">Sub-Company</label>
+              {selectedVehicleNegotiation ? (
+                <div className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                  {header.subCompanyName || 'No sub-company assigned'}
+                  {header.subCompanyCode && (
+                    <span className="text-xs text-gray-500 ml-1">({header.subCompanyCode})</span>
+                  )}
+                </div>
+              ) : (
+                <select
+                  value={header.subCompanyId || ''}
+                  onChange={(e) => {
+                    const subCompanyId = e.target.value;
+                    const selected = subCompanies.find(sc => sc._id === subCompanyId);
+                    setHeader(prev => ({
+                      ...prev,
+                      subCompanyId: subCompanyId,
+                      subCompanyName: selected?.name || '',
+                      subCompanyCode: selected?.code || ''
+                    }));
+                    // Also update orders with sub-company if needed
+                    setOrderRows(prevOrders =>
+                      prevOrders.map(order => ({
+                        ...order,
+                        subCompanyName: selected?.name || '',
+                        subCompanyCode: selected?.code || ''
+                      }))
+                    );
+                  }}
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                >
+                  <option value="">Select Sub-Company</option>
+                  {subCompanies.map((sc) => (
+                    <option key={sc._id} value={sc._id}>
+                      {sc.name} ({sc.code})
+                    </option>
+                  ))}
+                </select>
+              )}
+              {selectedVehicleNegotiation && header.subCompanyName && (
+                <div className="text-xs text-green-600 mt-0.5">✓ Auto-filled from negotiation</div>
+              )}
+              {!selectedVehicleNegotiation && header.subCompanyName && (
+                <div className="text-xs text-blue-600 mt-0.5">✓ Selected: {header.subCompanyName} ({header.subCompanyCode})</div>
+              )}
+            </div>
 
             <div className="col-span-12 md:col-span-2">
               <label className="text-xs font-bold text-slate-600">Date</label>
@@ -8059,9 +8054,8 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
                 value={header.date}
                 onChange={(e) => setHeader({ ...header, date: e.target.value })}
                 readOnly={!!selectedVehicleNegotiation}
-                className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 ${
-                  selectedVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-                }`}
+                className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 ${selectedVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+                  }`}
               />
             </div>
 
@@ -8077,7 +8071,7 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
 
             <div className="col-span-12 md:col-span-2">
               <label className="text-xs font-bold text-slate-600">Driving licence </label>
-              <button 
+              <button
                 onClick={() => handleFileSelect('vehicle', 'aadhar')}
                 className="mt-1 w-full rounded-lg bg-purple-50 px-3 py-2 text-xs font-bold text-purple-700 border border-purple-200 hover:bg-purple-100 transition flex items-center justify-center gap-2"
               >
@@ -8087,9 +8081,9 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
                 {vehicleFiles.aadhar.length > 0 ? `✓ ${vehicleFiles.aadhar.length} file(s)` : 'Upload Driving License'}
               </button>
               {vehicleFiles.aadhar.map((file, idx) => (
-                <FileUploadItem 
-                  key={idx} 
-                  file={file} 
+                <FileUploadItem
+                  key={idx}
+                  file={file}
                   index={idx}
                   onRemove={() => removeFile('vehicle', 'aadhar', idx)}
                   label="Driving License"
@@ -8124,7 +8118,7 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
                       onChange={(e) => setGpsTracking({ ...gpsTracking, driverMobileNumber: e.target.value })}
                       className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500"
                     />
-                    <button 
+                    <button
                       onClick={handleActivateTracking}
                       className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700 whitespace-nowrap"
                     >
@@ -8165,9 +8159,9 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
                     <div className="mt-3">
                       <p className="text-xs font-bold text-slate-600 mb-2">Captured Photos:</p>
                       {vehicleFiles.photo.map((file, idx) => (
-                        <FileUploadItem 
-                          key={idx} 
-                          file={file} 
+                        <FileUploadItem
+                          key={idx}
+                          file={file}
                           index={idx}
                           onRemove={() => removeFile('vehicle', 'photo', idx)}
                           label="Driver Photo"
@@ -8229,9 +8223,8 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
                             value={header[col.key] || ""}
                             onChange={(e) => setHeader(prev => ({ ...prev, [col.key]: e.target.value }))}
                             readOnly={!!selectedVehicleNegotiation}
-                            className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 ${
-                              selectedVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-                            }`}
+                            className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 ${selectedVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+                              }`}
                             placeholder={`Enter ${col.label}`}
                           />
                         )}
@@ -8246,17 +8239,16 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
 
         {/* Order Details Card */}
         <div className="mt-4">
-          <Card 
+          <Card
             title="Order Details"
             right={
               <button
                 onClick={addOrderRow}
                 disabled={!!selectedVehicleNegotiation}
-                className={`rounded-xl px-4 py-1.5 text-xs font-bold text-white transition ${
-                  selectedVehicleNegotiation 
-                    ? 'bg-gray-400 cursor-not-allowed' 
+                className={`rounded-xl px-4 py-1.5 text-xs font-bold text-white transition ${selectedVehicleNegotiation
+                    ? 'bg-gray-400 cursor-not-allowed'
                     : 'bg-yellow-600 hover:bg-yellow-700'
-                }`}
+                  }`}
               >
                 + Add Order
               </button>
@@ -8294,9 +8286,8 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
                           value={row.orderNo || ""}
                           onChange={(e) => updateOrderRow(row._id, 'orderNo', e.target.value)}
                           readOnly={!!selectedVehicleNegotiation}
-                          className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-emerald-500 ${
-                            selectedVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-                          }`}
+                          className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-emerald-500 ${selectedVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+                            }`}
                           placeholder="Order No"
                         />
                       </td>
@@ -8306,9 +8297,8 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
                           value={row.partyName || ""}
                           onChange={(e) => updateOrderRow(row._id, 'partyName', e.target.value)}
                           readOnly={!!selectedVehicleNegotiation}
-                          className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-emerald-500 ${
-                            selectedVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-                          }`}
+                          className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-emerald-500 ${selectedVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+                            }`}
                           placeholder="Party Name"
                         />
                       </td>
@@ -8337,9 +8327,8 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
                           value={row.orderType || ""}
                           onChange={(e) => updateOrderRow(row._id, 'orderType', e.target.value)}
                           disabled={!!selectedVehicleNegotiation}
-                          className={`w-full rounded-lg border border-slate-200 px-2 py-2 text-sm outline-none focus:border-emerald-500 ${
-                            selectedVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-                          }`}
+                          className={`w-full rounded-lg border border-slate-200 px-2 py-2 text-sm outline-none focus:border-emerald-500 ${selectedVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+                            }`}
                         >
                           <option value="">Select</option>
                           {ORDER_TYPES.map((opt) => (
@@ -8353,9 +8342,8 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
                           value={row.pinCode || ""}
                           onChange={(e) => updateOrderRow(row._id, 'pinCode', e.target.value)}
                           readOnly={!!selectedVehicleNegotiation}
-                          className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-emerald-500 ${
-                            selectedVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-                          }`}
+                          className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-emerald-500 ${selectedVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+                            }`}
                           placeholder="Pin Code"
                         />
                       </td>
@@ -8365,9 +8353,8 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
                           value={row.fromName || row.from || ""}
                           onChange={(e) => updateOrderRow(row._id, 'fromName', e.target.value)}
                           readOnly={!!selectedVehicleNegotiation}
-                          className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-emerald-500 ${
-                            selectedVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-                          }`}
+                          className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-emerald-500 ${selectedVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+                            }`}
                           placeholder="From"
                         />
                       </td>
@@ -8377,9 +8364,8 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
                           value={row.toName || row.to || ""}
                           onChange={(e) => updateOrderRow(row._id, 'toName', e.target.value)}
                           readOnly={!!selectedVehicleNegotiation}
-                          className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-emerald-500 ${
-                            selectedVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-                          }`}
+                          className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-emerald-500 ${selectedVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+                            }`}
                           placeholder="To"
                         />
                       </td>
@@ -8389,9 +8375,8 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
                           value={row.talukaName || row.taluka || ""}
                           onChange={(e) => updateOrderRow(row._id, 'talukaName', e.target.value)}
                           readOnly={!!selectedVehicleNegotiation}
-                          className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-emerald-500 ${
-                            selectedVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-                          }`}
+                          className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-emerald-500 ${selectedVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+                            }`}
                           placeholder="Taluka"
                         />
                       </td>
@@ -8401,9 +8386,8 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
                           value={row.districtName || row.district || ""}
                           onChange={(e) => updateOrderRow(row._id, 'districtName', e.target.value)}
                           readOnly={!!selectedVehicleNegotiation}
-                          className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-emerald-500 ${
-                            selectedVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-                          }`}
+                          className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-emerald-500 ${selectedVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+                            }`}
                           placeholder="District"
                         />
                       </td>
@@ -8413,19 +8397,17 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
                           value={row.stateName || row.state || ""}
                           onChange={(e) => updateOrderRow(row._id, 'stateName', e.target.value)}
                           readOnly={!!selectedVehicleNegotiation}
-                          className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-emerald-500 ${
-                            selectedVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-                          }`}
+                          className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-emerald-500 ${selectedVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+                            }`}
                           placeholder="State"
                         />
                       </td>
                       <td className="border border-yellow-300 px-2 py-2 text-center">
                         {row.fromState && row.stateName ? (
-                          <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${
-                            row.fromState.trim().toUpperCase() === row.stateName.trim().toUpperCase()
+                          <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${row.fromState.trim().toUpperCase() === row.stateName.trim().toUpperCase()
                               ? 'bg-green-100 text-green-800 border border-green-300'
                               : 'bg-red-100 text-red-800 border border-red-300'
-                          }`}>
+                            }`}>
                             {row.fromState.trim().toUpperCase() === row.stateName.trim().toUpperCase() ? '✅ Local' : '❌ Not Local'}
                           </span>
                         ) : (
@@ -8438,9 +8420,8 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
                           value={row.weight || ""}
                           onChange={(e) => updateOrderRow(row._id, 'weight', e.target.value)}
                           readOnly={!!selectedVehicleNegotiation}
-                          className={`w-20 rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-emerald-500 ${
-                            selectedVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-                          }`}
+                          className={`w-20 rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-emerald-500 ${selectedVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+                            }`}
                           placeholder="Weight"
                         />
                       </td>
@@ -8450,9 +8431,8 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
                           value={row.collectionCharges || ""}
                           onChange={(e) => updateOrderRow(row._id, 'collectionCharges', e.target.value)}
                           readOnly={!!selectedVehicleNegotiation}
-                          className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-emerald-500 ${
-                            selectedVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-                          }`}
+                          className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-emerald-500 ${selectedVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+                            }`}
                           placeholder="Collection Charges"
                         />
                       </td>
@@ -8462,9 +8442,8 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
                           value={row.cancellationCharges || ""}
                           onChange={(e) => updateOrderRow(row._id, 'cancellationCharges', e.target.value)}
                           readOnly={!!selectedVehicleNegotiation}
-                          className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-emerald-500 ${
-                            selectedVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-                          }`}
+                          className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-emerald-500 ${selectedVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+                            }`}
                           placeholder="Cancellation Charges"
                         />
                       </td>
@@ -8474,9 +8453,8 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
                           value={row.loadingCharges || ""}
                           onChange={(e) => updateOrderRow(row._id, 'loadingCharges', e.target.value)}
                           readOnly={!!selectedVehicleNegotiation}
-                          className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-emerald-500 ${
-                            selectedVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-                          }`}
+                          className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-emerald-500 ${selectedVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+                            }`}
                           placeholder="Loading Charges"
                         />
                       </td>
@@ -8486,9 +8464,8 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
                           value={row.otherCharges || ""}
                           onChange={(e) => updateOrderRow(row._id, 'otherCharges', e.target.value)}
                           readOnly={!!selectedVehicleNegotiation}
-                          className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-emerald-500 ${
-                            selectedVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-                          }`}
+                          className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-emerald-500 ${selectedVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+                            }`}
                           placeholder="Other Charges"
                         />
                       </td>
@@ -8496,11 +8473,10 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
                         <button
                           onClick={() => removeOrderRow(row._id)}
                           disabled={!!selectedVehicleNegotiation}
-                          className={`rounded-lg px-3 py-1.5 text-xs font-bold text-white ${
-                            selectedVehicleNegotiation 
-                              ? 'bg-gray-400 cursor-not-allowed' 
+                          className={`rounded-lg px-3 py-1.5 text-xs font-bold text-white ${selectedVehicleNegotiation
+                              ? 'bg-gray-400 cursor-not-allowed'
                               : 'bg-red-500 hover:bg-red-600'
-                          }`}
+                            }`}
                         >
                           Remove
                         </button>
@@ -8591,7 +8567,7 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
                         >
                           + Create New Vehicle
                         </button>
-                        
+
                         {selectedVehicle && (
                           <div className="mt-2 p-2 bg-green-50 rounded-lg border border-green-200">
                             <div className="text-xs font-medium text-green-800">Selected Vehicle:</div>
@@ -8603,7 +8579,7 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
                         <div className="pt-2 border-t border-slate-200">
                           <label className="text-xs font-bold text-slate-600">Vehicle Photos</label>
                           <p className="text-xs text-slate-400 mb-1">Upload vehicle photos (Max 10)</p>
-                          <button 
+                          <button
                             onClick={handleVehiclePhotoSelect}
                             className="w-full rounded-lg bg-cyan-50 px-3 py-2 text-xs font-bold text-cyan-700 border border-cyan-200 hover:bg-cyan-100 transition flex items-center justify-center gap-2"
                           >
@@ -8615,9 +8591,9 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
                           </button>
                           <div className="mt-2 max-h-40 overflow-y-auto">
                             {vehiclePhotoFiles.map((file, idx) => (
-                              <FileUploadItem 
-                                key={idx} 
-                                file={file} 
+                              <FileUploadItem
+                                key={idx}
+                                file={file}
                                 index={idx}
                                 onRemove={removeVehiclePhoto}
                                 label={`Vehicle Photo ${idx + 1}`}
@@ -8626,7 +8602,7 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
                           </div>
                           {vehiclePhotoFiles.length > 0 && (
                             <div className="w-full bg-slate-200 rounded-full h-1.5 mt-2">
-                              <div 
+                              <div
                                 className="bg-cyan-500 h-1.5 rounded-full transition-all"
                                 style={{ width: `${(vehiclePhotoFiles.length / 10) * 100}%` }}
                               />
@@ -8807,7 +8783,7 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
                                 </div>
                               ))}
                               {vehicleFiles.rc.length === 0 && (!existingFiles.vehicle?.rc || existingFiles.vehicle.rc.length === 0) && (
-                                <button 
+                                <button
                                   onClick={() => handleFileSelect('vehicle', 'rc')}
                                   className="w-full rounded-lg bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700 border border-blue-200 hover:bg-blue-100 transition flex items-center justify-center gap-2"
                                 >
@@ -8819,7 +8795,7 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
                               )}
                             </div>
                           </div>
-                          
+
                           <div>
                             <label className="text-xs font-bold text-slate-600">Owner Pan Doc</label>
                             <div className="mt-1 space-y-2">
@@ -8877,7 +8853,7 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
                                 </div>
                               ))}
                               {vehicleFiles.pan.length === 0 && (!existingFiles.vehicle?.pan || existingFiles.vehicle.pan.length === 0) && (
-                                <button 
+                                <button
                                   onClick={() => handleFileSelect('vehicle', 'pan')}
                                   className="w-full rounded-lg bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700 border border-blue-200 hover:bg-blue-100 transition flex items-center justify-center gap-2"
                                 >
@@ -8941,7 +8917,7 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
                               className="mt-1 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500"
                               placeholder="License No"
                             />
-                            <button 
+                            <button
                               onClick={() => handleFileSelect('vehicle', 'license')}
                               className="mt-1 rounded-lg bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700 border border-blue-200 hover:bg-blue-100 whitespace-nowrap"
                             >
@@ -8949,9 +8925,9 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
                             </button>
                           </div>
                           {vehicleFiles.license.map((file, idx) => (
-                            <FileUploadItem 
-                              key={idx} 
-                              file={file} 
+                            <FileUploadItem
+                              key={idx}
+                              file={file}
                               index={idx}
                               onRemove={() => removeFile('vehicle', 'license', idx)}
                               label="License"
@@ -9004,16 +8980,16 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
 
                             <div>
                               <label className="text-xs font-bold text-slate-600">Helper Photo</label>
-                              <button 
+                              <button
                                 onClick={() => handleHelperFileSelect('photo')}
                                 className="mt-1 w-full rounded-lg bg-green-50 px-3 py-2 text-xs font-bold text-green-700 border border-green-200 hover:bg-green-100"
                               >
                                 {helperInfo.photo.length > 0 ? `✓ ${helperInfo.photo.length} file(s)` : '+ Upload Photo'}
                               </button>
                               {helperInfo.photo.map((file, idx) => (
-                                <FileUploadItem 
-                                  key={idx} 
-                                  file={file} 
+                                <FileUploadItem
+                                  key={idx}
+                                  file={file}
                                   index={idx}
                                   onRemove={() => removeFile('helper', 'photo', idx)}
                                   label="Helper Photo"
@@ -9023,16 +8999,16 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
 
                             <div>
                               <label className="text-xs font-bold text-slate-600">Helper Aadhar Photo</label>
-                              <button 
+                              <button
                                 onClick={() => handleHelperFileSelect('aadharPhoto')}
                                 className="mt-1 w-full rounded-lg bg-purple-50 px-3 py-2 text-xs font-bold text-purple-700 border border-purple-200 hover:bg-purple-100"
                               >
                                 {helperInfo.aadharPhoto.length > 0 ? `✓ ${helperInfo.aadharPhoto.length} file(s)` : '+ Upload Aadhar'}
                               </button>
                               {helperInfo.aadharPhoto.map((file, idx) => (
-                                <FileUploadItem 
-                                  key={idx} 
-                                  file={file} 
+                                <FileUploadItem
+                                  key={idx}
+                                  file={file}
                                   index={idx}
                                   onRemove={() => removeFile('helper', 'aadharPhoto', idx)}
                                   label="Helper Aadhar"
@@ -9097,7 +9073,7 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
               </div>
               {/* Remove the Add Row button */}
             </div>
-            
+
             <PackTypeTable
               key={activePack}
               packType={activePack}
@@ -9117,25 +9093,24 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
               <div className="col-span-12">
                 <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-200">
                   <h3 className="text-sm font-bold text-slate-800 mb-3">Vehicle - Body Pictures (VBP)</h3>
-                  
+
                   <div className="grid grid-cols-8 gap-3">
-                    {[1,2,3,4,5,6,7].map((num) => (
+                    {[1, 2, 3, 4, 5, 6, 7].map((num) => (
                       <div key={num} className="col-span-1">
                         <div className="text-xs font-bold text-slate-600 mb-1">VBP - {num}</div>
-                        <button 
+                        <button
                           onClick={() => openImageMediaPicker('vbp', `vbp${num}`, `VBP-${num}`)}
-                          className={`w-full rounded-lg px-2 py-3 text-xs font-bold border hover:bg-opacity-80 ${
-                            vbpFiles[`vbp${num}`].length > 0 
-                              ? 'bg-green-50 text-green-700 border-green-200' 
+                          className={`w-full rounded-lg px-2 py-3 text-xs font-bold border hover:bg-opacity-80 ${vbpFiles[`vbp${num}`].length > 0
+                              ? 'bg-green-50 text-green-700 border-green-200'
                               : 'bg-blue-50 text-blue-700 border-blue-200'
-                          }`}
+                            }`}
                         >
                           {vbpFiles[`vbp${num}`].length > 0 ? `✓ ${vbpFiles[`vbp${num}`].length} file(s)` : 'Select'}
                         </button>
                         {vbpFiles[`vbp${num}`].map((file, idx) => (
-                          <FileUploadItem 
-                            key={idx} 
-                            file={file} 
+                          <FileUploadItem
+                            key={idx}
+                            file={file}
                             index={idx}
                             onRemove={() => removeFile('vbp', `vbp${num}`, idx)}
                             label={`VBP-${num}`}
@@ -9145,20 +9120,19 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
                     ))}
                     <div className="col-span-1">
                       <div className="text-xs font-bold text-slate-600 mb-1">Video - VBP</div>
-                      <button 
+                      <button
                         onClick={() => handleFileSelect('vbp', 'videoVbp', true)}
-                        className={`w-full rounded-lg px-2 py-3 text-xs font-bold border hover:bg-opacity-80 ${
-                          vbpFiles.videoVbp.length > 0 
-                            ? 'bg-green-50 text-green-700 border-green-200' 
+                        className={`w-full rounded-lg px-2 py-3 text-xs font-bold border hover:bg-opacity-80 ${vbpFiles.videoVbp.length > 0
+                            ? 'bg-green-50 text-green-700 border-green-200'
                             : 'bg-purple-50 text-purple-700 border-purple-200'
-                        }`}
+                          }`}
                       >
                         {vbpFiles.videoVbp.length > 0 ? `✓ ${vbpFiles.videoVbp.length} file(s)` : 'Select'}
                       </button>
                       {vbpFiles.videoVbp.map((file, idx) => (
-                        <FileUploadItem 
-                          key={idx} 
-                          file={file} 
+                        <FileUploadItem
+                          key={idx}
+                          file={file}
                           index={idx}
                           onRemove={() => removeFile('vbp', 'videoVbp', idx)}
                           label="Video"
@@ -9196,23 +9170,22 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
           <Card title="VFT - PANEL (Vehicle Floor Tarpaulin Pictures)">
             <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
               <div className="grid grid-cols-8 gap-3">
-                {[1,2,3,4,5,6,7].map((num) => (
+                {[1, 2, 3, 4, 5, 6, 7].map((num) => (
                   <div key={num} className="col-span-1">
                     <div className="text-xs font-bold text-slate-600 mb-1">VFT - {num}</div>
-                    <button 
+                    <button
                       onClick={() => openImageMediaPicker('vft', `vft${num}`, `VFT-${num}`)}
-                      className={`w-full rounded-lg px-2 py-3 text-xs font-bold border hover:bg-opacity-80 ${
-                        vftFiles[`vft${num}`].length > 0 
-                          ? 'bg-green-50 text-green-700 border-green-200' 
+                      className={`w-full rounded-lg px-2 py-3 text-xs font-bold border hover:bg-opacity-80 ${vftFiles[`vft${num}`].length > 0
+                          ? 'bg-green-50 text-green-700 border-green-200'
                           : 'bg-blue-50 text-blue-700 border-blue-200'
-                      }`}
+                        }`}
                     >
                       {vftFiles[`vft${num}`].length > 0 ? `✓ ${vftFiles[`vft${num}`].length} file(s)` : 'Select'}
                     </button>
                     {vftFiles[`vft${num}`].map((file, idx) => (
-                      <FileUploadItem 
-                        key={idx} 
-                        file={file} 
+                      <FileUploadItem
+                        key={idx}
+                        file={file}
                         index={idx}
                         onRemove={() => removeFile('vft', `vft${num}`, idx)}
                         label={`VFT-${num}`}
@@ -9222,20 +9195,19 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
                 ))}
                 <div className="col-span-1">
                   <div className="text-xs font-bold text-slate-600 mb-1">Video - VFT</div>
-                  <button 
+                  <button
                     onClick={() => handleFileSelect('vft', 'videoVft', true)}
-                    className={`w-full rounded-lg px-2 py-3 text-xs font-bold border hover:bg-opacity-80 ${
-                      vftFiles.videoVft.length > 0 
-                        ? 'bg-green-50 text-green-700 border-green-200' 
+                    className={`w-full rounded-lg px-2 py-3 text-xs font-bold border hover:bg-opacity-80 ${vftFiles.videoVft.length > 0
+                        ? 'bg-green-50 text-green-700 border-green-200'
                         : 'bg-purple-50 text-purple-700 border-purple-200'
-                    }`}
+                      }`}
                   >
                     {vftFiles.videoVft.length > 0 ? `✓ ${vftFiles.videoVft.length} file(s)` : 'Select'}
                   </button>
                   {vftFiles.videoVft.map((file, idx) => (
-                    <FileUploadItem 
-                      key={idx} 
-                      file={file} 
+                    <FileUploadItem
+                      key={idx}
+                      file={file}
                       index={idx}
                       onRemove={() => removeFile('vft', 'videoVft', idx)}
                       label="Video"
@@ -9287,14 +9259,14 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
                   )}
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-12 gap-4">
                 {vlFields.map((fieldNum) => {
                   const currentCount = vlFiles[`vl${fieldNum}`]?.length || 0;
                   const totalCount = getTotalVlPhotosCount();
                   const isMaxReached = totalCount >= 25;
                   const isDisabled = isMaxReached && currentCount === 0;
-                  
+
                   return (
                     <div key={fieldNum} className="col-span-12 lg:col-span-6">
                       <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
@@ -9319,30 +9291,29 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
                             )}
                           </div>
                         </div>
-                        
-                        <button 
+
+                        <button
                           onClick={() => openImageMediaPicker('vl', `vl${fieldNum}`, `VL(stack)-${fieldNum}`)}
                           disabled={isDisabled}
-                          className={`w-full rounded-lg py-2.5 text-sm font-bold border transition-all ${
-                            currentCount > 0 
-                              ? 'bg-green-50 text-green-700 border-green-300 hover:bg-green-100' 
-                              : isDisabled 
+                          className={`w-full rounded-lg py-2.5 text-sm font-bold border transition-all ${currentCount > 0
+                              ? 'bg-green-50 text-green-700 border-green-300 hover:bg-green-100'
+                              : isDisabled
                                 ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
                                 : 'bg-blue-50 text-blue-700 border-blue-300 hover:bg-blue-100'
-                          }`}
+                            }`}
                           title={isDisabled ? "Maximum 25 photos reached" : `Upload VL(stack)-${fieldNum} photos`}
                         >
-                          {currentCount > 0 
-                            ? `📸 + Add More Photos (${currentCount} uploaded)` 
-                            : isDisabled 
-                              ? 'Max Reached' 
+                          {currentCount > 0
+                            ? `📸 + Add More Photos (${currentCount} uploaded)`
+                            : isDisabled
+                              ? 'Max Reached'
                               : '+ Select Photos'}
                         </button>
 
                         {currentCount > 0 && (
                           <div className="mt-2">
                             <div className="w-full bg-slate-200 rounded-full h-1.5">
-                              <div 
+                              <div
                                 className="bg-green-500 h-1.5 rounded-full transition-all"
                                 style={{ width: `${(currentCount / 25) * 100}%` }}
                               />
@@ -9359,16 +9330,16 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
                               const height = parseFloat(vlPhotoDetails[`vl${fieldNum}_${fileIdx}_height`]) || 0;
                               const nose = parseFloat(vlPhotoDetails[`vl${fieldNum}_${fileIdx}_nose`]) || 0;
                               const total = (width * height) + nose;
-                              
+
                               return (
                                 <div key={fileIdx} className="bg-slate-50 rounded-lg p-3 border border-slate-200">
-                                  <FileUploadItem 
-                                    file={file} 
+                                  <FileUploadItem
+                                    file={file}
                                     index={fileIdx}
                                     onRemove={() => removeFile('vl', `vl${fieldNum}`, fileIdx)}
                                     label={`VL(stack)-${fieldNum}`}
                                   />
-                                  
+
                                   <div className="grid grid-cols-4 gap-2 mt-2">
                                     <div>
                                       <label className="text-xs font-bold text-slate-600">Width (ft)</label>
@@ -9446,23 +9417,22 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
                       <div className="text-xs font-bold text-purple-700 mb-1">Video - VL</div>
                       <p className="text-xs text-slate-500">Upload video of vehicle loading (Optional)</p>
                     </div>
-                    <button 
+                    <button
                       onClick={() => handleFileSelect('vl', 'videoVl', true)}
-                      className={`rounded-lg px-4 py-2 text-xs font-bold border hover:bg-opacity-80 ${
-                        vlFiles.videoVl && vlFiles.videoVl.length > 0
-                          ? 'bg-green-50 text-green-700 border-green-300' 
+                      className={`rounded-lg px-4 py-2 text-xs font-bold border hover:bg-opacity-80 ${vlFiles.videoVl && vlFiles.videoVl.length > 0
+                          ? 'bg-green-50 text-green-700 border-green-300'
                           : 'bg-purple-100 text-purple-700 border-purple-300 hover:bg-purple-200'
-                      }`}
+                        }`}
                     >
-                      {vlFiles.videoVl && vlFiles.videoVl.length > 0 
-                        ? `✓ ${vlFiles.videoVl.length} video(s)` 
+                      {vlFiles.videoVl && vlFiles.videoVl.length > 0
+                        ? `✓ ${vlFiles.videoVl.length} video(s)`
                         : '+ Upload Video'}
                     </button>
                   </div>
                   {vlFiles.videoVl && vlFiles.videoVl.map((file, idx) => (
-                    <FileUploadItem 
-                      key={idx} 
-                      file={file} 
+                    <FileUploadItem
+                      key={idx}
+                      file={file}
                       index={idx}
                       onRemove={() => removeFile('vl', 'videoVl', idx)}
                       label="Video"
@@ -9477,14 +9447,13 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
                   <span className="font-bold">{getTotalVlPhotosCount()} / 25 photos</span>
                 </div>
                 <div className="w-full bg-slate-200 rounded-full h-2.5">
-                  <div 
-                    className={`h-2.5 rounded-full transition-all duration-300 ${
-                      getTotalVlPhotosCount() >= 5 
-                        ? 'bg-green-500' 
+                  <div
+                    className={`h-2.5 rounded-full transition-all duration-300 ${getTotalVlPhotosCount() >= 5
+                        ? 'bg-green-500'
                         : 'bg-yellow-500'
-                    }`}
-                    style={{ 
-                      width: `${Math.min(100, (getTotalVlPhotosCount() / 25) * 100)}%` 
+                      }`}
+                    style={{
+                      width: `${Math.min(100, (getTotalVlPhotosCount() / 25) * 100)}%`
                     }}
                   />
                 </div>
@@ -9506,7 +9475,7 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
                   {vlUploads.loadingStatus || 'Not Set'}
                 </span>
               </div>
-              
+
               {getTotalVlPhotosCount() > 0 && getTotalVlPhotosCount() < 5 && (
                 <div className="mt-3 p-3 bg-red-50 rounded-lg border border-red-200">
                   <p className="text-xs text-red-600 flex items-center gap-2">
@@ -9517,7 +9486,7 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
                   </p>
                 </div>
               )}
-              
+
               {getTotalVlPhotosCount() >= 5 && (
                 <div className="mt-3 p-3 bg-green-50 rounded-lg border border-green-200">
                   <p className="text-xs text-green-600 flex items-center gap-2">
@@ -9537,23 +9506,22 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
           <Card title="VOT - PANEL (Vehicle Outer Tarpaulin Pictures)">
             <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-200">
               <div className="grid grid-cols-8 gap-3">
-                {[1,2,3,4,5,6,7].map((num) => (
+                {[1, 2, 3, 4, 5, 6, 7].map((num) => (
                   <div key={num} className="col-span-1">
                     <div className="text-xs font-bold text-slate-600 mb-1">VOT - {num}</div>
-                    <button 
+                    <button
                       onClick={() => openImageMediaPicker('vot', `vot${num}`, `VOT-${num}`)}
-                      className={`w-full rounded-lg px-2 py-3 text-xs font-bold border hover:bg-opacity-80 ${
-                        votFiles[`vot${num}`].length > 0 
-                          ? 'bg-green-50 text-green-700 border-green-200' 
+                      className={`w-full rounded-lg px-2 py-3 text-xs font-bold border hover:bg-opacity-80 ${votFiles[`vot${num}`].length > 0
+                          ? 'bg-green-50 text-green-700 border-green-200'
                           : 'bg-blue-50 text-blue-700 border-blue-200'
-                      }`}
+                        }`}
                     >
                       {votFiles[`vot${num}`].length > 0 ? `✓ ${votFiles[`vot${num}`].length} file(s)` : 'Select'}
                     </button>
                     {votFiles[`vot${num}`].map((file, idx) => (
-                      <FileUploadItem 
-                        key={idx} 
-                        file={file} 
+                      <FileUploadItem
+                        key={idx}
+                        file={file}
                         index={idx}
                         onRemove={() => removeFile('vot', `vot${num}`, idx)}
                         label={`VOT-${num}`}
@@ -9563,20 +9531,19 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
                 ))}
                 <div className="col-span-1">
                   <div className="text-xs font-bold text-slate-600 mb-1">Video - VOT</div>
-                  <button 
+                  <button
                     onClick={() => handleFileSelect('vot', 'videoVot', true)}
-                    className={`w-full rounded-lg px-2 py-3 text-xs font-bold border hover:bg-opacity-80 ${
-                      votFiles.videoVot.length > 0 
-                        ? 'bg-green-50 text-green-700 border-green-200' 
+                    className={`w-full rounded-lg px-2 py-3 text-xs font-bold border hover:bg-opacity-80 ${votFiles.videoVot.length > 0
+                        ? 'bg-green-50 text-green-700 border-green-200'
                         : 'bg-purple-50 text-purple-700 border-purple-200'
-                    }`}
+                      }`}
                   >
                     {votFiles.videoVot.length > 0 ? `✓ ${votFiles.videoVot.length} file(s)` : 'Select'}
                   </button>
                   {votFiles.videoVot.map((file, idx) => (
-                    <FileUploadItem 
-                      key={idx} 
-                      file={file} 
+                    <FileUploadItem
+                      key={idx}
+                      file={file}
                       index={idx}
                       onRemove={() => removeFile('vot', 'videoVot', idx)}
                       label="Video"
@@ -9602,31 +9569,30 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
               <div className="col-span-12 md:col-span-6">
                 <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-200 h-full">
                   <h3 className="text-sm font-bold text-slate-800 mb-3">Weighment & Approval</h3>
-                  
+
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-slate-600">Loaded Vehicle - Weigh Slip:</span>
-                      <button 
+                      <button
                         onClick={() => handleFileSelect('weighment', 'weighSlip')}
-                        className={`rounded-lg px-4 py-2 text-xs font-bold border hover:bg-opacity-80 ${
-                          weighmentFiles.weighSlip.length > 0 
-                            ? 'bg-green-50 text-green-700 border-green-200' 
+                        className={`rounded-lg px-4 py-2 text-xs font-bold border hover:bg-opacity-80 ${weighmentFiles.weighSlip.length > 0
+                            ? 'bg-green-50 text-green-700 border-green-200'
                             : 'bg-blue-50 text-blue-700 border-blue-200'
-                        }`}
+                          }`}
                       >
                         {weighmentFiles.weighSlip.length > 0 ? `✓ ${weighmentFiles.weighSlip.length} file(s)` : 'Select'}
                       </button>
                     </div>
                     {weighmentFiles.weighSlip.map((file, idx) => (
-                      <FileUploadItem 
-                        key={idx} 
-                        file={file} 
+                      <FileUploadItem
+                        key={idx}
+                        file={file}
                         index={idx}
                         onRemove={() => removeFile('weighment', 'weighSlip', idx)}
                         label="Weigh Slip"
                       />
                     ))}
-                    
+
                     <div className="flex items-center gap-3">
                       <span className="text-xs font-bold text-slate-600">Approval:</span>
                       <span className={`text-sm px-3 py-1 rounded-full ${getStatusBadge(loadedWeighment.approval)}`}>
@@ -9635,7 +9601,7 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="mt-4">
                   {/* Detention days removed */}
                 </div>
@@ -9649,7 +9615,7 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
                       Deduct at Office
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-slate-700">Loading Charges:</span>
@@ -9780,7 +9746,7 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
               <div className="col-span-12 md:col-span-4">
                 <div className="bg-white p-4 rounded-xl border border-slate-200">
                   <h3 className="text-sm font-bold text-slate-800 mb-2">Consignment Note (LR)</h3>
-                  <button 
+                  <button
                     onClick={handleGenerateLR}
                     className="w-full rounded-lg bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700"
                   >
@@ -9800,9 +9766,17 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
               <div className="col-span-12 md:col-span-4">
                 <div className="bg-white p-4 rounded-xl border border-slate-200">
                   <h3 className="text-sm font-bold text-slate-800 mb-2">Invoice</h3>
-                  <button className="w-full rounded-lg bg-purple-600 px-4 py-2 text-xs font-bold text-white hover:bg-purple-700">
+                  <button
+                    type="button"
+                    disabled
+                    title="Available once an invoice is uploaded on the LR page"
+                    className="w-full cursor-not-allowed rounded-lg bg-gray-400 px-4 py-2 text-xs font-bold text-white"
+                  >
                     View Invoice
                   </button>
+                  <p className="text-xs text-slate-500 mt-2">
+                    Save this Loading Info first. Invoices are uploaded on the LR page and will appear here per LR.
+                  </p>
                 </div>
               </div>
             </div>
@@ -9814,7 +9788,7 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
           <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-200">
             <label className="text-xs font-bold text-indigo-700">Loaded Vehicle Slip</label>
             <p className="text-xs text-slate-400 mb-1">Upload loaded vehicle slip after loading (Image/PDF)</p>
-            <button 
+            <button
               onClick={handleLoadedVehicleSlipSelect}
               className="w-full rounded-lg bg-indigo-100 px-3 py-2 text-xs font-bold text-indigo-700 border border-indigo-300 hover:bg-indigo-200 transition flex items-center justify-center gap-2"
             >
@@ -9825,9 +9799,9 @@ const handleSelectVehicleNegotiation = async (negotiation) => {
             </button>
             <div className="mt-2">
               {loadedVehicleSlipFiles.map((file, idx) => (
-                <FileUploadItem 
-                  key={idx} 
-                  file={file} 
+                <FileUploadItem
+                  key={idx}
+                  file={file}
                   index={idx}
                   onRemove={removeLoadedVehicleSlip}
                   label="Loaded Vehicle Slip"

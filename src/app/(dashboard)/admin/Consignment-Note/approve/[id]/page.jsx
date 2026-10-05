@@ -2651,7 +2651,7 @@ export default function ApproveConsignmentNote() {
         </Card>
 
         {/* ===== VEHICLE UNLOADED DATE & REMARKS (READ ONLY) ===== */}
-        <Card title="Vehicle Unloaded & Remarks - Read Only">
+        {/* <Card title="Vehicle Unloaded & Remarks - Read Only">
           <div className="grid grid-cols-12 gap-4">
             <div className="col-span-12 md:col-span-4">
               <label className="text-xs font-bold text-slate-600">Vehicle Unloaded Date</label>
@@ -2669,7 +2669,7 @@ export default function ApproveConsignmentNote() {
               </div>
             </div>
           </div>
-        </Card>
+        </Card> */}
 
         {/* ===== SUMMARY CARD ===== */}
         <Card title="Summary">

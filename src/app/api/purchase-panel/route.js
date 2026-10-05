@@ -15,19 +15,19 @@ import { activeOperatingCompanyId, companyScopeFilter } from "@/lib/companyScope
 
 function isAuthorized(user) {
   if (!user) return false;
-  
+
   // Company admins have full access
   if (user.type === "company") return true;
-  
+
   // Admin role has full access
   if (user.roles && user.roles.includes("Admin")) return true;
-  
+
   // Check module-based permissions for "Purchase Panel"
   const modules = user.modules || {};
   const moduleData = modules["Purchase Panel"];
-  
+
   if (!moduleData || !moduleData.selected) return false;
-  
+
   return true;
 }
 
@@ -35,12 +35,12 @@ function hasPermission(user, action) {
   if (!user) return false;
   if (user.type === "company") return true;
   if (user.roles && user.roles.includes("Admin")) return true;
-  
+
   const modules = user.modules || {};
   const moduleData = modules["Purchase Panel"];
-  
+
   if (!moduleData || !moduleData.selected) return false;
-  
+
   const permissions = moduleData.permissions || {};
   return permissions[action] === true;
 }
@@ -53,21 +53,21 @@ async function validateUser(req, requiredAction = null) {
     const user = verifyJWT(token);
     if (!user) return { error: "Invalid or expired token. Please login again.", status: 401 };
     try { activeOperatingCompanyId(user); } catch (error) { return { error: error.message, status: 401 }; }
-    
+
     if (!isAuthorized(user)) {
-      return { 
-        error: "Access denied. You don't have permission to access Purchase Panel.", 
-        status: 403 
+      return {
+        error: "Access denied. You don't have permission to access Purchase Panel.",
+        status: 403
       };
     }
-    
+
     if (requiredAction && !hasPermission(user, requiredAction)) {
-      return { 
-        error: `Permission denied: ${requiredAction} action not allowed for Purchase Panel.`, 
-        status: 403 
+      return {
+        error: `Permission denied: ${requiredAction} action not allowed for Purchase Panel.`,
+        status: 403
       };
     }
-    
+
     return { user, error: null, status: 200 };
   } catch (err) {
     console.error("JWT Verification Failed:", err?.message || err);
@@ -118,15 +118,40 @@ function arrivalFromLoadingInfo(loadingInfo) {
   };
 }
 
+// Departure is the creation time of the first LR linked to the Loading Info.
+// This does not depend on out-date/time copies stored on the Loading Info.
+async function arrivalWithLR(user, loadingInfo) {
+  const base = arrivalFromLoadingInfo(loadingInfo);
+  if (!loadingInfo?.vehicleArrivalNo) return base;
+
+  const lr = await ConsignmentNote.findOne(
+    companyScopeFilter(user, { loadingInfoNo: loadingInfo.vehicleArrivalNo })
+  ).sort({ createdAt: 1 }).select('createdAt').lean();
+  if (!lr?.createdAt) return base;
+
+  const p = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+  }).formatToParts(new Date(lr.createdAt))
+    .reduce((r, part) => ({ ...r, [part.type]: part.value }), {});
+
+  return {
+    ...(base || {}),
+    outDate: new Date(`${p.year}-${p.month}-${p.day}`),
+    outTime: `${p.hour}:${p.minute}`
+  };
+}
+
 async function getLRCodeByOrderNo(orderNo, companyId) {
   if (!orderNo) return '';
-  
+
   try {
     const consignmentNote = await ConsignmentNote.findOne({
       'header.orderNo': orderNo,
       companyId: companyId
     }).lean();
-    
+
     return consignmentNote?.lrNo || consignmentNote?.header?.lrNo || '';
   } catch (error) {
     console.error(`Error fetching LR code for order ${orderNo}:`, error);
@@ -136,14 +161,14 @@ async function getLRCodeByOrderNo(orderNo, companyId) {
 
 async function getLRCodeForPurchase(purchase, companyId) {
   let lrCode = '';
-  
+
   if (purchase.orderRows && purchase.orderRows.length > 0) {
     const firstOrderNo = purchase.orderRows[0]?.orderNo;
     if (firstOrderNo) {
       lrCode = await getLRCodeByOrderNo(firstOrderNo, companyId);
     }
   }
-  
+
   return lrCode;
 }
 
@@ -155,8 +180,8 @@ export async function GET(req) {
     await connectDb();
     const { user, error, status } = await validateUser(req, 'view');
     if (error) {
-      return NextResponse.json({ 
-        success: false, 
+      return NextResponse.json({
+        success: false,
         message: error,
         code: status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN'
       }, { status });
@@ -174,27 +199,27 @@ export async function GET(req) {
     const enhancePurchase = async (purchase) => {
       let fromLocation = '';
       let toLocation = '';
-      
+
       if (purchase.orderRows && purchase.orderRows.length > 0) {
         fromLocation = purchase.orderRows[0]?.from || '';
         toLocation = purchase.orderRows[0]?.to || '';
       }
-      
+
       const lrCode = await getLRCodeForPurchase(purchase, user.companyId);
       const loadingInfo = purchase.loadingInfoNo
         ? await LoadingPanel.findOne(companyScopeFilter(user, { vehicleArrivalNo: purchase.loadingInfoNo })).lean()
         : null;
-      const loadingArrival = arrivalFromLoadingInfo(loadingInfo);
+      const loadingArrival = await arrivalWithLR(user, loadingInfo);
       const arrivalDetails = loadingArrival
         ? {
-            ...purchase.arrivalDetails,
-            inDate: loadingArrival.date || purchase.arrivalDetails?.inDate || null,
-            inTime: loadingArrival.time || purchase.arrivalDetails?.inTime || '',
-            outDate: loadingArrival.outDate || purchase.arrivalDetails?.outDate || null,
-            outTime: loadingArrival.outTime || purchase.arrivalDetails?.outTime || '',
-          }
+          ...purchase.arrivalDetails,
+          inDate: loadingArrival.date || purchase.arrivalDetails?.inDate || null,
+          inTime: loadingArrival.time || purchase.arrivalDetails?.inTime || '',
+          outDate: loadingArrival.outDate || purchase.arrivalDetails?.outDate || null,
+          outTime: loadingArrival.outTime || purchase.arrivalDetails?.outTime || '',
+        }
         : purchase.arrivalDetails;
-      
+
       return {
         ...purchase,
         arrivalDetails,
@@ -207,26 +232,26 @@ export async function GET(req) {
     // CASE 1: GET SINGLE PURCHASE BY ID
     if (id) {
       if (!isValidObjectId(id)) {
-        return NextResponse.json({ 
-          success: false, 
-          message: "Invalid purchase ID format" 
+        return NextResponse.json({
+          success: false,
+          message: "Invalid purchase ID format"
         }, { status: 400 });
       }
 
       const purchase = await PurchasePanel.findOne(companyScopeFilter(user, { _id: id })).lean();
 
       if (!purchase) {
-        return NextResponse.json({ 
-          success: false, 
-          message: "Purchase not found" 
+        return NextResponse.json({
+          success: false,
+          message: "Purchase not found"
         }, { status: 404 });
       }
 
       const enhancedPurchase = await enhancePurchase(purchase);
 
-      return NextResponse.json({ 
-        success: true, 
-        data: enhancedPurchase 
+      return NextResponse.json({
+        success: true,
+        data: enhancedPurchase
       }, { status: 200 });
     }
 
@@ -235,17 +260,17 @@ export async function GET(req) {
       const purchase = await PurchasePanel.findOne(companyScopeFilter(user, { purchaseNo })).lean();
 
       if (!purchase) {
-        return NextResponse.json({ 
-          success: false, 
-          message: "Purchase not found" 
+        return NextResponse.json({
+          success: false,
+          message: "Purchase not found"
         }, { status: 404 });
       }
 
       const enhancedPurchase = await enhancePurchase(purchase);
 
-      return NextResponse.json({ 
-        success: true, 
-        data: enhancedPurchase 
+      return NextResponse.json({
+        success: true,
+        data: enhancedPurchase
       }, { status: 200 });
     }
 
@@ -287,22 +312,22 @@ export async function GET(req) {
         let fromLocation = '';
         let toLocation = '';
         let lrCode = '';
-        
+
         if (purchase.orderRows && purchase.orderRows.length > 0) {
           fromLocation = purchase.orderRows[0]?.from || '';
           toLocation = purchase.orderRows[0]?.to || '';
-          
+
           const firstOrderNo = purchase.orderRows[0]?.orderNo;
           if (firstOrderNo) {
             lrCode = await getLRCodeByOrderNo(firstOrderNo, user.companyId);
           }
         }
-        
-        const vehicleNo = purchase.purchaseDetails?.vehicleNo || 
-                          purchase.vehicleNo || 
-                          purchase.header?.vehicleNo || 
-                          '';
-        
+
+        const vehicleNo = purchase.purchaseDetails?.vehicleNo ||
+          purchase.vehicleNo ||
+          purchase.header?.vehicleNo ||
+          '';
+
         return {
           _id: purchase._id,
           date: purchase.createdAt ? new Date(purchase.createdAt).toLocaleDateString('en-IN') : '',
@@ -335,27 +360,27 @@ export async function GET(req) {
 
     // CASE 4: LIST FOR DROPDOWNS
     const purchases = await PurchasePanel.find(companyScopeFilter(user))
-    .select('purchaseNo vnnNo pricingSerialNo subCompanyName subCompanyCode purchaseDetails.vendorName purchaseAmountFromVNN approval.status orderRows purchaseDetails.vehicleNo')
-    .sort({ createdAt: -1 })
-    .lean();
+      .select('purchaseNo vnnNo pricingSerialNo subCompanyName subCompanyCode purchaseDetails.vendorName purchaseAmountFromVNN approval.status orderRows purchaseDetails.vehicleNo')
+      .sort({ createdAt: -1 })
+      .lean();
 
     const enhancedPurchases = await Promise.all(purchases.map(async (purchase) => {
       let fromLocation = '';
       let toLocation = '';
       let lrCode = '';
-      
+
       if (purchase.orderRows && purchase.orderRows.length > 0) {
         fromLocation = purchase.orderRows[0]?.from || '';
         toLocation = purchase.orderRows[0]?.to || '';
-        
+
         const firstOrderNo = purchase.orderRows[0]?.orderNo;
         if (firstOrderNo) {
           lrCode = await getLRCodeByOrderNo(firstOrderNo, user.companyId);
         }
       }
-      
+
       const vehicleNo = purchase.purchaseDetails?.vehicleNo || '';
-      
+
       return {
         ...purchase,
         fromLocation,
@@ -372,8 +397,8 @@ export async function GET(req) {
 
   } catch (error) {
     console.error("❌ GET /purchase-panel error:", error);
-    return NextResponse.json({ 
-      success: false, 
+    return NextResponse.json({
+      success: false,
       message: error.message || "Failed to fetch purchases"
     }, { status: 500 });
   }
@@ -387,15 +412,15 @@ export async function POST(req) {
     await connectDb();
     const { user, error, status } = await validateUser(req, 'create');
     if (error) {
-      return NextResponse.json({ 
-        success: false, 
+      return NextResponse.json({
+        success: false,
         message: error,
         code: status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN'
       }, { status });
     }
 
     const body = await req.json();
-    
+
     console.log("📝 Creating new purchase");
 
     // A Loading Info can create one purchase only, and only before it has
@@ -479,10 +504,10 @@ export async function POST(req) {
     const totalOrderAmount = processedOrderRows.reduce((sum, row) => sum + (row.totalAmount || 0), 0);
     const totalAdditions = processedAdditions.reduce((sum, row) => sum + (row.amount || 0), 0);
     const totalDeductions = processedDeductions.reduce((sum, row) => sum + (row.amount || 0), 0);
-    
+
     const purchaseAmountFromVNN = num(body.purchaseAmountFromVNN) || num(body.purchaseDetails?.amount) || totalOrderAmount;
     const advance = num(body.purchaseDetails?.advance);
-    
+
     const totalLoadingExpenses = (
       num(body.loadingExpenses?.loadingCharges) +
       num(body.loadingExpenses?.loadingStaffMunshiyana) +
@@ -490,12 +515,12 @@ export async function POST(req) {
       num(body.loadingExpenses?.vehicleFloorTarpaulin) +
       num(body.loadingExpenses?.vehicleOuterTarpaulin)
     );
-    
+
     const totalWarehouseExpenses = (
       num(body.warehouseExpenses?.wVehicleFloorTarpaulin) +
       num(body.warehouseExpenses?.wVehicleOuterTarpaulin)
     );
-    
+
     const balance = purchaseAmountFromVNN - advance;
     const netEffect = advance + totalAdditions - totalDeductions - totalLoadingExpenses - totalWarehouseExpenses;
 
@@ -512,7 +537,7 @@ export async function POST(req) {
     const linkedLoadingInfo = body.loadingInfoNo
       ? await LoadingPanel.findOne(companyScopeFilter(user, { vehicleArrivalNo: body.loadingInfoNo })).lean()
       : null;
-    const loadingArrival = arrivalFromLoadingInfo(linkedLoadingInfo) || {};
+    const loadingArrival = (await arrivalWithLR(user, linkedLoadingInfo)) || {};
     const arrivalDetails = {
       inDate: loadingArrival.date ? new Date(loadingArrival.date) : (body.arrivalDetails?.inDate ? new Date(body.arrivalDetails.inDate) : null),
       inTime: loadingArrival.time || body.arrivalDetails?.inTime || '',
@@ -530,12 +555,12 @@ export async function POST(req) {
       pricingSerialNo: body.header?.pricingSerialNo || body.pricingSerialNo || '',
       loadingInfoNo: body.loadingInfoNo || '',
       purchaseAmountFromVNN,
-      
+
       // Sub-Company at main level
       subCompanyId,
       subCompanyName,
       subCompanyCode,
-      
+
       header: {
         purchaseNo,
         pricingSerialNo: body.header?.pricingSerialNo || '',
@@ -548,7 +573,7 @@ export async function POST(req) {
         date: body.header?.date ? new Date(body.header.date) : new Date(),
         delivery: body.header?.delivery || 'Normal',
       },
-      
+
       billing: {
         billingType: body.billing?.billingType || 'Multi - Order',
         noOfLoadingPoints: body.billing?.noOfLoadingPoints || '1',
@@ -558,9 +583,9 @@ export async function POST(req) {
         loadingCharges: body.billing?.loadingCharges || 'Nil',
         otherCharges: body.billing?.otherCharges || 'Nil',
       },
-      
+
       orderRows: processedOrderRows,
-      
+
       purchaseDetails: {
         vendorStatus: body.purchaseDetails?.vendorStatus || 'Active',
         vendorName: body.purchaseDetails?.vendorName || '',
@@ -582,7 +607,7 @@ export async function POST(req) {
         subCompanyName,
         subCompanyCode
       },
-      
+
       loadingExpenses: {
         loadingCharges: num(body.loadingExpenses?.loadingCharges),
         loadingStaffMunshiyana: num(body.loadingExpenses?.loadingStaffMunshiyana),
@@ -591,13 +616,13 @@ export async function POST(req) {
         vehicleOuterTarpaulin: num(body.loadingExpenses?.vehicleOuterTarpaulin),
       },
       totalLoadingExpenses,
-      
+
       warehouseExpenses: {
         wVehicleFloorTarpaulin: num(body.warehouseExpenses?.wVehicleFloorTarpaulin),
         wVehicleOuterTarpaulin: num(body.warehouseExpenses?.wVehicleOuterTarpaulin),
       },
       totalWarehouseExpenses,
-      
+
       additions: processedAdditions,
       deductions: processedDeductions,
       totalAdditions,
@@ -605,21 +630,21 @@ export async function POST(req) {
       totalOrderAmount,
       balance,
       netEffect,
-      
+
       registeredVehicle: {
         vehiclePlate: body.registeredVehicle?.vehiclePlate || body.registeredVehicle?.registeredPlate || '',
         isRegistered: body.registeredVehicle?.isRegistered || false,
       },
-      
+
       approval: {
         status: body.approval?.status || 'Pending',
         remarks: body.approval?.remarks || '',
       },
-      
+
       arrivalDetails,
-      
+
       memoFile: body.memoFile || null,
-      
+
       companyId: user.companyId,
       createdBy: user.id,
       panelStatus: 'Draft'
@@ -636,8 +661,8 @@ export async function POST(req) {
 
     await purchase.save();
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       message: "Purchase created successfully",
       data: {
         _id: purchase._id,
@@ -653,22 +678,22 @@ export async function POST(req) {
     console.error("❌ POST /purchase-panel error:", error);
 
     if (error.code === 11000) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Purchase number already exists" 
+      return NextResponse.json({
+        success: false,
+        message: "Purchase number already exists"
       }, { status: 400 });
     }
 
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(err => err.message);
-      return NextResponse.json({ 
-        success: false, 
-        message: messages.join(', ') 
+      return NextResponse.json({
+        success: false,
+        message: messages.join(', ')
       }, { status: 400 });
     }
 
-    return NextResponse.json({ 
-      success: false, 
+    return NextResponse.json({
+      success: false,
       message: error.message || "Failed to create purchase"
     }, { status: 500 });
   }
@@ -680,39 +705,74 @@ export async function POST(req) {
 export async function PUT(req) {
   try {
     await connectDb();
-    const { user, error, status } = await validateUser(req, 'edit');
+    const { user, error, status } = await validateUser(req);
     if (error) {
-      return NextResponse.json({ 
-        success: false, 
+      return NextResponse.json({
+        success: false,
         message: error,
         code: status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN'
       }, { status });
     }
+    const canEdit = hasPermission(user, 'edit');
+    const canApprove = hasPermission(user, 'approve');
+    if (!canEdit && !canApprove) {
+      return NextResponse.json({
+        success: false,
+        message: "Permission denied: edit or approve action required for Purchase Panel.",
+        code: 'FORBIDDEN'
+      }, { status: 403 });
+    }
 
     const body = await req.json();
     const { id } = body;
-    
+
+    // Approve-only users may change nothing except the approval block.
+    if (!canEdit) {
+      const extra = Object.keys(body).filter((k) => k !== 'id' && k !== 'approval');
+      if (extra.length || !body.approval) {
+        return NextResponse.json({
+          success: false,
+          message: "Permission denied: edit action not allowed for Purchase Panel.",
+          code: 'FORBIDDEN'
+        }, { status: 403 });
+      }
+    }
+
     if (!id) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Purchase ID is required" 
+      return NextResponse.json({
+        success: false,
+        message: "Purchase ID is required"
       }, { status: 400 });
     }
 
     if (!isValidObjectId(id)) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Invalid purchase ID format" 
+      return NextResponse.json({
+        success: false,
+        message: "Invalid purchase ID format"
       }, { status: 400 });
     }
 
     const purchase = await PurchasePanel.findOne(companyScopeFilter(user, { _id: id }));
 
     if (!purchase) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Purchase not found" 
+      return NextResponse.json({
+        success: false,
+        message: "Purchase not found"
       }, { status: 404 });
+    }
+
+    // Only users with approve permission may change the approval status.
+    if (body.approval && !canApprove) {
+      const current = purchase.approval?.status || 'Pending';
+      const next = body.approval.status || current;
+      if (next !== current) {
+        return NextResponse.json({
+          success: false,
+          message: "Permission denied: approve action not allowed for Purchase Panel.",
+          code: 'FORBIDDEN'
+        }, { status: 403 });
+      }
+      delete body.approval; // ignore remarks changes too
     }
 
     purchase.subCompanyId = user.activeOperatingCompanyId;
@@ -751,8 +811,8 @@ export async function PUT(req) {
     if (body.orderRows || body.orders) {
       const orders = body.orderRows || body.orders;
       purchase.orderRows = orders.map(row => ({
-        _id: row._id && isValidObjectId(row._id) 
-          ? new mongoose.Types.ObjectId(row._id) 
+        _id: row._id && isValidObjectId(row._id)
+          ? new mongoose.Types.ObjectId(row._id)
           : new mongoose.Types.ObjectId(),
         orderNo: row.orderNo || '',
         partyName: row.partyName || '',
@@ -838,8 +898,8 @@ export async function PUT(req) {
     // Update additions
     if (body.additions) {
       purchase.additions = body.additions.map(row => ({
-        _id: row._id && isValidObjectId(row._id) 
-          ? new mongoose.Types.ObjectId(row._id) 
+        _id: row._id && isValidObjectId(row._id)
+          ? new mongoose.Types.ObjectId(row._id)
           : new mongoose.Types.ObjectId(),
         description: row.description || '',
         amount: num(row.amount)
@@ -850,8 +910,8 @@ export async function PUT(req) {
     // Update deductions
     if (body.deductions) {
       purchase.deductions = body.deductions.map(row => ({
-        _id: row._id && isValidObjectId(row._id) 
-          ? new mongoose.Types.ObjectId(row._id) 
+        _id: row._id && isValidObjectId(row._id)
+          ? new mongoose.Types.ObjectId(row._id)
           : new mongoose.Types.ObjectId(),
         description: row.description || '',
         amount: num(row.amount)
@@ -886,7 +946,7 @@ export async function PUT(req) {
       const source = purchase.loadingInfoNo
         ? await LoadingPanel.findOne(companyScopeFilter(user, { vehicleArrivalNo: purchase.loadingInfoNo })).lean()
         : null;
-      const loadingArrival = arrivalFromLoadingInfo(source);
+      const loadingArrival = await arrivalWithLR(user, source);
       if (loadingArrival) {
         purchase.arrivalDetails.inDate = loadingArrival.date || purchase.arrivalDetails.inDate;
         purchase.arrivalDetails.inTime = loadingArrival.time || purchase.arrivalDetails.inTime;
@@ -903,8 +963,8 @@ export async function PUT(req) {
 
     await purchase.save();
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       message: "Purchase updated successfully",
       data: {
         _id: purchase._id,
@@ -918,8 +978,8 @@ export async function PUT(req) {
 
   } catch (error) {
     console.error("❌ PUT /purchase-panel error:", error);
-    return NextResponse.json({ 
-      success: false, 
+    return NextResponse.json({
+      success: false,
       message: error.message || "Failed to update purchase"
     }, { status: 500 });
   }
@@ -933,8 +993,8 @@ export async function DELETE(req) {
     await connectDb();
     const { user, error, status } = await validateUser(req, 'delete');
     if (error) {
-      return NextResponse.json({ 
-        success: false, 
+      return NextResponse.json({
+        success: false,
         message: error,
         code: status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN'
       }, { status });
@@ -942,32 +1002,32 @@ export async function DELETE(req) {
 
     const url = new URL(req.url);
     const id = url.searchParams.get("id");
-    
+
     if (!id || !isValidObjectId(id)) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Valid ID is required" 
+      return NextResponse.json({
+        success: false,
+        message: "Valid ID is required"
       }, { status: 400 });
     }
 
     const result = await PurchasePanel.deleteOne(companyScopeFilter(user, { _id: id }));
 
     if (result.deletedCount === 0) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Purchase not found" 
+      return NextResponse.json({
+        success: false,
+        message: "Purchase not found"
       }, { status: 404 });
     }
 
-    return NextResponse.json({ 
-      success: true, 
-      message: "Purchase deleted successfully" 
+    return NextResponse.json({
+      success: true,
+      message: "Purchase deleted successfully"
     }, { status: 200 });
 
   } catch (error) {
     console.error("❌ DELETE /purchase-panel error:", error);
-    return NextResponse.json({ 
-      success: false, 
+    return NextResponse.json({
+      success: false,
       message: error.message || "Failed to delete purchase"
     }, { status: 500 });
   }
@@ -982,8 +1042,8 @@ export async function PATCH(req) {
     await connectDb();
     const { user, error, status } = await validateUser(req, 'approve');
     if (error) {
-      return NextResponse.json({ 
-        success: false, 
+      return NextResponse.json({
+        success: false,
         message: error,
         code: status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN'
       }, { status });
@@ -991,30 +1051,30 @@ export async function PATCH(req) {
 
     const body = await req.json();
     const { id, action, remarks } = body;
-    
+
     if (!id || !isValidObjectId(id)) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Valid ID is required" 
+      return NextResponse.json({
+        success: false,
+        message: "Valid ID is required"
       }, { status: 400 });
     }
 
     console.log(`📝 Updating purchase status: ${id} - ${action}`);
-    
+
     const purchase = await PurchasePanel.findOne(companyScopeFilter(user, { _id: id }));
 
     if (!purchase) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Purchase not found" 
+      return NextResponse.json({
+        success: false,
+        message: "Purchase not found"
       }, { status: 404 });
     }
 
     const allowedActions = ['approve', 'reject', 'complete'];
     if (!allowedActions.includes(action)) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Invalid action. Allowed: approve, reject, complete" 
+      return NextResponse.json({
+        success: false,
+        message: "Invalid action. Allowed: approve, reject, complete"
       }, { status: 400 });
     }
 
@@ -1026,19 +1086,19 @@ export async function PATCH(req) {
 
     // Update approval status
     purchase.approval.status = statusMap[action];
-    
+
     // Update remarks if provided
     if (remarks !== undefined) {
       purchase.approval.remarks = remarks;
     }
-    
+
     // Update panel status
     purchase.panelStatus = statusMap[action];
 
     await purchase.save();
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       message: `Purchase ${action}d successfully`,
       data: {
         _id: purchase._id,
@@ -1050,8 +1110,8 @@ export async function PATCH(req) {
 
   } catch (error) {
     console.error("❌ PATCH /purchase-panel error:", error);
-    return NextResponse.json({ 
-      success: false, 
+    return NextResponse.json({
+      success: false,
       message: error.message || "Failed to update purchase status"
     }, { status: 500 });
   }

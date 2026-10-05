@@ -43,25 +43,25 @@
 //     setLoading(true);
 //     try {
 //       const token = localStorage.getItem('token');
-      
+
 //       const loadingRes = await fetch('/api/loading-panel?format=table', {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       if (!loadingRes.ok) {
 //         console.warn('Loading Info API returned', loadingRes.status);
 //         setLoadingInfos([]);
 //         return;
 //       }
-      
+
 //       const loadingData = await loadingRes.json();
-      
+
 //       const purchaseRes = await fetch('/api/purchase-panel?format=table', {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       let usedLoadingInfos = new Set();
-      
+
 //       if (purchaseRes.ok) {
 //         const purchaseData = await purchaseRes.json();
 //         if (purchaseData.success && Array.isArray(purchaseData.data)) {
@@ -72,23 +72,23 @@
 //           });
 //         }
 //       }
-      
+
 //       if (loadingData.success && Array.isArray(loadingData.data)) {
 //         const availableInfos = loadingData.data.filter(info => 
 //           info.vehicleNegotiationNo && 
 //           info.vehicleNegotiationNo !== 'N/A' &&
 //           !usedLoadingInfos.has(info.vehicleArrivalNo)
 //         );
-        
+
 //         console.log(`📊 Found ${availableInfos.length} available loading infos out of ${loadingData.data.length} total`);
-        
+
 //         const enhancedData = availableInfos.map(item => ({
 //           ...item,
 //           driverNo: item.driverNo || item.driverMobileNo || '',
 //           vehicleInfo: item.vehicleInfo || {},
 //           orderRows: item.orderRows || []
 //         }));
-        
+
 //         setLoadingInfos(enhancedData);
 //       }
 //     } catch (error) {
@@ -97,7 +97,7 @@
 //       setLoading(false);
 //     }
 //   };
-  
+
 //   const getLoadingInfoById = async (id) => {
 //     setLoading(true);
 //     try {
@@ -105,9 +105,9 @@
 //       const res = await fetch(`/api/loading-panel?id=${id}`, {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       if (!res.ok) return null;
-      
+
 //       const data = await res.json();
 //       return data.success ? data.data : null;
 //     } catch (error) {
@@ -129,19 +129,19 @@
 //     try {
 //       const token = localStorage.getItem('token');
 //       console.log(`🔍 Fetching Vehicle Negotiation with VNN: ${vnnNo}`);
-      
+
 //       const res = await fetch(`/api/vehicle-negotiation?vnnNo=${encodeURIComponent(vnnNo)}`, {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       if (!res.ok) {
 //         console.error(`API returned ${res.status}`);
 //         return null;
 //       }
-      
+
 //       const data = await res.json();
 //       console.log("📦 Vehicle Negotiation Data:", data);
-      
+
 //       return data.success ? data.data : null;
 //     } catch (error) {
 //       console.error('Error fetching negotiation:', error);
@@ -369,7 +369,7 @@
 //    ========================= */
 //   const [selectedVNN, setSelectedVNN] = useState(null);
 //   const [selectedVNNNo, setSelectedVNNNo] = useState("");
-  
+
 //   /** =========================
 //    * PURCHASE AMOUNT FROM VNN (A x B)
 //    ========================= */
@@ -395,7 +395,7 @@
 
 //     const formData = new FormData();
 //     formData.append('file', file);
-    
+
 //     try {
 //       const token = localStorage.getItem('token');
 //       const res = await fetch('/api/upload/excel', {
@@ -405,9 +405,9 @@
 //         },
 //         body: formData,
 //       });
-      
+
 //       const data = await res.json();
-      
+
 //       if (data.success) {
 //         setMemoFileInfo({
 //           filePath: data.filePath,
@@ -450,16 +450,16 @@
 //     try {
 //       const token = localStorage.getItem('token');
 //       if (!token) return;
-      
+
 //       const res = await fetch('/api/branches', {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       if (!res.ok) {
 //         console.warn('Branches API not available');
 //         return;
 //       }
-      
+
 //       const data = await res.json();
 //       if (data.success && Array.isArray(data.data)) {
 //         setBranches(data.data);
@@ -473,16 +473,16 @@
 //     try {
 //       const token = localStorage.getItem('token');
 //       if (!token) return;
-      
+
 //       const res = await fetch('/api/plants', {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       if (!res.ok) {
 //         console.warn('Plants API not available');
 //         return;
 //       }
-      
+
 //       const data = await res.json();
 //       if (data.success && Array.isArray(data.data)) {
 //         setPlants(data.data);
@@ -496,17 +496,17 @@
 //     try {
 //       const token = localStorage.getItem('token');
 //       if (!token) return;
-      
+
 //       const res = await fetch('/api/price-lists', {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       if (!res.ok) {
 //         console.warn('Price lists API not available');
 //         setPriceLists([]);
 //         return;
 //       }
-      
+
 //       const data = await res.json();
 //       if (data.success && Array.isArray(data.data)) {
 //         setPriceLists(data.data);
@@ -521,16 +521,16 @@
 //     try {
 //       const token = localStorage.getItem('token');
 //       if (!token) return;
-      
+
 //       const res = await fetch('/api/order-panel', {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       if (!res.ok) {
 //         console.warn('Orders API not available');
 //         return;
 //       }
-      
+
 //       const data = await res.json();
 //       if (data.success && Array.isArray(data.data)) {
 //         setOrders(data.data);
@@ -544,17 +544,17 @@
 //     try {
 //       const token = localStorage.getItem('token');
 //       if (!token) return;
-      
+
 //       const res = await fetch('/api/vendors', {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       if (!res.ok) {
 //         console.warn('Vendors API not available');
 //         setVendors([]);
 //         return;
 //       }
-      
+
 //       const data = await res.json();
 //       if (data.success && Array.isArray(data.data)) {
 //         setVendors(data.data);
@@ -579,7 +579,7 @@
 //    ========================= */
 //   const handleLoadingInfoSearch = (query) => {
 //     setLoadingInfoNo(query);
-    
+
 //     if (query.trim() === "") {
 //       setFilteredLoadingInfos(loadingInfoHook.loadingInfos);
 //     } else {
@@ -595,17 +595,17 @@
 //   setLoadingInfoNo(loadingInfo.vehicleArrivalNo);
 //   setShowLoadingInfoDropdown(false);
 //   setFetchingData(true);
-  
+
 //   try {
 //     console.log("📋 Selected Loading Info:", loadingInfo);
-    
+
 //     // ✅ Extract sub-company from loadingInfo (from table format)
 //     let subCompanyId = loadingInfo.subCompanyId || '';
 //     let subCompanyName = loadingInfo.subCompanyName || '';
 //     let subCompanyCode = loadingInfo.subCompanyCode || '';
-    
+
 //     console.log("📌 Sub-Company from Loading Info:", { subCompanyId, subCompanyName, subCompanyCode });
-    
+
 //     // ✅ If subCompanyId is missing, fetch the full loading panel to get it
 //     if (!subCompanyId && loadingInfo.vehicleArrivalNo) {
 //       try {
@@ -613,7 +613,7 @@
 //         const fullLoadingRes = await fetch(`/api/loading-panel?vehicleArrivalNo=${loadingInfo.vehicleArrivalNo}`, {
 //           headers: { Authorization: `Bearer ${token}` },
 //         });
-        
+
 //         if (fullLoadingRes.ok) {
 //           const fullData = await fullLoadingRes.json();
 //           if (fullData.success && fullData.data) {
@@ -627,29 +627,29 @@
 //         console.error("Error fetching full loading panel:", error);
 //       }
 //     }
-    
+
 //     const vnnFromLoading = loadingInfo.vehicleNegotiationNo;
-    
+
 //     if (!vnnFromLoading) {
 //       alert("⚠️ This Loading Info has no Vehicle Negotiation reference");
 //       setFetchingData(false);
 //       return;
 //     }
-    
+
 //     console.log("🔍 Looking for Vehicle Negotiation with VNN:", vnnFromLoading);
 //     setSelectedVNNNo(vnnFromLoading);
-    
+
 //     const vnnData = await vehicleNegotiationHook.getNegotiationByVNN(vnnFromLoading);
-    
+
 //     if (!vnnData) {
 //       alert(`⚠️ No Vehicle Negotiation found for VNN: ${vnnFromLoading}`);
 //       setFetchingData(false);
 //       return;
 //     }
-    
+
 //     console.log("✅ Vehicle Negotiation Data loaded:", vnnData);
 //     setSelectedVNN(vnnData);
-    
+
 //     // ✅ If still no sub-company, try VNN data as fallback
 //     if (!subCompanyId) {
 //       subCompanyId = vnnData.subCompanyId || '';
@@ -657,9 +657,9 @@
 //       subCompanyCode = vnnData.subCompanyCode || subCompanyCode;
 //       console.log("📌 Sub-Company from VNN (fallback):", { subCompanyId, subCompanyName, subCompanyCode });
 //     }
-    
+
 //     console.log("✅ Final Sub-Company being set:", { subCompanyId, subCompanyName, subCompanyCode });
-    
+
 //     // Calculate Purchase Amount (A x B) from VNN data
 //     let calculatedPurchaseAmount = 0;
 //     if (vnnData.approval) {
@@ -672,32 +672,32 @@
 //     }
 //     setPurchaseAmountFromVNN(calculatedPurchaseAmount);
 //     console.log("💰 Purchase Amount from VNN (A x B):", calculatedPurchaseAmount);
-    
+
 //     const vehicleNegotiationId = vnnData._id;
 //     console.log("🔑 Vehicle Negotiation ID:", vehicleNegotiationId);
-    
+
 //     let pricingData = null;
 //     let orderPanelData = null;
 //     let loadingPanelData = null;
-    
+
 //     try {
 //       const token = localStorage.getItem('token');
-      
+
 //       // Fetch pricing panel
 //       const pricingRes = await fetch('/api/pricing-panel?format=table', {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       if (pricingRes.ok) {
 //         const pricingList = await pricingRes.json();
-        
+
 //         if (pricingList.success && Array.isArray(pricingList.data)) {
 //           for (const panel of pricingList.data) {
 //             if (panel.vnn === vnnFromLoading || panel.vehicleNegotiationId === vehicleNegotiationId) {
 //               const fullPricingRes = await fetch(`/api/pricing-panel?id=${panel.panelId || panel._id}`, {
 //                 headers: { Authorization: `Bearer ${token}` },
 //               });
-              
+
 //               if (fullPricingRes.ok) {
 //                 const fullData = await fullPricingRes.json();
 //                 if (fullData.success) {
@@ -710,7 +710,7 @@
 //           }
 //         }
 //       }
-      
+
 //       // Fetch Order Panel data
 //       if (vnnData.selectedOrderPanels && vnnData.selectedOrderPanels.length > 0) {
 //         const firstOrderPanel = vnnData.selectedOrderPanels[0];
@@ -718,7 +718,7 @@
 //           const orderRes = await fetch(`/api/order-panel?id=${firstOrderPanel._id}`, {
 //             headers: { Authorization: `Bearer ${token}` },
 //           });
-          
+
 //           if (orderRes.ok) {
 //             const orderData = await orderRes.json();
 //             if (orderData.success && orderData.data) {
@@ -728,12 +728,12 @@
 //           }
 //         }
 //       }
-      
+
 //       // Fetch FULL Loading Panel data
 //       const loadingPanelRes = await fetch(`/api/loading-panel?vehicleArrivalNo=${loadingInfo.vehicleArrivalNo}`, {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       if (loadingPanelRes.ok) {
 //         const loadingPanelResult = await loadingPanelRes.json();
 //         if (loadingPanelResult.success && loadingPanelResult.data) {
@@ -741,27 +741,27 @@
 //           console.log("✅ Found Loading Panel Data:", loadingPanelData.vehicleArrivalNo);
 //         }
 //       }
-      
+
 //     } catch (error) {
 //       console.error("Error fetching additional data:", error);
 //     }
-    
+
 //     let driverMobileNo = "";
 //     if (loadingInfo.driverNo) {
 //       driverMobileNo = loadingInfo.driverNo;
 //     } else if (loadingInfo.vehicleInfo?.driverMobileNo) {
 //       driverMobileNo = loadingInfo.vehicleInfo.driverMobileNo;
 //     }
-    
+
 //     const approvalData = vnnData.approval || {};
 //     const vehicleInfo = vnnData.vehicleInfo || {};
 //     const negotiation = vnnData.negotiation || {};
-    
+
 //     const vendorCode = approvalData.vendorCode || "";
 //     const vendorName = approvalData.vendorName || vnnData.vendorName || "";
-    
+
 //     console.log("✅ Vendor from VNN:", { vendorName, vendorCode });
-    
+
 //     setHeader({
 //       ...header,
 //       branch: vnnData.branch || "",
@@ -805,7 +805,7 @@
 //     let otherExpensesVal = "0";
 //     let vehicleFloorTarpaulinVal = "0";
 //     let vehicleOuterTarpaulinVal = "0";
-    
+
 //     if (loadingPanelData && loadingPanelData.loadedWeighment) {
 //       loadingChargesVal = loadingPanelData.loadedWeighment.loadingCharges?.toString() || "0";
 //       loadingStaffMunshiyanaVal = loadingPanelData.loadedWeighment.loadingStaffMunshiyana?.toString() || "0";
@@ -828,7 +828,7 @@
 //       vehicleOuterTarpaulinVal = approvalData.vehicleOuterTarpaulin?.toString() || "0";
 //       console.log("✅ Loading Expenses from VNN Approval");
 //     }
-    
+
 //     setLoadingExpenses({
 //       loadingCharges: loadingChargesVal,
 //       loadingStaffMunshiyana: loadingStaffMunshiyanaVal,
@@ -860,7 +860,7 @@
 //       status: approvalData.approvalStatus || "Pending",
 //       remarks: approvalData.remarks || `Auto-filled from VNN: ${vnnData.vnnNo}`,
 //     });
-    
+
 //     // Set memo file from VNN if exists
 //     if (approvalData.memoFile && approvalData.memoFile.filePath) {
 //       setMemoFileInfo(approvalData.memoFile);
@@ -889,26 +889,26 @@
 //         let priceList = "";
 //         let rate = "";
 //         let totalAmount = "";
-        
+
 //         // Get fromState from order data
 //         const fromState = order.fromState || '';
 //         const orderState = order.stateName || order.state || '';
-        
+
 //         // Determine local status
 //         let localStatus = 'unknown';
 //         let localStatusLabel = 'Unknown';
-        
+
 //         if (fromState && orderState) {
 //           const isLocal = fromState.trim().toUpperCase() === orderState.trim().toUpperCase();
 //           localStatus = isLocal ? 'local' : 'not-local';
 //           localStatusLabel = isLocal ? 'Local' : 'Not Local';
 //         }
-        
+
 //         if (pricingData && pricingData.orders) {
 //           const matchingPricingOrder = pricingData.orders.find(
 //             po => po.orderNo === order.orderNo
 //           );
-          
+
 //           if (matchingPricingOrder) {
 //             console.log(`✅ Found pricing data for order ${order.orderNo}:`, matchingPricingOrder);
 //             locationRate = matchingPricingOrder.locationRate?.toString() || "";
@@ -917,7 +917,7 @@
 //             totalAmount = matchingPricingOrder.totalAmount?.toString() || "";
 //           }
 //         }
-        
+
 //         return {
 //           _id: uid(),
 //           orderNo: order.orderNo || "",
@@ -949,12 +949,12 @@
 //           localStatusLabel: localStatusLabel
 //         };
 //       });
-      
+
 //       setOrderRows(newOrderRows);
-      
+
 //       const totalWeight = newOrderRows.reduce((sum, row) => sum + num(row.weight), 0);
 //       const totalOrderAmount = newOrderRows.reduce((sum, row) => sum + num(row.totalAmount), 0);
-      
+
 //       setPurchaseDetails(prev => ({
 //         ...prev,
 //         weight: totalWeight.toString(),
@@ -978,9 +978,9 @@
 //       loadedMessage += `\n✅ Sub-Company: ${subCompanyName} (${subCompanyCode})`;
 //     }
 //     loadedMessage += `\n💰 Purchase Amount (A x B): ₹${calculatedPurchaseAmount.toLocaleString()}`;
-    
+
 //     alert(loadedMessage);
-    
+
 //   } catch (error) {
 //     console.error("❌ Error loading data:", error);
 //     alert(`❌ Failed to load data: ${error.message}`);
@@ -1014,13 +1014,13 @@
 //       prev.map((r) => {
 //         if (r._id === rowId) {
 //           const updatedRow = { ...r, [key]: value };
-          
+
 //           if (key === "weight" || key === "rate") {
 //             const weight = num(updatedRow.weight);
 //             const rate = num(updatedRow.rate);
 //             updatedRow.totalAmount = (weight * rate).toString();
 //           }
-          
+
 //           return updatedRow;
 //         }
 //         return r;
@@ -1045,9 +1045,9 @@
 //     if (orderRows.length > 1) {
 //       const newRows = orderRows.filter((r) => r._id !== rowId);
 //       setOrderRows(newRows);
-      
+
 //       const totalWeight = newRows.reduce((sum, row) => sum + num(row.weight), 0);
-      
+
 //       setPurchaseDetails(prev => ({
 //         ...prev,
 //         weight: totalWeight.toString(),
@@ -1062,9 +1062,9 @@
 //     if (!row) return;
 //     const newRows = [...orderRows, { ...row, _id: uid(), orderNo: "" }];
 //     setOrderRows(newRows);
-    
+
 //     const totalWeight = newRows.reduce((sum, row) => sum + num(row.weight), 0);
-    
+
 //     setPurchaseDetails(prev => ({
 //       ...prev,
 //       weight: totalWeight.toString(),
@@ -1122,7 +1122,7 @@
 //       const cancellationCharges = num(row.cancellationCharges);
 //       const loadingCharges = num(row.loadingCharges);
 //       const otherCharges = num(row.otherCharges);
-      
+
 //       return sum + totalAmount + collectionCharges + cancellationCharges + loadingCharges + otherCharges;
 //     }, 0);
 //   };
@@ -1169,7 +1169,7 @@
 //     const totalDeductions = calculateTotalDeductions();
 //     const totalLoadingExpenses = calculateTotalLoadingExpenses();
 //     const totalWarehouseExpenses = calculateTotalWarehouseExpenses();
-    
+
 //     return advance + totalAdditions - totalDeductions - totalLoadingExpenses - totalWarehouseExpenses;
 //   };
 
@@ -1264,9 +1264,9 @@
 
 //     const data = await res.json();
 //     alert(`✅ Purchase saved successfully!\nPurchase No: ${data.data?.purchaseNo || 'Generated'}`);
-    
+
 //     router.push('/admin/Purchase-Panel');
-    
+
 //   } catch (error) {
 //     console.error('Error saving purchase:', error);
 //     alert(`❌ Error: ${error.message}`);
@@ -1291,7 +1291,7 @@
 //       date: new Date().toISOString().split('T')[0],
 //       delivery: "",
 //     });
-    
+
 //     setBilling({
 //       billingType: "",
 //       noOfLoadingPoints: "",
@@ -1301,9 +1301,9 @@
 //       loadingCharges: "",
 //       otherCharges: "",
 //     });
-    
+
 //     setOrderRows([defaultOrderRow()]);
-    
+
 //     setPurchaseDetails({
 //       vendorStatus: "",
 //       vendorName: "",
@@ -1322,7 +1322,7 @@
 //       driverMobileNo: "",
 //       purchaseDate: new Date().toISOString().split('T')[0],
 //     });
-    
+
 //     setLoadingExpenses({
 //       loadingCharges: "",
 //       loadingStaffMunshiyana: "",
@@ -1330,28 +1330,28 @@
 //       vehicleFloorTarpaulin: "",
 //       vehicleOuterTarpaulin: "",
 //     });
-    
+
 //     setWarehouseExpenses({
 //       wVehicleFloorTarpaulin: "",
 //       wVehicleOuterTarpaulin: "",
 //     });
-    
+
 //     setAdditions([]);
 //     setDeductions([]);
 //     setMemoFileInfo(null);
 //     setPurchaseAmountFromVNN(0);
-    
+
 //     setRegisteredVehicle({
 //       loadingPanelPlate: "",
 //       registeredPlate: "",
 //       isRegistered: false,
 //     });
-    
+
 //     setApproval({
 //       status: "",
 //       remarks: "",
 //     });
-    
+
 //     setArrivalDetails({
 //       inDate: new Date().toISOString().split('T')[0],
 //       inTime: "",
@@ -1471,7 +1471,7 @@
 //                     </div>
 //                   )}
 //                 </div>
-                
+
 //                 {showLoadingInfoDropdown && (
 //                   <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
 //                     {loadingInfoHook.loading ? (
@@ -1678,7 +1678,7 @@
 //             <div className="overflow-auto rounded-xl border border-yellow-300">
 //               <table className="min-w-max w-full text-sm">
 //                 <thead className="sticky top-0 bg-yellow-400 z-10">
-                 
+
 // <tr>
 //   <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[120px]">Order No</th>
 //   <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[150px]">Party Name</th>
@@ -1944,7 +1944,7 @@
 //               <div className="col-span-12 md:col-span-4">
 //                 <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-200 h-full">
 //                   <h3 className="text-sm font-bold text-slate-800 mb-3">Vendor Information</h3>
-                  
+
 //                   <div className="space-y-3">
 //                     <div>
 //                       <label className="text-xs font-bold text-slate-600">Vendor Status</label>
@@ -2026,7 +2026,7 @@
 //               <div className="col-span-12 md:col-span-4">
 //                 <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 h-full">
 //                   <h3 className="text-sm font-bold text-slate-800 mb-3">Purchase Terms (Auto-filled from VNN)</h3>
-                  
+
 //                   <div className="space-y-3">
 //                     <div>
 //                       <label className="text-xs font-bold text-slate-600">Purchase - Type</label>
@@ -2116,7 +2116,7 @@
 //                     </svg>
 //                     MEMO from Vehicle Negotiation
 //                   </h3>
-                  
+
 //                   {memoFileInfo ? (
 //                     <div 
 //                       className="relative group cursor-pointer overflow-hidden rounded-xl border-2 border-green-300 bg-white shadow-lg hover:shadow-xl transition-all duration-300"
@@ -2164,7 +2164,7 @@
 //                             <span className="text-sm text-gray-500 mt-1">Click to download</span>
 //                           </div>
 //                         )}
-                        
+
 //                         {/* Hover Overlay */}
 //                         <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col items-center justify-center gap-2">
 //                           <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2174,7 +2174,7 @@
 //                           <span className="text-white text-sm font-medium">Click to View Full Size</span>
 //                         </div>
 //                       </div>
-                      
+
 //                       {/* File Info Footer */}
 //                       <div className="p-3 bg-white border-t border-green-100">
 //                         <div className="flex justify-between items-center">
@@ -2228,7 +2228,7 @@
 //                   Will be deducted from Total Amount
 //                 </div>
 //               </div>
-              
+
 //               <div className="space-y-3">
 //                 {/* Loading Charges */}
 //                 <div className="flex justify-between items-center">
@@ -2241,7 +2241,7 @@
 //                     placeholder="0"
 //                   />
 //                 </div>
-                
+
 //                 {/* Loading Staff Munshiyana */}
 //                 <div className="flex justify-between items-center">
 //                   <span className="text-sm text-slate-700">Loading Staff Munshiyana:</span>
@@ -2253,7 +2253,7 @@
 //                     placeholder="0"
 //                   />
 //                 </div>
-                
+
 //                 {/* Other Expenses */}
 //                 <div className="flex justify-between items-center">
 //                   <span className="text-sm text-slate-700">Other Expenses:</span>
@@ -2265,7 +2265,7 @@
 //                     placeholder="0"
 //                   />
 //                 </div>
-                
+
 //                 {/* Vehicle - Floor Tarpaulin */}
 //                 <div className="flex justify-between items-center">
 //                   <span className="text-sm text-slate-700">Vehicle - Floor Tarpaulin:</span>
@@ -2282,7 +2282,7 @@
 //                     </span>
 //                   </div>
 //                 </div>
-                
+
 //                 {/* Vehicle - Outer Tarpaulin */}
 //                 <div className="flex justify-between items-center">
 //                   <span className="text-sm text-slate-700">Vehicle - Outer Tarpaulin:</span>
@@ -2299,7 +2299,7 @@
 //                     </span>
 //                   </div>
 //                 </div>
-                
+
 //                 {/* Total Line */}
 //                 <div className="flex justify-between items-center pt-2 border-t border-slate-200 mt-2">
 //                   <span className="text-sm font-bold text-slate-800">Total Deduct at Office:</span>
@@ -2322,7 +2322,7 @@
 //                   Will be deducted at Warehouse
 //                 </div>
 //               </div> */}
-              
+
 //               {/* <div className="space-y-3"> */}
 //                 {/* W-Vehicle - Floor Tarpaulin */}
 //                 {/* <div className="flex justify-between items-center">
@@ -2816,7 +2816,7 @@
 //           <div className="mt-4">
 //             <Card title="Approval">
 //               <div className="grid grid-cols-12 gap-4">
-                
+
 
 //                 <div className="col-span-12 md:col-span-6">
 //                   <div className="bg-white p-4 rounded-xl border border-slate-200">
@@ -2883,10 +2883,10 @@ const ORDER_TYPES = ["Sales", "STO Order", "Export", "Import"];
 const BILLING_TYPES = ["Single - Order", "Multi - Order"];
 const PURCHASE_TYPE_OPTIONS = ["Loading & Unloading", "Unloading Only", "Safi Vehicle"];
 const PAYMENT_TERMS_OPTIONS = [
-  "80 % Advance", 
-  "90 % Advance", 
-  "Rs.10,000/- Balance Only", 
-  "Rs. 5000/- Balance Only", 
+  "80 % Advance",
+  "90 % Advance",
+  "Rs.10,000/- Balance Only",
+  "Rs. 5000/- Balance Only",
   "Full Payment after Delivery",
   "Custom / Manual"
 ];
@@ -2924,17 +2924,17 @@ function useLoadingInfo() {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      
+
       const loadingRes = await fetch('/api/purchase-panel/reference-data', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       if (!loadingRes.ok) {
         console.warn('Loading Info API returned', loadingRes.status);
         setLoadingInfos([]);
         return;
       }
-      
+
       const loadingData = await loadingRes.json();
       if (loadingData.success && Array.isArray(loadingData.data?.loadingInfos)) {
         const enhancedData = loadingData.data.loadingInfos.map(item => ({
@@ -2953,7 +2953,7 @@ function useLoadingInfo() {
       setLoading(false);
     }
   };
-  
+
   const getLoadingInfoById = async (id) => {
     setLoading(true);
     try {
@@ -2961,9 +2961,9 @@ function useLoadingInfo() {
       const res = await fetch(`/api/loading-panel?id=${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       if (!res.ok) return null;
-      
+
       const data = await res.json();
       return data.success ? data.data : null;
     } catch (error) {
@@ -2985,19 +2985,19 @@ function useVehicleNegotiation() {
     try {
       const token = localStorage.getItem('token');
       console.log(`🔍 Fetching Vehicle Negotiation with VNN: ${vnnNo}`);
-      
+
       const res = await fetch(`/api/purchase-panel/reference-data?vnnNo=${encodeURIComponent(vnnNo)}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       if (!res.ok) {
         console.error(`API returned ${res.status}`);
         return null;
       }
-      
+
       const data = await res.json();
       console.log("📦 Vehicle Negotiation Data:", data);
-      
+
       return data.success ? data.data?.vehicleNegotiation : null;
     } catch (error) {
       console.error('Error fetching negotiation:', error);
@@ -3032,11 +3032,11 @@ function defaultOrderRow() {
     fromState: "",
     to: "",
     toName: "",
-    locationRate: "",
-    priceList: "",
+    // locationRate: "",
+    // priceList: "",
     weight: "",
-    rate: "",
-    totalAmount: "",
+    // rate: "",
+    // totalAmount: "",
     collectionCharges: "",
     cancellationCharges: "",
     loadingCharges: "",
@@ -3085,7 +3085,7 @@ export default function CreatePurchasePanel() {
   const [fetchingData, setFetchingData] = useState(false);
   const [memoFileInfo, setMemoFileInfo] = useState(null);
   const [subCompanies, setSubCompanies] = useState([]);
-  
+
   /** =========================
    * LOADING INFO SEARCH STATE
    ========================= */
@@ -3228,7 +3228,7 @@ export default function CreatePurchasePanel() {
    ========================= */
   const [selectedVNN, setSelectedVNN] = useState(null);
   const [selectedVNNNo, setSelectedVNNNo] = useState("");
-  
+
   /** =========================
    * PURCHASE AMOUNT FROM VNN (A x B)
    ========================= */
@@ -3260,7 +3260,7 @@ export default function CreatePurchasePanel() {
 
     const formData = new FormData();
     formData.append('file', file);
-    
+
     try {
       const token = localStorage.getItem('token');
       const res = await fetch('/api/upload/excel', {
@@ -3270,9 +3270,9 @@ export default function CreatePurchasePanel() {
         },
         body: formData,
       });
-      
+
       const data = await res.json();
-      
+
       if (data.success) {
         setMemoFileInfo({
           filePath: data.filePath,
@@ -3296,7 +3296,7 @@ export default function CreatePurchasePanel() {
    * FETCH DATA FROM APIs
    ========================= */
   useEffect(() => {
-    fetchSubCompanies(); 
+    fetchSubCompanies();
     loadingInfoHook.fetchLoadingInfos();
   }, []);
 
@@ -3310,16 +3310,16 @@ export default function CreatePurchasePanel() {
     try {
       const token = localStorage.getItem('token');
       if (!token) return;
-      
+
       const res = await fetch('/api/branches', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       if (!res.ok) {
         console.warn('Branches API not available');
         return;
       }
-      
+
       const data = await res.json();
       if (data.success && Array.isArray(data.data)) {
         setBranches(data.data);
@@ -3333,16 +3333,16 @@ export default function CreatePurchasePanel() {
     try {
       const token = localStorage.getItem('token');
       if (!token) return;
-      
+
       const res = await fetch('/api/plants', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       if (!res.ok) {
         console.warn('Plants API not available');
         return;
       }
-      
+
       const data = await res.json();
       if (data.success && Array.isArray(data.data)) {
         setPlants(data.data);
@@ -3356,17 +3356,17 @@ export default function CreatePurchasePanel() {
     try {
       const token = localStorage.getItem('token');
       if (!token) return;
-      
+
       const res = await fetch('/api/price-lists', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       if (!res.ok) {
         console.warn('Price lists API not available');
         setPriceLists([]);
         return;
       }
-      
+
       const data = await res.json();
       if (data.success && Array.isArray(data.data)) {
         setPriceLists(data.data);
@@ -3381,16 +3381,16 @@ export default function CreatePurchasePanel() {
     try {
       const token = localStorage.getItem('token');
       if (!token) return;
-      
+
       const res = await fetch('/api/order-panel', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       if (!res.ok) {
         console.warn('Orders API not available');
         return;
       }
-      
+
       const data = await res.json();
       if (data.success && Array.isArray(data.data)) {
         setOrders(data.data);
@@ -3404,17 +3404,17 @@ export default function CreatePurchasePanel() {
     try {
       const token = localStorage.getItem('token');
       if (!token) return;
-      
+
       const res = await fetch('/api/vendors', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       if (!res.ok) {
         console.warn('Vendors API not available');
         setVendors([]);
         return;
       }
-      
+
       const data = await res.json();
       if (data.success && Array.isArray(data.data)) {
         setVendors(data.data);
@@ -3439,7 +3439,7 @@ export default function CreatePurchasePanel() {
    ========================= */
   const handleLoadingInfoSearch = (query) => {
     setLoadingInfoNo(query);
-    
+
     if (query.trim() === "") {
       setFilteredLoadingInfos(loadingInfoHook.loadingInfos);
     } else {
@@ -3459,17 +3459,17 @@ export default function CreatePurchasePanel() {
     setLoadingInfoNo(loadingInfo.vehicleArrivalNo);
     setShowLoadingInfoDropdown(false);
     setFetchingData(true);
-    
+
     try {
       console.log("📋 Selected Loading Info:", loadingInfo);
-      
+
       // ✅ Extract sub-company from loadingInfo (table format now includes subCompanyId)
       let subCompanyId = loadingInfo.subCompanyId || '';
       let subCompanyName = loadingInfo.subCompanyName || '';
       let subCompanyCode = loadingInfo.subCompanyCode || '';
-      
+
       console.log("📌 Sub-Company from Loading Info (table):", { subCompanyId, subCompanyName, subCompanyCode });
-      
+
       // ✅ If subCompanyId is missing but we have a company code, try to match from subCompanies list
       if (!subCompanyId && subCompanyCode) {
         const matchedSubCompany = subCompanies.find(sc => sc.code === subCompanyCode);
@@ -3479,29 +3479,29 @@ export default function CreatePurchasePanel() {
           console.log("✅ Found Sub-Company by code from list:", { subCompanyId, subCompanyName, subCompanyCode });
         }
       }
-      
+
       const vnnFromLoading = loadingInfo.vehicleNegotiationNo;
-      
+
       if (!vnnFromLoading) {
         alert("⚠️ This Loading Info has no Vehicle Negotiation reference");
         setFetchingData(false);
         return;
       }
-      
+
       console.log("🔍 Looking for Vehicle Negotiation with VNN:", vnnFromLoading);
       setSelectedVNNNo(vnnFromLoading);
-      
+
       const vnnData = await vehicleNegotiationHook.getNegotiationByVNN(vnnFromLoading);
-      
+
       if (!vnnData) {
         alert(`⚠️ No Vehicle Negotiation found for VNN: ${vnnFromLoading}`);
         setFetchingData(false);
         return;
       }
-      
+
       console.log("✅ Vehicle Negotiation Data loaded:", vnnData);
       setSelectedVNN(vnnData);
-      
+
       // ✅ If still no sub-company, try VNN data as fallback
       if (!subCompanyId) {
         subCompanyId = vnnData.subCompanyId || '';
@@ -3509,7 +3509,7 @@ export default function CreatePurchasePanel() {
         subCompanyCode = vnnData.subCompanyCode || subCompanyCode;
         console.log("📌 Sub-Company from VNN (fallback):", { subCompanyId, subCompanyName, subCompanyCode });
       }
-      
+
       // ✅ Final attempt: If we have code but no ID, try to match from subCompanies list again
       if (!subCompanyId && subCompanyCode) {
         const matchedSubCompany = subCompanies.find(sc => sc.code === subCompanyCode);
@@ -3519,9 +3519,9 @@ export default function CreatePurchasePanel() {
           console.log("✅ Final match by code from list:", { subCompanyId, subCompanyName, subCompanyCode });
         }
       }
-      
+
       console.log("✅ Final Sub-Company being set:", { subCompanyId, subCompanyName, subCompanyCode });
-      
+
       // Calculate Purchase Amount (A x B) from VNN data
       let calculatedPurchaseAmount = 0;
       if (vnnData.approval) {
@@ -3534,17 +3534,17 @@ export default function CreatePurchasePanel() {
       }
       setPurchaseAmountFromVNN(calculatedPurchaseAmount);
       console.log("💰 Purchase Amount from VNN (A x B):", calculatedPurchaseAmount);
-      
+
       const vehicleNegotiationId = vnnData._id;
       console.log("🔑 Vehicle Negotiation ID:", vehicleNegotiationId);
-      
+
       let pricingData = null;
       let orderPanelData = null;
       let loadingPanelData = null;
-      
+
       try {
         const token = localStorage.getItem('token');
-        
+
         // Purchase users may not have view permission for the source modules.
         // Resolve every downstream record through the scoped Purchase reference
         // endpoint instead of calling each master/transaction API directly.
@@ -3560,27 +3560,27 @@ export default function CreatePurchasePanel() {
             console.log("✅ Loaded scoped Purchase reference data");
           }
         }
-        
+
       } catch (error) {
         console.error("Error fetching additional data:", error);
       }
-      
+
       let driverMobileNo = "";
       if (loadingInfo.driverNo) {
         driverMobileNo = loadingInfo.driverNo;
       } else if (loadingInfo.vehicleInfo?.driverMobileNo) {
         driverMobileNo = loadingInfo.vehicleInfo.driverMobileNo;
       }
-      
+
       const approvalData = vnnData.approval || {};
       const vehicleInfo = vnnData.vehicleInfo || {};
       const negotiation = vnnData.negotiation || {};
-      
+
       const vendorCode = approvalData.vendorCode || "";
       const vendorName = approvalData.vendorName || vnnData.vendorName || "";
-      
+
       console.log("✅ Vendor from VNN:", { vendorName, vendorCode });
-      
+
       setHeader({
         ...header,
         branch: vnnData.branch || "",
@@ -3624,7 +3624,7 @@ export default function CreatePurchasePanel() {
       let otherExpensesVal = "0";
       let vehicleFloorTarpaulinVal = "0";
       let vehicleOuterTarpaulinVal = "0";
-      
+
       if (loadingPanelData && loadingPanelData.loadedWeighment) {
         loadingChargesVal = loadingPanelData.loadedWeighment.loadingCharges?.toString() || "0";
         loadingStaffMunshiyanaVal = loadingPanelData.loadedWeighment.loadingStaffMunshiyana?.toString() || "0";
@@ -3647,7 +3647,7 @@ export default function CreatePurchasePanel() {
         vehicleOuterTarpaulinVal = approvalData.vehicleOuterTarpaulin?.toString() || "0";
         console.log("✅ Loading Expenses from VNN Approval");
       }
-      
+
       setLoadingExpenses({
         loadingCharges: loadingChargesVal,
         loadingStaffMunshiyana: loadingStaffMunshiyanaVal,
@@ -3679,7 +3679,7 @@ export default function CreatePurchasePanel() {
         status: approvalData.approvalStatus || "Pending",
         remarks: approvalData.remarks || `Auto-filled from VNN: ${vnnData.vnnNo}`,
       });
-      
+
       // Set memo file from VNN if exists
       if (approvalData.memoFile && approvalData.memoFile.filePath) {
         setMemoFileInfo(approvalData.memoFile);
@@ -3704,39 +3704,39 @@ export default function CreatePurchasePanel() {
       // ====================================================
       if (vnnData.orders && vnnData.orders.length > 0) {
         const newOrderRows = vnnData.orders.map(order => {
-          let locationRate = "";
-          let priceList = "";
-          let rate = "";
-          let totalAmount = "";
-          
+          // let locationRate = "";
+          // let priceList = "";
+          // let rate = "";
+          // let totalAmount = "";
+
           // Get fromState from order data
           const fromState = order.fromState || '';
           const orderState = order.stateName || order.state || '';
-          
+
           // Determine local status
           let localStatus = 'unknown';
           let localStatusLabel = 'Unknown';
-          
+
           if (fromState && orderState) {
             const isLocal = fromState.trim().toUpperCase() === orderState.trim().toUpperCase();
             localStatus = isLocal ? 'local' : 'not-local';
             localStatusLabel = isLocal ? 'Local' : 'Not Local';
           }
-          
+
           if (pricingData && pricingData.orders) {
             const matchingPricingOrder = pricingData.orders.find(
               po => po.orderNo === order.orderNo
             );
-            
+
             if (matchingPricingOrder) {
               console.log(`✅ Found pricing data for order ${order.orderNo}:`, matchingPricingOrder);
-              locationRate = matchingPricingOrder.locationRate?.toString() || "";
-              priceList = matchingPricingOrder.priceList || "";
-              rate = matchingPricingOrder.rate?.toString() || "";
-              totalAmount = matchingPricingOrder.totalAmount?.toString() || "";
+              // locationRate = matchingPricingOrder.locationRate?.toString() || "";
+              // priceList = matchingPricingOrder.priceList || "";
+              // rate = matchingPricingOrder.rate?.toString() || "";
+              // totalAmount = matchingPricingOrder.totalAmount?.toString() || "";
             }
           }
-          
+
           return {
             _id: uid(),
             orderNo: order.orderNo || "",
@@ -3755,11 +3755,11 @@ export default function CreatePurchasePanel() {
             fromState: fromState,
             to: order.toName || order.to || "",
             toName: order.toName || order.to || "",
-            locationRate: locationRate,
-            priceList: priceList,
+            // locationRate: locationRate,
+            // priceList: priceList,
             weight: order.weight?.toString() || "",
-            rate: rate,
-            totalAmount: totalAmount,
+            // rate: rate,
+            // totalAmount: totalAmount,
             collectionCharges: order.collectionCharges?.toString() || "0",
             cancellationCharges: order.cancellationCharges || "Nil",
             loadingCharges: order.loadingCharges || "Nil",
@@ -3768,12 +3768,12 @@ export default function CreatePurchasePanel() {
             localStatusLabel: localStatusLabel
           };
         });
-        
+
         setOrderRows(newOrderRows);
-        
+
         const totalWeight = newOrderRows.reduce((sum, row) => sum + num(row.weight), 0);
         const totalOrderAmount = newOrderRows.reduce((sum, row) => sum + num(row.totalAmount), 0);
-        
+
         setPurchaseDetails(prev => ({
           ...prev,
           weight: totalWeight.toString(),
@@ -3797,9 +3797,9 @@ export default function CreatePurchasePanel() {
         loadedMessage += `\n✅ Sub-Company: ${subCompanyName} (${subCompanyCode})`;
       }
       loadedMessage += `\n💰 Purchase Amount (A x B): ₹${calculatedPurchaseAmount.toLocaleString()}`;
-      
+
       alert(loadedMessage);
-      
+
     } catch (error) {
       console.error("❌ Error loading data:", error);
       alert(`❌ Failed to load data: ${error.message}`);
@@ -3833,13 +3833,13 @@ export default function CreatePurchasePanel() {
       prev.map((r) => {
         if (r._id === rowId) {
           const updatedRow = { ...r, [key]: value };
-          
+
           if (key === "weight" || key === "rate") {
             const weight = num(updatedRow.weight);
             const rate = num(updatedRow.rate);
             updatedRow.totalAmount = (weight * rate).toString();
           }
-          
+
           return updatedRow;
         }
         return r;
@@ -3864,9 +3864,9 @@ export default function CreatePurchasePanel() {
     if (orderRows.length > 1) {
       const newRows = orderRows.filter((r) => r._id !== rowId);
       setOrderRows(newRows);
-      
+
       const totalWeight = newRows.reduce((sum, row) => sum + num(row.weight), 0);
-      
+
       setPurchaseDetails(prev => ({
         ...prev,
         weight: totalWeight.toString(),
@@ -3881,9 +3881,9 @@ export default function CreatePurchasePanel() {
     if (!row) return;
     const newRows = [...orderRows, { ...row, _id: uid(), orderNo: "" }];
     setOrderRows(newRows);
-    
+
     const totalWeight = newRows.reduce((sum, row) => sum + num(row.weight), 0);
-    
+
     setPurchaseDetails(prev => ({
       ...prev,
       weight: totalWeight.toString(),
@@ -3941,7 +3941,7 @@ export default function CreatePurchasePanel() {
       const cancellationCharges = num(row.cancellationCharges);
       const loadingCharges = num(row.loadingCharges);
       const otherCharges = num(row.otherCharges);
-      
+
       return sum + totalAmount + collectionCharges + cancellationCharges + loadingCharges + otherCharges;
     }, 0);
   };
@@ -3988,7 +3988,7 @@ export default function CreatePurchasePanel() {
     const totalDeductions = calculateTotalDeductions();
     const totalLoadingExpenses = calculateTotalLoadingExpenses();
     const totalWarehouseExpenses = calculateTotalWarehouseExpenses();
-    
+
     return advance + totalAdditions - totalDeductions - totalLoadingExpenses - totalWarehouseExpenses;
   };
 
@@ -4082,9 +4082,9 @@ export default function CreatePurchasePanel() {
 
       const data = await res.json();
       alert(`✅ Purchase saved successfully!\nPurchase No: ${data.data?.purchaseNo || 'Generated'}`);
-      
+
       router.push('/admin/Purchase-Panel');
-      
+
     } catch (error) {
       console.error('Error saving purchase:', error);
       alert(`❌ Error: ${error.message}`);
@@ -4109,7 +4109,7 @@ export default function CreatePurchasePanel() {
       date: new Date().toISOString().split('T')[0],
       delivery: "",
     });
-    
+
     setBilling({
       billingType: "",
       noOfLoadingPoints: "",
@@ -4119,9 +4119,9 @@ export default function CreatePurchasePanel() {
       loadingCharges: "",
       otherCharges: "",
     });
-    
+
     setOrderRows([defaultOrderRow()]);
-    
+
     setPurchaseDetails({
       vendorStatus: "",
       vendorName: "",
@@ -4140,7 +4140,7 @@ export default function CreatePurchasePanel() {
       driverMobileNo: "",
       purchaseDate: new Date().toISOString().split('T')[0],
     });
-    
+
     setLoadingExpenses({
       loadingCharges: "",
       loadingStaffMunshiyana: "",
@@ -4148,28 +4148,28 @@ export default function CreatePurchasePanel() {
       vehicleFloorTarpaulin: "",
       vehicleOuterTarpaulin: "",
     });
-    
+
     setWarehouseExpenses({
       wVehicleFloorTarpaulin: "",
       wVehicleOuterTarpaulin: "",
     });
-    
+
     setAdditions([]);
     setDeductions([]);
     setMemoFileInfo(null);
     setPurchaseAmountFromVNN(0);
-    
+
     setRegisteredVehicle({
       loadingPanelPlate: "",
       registeredPlate: "",
       isRegistered: false,
     });
-    
+
     setApproval({
       status: "",
       remarks: "",
     });
-    
+
     setArrivalDetails({
       inDate: new Date().toISOString().split('T')[0],
       inTime: "",
@@ -4242,11 +4242,10 @@ export default function CreatePurchasePanel() {
             <button
               onClick={handleSave}
               disabled={saving || fetchingData}
-              className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${
-                saving || fetchingData
-                  ? 'bg-gray-400 cursor-not-allowed' 
+              className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${saving || fetchingData
+                  ? 'bg-gray-400 cursor-not-allowed'
                   : 'bg-emerald-600 hover:bg-emerald-700'
-              }`}
+                }`}
             >
               {saving ? (
                 <span className="flex items-center gap-2">
@@ -4295,7 +4294,7 @@ export default function CreatePurchasePanel() {
                     </div>
                   )}
                 </div>
-                
+
                 {showLoadingInfoDropdown && (
                   <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
                     {loadingInfoHook.loading ? (
@@ -4531,10 +4530,10 @@ export default function CreatePurchasePanel() {
                     <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[120px]">From</th>
                     <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[120px]">To</th>
                     <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[110px]">Local/Not Local</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[100px]">Location Rate</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[100px]">Price List</th>
+                    {/* <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[100px]">Location Rate</th>
+                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[100px]">Price List</th> */}
                     <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[80px]">Weight</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[80px]">Rate</th>
+                    {/* <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[80px]">Rate</th> */}
                     <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[130px]">Collection Charges</th>
                     <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[140px]">Cancellation Charges</th>
                     <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[130px]">Loading Charges</th>
@@ -4646,18 +4645,17 @@ export default function CreatePurchasePanel() {
                       </td>
                       <td className="border border-yellow-300 px-2 py-2 text-center">
                         {row.fromState && row.state ? (
-                          <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${
-                            row.fromState.trim().toUpperCase() === row.state.trim().toUpperCase()
+                          <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${row.fromState.trim().toUpperCase() === row.state.trim().toUpperCase()
                               ? 'bg-green-100 text-green-800 border border-green-300'
                               : 'bg-red-100 text-red-800 border border-red-300'
-                          }`}>
+                            }`}>
                             {row.fromState.trim().toUpperCase() === row.state.trim().toUpperCase() ? '✅ Local' : '❌ Not Local'}
                           </span>
                         ) : (
                           <span className="text-xs text-gray-400">-</span>
                         )}
                       </td>
-                      <td className="border border-yellow-300 px-2 py-2">
+                      {/* <td className="border border-yellow-300 px-2 py-2">
                         <input
                           type="text"
                           value={row.locationRate || ""}
@@ -4665,8 +4663,8 @@ export default function CreatePurchasePanel() {
                           className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm"
                           placeholder="Location Rate"
                         />
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
+                      </td> */}
+                      {/* <td className="border border-yellow-300 px-2 py-2">
                         <input
                           type="text"
                           value={row.priceList || ""}
@@ -4674,7 +4672,7 @@ export default function CreatePurchasePanel() {
                           className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm"
                           placeholder="Price List"
                         />
-                      </td>
+                      </td> */}
                       <td className="border border-yellow-300 px-2 py-2">
                         <input
                           type="number"
@@ -4684,7 +4682,7 @@ export default function CreatePurchasePanel() {
                           placeholder="0"
                         />
                       </td>
-                      <td className="border border-yellow-300 px-2 py-2">
+                      {/* <td className="border border-yellow-300 px-2 py-2">
                         <input
                           type="number"
                           value={row.rate || ""}
@@ -4692,7 +4690,7 @@ export default function CreatePurchasePanel() {
                           className="w-20 rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm"
                           placeholder="0"
                         />
-                      </td>
+                      </td> */}
                       <td className="border border-yellow-300 px-2 py-2">
                         <input
                           type="number"
@@ -4750,7 +4748,7 @@ export default function CreatePurchasePanel() {
                     </tr>
                   ))}
                 </tbody>
-                <tfoot className="bg-yellow-100">
+                {/* <tfoot className="bg-yellow-100">
                   <tr>
                     <td colSpan="20" className="border border-yellow-300 px-3 py-2 text-right font-bold">
                       Total Order Amount:
@@ -4759,7 +4757,7 @@ export default function CreatePurchasePanel() {
                       ₹{calculateTotalOrderAmount().toLocaleString()}
                     </td>
                   </tr>
-                </tfoot>
+                </tfoot> */}
               </table>
             </div>
           </Card>
@@ -4773,7 +4771,7 @@ export default function CreatePurchasePanel() {
               <div className="col-span-12 md:col-span-4">
                 <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-200 h-full">
                   <h3 className="text-sm font-bold text-slate-800 mb-3">Vendor Information</h3>
-                  
+
                   <div className="space-y-3">
                     <div>
                       <label className="text-xs font-bold text-slate-600">Vendor Status</label>
@@ -4855,7 +4853,7 @@ export default function CreatePurchasePanel() {
               <div className="col-span-12 md:col-span-4">
                 <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 h-full">
                   <h3 className="text-sm font-bold text-slate-800 mb-3">Purchase Terms (Auto-filled from VNN)</h3>
-                  
+
                   <div className="space-y-3">
                     <div>
                       <label className="text-xs font-bold text-slate-600">Purchase - Type</label>
@@ -4949,9 +4947,9 @@ export default function CreatePurchasePanel() {
                     </svg>
                     MEMO from Vehicle Negotiation
                   </h3>
-                  
+
                   {memoFileInfo ? (
-                    <div 
+                    <div
                       className="relative group cursor-pointer overflow-hidden rounded-xl border-2 border-green-300 bg-white shadow-lg hover:shadow-xl transition-all duration-300"
                       onClick={() => {
                         if (memoFileInfo.filePath) {
@@ -4962,8 +4960,8 @@ export default function CreatePurchasePanel() {
                       {/* Image/File Preview */}
                       <div className="relative w-full min-h-[280px] bg-gray-100">
                         {memoFileInfo.mimeType?.includes('image') ? (
-                          <img 
-                            src={memoFileInfo.filePath} 
+                          <img
+                            src={memoFileInfo.filePath}
                             alt={memoFileInfo.originalName}
                             className="w-full h-full min-h-[280px] object-contain transition-transform duration-300 group-hover:scale-105"
                             onError={(e) => {
@@ -4997,7 +4995,7 @@ export default function CreatePurchasePanel() {
                             <span className="text-sm text-gray-500 mt-1">Click to download</span>
                           </div>
                         )}
-                        
+
                         {/* Hover Overlay */}
                         <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col items-center justify-center gap-2">
                           <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -5007,7 +5005,7 @@ export default function CreatePurchasePanel() {
                           <span className="text-white text-sm font-medium">Click to View Full Size</span>
                         </div>
                       </div>
-                      
+
                       {/* File Info Footer */}
                       <div className="p-3 bg-white border-t border-green-100">
                         <div className="flex justify-between items-center">
@@ -5061,7 +5059,7 @@ export default function CreatePurchasePanel() {
                   Will be deducted from Total Amount
                 </div>
               </div>
-              
+
               <div className="space-y-3">
                 {/* Loading Charges */}
                 <div className="flex justify-between items-center">
@@ -5074,7 +5072,7 @@ export default function CreatePurchasePanel() {
                     placeholder="0"
                   />
                 </div>
-                
+
                 {/* Loading Staff Munshiyana */}
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-slate-700">Loading Staff Munshiyana:</span>
@@ -5086,7 +5084,7 @@ export default function CreatePurchasePanel() {
                     placeholder="0"
                   />
                 </div>
-                
+
                 {/* Other Expenses */}
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-slate-700">Other Expenses:</span>
@@ -5098,7 +5096,7 @@ export default function CreatePurchasePanel() {
                     placeholder="0"
                   />
                 </div>
-                
+
                 {/* Vehicle - Floor Tarpaulin */}
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-slate-700">Vehicle - Floor Tarpaulin:</span>
@@ -5115,7 +5113,7 @@ export default function CreatePurchasePanel() {
                     </span>
                   </div>
                 </div>
-                
+
                 {/* Vehicle - Outer Tarpaulin */}
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-slate-700">Vehicle - Outer Tarpaulin:</span>
@@ -5132,7 +5130,7 @@ export default function CreatePurchasePanel() {
                     </span>
                   </div>
                 </div>
-                
+
                 {/* Total Line */}
                 <div className="flex justify-between items-center pt-2 border-t border-slate-200 mt-2">
                   <span className="text-sm font-bold text-slate-800">Total Deduct at Office:</span>
@@ -5172,9 +5170,9 @@ export default function CreatePurchasePanel() {
                     <input
                       type="text"
                       value={registeredVehicle.registeredPlate}
-                      onChange={(e) => setRegisteredVehicle({ 
-                        ...registeredVehicle, 
-                        registeredPlate: e.target.value 
+                      onChange={(e) => setRegisteredVehicle({
+                        ...registeredVehicle,
+                        registeredPlate: e.target.value
                       })}
                       className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
                       placeholder="Enter registered plate number"
@@ -5193,9 +5191,9 @@ export default function CreatePurchasePanel() {
                         type="checkbox"
                         id="registered"
                         checked={registeredVehicle.isRegistered}
-                        onChange={(e) => setRegisteredVehicle({ 
-                          ...registeredVehicle, 
-                          isRegistered: e.target.checked 
+                        onChange={(e) => setRegisteredVehicle({
+                          ...registeredVehicle,
+                          isRegistered: e.target.checked
                         })}
                         className="h-5 w-5 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
                       />
@@ -5256,7 +5254,7 @@ export default function CreatePurchasePanel() {
 
             {/* Deductions Column */}
             <div className="col-span-12 md:col-span-6">
-              <Card 
+              <Card
                 title="Deductions (-) - Adjustments"
                 right={
                   <button
@@ -5332,7 +5330,7 @@ export default function CreatePurchasePanel() {
 
             {/* Additions Column */}
             <div className="col-span-12 md:col-span-6">
-              <Card 
+              <Card
                 title="Additions (+) - Extra Charges"
                 right={
                   <button
