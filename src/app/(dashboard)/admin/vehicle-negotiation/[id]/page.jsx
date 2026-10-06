@@ -348,7 +348,7 @@
 
 // //   useEffect(() => {
 // //     if (isUpdatingRef.current) return;
-    
+
 // //     if (selectedId && typeof selectedId === 'string') {
 // //       const item = items.find(i => i._id === selectedId || i.code === selectedId || i.supplierName === selectedId);
 // //       if (item) {
@@ -377,7 +377,7 @@
 
 // //   const handleSearch = (query) => {
 // //     setSearchQuery(query);
-    
+
 // //     if (!query.trim()) {
 // //       setFilteredItems(items);
 // //     } else {
@@ -389,7 +389,7 @@
 // //       });
 // //       setFilteredItems(filtered);
 // //     }
-    
+
 // //     if (selectedItem && query !== getDisplayValue(selectedItem)) {
 // //       setSelectedItem(null);
 // //       isUpdatingRef.current = true;
@@ -409,7 +409,7 @@
 
 // //   const handleInputFocus = () => {
 // //     if (disabled) return;
-    
+
 // //     if (inputRef.current) {
 // //       const rect = inputRef.current.getBoundingClientRect();
 // //       setDropdownPosition({
@@ -418,7 +418,7 @@
 // //         width: rect.width
 // //       });
 // //     }
-    
+
 // //     setFilteredItems(items);
 // //     setShowDropdown(true);
 // //   };
@@ -467,7 +467,7 @@
 // //         disabled={disabled}
 // //         autoComplete="off"
 // //       />
-      
+
 // //       {showDropdown && !disabled && (
 // //         <div 
 // //           ref={dropdownRef}
@@ -558,7 +558,7 @@
 
 // //   const handleSearch = (query) => {
 // //     setSearchQuery(query);
-    
+
 // //     if (!query.trim()) {
 // //       setFilteredItems(items);
 // //     } else {
@@ -578,7 +578,7 @@
 // //       });
 // //       setFilteredItems(filtered);
 // //     }
-    
+
 // //     if (selectedItem && query !== getDisplayValue(selectedItem)) {
 // //       setSelectedItem(null);
 // //       onSelect?.(null);
@@ -626,7 +626,7 @@
 // //         disabled={disabled}
 // //         autoComplete="off"
 // //       />
-      
+
 // //       {showDropdown && !disabled && (
 // //         <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
 // //           {filteredItems.length > 0 ? (
@@ -706,7 +706,7 @@
 // //     if (!showDropdown) {
 // //       setShowDropdown(true);
 // //     }
-    
+
 // //     if (!query.trim()) {
 // //       setSuppliers(supplierSearch.suppliers);
 // //     } else {
@@ -749,7 +749,7 @@
 // //         placeholder={placeholder}
 // //         autoComplete="off"
 // //       />
-      
+
 // //       {showDropdown && !readOnly && (
 // //         <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
 // //           {supplierSearch.loading ? (
@@ -800,7 +800,7 @@
 // //   useEffect(() => {
 // //     if (orderPanelSearch.orderPanels.length > 0) {
 // //       setAllPanels(orderPanelSearch.orderPanels);
-      
+
 // //       const selectedIds = selectedPanels.map(p => p._id);
 // //       const filtered = orderPanelSearch.orderPanels.filter(
 // //         panel => !selectedIds.includes(panel._id)
@@ -811,9 +811,9 @@
 
 // //   const handleSearch = (query) => {
 // //     setSearchQuery(query);
-    
+
 // //     const selectedIds = selectedPanels.map(p => p._id);
-    
+
 // //     if (!query.trim()) {
 // //       const filtered = allPanels.filter(panel => !selectedIds.includes(panel._id));
 // //       setPanels(filtered);
@@ -831,18 +831,18 @@
 
 // //   const handleSelectPanel = async (panel) => {
 // //     setSearchQuery("");
-    
+
 // //     if (selectedPanels.some(p => p._id === panel._id)) {
 // //       alert("This order panel is already selected");
 // //       return;
 // //     }
-    
+
 // //     setLoading(true);
 // //     try {
 // //       const fullPanel = await orderPanelSearch.getOrderPanelById(panel._id);
 // //       if (fullPanel) {
 // //         onSelect(fullPanel);
-        
+
 // //         setPanels(prev => prev.filter(p => p._id !== panel._id));
 // //         setSearchQuery("");
 // //         setShowDropdown(true);
@@ -857,7 +857,7 @@
 // //   const handleRemovePanel = (panelId) => {
 // //     const removedPanel = selectedPanels.find(p => p._id === panelId);
 // //     onSelect(null, panelId);
-    
+
 // //     if (removedPanel) {
 // //       const panelToAdd = allPanels.find(p => p._id === panelId);
 // //       if (panelToAdd) {
@@ -876,7 +876,7 @@
 
 // //   const handleInputFocus = async () => {
 // //     await orderPanelSearch.searchOrderPanels();
-    
+
 // //     const selectedIds = selectedPanels.map(p => p._id);
 // //     const filtered = orderPanelSearch.orderPanels.filter(
 // //       panel => !selectedIds.includes(panel._id)
@@ -898,7 +898,7 @@
 // //         setShowDropdown(false);
 // //       }
 // //     };
-    
+
 // //     document.addEventListener('mousedown', handleClickOutside);
 // //     return () => {
 // //       document.removeEventListener('mousedown', handleClickOutside);
@@ -930,7 +930,7 @@
 // //           ))}
 // //         </div>
 // //       )}
-      
+
 // //       <input
 // //         ref={inputRef}
 // //         type="text"
@@ -943,7 +943,7 @@
 // //         placeholder={placeholder}
 // //         autoComplete="off"
 // //       />
-      
+
 // //       {showDropdown && (
 // //         <div 
 // //           className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto"
@@ -1087,7 +1087,7 @@
 // //   const [selectedVehicle, setSelectedVehicle] = useState(null);
 // //   const vehicleSearch = useVehicleSearch();
 // //   const supplierSearch = useSupplierSearch();
-  
+
 // //   const [customerSearchQuery, setCustomerSearchQuery] = useState("");
 // //   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
 // //   const [selectedCustomer, setSelectedCustomer] = useState(null);
@@ -1280,15 +1280,15 @@
 // //         headers: { Authorization: `Bearer ${token}` },
 // //       });
 // //       const data = await res.json();
-      
+
 // //       if (!data.success) {
 // //         throw new Error(data.message || 'Failed to fetch vehicle negotiation');
 // //       }
 
 // //       const vn = data.data;
-      
+
 // //       setVnnNumber(vn.vnnNo || "");
-      
+
 // //       // Set header with sub-company
 // //       setHeader({
 // //         vnnNo: vn.vnnNo || "",
@@ -1456,7 +1456,7 @@
 
 // //   const handleCustomerSearch = (query) => {
 // //     setCustomerSearchQuery(query);
-    
+
 // //     if (query.trim() === "") {
 // //       setFilteredCustomers(customerSearch.customers);
 // //     } else {
@@ -1467,7 +1467,7 @@
 // //       );
 // //       setFilteredCustomers(filtered);
 // //     }
-    
+
 // //     if (selectedCustomer && query !== selectedCustomer.customerName) {
 // //       setSelectedCustomer(null);
 // //     }
@@ -1477,13 +1477,13 @@
 // //     setSelectedCustomer(customer);
 // //     setCustomerSearchQuery(customer.customerName);
 // //     setShowCustomerDropdown(false);
-    
+
 // //     setHeader(prev => ({
 // //       ...prev,
 // //       partyName: customer.customerName,
 // //       customerId: customer._id
 // //     }));
-    
+
 // //     setOrders(prevOrders => 
 // //       prevOrders.map(order => ({
 // //         ...order,
@@ -1531,10 +1531,10 @@
 // //   const handleOrderPanelSelect = async (fullPanel, removePanelId = null) => {
 // //     if (removePanelId) {
 // //       const panelToRemove = selectedOrderPanels.find(p => p._id === removePanelId);
-      
+
 // //       setSelectedOrderPanels(prev => prev.filter(p => p._id !== removePanelId));
 // //       setOrders(prev => prev.filter(order => order.orderPanelId !== removePanelId));
-      
+
 // //       if (panelToRemove) {
 // //         setHeader(prev => ({
 // //           ...prev,
@@ -1546,7 +1546,7 @@
 // //           dropPoints: String(Math.max(0, (Number(prev.dropPoints) || 0) - (Number(panelToRemove.dropPoints) || 0)))
 // //         }));
 // //       }
-      
+
 // //       if (selectedOrderPanels.length === 1) {
 // //         setOrders([defaultOrderRow()]);
 // //         setHeader(prev => ({
@@ -1574,16 +1574,16 @@
 // //         alert("This order panel is already selected");
 // //         return;
 // //       }
-      
+
 // //       const newSelectedPanels = [...selectedOrderPanels, fullPanel];
 // //       setSelectedOrderPanels(newSelectedPanels);
-      
+
 // //       if (fullPanel.plantRows && fullPanel.plantRows.length > 0) {
 // //         const newOrders = fullPanel.plantRows.map((row) => {
 // //           let plantId = null;
 // //           let plantName = '';
 // //           let plantCode = '';
-          
+
 // //           if (row.plantCode) {
 // //             if (typeof row.plantCode === 'object' && row.plantCode._id) {
 // //               plantId = row.plantCode._id;
@@ -1595,7 +1595,7 @@
 // //               plantCode = row.plantCodeValue || '';
 // //             }
 // //           }
-          
+
 // //           if (!plantId && row.plantCodeValue) {
 // //             const plant = plants.find(p => p.code === row.plantCodeValue);
 // //             if (plant) {
@@ -1604,7 +1604,7 @@
 // //               plantCode = plant.code;
 // //             }
 // //           }
-          
+
 // //           return {
 // //             _id: uid(),
 // //             orderNo: fullPanel.orderPanelNo,
@@ -1644,7 +1644,7 @@
 // //             subCompanyCode: fullPanel.subCompanyCode || header.subCompanyCode || ''
 // //           };
 // //         });
-        
+
 // //         setOrders(prev => {
 // //           const existingOrdersFromPanel = prev.filter(o => o.orderPanelId === fullPanel._id);
 // //           if (existingOrdersFromPanel.length > 0) {
@@ -1708,14 +1708,14 @@
 // //         const otherOrdersFromSamePanel = orders.filter(o => 
 // //           o.orderPanelId === orderToRemove.orderPanelId && o._id !== id
 // //         );
-        
+
 // //         if (otherOrdersFromSamePanel.length === 0) {
 // //           setSelectedOrderPanels(prev => 
 // //             prev.filter(p => p._id !== orderToRemove.orderPanelId)
 // //           );
 // //         }
 // //       }
-      
+
 // //       setOrders((prev) => prev.filter((x) => x._id !== id));
 // //     } else {
 // //       alert("At least one order row is required");
@@ -1753,10 +1753,10 @@
 // //     }
 
 // //     setMemoFile(file);
-    
+
 // //     const formData = new FormData();
 // //     formData.append('file', file);
-    
+
 // //     try {
 // //       const token = localStorage.getItem('token');
 // //       const res = await fetch('/api/upload/excel', {
@@ -1766,9 +1766,9 @@
 // //         },
 // //         body: formData,
 // //       });
-      
+
 // //       const data = await res.json();
-      
+
 // //       if (data.success) {
 // //         setApproval((p) => ({ 
 // //           ...p, 
@@ -1809,7 +1809,7 @@
 
 // //     const formData = new FormData();
 // //     formData.append('file', file);
-    
+
 // //     try {
 // //       const token = localStorage.getItem('token');
 // //       const res = await fetch('/api/upload', {
@@ -1819,9 +1819,9 @@
 // //         },
 // //         body: formData,
 // //       });
-      
+
 // //       const data = await res.json();
-      
+
 // //       if (data.success) {
 // //         let audioUrl;
 // //         if (process.env.NODE_ENV === 'development' && data.filePath) {
@@ -1829,9 +1829,9 @@
 // //         } else {
 // //           audioUrl = URL.createObjectURL(file);
 // //         }
-        
+
 // //         setVoiceUrl(audioUrl);
-        
+
 // //         setVoiceFileInfo({
 // //           filePath: data.filePath,
 // //           fullPath: data.fullPath,
@@ -1840,7 +1840,7 @@
 // //           size: file.size,
 // //           mimeType: file.type
 // //         });
-        
+
 // //         alert("✅ Voice note uploaded successfully!");
 // //       } else {
 // //         throw new Error(data.error || "Upload failed");
@@ -1860,12 +1860,12 @@
 // //       alert("Please select a branch");
 // //       return;
 // //     }
-    
+
 // //     if (orders.length === 0) {
 // //       alert("Please add at least one order");
 // //       return;
 // //     }
-    
+
 // //     const hasInvalidOrders = orders.some(order => !order.plantCode);
 // //     if (hasInvalidOrders) {
 // //       const invalidCount = orders.filter(order => !order.plantCode).length;
@@ -1991,13 +1991,13 @@
 // //       }
 
 // //       setSaveSuccess(true);
-      
+
 // //       alert(`✅ Vehicle negotiation updated successfully!\nVNN Number: ${header.vnnNo}`);
-      
+
 // //       setTimeout(() => {
 // //         router.push('/admin/vehicle-negotiation');
 // //       }, 2000);
-      
+
 // //     } catch (error) {
 // //       console.error('Error updating vehicle negotiation:', error);
 // //       setSaveError(error.message || 'Failed to update vehicle negotiation');
@@ -2327,7 +2327,7 @@
 
 // //   const VendorsTable = ({ rows, onChange, onRemove, onAdd }) => {
 // //     const [selectedSupplierNames, setSelectedSupplierNames] = useState({});
-    
+
 // //     useEffect(() => {
 // //       const names = {};
 // //       rows.forEach(row => {
@@ -2513,7 +2513,7 @@
 // //                 {header.vnnNo || "Auto-generated on save"}
 // //               </div>
 // //             </div>
-            
+
 // //             <div className="col-span-12 md:col-span-6">
 // //               <label className="text-xs font-bold text-slate-600">Select Order Panels (Multi-Select)</label>
 // //               <MultiSelectOrderPanelDropdown
@@ -2527,7 +2527,7 @@
 // //                 </div>
 // //               )}
 // //             </div>
-            
+
 // //             <div className="col-span-12 md:col-span-3">
 // //               <label className="text-xs font-bold text-slate-600">Branch *</label>
 // //               <SearchableDropdown
@@ -2596,7 +2596,7 @@
 
 // //             <Select col="col-span-12 md:col-span-3" label="Delivery" value={header.delivery} onChange={(v) => setHeader((p) => ({ ...p, delivery: v }))} options={["Urgent", "Normal", "Express", "Scheduled"]} readOnly={selectedOrderPanels.length > 0} />
 // //             <Input type="date" col="col-span-12 md:col-span-3" label="Date" value={header.date} onChange={(v) => setHeader((p) => ({ ...p, date: v }))} readOnly={selectedOrderPanels.length > 0} />
-            
+
 // //             <div className="col-span-12 md:col-span-3 relative">
 // //               <label className="text-xs font-bold text-slate-600">Party Name</label>
 // //               <input
@@ -3202,7 +3202,7 @@
 
 //   useEffect(() => {
 //     if (isUpdatingRef.current) return;
-    
+
 //     if (selectedId && typeof selectedId === 'string') {
 //       const item = items.find(i => i._id === selectedId || i.code === selectedId || i.supplierName === selectedId);
 //       if (item) {
@@ -3231,7 +3231,7 @@
 
 //   const handleSearch = (query) => {
 //     setSearchQuery(query);
-    
+
 //     if (!query.trim()) {
 //       setFilteredItems(items);
 //     } else {
@@ -3243,7 +3243,7 @@
 //       });
 //       setFilteredItems(filtered);
 //     }
-    
+
 //     if (selectedItem && query !== getDisplayValue(selectedItem)) {
 //       setSelectedItem(null);
 //       isUpdatingRef.current = true;
@@ -3263,7 +3263,7 @@
 
 //   const handleInputFocus = () => {
 //     if (disabled) return;
-    
+
 //     if (inputRef.current) {
 //       const rect = inputRef.current.getBoundingClientRect();
 //       setDropdownPosition({
@@ -3272,7 +3272,7 @@
 //         width: rect.width
 //       });
 //     }
-    
+
 //     setFilteredItems(items);
 //     setShowDropdown(true);
 //   };
@@ -3321,7 +3321,7 @@
 //         disabled={disabled}
 //         autoComplete="off"
 //       />
-      
+
 //       {showDropdown && !disabled && (
 //         <div 
 //           ref={dropdownRef}
@@ -3412,7 +3412,7 @@
 
 //   const handleSearch = (query) => {
 //     setSearchQuery(query);
-    
+
 //     if (!query.trim()) {
 //       setFilteredItems(items);
 //     } else {
@@ -3432,7 +3432,7 @@
 //       });
 //       setFilteredItems(filtered);
 //     }
-    
+
 //     if (selectedItem && query !== getDisplayValue(selectedItem)) {
 //       setSelectedItem(null);
 //       onSelect?.(null);
@@ -3480,7 +3480,7 @@
 //         disabled={disabled}
 //         autoComplete="off"
 //       />
-      
+
 //       {showDropdown && !disabled && (
 //         <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
 //           {filteredItems.length > 0 ? (
@@ -3560,7 +3560,7 @@
 //     if (!showDropdown) {
 //       setShowDropdown(true);
 //     }
-    
+
 //     if (!query.trim()) {
 //       setSuppliers(supplierSearch.suppliers);
 //     } else {
@@ -3603,7 +3603,7 @@
 //         placeholder={placeholder}
 //         autoComplete="off"
 //       />
-      
+
 //       {showDropdown && !readOnly && (
 //         <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
 //           {supplierSearch.loading ? (
@@ -3654,7 +3654,7 @@
 //   useEffect(() => {
 //     if (orderPanelSearch.orderPanels.length > 0) {
 //       setAllPanels(orderPanelSearch.orderPanels);
-      
+
 //       const selectedIds = selectedPanels.map(p => p._id);
 //       const filtered = orderPanelSearch.orderPanels.filter(
 //         panel => !selectedIds.includes(panel._id)
@@ -3665,9 +3665,9 @@
 
 //   const handleSearch = (query) => {
 //     setSearchQuery(query);
-    
+
 //     const selectedIds = selectedPanels.map(p => p._id);
-    
+
 //     if (!query.trim()) {
 //       const filtered = allPanels.filter(panel => !selectedIds.includes(panel._id));
 //       setPanels(filtered);
@@ -3685,18 +3685,18 @@
 
 //   const handleSelectPanel = async (panel) => {
 //     setSearchQuery("");
-    
+
 //     if (selectedPanels.some(p => p._id === panel._id)) {
 //       alert("This order panel is already selected");
 //       return;
 //     }
-    
+
 //     setLoading(true);
 //     try {
 //       const fullPanel = await orderPanelSearch.getOrderPanelById(panel._id);
 //       if (fullPanel) {
 //         onSelect(fullPanel);
-        
+
 //         setPanels(prev => prev.filter(p => p._id !== panel._id));
 //         setSearchQuery("");
 //         setShowDropdown(true);
@@ -3711,7 +3711,7 @@
 //   const handleRemovePanel = (panelId) => {
 //     const removedPanel = selectedPanels.find(p => p._id === panelId);
 //     onSelect(null, panelId);
-    
+
 //     if (removedPanel) {
 //       const panelToAdd = allPanels.find(p => p._id === panelId);
 //       if (panelToAdd) {
@@ -3730,7 +3730,7 @@
 
 //   const handleInputFocus = async () => {
 //     await orderPanelSearch.searchOrderPanels();
-    
+
 //     const selectedIds = selectedPanels.map(p => p._id);
 //     const filtered = orderPanelSearch.orderPanels.filter(
 //       panel => !selectedIds.includes(panel._id)
@@ -3752,7 +3752,7 @@
 //         setShowDropdown(false);
 //       }
 //     };
-    
+
 //     document.addEventListener('mousedown', handleClickOutside);
 //     return () => {
 //       document.removeEventListener('mousedown', handleClickOutside);
@@ -3784,7 +3784,7 @@
 //           ))}
 //         </div>
 //       )}
-      
+
 //       <input
 //         ref={inputRef}
 //         type="text"
@@ -3797,7 +3797,7 @@
 //         placeholder={placeholder}
 //         autoComplete="off"
 //       />
-      
+
 //       {showDropdown && (
 //         <div 
 //           className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto"
@@ -3941,7 +3941,7 @@
 //   const [selectedVehicle, setSelectedVehicle] = useState(null);
 //   const vehicleSearch = useVehicleSearch();
 //   const supplierSearch = useSupplierSearch();
-  
+
 //   const [customerSearchQuery, setCustomerSearchQuery] = useState("");
 //   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
 //   const [selectedCustomer, setSelectedCustomer] = useState(null);
@@ -4138,15 +4138,15 @@
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
 //       const data = await res.json();
-      
+
 //       if (!data.success) {
 //         throw new Error(data.message || 'Failed to fetch vehicle negotiation');
 //       }
 
 //       const vn = data.data;
-      
+
 //       setVnnNumber(vn.vnnNo || "");
-      
+
 //       // Set header with sub-company
 //       setHeader({
 //         vnnNo: vn.vnnNo || "",
@@ -4314,7 +4314,7 @@
 
 //   const handleCustomerSearch = (query) => {
 //     setCustomerSearchQuery(query);
-    
+
 //     if (query.trim() === "") {
 //       setFilteredCustomers(customerSearch.customers);
 //     } else {
@@ -4325,7 +4325,7 @@
 //       );
 //       setFilteredCustomers(filtered);
 //     }
-    
+
 //     if (selectedCustomer && query !== selectedCustomer.customerName) {
 //       setSelectedCustomer(null);
 //     }
@@ -4335,13 +4335,13 @@
 //     setSelectedCustomer(customer);
 //     setCustomerSearchQuery(customer.customerName);
 //     setShowCustomerDropdown(false);
-    
+
 //     setHeader(prev => ({
 //       ...prev,
 //       partyName: customer.customerName,
 //       customerId: customer._id
 //     }));
-    
+
 //     setOrders(prevOrders => 
 //       prevOrders.map(order => ({
 //         ...order,
@@ -4389,10 +4389,10 @@
 //   const handleOrderPanelSelect = async (fullPanel, removePanelId = null) => {
 //     if (removePanelId) {
 //       const panelToRemove = selectedOrderPanels.find(p => p._id === removePanelId);
-      
+
 //       setSelectedOrderPanels(prev => prev.filter(p => p._id !== removePanelId));
 //       setOrders(prev => prev.filter(order => order.orderPanelId !== removePanelId));
-      
+
 //       if (panelToRemove) {
 //         setHeader(prev => ({
 //           ...prev,
@@ -4404,7 +4404,7 @@
 //           dropPoints: String(Math.max(0, (Number(prev.dropPoints) || 0) - (Number(panelToRemove.dropPoints) || 0)))
 //         }));
 //       }
-      
+
 //       if (selectedOrderPanels.length === 1) {
 //         setOrders([defaultOrderRow()]);
 //         setHeader(prev => ({
@@ -4432,16 +4432,16 @@
 //         alert("This order panel is already selected");
 //         return;
 //       }
-      
+
 //       const newSelectedPanels = [...selectedOrderPanels, fullPanel];
 //       setSelectedOrderPanels(newSelectedPanels);
-      
+
 //       if (fullPanel.plantRows && fullPanel.plantRows.length > 0) {
 //         const newOrders = fullPanel.plantRows.map((row) => {
 //           let plantId = null;
 //           let plantName = '';
 //           let plantCode = '';
-          
+
 //           if (row.plantCode) {
 //             if (typeof row.plantCode === 'object' && row.plantCode._id) {
 //               plantId = row.plantCode._id;
@@ -4453,7 +4453,7 @@
 //               plantCode = row.plantCodeValue || '';
 //             }
 //           }
-          
+
 //           if (!plantId && row.plantCodeValue) {
 //             const plant = plants.find(p => p.code === row.plantCodeValue);
 //             if (plant) {
@@ -4462,7 +4462,7 @@
 //               plantCode = plant.code;
 //             }
 //           }
-          
+
 //           return {
 //             _id: uid(),
 //             orderNo: fullPanel.orderPanelNo,
@@ -4502,7 +4502,7 @@
 //             subCompanyCode: fullPanel.subCompanyCode || header.subCompanyCode || ''
 //           };
 //         });
-        
+
 //         setOrders(prev => {
 //           const existingOrdersFromPanel = prev.filter(o => o.orderPanelId === fullPanel._id);
 //           if (existingOrdersFromPanel.length > 0) {
@@ -4566,14 +4566,14 @@
 //         const otherOrdersFromSamePanel = orders.filter(o => 
 //           o.orderPanelId === orderToRemove.orderPanelId && o._id !== id
 //         );
-        
+
 //         if (otherOrdersFromSamePanel.length === 0) {
 //           setSelectedOrderPanels(prev => 
 //             prev.filter(p => p._id !== orderToRemove.orderPanelId)
 //           );
 //         }
 //       }
-      
+
 //       setOrders((prev) => prev.filter((x) => x._id !== id));
 //     } else {
 //       alert("At least one order row is required");
@@ -4611,10 +4611,10 @@
 //     }
 
 //     setMemoFile(file);
-    
+
 //     const formData = new FormData();
 //     formData.append('file', file);
-    
+
 //     try {
 //       const token = localStorage.getItem('token');
 //       const res = await fetch('/api/upload/excel', {
@@ -4624,9 +4624,9 @@
 //         },
 //         body: formData,
 //       });
-      
+
 //       const data = await res.json();
-      
+
 //       if (data.success) {
 //         setApproval((p) => ({ 
 //           ...p, 
@@ -4667,7 +4667,7 @@
 
 //     const formData = new FormData();
 //     formData.append('file', file);
-    
+
 //     try {
 //       const token = localStorage.getItem('token');
 //       const res = await fetch('/api/upload', {
@@ -4677,9 +4677,9 @@
 //         },
 //         body: formData,
 //       });
-      
+
 //       const data = await res.json();
-      
+
 //       if (data.success) {
 //         let audioUrl;
 //         if (process.env.NODE_ENV === 'development' && data.filePath) {
@@ -4687,9 +4687,9 @@
 //         } else {
 //           audioUrl = URL.createObjectURL(file);
 //         }
-        
+
 //         setVoiceUrl(audioUrl);
-        
+
 //         setVoiceFileInfo({
 //           filePath: data.filePath,
 //           fullPath: data.fullPath,
@@ -4698,7 +4698,7 @@
 //           size: file.size,
 //           mimeType: file.type
 //         });
-        
+
 //         alert("✅ Voice note uploaded successfully!");
 //       } else {
 //         throw new Error(data.error || "Upload failed");
@@ -4718,12 +4718,12 @@
 //       alert("Please select a branch");
 //       return;
 //     }
-    
+
 //     if (orders.length === 0) {
 //       alert("Please add at least one order");
 //       return;
 //     }
-    
+
 //     const hasInvalidOrders = orders.some(order => !order.plantCode);
 //     if (hasInvalidOrders) {
 //       const invalidCount = orders.filter(order => !order.plantCode).length;
@@ -4849,13 +4849,13 @@
 //       }
 
 //       setSaveSuccess(true);
-      
+
 //       alert(`✅ Vehicle negotiation updated successfully!\nVNN Number: ${header.vnnNo}`);
-      
+
 //       setTimeout(() => {
 //         router.push('/admin/vehicle-negotiation');
 //       }, 2000);
-      
+
 //     } catch (error) {
 //       console.error('Error updating vehicle negotiation:', error);
 //       setSaveError(error.message || 'Failed to update vehicle negotiation');
@@ -5185,7 +5185,7 @@
 
 //   const VendorsTable = ({ rows, onChange, onRemove, onAdd }) => {
 //     const [selectedSupplierNames, setSelectedSupplierNames] = useState({});
-    
+
 //     useEffect(() => {
 //       const names = {};
 //       rows.forEach(row => {
@@ -5374,7 +5374,7 @@
 //                 {header.vnnNo || "Auto-generated on save"}
 //               </div>
 //             </div>
-            
+
 //             <div className="col-span-12 md:col-span-6">
 //               <label className="text-xs font-bold text-slate-600">Select Order Panels (Multi-Select)</label>
 //               <MultiSelectOrderPanelDropdown
@@ -5388,7 +5388,7 @@
 //                 </div>
 //               )}
 //             </div>
-            
+
 //             <div className="col-span-12 md:col-span-3">
 //               <label className="text-xs font-bold text-slate-600">Branch *</label>
 //               <SearchableDropdown
@@ -5457,7 +5457,7 @@
 
 //             <Select col="col-span-12 md:col-span-3" label="Delivery" value={header.delivery} onChange={(v) => setHeader((p) => ({ ...p, delivery: v }))} options={["Urgent", "Normal", "Express", "Scheduled"]} readOnly={selectedOrderPanels.length > 0} />
 //             <Input type="date" col="col-span-12 md:col-span-3" label="Date" value={header.date} onChange={(v) => setHeader((p) => ({ ...p, date: v }))} readOnly={selectedOrderPanels.length > 0} />
-            
+
 //             <div className="col-span-12 md:col-span-3 relative">
 //               <label className="text-xs font-bold text-slate-600">Party Name</label>
 //               <input
@@ -5822,7 +5822,6 @@
 //     </div>
 //   );
 // }
-
 "use client";
 
 import { useMemo, useRef, useState, useEffect } from "react";
@@ -6091,7 +6090,7 @@ function defaultVendorRow() {
   return {
     _id: uid(),
     vendorName: "",
-    vendorCode: "", 
+    vendorCode: "",
     marketRate: "",
     purchaseType: "",
   };
@@ -6122,9 +6121,8 @@ function Input({ label, value, onChange, col = "", type = "text", readOnly = fal
         onChange={(e) => onChange?.(e.target.value)}
         readOnly={readOnly}
         disabled={disabled}
-        className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${
-          readOnly || disabled ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-        }`}
+        className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${readOnly || disabled ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+          }`}
       />
     </div>
   );
@@ -6138,9 +6136,8 @@ function Select({ label, value, onChange, options = [], col = "", readOnly = fal
         value={value || ""}
         onChange={(e) => onChange?.(e.target.value)}
         disabled={readOnly}
-        className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${
-          readOnly ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-        }`}
+        className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${readOnly ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+          }`}
       >
         <option value="">Select {label}</option>
         {options.map((o) => (
@@ -6151,10 +6148,10 @@ function Select({ label, value, onChange, options = [], col = "", readOnly = fal
   );
 }
 
-function TableSearchableDropdown({ 
-  items, 
-  selectedId, 
-  onSelect, 
+function TableSearchableDropdown({
+  items,
+  selectedId,
+  onSelect,
   placeholder = "Search...",
   required = false,
   displayField = 'name',
@@ -6176,7 +6173,7 @@ function TableSearchableDropdown({
 
   useEffect(() => {
     if (isUpdatingRef.current) return;
-    
+
     if (selectedId && typeof selectedId === 'string') {
       const item = items.find(i => i._id === selectedId || i.code === selectedId || i.supplierName === selectedId);
       if (item) {
@@ -6205,7 +6202,7 @@ function TableSearchableDropdown({
 
   const handleSearch = (query) => {
     setSearchQuery(query);
-    
+
     if (!query.trim()) {
       setFilteredItems(items);
     } else {
@@ -6217,7 +6214,7 @@ function TableSearchableDropdown({
       });
       setFilteredItems(filtered);
     }
-    
+
   };
 
   const clearSelection = () => {
@@ -6243,7 +6240,7 @@ function TableSearchableDropdown({
 
   const handleInputFocus = () => {
     if (disabled || selectedItem) return;
-    
+
     if (inputRef.current) {
       const rect = inputRef.current.getBoundingClientRect();
       setDropdownPosition({
@@ -6252,7 +6249,7 @@ function TableSearchableDropdown({
         width: rect.width
       });
     }
-    
+
     setFilteredItems(items);
     setHighlightedIndex(-1);
     setShowDropdown(true);
@@ -6339,9 +6336,9 @@ function TableSearchableDropdown({
         aria-activedescendant={highlightedIndex >= 0 ? `${listboxId}-${highlightedIndex}` : undefined}
       />
       {selectedItem && !disabled && <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={clearSelection} className="absolute right-1 top-1/2 -translate-y-1/2 rounded p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-800" aria-label="Clear selected value" title="Clear selection to choose another value">×</button>}
-      
+
       {showDropdown && !disabled && (
-        <div 
+        <div
           ref={dropdownRef}
           style={{
             position: 'fixed',
@@ -6366,9 +6363,8 @@ function TableSearchableDropdown({
                   e.preventDefault();
                   handleSelectItem(item);
                 }}
-                className={`p-2 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors ${
-                  selectedItem?._id === item._id || highlightedIndex === filteredItems.indexOf(item) ? 'bg-sky-50' : ''
-                }`}
+                className={`p-2 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors ${selectedItem?._id === item._id || highlightedIndex === filteredItems.indexOf(item) ? 'bg-sky-50' : ''
+                  }`}
               >
                 <div className="font-medium text-slate-800 text-sm">
                   {item[displayField]}
@@ -6382,8 +6378,8 @@ function TableSearchableDropdown({
             ))
           ) : (
             <div className="p-2 text-center text-sm text-slate-500">
-              {searchQuery.trim() ? 
-                `No items found for "${searchQuery}"` : 
+              {searchQuery.trim() ?
+                `No items found for "${searchQuery}"` :
                 "No items available"
               }
             </div>
@@ -6394,10 +6390,10 @@ function TableSearchableDropdown({
   );
 }
 
-function SearchableDropdown({ 
-  items, 
-  selectedId, 
-  onSelect, 
+function SearchableDropdown({
+  items,
+  selectedId,
+  onSelect,
   placeholder = "Search...",
   required = false,
   displayField = 'name',
@@ -6436,27 +6432,27 @@ function SearchableDropdown({
 
   const handleSearch = (query) => {
     setSearchQuery(query);
-    
+
     if (!query.trim()) {
       setFilteredItems(items);
     } else {
       const filtered = items.filter(item => {
         if (displayField === 'supplierName') {
           return (item.supplierName && item.supplierName.toLowerCase().includes(query.toLowerCase())) ||
-                 (item.supplierCode && item.supplierCode.toLowerCase().includes(query.toLowerCase()));
+            (item.supplierCode && item.supplierCode.toLowerCase().includes(query.toLowerCase()));
         }
         if (displayField === 'vehicleNumber') {
           return (item.vehicleNumber && item.vehicleNumber.toLowerCase().includes(query.toLowerCase())) ||
-                 (item.ownerName && item.ownerName.toLowerCase().includes(query.toLowerCase())) ||
-                 (item.rcNumber && item.rcNumber.toLowerCase().includes(query.toLowerCase()));
+            (item.ownerName && item.ownerName.toLowerCase().includes(query.toLowerCase())) ||
+            (item.rcNumber && item.rcNumber.toLowerCase().includes(query.toLowerCase()));
         }
         return (item[displayField] && item[displayField].toLowerCase().includes(query.toLowerCase())) ||
-               (item[codeField] && item[codeField].toLowerCase().includes(query.toLowerCase())) ||
-               (item.customerName && item.customerName.toLowerCase().includes(query.toLowerCase()));
+          (item[codeField] && item[codeField].toLowerCase().includes(query.toLowerCase())) ||
+          (item.customerName && item.customerName.toLowerCase().includes(query.toLowerCase()));
       });
       setFilteredItems(filtered);
     }
-    
+
   };
 
   const clearSelection = () => {
@@ -6509,9 +6505,8 @@ function SearchableDropdown({
         onFocus={handleInputFocus}
         onBlur={handleInputBlur}
         onKeyDown={handleDropdownKeyDown}
-        className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${
-          disabled ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-        }`}
+        className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${disabled ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+          }`}
         placeholder={placeholder}
         required={required}
         disabled={disabled}
@@ -6522,7 +6517,7 @@ function SearchableDropdown({
         aria-haspopup="listbox"
       />
       {selectedItem && !disabled && <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={clearSelection} className="absolute right-1 top-1/2 -translate-y-1/2 rounded p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-800" aria-label="Clear selected value" title="Clear selection to choose another value">×</button>}
-      
+
       {showDropdown && !disabled && (
         <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto" role="listbox">
           {filteredItems.length > 0 ? (
@@ -6532,14 +6527,13 @@ function SearchableDropdown({
                 data-keyboard-option
                 role="option"
                 onMouseDown={() => handleSelectItem(item)}
-                className={`p-3 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors ${
-                  selectedItem?._id === item._id || highlightedIndex === filteredItems.indexOf(item) ? 'bg-sky-50' : ''
-                }`}
+                className={`p-3 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors ${selectedItem?._id === item._id || highlightedIndex === filteredItems.indexOf(item) ? 'bg-sky-50' : ''
+                  }`}
               >
                 <div className="font-medium text-slate-800">
-                  {displayField === 'supplierName' ? item.supplierName : 
-                   displayField === 'vehicleNumber' ? item.vehicleNumber : 
-                   (item[displayField] || item.customerName)}
+                  {displayField === 'supplierName' ? item.supplierName :
+                    displayField === 'vehicleNumber' ? item.vehicleNumber :
+                      (item[displayField] || item.customerName)}
                 </div>
                 <div className="text-xs text-slate-500 mt-1">
                   {displayField === 'supplierName' ? (
@@ -6558,8 +6552,8 @@ function SearchableDropdown({
             ))
           ) : (
             <div className="p-3 text-center text-sm text-slate-500">
-              {searchQuery.trim() ? 
-                `No items found for "${searchQuery}"` : 
+              {searchQuery.trim() ?
+                `No items found for "${searchQuery}"` :
                 "No items available"
               }
             </div>
@@ -6570,8 +6564,8 @@ function SearchableDropdown({
   );
 }
 
-function SupplierSearchDropdown({ 
-  value, 
+function SupplierSearchDropdown({
+  value,
   onSelect,
   placeholder = "Search supplier...",
   readOnly = false
@@ -6604,7 +6598,7 @@ function SupplierSearchDropdown({
     if (!showDropdown) {
       setShowDropdown(true);
     }
-    
+
     if (!query.trim()) {
       setSuppliers(supplierSearch.suppliers);
     } else {
@@ -6650,9 +6644,8 @@ function SupplierSearchDropdown({
         onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
         onKeyDown={handleDropdownKeyDown}
         readOnly={readOnly || Boolean(value)}
-        className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${
-          readOnly ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-        }`}
+        className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${readOnly ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+          }`}
         placeholder={placeholder}
         autoComplete="off"
         role="combobox"
@@ -6660,7 +6653,7 @@ function SupplierSearchDropdown({
         aria-haspopup="listbox"
       />
       {value && !readOnly && <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => { onSelect(null); setSearchQuery(''); setShowDropdown(true); }} className="absolute right-1 top-1/2 -translate-y-1/2 rounded p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-800" aria-label="Clear selected supplier" title="Clear selection to choose another supplier">×</button>}
-      
+
       {showDropdown && !readOnly && (
         <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto" role="listbox">
           {supplierSearch.loading ? (
@@ -6696,7 +6689,7 @@ function SupplierSearchDropdown({
   );
 }
 
-function MultiSelectOrderPanelDropdown({ 
+function MultiSelectOrderPanelDropdown({
   selectedPanels = [],
   onSelect,
   placeholder = "Search and select order panels..."
@@ -6713,7 +6706,7 @@ function MultiSelectOrderPanelDropdown({
   useEffect(() => {
     if (orderPanelSearch.orderPanels.length > 0) {
       setAllPanels(orderPanelSearch.orderPanels);
-      
+
       const selectedIds = selectedPanels.map(p => p._id);
       const filtered = orderPanelSearch.orderPanels.filter(
         panel => !selectedIds.includes(panel._id)
@@ -6724,14 +6717,14 @@ function MultiSelectOrderPanelDropdown({
 
   const handleSearch = (query) => {
     setSearchQuery(query);
-    
+
     const selectedIds = selectedPanels.map(p => p._id);
-    
+
     if (!query.trim()) {
       const filtered = allPanels.filter(panel => !selectedIds.includes(panel._id));
       setPanels(filtered);
     } else {
-      const filtered = allPanels.filter(panel => 
+      const filtered = allPanels.filter(panel =>
         !selectedIds.includes(panel._id) && (
           panel.orderPanelNo?.toLowerCase().includes(query.toLowerCase()) ||
           panel.partyName?.toLowerCase().includes(query.toLowerCase()) ||
@@ -6744,18 +6737,18 @@ function MultiSelectOrderPanelDropdown({
 
   const handleSelectPanel = async (panel) => {
     setSearchQuery("");
-    
+
     if (selectedPanels.some(p => p._id === panel._id)) {
       alert("This order panel is already selected");
       return;
     }
-    
+
     setLoading(true);
     try {
       const fullPanel = await orderPanelSearch.getOrderPanelById(panel._id);
       if (fullPanel) {
         onSelect(fullPanel);
-        
+
         setPanels(prev => prev.filter(p => p._id !== panel._id));
         setSearchQuery("");
         setShowDropdown(true);
@@ -6770,13 +6763,13 @@ function MultiSelectOrderPanelDropdown({
   const handleRemovePanel = (panelId) => {
     const removedPanel = selectedPanels.find(p => p._id === panelId);
     onSelect(null, panelId);
-    
+
     if (removedPanel) {
       const panelToAdd = allPanels.find(p => p._id === panelId);
       if (panelToAdd) {
         setPanels(prev => {
           if (!prev.some(p => p._id === panelId)) {
-            return [...prev, panelToAdd].sort((a, b) => 
+            return [...prev, panelToAdd].sort((a, b) =>
               (a.orderPanelNo || '').localeCompare(b.orderPanelNo || '')
             );
           }
@@ -6789,7 +6782,7 @@ function MultiSelectOrderPanelDropdown({
 
   const handleInputFocus = async () => {
     await orderPanelSearch.searchOrderPanels();
-    
+
     const selectedIds = selectedPanels.map(p => p._id);
     const filtered = orderPanelSearch.orderPanels.filter(
       panel => !selectedIds.includes(panel._id)
@@ -6802,7 +6795,7 @@ function MultiSelectOrderPanelDropdown({
     setShowDropdown(true);
   };
 
-  const handleInputBlur = () => {};
+  const handleInputBlur = () => { };
 
   const { highlightedIndex, handleKeyDown: handleDropdownKeyDown } = useKeyboardDropdown({
     isOpen: showDropdown,
@@ -6815,11 +6808,11 @@ function MultiSelectOrderPanelDropdown({
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target) &&
-          inputRef.current && !inputRef.current.contains(event.target)) {
+        inputRef.current && !inputRef.current.contains(event.target)) {
         setShowDropdown(false);
       }
     };
-    
+
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
@@ -6851,7 +6844,7 @@ function MultiSelectOrderPanelDropdown({
           ))}
         </div>
       )}
-      
+
       <input
         ref={inputRef}
         type="text"
@@ -6868,9 +6861,9 @@ function MultiSelectOrderPanelDropdown({
         aria-expanded={showDropdown}
         aria-haspopup="listbox"
       />
-      
+
       {showDropdown && (
-        <div 
+        <div
           className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto"
           role="listbox"
         >
@@ -6895,8 +6888,8 @@ function MultiSelectOrderPanelDropdown({
                   {panel.orderPanelNo}
                 </div>
                 <div className="text-xs text-slate-500 mt-1">
-                  {panel.partyName || panel.customerName || 'N/A'} | 
-                  Branch: {panel.branchName || panel.branchCode || 'N/A'} | 
+                  {panel.partyName || panel.customerName || 'N/A'} |
+                  Branch: {panel.branchName || panel.branchCode || 'N/A'} |
                   Weight: {panel.totalWeight || 0}
                   {panel.subCompanyName && (
                     <span className="ml-2 text-blue-600">
@@ -6908,8 +6901,8 @@ function MultiSelectOrderPanelDropdown({
             ))
           ) : (
             <div className="p-3 text-center text-sm text-slate-500">
-              {searchQuery.trim() ? 
-                `No matching order panels found for "${searchQuery}"` : 
+              {searchQuery.trim() ?
+                `No matching order panels found for "${searchQuery}"` :
                 "No order panels available"
               }
               {selectedPanels.length > 0 && (
@@ -6975,9 +6968,8 @@ function BillingTypeTable({ header, setHeader, billingColumns, selectedOrderPane
                     value={header[col.key] || ""}
                     onChange={(e) => setHeader(prev => ({ ...prev, [col.key]: e.target.value }))}
                     readOnly={selectedOrderPanels.length > 0}
-                    className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${
-                      selectedOrderPanels.length > 0 ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-                    }`}
+                    className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${selectedOrderPanels.length > 0 ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+                      }`}
                     placeholder={`Enter ${col.label}`}
                   />
                 )}
@@ -7016,7 +7008,7 @@ export default function EditVehicleNegotiation() {
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const vehicleSearch = useVehicleSearch();
   const supplierSearch = useSupplierSearch();
-  
+
   const [customerSearchQuery, setCustomerSearchQuery] = useState("");
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
@@ -7106,7 +7098,6 @@ export default function EditVehicleNegotiation() {
 
   const [orders, setOrders] = useState([]);
   const [voiceFileInfo, setVoiceFileInfo] = useState(null);
-  const [memoFile, setMemoFile] = useState(null);
   const audioRef = useRef(null);
 
   const [negotiation, setNegotiation] = useState({
@@ -7140,9 +7131,7 @@ export default function EditVehicleNegotiation() {
     part3Status: "Pending",
     part3Remarks: "",
     approvalStatus: "",
-    remarks: "",
-    memoStatus: "Pending",
-    memoFile: null
+    remarks: ""
   });
 
   const isPart1Locked = Boolean(workflow.part1Locked);
@@ -7222,16 +7211,16 @@ export default function EditVehicleNegotiation() {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-      
+
       if (!data.success) {
         throw new Error(data.message || 'Failed to fetch vehicle negotiation');
       }
 
       const vn = data.data;
       setWorkflow(vn.workflow || { part1Locked: false, amendmentCount: 0 });
-      
+
       setVnnNumber(vn.vnnNo || "");
-      
+
       // Set header with sub-company
       setHeader({
         vnnNo: vn.vnnNo || "",
@@ -7371,9 +7360,7 @@ export default function EditVehicleNegotiation() {
           part3Status: vn.approval.part3Status || "Pending",
           part3Remarks: vn.approval.part3Remarks || "",
           approvalStatus: vn.approval.approvalStatus || "",
-          remarks: vn.approval.remarks || "",
-          memoStatus: vn.approval.memoStatus || "Pending",
-          memoFile: vn.approval.memoFile || null
+          remarks: vn.approval.remarks || ""
         });
 
         if (vn.approval.vehicleData) {
@@ -7403,7 +7390,7 @@ export default function EditVehicleNegotiation() {
 
   const handleCustomerSearch = (query) => {
     setCustomerSearchQuery(query);
-    
+
     if (query.trim() === "") {
       setFilteredCustomers(customerSearch.customers);
     } else {
@@ -7414,7 +7401,7 @@ export default function EditVehicleNegotiation() {
       );
       setFilteredCustomers(filtered);
     }
-    
+
     if (selectedCustomer && query !== selectedCustomer.customerName) {
       setSelectedCustomer(null);
     }
@@ -7424,14 +7411,14 @@ export default function EditVehicleNegotiation() {
     setSelectedCustomer(customer);
     setCustomerSearchQuery(customer.customerName);
     setShowCustomerDropdown(false);
-    
+
     setHeader(prev => ({
       ...prev,
       partyName: customer.customerName,
       customerId: customer._id
     }));
-    
-    setOrders(prevOrders => 
+
+    setOrders(prevOrders =>
       prevOrders.map(order => ({
         ...order,
         partyName: customer.customerName,
@@ -7478,10 +7465,10 @@ export default function EditVehicleNegotiation() {
   const handleOrderPanelSelect = async (fullPanel, removePanelId = null) => {
     if (removePanelId) {
       const panelToRemove = selectedOrderPanels.find(p => p._id === removePanelId);
-      
+
       setSelectedOrderPanels(prev => prev.filter(p => p._id !== removePanelId));
       setOrders(prev => prev.filter(order => order.orderPanelId !== removePanelId));
-      
+
       if (panelToRemove) {
         setHeader(prev => ({
           ...prev,
@@ -7493,7 +7480,7 @@ export default function EditVehicleNegotiation() {
           dropPoints: String(Math.max(0, (Number(prev.dropPoints) || 0) - (Number(panelToRemove.dropPoints) || 0)))
         }));
       }
-      
+
       if (selectedOrderPanels.length === 1) {
         setOrders([defaultOrderRow()]);
         setHeader(prev => ({
@@ -7521,16 +7508,16 @@ export default function EditVehicleNegotiation() {
         alert("This order panel is already selected");
         return;
       }
-      
+
       const newSelectedPanels = [...selectedOrderPanels, fullPanel];
       setSelectedOrderPanels(newSelectedPanels);
-      
+
       if (fullPanel.plantRows && fullPanel.plantRows.length > 0) {
         const newOrders = fullPanel.plantRows.map((row) => {
           let plantId = null;
           let plantName = '';
           let plantCode = '';
-          
+
           if (row.plantCode) {
             if (typeof row.plantCode === 'object' && row.plantCode._id) {
               plantId = row.plantCode._id;
@@ -7542,7 +7529,7 @@ export default function EditVehicleNegotiation() {
               plantCode = row.plantCodeValue || '';
             }
           }
-          
+
           if (!plantId && row.plantCodeValue) {
             const plant = plants.find(p => p.code === row.plantCodeValue);
             if (plant) {
@@ -7551,7 +7538,7 @@ export default function EditVehicleNegotiation() {
               plantCode = plant.code;
             }
           }
-          
+
           return {
             _id: uid(),
             orderNo: fullPanel.orderPanelNo,
@@ -7591,7 +7578,7 @@ export default function EditVehicleNegotiation() {
             subCompanyCode: fullPanel.subCompanyCode || header.subCompanyCode || ''
           };
         });
-        
+
         setOrders(prev => {
           const existingOrdersFromPanel = prev.filter(o => o.orderPanelId === fullPanel._id);
           if (existingOrdersFromPanel.length > 0) {
@@ -7652,17 +7639,17 @@ export default function EditVehicleNegotiation() {
     if (orders.length > 1) {
       const orderToRemove = orders.find(o => o._id === id);
       if (orderToRemove && orderToRemove.orderPanelId) {
-        const otherOrdersFromSamePanel = orders.filter(o => 
+        const otherOrdersFromSamePanel = orders.filter(o =>
           o.orderPanelId === orderToRemove.orderPanelId && o._id !== id
         );
-        
+
         if (otherOrdersFromSamePanel.length === 0) {
-          setSelectedOrderPanels(prev => 
+          setSelectedOrderPanels(prev =>
             prev.filter(p => p._id !== orderToRemove.orderPanelId)
           );
         }
       }
-      
+
       setOrders((prev) => prev.filter((x) => x._id !== id));
     } else {
       alert("At least one order row is required");
@@ -7684,73 +7671,6 @@ export default function EditVehicleNegotiation() {
   const updateVendor = (id, key, value) =>
     setVendors((p) => p.map((v) => (v._id === id ? { ...v, [key]: value } : v)));
 
-  const handleMemoUpload = async (e) => {
-    if (!canEditVnn) {
-      alert('Vehicle Negotiation edit permission is required to upload a memo.');
-      return;
-    }
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
-    if (!allowedTypes.includes(file.type)) {
-      alert("❌ Please upload only PDF or image files (JPEG, PNG)");
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      alert("❌ File size should be less than 5MB");
-      return;
-    }
-
-    setMemoFile(file);
-    
-    const formData = new FormData();
-    formData.append('file', file);
-    
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('/api/upload/excel', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      });
-      
-      const data = await res.json();
-      
-      if (data.success) {
-        const uploadedMemo = {
-          filePath: data.filePath,
-          fullPath: data.fullPath,
-          filename: data.filename,
-          originalName: file.name,
-          size: file.size,
-          mimeType: file.type
-        };
-        const memoRes = await fetch(`/api/vehicle-negotiation/${negotiationId}/memo`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ memoFile: uploadedMemo })
-        });
-        const memoData = await memoRes.json();
-        if (!memoRes.ok || !memoData.success) throw new Error(memoData.message || 'Memo metadata could not be saved');
-        setApproval((p) => ({ 
-          ...p, 
-          memoStatus: memoData.data.memoStatus,
-          memoFile: memoData.data.memoFile
-        }));
-        alert("✅ Memo uploaded successfully!");
-      } else {
-        throw new Error(data.error || "Upload failed");
-      }
-    } catch (error) {
-      console.error("Error uploading memo:", error);
-      alert("❌ Failed to upload memo. Please try again.");
-    }
-  };
-
   const handleVoiceUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -7768,7 +7688,7 @@ export default function EditVehicleNegotiation() {
 
     const formData = new FormData();
     formData.append('file', file);
-    
+
     try {
       const token = localStorage.getItem('token');
       const res = await fetch('/api/upload', {
@@ -7778,9 +7698,9 @@ export default function EditVehicleNegotiation() {
         },
         body: formData,
       });
-      
+
       const data = await res.json();
-      
+
       if (data.success) {
         let audioUrl;
         if (process.env.NODE_ENV === 'development' && data.filePath) {
@@ -7788,9 +7708,9 @@ export default function EditVehicleNegotiation() {
         } else {
           audioUrl = URL.createObjectURL(file);
         }
-        
+
         setVoiceUrl(audioUrl);
-        
+
         setVoiceFileInfo({
           filePath: data.filePath,
           fullPath: data.fullPath,
@@ -7799,7 +7719,7 @@ export default function EditVehicleNegotiation() {
           size: file.size,
           mimeType: file.type
         });
-        
+
         alert("✅ Voice note uploaded successfully!");
       } else {
         throw new Error(data.error || "Upload failed");
@@ -7860,12 +7780,12 @@ export default function EditVehicleNegotiation() {
       alert("Please select a branch");
       return false;
     }
-    
+
     if (orders.length === 0) {
       alert("Please add at least one order");
       return false;
     }
-    
+
     const hasInvalidOrders = orders.some(order => !order.plantCode);
     if (hasInvalidOrders) {
       const invalidCount = orders.filter(order => !order.plantCode).length;
@@ -7969,9 +7889,7 @@ export default function EditVehicleNegotiation() {
           purchaseType: approval.purchaseType,
           paymentTerms: approval.paymentTerms,
           approvalStatus: approval.approvalStatus,
-          remarks: approval.remarks,
-          memoStatus: approval.memoStatus,
-          memoFile: approval.memoFile
+          remarks: approval.remarks
         }
       };
 
@@ -7997,16 +7915,16 @@ export default function EditVehicleNegotiation() {
       }
 
       setSaveSuccess(true);
-      
+
       alert(`✅ ${isPlacementSave ? 'Vehicle placement saved' : 'Vehicle negotiation updated'} successfully!\nVNN Number: ${header.vnnNo}`);
-      
+
       if (redirect) {
         setTimeout(() => {
           router.push('/admin/vehicle-negotiation');
         }, 2000);
       }
       return true;
-      
+
     } catch (error) {
       console.error('Error updating vehicle negotiation:', error);
       setSaveError(error.message || 'Failed to update vehicle negotiation');
@@ -8042,9 +7960,8 @@ export default function EditVehicleNegotiation() {
       weight: o.weight,
       orderStatus: o.status,
       approval: approval.part3Status || "Pending",
-      memo: approval.memoStatus || "Pending",
     }));
-  }, [orders, header.date, header.vnnNo, approval.part3Status, approval.memoStatus]);
+  }, [orders, header.date, header.vnnNo, approval.part3Status]);
 
   const ordersColumns = [
     { key: "orderNo", label: "Order No" },
@@ -8215,11 +8132,10 @@ export default function EditVehicleNegotiation() {
                     </td>
                     <td className="border border-yellow-300 px-2 py-2 text-center">
                       {row.fromState && row.stateName ? (
-                        <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${
-                          row.fromState.trim().toUpperCase() === row.stateName.trim().toUpperCase()
-                            ? 'bg-green-100 text-green-800 border border-green-300'
-                            : 'bg-red-100 text-red-800 border border-red-300'
-                        }`}>
+                        <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${row.fromState.trim().toUpperCase() === row.stateName.trim().toUpperCase()
+                          ? 'bg-green-100 text-green-800 border border-green-300'
+                          : 'bg-red-100 text-red-800 border border-red-300'
+                          }`}>
                           {row.fromState.trim().toUpperCase() === row.stateName.trim().toUpperCase() ? '✅ Local' : '❌ Not Local'}
                         </span>
                       ) : (
@@ -8335,7 +8251,7 @@ export default function EditVehicleNegotiation() {
 
   const VendorsTable = ({ rows, onChange, onRemove, onAdd }) => {
     const [selectedSupplierNames, setSelectedSupplierNames] = useState({});
-    
+
     useEffect(() => {
       const names = {};
       rows.forEach(row => {
@@ -8466,503 +8382,475 @@ export default function EditVehicleNegotiation() {
 
   return (
     <TransactionFormKeyboardNavigation>
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white">
-      <div className="sticky top-0 z-40 border-b bg-white/80 backdrop-blur">
-        <div className="mx-auto max-w-full px-4 py-3 flex items-center justify-between">
-          <div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white">
+        <div className="sticky top-0 z-40 border-b bg-white/80 backdrop-blur">
+          <div className="mx-auto max-w-full px-4 py-3 flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => router.push('/admin/vehicle-negotiation')}
+                  className="text-yellow-600 hover:text-yellow-800 font-medium text-sm flex items-center gap-1"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                  </svg>
+                  Back to List
+                </button>
+                <div className="text-lg font-extrabold text-slate-900">
+                  Edit Vehicle Negotiation: {header.vnnNo}
+                </div>
+              </div>
+              {saveSuccess && (
+                <div className="text-sm text-green-600 font-medium mt-1">
+                  ✅ Vehicle negotiation updated successfully! Redirecting to list...
+                </div>
+              )}
+              {saveError && (
+                <div className="text-sm text-red-600 font-medium mt-1">
+                  ❌ {saveError}
+                </div>
+              )}
+              <div className="text-xs text-blue-600 mt-1">
+                ⓘ Commercial Part 3 is editable after Rate Target. Vehicle placement opens only after Part 3 approval.
+              </div>
+            </div>
+
             <div className="flex items-center gap-3">
               <button
-                onClick={() => router.push('/admin/vehicle-negotiation')}
-                className="text-yellow-600 hover:text-yellow-800 font-medium text-sm flex items-center gap-1"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-                Back to List
-              </button>
-              <div className="text-lg font-extrabold text-slate-900">
-                Edit Vehicle Negotiation: {header.vnnNo}
-              </div>
-            </div>
-            {saveSuccess && (
-              <div className="text-sm text-green-600 font-medium mt-1">
-                ✅ Vehicle negotiation updated successfully! Redirecting to list...
-              </div>
-            )}
-            {saveError && (
-              <div className="text-sm text-red-600 font-medium mt-1">
-                ❌ {saveError}
-              </div>
-            )}
-            <div className="text-xs text-blue-600 mt-1">
-              ⓘ Commercial Part 3 is editable after Rate Target. Vehicle placement opens only after Part 3 approval.
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">            
-            <button
-              onClick={handleUpdate}
-              disabled={saving || (!canEditVnn && !canEditPlacement) || (isPart1Locked && !canEditPart3 && !canEditPlacement)}
-              className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${
-                saving 
-                  ? 'bg-gray-400 cursor-not-allowed' 
+                onClick={handleUpdate}
+                disabled={saving || (!canEditVnn && !canEditPlacement) || (isPart1Locked && !canEditPart3 && !canEditPlacement)}
+                className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${saving
+                  ? 'bg-gray-400 cursor-not-allowed'
                   : 'bg-yellow-600 hover:bg-yellow-700'
-              }`}
-            >
-              {saving ? (
-                <span className="flex items-center gap-2">
-                  <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Updating...
-                </span>
-              ) : (isPart1Locked ? (isPart3Finalized ? 'Save Vehicle Placement' : 'Save Part 3') : 'Save Draft')}
-            </button>
-            {!isPart1Locked && canEditVnn ? (
-              <button onClick={() => handleWorkflowAction('lock-part1')} disabled={saving} className="rounded-xl bg-indigo-600 px-5 py-2 text-sm font-bold text-white hover:bg-indigo-700 disabled:bg-slate-400">
-                Submit & Lock Part 1
+                  }`}
+              >
+                {saving ? (
+                  <span className="flex items-center gap-2">
+                    <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Updating...
+                  </span>
+                ) : (isPart1Locked ? (isPart3Finalized ? 'Save Vehicle Placement' : 'Save Part 3') : 'Save Draft')}
               </button>
-            ) : (isPart1Locked && canEditVnn && (
-              <button onClick={() => handleWorkflowAction('amend-part1')} disabled={saving} className="rounded-xl bg-amber-600 px-5 py-2 text-sm font-bold text-white hover:bg-amber-700 disabled:bg-slate-400">
-                Amend Part 1
-              </button>
-            ))}
+              {!isPart1Locked && canEditVnn ? (
+                <button onClick={() => handleWorkflowAction('lock-part1')} disabled={saving} className="rounded-xl bg-indigo-600 px-5 py-2 text-sm font-bold text-white hover:bg-indigo-700 disabled:bg-slate-400">
+                  Submit & Lock Part 1
+                </button>
+              ) : (isPart1Locked && canEditVnn && (
+                <button onClick={() => handleWorkflowAction('amend-part1')} disabled={saving} className="rounded-xl bg-amber-600 px-5 py-2 text-sm font-bold text-white hover:bg-amber-700 disabled:bg-slate-400">
+                  Amend Part 1
+                </button>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="mx-auto max-w-full p-4 space-y-4">
-        {/* PART 1: VEHICLE NEGOTIATION - PART 1 */}
-        <Card title="Vehicle Negotiation - Panel - Part -1">
-          <fieldset disabled={isPart1Locked || !canEditVnn} className="disabled:opacity-70">
-          <div className="grid grid-cols-12 gap-3 mb-4">
-            <div className="col-span-12 md:col-span-3">
-              <label className="text-xs font-bold text-slate-600">Vehicle Negotiation No</label>
-              <div className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">
-                {header.vnnNo || "Auto-generated on save"}
-              </div>
-            </div>
-            
-            <div className="col-span-12 md:col-span-6">
-              <label className="text-xs font-bold text-slate-600">Select Order Panels (Multi-Select)</label>
-              <MultiSelectOrderPanelDropdown
-                selectedPanels={selectedOrderPanels}
-                onSelect={handleOrderPanelSelect}
-                placeholder="Search and select order panels..."
-              />
-              {selectedOrderPanels.length > 0 && (
-                <div className="text-xs text-slate-500 mt-1">
-                  {selectedOrderPanels.length} order panel(s) selected • {orders.length} total order row(s)
+        <div className="mx-auto max-w-full p-4 space-y-4">
+          {/* PART 1: VEHICLE NEGOTIATION - PART 1 */}
+          <Card title="Vehicle Negotiation - Panel - Part -1">
+            <fieldset disabled={isPart1Locked || !canEditVnn} className="disabled:opacity-70">
+              <div className="grid grid-cols-12 gap-3 mb-4">
+                <div className="col-span-12 md:col-span-3">
+                  <label className="text-xs font-bold text-slate-600">Vehicle Negotiation No</label>
+                  <div className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">
+                    {header.vnnNo || "Auto-generated on save"}
+                  </div>
                 </div>
-              )}
-            </div>
-            
-            <div className="col-span-12 md:col-span-3">
-              <label className="text-xs font-bold text-slate-600">Branch *</label>
-              <SearchableDropdown
-                items={branches}
-                selectedId={header.branch}
-                onSelect={(branch) => setHeader(p => ({ ...p, branch: branch?._id || null, branchName: branch?.name || '', branchCode: branch?.code || '' }))}
-                placeholder="Search branch... *"
-                required={true}
-                displayField="name"
-                codeField="code"
-                disabled={selectedOrderPanels.length > 0}
-              />
-            </div>
 
-            {/* Sub-Company Dropdown */}
-            <div className="col-span-12 md:col-span-3">
-              <label className="text-xs font-bold text-slate-600">Sub-Company</label>
-              {selectedOrderPanels.length > 0 && selectedOrderPanels[0].subCompanyName ? (
-                <div className="mt-1 w-full rounded-xl border border-slate-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700">
-                  {selectedOrderPanels[0].subCompanyName} ({selectedOrderPanels[0].subCompanyCode})
-                  <span className="ml-2 text-xs text-gray-500">(Locked - {selectedOrderPanels.length} order(s))</span>
-                </div>
-              ) : header.subCompanyName ? (
-                <div className="mt-1 w-full rounded-xl border border-slate-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700">
-                  {header.subCompanyName} ({header.subCompanyCode})
-                  <span className="ml-2 text-xs text-gray-500">(Saved)</span>
-                </div>
-              ) : (
-                <select
-                  value={header.subCompanyId || ''}
-                  onChange={(e) => {
-                    const subCompanyId = e.target.value;
-                    const selected = subCompanies.find(sc => sc._id === subCompanyId);
-                    setHeader(prev => ({
-                      ...prev,
-                      subCompanyId: subCompanyId,
-                      subCompanyName: selected?.name || '',
-                      subCompanyCode: selected?.code || ''
-                    }));
-                    setOrders(prevOrders => 
-                      prevOrders.map(order => ({
-                        ...order,
-                        subCompanyId: subCompanyId,
-                        subCompanyName: selected?.name || '',
-                        subCompanyCode: selected?.code || ''
-                      }))
-                    );
-                  }}
-                  disabled={selectedOrderPanels.length > 0}
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 disabled:bg-slate-50 disabled:cursor-not-allowed"
-                >
-                  <option value="">Select Sub-Company</option>
-                  {subCompanies.map((sc) => (
-                    <option key={sc._id} value={sc._id}>
-                      {sc.name} ({sc.code})
-                    </option>
-                  ))}
-                </select>
-              )}
-              {selectedOrderPanels.length > 0 && selectedOrderPanels[0].subCompanyName && (
-                <div className="text-xs text-green-600 mt-1">
-                  ✅ All orders from same sub-company: {selectedOrderPanels[0].subCompanyName}
-                </div>
-              )}
-            </div>
-
-            <Select col="col-span-12 md:col-span-3" label="Delivery" value={header.delivery} onChange={(v) => setHeader((p) => ({ ...p, delivery: v }))} options={["Urgent", "Normal", "Express", "Scheduled"]} readOnly={selectedOrderPanels.length > 0} />
-            <Input type="date" col="col-span-12 md:col-span-3" label="Date" value={header.date} onChange={(v) => setHeader((p) => ({ ...p, date: v }))} readOnly={selectedOrderPanels.length > 0} />
-            
-            <div className="col-span-12 md:col-span-3 relative" data-keyboard-dropdown>
-              <label className="text-xs font-bold text-slate-600">Party Name</label>
-              <input
-                type="text"
-                value={selectedCustomer ? selectedCustomer.customerName : header.partyName}
-                onChange={(e) => handleCustomerSearch(e.target.value)}
-                onFocus={handleCustomerInputFocus}
-                onBlur={handleCustomerInputBlur}
-                readOnly={selectedOrderPanels.length > 0}
-                className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${selectedOrderPanels.length > 0 ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'}`}
-                placeholder="Search customer by name..."
-                autoComplete="off"
-                role="combobox"
-                aria-expanded={showCustomerDropdown}
-                aria-haspopup="listbox"
-              />
-              {showCustomerDropdown && selectedOrderPanels.length === 0 && (
-                <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto" role="listbox">
-                  {customerSearch.loading ? (
-                    <div className="p-3 text-center text-sm text-slate-500">
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-sky-500 mx-auto"></div>
-                      <p className="mt-1">Loading customers...</p>
+                <div className="col-span-12 md:col-span-6">
+                  <label className="text-xs font-bold text-slate-600">Select Order Panels (Multi-Select)</label>
+                  <MultiSelectOrderPanelDropdown
+                    selectedPanels={selectedOrderPanels}
+                    onSelect={handleOrderPanelSelect}
+                    placeholder="Search and select order panels..."
+                  />
+                  {selectedOrderPanels.length > 0 && (
+                    <div className="text-xs text-slate-500 mt-1">
+                      {selectedOrderPanels.length} order panel(s) selected • {orders.length} total order row(s)
                     </div>
-                  ) : filteredCustomers.length > 0 ? (
-                    filteredCustomers.map((customer) => (
-                      <div key={customer._id} data-keyboard-option role="option" onMouseDown={() => handleSelectCustomer(customer)} className="p-3 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0">
-                        <div className="font-medium text-slate-800">{customer.customerName}</div>
-                        <div className="text-xs text-slate-500 mt-1">Code: {customer.customerCode}</div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="p-3 text-center text-sm text-slate-500">No customers found</div>
                   )}
                 </div>
-              )}
-            </div>
 
-            {/* APPROVAL STATUS - PART 1 - READONLY */}
-            <Select 
-              col="col-span-12 md:col-span-3" 
-              label="Approval Status (Part 1)" 
-              value={approval.part1Status}
-              options={APPROVALS} 
-              readOnly={true} 
-            />
+                <div className="col-span-12 md:col-span-3">
+                  <label className="text-xs font-bold text-slate-600">Branch *</label>
+                  <SearchableDropdown
+                    items={branches}
+                    selectedId={header.branch}
+                    onSelect={(branch) => setHeader(p => ({ ...p, branch: branch?._id || null, branchName: branch?.name || '', branchCode: branch?.code || '' }))}
+                    placeholder="Search branch... *"
+                    required={true}
+                    displayField="name"
+                    codeField="code"
+                    disabled={selectedOrderPanels.length > 0}
+                  />
+                </div>
 
-            {/* APPROVAL REMARKS - PART 1 - READONLY */}
-            <div className="col-span-12 md:col-span-3">
-              <label className="text-xs font-bold text-slate-600">Approval Remarks</label>
-              <textarea
-                value={approval.part1Remarks}
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2 text-sm outline-none cursor-not-allowed"
-                rows={1}
-                placeholder="Enter remarks..."
-                readOnly={true}
-              />
-            </div>
-          </div>
+                {/* Sub-Company Dropdown */}
+                <div className="col-span-12 md:col-span-3">
+                  <label className="text-xs font-bold text-slate-600">Sub-Company</label>
+                  {selectedOrderPanels.length > 0 && selectedOrderPanels[0].subCompanyName ? (
+                    <div className="mt-1 w-full rounded-xl border border-slate-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700">
+                      {selectedOrderPanels[0].subCompanyName} ({selectedOrderPanels[0].subCompanyCode})
+                      <span className="ml-2 text-xs text-gray-500">(Locked - {selectedOrderPanels.length} order(s))</span>
+                    </div>
+                  ) : header.subCompanyName ? (
+                    <div className="mt-1 w-full rounded-xl border border-slate-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700">
+                      {header.subCompanyName} ({header.subCompanyCode})
+                      <span className="ml-2 text-xs text-gray-500">(Saved)</span>
+                    </div>
+                  ) : (
+                    <select
+                      value={header.subCompanyId || ''}
+                      onChange={(e) => {
+                        const subCompanyId = e.target.value;
+                        const selected = subCompanies.find(sc => sc._id === subCompanyId);
+                        setHeader(prev => ({
+                          ...prev,
+                          subCompanyId: subCompanyId,
+                          subCompanyName: selected?.name || '',
+                          subCompanyCode: selected?.code || ''
+                        }));
+                        setOrders(prevOrders =>
+                          prevOrders.map(order => ({
+                            ...order,
+                            subCompanyId: subCompanyId,
+                            subCompanyName: selected?.name || '',
+                            subCompanyCode: selected?.code || ''
+                          }))
+                        );
+                      }}
+                      disabled={selectedOrderPanels.length > 0}
+                      className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 disabled:bg-slate-50 disabled:cursor-not-allowed"
+                    >
+                      <option value="">Select Sub-Company</option>
+                      {subCompanies.map((sc) => (
+                        <option key={sc._id} value={sc._id}>
+                          {sc.name} ({sc.code})
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                  {selectedOrderPanels.length > 0 && selectedOrderPanels[0].subCompanyName && (
+                    <div className="text-xs text-green-600 mt-1">
+                      ✅ All orders from same sub-company: {selectedOrderPanels[0].subCompanyName}
+                    </div>
+                  )}
+                </div>
 
-          <div className="mb-4">
-            <div className="text-sm font-bold text-slate-700 mb-2">Billing Type / Charges</div>
-            <BillingTypeTable header={header} setHeader={setHeader} billingColumns={billingColumns} selectedOrderPanels={selectedOrderPanels} orders={orders} />
-          </div>
+                <Select col="col-span-12 md:col-span-3" label="Delivery" value={header.delivery} onChange={(v) => setHeader((p) => ({ ...p, delivery: v }))} options={["Urgent", "Normal", "Express", "Scheduled"]} readOnly={selectedOrderPanels.length > 0} />
+                <Input type="date" col="col-span-12 md:col-span-3" label="Date" value={header.date} onChange={(v) => setHeader((p) => ({ ...p, date: v }))} readOnly={selectedOrderPanels.length > 0} />
 
-          {/* Orders Table */}
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <div className="text-sm font-bold text-slate-700">
-                Orders (Part-1) - {selectedOrderPanels.length > 0 ? "Multi - Order" : "Single Order"} - {orders.length} row{orders.length !== 1 ? 's' : ''}
+                <div className="col-span-12 md:col-span-3 relative" data-keyboard-dropdown>
+                  <label className="text-xs font-bold text-slate-600">Party Name</label>
+                  <input
+                    type="text"
+                    value={selectedCustomer ? selectedCustomer.customerName : header.partyName}
+                    onChange={(e) => handleCustomerSearch(e.target.value)}
+                    onFocus={handleCustomerInputFocus}
+                    onBlur={handleCustomerInputBlur}
+                    readOnly={selectedOrderPanels.length > 0}
+                    className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${selectedOrderPanels.length > 0 ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'}`}
+                    placeholder="Search customer by name..."
+                    autoComplete="off"
+                    role="combobox"
+                    aria-expanded={showCustomerDropdown}
+                    aria-haspopup="listbox"
+                  />
+                  {showCustomerDropdown && selectedOrderPanels.length === 0 && (
+                    <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto" role="listbox">
+                      {customerSearch.loading ? (
+                        <div className="p-3 text-center text-sm text-slate-500">
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-sky-500 mx-auto"></div>
+                          <p className="mt-1">Loading customers...</p>
+                        </div>
+                      ) : filteredCustomers.length > 0 ? (
+                        filteredCustomers.map((customer) => (
+                          <div key={customer._id} data-keyboard-option role="option" onMouseDown={() => handleSelectCustomer(customer)} className="p-3 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0">
+                            <div className="font-medium text-slate-800">{customer.customerName}</div>
+                            <div className="text-xs text-slate-500 mt-1">Code: {customer.customerCode}</div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="p-3 text-center text-sm text-slate-500">No customers found</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* APPROVAL STATUS - PART 1 - READONLY */}
+                <Select
+                  col="col-span-12 md:col-span-3"
+                  label="Approval Status (Part 1)"
+                  value={approval.part1Status}
+                  options={APPROVALS}
+                  readOnly={true}
+                />
+
+                {/* APPROVAL REMARKS - PART 1 - READONLY */}
+                <div className="col-span-12 md:col-span-3">
+                  <label className="text-xs font-bold text-slate-600">Approval Remarks</label>
+                  <textarea
+                    value={approval.part1Remarks}
+                    className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2 text-sm outline-none cursor-not-allowed"
+                    rows={1}
+                    placeholder="Enter remarks..."
+                    readOnly={true}
+                  />
+                </div>
               </div>
-            </div>
-            <OrdersTable 
-              rows={orders} 
-              onChange={updateOrder} 
-              onRemove={removeOrder} 
-              readOnly={selectedOrderPanels.length > 0}
-            />
-          </div>
 
-          <div className="flex justify-end mt-4">
-            <div className="flex items-center gap-3 border border-yellow-300 px-6 py-3 bg-yellow-50 rounded-xl">
-              <div className="text-sm font-extrabold text-slate-900">Total Weight:</div>
-              <div className="text-xl font-extrabold text-emerald-700">{totalWeight}</div>
-            </div>
-          </div>
+              <div className="mb-4">
+                <div className="text-sm font-bold text-slate-700 mb-2">Billing Type / Charges</div>
+                <BillingTypeTable header={header} setHeader={setHeader} billingColumns={billingColumns} selectedOrderPanels={selectedOrderPanels} orders={orders} />
+              </div>
 
-          {/* Suppliers / Market Rates Section - Added at bottom of Part 1 */}
-          <div className="mt-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="text-sm font-bold text-slate-700">Suppliers / Market Rates</div>
-              <button
-                onClick={addVendor}
-                className="rounded-xl bg-yellow-600 px-4 py-2 text-sm font-bold text-white hover:bg-yellow-700"
-              >
-                + Add Supplier
-              </button>
-            </div>
-            <VendorsTable rows={vendors} onChange={updateVendor} onRemove={removeVendor} onAdd={addVendor} />
-          </div>
-          </fieldset>
-        </Card>
+              {/* Orders Table */}
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="text-sm font-bold text-slate-700">
+                    Orders (Part-1) - {selectedOrderPanels.length > 0 ? "Multi - Order" : "Single Order"} - {orders.length} row{orders.length !== 1 ? 's' : ''}
+                  </div>
+                </div>
+                <OrdersTable
+                  rows={orders}
+                  onChange={updateOrder}
+                  onRemove={removeOrder}
+                  readOnly={selectedOrderPanels.length > 0}
+                />
+              </div>
 
-        {/* Rate Target has moved to its dedicated workspace. */}
-        {false && <Card title="Vehicle - Negotiation - Part - 2 (Rate-Target)">
-          {!isPart1Approved && (
-            <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-700">
-              ⚠️ Part 2 is locked. Please set Part 1 Approval Status to "Approved" to edit this section.
-            </div>
-          )}
-          <div className="grid grid-cols-12 gap-3 mb-4">
-            <Input 
-              col="col-span-12 md:col-span-3" 
-              label="Max Rate" 
-              value={negotiation.maxRate} 
-              onChange={(v) => setNegotiation((p) => ({ ...p, maxRate: v }))} 
-              readOnly={!isPart1Approved}
-            />
-            <Input 
-              col="col-span-12 md:col-span-3" 
-              label="Target Rate" 
-              value={negotiation.targetRate} 
-              onChange={(v) => setNegotiation((p) => ({ ...p, targetRate: v }))} 
-              readOnly={!isPart1Approved}
-            />
-            <Input 
-              col="col-span-12 md:col-span-3" 
-              label="Old Rate %" 
-              value={negotiation.oldRatePercent} 
-              onChange={(v) => setNegotiation((p) => ({ ...p, oldRatePercent: v }))} 
-              readOnly={!isPart1Approved}
-            />
+              <div className="flex justify-end mt-4">
+                <div className="flex items-center gap-3 border border-yellow-300 px-6 py-3 bg-yellow-50 rounded-xl">
+                  <div className="text-sm font-extrabold text-slate-900">Total Weight:</div>
+                  <div className="text-xl font-extrabold text-emerald-700">{totalWeight}</div>
+                </div>
+              </div>
 
-            {/* APPROVAL STATUS - PART 2 - READONLY */}
-            <Select 
-              col="col-span-12 md:col-span-3" 
-              label="Approval Status (Part 2)" 
-              value={approval.approvalStatus} 
-              options={APPROVALS} 
-              readOnly={true} 
-            />
-          </div>
+              {/* Suppliers / Market Rates Section - Added at bottom of Part 1 */}
+              <div className="mt-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="text-sm font-bold text-slate-700">Suppliers / Market Rates</div>
+                  <button
+                    onClick={addVendor}
+                    className="rounded-xl bg-yellow-600 px-4 py-2 text-sm font-bold text-white hover:bg-yellow-700"
+                  >
+                    + Add Supplier
+                  </button>
+                </div>
+                <VendorsTable rows={vendors} onChange={updateVendor} onRemove={removeVendor} onAdd={addVendor} />
+              </div>
+            </fieldset>
+          </Card>
 
-          {/* APPROVAL REMARKS - PART 2 - READONLY */}
-          <div className="grid grid-cols-12 gap-3 mb-4">
-            <div className="col-span-12 md:col-span-6">
-              <label className="text-xs font-bold text-slate-600">Approval Remarks</label>
-              <textarea
-                value={approval.remarks}
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2 text-sm outline-none cursor-not-allowed"
-                rows={1}
-                placeholder="Enter remarks..."
+          {/* Rate Target has moved to its dedicated workspace. */}
+          {false && <Card title="Vehicle - Negotiation - Part - 2 (Rate-Target)">
+            {!isPart1Approved && (
+              <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-700">
+                ⚠️ Part 2 is locked. Please set Part 1 Approval Status to "Approved" to edit this section.
+              </div>
+            )}
+            <div className="grid grid-cols-12 gap-3 mb-4">
+              <Input
+                col="col-span-12 md:col-span-3"
+                label="Max Rate"
+                value={negotiation.maxRate}
+                onChange={(v) => setNegotiation((p) => ({ ...p, maxRate: v }))}
+                readOnly={!isPart1Approved}
+              />
+              <Input
+                col="col-span-12 md:col-span-3"
+                label="Target Rate"
+                value={negotiation.targetRate}
+                onChange={(v) => setNegotiation((p) => ({ ...p, targetRate: v }))}
+                readOnly={!isPart1Approved}
+              />
+              <Input
+                col="col-span-12 md:col-span-3"
+                label="Old Rate %"
+                value={negotiation.oldRatePercent}
+                onChange={(v) => setNegotiation((p) => ({ ...p, oldRatePercent: v }))}
+                readOnly={!isPart1Approved}
+              />
+
+              {/* APPROVAL STATUS - PART 2 - READONLY */}
+              <Select
+                col="col-span-12 md:col-span-3"
+                label="Approval Status (Part 2)"
+                value={approval.approvalStatus}
+                options={APPROVALS}
                 readOnly={true}
               />
             </div>
-          </div>
 
-          {/* Remarks & Voice Note */}
-          <div className="grid grid-cols-12 gap-4">
-            <div className="col-span-12 md:col-span-7">
-              <div className="rounded-xl border border-slate-200 p-4">
-                <div className="text-sm font-extrabold text-slate-900 mb-3">Remarks</div>
+            {/* APPROVAL REMARKS - PART 2 - READONLY */}
+            <div className="grid grid-cols-12 gap-3 mb-4">
+              <div className="col-span-12 md:col-span-6">
+                <label className="text-xs font-bold text-slate-600">Approval Remarks</label>
                 <textarea
-                  value={negotiation.remarks1}
-                  onChange={(e) => setNegotiation((p) => ({ ...p, remarks1: e.target.value }))}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm outline-none cursor-not-allowed"
-                  rows={2}
+                  value={approval.remarks}
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2 text-sm outline-none cursor-not-allowed"
+                  rows={1}
                   placeholder="Enter remarks..."
                   readOnly={true}
                 />
               </div>
             </div>
-            <div className="col-span-12 md:col-span-5">
-              <div className="rounded-xl border border-slate-200 p-4">
-                <div className="text-sm font-extrabold text-slate-900 mb-3">Voice Note</div>
-                <input type="file" accept="audio/*" onChange={handleVoiceUpload} className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200" />
-                {voiceUrl && (
-                  <div className="mt-3">
-                    <audio ref={audioRef} src={voiceUrl} controls className="w-full" />
-                    {voiceFileInfo?.filePath && process.env.NODE_ENV === 'development' && (
-                      <div className="mt-2 text-xs text-slate-500">File: {voiceFileInfo.originalName}</div>
-                    )}
-                  </div>
-                )}
+
+            {/* Remarks & Voice Note */}
+            <div className="grid grid-cols-12 gap-4">
+              <div className="col-span-12 md:col-span-7">
+                <div className="rounded-xl border border-slate-200 p-4">
+                  <div className="text-sm font-extrabold text-slate-900 mb-3">Remarks</div>
+                  <textarea
+                    value={negotiation.remarks1}
+                    onChange={(e) => setNegotiation((p) => ({ ...p, remarks1: e.target.value }))}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm outline-none cursor-not-allowed"
+                    rows={2}
+                    placeholder="Enter remarks..."
+                    readOnly={true}
+                  />
+                </div>
+              </div>
+              <div className="col-span-12 md:col-span-5">
+                <div className="rounded-xl border border-slate-200 p-4">
+                  <div className="text-sm font-extrabold text-slate-900 mb-3">Voice Note</div>
+                  <input type="file" accept="audio/*" onChange={handleVoiceUpload} className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200" />
+                  {voiceUrl && (
+                    <div className="mt-3">
+                      <audio ref={audioRef} src={voiceUrl} controls className="w-full" />
+                      {voiceFileInfo?.filePath && process.env.NODE_ENV === 'development' && (
+                        <div className="mt-2 text-xs text-slate-500">File: {voiceFileInfo.originalName}</div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        </Card>}
+          </Card>}
 
-        {/* PART 3: VEHICLE APPROVAL - PART 3 - Editable only after Rate Target approval */}
-        <Card title="Vehicle - Approval - Part - 3">
-          {!canEditPart3 && !canEditPlacement && (
-            <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-700">
-              {isPart3Finalized
-                ? 'Vehicle placement requires Vehicle Negotiation Placement edit permission.'
-                : 'Commercial Part 3 is locked until Rate Target has valid Max Rate and Target Rate values. Vehicle placement opens after Part 3 approval.'}
-            </div>
-          )}
-          <div className="grid grid-cols-12 gap-3 mb-4">
-            <div className="col-span-12 md:col-span-4">
-              <label className="text-xs font-bold text-slate-600">Supplier Name</label>
-              <SupplierSearchDropdown 
-                value={selectedSupplier ? selectedSupplier.supplierName : approval.vendorName} 
-                onSelect={handleSupplierSelect} 
-                placeholder="Search supplier..." 
+          {/* PART 3: VEHICLE APPROVAL - PART 3 - Editable only after Rate Target approval */}
+          <Card title="Vehicle - Approval - Part - 3">
+            {!canEditPart3 && !canEditPlacement && (
+              <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-700">
+                {isPart3Finalized
+                  ? 'Vehicle placement requires Vehicle Negotiation Placement edit permission.'
+                  : 'Commercial Part 3 is locked until Rate Target has valid Max Rate and Target Rate values. Vehicle placement opens after Part 3 approval.'}
+              </div>
+            )}
+            <div className="grid grid-cols-12 gap-3 mb-4">
+              <div className="col-span-12 md:col-span-4">
+                <label className="text-xs font-bold text-slate-600">Supplier Name</label>
+                <SupplierSearchDropdown
+                  value={selectedSupplier ? selectedSupplier.supplierName : approval.vendorName}
+                  onSelect={handleSupplierSelect}
+                  placeholder="Search supplier..."
+                  readOnly={!canEditPart3}
+                />
+              </div>
+              <Select
+                col="col-span-12 md:col-span-4"
+                label="Supplier (Status)"
+                value={approval.vendorStatus}
+                onChange={(v) => setApproval((p) => ({ ...p, vendorStatus: v }))}
+                options={VENDOR_STATUS}
+                readOnly={!canEditPart3}
+              />
+              <Select
+                col="col-span-12 md:col-span-4"
+                label="Rate - Type"
+                value={approval.rateType}
+                onChange={(v) => {
+                  setApproval((p) => ({ ...p, rateType: v }));
+                  if (v === "Per MT") {
+                    setApproval((p) => ({ ...p, finalFix: "" }));
+                  } else if (v === "Fixed") {
+                    setApproval((p) => ({ ...p, finalPerMT: "" }));
+                  }
+                }}
+                options={RATE_TYPES}
                 readOnly={!canEditPart3}
               />
             </div>
-            <Select 
-              col="col-span-12 md:col-span-4" 
-              label="Supplier (Status)" 
-              value={approval.vendorStatus} 
-              onChange={(v) => setApproval((p) => ({ ...p, vendorStatus: v }))} 
-              options={VENDOR_STATUS} 
-              readOnly={!canEditPart3}
-            />
-            <Select 
-              col="col-span-12 md:col-span-4" 
-              label="Rate - Type" 
-              value={approval.rateType} 
-              onChange={(v) => {
-                setApproval((p) => ({ ...p, rateType: v }));
-                if (v === "Per MT") {
-                  setApproval((p) => ({ ...p, finalFix: "" }));
-                } else if (v === "Fixed") {
-                  setApproval((p) => ({ ...p, finalPerMT: "" }));
-                }
-              }} 
-              options={RATE_TYPES} 
-              readOnly={!canEditPart3}
-            />
-          </div>
 
-          <div className="grid grid-cols-12 gap-3 mb-4">
-            <Input 
-              col="col-span-12 md:col-span-4" 
-              label="Final - Per MT (A)" 
-              value={approval.finalPerMT} 
-              onChange={(v) => setApproval((p) => ({ ...p, finalPerMT: v }))} 
-              readOnly={!canEditPart3 || approval.rateType === "Fixed"}
-            />
-            <div className="col-span-12 md:col-span-4 mt-2">
-              <div className="flex flex-col">
-                <label className="text-xs font-bold text-slate-600">Weight (B)</label>
-                <div className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-extrabold text-slate-900">{totalWeight}</div>
+            <div className="grid grid-cols-12 gap-3 mb-4">
+              <Input
+                col="col-span-12 md:col-span-4"
+                label="Final - Per MT (A)"
+                value={approval.finalPerMT}
+                onChange={(v) => setApproval((p) => ({ ...p, finalPerMT: v }))}
+                readOnly={!canEditPart3 || approval.rateType === "Fixed"}
+              />
+              <div className="col-span-12 md:col-span-4 mt-2">
+                <div className="flex flex-col">
+                  <label className="text-xs font-bold text-slate-600">Weight (B)</label>
+                  <div className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-extrabold text-slate-900">{totalWeight}</div>
+                </div>
+              </div>
+              <div className="col-span-12 md:col-span-4 mt-2">
+                <div className="flex flex-col">
+                  <label className="text-xs font-bold text-slate-600">Purchase Amount (A x B)</label>
+                  <div className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-extrabold text-emerald-700">{purchaseAmount}</div>
+                </div>
               </div>
             </div>
-            <div className="col-span-12 md:col-span-4 mt-2">
-              <div className="flex flex-col">
-                <label className="text-xs font-bold text-slate-600">Purchase Amount (A x B)</label>
-                <div className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-extrabold text-emerald-700">{purchaseAmount}</div>
-              </div>
+
+            <div className="grid grid-cols-12 gap-3 mb-4">
+              <Input
+                col="col-span-12 md:col-span-4"
+                label="Final - Fix"
+                value={approval.finalFix}
+                onChange={(v) => setApproval((p) => ({ ...p, finalFix: v }))}
+                readOnly={!canEditPart3 || approval.rateType === "Per MT"}
+              />
             </div>
-          </div>
 
-          <div className="grid grid-cols-12 gap-3 mb-4">
-            <Input 
-              col="col-span-12 md:col-span-4" 
-              label="Final - Fix" 
-              value={approval.finalFix} 
-              onChange={(v) => setApproval((p) => ({ ...p, finalFix: v }))} 
-              readOnly={!canEditPart3 || approval.rateType === "Per MT"}
-            />
-          </div>
-
-          <div className="grid grid-cols-12 gap-3 mb-4">
-            <div className="col-span-12 md:col-span-4">
-              <label className="text-xs font-bold text-slate-600">Vehicle Number</label>
-              <input 
-                type="text" 
-                value={approval.vehicleNo || ""} 
-                onChange={(e) => setApproval((p) => ({ ...p, vehicleNo: e.target.value }))} 
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200" 
-                placeholder="Enter vehicle number..." 
+            <div className="grid grid-cols-12 gap-3 mb-4">
+              <div className="col-span-12 md:col-span-4">
+                <label className="text-xs font-bold text-slate-600">Vehicle Number</label>
+                <input
+                  type="text"
+                  value={approval.vehicleNo || ""}
+                  onChange={(e) => setApproval((p) => ({ ...p, vehicleNo: e.target.value }))}
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+                  placeholder="Enter vehicle number..."
+                  readOnly={!canEditPlacement}
+                  disabled={!canEditPlacement}
+                />
+              </div>
+              <Input
+                col="col-span-12 md:col-span-4"
+                label="Mobile"
+                value={approval.mobile}
+                onChange={(v) => setApproval((p) => ({ ...p, mobile: v }))}
                 readOnly={!canEditPlacement}
                 disabled={!canEditPlacement}
               />
             </div>
-            <Input 
-              col="col-span-12 md:col-span-4" 
-              label="Mobile" 
-              value={approval.mobile} 
-              onChange={(v) => setApproval((p) => ({ ...p, mobile: v }))} 
-              readOnly={!canEditPlacement}
-              disabled={!canEditPlacement}
-            />
-          </div>
 
-          <div className="grid grid-cols-12 gap-3 mb-4">
-            <Select 
-              col="col-span-12 md:col-span-4" 
-              label="Purchase - Type" 
-              value={approval.purchaseType} 
-              onChange={(v) => setApproval((p) => ({ ...p, purchaseType: v }))} 
-              options={purchaseTypes.length > 0 ? purchaseTypes : PURCHASE_TYPES}
-              readOnly={!canEditPlacement}
-            />
-            <Select 
-              col="col-span-12 md:col-span-4" 
-              label="Payment - Terms" 
-              value={approval.paymentTerms} 
-              onChange={(v) => setApproval((p) => ({ ...p, paymentTerms: v }))} 
-              options={paymentTerms.length > 0 ? paymentTerms : PAYMENT_TERMS}
-              readOnly={!canEditPlacement}
-            />
-          </div>
-        </Card>
-
-        {/* MEMO UPLOAD with Approval Dropdown */}
-        <Card title="Memo - Upload">
-          <div className="rounded-xl border border-slate-200 p-4">
-            <div className="text-sm font-extrabold text-slate-900 mb-3">Memo Upload</div>
-            <input
-              type="file"
-              accept=".pdf,.png,.jpg,.jpeg"
-              onChange={handleMemoUpload}
-              disabled={!canEditVnn}
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-            />
-            <div className="mt-3 text-sm">
-              Status:{" "}
-              <span className={`font-extrabold ${approval.memoStatus === "Uploaded" ? "text-green-700" : "text-yellow-700"}`}>
-                {approval.memoStatus || "Pending"}
-              </span>
+            <div className="grid grid-cols-12 gap-3 mb-4">
+              <Select
+                col="col-span-12 md:col-span-4"
+                label="Purchase - Type"
+                value={approval.purchaseType}
+                onChange={(v) => setApproval((p) => ({ ...p, purchaseType: v }))}
+                options={purchaseTypes.length > 0 ? purchaseTypes : PURCHASE_TYPES}
+                readOnly={!canEditPlacement}
+              />
+              <Select
+                col="col-span-12 md:col-span-4"
+                label="Payment - Terms"
+                value={approval.paymentTerms}
+                onChange={(v) => setApproval((p) => ({ ...p, paymentTerms: v }))}
+                options={paymentTerms.length > 0 ? paymentTerms : PAYMENT_TERMS}
+                readOnly={!canEditPlacement}
+              />
             </div>
-            {approval.memoFile && (
-              <div className="mt-2 text-xs text-slate-600">
-                File: {approval.memoFile.originalName}
-                {approval.memoFile.filePath && process.env.NODE_ENV === 'development' && (
-                  <a href={approval.memoFile.filePath} target="_blank" rel="noopener noreferrer" className="ml-2 text-sky-600 hover:underline">View</a>
-                )}
-              </div>
-            )}
-          </div>
-        </Card>
+          </Card>
+
+        </div>
       </div>
-    </div>
     </TransactionFormKeyboardNavigation>
   );
 }

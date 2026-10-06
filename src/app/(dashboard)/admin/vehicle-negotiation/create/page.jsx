@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useMemo, useRef, useState, useEffect, useCallback } from "react";
@@ -1686,7 +1685,6 @@ export default function VehicleNegotiationPanel() {
 
   const [orders, setOrders] = useState([]);
   const [voiceFileInfo, setVoiceFileInfo] = useState(null);
-  const [memoFile, setMemoFile] = useState(null);
   const audioRef = useRef(null);
 
   const fetchSubCompanies = async () => {
@@ -1925,9 +1923,7 @@ const handleSupplierSelect = (supplier) => {
     purchaseType: "",
     paymentTerms: "",
     approvalStatus: "",
-    remarks: "",
-    memoStatus: "Pending",
-    memoFile: null
+    remarks: ""
   });
 
   const purchaseAmount = useMemo(() => {
@@ -1956,64 +1952,8 @@ const handleSupplierSelect = (supplier) => {
       weight: o.weight,
       orderStatus: o.status,
       approval: approval.approvalStatus || "Pending",
-      memo: approval.memoStatus || "Pending",
     }));
-  }, [orders, header.date, header.vnnNo, approval.approvalStatus, approval.memoStatus]);
-
-  const handleMemoUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
-    if (!allowedTypes.includes(file.type)) {
-      alert("❌ Please upload only PDF or image files (JPEG, PNG)");
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      alert("❌ File size should be less than 5MB");
-      return;
-    }
-
-    setMemoFile(file);
-    
-    const formData = new FormData();
-    formData.append('file', file);
-    
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('/api/upload/excel', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      });
-      
-      const data = await res.json();
-      
-      if (data.success) {
-        setApproval((p) => ({ 
-          ...p, 
-          memoStatus: "Uploaded",
-          memoFile: {
-            filePath: data.filePath,
-            fullPath: data.fullPath,
-            filename: data.filename,
-            originalName: file.name,
-            size: file.size,
-            mimeType: file.type
-          }
-        }));
-        alert("✅ Memo uploaded successfully!");
-      } else {
-        throw new Error(data.error || "Upload failed");
-      }
-    } catch (error) {
-      console.error("Error uploading memo:", error);
-      alert("❌ Failed to upload memo. Please try again.");
-    }
-  };
+  }, [orders, header.date, header.vnnNo, approval.approvalStatus]);
 
   const handleVoiceUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -2190,9 +2130,7 @@ const handleSupplierSelect = (supplier) => {
           purchaseType: approval.purchaseType,
           paymentTerms: approval.paymentTerms,
           approvalStatus: approval.approvalStatus,
-          remarks: approval.remarks,
-          memoStatus: approval.memoStatus,
-          memoFile: approval.memoFile
+          remarks: approval.remarks
         },
         reportRows: reportRows.map(row => ({
           ...row,
@@ -2310,8 +2248,6 @@ const handleSupplierSelect = (supplier) => {
       paymentTerms: "",
       approvalStatus: "",
       remarks: "",
-      memoStatus: "Pending",
-      memoFile: null,
     });
     
     setSelectedCustomer(null);
@@ -2322,7 +2258,6 @@ const handleSupplierSelect = (supplier) => {
     setSelectedVehicle(null);
     setVoiceUrl("");
     setVoiceFileInfo(null);
-    setMemoFile(null);
     
     setStateData({});
     setDistrictData({});
@@ -2381,7 +2316,6 @@ const handleSupplierSelect = (supplier) => {
     { key: "weight", label: "Weight" },
     { key: "orderStatus", label: "Order Status" },
     { key: "approval", label: "Approval" },
-    { key: "memo", label: "Memo" },
   ];
 
   const billingColumns = [
@@ -3072,46 +3006,6 @@ const handleSupplierSelect = (supplier) => {
           </div>
         </Card>
 
-        {/* MEMO UPLOAD */}
-        <Card title="Memo - Upload">
-          <div className="rounded-xl border border-slate-200 p-4">
-            <div className="text-sm font-extrabold text-slate-900 mb-3">Memo Upload</div>
-            <input
-              type="file"
-              accept=".pdf,.png,.jpg,.jpeg"
-              onChange={handleMemoUpload}
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-            />
-            <div className="mt-3 text-sm">
-              Status:{" "}
-              <span className={`font-extrabold ${approval.memoStatus === "Uploaded" ? "text-green-700" : "text-yellow-700"}`}>
-                {approval.memoStatus || "Pending"}
-              </span>
-            </div>
-            <div className="mt-3">
-              <label className="text-xs font-bold text-slate-600">Memo Approval</label>
-              <select
-                value={approval.approvalStatus || ""}
-                onChange={(e) => setApproval((p) => ({ ...p, approvalStatus: e.target.value }))}
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none cursor-not-allowed"
-                disabled={true}
-              >
-                <option value="">Select Approval</option>
-                {APPROVALS.map((opt) => (
-                  <option key={opt} value={opt}>{opt}</option>
-                ))}
-              </select>
-            </div>
-            {approval.memoFile && (
-              <div className="mt-2 text-xs text-slate-600">
-                File: {approval.memoFile.originalName}
-                {approval.memoFile.filePath && process.env.NODE_ENV === 'development' && (
-                  <a href={approval.memoFile.filePath} target="_blank" rel="noopener noreferrer" className="ml-2 text-sky-600 hover:underline">View</a>
-                )}
-              </div>
-            )}
-          </div>
-        </Card>
       </div>
     </div>
     </TransactionFormKeyboardNavigation>

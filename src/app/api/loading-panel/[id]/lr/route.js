@@ -33,7 +33,10 @@ export const GET = withAuth(async (req, context, user) => {
         }
 
         const notes = panel.vehicleArrivalNo
-            ? await ConsignmentNote.find(companyScopeFilter(user, { loadingInfoNo: panel.vehicleArrivalNo }))
+            ? await ConsignmentNote.find(companyScopeFilter(user, {
+                loadingInfoNo: panel.vehicleArrivalNo,
+                "header.status": { $in: ["Approved", "Completed"] },
+            }))
                 .select("-companyId -createdBy -updatedBy -__v")
                 .sort({ createdAt: 1 })
                 .lean()

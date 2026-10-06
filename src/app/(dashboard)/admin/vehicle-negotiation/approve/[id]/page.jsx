@@ -298,7 +298,7 @@
 // //         placeholder={placeholder}
 // //         autoComplete="off"
 // //       />
-      
+
 // //       {showDropdown && !disabled && filteredItems.length > 0 && (
 // //         <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
 // //           {filteredItems.map((item) => (
@@ -356,7 +356,7 @@
 // //         placeholder="Search supplier..."
 // //         autoComplete="off"
 // //       />
-      
+
 // //       {showDropdown && !readOnly && suppliers.length > 0 && (
 // //         <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
 // //           {suppliers.map((supplier) => (
@@ -790,20 +790,20 @@
 // //     try {
 // //       const token = localStorage.getItem('token');
 // //       console.log("Fetching negotiation with ID:", negotiationId);
-      
+
 // //       const res = await fetch(`/api/vehicle-negotiation?id=${negotiationId}`, {
 // //         headers: { Authorization: `Bearer ${token}` },
 // //       });
 // //       const data = await res.json();
 // //       console.log("API Response:", data);
-      
+
 // //       if (!data.success) throw new Error(data.message || 'Failed to fetch');
 
 // //       const vn = data.data;
 // //       console.log("Vehicle Negotiation Data:", vn);
-      
+
 // //       setVnnNumber(vn.vnnNo || "");
-      
+
 // //       setHeader({
 // //         vnnNo: vn.vnnNo || "",
 // //         branch: vn.branch || null,
@@ -892,9 +892,9 @@
 // //           memoStatus: vn.approval.memoStatus || "Pending",
 // //           memoFile: vn.approval.memoFile || null
 // //         };
-        
+
 // //         setApproval(approvalData);
-        
+
 // //         // Set all section approvals with the same initial data
 // //         setPart1Approval({
 // //           approvalStatus: vn.approval.approvalStatus || "Pending",
@@ -952,7 +952,7 @@
 // //     setUploading(true);
 // //     const formData = new FormData();
 // //     formData.append('file', file);
-    
+
 // //     try {
 // //       const token = localStorage.getItem('token');
 // //       const res = await fetch('/api/upload/excel', {
@@ -961,7 +961,7 @@
 // //         body: formData,
 // //       });
 // //       const data = await res.json();
-      
+
 // //       if (data.success) {
 // //         setApproval(prev => ({ 
 // //           ...prev, 
@@ -995,15 +995,15 @@
 // //     setSavingPart1(true);
 // //     try {
 // //       const token = localStorage.getItem('token');
-      
+
 // //       const fetchRes = await fetch(`/api/vehicle-negotiation?id=${negotiationId}`, {
 // //         headers: { Authorization: `Bearer ${token}` },
 // //       });
 // //       const fetchData = await fetchRes.json();
 // //       if (!fetchData.success) throw new Error('Failed to fetch data');
-      
+
 // //       const currentData = fetchData.data;
-      
+
 // //       // Only update approvalStatus and remarks from Part 1
 // //       const updatedData = {
 // //         ...currentData,
@@ -1013,7 +1013,7 @@
 // //           remarks: part1Approval.remarks
 // //         }
 // //       };
-      
+
 // //       const res = await fetch('/api/vehicle-negotiation', {
 // //         method: 'PUT',
 // //         headers: {
@@ -1054,15 +1054,15 @@
 // //     setSavingPart2(true);
 // //     try {
 // //       const token = localStorage.getItem('token');
-      
+
 // //       const fetchRes = await fetch(`/api/vehicle-negotiation?id=${negotiationId}`, {
 // //         headers: { Authorization: `Bearer ${token}` },
 // //       });
 // //       const fetchData = await fetchRes.json();
 // //       if (!fetchData.success) throw new Error('Failed to fetch data');
-      
+
 // //       const currentData = fetchData.data;
-      
+
 // //       // Only update approvalStatus and remarks from Part 2
 // //       const updatedData = {
 // //         ...currentData,
@@ -1072,7 +1072,7 @@
 // //           remarks: part2Approval.remarks
 // //         }
 // //       };
-      
+
 // //       const res = await fetch('/api/vehicle-negotiation', {
 // //         method: 'PUT',
 // //         headers: {
@@ -1113,15 +1113,15 @@
 // //     setSavingPart3(true);
 // //     try {
 // //       const token = localStorage.getItem('token');
-      
+
 // //       const fetchRes = await fetch(`/api/vehicle-negotiation?id=${negotiationId}`, {
 // //         headers: { Authorization: `Bearer ${token}` },
 // //       });
 // //       const fetchData = await fetchRes.json();
 // //       if (!fetchData.success) throw new Error('Failed to fetch data');
-      
+
 // //       const currentData = fetchData.data;
-      
+
 // //       // Only update approvalStatus and remarks from Part 3
 // //       const updatedData = {
 // //         ...currentData,
@@ -1131,7 +1131,7 @@
 // //           remarks: part3Approval.remarks
 // //         }
 // //       };
-      
+
 // //       const res = await fetch('/api/vehicle-negotiation', {
 // //         method: 'PUT',
 // //         headers: {
@@ -1237,7 +1237,7 @@
 // //         >
 // //           <div className="grid grid-cols-12 gap-3 mb-4">
 // //             <Input col="col-span-12 md:col-span-3" label="Vehicle Negotiation No" value={vnnNumber} readOnly={true} />
-            
+
 // //             <div className="col-span-12 md:col-span-6">
 // //               <label className="text-xs font-bold text-slate-600">Select Order Panels</label>
 // //               <MultiSelectOrderPanelDropdown
@@ -1247,7 +1247,7 @@
 // //                 readOnly={true}
 // //               />
 // //             </div>
-            
+
 // //             <div className="col-span-12 md:col-span-3">
 // //               <label className="text-xs font-bold text-slate-600">Branch</label>
 // //               <Input value={header.branchName} readOnly={true} />
@@ -1266,7 +1266,7 @@
 
 // //             <Input col="col-span-12 md:col-span-3" label="Delivery" value={header.delivery} readOnly={true} />
 // //             <Input type="date" col="col-span-12 md:col-span-3" label="Date" value={header.date} readOnly={true} />
-           
+
 // //             {/* APPROVAL STATUS - PART 1 */}
 // //             <Select 
 // //               col="col-span-12 md:col-span-3" 
@@ -1339,7 +1339,7 @@
 // //             <Input col="col-span-12 md:col-span-3" label="Max Rate" value={negotiation.maxRate} readOnly={true} />
 // //             <Input col="col-span-12 md:col-span-3" label="Target Rate" value={negotiation.targetRate} readOnly={true} />
 // //             <Input col="col-span-12 md:col-span-3" label="Old Rate %" value={negotiation.oldRatePercent} readOnly={true} />
-            
+
 // //             {/* APPROVAL STATUS - PART 2 */}
 // //             <Select 
 // //               col="col-span-12 md:col-span-3" 
@@ -1468,7 +1468,7 @@
 // //         <Card title="Memo - Upload">
 // //           <div className="rounded-xl border border-slate-200 p-4">
 // //             <div className="text-sm font-extrabold text-slate-900 mb-3">Memo Upload</div>
-            
+
 // //             {/* File Upload */}
 // //             <input
 // //               type="file"
@@ -1477,7 +1477,7 @@
 // //               disabled={uploading}
 // //               className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 disabled:opacity-50"
 // //             />
-            
+
 // //             {/* Uploading Status */}
 // //             {uploading && (
 // //               <div className="mt-3 text-sm text-blue-600 flex items-center gap-2">
@@ -1488,7 +1488,7 @@
 // //                 Uploading memo...
 // //               </div>
 // //             )}
-            
+
 // //             {/* Memo Status - Editable */}
 // //             <div className="mt-3">
 // //               <label className="text-xs font-bold text-slate-600">Memo Status</label>
@@ -1502,7 +1502,7 @@
 // //                 ))}
 // //               </select>
 // //             </div>
-            
+
 // //             {/* Display Uploaded File Info */}
 // //             {approval.memoFile && (
 // //               <div className="mt-3 p-3 bg-green-50 rounded-lg border border-green-200">
@@ -1825,7 +1825,7 @@
 //         placeholder={placeholder}
 //         autoComplete="off"
 //       />
-      
+
 //       {showDropdown && !disabled && filteredItems.length > 0 && (
 //         <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
 //           {filteredItems.map((item) => (
@@ -1883,7 +1883,7 @@
 //         placeholder="Search supplier..."
 //         autoComplete="off"
 //       />
-      
+
 //       {showDropdown && !readOnly && suppliers.length > 0 && (
 //         <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
 //           {suppliers.map((supplier) => (
@@ -2317,20 +2317,20 @@
 //     try {
 //       const token = localStorage.getItem('token');
 //       console.log("Fetching negotiation with ID:", negotiationId);
-      
+
 //       const res = await fetch(`/api/vehicle-negotiation?id=${negotiationId}`, {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
 //       const data = await res.json();
 //       console.log("API Response:", data);
-      
+
 //       if (!data.success) throw new Error(data.message || 'Failed to fetch');
 
 //       const vn = data.data;
 //       console.log("Vehicle Negotiation Data:", vn);
-      
+
 //       setVnnNumber(vn.vnnNo || "");
-      
+
 //       setHeader({
 //         vnnNo: vn.vnnNo || "",
 //         branch: vn.branch || null,
@@ -2419,9 +2419,9 @@
 //           memoStatus: vn.approval.memoStatus || "Pending",
 //           memoFile: vn.approval.memoFile || null
 //         };
-        
+
 //         setApproval(approvalData);
-        
+
 //         // Set all section approvals with the same initial data
 //         setPart1Approval({
 //           approvalStatus: vn.approval.approvalStatus || "Pending",
@@ -2479,7 +2479,7 @@
 //     setUploading(true);
 //     const formData = new FormData();
 //     formData.append('file', file);
-    
+
 //     try {
 //       const token = localStorage.getItem('token');
 //       const res = await fetch('/api/upload/excel', {
@@ -2488,7 +2488,7 @@
 //         body: formData,
 //       });
 //       const data = await res.json();
-      
+
 //       if (data.success) {
 //         setApproval(prev => ({ 
 //           ...prev, 
@@ -2522,15 +2522,15 @@
 //     setSavingPart1(true);
 //     try {
 //       const token = localStorage.getItem('token');
-      
+
 //       const fetchRes = await fetch(`/api/vehicle-negotiation?id=${negotiationId}`, {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
 //       const fetchData = await fetchRes.json();
 //       if (!fetchData.success) throw new Error('Failed to fetch data');
-      
+
 //       const currentData = fetchData.data;
-      
+
 //       // Only update approvalStatus and remarks from Part 1
 //       const updatedData = {
 //         ...currentData,
@@ -2540,7 +2540,7 @@
 //           remarks: part1Approval.remarks
 //         }
 //       };
-      
+
 //       const res = await fetch('/api/vehicle-negotiation', {
 //         method: 'PUT',
 //         headers: {
@@ -2596,15 +2596,15 @@
 //     setSavingPart2(true);
 //     try {
 //       const token = localStorage.getItem('token');
-      
+
 //       const fetchRes = await fetch(`/api/vehicle-negotiation?id=${negotiationId}`, {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
 //       const fetchData = await fetchRes.json();
 //       if (!fetchData.success) throw new Error('Failed to fetch data');
-      
+
 //       const currentData = fetchData.data;
-      
+
 //       // Only update approvalStatus and remarks from Part 2
 //       const updatedData = {
 //         ...currentData,
@@ -2614,7 +2614,7 @@
 //           remarks: part2Approval.remarks
 //         }
 //       };
-      
+
 //       const res = await fetch('/api/vehicle-negotiation', {
 //         method: 'PUT',
 //         headers: {
@@ -2670,15 +2670,15 @@
 //     setSavingPart3(true);
 //     try {
 //       const token = localStorage.getItem('token');
-      
+
 //       const fetchRes = await fetch(`/api/vehicle-negotiation?id=${negotiationId}`, {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
 //       const fetchData = await fetchRes.json();
 //       if (!fetchData.success) throw new Error('Failed to fetch data');
-      
+
 //       const currentData = fetchData.data;
-      
+
 //       // Only update approvalStatus and remarks from Part 3
 //       const updatedData = {
 //         ...currentData,
@@ -2688,7 +2688,7 @@
 //           remarks: part3Approval.remarks
 //         }
 //       };
-      
+
 //       const res = await fetch('/api/vehicle-negotiation', {
 //         method: 'PUT',
 //         headers: {
@@ -2809,7 +2809,7 @@
 //         >
 //           <div className="grid grid-cols-12 gap-3 mb-4">
 //             <Input col="col-span-12 md:col-span-3" label="Vehicle Negotiation No" value={vnnNumber} readOnly={true} />
-            
+
 //             <div className="col-span-12 md:col-span-6">
 //               <label className="text-xs font-bold text-slate-600">Select Order Panels</label>
 //               <MultiSelectOrderPanelDropdown
@@ -2819,7 +2819,7 @@
 //                 readOnly={true}
 //               />
 //             </div>
-            
+
 //             <div className="col-span-12 md:col-span-3">
 //               <label className="text-xs font-bold text-slate-600">Branch</label>
 //               <Input value={header.branchName} readOnly={true} />
@@ -2838,7 +2838,7 @@
 
 //             <Input col="col-span-12 md:col-span-3" label="Delivery" value={header.delivery} readOnly={true} />
 //             <Input type="date" col="col-span-12 md:col-span-3" label="Date" value={header.date} readOnly={true} />
-           
+
 //             {/* APPROVAL STATUS - PART 1 */}
 //             <Select 
 //               col="col-span-12 md:col-span-3" 
@@ -2911,7 +2911,7 @@
 //             <Input col="col-span-12 md:col-span-3" label="Max Rate" value={negotiation.maxRate} readOnly={true} />
 //             <Input col="col-span-12 md:col-span-3" label="Target Rate" value={negotiation.targetRate} readOnly={true} />
 //             <Input col="col-span-12 md:col-span-3" label="Old Rate %" value={negotiation.oldRatePercent} readOnly={true} />
-            
+
 //             {/* APPROVAL STATUS - PART 2 */}
 //             <Select 
 //               col="col-span-12 md:col-span-3" 
@@ -3040,7 +3040,7 @@
 //         <Card title="Memo - Upload">
 //           <div className="rounded-xl border border-slate-200 p-4">
 //             <div className="text-sm font-extrabold text-slate-900 mb-3">Memo Upload</div>
-            
+
 //             {/* File Upload */}
 //             <input
 //               type="file"
@@ -3049,7 +3049,7 @@
 //               disabled={uploading}
 //               className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 disabled:opacity-50"
 //             />
-            
+
 //             {/* Uploading Status */}
 //             {uploading && (
 //               <div className="mt-3 text-sm text-blue-600 flex items-center gap-2">
@@ -3060,7 +3060,7 @@
 //                 Uploading memo...
 //               </div>
 //             )}
-            
+
 //             {/* Memo Status - Editable */}
 //             <div className="mt-3">
 //               <label className="text-xs font-bold text-slate-600">Memo Status</label>
@@ -3074,7 +3074,7 @@
 //                 ))}
 //               </select>
 //             </div>
-            
+
 //             {/* Display Uploaded File Info */}
 //             {approval.memoFile && (
 //               <div className="mt-3 p-3 bg-green-50 rounded-lg border border-green-200">
@@ -3124,7 +3124,6 @@ const PAYMENT_TERMS = [
   "Full Payment after Delivery",
 ];
 const APPROVALS = ["Approved", "Reject", "Pending"];
-const MEMO_STATUS = ["Uploaded", "Pending"];
 
 function uid() {
   return Math.random().toString(36).slice(2, 10);
@@ -3292,7 +3291,7 @@ function defaultVendorRow() {
   return {
     _id: uid(),
     vendorName: "",
-    vendorCode: "", 
+    vendorCode: "",
     marketRate: "",
     purchaseType: "",
   };
@@ -3322,9 +3321,8 @@ function Input({ label, value, onChange, col = "", type = "text", readOnly = fal
         value={value || ""}
         onChange={(e) => onChange?.(e.target.value)}
         readOnly={readOnly}
-        className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${
-          readOnly ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-        }`}
+        className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${readOnly ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+          }`}
       />
     </div>
   );
@@ -3338,9 +3336,8 @@ function Select({ label, value, onChange, options = [], col = "", readOnly = fal
         value={value || ""}
         onChange={(e) => onChange?.(e.target.value)}
         disabled={readOnly}
-        className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${
-          readOnly ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-        }`}
+        className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${readOnly ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+          }`}
       >
         <option value="">Select {label}</option>
         {options.map((o) => (
@@ -3351,10 +3348,10 @@ function Select({ label, value, onChange, options = [], col = "", readOnly = fal
   );
 }
 
-function SearchableDropdown({ 
-  items, 
-  selectedId, 
-  onSelect, 
+function SearchableDropdown({
+  items,
+  selectedId,
+  onSelect,
   placeholder = "Search...",
   displayField = 'name',
   codeField = 'code',
@@ -3402,16 +3399,15 @@ function SearchableDropdown({
         onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
         onKeyDown={handleDropdownKeyDown}
         disabled={disabled}
-        className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${
-          disabled ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-        }`}
+        className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${disabled ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+          }`}
         placeholder={placeholder}
         autoComplete="off"
         role="combobox"
         aria-expanded={showDropdown}
         aria-haspopup="listbox"
       />
-      
+
       {showDropdown && !disabled && filteredItems.length > 0 && (
         <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto" role="listbox">
           {filteredItems.map((item) => (
@@ -3474,16 +3470,15 @@ function SupplierSearchDropdown({ value, onSelect, readOnly = false }) {
         onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
         onKeyDown={handleDropdownKeyDown}
         readOnly={readOnly}
-        className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${
-          readOnly ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-        }`}
+        className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${readOnly ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+          }`}
         placeholder="Search supplier..."
         autoComplete="off"
         role="combobox"
         aria-expanded={showDropdown}
         aria-haspopup="listbox"
       />
-      
+
       {showDropdown && !readOnly && suppliers.length > 0 && (
         <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto" role="listbox">
           {suppliers.map((supplier) => (
@@ -3613,28 +3608,28 @@ function MultiSelectOrderPanelDropdown({ selectedPanels = [], onSelect, placehol
   Orders Table Component (Read-only with all charge fields)
 ========================= */
 function OrdersTable({ rows }) {
- const columns = [
-  { key: "orderNo", label: "Order No", minWidth: "120px" },
-  { key: "partyName", label: "Party Name", minWidth: "150px" },
-  { key: "plantCode", label: "Plant Code", minWidth: "100px" },
-  { key: "plantName", label: "Plant Name", minWidth: "120px" },
-  { key: "orderType", label: "Order Type", minWidth: "100px" },
-  { key: "pinCode", label: "Pin Code", minWidth: "100px" },
-  { key: "from", label: "From", minWidth: "120px" },
-  { key: "to", label: "To", minWidth: "120px" },
-  { key: "taluka", label: "Taluka", minWidth: "120px" },
-  { key: "district", label: "District", minWidth: "100px" },
-  { key: "state", label: "State", minWidth: "100px" },
-  { key: "localStatus", label: "Local/Not Local", minWidth: "120px" },
-  { key: "country", label: "Country", minWidth: "100px" },
-  { key: "weight", label: "Weight", minWidth: "80px" },
-  { key: "status", label: "Status", minWidth: "100px" },
-  { key: "collectionCharges", label: "Collection Charges", minWidth: "120px" },
-  { key: "cancellationCharges", label: "Cancellation Charges", minWidth: "130px" },
-  { key: "loadingCharges", label: "Loading Charges", minWidth: "120px" },
-  { key: "otherCharges", label: "Other Charges", minWidth: "110px" },
-  { key: "subCompanyName", label: "Sub-Company", minWidth: "120px" },
-];
+  const columns = [
+    { key: "orderNo", label: "Order No", minWidth: "120px" },
+    { key: "partyName", label: "Party Name", minWidth: "150px" },
+    { key: "plantCode", label: "Plant Code", minWidth: "100px" },
+    { key: "plantName", label: "Plant Name", minWidth: "120px" },
+    { key: "orderType", label: "Order Type", minWidth: "100px" },
+    { key: "pinCode", label: "Pin Code", minWidth: "100px" },
+    { key: "from", label: "From", minWidth: "120px" },
+    { key: "to", label: "To", minWidth: "120px" },
+    { key: "taluka", label: "Taluka", minWidth: "120px" },
+    { key: "district", label: "District", minWidth: "100px" },
+    { key: "state", label: "State", minWidth: "100px" },
+    { key: "localStatus", label: "Local/Not Local", minWidth: "120px" },
+    { key: "country", label: "Country", minWidth: "100px" },
+    { key: "weight", label: "Weight", minWidth: "80px" },
+    { key: "status", label: "Status", minWidth: "100px" },
+    { key: "collectionCharges", label: "Collection Charges", minWidth: "120px" },
+    { key: "cancellationCharges", label: "Cancellation Charges", minWidth: "130px" },
+    { key: "loadingCharges", label: "Loading Charges", minWidth: "120px" },
+    { key: "otherCharges", label: "Other Charges", minWidth: "110px" },
+    { key: "subCompanyName", label: "Sub-Company", minWidth: "120px" },
+  ];
 
   if (!rows || rows.length === 0) {
     return (
@@ -3670,27 +3665,25 @@ function OrdersTable({ rows }) {
               <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.talukaName || row.taluka || '-'}</td>
               <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.districtName || row.district || '-'}</td>
               <td className="border border-yellow-300 px-2 py-2 text-center">
-  {row.fromState && row.stateName ? (
-    <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${
-      row.fromState.trim().toUpperCase() === row.stateName.trim().toUpperCase()
-        ? 'bg-green-100 text-green-800 border border-green-300'
-        : 'bg-red-100 text-red-800 border border-red-300'
-    }`}>
-      {row.fromState.trim().toUpperCase() === row.stateName.trim().toUpperCase() ? '✅ Local' : '❌ Not Local'}
-    </span>
-  ) : (
-    <span className="text-xs text-gray-400">-</span>
-  )}
-</td>
+                {row.fromState && row.stateName ? (
+                  <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${row.fromState.trim().toUpperCase() === row.stateName.trim().toUpperCase()
+                    ? 'bg-green-100 text-green-800 border border-green-300'
+                    : 'bg-red-100 text-red-800 border border-red-300'
+                    }`}>
+                    {row.fromState.trim().toUpperCase() === row.stateName.trim().toUpperCase() ? '✅ Local' : '❌ Not Local'}
+                  </span>
+                ) : (
+                  <span className="text-xs text-gray-400">-</span>
+                )}
+              </td>
               <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.stateName || row.state || '-'}</td>
               <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.countryName || row.country || '-'}</td>
               <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.weight || '0'}</td>
               <td className="border border-yellow-300 px-2 py-2">
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                  row.status === 'Open' ? 'bg-green-100 text-green-800' :
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${row.status === 'Open' ? 'bg-green-100 text-green-800' :
                   row.status === 'Hold' ? 'bg-yellow-100 text-yellow-800' :
-                  row.status === 'Cancelled' ? 'bg-red-100 text-red-800' : 'bg-slate-100 text-slate-800'
-                }`}>{row.status || 'Open'}</span>
+                    row.status === 'Cancelled' ? 'bg-red-100 text-red-800' : 'bg-slate-100 text-slate-800'
+                  }`}>{row.status || 'Open'}</span>
               </td>
               <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.collectionCharges || '0'}</td>
               <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.cancellationCharges || 'Nil'}</td>
@@ -3789,13 +3782,11 @@ export default function ApproveVehicleNegotiation() {
   const supplierSearch = useSupplierSearch();
   const customerSearch = useCustomerSearch();
   const audioRef = useRef(null);
-  const fileInputRef = useRef(null);
 
   const [loading, setLoading] = useState(true);
   const [savingPart1, setSavingPart1] = useState(false);
   const [savingPart2, setSavingPart2] = useState(false);
   const [savingPart3, setSavingPart3] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [purchaseTypes, setPurchaseTypes] = useState([]);
   const [paymentTerms, setPaymentTerms] = useState([]);
   const [branches, setBranches] = useState([]);
@@ -3851,9 +3842,7 @@ export default function ApproveVehicleNegotiation() {
     vehicleData: null,
     mobile: "",
     purchaseType: "",
-    paymentTerms: "",
-    memoStatus: "Pending",
-    memoFile: null
+    paymentTerms: ""
   });
 
   // Separate state for each section's approval
@@ -3931,20 +3920,20 @@ export default function ApproveVehicleNegotiation() {
     try {
       const token = localStorage.getItem('token');
       console.log("Fetching negotiation with ID:", negotiationId);
-      
+
       const res = await fetch(`/api/vehicle-negotiation?id=${negotiationId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
       console.log("API Response:", data);
-      
+
       if (!data.success) throw new Error(data.message || 'Failed to fetch');
 
       const vn = data.data;
       console.log("Vehicle Negotiation Data:", vn);
-      
+
       setVnnNumber(vn.vnnNo || "");
-      
+
       setHeader({
         vnnNo: vn.vnnNo || "",
         branch: vn.branch || null,
@@ -3975,8 +3964,8 @@ export default function ApproveVehicleNegotiation() {
       }
 
       if (vn.orders && vn.orders.length > 0) {
-        setOrders(vn.orders.map(order => ({ 
-          ...order, 
+        setOrders(vn.orders.map(order => ({
+          ...order,
           _id: order._id || uid(),
           subCompanyId: order.subCompanyId || vn.subCompanyId || null,
           subCompanyName: order.subCompanyName || vn.subCompanyName || '',
@@ -4028,22 +4017,20 @@ export default function ApproveVehicleNegotiation() {
           vehicleData: vn.approval.vehicleData || null,
           mobile: vn.approval.mobile || "",
           purchaseType: vn.approval.purchaseType || "",
-          paymentTerms: vn.approval.paymentTerms || "",
-          memoStatus: vn.approval.memoStatus || "Pending",
-          memoFile: vn.approval.memoFile || null
+          paymentTerms: vn.approval.paymentTerms || ""
         });
-        
+
         // Set each part's approval independently from the database
         setPart1Approval({
           approvalStatus: vn.approval.part1Status || "Pending",
           remarks: vn.approval.part1Remarks || ""
         });
-        
+
         setPart2Approval({
           approvalStatus: vn.approval.part2Status || "Pending",
           remarks: vn.approval.part2Remarks || ""
         });
-        
+
         setPart3Approval({
           approvalStatus: vn.approval.part3Status || "Pending",
           remarks: vn.approval.part3Remarks || ""
@@ -4074,65 +4061,6 @@ export default function ApproveVehicleNegotiation() {
     }
   };
 
-  const handleMemoUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
-    if (!allowedTypes.includes(file.type)) {
-      alert("❌ Please upload only PDF or image files");
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      alert("❌ File size should be less than 5MB");
-      return;
-    }
-
-    setUploading(true);
-    const formData = new FormData();
-    formData.append('file', file);
-    
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('/api/upload/excel', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
-      });
-      const data = await res.json();
-      
-      if (data.success) {
-        const uploadedMemo = {
-          filePath: data.filePath,
-          fullPath: data.fullPath,
-          filename: data.filename,
-          originalName: file.name,
-          size: file.size,
-          mimeType: file.type
-        };
-        const memoRes = await fetch(`/api/vehicle-negotiation/${negotiationId}/memo`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ memoFile: uploadedMemo })
-        });
-        const memoData = await memoRes.json();
-        if (!memoRes.ok || !memoData.success) throw new Error(memoData.message || 'Memo metadata could not be saved');
-        setApproval(prev => ({ 
-          ...prev, 
-          memoStatus: memoData.data.memoStatus,
-          memoFile: memoData.data.memoFile
-        }));
-        alert("✅ Memo uploaded successfully!");
-      }
-    } catch (error) {
-      console.error("Error uploading memo:", error);
-      alert("❌ Failed to upload memo");
-    } finally {
-      setUploading(false);
-    }
-  };
-
   // ============================================
   // PART 1 - Using PATCH for approval
   // ============================================
@@ -4146,7 +4074,7 @@ export default function ApproveVehicleNegotiation() {
     try {
       const token = localStorage.getItem('token');
       const action = part1Approval.approvalStatus === 'Approved' ? 'approve' : 'reject';
-      
+
       // ✅ USE PATCH for approval
       const res = await fetch('/api/vehicle-negotiation', {
         method: 'PATCH',
@@ -4154,7 +4082,7 @@ export default function ApproveVehicleNegotiation() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           id: negotiationId,
           action: action,
           part: 'part1',
@@ -4197,7 +4125,7 @@ export default function ApproveVehicleNegotiation() {
     try {
       const token = localStorage.getItem('token');
       const action = part2Approval.approvalStatus === 'Approved' ? 'approve' : 'reject';
-      
+
       // ✅ USE PATCH for approval
       const res = await fetch('/api/vehicle-negotiation', {
         method: 'PATCH',
@@ -4205,7 +4133,7 @@ export default function ApproveVehicleNegotiation() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           id: negotiationId,
           action: action,
           part: 'part2',
@@ -4248,7 +4176,7 @@ export default function ApproveVehicleNegotiation() {
     try {
       const token = localStorage.getItem('token');
       const action = part3Approval.approvalStatus === 'Approved' ? 'approve' : 'reject';
-      
+
       // ✅ USE PATCH for approval
       const res = await fetch('/api/vehicle-negotiation', {
         method: 'PATCH',
@@ -4256,7 +4184,7 @@ export default function ApproveVehicleNegotiation() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           id: negotiationId,
           action: action,
           part: 'part3',
@@ -4318,309 +4246,248 @@ export default function ApproveVehicleNegotiation() {
 
   return (
     <TransactionFormKeyboardNavigation>
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white">
-      {/* Top Bar */}
-      <div className="sticky top-0 z-40 border-b bg-white/80 backdrop-blur">
-        <div className="mx-auto max-w-full px-4 py-3 flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => router.push('/admin/vehicle-negotiation')}
-                className="text-yellow-600 hover:text-yellow-800 font-medium text-sm flex items-center gap-1"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-                Back to List
-              </button>
-              <div className="text-lg font-extrabold text-slate-900">
-                Approve Vehicle Negotiation: {vnnNumber}
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white">
+        {/* Top Bar */}
+        <div className="sticky top-0 z-40 border-b bg-white/80 backdrop-blur">
+          <div className="mx-auto max-w-full px-4 py-3 flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => router.push('/admin/vehicle-negotiation')}
+                  className="text-yellow-600 hover:text-yellow-800 font-medium text-sm flex items-center gap-1"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                  </svg>
+                  Back to List
+                </button>
+                <div className="text-lg font-extrabold text-slate-900">
+                  Approve Vehicle Negotiation: {vnnNumber}
+                </div>
               </div>
-            </div>
-            <div className="text-xs text-green-600 mt-1 font-medium">
-              ⓘ Submit approval for each section separately
+              <div className="text-xs text-green-600 mt-1 font-medium">
+                ⓘ Submit approval for each section separately
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div className="mx-auto max-w-full p-4 space-y-4">
-        {/* PART 1 - Vehicle Negotiation - Panel - Part -1 with Approval Fields Editable */}
-        <Card 
-          title="Vehicle Negotiation - Panel - Part -1" 
-          right={
-            <button
-              onClick={handleSubmitPart1}
-              disabled={savingPart1 || savingPart2 || savingPart3 || uploading}
-              className={`rounded-xl px-4 py-2 text-xs font-bold text-white transition ${
-                savingPart1 || savingPart2 || savingPart3 || uploading ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
-              }`}
-            >
-              {savingPart1 ? 'Saving...' : 'Submit Part 1'}
-            </button>
-          }
-        >
-          <div className="grid grid-cols-12 gap-3 mb-4">
-            <Input col="col-span-12 md:col-span-3" label="Vehicle Negotiation No" value={vnnNumber} readOnly={true} />
-            
-            <div className="col-span-12 md:col-span-6">
-              <label className="text-xs font-bold text-slate-600">Select Order Panels</label>
-              <MultiSelectOrderPanelDropdown
-                selectedPanels={selectedOrderPanels}
-                onSelect={() => {}}
-                placeholder="Search and select order panels..."
-                readOnly={true}
+        <div className="mx-auto max-w-full p-4 space-y-4">
+          {/* PART 1 - Vehicle Negotiation - Panel - Part -1 with Approval Fields Editable */}
+          <Card
+            title="Vehicle Negotiation - Panel - Part -1"
+            right={
+              <button
+                onClick={handleSubmitPart1}
+                disabled={savingPart1 || savingPart2 || savingPart3}
+                className={`rounded-xl px-4 py-2 text-xs font-bold text-white transition ${savingPart1 || savingPart2 || savingPart3 ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
+                  }`}
+              >
+                {savingPart1 ? 'Saving...' : 'Submit Part 1'}
+              </button>
+            }
+          >
+            <div className="grid grid-cols-12 gap-3 mb-4">
+              <Input col="col-span-12 md:col-span-3" label="Vehicle Negotiation No" value={vnnNumber} readOnly={true} />
+
+              <div className="col-span-12 md:col-span-6">
+                <label className="text-xs font-bold text-slate-600">Select Order Panels</label>
+                <MultiSelectOrderPanelDropdown
+                  selectedPanels={selectedOrderPanels}
+                  onSelect={() => { }}
+                  placeholder="Search and select order panels..."
+                  readOnly={true}
+                />
+              </div>
+
+              <div className="col-span-12 md:col-span-3">
+                <label className="text-xs font-bold text-slate-600">Branch</label>
+                <Input value={header.branchName} readOnly={true} />
+              </div>
+
+              {/* Sub-Company - Read Only */}
+              <div className="col-span-12 md:col-span-3">
+                <label className="text-xs font-bold text-slate-600">Sub-Company</label>
+                <div className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                  {header.subCompanyName || '-'}
+                  {header.subCompanyCode && (
+                    <span className="text-xs text-gray-500 ml-1">({header.subCompanyCode})</span>
+                  )}
+                </div>
+              </div>
+
+              <Input col="col-span-12 md:col-span-3" label="Delivery" value={header.delivery} readOnly={true} />
+              <Input type="date" col="col-span-12 md:col-span-3" label="Date" value={header.date} readOnly={true} />
+
+              {/* APPROVAL STATUS - PART 1 - Editable */}
+              <Select
+                col="col-span-12 md:col-span-3"
+                label="Approval Status"
+                value={part1Approval.approvalStatus}
+                onChange={(v) => setPart1Approval(prev => ({ ...prev, approvalStatus: v }))}
+                options={APPROVALS}
+                readOnly={false}
               />
-            </div>
-            
-            <div className="col-span-12 md:col-span-3">
-              <label className="text-xs font-bold text-slate-600">Branch</label>
-              <Input value={header.branchName} readOnly={true} />
-            </div>
 
-            {/* Sub-Company - Read Only */}
-            <div className="col-span-12 md:col-span-3">
-              <label className="text-xs font-bold text-slate-600">Sub-Company</label>
-              <div className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
-                {header.subCompanyName || '-'}
-                {header.subCompanyCode && (
-                  <span className="text-xs text-gray-500 ml-1">({header.subCompanyCode})</span>
-                )}
+              {/* APPROVAL REMARKS - PART 1 - Editable */}
+              <div className="col-span-12 md:col-span-3">
+                <label className="text-xs font-bold text-slate-600">Approval Remarks</label>
+                <textarea
+                  value={part1Approval.remarks}
+                  onChange={(e) => setPart1Approval(prev => ({ ...prev, remarks: e.target.value }))}
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white p-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+                  rows={1}
+                  placeholder="Enter remarks..."
+                  readOnly={false}
+                />
               </div>
             </div>
 
-            <Input col="col-span-12 md:col-span-3" label="Delivery" value={header.delivery} readOnly={true} />
-            <Input type="date" col="col-span-12 md:col-span-3" label="Date" value={header.date} readOnly={true} />
-           
-            {/* APPROVAL STATUS - PART 1 - Editable */}
-            <Select 
-              col="col-span-12 md:col-span-3" 
-              label="Approval Status" 
-              value={part1Approval.approvalStatus} 
-              onChange={(v) => setPart1Approval(prev => ({ ...prev, approvalStatus: v }))} 
-              options={APPROVALS} 
-              readOnly={false} 
-            />
-
-            {/* APPROVAL REMARKS - PART 1 - Editable */}
-            <div className="col-span-12 md:col-span-3">
-              <label className="text-xs font-bold text-slate-600">Approval Remarks</label>
-              <textarea
-                value={part1Approval.remarks}
-                onChange={(e) => setPart1Approval(prev => ({ ...prev, remarks: e.target.value }))}
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-white p-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-                rows={1}
-                placeholder="Enter remarks..."
-                readOnly={false}
-              />
+            {/* Billing Type / Charges */}
+            <div className="mb-4">
+              <div className="text-sm font-bold text-slate-700 mb-2">Billing Type / Charges</div>
+              <BillingTypeTable header={header} billingColumns={billingColumns} />
             </div>
-          </div>
 
-          {/* Billing Type / Charges */}
-          <div className="mb-4">
-            <div className="text-sm font-bold text-slate-700 mb-2">Billing Type / Charges</div>
-            <BillingTypeTable header={header} billingColumns={billingColumns} />
-          </div>
-
-          {/* Orders Table with all charge fields */}
-          <div>
-            <div className="text-sm font-bold text-slate-700 mb-4">
-              Orders (Part-1) - {header.billingType} - {orders.length} row{orders.length !== 1 ? 's' : ''}
+            {/* Orders Table with all charge fields */}
+            <div>
+              <div className="text-sm font-bold text-slate-700 mb-4">
+                Orders (Part-1) - {header.billingType} - {orders.length} row{orders.length !== 1 ? 's' : ''}
+              </div>
+              <OrdersTable rows={orders} />
             </div>
-            <OrdersTable rows={orders} />
-          </div>
 
-          {/* Total Weight */}
-          <div className="flex justify-end mt-4">
-            <div className="flex items-center gap-3 border border-yellow-300 px-6 py-3 bg-yellow-50 rounded-xl">
-              <div className="text-sm font-extrabold text-slate-900">Total Weight:</div>
-              <div className="text-xl font-extrabold text-emerald-700">{totalWeight}</div>
+            {/* Total Weight */}
+            <div className="flex justify-end mt-4">
+              <div className="flex items-center gap-3 border border-yellow-300 px-6 py-3 bg-yellow-50 rounded-xl">
+                <div className="text-sm font-extrabold text-slate-900">Total Weight:</div>
+                <div className="text-xl font-extrabold text-emerald-700">{totalWeight}</div>
+              </div>
             </div>
-          </div>
 
-          {/* Suppliers / Market Rates Section with Purchase Type */}
-          <div className="mt-6">
-            <div className="text-sm font-bold text-slate-700 mb-4">Suppliers / Market Rates</div>
-            <VendorsTable rows={vendors} />
-          </div>
-        </Card>
-
-        {/* PART 2 - Rate Target is completed by a validated save, not by approval. */}
-        <Card 
-          title="Vehicle - Negotiation - Part - 2 (Rate-Target)"
-        >
-          <div className="grid grid-cols-12 gap-3 mb-4">
-            <Input col="col-span-12 md:col-span-3" label="Max Rate" value={negotiation.maxRate} readOnly={true} />
-            <Input col="col-span-12 md:col-span-3" label="Target Rate" value={negotiation.targetRate} readOnly={true} />
-            <Input col="col-span-12 md:col-span-3" label="Old Rate %" value={negotiation.oldRatePercent} readOnly={true} />
-          </div>
-
-          <div className="grid grid-cols-12 gap-3 mb-4">
-            <div className="col-span-12 md:col-span-6">
-              <label className="text-xs font-bold text-slate-600">Rate Target Remarks</label>
-              <div className="mt-1 min-h-10 rounded-xl border border-slate-200 bg-slate-50 p-2 text-sm text-slate-700">{negotiation.remarks1 || '—'}</div>
+            {/* Suppliers / Market Rates Section with Purchase Type */}
+            <div className="mt-6">
+              <div className="text-sm font-bold text-slate-700 mb-4">Suppliers / Market Rates</div>
+              <VendorsTable rows={vendors} />
             </div>
-          </div>
+          </Card>
 
-          {/* Remarks & Voice Note */}
-          <div className="grid grid-cols-12 gap-4">
-            <div className="col-span-12 md:col-span-7">
-              <div className="rounded-xl border border-slate-200 p-4">
-                <div className="text-sm font-extrabold text-slate-900 mb-3">Remarks</div>
-                <div className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700 min-h-[80px]">
-                  {negotiation.remarks1 || "-"}
+          {/* PART 2 - Rate Target is completed by a validated save, not by approval. */}
+          <Card
+            title="Vehicle - Negotiation - Part - 2 (Rate-Target)"
+          >
+            <div className="grid grid-cols-12 gap-3 mb-4">
+              <Input col="col-span-12 md:col-span-3" label="Max Rate" value={negotiation.maxRate} readOnly={true} />
+              <Input col="col-span-12 md:col-span-3" label="Target Rate" value={negotiation.targetRate} readOnly={true} />
+              <Input col="col-span-12 md:col-span-3" label="Old Rate %" value={negotiation.oldRatePercent} readOnly={true} />
+            </div>
+
+            <div className="grid grid-cols-12 gap-3 mb-4">
+              <div className="col-span-12 md:col-span-6">
+                <label className="text-xs font-bold text-slate-600">Rate Target Remarks</label>
+                <div className="mt-1 min-h-10 rounded-xl border border-slate-200 bg-slate-50 p-2 text-sm text-slate-700">{negotiation.remarks1 || '—'}</div>
+              </div>
+            </div>
+
+            {/* Remarks & Voice Note */}
+            <div className="grid grid-cols-12 gap-4">
+              <div className="col-span-12 md:col-span-7">
+                <div className="rounded-xl border border-slate-200 p-4">
+                  <div className="text-sm font-extrabold text-slate-900 mb-3">Remarks</div>
+                  <div className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700 min-h-[80px]">
+                    {negotiation.remarks1 || "-"}
+                  </div>
+                </div>
+              </div>
+              <div className="col-span-12 md:col-span-5">
+                <div className="rounded-xl border border-slate-200 p-4">
+                  <div className="text-sm font-extrabold text-slate-900 mb-3">Voice Note</div>
+                  {voiceUrl ? (
+                    <audio ref={audioRef} src={voiceUrl} controls className="w-full" />
+                  ) : (
+                    <div className="text-sm text-slate-500 italic">No voice note uploaded</div>
+                  )}
                 </div>
               </div>
             </div>
-            <div className="col-span-12 md:col-span-5">
-              <div className="rounded-xl border border-slate-200 p-4">
-                <div className="text-sm font-extrabold text-slate-900 mb-3">Voice Note</div>
-                {voiceUrl ? (
-                  <audio ref={audioRef} src={voiceUrl} controls className="w-full" />
-                ) : (
-                  <div className="text-sm text-slate-500 italic">No voice note uploaded</div>
-                )}
+          </Card>
+
+          {/* PART 3 - VEHICLE APPROVAL - Approval Status and Remarks Editable */}
+          <Card
+            title="Vehicle - Approval - Part - 3"
+            right={
+              <button
+                onClick={handleSubmitPart3}
+                disabled={savingPart1 || savingPart2 || savingPart3}
+                className={`rounded-xl px-4 py-2 text-xs font-bold text-white transition ${savingPart1 || savingPart2 || savingPart3 ? 'bg-gray-400 cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-700'
+                  }`}
+              >
+                {savingPart3 ? 'Saving...' : 'Submit Part 3'}
+              </button>
+            }
+          >
+            <div className="grid grid-cols-12 gap-3 mb-4">
+              <div className="col-span-12 md:col-span-4">
+                <label className="text-xs font-bold text-slate-600">Supplier Name</label>
+                <Input value={selectedSupplier?.supplierName || approval.vendorName} readOnly={true} />
+              </div>
+              <Input col="col-span-12 md:col-span-4" label="Supplier Code" value={approval.vendorCode} readOnly={true} />
+              <Select col="col-span-12 md:col-span-4" label="Supplier Status" value={approval.vendorStatus} options={VENDOR_STATUS} readOnly={true} />
+            </div>
+
+            <div className="grid grid-cols-12 gap-3 mb-4">
+              <Select col="col-span-12 md:col-span-4" label="Rate - Type" value={approval.rateType} options={RATE_TYPES} readOnly={true} />
+              <Input col="col-span-12 md:col-span-4" label="Final - Per MT (A)" value={approval.finalPerMT} type="number" readOnly={true} />
+              <Input col="col-span-12 md:col-span-4" label="Final - Fix" value={approval.finalFix} type="number" readOnly={true} />
+            </div>
+
+            <div className="grid grid-cols-12 gap-3 mb-4">
+              <div className="col-span-12 md:col-span-4">
+                <label className="text-xs font-bold text-slate-600">Weight (B)</label>
+                <div className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-extrabold text-slate-900">{totalWeight}</div>
+              </div>
+              <div className="col-span-12 md:col-span-4">
+                <label className="text-xs font-bold text-slate-600">Purchase Amount (A x B)</label>
+                <div className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-extrabold text-emerald-700">₹{purchaseAmount.toLocaleString('en-IN')}</div>
+              </div>
+              <div className="col-span-12 md:col-span-4">
+                <label className="text-xs font-bold text-slate-600">Approval Status</label>
+                <Select
+                  value={part3Approval.approvalStatus}
+                  onChange={(v) => setPart3Approval(prev => ({ ...prev, approvalStatus: v }))}
+                  options={APPROVALS}
+                  readOnly={false}
+                />
               </div>
             </div>
-          </div>
-        </Card>
 
-        {/* PART 3 - VEHICLE APPROVAL - Approval Status and Remarks Editable */}
-        <Card 
-          title="Vehicle - Approval - Part - 3" 
-          right={
-            <button
-              onClick={handleSubmitPart3}
-              disabled={savingPart1 || savingPart2 || savingPart3 || uploading}
-              className={`rounded-xl px-4 py-2 text-xs font-bold text-white transition ${
-                savingPart1 || savingPart2 || savingPart3 || uploading ? 'bg-gray-400 cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-700'
-              }`}
-            >
-              {savingPart3 ? 'Saving...' : 'Submit Part 3'}
-            </button>
-          }
-        >
-          <div className="grid grid-cols-12 gap-3 mb-4">
-            <div className="col-span-12 md:col-span-4">
-              <label className="text-xs font-bold text-slate-600">Supplier Name</label>
-              <Input value={selectedSupplier?.supplierName || approval.vendorName} readOnly={true} />
-            </div>
-            <Input col="col-span-12 md:col-span-4" label="Supplier Code" value={approval.vendorCode} readOnly={true} />
-            <Select col="col-span-12 md:col-span-4" label="Supplier Status" value={approval.vendorStatus} options={VENDOR_STATUS} readOnly={true} />
-          </div>
-
-          <div className="grid grid-cols-12 gap-3 mb-4">
-            <Select col="col-span-12 md:col-span-4" label="Rate - Type" value={approval.rateType} options={RATE_TYPES} readOnly={true} />
-            <Input col="col-span-12 md:col-span-4" label="Final - Per MT (A)" value={approval.finalPerMT} type="number" readOnly={true} />
-            <Input col="col-span-12 md:col-span-4" label="Final - Fix" value={approval.finalFix} type="number" readOnly={true} />
-          </div>
-
-          <div className="grid grid-cols-12 gap-3 mb-4">
-            <div className="col-span-12 md:col-span-4">
-              <label className="text-xs font-bold text-slate-600">Weight (B)</label>
-              <div className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-extrabold text-slate-900">{totalWeight}</div>
-            </div>
-            <div className="col-span-12 md:col-span-4">
-              <label className="text-xs font-bold text-slate-600">Purchase Amount (A x B)</label>
-              <div className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-extrabold text-emerald-700">₹{purchaseAmount.toLocaleString('en-IN')}</div>
-            </div>
-            <div className="col-span-12 md:col-span-4">
-              <label className="text-xs font-bold text-slate-600">Approval Status</label>
-              <Select 
-                value={part3Approval.approvalStatus} 
-                onChange={(v) => setPart3Approval(prev => ({ ...prev, approvalStatus: v }))} 
-                options={APPROVALS} 
-                readOnly={false} 
+            <div className="mb-4">
+              <label className="text-xs font-bold text-slate-600">Approval Remarks</label>
+              <textarea
+                value={part3Approval.remarks}
+                onChange={(e) => setPart3Approval(prev => ({ ...prev, remarks: e.target.value }))}
+                className="mt-1 w-full rounded-xl border border-slate-200 bg-white p-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+                rows={2}
+                placeholder="Enter remarks..."
               />
             </div>
-          </div>
 
-          <div className="mb-4">
-            <label className="text-xs font-bold text-slate-600">Approval Remarks</label>
-            <textarea
-              value={part3Approval.remarks}
-              onChange={(e) => setPart3Approval(prev => ({ ...prev, remarks: e.target.value }))}
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-white p-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-              rows={2}
-              placeholder="Enter remarks..."
-            />
-          </div>
-
-          <div className="grid grid-cols-12 gap-3 mb-4">
-            <div className="col-span-12 md:col-span-4">
-              <label className="text-xs font-bold text-slate-600">Vehicle Number</label>
-              <Input value={approval.vehicleNo} readOnly={true} />
-            </div>
-            <Input col="col-span-12 md:col-span-4" label="Mobile" value={approval.mobile} readOnly={true} />
-          </div>
-
-          <div className="grid grid-cols-12 gap-3 mb-4">
-            <Select col="col-span-12 md:col-span-4" label="Purchase - Type" value={approval.purchaseType} options={purchaseTypes.length > 0 ? purchaseTypes : PURCHASE_TYPES} readOnly={true} />
-            <Select col="col-span-12 md:col-span-4" label="Payment - Terms" value={approval.paymentTerms} options={paymentTerms.length > 0 ? paymentTerms : PAYMENT_TERMS} readOnly={true} />
-          </div>
-        </Card>
-
-        {/* MEMO UPLOAD - Only Memo Upload and Memo Status Editable */}
-        <Card title="Memo - Upload">
-          <div className="rounded-xl border border-slate-200 p-4">
-            <div className="text-sm font-extrabold text-slate-900 mb-3">Memo Upload</div>
-            
-            {/* File Upload */}
-            <input
-              type="file"
-              accept=".pdf,.png,.jpg,.jpeg"
-              onChange={handleMemoUpload}
-              disabled={uploading}
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 disabled:opacity-50"
-            />
-            
-            {/* Uploading Status */}
-            {uploading && (
-              <div className="mt-3 text-sm text-blue-600 flex items-center gap-2">
-                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Uploading memo...
+            <div className="grid grid-cols-12 gap-3 mb-4">
+              <div className="col-span-12 md:col-span-4">
+                <label className="text-xs font-bold text-slate-600">Vehicle Number</label>
+                <Input value={approval.vehicleNo} readOnly={true} />
               </div>
-            )}
-            
-            {/* Memo Status - Editable */}
-            <div className="mt-3">
-              <label className="text-xs font-bold text-slate-600">Memo Status</label>
-              <select
-                value={approval.memoStatus || "Pending"}
-                onChange={(e) => setApproval(prev => ({ ...prev, memoStatus: e.target.value }))}
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-              >
-                {MEMO_STATUS.map((opt) => (
-                  <option key={opt} value={opt}>{opt}</option>
-                ))}
-              </select>
+              <Input col="col-span-12 md:col-span-4" label="Mobile" value={approval.mobile} readOnly={true} />
             </div>
-            
-            {/* Display Uploaded File Info */}
-            {approval.memoFile && (
-              <div className="mt-3 p-3 bg-green-50 rounded-lg border border-green-200">
-                <p className="text-sm font-medium text-green-800">Uploaded File:</p>
-                <p className="text-sm text-green-700 mt-1">{approval.memoFile.originalName}</p>
-                <p className="text-xs text-green-600 mt-0.5">Size: {(approval.memoFile.size / 1024).toFixed(1)} KB</p>
-                {approval.memoFile.filePath && (
-                  <a 
-                    href={approval.memoFile.filePath} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-sm text-sky-600 hover:underline mt-2 inline-block"
-                  >
-                    View File
-                  </a>
-                )}
-              </div>
-            )}
-          </div>
-        </Card>
+
+            <div className="grid grid-cols-12 gap-3 mb-4">
+              <Select col="col-span-12 md:col-span-4" label="Purchase - Type" value={approval.purchaseType} options={purchaseTypes.length > 0 ? purchaseTypes : PURCHASE_TYPES} readOnly={true} />
+              <Select col="col-span-12 md:col-span-4" label="Payment - Terms" value={approval.paymentTerms} options={paymentTerms.length > 0 ? paymentTerms : PAYMENT_TERMS} readOnly={true} />
+            </div>
+          </Card>
+
+        </div>
       </div>
-    </div>
     </TransactionFormKeyboardNavigation>
   );
 }

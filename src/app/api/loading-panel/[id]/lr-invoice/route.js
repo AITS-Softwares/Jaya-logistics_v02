@@ -21,13 +21,16 @@ export const GET = withAuth(async (req, context, user) => {
     if (!panel?.vehicleArrivalNo) return fail("Loading Info not found.", 404);
 
     const note = await ConsignmentNote.findOne(
-        companyScopeFilter(user, { _id: lrId, loadingInfoNo: panel.vehicleArrivalNo })
+        companyScopeFilter(user, {
+            _id: lrId, loadingInfoNo: panel.vehicleArrivalNo,
+            "header.status": { $in: ["Approved", "Completed"] }
+        })
     ).select("invoice.file").lean();
     const f = note?.invoice?.file;
     if (!f?.filePath) return fail("No invoice uploaded for this LR.", 404);
 
     try {
-        const buf = await readFile(path.join(process.cwd(), "uploads", "lr-invoice", path.basename(f.filePath)));
+        const buf = await readInvoiceFile(path.basename(f.filePath));
         return new NextResponse(buf, {
             headers: {
                 "Content-Type": f.mimeType || "application/octet-stream",
