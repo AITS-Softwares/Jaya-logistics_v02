@@ -3830,6 +3830,8 @@ const VEHICLE_REACH_OPTIONS = ["Reach", "Not Reach"];
 const VERIFICATION_OPTIONS = ["Verified", "Not Verified"];
 // Orders that already have an LR in one of these statuses are hidden from the order picker
 const HIDE_ORDER_IF_LR_STATUS = ['Approved'];
+// LRs in these statuses do not count as "weight already covered" in the order dropdown
+const IGNORE_LR_STATUS_FOR_WEIGHT = ['Rejected', 'Cancelled'];
 const normText = (v) => String(v ?? '').trim().toLowerCase();
 
 function uid() {
@@ -3940,6 +3942,8 @@ export default function CreateConsignmentNote() {
   const [orderRows, setOrderRows] = useState([]);        // rows of the selected order
   const [selectedRowId, setSelectedRowId] = useState('');
   const [existingLrs, setExistingLrs] = useState([]);    // to know which rows already have an LR
+  const [orderPlantRows, setOrderPlantRows] = useState({}); // normalised order no -> its plantRows
+  const requestedOrdersRef = useRef(new Set());
 
   /** =========================
    * VEHICLE NEGOTIATION STATE
@@ -4148,12 +4152,14 @@ export default function CreateConsignmentNote() {
       // Collect order numbers that already have an approved/completed LR
       const approvedRowIds = new Set();
       const legacyKeys = new Set();
+      let allLrs = []; // every existing LR, used for the LR details / remaining weight in the dropdown
       try {
         const lrRes = await fetch('/api/consignment-note', { headers: { Authorization: `Bearer ${token}` } });
         if (lrRes.ok) {
           const lrData = await lrRes.json();
-          setExistingLrs(lrData.data || []);
-          (lrData.data || []).forEach((n) => {
+          allLrs = Array.isArray(lrData.data) ? lrData.data : [];
+          setExistingLrs(allLrs);
+          allLrs.forEach((n) => {
             if (!HIDE_ORDER_IF_LR_STATUS.includes(n.header?.status)) return;
             if (n.orderRowId) approvedRowIds.add(String(n.orderRowId));
             else legacyKeys.add(`${normText(n.header?.orderNo)}|${normText(n.header?.to)}`);
@@ -4164,15 +4170,43 @@ export default function CreateConsignmentNote() {
       }
 
       if (data.success && Array.isArray(data.data)) {
-        const seen = new Set();
-        const availableOrders = data.data.filter((o) => {
+        // Does this order row already have a live LR? (by row id, or by order no + destination for old LRs)
+        const rowLr = (o) => allLrs.find((l) =>
+          !IGNORE_LR_STATUS_FOR_WEIGHT.includes(l.header?.status || 'Pending') && (
+            (l.orderRowId && String(l.orderRowId) === String(o.originalRowId)) ||
+            (!l.orderRowId
+              && normText(l.header?.orderNo) === normText(o.orderNo || o.orderPanelNo)
+              && normText(l.header?.to) === normText(o.to))
+          ));
+
+        const stats = {};
+        data.data.forEach((o) => {
           const no = normText(o.orderNo || o.orderPanelNo);
-          const covered = (o.originalRowId && approvedRowIds.has(String(o.originalRowId)))
-            || legacyKeys.has(`${no}|${normText(o.to)}`);
-          if (covered || seen.has(no)) return false;
-          seen.add(no);
-          return true;
+          const s = stats[no] || (stats[no] = { rows: 0, total: 0, used: 0, done: 0, lrs: [] });
+          const w = Number(o.weight) || 0;
+          s.rows += 1;
+          s.total += w;
+          if (rowLr(o)) {            // this row already has an LR (Pending counts)
+            s.done += 1;
+            s.used += w;             // use the row's own weight, not the LR's pack-data total
+          }
         });
+        allLrs.forEach((l) => {
+          const s = stats[normText(l.header?.orderNo)];
+          if (s) s.lrs.push({ lrNo: l.lrNo, status: l.header?.status || 'Pending', weight: Number(l.totalWeight) || 0 });
+        });
+
+        const seen = new Set();
+        const availableOrders = data.data
+          .filter((o) => {
+            const no = normText(o.orderNo || o.orderPanelNo);
+            const covered = (o.originalRowId && approvedRowIds.has(String(o.originalRowId)))
+              || legacyKeys.has(`${no}|${normText(o.to)}`);
+            if (covered || seen.has(no)) return false;
+            seen.add(no);
+            return true;
+          })
+          .map((o) => ({ ...o, stats: stats[normText(o.orderNo || o.orderPanelNo)] }));
         setAllOrders(availableOrders);
         setFilteredOrders(availableOrders);
       } else {
@@ -4627,6 +4661,59 @@ export default function CreateConsignmentNote() {
       state: row.stateName || row.state || '',
     }));
   };
+  // Real row data for the listed orders (the table list only has a summary row)
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    filteredOrders.slice(0, 40).forEach(async (o) => {
+      const key = normText(o.orderNo || o.orderPanelNo);
+      if (requestedOrdersRef.current.has(key)) return;
+      requestedOrdersRef.current.add(key);
+
+      // same id order as handleSelectOrder, which is known to work
+      const ids = [...new Set([o._id, o.originalOrderId].filter(Boolean))];
+      for (const id of ids) {
+        try {
+          const res = await fetch(`/api/order-panel?id=${id}`, { headers: { Authorization: `Bearer ${token}` } });
+          const d = await res.json();
+          console.log('[LR dropdown] rows request', key, id, res.status, d);
+          if (d.success && Array.isArray(d.data?.plantRows) && d.data.plantRows.length > 0) {
+            setOrderPlantRows((p) => ({ ...p, [key]: d.data.plantRows }));
+            return;
+          }
+        } catch (err) {
+          console.warn('[LR dropdown] rows request failed', key, id, err);
+        }
+      }
+      requestedOrdersRef.current.delete(key); // retry on the next search
+    });
+  }, [filteredOrders]);
+
+  // null until the real rows have loaded
+  const statsFor = (order) => {
+    const key = normText(order.orderNo || order.orderPanelNo);
+    const rows = orderPlantRows[key];
+    if (!rows) return null;
+    let total = 0, used = 0, done = 0;
+    rows.forEach((r) => {
+      const w = Number(r.weight) || 0;
+      total += w;
+      const lr = existingLrs.find((l) =>
+        !IGNORE_LR_STATUS_FOR_WEIGHT.includes(l.header?.status || 'Pending') && (
+          (l.orderRowId && String(l.orderRowId) === String(r._id)) ||
+          (!l.orderRowId && normText(l.header?.orderNo) === key && normText(l.header?.to) === normText(r.toName || r.to))
+        ));
+      if (lr) { used += w; done += 1; }
+    });
+    return { ...(order.stats || { lrs: [] }), rows: rows.length, total, used, done };
+  };
+
+  // hide an order only once its real rows are loaded and every row has a live LR
+  const visibleOrders = filteredOrders.filter((o) => {
+    const s = statsFor(o);
+    return !s || !(s.rows > 0 && s.done >= s.rows);
+  });
+
   const handleOrderInputFocus = () => {
     if (!showOrderDropdown && allOrders && allOrders.length > 0) {
       setFilteredOrders(allOrders);
@@ -5021,32 +5108,72 @@ export default function CreateConsignmentNote() {
                 )}
               </div>
               {showOrderDropdown && !isReadOnly && (
-                <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-80 overflow-y-auto">
                   {ordersLoading ? (
                     <div className="p-3 text-center text-sm text-slate-500">Loading orders...</div>
-                  ) : filteredOrders.length > 0 ? (
-                    filteredOrders.map((order, index) => (
-                      <div
-                        key={order._id || index}
-                        onMouseDown={() => handleSelectOrder(order)}
-                        className="p-3 hover:bg-purple-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors"
-                      >
-                        <div className="font-medium text-slate-800">
-                          {order.orderNo || order.orderPanelNo}
-                        </div>
-                        <div className="text-xs text-slate-500 mt-1">
-                          Party: {order.partyName || order.customerName || 'N/A'}
-                        </div>
-                        <div className="text-xs text-slate-400">
-                          From: {order.from || 'N/A'} → To: {order.to || 'N/A'}
-                        </div>
-                        {order.subCompanyName && (
-                          <div className="text-xs text-blue-600 mt-0.5">
-                            🏢 {order.subCompanyName}
+                  ) : visibleOrders.length > 0 ? (
+                    visibleOrders.map((order, index) => {
+                      const st = statsFor(order);
+                      return (
+                        <div
+                          key={order._id || index}
+                          onMouseDown={() => handleSelectOrder(order)}
+                          className="p-3 hover:bg-purple-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors"
+                        >
+                          <div className="font-medium text-slate-800">
+                            {order.orderNo || order.orderPanelNo}
                           </div>
-                        )}
-                      </div>
-                    ))
+                          <div className="text-xs text-slate-500 mt-1">
+                            Party: {order.partyName || order.customerName || 'N/A'}
+                          </div>
+                          <div className="text-xs text-slate-400">
+                            From: {order.from || 'N/A'} → To: {order.to || 'N/A'}
+                          </div>
+                          {order.subCompanyName && (
+                            <div className="text-xs text-blue-600 mt-0.5">
+                              🏢 {order.subCompanyName}
+                            </div>
+                          )}
+
+                          {/* ===== LR details + remaining weight for this order ===== */}
+                          {!st && (
+                            <div className="mt-1.5 text-[11px] text-slate-400">Loading order rows…</div>
+                          )}
+                          {st && (
+                            <div className="mt-1.5">
+                              <div className="flex flex-wrap gap-1.5 text-[11px] font-semibold">
+                                <span className="rounded bg-slate-100 px-1.5 py-0.5 text-slate-700">
+                                  Total {Math.round(st.total * 1000) / 1000} MT
+                                </span>
+                                <span className="rounded bg-amber-100 px-1.5 py-0.5 text-amber-800">
+                                  LR made {Math.round(st.used * 1000) / 1000} MT
+                                </span>
+                                <span className="rounded bg-green-100 px-1.5 py-0.5 text-green-800">
+                                  Remaining {Math.round(Math.max(st.total - st.used, 0) * 1000) / 1000} MT
+                                </span>
+                                <span className="rounded bg-blue-100 px-1.5 py-0.5 text-blue-800">
+                                  {Math.max(st.rows - st.done, 0)} of {st.rows} rows pending
+                                </span>
+                              </div>
+                              {st.lrs?.length > 0 ? (
+                                <div className="mt-1 space-y-0.5">
+                                  {st.lrs.slice(0, 3).map((lr) => (
+                                    <div key={lr.lrNo} className="text-[11px] text-slate-500">
+                                      {lr.lrNo} · {lr.status}{lr.weight ? ` · ${Math.round(lr.weight * 1000) / 1000} MT` : ''}
+                                    </div>
+                                  ))}
+                                  {st.lrs.length > 3 && (
+                                    <div className="text-[11px] text-slate-400">+{st.lrs.length - 3} more LR</div>
+                                  )}
+                                </div>
+                              ) : (
+                                <div className="mt-1 text-[11px] text-slate-400">No LR created yet</div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
                   ) : (
                     <div className="p-3 text-center text-sm text-slate-500">
                       {header.orderNo.trim() ?

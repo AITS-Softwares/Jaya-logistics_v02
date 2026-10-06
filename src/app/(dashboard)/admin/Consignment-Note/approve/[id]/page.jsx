@@ -320,7 +320,7 @@
 //   const [uniformRows, setUniformRows] = useState([]);
 //   const [looseCargoRows, setLooseCargoRows] = useState([]);
 //   const [nonUniformRows, setNonUniformRows] = useState([]);
-  
+
 //   const [loadingInfoNo, setLoadingInfoNo] = useState("");
 //   const [vnnNo, setVnnNo] = useState("");
 //   const [vehicleNegotiationId, setVehicleNegotiationId] = useState("");
@@ -336,29 +336,29 @@
 //     setLoading(true);
 //     try {
 //       const token = localStorage.getItem('token');
-      
+
 //       const res = await fetch(`/api/consignment-note?id=${noteId}`, {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       if (!res.ok) {
 //         throw new Error(`HTTP error! status: ${res.status}`);
 //       }
-      
+
 //       const data = await res.json();
-      
+
 //       if (!data.success) {
 //         throw new Error(data.message || 'Failed to fetch consignment note');
 //       }
 
 //       const note = data.data;
 //       console.log("📦 Consignment Note Data for Approval:", note);
-      
+
 //       // Set reference fields
 //       if (note.vnnNo) setVnnNo(note.vnnNo);
 //       if (note.vehicleNegotiationId) setVehicleNegotiationId(note.vehicleNegotiationId);
 //       if (note.loadingInfoNo) setLoadingInfoNo(note.loadingInfoNo);
-      
+
 //       // Set header data (STATUS IS EDITABLE, others read-only)
 //       setHeader({
 //         partyName: note.header?.partyName || "",
@@ -461,7 +461,7 @@
 //     setSaving(true);
 //     try {
 //       const token = localStorage.getItem('token');
-      
+
 //       // Prepare update payload - only update status
 //       const payload = {
 //         id: noteId,
@@ -469,7 +469,7 @@
 //           status: header.status
 //         }
 //       };
-      
+
 //       // Send update
 //       const res = await fetch('/api/consignment-note', {
 //         method: 'PUT',
@@ -502,7 +502,7 @@
 //     try {
 //       // Get token for API calls if needed for logo/business info
 //       const token = localStorage.getItem('token');
-      
+
 //       // Fetch company/business info (optional, for logo and GST etc.)
 //       let businessInfo = {
 //         companyName: "Jaya Logistics",
@@ -514,7 +514,7 @@
 //         transportGst: "27AAMFS9446C1ZU",
 //         emergencyContact: "9653489852 9004645555"
 //       };
-      
+
 //       try {
 //         const bizRes = await fetch('/api/business-info', {
 //           headers: { Authorization: `Bearer ${token}` }
@@ -1074,13 +1074,13 @@
 
 //       {/* ===== Main Layout ===== */}
 //       <div className="mx-auto max-w-full p-4 space-y-4">
-        
+
 //         {/* ===== PARTY INFORMATION ===== */}
 //         <Card title="Party Information - Read Only (Except Status)">
 //           <div className="grid grid-cols-12 gap-4">
 //             <Input col="col-span-12 md:col-span-3" label="Party Name" value={header.partyName} readOnly={true} />
 //             <Input col="col-span-12 md:col-span-2" label="Order No" value={header.orderNo} readOnly={true} />
-            
+
 //             {/* LC/Not LC - Read Only */}
 //             <div className="col-span-12 md:col-span-2">
 //               <label className="text-xs font-bold text-slate-600">LC / Not LC</label>
@@ -1105,7 +1105,7 @@
 
 //             <Input col="col-span-12 md:col-span-2" label="Order Type" value={header.orderType} readOnly={true} />
 //             <Input col="col-span-12 md:col-span-2" label="Plant Code" value={header.plantCode} readOnly={true} />
-            
+
 //             <div className="col-span-12 md:col-span-1">
 //               <label className="text-xs font-bold text-slate-600">Hired/Owned</label>
 //               <input
@@ -1123,7 +1123,7 @@
 //             <Input col="col-span-12 md:col-span-1" label="Taluka" value={header.taluka} readOnly={true} />
 //             <Input col="col-span-12 md:col-span-1" label="District" value={header.district} readOnly={true} />
 //             <Input col="col-span-12 md:col-span-1" label="State" value={header.state} readOnly={true} />
-            
+
 //             {/* Vehicle Reach - Read Only */}
 //             <div className="col-span-12 md:col-span-2">
 //               <label className="text-xs font-bold text-slate-600">Vehicle Reach</label>
@@ -1151,7 +1151,7 @@
 //             <Input col="col-span-12 md:col-span-2" label="LR No" value={header.lrNo} readOnly={true} />
 //             <Input col="col-span-12 md:col-span-2" label="LR Date" value={header.lrDate} readOnly={true} />
 //             <Input col="col-span-12 md:col-span-1" label="Unit" value={header.unit} readOnly={true} />
-            
+
 //             {/* Status is EDITABLE */}
 //             <div className="col-span-12 md:col-span-1">
 //               <label className="text-xs font-bold text-slate-600">Status *</label>
@@ -1346,6 +1346,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
+import LRInvoiceUpload from "@/components/LRInvoiceUpload";
 
 /** =========================
  * CONSTANTS
@@ -1390,9 +1391,8 @@ function Input({ label, value, col = "", type = "text", readOnly = false }) {
         type={type}
         value={value || ""}
         readOnly={readOnly}
-        className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none ${
-          readOnly ? 'bg-slate-50 cursor-not-allowed' : 'bg-white focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200'
-        }`}
+        className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none ${readOnly ? 'bg-slate-50 cursor-not-allowed' : 'bg-white focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200'
+          }`}
       />
     </div>
   );
@@ -1406,9 +1406,8 @@ function Select({ label, value, onChange, options = [], col = "", readOnly = fal
         value={value || ""}
         onChange={(e) => onChange?.(e.target.value)}
         disabled={readOnly}
-        className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none ${
-          readOnly ? 'bg-slate-50 cursor-not-allowed' : 'bg-white focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200'
-        }`}
+        className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none ${readOnly ? 'bg-slate-50 cursor-not-allowed' : 'bg-white focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200'
+          }`}
       >
         <option value="">Select {label}</option>
         {options.map((o) => (
@@ -1653,6 +1652,7 @@ export default function ApproveConsignmentNote() {
     boeInvoiceNo: "",
     boeInvoiceDate: "",
     invoiceValue: "",
+    file: null,
   });
 
   const [ewaybill, setEwaybill] = useState({
@@ -1666,7 +1666,7 @@ export default function ApproveConsignmentNote() {
   const [uniformRows, setUniformRows] = useState([]);
   const [looseCargoRows, setLooseCargoRows] = useState([]);
   const [nonUniformRows, setNonUniformRows] = useState([]);
-  
+
   const [loadingInfoNo, setLoadingInfoNo] = useState("");
   const [vnnNo, setVnnNo] = useState("");
   const [vehicleNegotiationId, setVehicleNegotiationId] = useState("");
@@ -1682,34 +1682,34 @@ export default function ApproveConsignmentNote() {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      
+
       const res = await fetch(`/api/consignment-note?id=${noteId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       if (!res.ok) {
         throw new Error(`HTTP error! status: ${res.status}`);
       }
-      
+
       const data = await res.json();
-      
+
       if (!data.success) {
         throw new Error(data.message || 'Failed to fetch consignment note');
       }
 
       const note = data.data;
       console.log("📦 Consignment Note Data for Approval:", note);
-      
+
       // ✅ Set sub-company from note
       const subCompanyId = note.subCompanyId || note.header?.subCompanyId || '';
       const subCompanyName = note.subCompanyName || note.header?.subCompanyName || '';
       const subCompanyCode = note.subCompanyCode || note.header?.subCompanyCode || '';
-      
+
       // Set reference fields
       if (note.vnnNo) setVnnNo(note.vnnNo);
       if (note.vehicleNegotiationId) setVehicleNegotiationId(note.vehicleNegotiationId);
       if (note.loadingInfoNo) setLoadingInfoNo(note.loadingInfoNo);
-      
+
       // Set header data (STATUS IS EDITABLE, others read-only)
       setHeader({
         partyName: note.header?.partyName || "",
@@ -1765,7 +1765,8 @@ export default function ApproveConsignmentNote() {
         boeInvoice: note.invoice?.boeInvoice || "As Per Invoice",
         boeInvoiceNo: note.invoice?.boeInvoiceNo || "",
         boeInvoiceDate: note.invoice?.boeInvoiceDate || "",
-        invoiceValue: note.invoice?.invoiceValue || ""
+        invoiceValue: note.invoice?.invoiceValue || "",
+        file: note.invoice?.file || null,
       });
 
       // Set ewaybill (READ-ONLY)
@@ -1822,7 +1823,7 @@ export default function ApproveConsignmentNote() {
     setSaving(true);
     try {
       const token = localStorage.getItem('token');
-      
+
       // Status changes are approval actions, not ordinary LR edits.
       const res = await fetch('/api/consignment-note', {
         method: 'PATCH',
@@ -1855,7 +1856,7 @@ export default function ApproveConsignmentNote() {
     try {
       // Get token for API calls if needed for logo/business info
       const token = localStorage.getItem('token');
-      
+
       // Fetch company/business info (optional, for logo and GST etc.)
       let businessInfo = {
         companyName: "Jaya Logistics",
@@ -1867,7 +1868,7 @@ export default function ApproveConsignmentNote() {
         transportGst: "27AAMFS9446C1ZU",
         emergencyContact: "9653489852 9004645555"
       };
-      
+
       try {
         const bizRes = await fetch('/api/business-info', {
           headers: { Authorization: `Bearer ${token}` }
@@ -2400,11 +2401,10 @@ export default function ApproveConsignmentNote() {
             <button
               onClick={handleGenerateLR}
               disabled={generatingLR}
-              className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${
-                generatingLR
-                  ? 'bg-gray-400 cursor-not-allowed' 
-                  : 'bg-blue-600 hover:bg-blue-700'
-              }`}
+              className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${generatingLR
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-blue-600 hover:bg-blue-700'
+                }`}
             >
               {generatingLR ? (
                 <span className="flex items-center gap-2">
@@ -2419,11 +2419,10 @@ export default function ApproveConsignmentNote() {
             <button
               onClick={handleApprove}
               disabled={saving}
-              className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${
-                saving
-                  ? 'bg-gray-400 cursor-not-allowed' 
-                  : 'bg-yellow-600 hover:bg-yellow-700'
-              }`}
+              className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${saving
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-yellow-600 hover:bg-yellow-700'
+                }`}
             >
               {saving ? (
                 <span className="flex items-center gap-2">
@@ -2441,13 +2440,13 @@ export default function ApproveConsignmentNote() {
 
       {/* ===== Main Layout ===== */}
       <div className="mx-auto max-w-full p-4 space-y-4">
-        
+
         {/* ===== PARTY INFORMATION ===== */}
         <Card title="Party Information - Read Only (Except Status)">
           <div className="grid grid-cols-12 gap-4">
             <Input col="col-span-12 md:col-span-3" label="Party Name" value={header.partyName} readOnly={true} />
             <Input col="col-span-12 md:col-span-2" label="Order No" value={header.orderNo} readOnly={true} />
-            
+
             {/* LC/Not LC - Read Only */}
             <div className="col-span-12 md:col-span-2">
               <label className="text-xs font-bold text-slate-600">LC / Not LC</label>
@@ -2472,7 +2471,7 @@ export default function ApproveConsignmentNote() {
 
             <Input col="col-span-12 md:col-span-2" label="Order Type" value={header.orderType} readOnly={true} />
             <Input col="col-span-12 md:col-span-2" label="Plant Code" value={header.plantCode} readOnly={true} />
-            
+
             <div className="col-span-12 md:col-span-1">
               <label className="text-xs font-bold text-slate-600">Hired/Owned</label>
               <input
@@ -2490,7 +2489,7 @@ export default function ApproveConsignmentNote() {
             <Input col="col-span-12 md:col-span-1" label="Taluka" value={header.taluka} readOnly={true} />
             <Input col="col-span-12 md:col-span-1" label="District" value={header.district} readOnly={true} />
             <Input col="col-span-12 md:col-span-1" label="State" value={header.state} readOnly={true} />
-            
+
             {/* Vehicle Reach - Read Only */}
             <div className="col-span-12 md:col-span-2">
               <label className="text-xs font-bold text-slate-600">Vehicle Reach</label>
@@ -2518,7 +2517,7 @@ export default function ApproveConsignmentNote() {
             <Input col="col-span-12 md:col-span-2" label="LR No" value={header.lrNo} readOnly={true} />
             <Input col="col-span-12 md:col-span-2" label="LR Date" value={header.lrDate} readOnly={true} />
             <Input col="col-span-12 md:col-span-1" label="Unit" value={header.unit} readOnly={true} />
-            
+
             {/* ✅ SUB-COMPANY - READ ONLY */}
             <div className="col-span-12 md:col-span-2">
               <label className="text-xs font-bold text-slate-600">Sub-Company</label>
@@ -2529,7 +2528,7 @@ export default function ApproveConsignmentNote() {
                 className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm cursor-not-allowed"
               />
             </div>
-            
+
             {/* Status is EDITABLE */}
             <div className="col-span-12 md:col-span-1">
               <label className="text-xs font-bold text-slate-600">Status *</label>
@@ -2590,6 +2589,9 @@ export default function ApproveConsignmentNote() {
             <Input col="col-span-12 md:col-span-3" label="BOE / Invoice No" value={invoice.boeInvoiceNo} readOnly={true} />
             <Input col="col-span-12 md:col-span-3" label="BOE / Invoice Date" value={invoice.boeInvoiceDate} readOnly={true} />
             <Input col="col-span-12 md:col-span-3" label="Invoice Value" value={invoice.invoiceValue} readOnly={true} />
+            <div className="col-span-12 md:col-span-6">
+              <LRInvoiceUpload file={invoice.file} readOnly onChange={() => { }} />
+            </div>
           </div>
         </Card>
 

@@ -18,12 +18,12 @@
 
 // function calculatePendingDays(orderDate, status) {
 //   if (!orderDate || status === 'Completed' || status === 'Cancelled' || status === 'Draft') return '0 Days';
-  
+
 //   const created = new Date(orderDate);
 //   const now = new Date();
 //   const diffTime = Math.abs(now - created);
 //   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  
+
 //   return `${diffDays} Days`;
 // }
 
@@ -35,7 +35,7 @@
 //     const url = new URL(req.url);
 //     const id = url.searchParams.get("id");
 //     const isTable = url.searchParams.get("table") === "true";
-    
+
 //     // CASE 1: Get single order with full details
 //     if (id) {
 //       if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -44,7 +44,7 @@
 //           message: "Invalid order panel ID format" 
 //         }, { status: 400 });
 //       }
-      
+
 //       const orderPanel = await OrderPanel.findOne({
 //         _id: id,
 //         companyId: user.companyId
@@ -85,18 +85,18 @@
 //         data: formattedOrder 
 //       }, { status: 200 });
 //     }
-    
+
 //     // CASE 2: Get flattened data for table view
 //     if (isTable) {
 //       let query = { companyId: user.companyId };
-      
+
 //       const orderPanels = await OrderPanel.find(query)
 //         .sort({ createdAt: -1 })
 //         .select('orderPanelNo date branchName branchCode customerName partyName totalWeight panelStatus createdAt plantRows delivery collectionCharges cancellationCharges loadingCharges otherCharges')
 //         .lean();
 
 //       const flattenedRows = [];
-      
+
 //       orderPanels.forEach(order => {
 //         if (order.plantRows && order.plantRows.length > 0) {
 //           order.plantRows.forEach((row, index) => {
@@ -170,10 +170,10 @@
 //         data: flattenedRows
 //       }, { status: 200 });
 //     }
-    
+
 //     // CASE 3: Get list of orders (summary only)
 //     let query = { companyId: user.companyId };
-    
+
 //     const orderPanels = await OrderPanel.find(query)
 //       .sort({ createdAt: -1 })
 //       .select('orderPanelNo date branchName branchCode customerName partyName totalWeight panelStatus createdAt plantRows delivery')
@@ -213,14 +213,14 @@
 
 //   try {
 //     const body = await req.json();
-    
+
 //     let orderPanelNo = await getNextOrderPanelNumber(user.companyId);
-    
+
 //     const existingOrderPanel = await OrderPanel.findOne({ 
 //       orderPanelNo, 
 //       companyId: user.companyId 
 //     });
-    
+
 //     if (existingOrderPanel) {
 //       orderPanelNo = `OP-${Date.now().toString().slice(-6)}`;
 //     }
@@ -235,17 +235,17 @@
 //     const processedPlantRows = (body.plantRows || []).map((row) => {
 //       const weight = num(row.weight);
 //       const rate = num(row.rate);
-      
+
 //       let fromField = null;
 //       if (row.from && mongoose.Types.ObjectId.isValid(row.from)) {
 //         fromField = new mongoose.Types.ObjectId(row.from);
 //       }
-      
+
 //       let toField = null;
 //       if (row.to && mongoose.Types.ObjectId.isValid(row.to)) {
 //         toField = new mongoose.Types.ObjectId(row.to);
 //       }
-      
+
 //       return {
 //         _id: new mongoose.Types.ObjectId(),
 //         plantCode: row.plantCode || '',
@@ -276,7 +276,7 @@
 //         otherCharges: num(row.otherCharges) || 0
 //       };
 //     });
-    
+
 //     const totalWeight = processedPlantRows.reduce((sum, row) => sum + row.weight, 0);
 //     const totalAmount = processedPlantRows.reduce((sum, row) => sum + row.totalAmount, 0);
 
@@ -400,14 +400,14 @@
 
 //   } catch (error) {
 //     console.error("POST /order-panel error:", error);
-    
+
 //     if (error.code === 11000) {
 //       return NextResponse.json({ 
 //         success: false, 
 //         message: "Order panel number already exists. Please try again." 
 //       }, { status: 400 });
 //     }
-    
+
 //     if (error.name === 'ValidationError') {
 //       const messages = Object.values(error.errors).map(err => err.message);
 //       return NextResponse.json({ 
@@ -415,7 +415,7 @@
 //         message: messages.join(', ') 
 //       }, { status: 400 });
 //     }
-    
+
 //     return NextResponse.json({ 
 //       success: false, 
 //       message: `Failed to create order panel: ${error.message}` 
@@ -430,7 +430,7 @@
 //   try {
 //     const body = await req.json();
 //     const { id } = body;
-    
+
 //     if (!id) {
 //       return NextResponse.json({ 
 //         success: false, 
@@ -467,17 +467,17 @@
 //       const processedPlantRows = body.plantRows.map((row) => {
 //         const weight = num(row.weight);
 //         const rate = num(row.rate);
-        
+
 //         let fromField = null;
 //         if (row.from && mongoose.Types.ObjectId.isValid(row.from)) {
 //           fromField = new mongoose.Types.ObjectId(row.from);
 //         }
-        
+
 //         let toField = null;
 //         if (row.to && mongoose.Types.ObjectId.isValid(row.to)) {
 //           toField = new mongoose.Types.ObjectId(row.to);
 //         }
-        
+
 //         return {
 //           _id: row._id && mongoose.Types.ObjectId.isValid(row._id) ? new mongoose.Types.ObjectId(row._id) : new mongoose.Types.ObjectId(),
 //           plantCode: row.plantCode || '',
@@ -508,7 +508,7 @@
 //           otherCharges: num(row.otherCharges) || 0
 //         };
 //       });
-      
+
 //       orderPanel.plantRows = processedPlantRows;
 //       orderPanel.totalWeight = processedPlantRows.reduce((sum, row) => sum + row.weight, 0);
 //       orderPanel.totalAmount = processedPlantRows.reduce((sum, row) => sum + row.totalAmount, 0);
@@ -593,7 +593,7 @@
 //   try {
 //     const url = new URL(req.url);
 //     const id = url.searchParams.get("id");
-    
+
 //     if (!id) {
 //       return NextResponse.json({ 
 //         success: false, 
@@ -634,7 +634,7 @@
 //   try {
 //     const body = await req.json();
 //     const { id, action } = body;
-    
+
 //     if (!id) {
 //       return NextResponse.json({ 
 //         success: false, 
@@ -720,12 +720,12 @@ function num(value) {
 
 function calculatePendingDays(orderDate, status) {
   if (!orderDate || status === 'Completed' || status === 'Cancelled' || status === 'Draft') return '0 Days';
-  
+
   const created = new Date(orderDate);
   const now = new Date();
   const diffTime = Math.abs(now - created);
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  
+
   return `${diffDays} Days`;
 }
 
@@ -737,24 +737,24 @@ export const GET = withAuth(async (req, context, user) => {
     const url = new URL(req.url);
     const id = url.searchParams.get("id");
     const isTable = url.searchParams.get("table") === "true";
-    
+
     // CASE 1: Get single order with full details
     if (id) {
       if (!mongoose.Types.ObjectId.isValid(id)) {
-        return NextResponse.json({ 
-          success: false, 
-          message: "Invalid order panel ID format" 
+        return NextResponse.json({
+          success: false,
+          message: "Invalid order panel ID format"
         }, { status: 400 });
       }
-      
+
       const orderPanel = await OrderPanel.findOne(companyScopeFilter(user, { _id: id }))
         .populate('plantRows.plantCode', 'name code')
         .lean();
 
       if (!orderPanel) {
-        return NextResponse.json({ 
-          success: false, 
-          message: "Order panel not found" 
+        return NextResponse.json({
+          success: false,
+          message: "Order panel not found"
         }, { status: 404 });
       }
 
@@ -771,7 +771,12 @@ export const GET = withAuth(async (req, context, user) => {
         totalWeight: orderPanel.totalWeight || 0,
         panelStatus: orderPanel.panelStatus || 'Draft',
         delivery: orderPanel.delivery || 'Normal',
-        plantRows: orderPanel.plantRows || [],
+        plantRows: (orderPanel.plantRows || []).map(row => ({
+          ...row,
+          plantCode: row.plantCode?._id || row.plantCode || null,
+          plantName: row.plantName || row.plantCode?.name || '',
+          plantCodeValue: row.plantCodeValue || row.plantCode?.code || '',
+        })),
         collectionCharges: orderPanel.collectionCharges || 0,
         cancellationCharges: orderPanel.cancellationCharges || 'Nil',
         loadingCharges: orderPanel.loadingCharges || 'Nil',
@@ -783,23 +788,23 @@ export const GET = withAuth(async (req, context, user) => {
         packData: orderPanel.packData || {}
       };
 
-      return NextResponse.json({ 
-        success: true, 
-        data: formattedOrder 
+      return NextResponse.json({
+        success: true,
+        data: formattedOrder
       }, { status: 200 });
     }
-    
+
     // CASE 2: Get flattened data for table view
     if (isTable) {
       let query = companyScopeFilter(user);
-      
+
       const orderPanels = await OrderPanel.find(query)
         .sort({ createdAt: -1 })
         .select('orderPanelNo date branchName branchCode subCompanyName subCompanyCode customerName partyName totalWeight panelStatus createdAt plantRows delivery collectionCharges cancellationCharges loadingCharges otherCharges')
         .lean();
 
       const flattenedRows = [];
-      
+
       orderPanels.forEach(order => {
         if (order.plantRows && order.plantRows.length > 0) {
           order.plantRows.forEach((row, index) => {
@@ -877,10 +882,10 @@ export const GET = withAuth(async (req, context, user) => {
         data: flattenedRows
       }, { status: 200 });
     }
-    
+
     // CASE 3: Get list of orders (summary only)
     let query = companyScopeFilter(user);
-    
+
     const orderPanels = await OrderPanel.find(query)
       .sort({ createdAt: -1 })
       .select('orderPanelNo date branchName branchCode subCompanyName subCompanyCode customerName partyName totalWeight panelStatus createdAt plantRows delivery')
@@ -908,10 +913,10 @@ export const GET = withAuth(async (req, context, user) => {
 
   } catch (error) {
     console.error("GET /order-panel error:", error);
-    return NextResponse.json({ 
-      success: false, 
+    return NextResponse.json({
+      success: false,
       message: "Failed to fetch order panels",
-      error: error.message 
+      error: error.message
     }, { status: 500 });
   }
 }, { module: 'Order Panel', action: 'view' });
@@ -922,11 +927,11 @@ export const POST = withAuth(async (req, context, user) => {
 
   try {
     const body = await req.json();
-    
+
     let orderPanelNo = await getNextOrderPanelNumber(user.companyId, user.activeOperatingCompanyId, user.activeOperatingCompanyCode);
-    
+
     const existingOrderPanel = await OrderPanel.findOne(companyScopeFilter(user, { orderPanelNo }));
-    
+
     if (existingOrderPanel) {
       orderPanelNo = `OP-${Date.now().toString().slice(-6)}`;
     }
@@ -947,17 +952,17 @@ export const POST = withAuth(async (req, context, user) => {
     const processedPlantRows = (body.plantRows || []).map((row) => {
       const weight = num(row.weight);
       const rate = num(row.rate);
-      
+
       let fromField = null;
       if (row.from && mongoose.Types.ObjectId.isValid(row.from)) {
         fromField = new mongoose.Types.ObjectId(row.from);
       }
-      
+
       let toField = null;
       if (row.to && mongoose.Types.ObjectId.isValid(row.to)) {
         toField = new mongoose.Types.ObjectId(row.to);
       }
-      
+
       return {
         _id: new mongoose.Types.ObjectId(),
         plantCode: row.plantCode || '',
@@ -988,7 +993,7 @@ export const POST = withAuth(async (req, context, user) => {
         otherCharges: num(row.otherCharges) || 0
       };
     });
-    
+
     const totalWeight = processedPlantRows.reduce((sum, row) => sum + row.weight, 0);
     const totalAmount = processedPlantRows.reduce((sum, row) => sum + row.totalAmount, 0);
 
@@ -1108,8 +1113,8 @@ export const POST = withAuth(async (req, context, user) => {
     const newOrderPanel = new OrderPanel(orderPanelData);
     const savedOrderPanel = await newOrderPanel.save();
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       message: "Order panel created successfully",
       data: {
         _id: savedOrderPanel._id,
@@ -1119,25 +1124,25 @@ export const POST = withAuth(async (req, context, user) => {
 
   } catch (error) {
     console.error("POST /order-panel error:", error);
-    
+
     if (error.code === 11000) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Order panel number already exists. Please try again." 
+      return NextResponse.json({
+        success: false,
+        message: "Order panel number already exists. Please try again."
       }, { status: 400 });
     }
-    
+
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(err => err.message);
-      return NextResponse.json({ 
-        success: false, 
-        message: messages.join(', ') 
+      return NextResponse.json({
+        success: false,
+        message: messages.join(', ')
       }, { status: 400 });
     }
-    
-    return NextResponse.json({ 
-      success: false, 
-      message: `Failed to create order panel: ${error.message}` 
+
+    return NextResponse.json({
+      success: false,
+      message: `Failed to create order panel: ${error.message}`
     }, { status: 500 });
   }
 }, { module: 'Order Panel', action: 'create' });
@@ -1149,20 +1154,20 @@ export const PUT = withAuth(async (req, context, user) => {
   try {
     const body = await req.json();
     const { id } = body;
-    
+
     if (!id) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Order panel ID is required" 
+      return NextResponse.json({
+        success: false,
+        message: "Order panel ID is required"
       }, { status: 400 });
     }
 
     const orderPanel = await OrderPanel.findOne(companyScopeFilter(user, { _id: id }));
 
     if (!orderPanel) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Order panel not found" 
+      return NextResponse.json({
+        success: false,
+        message: "Order panel not found"
       }, { status: 404 });
     }
 
@@ -1181,23 +1186,31 @@ export const PUT = withAuth(async (req, context, user) => {
     if (body.cancellationCharges !== undefined) orderPanel.cancellationCharges = body.cancellationCharges;
     if (body.loadingCharges !== undefined) orderPanel.loadingCharges = body.loadingCharges;
     if (body.otherCharges !== undefined) orderPanel.otherCharges = num(body.otherCharges);
-    if (body.panelStatus) orderPanel.panelStatus = body.panelStatus;
+    if (body.panelStatus && body.panelStatus !== orderPanel.panelStatus) {
+      if (!hasPermission(user, 'Order Panel', 'approve')) {
+        return NextResponse.json({
+          success: false,
+          message: "Permission denied: approve action not allowed for Order Panel."
+        }, { status: 403 });
+      }
+      orderPanel.panelStatus = body.panelStatus;
+    }
 
     if (body.plantRows && Array.isArray(body.plantRows)) {
       const processedPlantRows = body.plantRows.map((row) => {
         const weight = num(row.weight);
         const rate = num(row.rate);
-        
+
         let fromField = null;
         if (row.from && mongoose.Types.ObjectId.isValid(row.from)) {
           fromField = new mongoose.Types.ObjectId(row.from);
         }
-        
+
         let toField = null;
         if (row.to && mongoose.Types.ObjectId.isValid(row.to)) {
           toField = new mongoose.Types.ObjectId(row.to);
         }
-        
+
         return {
           _id: row._id && mongoose.Types.ObjectId.isValid(row._id) ? new mongoose.Types.ObjectId(row._id) : new mongoose.Types.ObjectId(),
           plantCode: row.plantCode || '',
@@ -1228,7 +1241,7 @@ export const PUT = withAuth(async (req, context, user) => {
           otherCharges: num(row.otherCharges) || 0
         };
       });
-      
+
       orderPanel.plantRows = processedPlantRows;
       orderPanel.totalWeight = processedPlantRows.reduce((sum, row) => sum + row.weight, 0);
       orderPanel.totalAmount = processedPlantRows.reduce((sum, row) => sum + row.totalAmount, 0);
@@ -1288,8 +1301,8 @@ export const PUT = withAuth(async (req, context, user) => {
 
     await orderPanel.save();
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       message: "Order panel updated successfully",
       data: {
         _id: orderPanel._id,
@@ -1299,9 +1312,9 @@ export const PUT = withAuth(async (req, context, user) => {
 
   } catch (error) {
     console.error("PUT /order-panel error:", error);
-    return NextResponse.json({ 
-      success: false, 
-      message: `Failed to update order panel: ${error.message}` 
+    return NextResponse.json({
+      success: false,
+      message: `Failed to update order panel: ${error.message}`
     }, { status: 500 });
   }
 }, { module: 'Order Panel', action: 'edit' });
@@ -1313,33 +1326,33 @@ export const DELETE = withAuth(async (req, context, user) => {
   try {
     const url = new URL(req.url);
     const id = url.searchParams.get("id");
-    
+
     if (!id) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Order panel ID is required" 
+      return NextResponse.json({
+        success: false,
+        message: "Order panel ID is required"
       }, { status: 400 });
     }
 
     const result = await OrderPanel.deleteOne(companyScopeFilter(user, { _id: id }));
 
     if (result.deletedCount === 0) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Order panel not found" 
+      return NextResponse.json({
+        success: false,
+        message: "Order panel not found"
       }, { status: 404 });
     }
 
-    return NextResponse.json({ 
-      success: true, 
-      message: "Order panel deleted successfully" 
+    return NextResponse.json({
+      success: true,
+      message: "Order panel deleted successfully"
     }, { status: 200 });
 
   } catch (error) {
     console.error("DELETE /order-panel error:", error);
-    return NextResponse.json({ 
-      success: false, 
-      message: `Failed to delete order panel: ${error.message}` 
+    return NextResponse.json({
+      success: false,
+      message: `Failed to delete order panel: ${error.message}`
     }, { status: 500 });
   }
 }, { module: 'Order Panel', action: 'delete' });
@@ -1351,20 +1364,20 @@ export const PATCH = withAuth(async (req, context, user) => {
   try {
     const body = await req.json();
     const { id, action } = body;
-    
+
     if (!id) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Order panel ID is required" 
+      return NextResponse.json({
+        success: false,
+        message: "Order panel ID is required"
       }, { status: 400 });
     }
 
     const orderPanel = await OrderPanel.findOne(companyScopeFilter(user, { _id: id }));
 
     if (!orderPanel) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Order panel not found" 
+      return NextResponse.json({
+        success: false,
+        message: "Order panel not found"
       }, { status: 404 });
     }
 
@@ -1382,16 +1395,16 @@ export const PATCH = withAuth(async (req, context, user) => {
     } else if (action === 'complete') {
       orderPanel.panelStatus = 'Completed';
     } else {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Invalid action. Allowed: approve, reject, complete" 
+      return NextResponse.json({
+        success: false,
+        message: "Invalid action. Allowed: approve, reject, complete"
       }, { status: 400 });
     }
 
     await orderPanel.save();
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       message: `Order ${action}d successfully`,
       data: {
         _id: orderPanel._id,
@@ -1402,9 +1415,9 @@ export const PATCH = withAuth(async (req, context, user) => {
 
   } catch (error) {
     console.error("PATCH /order-panel error:", error);
-    return NextResponse.json({ 
-      success: false, 
-      message: `Failed to update order status: ${error.message}` 
+    return NextResponse.json({
+      success: false,
+      message: `Failed to update order status: ${error.message}`
     }, { status: 500 });
   }
 }, { module: 'Order Panel', action: 'approve' });

@@ -219,7 +219,7 @@ export default function LoadingInfoLRViewer({ panelId }) {
     const hint = {
         unsaved: "Save this Loading Info first. The LR is created by the Consignment Note team and will appear here.",
         loading: "Checking whether an LR has been created…",
-        none: "LR not created yet. It will appear here once the Consignment Note (LR) is created.",
+        none: "No approved LR yet. The LR and invoice appear here once the Consignment Note is approved.",
         error,
         ready: "View-only. Out Date and Out Time come from the LR generation time.",
     }[status];
@@ -378,7 +378,7 @@ export function LoadingInfoInvoiceViewer({ panelId }) {
     const hint = {
         unsaved: "Save this Loading Info first. Invoices are uploaded on the LR page.",
         loading: "Checking invoices…",
-        none: "LR not created yet. Invoices are uploaded on the LR page.",
+        none: "No approved LR yet. The LR and invoice appear here once the Consignment Note is approved.",
         error,
         ready: uploaded
             ? "View-only. Each invoice is uploaded on its LR page."

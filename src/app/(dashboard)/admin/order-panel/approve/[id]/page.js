@@ -397,26 +397,26 @@
 //     setLoading(true);
 //     try {
 //       const token = localStorage.getItem('token');
-      
+
 //       const res = await fetch(`/api/order-panel?id=${orderId}`, {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       if (!res.ok) {
 //         throw new Error(`HTTP error! status: ${res.status}`);
 //       }
-      
+
 //       const data = await res.json();
-      
+
 //       if (!data.success) {
 //         throw new Error(data.message || 'Failed to fetch order');
 //       }
 
 //       const order = data.data;
 //       console.log("📦 Order Data for Approval:", order);
-      
+
 //       setOrderPanel(order);
-      
+
 //       // Set header data (READ-ONLY)
 //       setHeader({
 //         orderPanelNo: order.orderPanelNo || "",
@@ -490,7 +490,7 @@
 //     setSaving(true);
 //     try {
 //       const token = localStorage.getItem('token');
-      
+
 //       const res = await fetch('/api/order-panel', {
 //         method: 'PUT',
 //         headers: {
@@ -601,7 +601,7 @@
 
 //       {/* Main Content */}
 //       <div className="mx-auto max-w-full p-4">
-        
+
 //         {/* Header Information */}
 //         <Card title="Order Information (Read Only)">
 //           <div className="grid grid-cols-12 gap-3">
@@ -711,7 +711,7 @@
 //                       ))}
 //                     </select>
 //                   </div>
-                  
+
 //                   <div>
 //                     <label className="text-xs font-bold text-slate-600">Remarks</label>
 //                     <textarea
@@ -933,9 +933,8 @@ function Input({ label, value, col = "", type = "text", readOnly = true }) {
         type={type}
         value={value || ""}
         readOnly={readOnly}
-        className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none ${
-          readOnly ? 'bg-slate-50 cursor-not-allowed' : 'bg-white focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200'
-        }`}
+        className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none ${readOnly ? 'bg-slate-50 cursor-not-allowed' : 'bg-white focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200'
+          }`}
       />
     </div>
   );
@@ -1006,9 +1005,8 @@ function OrdersTable({ rows }) {
     if (row.fromState && row.state) {
       const isLocal = row.fromState.trim().toUpperCase() === row.state.trim().toUpperCase();
       return (
-        <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${
-          isLocal ? 'bg-green-100 text-green-800 border border-green-300' : 'bg-red-100 text-red-800 border border-red-300'
-        }`}>
+        <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${isLocal ? 'bg-green-100 text-green-800 border border-green-300' : 'bg-red-100 text-red-800 border border-red-300'
+          }`}>
           {isLocal ? '✅ Local' : '❌ Not Local'}
         </span>
       );
@@ -1046,8 +1044,8 @@ function OrdersTable({ rows }) {
                 <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.fromState || '-'}</td>
                 <td className="border border-yellow-300 px-2 py-2 text-center">{renderLocalStatus(row)}</td>
                 <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.country || '-'}</td>
-                <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.from || '-'}</td>
-                <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.to || '-'}</td>
+                <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.fromName || row.from || '-'}</td>
+                <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.toName || row.to || '-'}</td>
                 <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.locationRate || '-'}</td>
                 <td className="border border-yellow-300 px-2 py-2 text-slate-700 text-right">{row.weight || '0'}</td>
                 <td className="border border-yellow-300 px-2 py-2 text-slate-700 text-right">₹{num(row.rate).toLocaleString()}</td>
@@ -1270,26 +1268,26 @@ export default function ApproveOrderPanel() {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      
+
       const res = await fetch(`/api/order-panel?id=${orderId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       if (!res.ok) {
         throw new Error(`HTTP error! status: ${res.status}`);
       }
-      
+
       const data = await res.json();
-      
+
       if (!data.success) {
         throw new Error(data.message || 'Failed to fetch order');
       }
 
       const order = data.data;
       console.log("📦 Order Data for Approval:", order);
-      
+
       setOrderPanel(order);
-      
+
       // Set header data (READ-ONLY)
       setHeader({
         orderPanelNo: order.orderPanelNo || "",
@@ -1314,7 +1312,8 @@ export default function ApproveOrderPanel() {
       if (order.plantRows && order.plantRows.length > 0) {
         const processedRows = order.plantRows.map(row => ({
           ...row,
-          orderNo: row.orderNo || header.orderPanelNo || 'N/A',
+          orderNo: row.orderNo || order.orderPanelNo || 'N/A',
+          partyName: row.partyName || order.partyName || order.customerName || '',
           fromState: row.fromState || '',
           localStatus: row.localStatus || 'unknown',
           localStatusLabel: row.localStatusLabel || 'Unknown'
@@ -1363,7 +1362,7 @@ export default function ApproveOrderPanel() {
     setSaving(true);
     try {
       const token = localStorage.getItem('token');
-      
+
       const res = await fetch('/api/order-panel', {
         method: 'PUT',
         headers: {
@@ -1452,11 +1451,10 @@ export default function ApproveOrderPanel() {
             <button
               onClick={handleApprove}
               disabled={saving}
-              className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${
-                saving 
-                  ? 'bg-gray-400 cursor-not-allowed' 
-                  : 'bg-yellow-600 hover:bg-yellow-700'
-              }`}
+              className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${saving
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-yellow-600 hover:bg-yellow-700'
+                }`}
             >
               {saving ? (
                 <span className="flex items-center gap-2">
@@ -1474,7 +1472,7 @@ export default function ApproveOrderPanel() {
 
       {/* Main Content */}
       <div className="mx-auto max-w-full p-4">
-        
+
         {/* Header Information */}
         <Card title="Order Information (Read Only)">
           <div className="grid grid-cols-12 gap-3">
@@ -1556,12 +1554,12 @@ export default function ApproveOrderPanel() {
             </div>
           )}
 
-          {packData.PALLETIZATION.length === 0 && 
-           packData['UNIFORM - BAGS/BOXES'].length === 0 && 
-           packData['LOOSE - CARGO'].length === 0 && 
-           packData['NON-UNIFORM - GENERAL CARGO'].length === 0 && (
-            <div className="text-center py-8 text-slate-400">No pack data available</div>
-          )}
+          {packData.PALLETIZATION.length === 0 &&
+            packData['UNIFORM - BAGS/BOXES'].length === 0 &&
+            packData['LOOSE - CARGO'].length === 0 &&
+            packData['NON-UNIFORM - GENERAL CARGO'].length === 0 && (
+              <div className="text-center py-8 text-slate-400">No pack data available</div>
+            )}
         </Card>
 
         {/* Approval Section - EDITABLE */}
@@ -1584,7 +1582,7 @@ export default function ApproveOrderPanel() {
                       ))}
                     </select>
                   </div>
-                  
+
                   <div>
                     <label className="text-xs font-bold text-slate-600">Remarks</label>
                     <textarea
@@ -1599,24 +1597,24 @@ export default function ApproveOrderPanel() {
                   {/* Current Status Display */}
                   {approval.status && (
                     <div className="mt-3 p-3 rounded-lg border" style={{
-                      backgroundColor: approval.status === 'Approved' ? '#f0fdf4' : 
-                                     approval.status === 'Rejected' ? '#fef2f2' :
-                                     approval.status === 'Completed' ? '#eff6ff' :
-                                     approval.status === 'Cancelled' ? '#fef3c7' :
-                                     approval.status === 'Draft' ? '#f3f4f6' : '#fefce8',
-                      borderColor: approval.status === 'Approved' ? '#86efac' : 
-                                   approval.status === 'Rejected' ? '#fca5a5' :
-                                   approval.status === 'Completed' ? '#93c5fd' :
-                                   approval.status === 'Cancelled' ? '#fcd34d' :
-                                   approval.status === 'Draft' ? '#d1d5db' : '#fde047'
+                      backgroundColor: approval.status === 'Approved' ? '#f0fdf4' :
+                        approval.status === 'Rejected' ? '#fef2f2' :
+                          approval.status === 'Completed' ? '#eff6ff' :
+                            approval.status === 'Cancelled' ? '#fef3c7' :
+                              approval.status === 'Draft' ? '#f3f4f6' : '#fefce8',
+                      borderColor: approval.status === 'Approved' ? '#86efac' :
+                        approval.status === 'Rejected' ? '#fca5a5' :
+                          approval.status === 'Completed' ? '#93c5fd' :
+                            approval.status === 'Cancelled' ? '#fcd34d' :
+                              approval.status === 'Draft' ? '#d1d5db' : '#fde047'
                     }}>
                       <p className="text-sm font-medium">
                         Selected Status: <span className={`
-                          ${approval.status === 'Approved' ? 'text-green-700' : 
+                          ${approval.status === 'Approved' ? 'text-green-700' :
                             approval.status === 'Rejected' ? 'text-red-700' :
-                            approval.status === 'Completed' ? 'text-blue-700' :
-                            approval.status === 'Cancelled' ? 'text-yellow-700' :
-                            approval.status === 'Draft' ? 'text-gray-700' : 'text-yellow-700'}
+                              approval.status === 'Completed' ? 'text-blue-700' :
+                                approval.status === 'Cancelled' ? 'text-yellow-700' :
+                                  approval.status === 'Draft' ? 'text-gray-700' : 'text-yellow-700'}
                         `}>
                           {approval.status}
                         </span>
@@ -1722,14 +1720,13 @@ export default function ApproveOrderPanel() {
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span className="text-sm text-slate-600">Current Status:</span>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      header.panelStatus === 'Approved' ? 'bg-green-100 text-green-800' :
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${header.panelStatus === 'Approved' ? 'bg-green-100 text-green-800' :
                       header.panelStatus === 'Rejected' ? 'bg-red-100 text-red-800' :
-                      header.panelStatus === 'Completed' ? 'bg-blue-100 text-blue-800' :
-                      header.panelStatus === 'Cancelled' ? 'bg-gray-100 text-gray-800' :
-                      header.panelStatus === 'Draft' ? 'bg-slate-100 text-slate-800' :
-                      'bg-yellow-100 text-yellow-800'
-                    }`}>
+                        header.panelStatus === 'Completed' ? 'bg-blue-100 text-blue-800' :
+                          header.panelStatus === 'Cancelled' ? 'bg-gray-100 text-gray-800' :
+                            header.panelStatus === 'Draft' ? 'bg-slate-100 text-slate-800' :
+                              'bg-yellow-100 text-yellow-800'
+                      }`}>
                       {header.panelStatus || 'Draft'}
                     </span>
                   </div>

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
+
 const API = "/api/consignment-note/upload-invoice";
 const OK_TYPES = ["application/pdf", "image/png", "image/jpeg"];
 const auth = () => ({ Authorization: `Bearer ${localStorage.getItem("token")}` });
@@ -28,7 +29,7 @@ function DocIcon({ className }) {
  * props: file = invoice.file ({fileName,filePath,mimeType,fileSize} | null)
  *        onChange(fileObjectOrNull) -> store it in the page's invoice state
  */
-export default function LRInvoiceUpload({ file, onChange }) {
+export default function LRInvoiceUpload({ file, onChange, readOnly = false }) {
     const inputRef = useRef(null);
     const [busy, setBusy] = useState(false);
     const [drag, setDrag] = useState(false);
@@ -89,7 +90,7 @@ export default function LRInvoiceUpload({ file, onChange }) {
         <div className="h-full rounded-xl border border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 p-4">
             <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-slate-800">
                 <DocIcon className="h-5 w-5 text-green-600" />
-                Upload Invoice
+                {readOnly ? "Invoice" : "Upload Invoice"}
             </h3>
 
             <input ref={inputRef} type="file" accept=".pdf,.png,.jpg,.jpeg" onChange={onInput} className="hidden" />
@@ -111,14 +112,23 @@ export default function LRInvoiceUpload({ file, onChange }) {
                         <div className="flex shrink-0 gap-1.5">
                             <button type="button" onClick={view}
                                 className="rounded-lg bg-blue-600 px-2.5 py-1 text-xs font-bold text-white hover:bg-blue-700">View</button>
-                            <button type="button" onClick={pick} disabled={busy}
-                                className="rounded-lg bg-slate-600 px-2.5 py-1 text-xs font-bold text-white hover:bg-slate-700 disabled:opacity-50">
-                                {busy ? "Uploading…" : "Replace"}
-                            </button>
-                            <button type="button" onClick={() => onChange(null)}
-                                className="rounded-lg bg-red-50 px-2.5 py-1 text-xs font-bold text-red-600 hover:bg-red-100">Remove</button>
+                            {!readOnly && (
+                                <>
+                                    <button type="button" onClick={pick} disabled={busy}
+                                        className="rounded-lg bg-slate-600 px-2.5 py-1 text-xs font-bold text-white hover:bg-slate-700 disabled:opacity-50">
+                                        {busy ? "Uploading…" : "Replace"}
+                                    </button>
+                                    <button type="button" onClick={() => onChange(null)}
+                                        className="rounded-lg bg-red-50 px-2.5 py-1 text-xs font-bold text-red-600 hover:bg-red-100">Remove</button>
+                                </>
+                            )}
                         </div>
                     </div>
+                </div>
+            ) : readOnly ? (
+                <div className="flex min-h-[140px] flex-col items-center justify-center rounded-xl border-2 border-dashed border-green-300 bg-white text-center">
+                    <DocIcon className="mb-2 h-12 w-12 text-gray-400" />
+                    <p className="text-sm text-slate-500">No invoice uploaded</p>
                 </div>
             ) : (
                 <div

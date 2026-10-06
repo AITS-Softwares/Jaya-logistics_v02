@@ -109,12 +109,12 @@
 // // if (purchaseNo) {
 // //   console.log(`🔍 Searching for Advance Payment with purchaseNo: "${purchaseNo}"`);
 // //   console.log(`Company ID: ${user.companyId}`);
-  
+
 // //   const payment = await AdvancePayment.findOne({
 // //     purchaseNo: purchaseNo,
 // //     companyId: user.companyId
 // //   }).lean();
-  
+
 // //   console.log("✅ Found payment:", payment ? payment.paymentNo : "NOT FOUND");
 // //   console.log("Payment data:", payment);
 
@@ -216,7 +216,7 @@
 // //     }
 
 // //     const body = await req.json();
-    
+
 // //     console.log("📝 Creating new advance payment");
 
 // //     // Generate payment number
@@ -228,7 +228,7 @@
 // //         purchaseNo: body.purchaseNo,
 // //         companyId: user.companyId
 // //       });
-      
+
 // //       if (existing) {
 // //         return NextResponse.json({ 
 // //           success: false, 
@@ -284,7 +284,7 @@
 // //       const otherCharges = num(row.otherCharges);
 // //       return sum + totalAmount + collectionCharges + cancellationCharges + loadingCharges + otherCharges;
 // //     }, 0);
-    
+
 // //     const purchaseAmountFromVNN = num(body.purchaseAmountFromVNN) || num(body.vendorDetails?.amount) || totalOrderAmount;
 // //     const advance = num(body.vendorDetails?.advance);
 // //     const totalAdditions = processedAdditionItems.reduce((sum, item) => sum + (item.amount || 0), 0);
@@ -306,7 +306,7 @@
 // //       purchaseId: body.purchaseDataId || null,
 // //       pricingSerialNo: body.pricingSerialNo || body.header?.pricingSerialNo || '',
 // //       purchaseAmountFromVNN,
-      
+
 // //       header: {
 // //         purchaseNo: body.header?.purchaseNo || '',
 // //         pricingSerialNo: body.header?.pricingSerialNo || '',
@@ -316,7 +316,7 @@
 // //         date: body.header?.date ? new Date(body.header.date) : new Date(),
 // //         delivery: body.header?.delivery || 'Normal'
 // //       },
-      
+
 // //       billing: {
 // //         billingType: body.billing?.billingType || 'Multi - Order',
 // //         noOfLoadingPoints: body.billing?.noOfLoadingPoints || '1',
@@ -326,15 +326,15 @@
 // //         loadingCharges: body.billing?.loadingCharges || 'Nil',
 // //         otherCharges: body.billing?.otherCharges || '0'
 // //       },
-      
+
 // //       orderRows: processedOrderRows,
-      
+
 // //       purchaseTerms: {
 // //         purchaseType: body.purchaseTerms?.purchaseType || 'Loading & Unloading',
 // //         rateType: body.purchaseTerms?.rateType || 'Per MT',
 // //         paymentTerms: body.purchaseTerms?.paymentTerms || '80 % Advance'
 // //       },
-      
+
 // //       vendorDetails: {
 // //         vendorStatus: body.vendorDetails?.vendorStatus || 'Active',
 // //         vendorCode: body.vendorDetails?.vendorCode || '',
@@ -349,17 +349,17 @@
 // //         ifsc: body.vendorDetails?.ifsc || body.vendorDetails?.ifscCode || '',
 // //         transactionId: body.vendorDetails?.transactionId || ''
 // //       },
-      
+
 // //       additions: {
 // //         totalAddition: totalAdditions,
 // //         items: processedAdditionItems
 // //       },
-      
+
 // //       deductions: {
 // //         totalDeduction: totalDeductions,
 // //         items: processedDeductionItems
 // //       },
-      
+
 // //       paymentDetails: {
 // //         vendorNameDebit: body.paymentDetails?.vendorNameDebit || body.vendorDetails?.vendorName || '',
 // //         accountNoCredit: body.paymentDetails?.accountNoCredit || body.vendorDetails?.accountNo || '',
@@ -370,15 +370,15 @@
 // //         paymentDate: body.paymentDetails?.paymentDate ? new Date(body.paymentDetails.paymentDate) : new Date(),
 // //         paymentStatus: body.paymentDetails?.paymentStatus || 'Pending'
 // //       },
-      
+
 // //       memoFile: body.memoFile || null,
-      
+
 // //       balance,
 // //       totalOrderAmount,
-      
+
 // //       status: 'Draft',
 // //       queueGenerated: false,
-      
+
 // //       companyId: user.companyId,
 // //       createdBy: user.id
 // //     });
@@ -433,7 +433,7 @@
 
 // //     const body = await req.json();
 // //     const { id } = body;
-    
+
 // //     if (!id) {
 // //       return NextResponse.json({ 
 // //         success: false, 
@@ -630,7 +630,7 @@
 
 // //     const url = new URL(req.url);
 // //     const id = url.searchParams.get("id");
-    
+
 // //     if (!id || !mongoose.Types.ObjectId.isValid(id)) {
 // //       return NextResponse.json({ 
 // //         success: false, 
@@ -694,7 +694,7 @@
 // //     const url = new URL(req.url);
 // //     const id = url.searchParams.get("id");
 // //     const action = url.searchParams.get("action");
-    
+
 // //     if (!id || !mongoose.Types.ObjectId.isValid(id)) {
 // //       return NextResponse.json({ 
 // //         success: false, 
@@ -757,19 +757,19 @@
 
 // function isAuthorized(user) {
 //   if (!user) return false;
-  
+
 //   // Company admins have full access
 //   if (user.type === "company") return true;
-  
+
 //   // Admin role has full access
 //   if (user.roles && user.roles.includes("Admin")) return true;
-  
+
 //   // Check module-based permissions for "Advance Payment"
 //   const modules = user.modules || {};
 //   const moduleData = modules["Advance Payment"];
-  
+
 //   if (!moduleData || !moduleData.selected) return false;
-  
+
 //   return true;
 // }
 
@@ -777,12 +777,12 @@
 //   if (!user) return false;
 //   if (user.type === "company") return true;
 //   if (user.roles && user.roles.includes("Admin")) return true;
-  
+
 //   const modules = user.modules || {};
 //   const moduleData = modules["Advance Payment"];
-  
+
 //   if (!moduleData || !moduleData.selected) return false;
-  
+
 //   const permissions = moduleData.permissions || {};
 //   return permissions[action] === true;
 // }
@@ -794,21 +794,21 @@
 //   try {
 //     const user = verifyJWT(token);
 //     if (!user) return { error: "Invalid or expired token. Please login again.", status: 401 };
-    
+
 //     if (!isAuthorized(user)) {
 //       return { 
 //         error: "Access denied. You don't have permission to access Advance Payments.", 
 //         status: 403 
 //       };
 //     }
-    
+
 //     if (requiredAction && !hasPermission(user, requiredAction)) {
 //       return { 
 //         error: `Permission denied: ${requiredAction} action not allowed for Advance Payments.`, 
 //         status: 403 
 //       };
 //     }
-    
+
 //     return { user, error: null, status: 200 };
 //   } catch (err) {
 //     console.error("JWT Verification Failed:", err?.message || err);
@@ -903,12 +903,12 @@
 //     // CASE 3: GET BY PURCHASE NUMBER
 //     if (purchaseNo) {
 //       console.log(`🔍 Searching for Advance Payment with purchaseNo: "${purchaseNo}"`);
-      
+
 //       const payment = await AdvancePayment.findOne({
 //         purchaseNo: purchaseNo,
 //         companyId: user.companyId
 //       }).lean();
-      
+
 //       console.log("✅ Found payment:", payment ? payment.paymentNo : "NOT FOUND");
 
 //       return NextResponse.json({ 
@@ -1013,7 +1013,7 @@
 //     }
 
 //     const body = await req.json();
-    
+
 //     console.log("📝 Creating new advance payment");
 
 //     let paymentNo = await getNextAdvancePaymentNumber(user.companyId);
@@ -1023,7 +1023,7 @@
 //         purchaseNo: body.purchaseNo,
 //         companyId: user.companyId
 //       });
-      
+
 //       if (existing) {
 //         return NextResponse.json({ 
 //           success: false, 
@@ -1075,7 +1075,7 @@
 //       const otherCharges = num(row.otherCharges);
 //       return sum + totalAmount + collectionCharges + cancellationCharges + loadingCharges + otherCharges;
 //     }, 0);
-    
+
 //     const purchaseAmountFromVNN = num(body.purchaseAmountFromVNN) || num(body.vendorDetails?.amount) || totalOrderAmount;
 //     const advance = num(body.vendorDetails?.advance);
 //     const totalAdditions = processedAdditionItems.reduce((sum, item) => sum + (item.amount || 0), 0);
@@ -1095,7 +1095,7 @@
 //       purchaseId: body.purchaseDataId || null,
 //       pricingSerialNo: body.pricingSerialNo || body.header?.pricingSerialNo || '',
 //       purchaseAmountFromVNN,
-      
+
 //       header: {
 //         purchaseNo: body.header?.purchaseNo || '',
 //         pricingSerialNo: body.header?.pricingSerialNo || '',
@@ -1105,7 +1105,7 @@
 //         date: body.header?.date ? new Date(body.header.date) : new Date(),
 //         delivery: body.header?.delivery || 'Normal'
 //       },
-      
+
 //       billing: {
 //         billingType: body.billing?.billingType || 'Multi - Order',
 //         noOfLoadingPoints: body.billing?.noOfLoadingPoints || '1',
@@ -1115,15 +1115,15 @@
 //         loadingCharges: body.billing?.loadingCharges || 'Nil',
 //         otherCharges: body.billing?.otherCharges || '0'
 //       },
-      
+
 //       orderRows: processedOrderRows,
-      
+
 //       purchaseTerms: {
 //         purchaseType: body.purchaseTerms?.purchaseType || 'Loading & Unloading',
 //         rateType: body.purchaseTerms?.rateType || 'Per MT',
 //         paymentTerms: body.purchaseTerms?.paymentTerms || '80 % Advance'
 //       },
-      
+
 //       vendorDetails: {
 //         vendorStatus: body.vendorDetails?.vendorStatus || 'Active',
 //         vendorCode: body.vendorDetails?.vendorCode || '',
@@ -1138,17 +1138,17 @@
 //         ifsc: body.vendorDetails?.ifsc || body.vendorDetails?.ifscCode || '',
 //         transactionId: body.vendorDetails?.transactionId || ''
 //       },
-      
+
 //       additions: {
 //         totalAddition: totalAdditions,
 //         items: processedAdditionItems
 //       },
-      
+
 //       deductions: {
 //         totalDeduction: totalDeductions,
 //         items: processedDeductionItems
 //       },
-      
+
 //       paymentDetails: {
 //         vendorNameDebit: body.paymentDetails?.vendorNameDebit || body.vendorDetails?.vendorName || '',
 //         accountNoCredit: body.paymentDetails?.accountNoCredit || body.vendorDetails?.accountNo || '',
@@ -1159,15 +1159,15 @@
 //         paymentDate: body.paymentDetails?.paymentDate ? new Date(body.paymentDetails.paymentDate) : new Date(),
 //         paymentStatus: body.paymentDetails?.paymentStatus || 'Pending'
 //       },
-      
+
 //       memoFile: body.memoFile || null,
-      
+
 //       balance,
 //       totalOrderAmount,
-      
+
 //       status: 'Draft',
 //       queueGenerated: false,
-      
+
 //       companyId: user.companyId,
 //       createdBy: user.id
 //     });
@@ -1226,7 +1226,7 @@
 
 //     const body = await req.json();
 //     const { id } = body;
-    
+
 //     if (!id) {
 //       return NextResponse.json({ 
 //         success: false, 
@@ -1413,7 +1413,7 @@
 
 //     const url = new URL(req.url);
 //     const id = url.searchParams.get("id");
-    
+
 //     if (!id || !isValidObjectId(id)) {
 //       return NextResponse.json({ 
 //         success: false, 
@@ -1481,7 +1481,7 @@
 //     const url = new URL(req.url);
 //     const id = url.searchParams.get("id");
 //     const action = url.searchParams.get("action");
-    
+
 //     if (!id || !isValidObjectId(id)) {
 //       return NextResponse.json({ 
 //         success: false, 
@@ -1527,17 +1527,17 @@
 //       // If body contains paymentStatus, use it, else set to Approved
 //       const body = await req.json();
 //       const newStatus = body.paymentStatus || 'Approved';
-      
+
 //       payment.paymentDetails.paymentStatus = newStatus;
 //       payment.status = newStatus;
-      
+
 //       // Update remarks if provided
 //       if (body.remarks !== undefined) {
 //         payment.paymentDetails.remarks = body.remarks;
 //       }
-      
+
 //       await payment.save();
-      
+
 //       return NextResponse.json({ 
 //         success: true, 
 //         message: `Payment ${newStatus} successfully`,
@@ -1553,17 +1553,17 @@
 //     // Reject action
 //     if (action === 'reject') {
 //       const body = await req.json();
-      
+
 //       payment.paymentDetails.paymentStatus = 'Rejected';
 //       payment.status = 'Rejected';
-      
+
 //       // Update remarks if provided
 //       if (body.remarks !== undefined) {
 //         payment.paymentDetails.remarks = body.remarks;
 //       }
-      
+
 //       await payment.save();
-      
+
 //       return NextResponse.json({ 
 //         success: true, 
 //         message: "Payment rejected successfully",
@@ -1579,18 +1579,18 @@
 //     // Update status only (for Pending status changes)
 //     if (action === 'update-status') {
 //       const body = await req.json();
-      
+
 //       if (body.paymentStatus) {
 //         payment.paymentDetails.paymentStatus = body.paymentStatus;
 //         payment.status = body.paymentStatus;
 //       }
-      
+
 //       if (body.remarks !== undefined) {
 //         payment.paymentDetails.remarks = body.remarks;
 //       }
-      
+
 //       await payment.save();
-      
+
 //       return NextResponse.json({ 
 //         success: true, 
 //         message: `Payment status updated to ${payment.paymentDetails.paymentStatus}`,
@@ -1630,19 +1630,19 @@ import { activeOperatingCompanyId, companyScopeFilter } from "@/lib/companyScope
 
 function isAuthorized(user) {
   if (!user) return false;
-  
+
   // Company admins have full access
   if (user.type === "company") return true;
-  
+
   // Admin role has full access
   if (user.roles && user.roles.includes("Admin")) return true;
-  
+
   // Check module-based permissions for "Advance Payment"
   const modules = user.modules || {};
   const moduleData = modules["Advance Payment"];
-  
+
   if (!moduleData || !moduleData.selected) return false;
-  
+
   return true;
 }
 
@@ -1650,12 +1650,12 @@ function hasPermission(user, action) {
   if (!user) return false;
   if (user.type === "company") return true;
   if (user.roles && user.roles.includes("Admin")) return true;
-  
+
   const modules = user.modules || {};
   const moduleData = modules["Advance Payment"];
-  
+
   if (!moduleData || !moduleData.selected) return false;
-  
+
   const permissions = moduleData.permissions || {};
   return permissions[action] === true;
 }
@@ -1668,21 +1668,21 @@ async function validateUser(req, requiredAction = null) {
     const user = verifyJWT(token);
     if (!user) return { error: "Invalid or expired token. Please login again.", status: 401 };
     try { activeOperatingCompanyId(user); } catch (error) { return { error: error.message, status: 401 }; }
-    
+
     if (!isAuthorized(user)) {
-      return { 
-        error: "Access denied. You don't have permission to access Advance Payments.", 
-        status: 403 
+      return {
+        error: "Access denied. You don't have permission to access Advance Payments.",
+        status: 403
       };
     }
-    
+
     if (requiredAction && !hasPermission(user, requiredAction)) {
-      return { 
-        error: `Permission denied: ${requiredAction} action not allowed for Advance Payments.`, 
-        status: 403 
+      return {
+        error: `Permission denied: ${requiredAction} action not allowed for Advance Payments.`,
+        status: 403
       };
     }
-    
+
     return { user, error: null, status: 200 };
   } catch (err) {
     console.error("JWT Verification Failed:", err?.message || err);
@@ -1710,8 +1710,8 @@ export async function GET(req) {
     await connectDb();
     const { user, error, status } = await validateUser(req, 'view');
     if (error) {
-      return NextResponse.json({ 
-        success: false, 
+      return NextResponse.json({
+        success: false,
         message: error,
         code: status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN'
       }, { status });
@@ -1730,24 +1730,24 @@ export async function GET(req) {
     // CASE 1: GET SINGLE BY ID
     if (id) {
       if (!isValidObjectId(id)) {
-        return NextResponse.json({ 
-          success: false, 
-          message: "Invalid advance payment ID format" 
+        return NextResponse.json({
+          success: false,
+          message: "Invalid advance payment ID format"
         }, { status: 400 });
       }
 
       const payment = await AdvancePayment.findOne(companyScopeFilter(user, { _id: id })).lean();
 
       if (!payment) {
-        return NextResponse.json({ 
-          success: false, 
-          message: "Advance payment not found" 
+        return NextResponse.json({
+          success: false,
+          message: "Advance payment not found"
         }, { status: 404 });
       }
 
-      return NextResponse.json({ 
-        success: true, 
-        data: payment 
+      return NextResponse.json({
+        success: true,
+        data: payment
       }, { status: 200 });
     }
 
@@ -1756,28 +1756,28 @@ export async function GET(req) {
       const payment = await AdvancePayment.findOne(companyScopeFilter(user, { paymentNo })).lean();
 
       if (!payment) {
-        return NextResponse.json({ 
-          success: false, 
-          message: "Advance payment not found" 
+        return NextResponse.json({
+          success: false,
+          message: "Advance payment not found"
         }, { status: 404 });
       }
 
-      return NextResponse.json({ 
-        success: true, 
-        data: payment 
+      return NextResponse.json({
+        success: true,
+        data: payment
       }, { status: 200 });
     }
 
     // CASE 3: GET BY PURCHASE NUMBER
     if (purchaseNo) {
       console.log(`🔍 Searching for Advance Payment with purchaseNo: "${purchaseNo}"`);
-      
+
       const payment = await AdvancePayment.findOne(companyScopeFilter(user, { purchaseNo })).lean();
-      
+
       console.log("✅ Found payment:", payment ? payment.paymentNo : "NOT FOUND");
 
-      return NextResponse.json({ 
-        success: true, 
+      return NextResponse.json({
+        success: true,
         data: payment || null,
         exists: !!payment
       }, { status: 200 });
@@ -1847,9 +1847,9 @@ export async function GET(req) {
 
     // CASE 5: LIST FOR DROPDOWNS
     const payments = await AdvancePayment.find(companyScopeFilter(user))
-    .select('paymentNo purchaseNo subCompanyName subCompanyCode vendorDetails.vendorName purchaseAmountFromVNN paymentDetails.paymentStatus')
-    .sort({ createdAt: -1 })
-    .lean();
+      .select('paymentNo purchaseNo subCompanyName subCompanyCode vendorDetails.vendorName purchaseAmountFromVNN paymentDetails.paymentStatus')
+      .sort({ createdAt: -1 })
+      .lean();
 
     return NextResponse.json({
       success: true,
@@ -1858,8 +1858,8 @@ export async function GET(req) {
 
   } catch (error) {
     console.error("❌ GET /advance-payment error:", error);
-    return NextResponse.json({ 
-      success: false, 
+    return NextResponse.json({
+      success: false,
       message: error.message || "Failed to fetch advance payments"
     }, { status: 500 });
   }
@@ -1873,15 +1873,15 @@ export async function POST(req) {
     await connectDb();
     const { user, error, status } = await validateUser(req, 'create');
     if (error) {
-      return NextResponse.json({ 
-        success: false, 
+      return NextResponse.json({
+        success: false,
         message: error,
         code: status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN'
       }, { status });
     }
 
     const body = await req.json();
-    
+
     console.log("📝 Creating new advance payment");
 
     if (!body.purchaseNo && !body.purchaseDataId) {
@@ -1892,11 +1892,11 @@ export async function POST(req) {
 
     if (body.purchaseNo) {
       const existing = await AdvancePayment.findOne(companyScopeFilter(user, { purchaseNo: body.purchaseNo }));
-      
+
       if (existing) {
-        return NextResponse.json({ 
-          success: false, 
-          message: `Advance payment already exists for Purchase No: ${body.purchaseNo}` 
+        return NextResponse.json({
+          success: false,
+          message: `Advance payment already exists for Purchase No: ${body.purchaseNo}`
         }, { status: 400 });
       }
     }
@@ -1967,7 +1967,7 @@ export async function POST(req) {
       const otherCharges = num(row.otherCharges);
       return sum + totalAmount + collectionCharges + cancellationCharges + loadingCharges + otherCharges;
     }, 0);
-    
+
     const purchaseAmountFromVNN = num(body.purchaseAmountFromVNN) || num(body.vendorDetails?.amount) || totalOrderAmount;
     const advance = num(body.vendorDetails?.advance);
     const totalAdditions = processedAdditionItems.reduce((sum, item) => sum + (item.amount || 0), 0);
@@ -1990,12 +1990,12 @@ export async function POST(req) {
       purchaseId: sourcePurchase._id,
       pricingSerialNo: body.pricingSerialNo || body.header?.pricingSerialNo || '',
       purchaseAmountFromVNN,
-      
+
       // ✅ Sub-Company at root level
       subCompanyId,
       subCompanyName,
       subCompanyCode,
-      
+
       header: {
         purchaseNo: body.header?.purchaseNo || '',
         pricingSerialNo: body.header?.pricingSerialNo || '',
@@ -2008,7 +2008,7 @@ export async function POST(req) {
         date: body.header?.date ? new Date(body.header.date) : new Date(),
         delivery: body.header?.delivery || 'Normal'
       },
-      
+
       billing: {
         billingType: body.billing?.billingType || 'Multi - Order',
         noOfLoadingPoints: body.billing?.noOfLoadingPoints || '1',
@@ -2018,15 +2018,15 @@ export async function POST(req) {
         loadingCharges: body.billing?.loadingCharges || 'Nil',
         otherCharges: body.billing?.otherCharges || '0'
       },
-      
+
       orderRows: processedOrderRows,
-      
+
       purchaseTerms: {
         purchaseType: body.purchaseTerms?.purchaseType || 'Loading & Unloading',
         rateType: body.purchaseTerms?.rateType || 'Per MT',
         paymentTerms: body.purchaseTerms?.paymentTerms || '80 % Advance'
       },
-      
+
       vendorDetails: {
         vendorStatus: body.vendorDetails?.vendorStatus || 'Active',
         vendorCode: body.vendorDetails?.vendorCode || '',
@@ -2044,17 +2044,17 @@ export async function POST(req) {
         subCompanyName,
         subCompanyCode
       },
-      
+
       additions: {
         totalAddition: totalAdditions,
         items: processedAdditionItems
       },
-      
+
       deductions: {
         totalDeduction: totalDeductions,
         items: processedDeductionItems
       },
-      
+
       paymentDetails: {
         vendorNameDebit: body.paymentDetails?.vendorNameDebit || body.vendorDetails?.vendorName || '',
         accountNoCredit: body.paymentDetails?.accountNoCredit || body.vendorDetails?.accountNo || '',
@@ -2065,23 +2065,23 @@ export async function POST(req) {
         paymentDate: body.paymentDetails?.paymentDate ? new Date(body.paymentDetails.paymentDate) : new Date(),
         paymentStatus: body.paymentDetails?.paymentStatus || 'Pending'
       },
-      
+
       memoFile: sourcePurchase.memoFile || null,
-      
+
       balance,
       totalOrderAmount,
-      
+
       status: 'Draft',
       queueGenerated: false,
-      
+
       companyId: user.companyId,
       createdBy: user.id
     });
 
     await advancePayment.save();
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       message: "Advance payment created successfully",
       data: {
         _id: advancePayment._id,
@@ -2095,22 +2095,22 @@ export async function POST(req) {
     console.error("❌ POST /advance-payment error:", error);
 
     if (error.code === 11000) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Payment number already exists" 
+      return NextResponse.json({
+        success: false,
+        message: "Payment number already exists"
       }, { status: 400 });
     }
 
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(err => err.message);
-      return NextResponse.json({ 
-        success: false, 
-        message: messages.join(', ') 
+      return NextResponse.json({
+        success: false,
+        message: messages.join(', ')
       }, { status: 400 });
     }
 
-    return NextResponse.json({ 
-      success: false, 
+    return NextResponse.json({
+      success: false,
       message: error.message || "Failed to create advance payment"
     }, { status: 500 });
   }
@@ -2124,8 +2124,8 @@ export async function PUT(req) {
     await connectDb();
     const { user, error, status } = await validateUser(req, 'edit');
     if (error) {
-      return NextResponse.json({ 
-        success: false, 
+      return NextResponse.json({
+        success: false,
         message: error,
         code: status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN'
       }, { status });
@@ -2133,34 +2133,34 @@ export async function PUT(req) {
 
     const body = await req.json();
     const { id } = body;
-    
+
     if (!id) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Advance payment ID is required" 
+      return NextResponse.json({
+        success: false,
+        message: "Advance payment ID is required"
       }, { status: 400 });
     }
 
     if (!isValidObjectId(id)) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Invalid advance payment ID format" 
+      return NextResponse.json({
+        success: false,
+        message: "Invalid advance payment ID format"
       }, { status: 400 });
     }
 
     const payment = await AdvancePayment.findOne(companyScopeFilter(user, { _id: id }));
 
     if (!payment) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Advance payment not found" 
+      return NextResponse.json({
+        success: false,
+        message: "Advance payment not found"
       }, { status: 404 });
     }
 
     if (payment.paymentDetails?.paymentStatus === 'Paid' || payment.paymentDetails?.paymentStatus === 'Completed') {
-      return NextResponse.json({ 
-        success: false, 
-        message: `Cannot update ${payment.paymentDetails.paymentStatus} payment` 
+      return NextResponse.json({
+        success: false,
+        message: `Cannot update ${payment.paymentDetails.paymentStatus} payment`
       }, { status: 400 });
     }
 
@@ -2194,8 +2194,8 @@ export async function PUT(req) {
 
     if (body.orderRows) {
       payment.orderRows = body.orderRows.map(row => ({
-        _id: row._id && isValidObjectId(row._id) 
-          ? new mongoose.Types.ObjectId(row._id) 
+        _id: row._id && isValidObjectId(row._id)
+          ? new mongoose.Types.ObjectId(row._id)
           : new mongoose.Types.ObjectId(),
         orderNo: row.orderNo || '',
         partyName: row.partyName || '',
@@ -2253,8 +2253,8 @@ export async function PUT(req) {
       payment.additions = {
         totalAddition: num(body.additions.totalAddition),
         items: (body.additions.items || []).map(item => ({
-          _id: item._id && isValidObjectId(item._id) 
-            ? new mongoose.Types.ObjectId(item._id) 
+          _id: item._id && isValidObjectId(item._id)
+            ? new mongoose.Types.ObjectId(item._id)
             : new mongoose.Types.ObjectId(),
           description: item.description || 'Addition',
           amount: num(item.amount)
@@ -2266,8 +2266,8 @@ export async function PUT(req) {
       payment.deductions = {
         totalDeduction: num(body.deductions.totalDeduction),
         items: (body.deductions.items || []).map(item => ({
-          _id: item._id && isValidObjectId(item._id) 
-            ? new mongoose.Types.ObjectId(item._id) 
+          _id: item._id && isValidObjectId(item._id)
+            ? new mongoose.Types.ObjectId(item._id)
             : new mongoose.Types.ObjectId(),
           description: item.description || 'Deduction',
           amount: num(item.amount)
@@ -2298,14 +2298,21 @@ export async function PUT(req) {
       }
     }
 
-    if (body.status) {
+    if (body.status && body.status !== payment.status) {
+      if (!hasPermission(user, 'approve')) {
+        return NextResponse.json({
+          success: false,
+          message: "Permission denied: approve action not allowed for Advance Payment.",
+          code: 'FORBIDDEN'
+        }, { status: 403 });
+      }
       payment.status = body.status;
     }
 
     await payment.save();
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       message: "Advance payment updated successfully",
       data: {
         _id: payment._id,
@@ -2317,8 +2324,8 @@ export async function PUT(req) {
 
   } catch (error) {
     console.error("❌ PUT /advance-payment error:", error);
-    return NextResponse.json({ 
-      success: false, 
+    return NextResponse.json({
+      success: false,
       message: error.message || "Failed to update advance payment"
     }, { status: 500 });
   }
@@ -2332,8 +2339,8 @@ export async function DELETE(req) {
     await connectDb();
     const { user, error, status } = await validateUser(req, 'delete');
     if (error) {
-      return NextResponse.json({ 
-        success: false, 
+      return NextResponse.json({
+        success: false,
         message: error,
         code: status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN'
       }, { status });
@@ -2341,34 +2348,34 @@ export async function DELETE(req) {
 
     const url = new URL(req.url);
     const id = url.searchParams.get("id");
-    
+
     if (!id || !isValidObjectId(id)) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Valid ID is required" 
+      return NextResponse.json({
+        success: false,
+        message: "Valid ID is required"
       }, { status: 400 });
     }
 
     const payment = await AdvancePayment.findOne(companyScopeFilter(user, { _id: id }));
 
     if (!payment) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Advance payment not found" 
+      return NextResponse.json({
+        success: false,
+        message: "Advance payment not found"
       }, { status: 404 });
     }
 
     if (payment.paymentDetails?.paymentStatus === 'Paid' || payment.paymentDetails?.paymentStatus === 'Completed') {
-      return NextResponse.json({ 
-        success: false, 
-        message: `Cannot delete ${payment.paymentDetails.paymentStatus} payment` 
+      return NextResponse.json({
+        success: false,
+        message: `Cannot delete ${payment.paymentDetails.paymentStatus} payment`
       }, { status: 400 });
     }
 
     await AdvancePayment.deleteOne(companyScopeFilter(user, { _id: id }));
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       message: "Advance payment deleted successfully",
       data: {
         paymentNo: payment.paymentNo
@@ -2377,8 +2384,8 @@ export async function DELETE(req) {
 
   } catch (error) {
     console.error("❌ DELETE /advance-payment error:", error);
-    return NextResponse.json({ 
-      success: false, 
+    return NextResponse.json({
+      success: false,
       message: error.message || "Failed to delete advance payment"
     }, { status: 500 });
   }
@@ -2393,8 +2400,8 @@ export async function PATCH(req) {
     await connectDb();
     const { user, error, status } = await validateUser(req, 'approve');
     if (error) {
-      return NextResponse.json({ 
-        success: false, 
+      return NextResponse.json({
+        success: false,
         message: error,
         code: status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN'
       }, { status });
@@ -2403,7 +2410,7 @@ export async function PATCH(req) {
     const url = new URL(req.url);
     const id = url.searchParams.get("id");
     const action = url.searchParams.get("action");
-    
+
     // Get body for actions that need additional data
     let body = {};
     try {
@@ -2411,20 +2418,20 @@ export async function PATCH(req) {
     } catch (e) {
       // Body might be empty for some actions
     }
-    
+
     if (!id || !isValidObjectId(id)) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Valid ID is required" 
+      return NextResponse.json({
+        success: false,
+        message: "Valid ID is required"
       }, { status: 400 });
     }
 
     const payment = await AdvancePayment.findOne(companyScopeFilter(user, { _id: id }));
 
     if (!payment) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Advance payment not found" 
+      return NextResponse.json({
+        success: false,
+        message: "Advance payment not found"
       }, { status: 404 });
     }
 
@@ -2451,8 +2458,8 @@ export async function PATCH(req) {
       payment.status = 'Paid';
       await payment.save();
 
-      return NextResponse.json({ 
-        success: true, 
+      return NextResponse.json({
+        success: true,
         message: "Payment queue generated successfully",
         data: {
           _id: payment._id,
@@ -2468,18 +2475,18 @@ export async function PATCH(req) {
     // Approve action
     if (action === 'approve') {
       const newStatus = body.paymentStatus || 'Approved';
-      
+
       payment.paymentDetails.paymentStatus = newStatus;
       payment.status = newStatus;
-      
+
       if (body.remarks !== undefined) {
         payment.paymentDetails.remarks = body.remarks;
       }
-      
+
       await payment.save();
-      
-      return NextResponse.json({ 
-        success: true, 
+
+      return NextResponse.json({
+        success: true,
         message: `Payment ${newStatus} successfully`,
         data: {
           _id: payment._id,
@@ -2495,15 +2502,15 @@ export async function PATCH(req) {
     if (action === 'reject') {
       payment.paymentDetails.paymentStatus = 'Rejected';
       payment.status = 'Rejected';
-      
+
       if (body.remarks !== undefined) {
         payment.paymentDetails.remarks = body.remarks;
       }
-      
+
       await payment.save();
-      
-      return NextResponse.json({ 
-        success: true, 
+
+      return NextResponse.json({
+        success: true,
         message: "Payment rejected successfully",
         data: {
           _id: payment._id,
@@ -2521,15 +2528,15 @@ export async function PATCH(req) {
         payment.paymentDetails.paymentStatus = body.paymentStatus;
         payment.status = body.paymentStatus;
       }
-      
+
       if (body.remarks !== undefined) {
         payment.paymentDetails.remarks = body.remarks;
       }
-      
+
       await payment.save();
-      
-      return NextResponse.json({ 
-        success: true, 
+
+      return NextResponse.json({
+        success: true,
         message: `Payment status updated to ${payment.paymentDetails.paymentStatus}`,
         data: {
           _id: payment._id,
@@ -2541,15 +2548,15 @@ export async function PATCH(req) {
       }, { status: 200 });
     }
 
-    return NextResponse.json({ 
-      success: false, 
-      message: "Invalid action. Allowed: generate-queue, approve, reject, update-status" 
+    return NextResponse.json({
+      success: false,
+      message: "Invalid action. Allowed: generate-queue, approve, reject, update-status"
     }, { status: 400 });
 
   } catch (error) {
     console.error("❌ PATCH /advance-payment error:", error);
-    return NextResponse.json({ 
-      success: false, 
+    return NextResponse.json({
+      success: false,
       message: error.message || "Failed to process request"
     }, { status: 500 });
   }

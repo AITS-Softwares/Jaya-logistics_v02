@@ -1755,6 +1755,7 @@
 import { useMemo, useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { LoadingInfoInvoiceViewer } from "@/components/LoadingInfoLRViewer";
+import LoadingInfoLRViewer from "@/components/LoadingInfoLRViewer";
 
 /* =======================
   HELPERS / CONSTANTS
@@ -3465,13 +3466,7 @@ export default function ApproveLoadingPanel() {
               <div className="col-span-12 md:col-span-4">
                 <div className="bg-white p-4 rounded-xl border border-slate-200">
                   <h3 className="text-sm font-bold text-slate-800 mb-2">Consignment Note (LR)</h3>
-                  <button
-                    onClick={() => window.open(`/api/loading-panel/${panelId}/generate-lr`, '_blank')}
-                    className="w-full rounded-lg bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700"
-                  >
-                    Generate LR
-                  </button>
-                  <p className="text-xs text-slate-500 mt-2">Click to generate Consignment Note (LR)</p>
+                  <LoadingInfoLRViewer panelId={panelId} />
                 </div>
               </div>
               <div className="col-span-12 md:col-span-4">
