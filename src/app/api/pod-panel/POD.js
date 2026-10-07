@@ -62,7 +62,7 @@
 //     required: true,
 //     index: true
 //   },
-  
+
 //   // References
 //   purchaseNo: {
 //     type: String,
@@ -73,7 +73,7 @@
 //     type: String,
 //     default: ''
 //   },
-  
+
 //   // Header Information
 //   header: {
 //     podNo: { type: String, default: '' },
@@ -156,24 +156,24 @@
 // podSchema.pre('save', function(next) {
 //   // Calculate total quantity from products
 //   this.totalQuantity = this.products.reduce((sum, p) => sum + (parseFloat(p.totalPkgs) || 0), 0);
-  
+
 //   // Calculate total actual weight from products
 //   this.totalActualWt = this.products.reduce((sum, p) => sum + (parseFloat(p.actualWt) || 0), 0);
-  
+
 //   // Calculate POD deduction from products value
 //   this.podDeduction = this.products.reduce((sum, p) => sum + (parseFloat(p.value) || 0), 0);
-  
+
 //   // Calculate final balance
 //   const total = this.vendorFinancial?.total || 0;
 //   const advance = this.vendorFinancial?.advance || 0;
 //   const poDeduction = this.vendorFinancial?.poDeduction || 0;
 //   this.finalBalance = total - advance - poDeduction - this.podDeduction;
-  
+
 //   // Update header with POD number
 //   if (this.header) {
 //     this.header.podNo = this.podNo;
 //   }
-  
+
 //   next();
 // });
 
@@ -243,7 +243,7 @@ const podSchema = new mongoose.Schema({
     required: true,
     index: true
   },
-  
+
   // References
   purchaseNo: {
     type: String,
@@ -254,7 +254,7 @@ const podSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
-  
+
   // ✅ COMPANY INFORMATION - ADDED
   companyId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -283,7 +283,7 @@ const podSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
-  
+
   // Header Information
   header: {
     podNo: { type: String, default: '' },
@@ -340,6 +340,10 @@ const podSchema = new mongoose.Schema({
   // Remarks
   remarks: { type: String, default: '' },
 
+  // Vehicle Unloaded & Remarks card
+  vehicleUnloadedDate: { type: String, default: '' },
+  unloadRemarks: { type: String, default: '' },
+
   // Calculated Totals
   totalQuantity: { type: Number, default: 0 },
   totalActualWt: { type: Number, default: 0 },
@@ -359,22 +363,22 @@ const podSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Pre-save middleware to calculate totals
-podSchema.pre('save', function(next) {
+podSchema.pre('save', function (next) {
   // Calculate total quantity from products
   this.totalQuantity = this.products.reduce((sum, p) => sum + (parseFloat(p.totalPkgs) || 0), 0);
-  
+
   // Calculate total actual weight from products
   this.totalActualWt = this.products.reduce((sum, p) => sum + (parseFloat(p.actualWt) || 0), 0);
-  
+
   // Calculate POD deduction from products value
   this.podDeduction = this.products.reduce((sum, p) => sum + (parseFloat(p.value) || 0), 0);
-  
+
   // Calculate final balance
   const total = this.vendorFinancial?.total || 0;
   const advance = this.vendorFinancial?.advance || 0;
   const poDeduction = this.vendorFinancial?.poDeduction || 0;
   this.finalBalance = total - advance - poDeduction - this.podDeduction;
-  
+
   // Update header with POD number and company info
   if (this.header) {
     this.header.podNo = this.podNo;
@@ -383,7 +387,7 @@ podSchema.pre('save', function(next) {
     this.header.subCompanyName = this.subCompanyName || '';
     this.header.subCompanyCode = this.subCompanyCode || '';
   }
-  
+
   next();
 });
 

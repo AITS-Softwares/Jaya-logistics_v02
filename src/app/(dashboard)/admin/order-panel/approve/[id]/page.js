@@ -875,12 +875,14 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { usePermission } from "../../../hooks/usePermission";
 
 /** =========================
  * CONSTANTS
  ========================= */
 const STATUS_OPTIONS = ["Open", "Hold", "Cancelled"];
-const PANEL_STATUS_OPTIONS = ["Draft", "Submitted", "Approved", "Completed", "Cancelled", "Rejected"];
+const PANEL_STATUS_OPTIONS = ["Approved", "Rejected", "Completed"];
+const ACTION_BY_STATUS = { Approved: 'approve', Rejected: 'reject', Completed: 'complete' };
 const ORDER_TYPES = ["Sales", "STO Order", "Export", "Import"];
 const DELIVERY_OPTIONS = ["Urgent", "Normal", "Express", "Scheduled"];
 
@@ -991,14 +993,14 @@ function OrdersTable({ rows }) {
     { key: "country", label: "Country" },
     { key: "from", label: "From" },
     { key: "to", label: "To" },
-    { key: "locationRate", label: "Location Rate" },
+    // { key: "locationRate", label: "Location Rate" },
     { key: "weight", label: "Weight (MT)" },
-    { key: "rate", label: "Rate (₹)" },
-    { key: "totalAmount", label: "Total Amount" },
-    { key: "collectionCharges", label: "Collection Charges" },
-    { key: "cancellationCharges", label: "Cancellation Charges" },
-    { key: "loadingCharges", label: "Loading Charges" },
-    { key: "otherCharges", label: "Other Charges" },
+    // { key: "rate", label: "Rate (₹)" },
+    // { key: "totalAmount", label: "Total Amount" },
+    // { key: "collectionCharges", label: "Collection Charges" },
+    // { key: "cancellationCharges", label: "Cancellation Charges" },
+    // { key: "loadingCharges", label: "Loading Charges" },
+    // { key: "otherCharges", label: "Other Charges" },
   ];
 
   const renderLocalStatus = (row) => {
@@ -1046,14 +1048,14 @@ function OrdersTable({ rows }) {
                 <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.country || '-'}</td>
                 <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.fromName || row.from || '-'}</td>
                 <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.toName || row.to || '-'}</td>
-                <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.locationRate || '-'}</td>
+                {/* <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.locationRate || '-'}</td> */}
                 <td className="border border-yellow-300 px-2 py-2 text-slate-700 text-right">{row.weight || '0'}</td>
-                <td className="border border-yellow-300 px-2 py-2 text-slate-700 text-right">₹{num(row.rate).toLocaleString()}</td>
-                <td className="border border-yellow-300 px-2 py-2 text-slate-700 text-right font-medium">₹{num(row.totalAmount).toLocaleString()}</td>
-                <td className="border border-yellow-300 px-2 py-2 text-slate-700 text-right">₹{num(row.collectionCharges).toLocaleString()}</td>
-                <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.cancellationCharges || '-'}</td>
-                <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.loadingCharges || '-'}</td>
-                <td className="border border-yellow-300 px-2 py-2 text-slate-700 text-right">₹{num(row.otherCharges).toLocaleString()}</td>
+                {/* <td className="border border-yellow-300 px-2 py-2 text-slate-700 text-right">₹{num(row.rate).toLocaleString()}</td> */}
+                {/* <td className="border border-yellow-300 px-2 py-2 text-slate-700 text-right font-medium">₹{num(row.totalAmount).toLocaleString()}</td> */}
+                {/* <td className="border border-yellow-300 px-2 py-2 text-slate-700 text-right">₹{num(row.collectionCharges).toLocaleString()}</td> */}
+                {/* <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.cancellationCharges || '-'}</td> */}
+                {/* <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.loadingCharges || '-'}</td> */}
+                {/* <td className="border border-yellow-300 px-2 py-2 text-slate-700 text-right">₹{num(row.otherCharges).toLocaleString()}</td> */}
               </tr>
             ))
           ) : (
@@ -1236,6 +1238,9 @@ export default function ApproveOrderPanel() {
   const params = useParams();
   const orderId = params.id;
 
+  const { hasPermission } = usePermission();
+  const canApproveHere = hasPermission("Order Panel", "approve");
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -1331,18 +1336,11 @@ export default function ApproveOrderPanel() {
         });
       }
 
-      // Set approval
-      if (order.approval) {
-        setApproval({
-          status: order.approval.status || order.panelStatus || "",
-          remarks: order.approval.remarks || "",
-        });
-      } else {
-        setApproval({
-          status: order.panelStatus || "",
-          remarks: "",
-        });
-      }
+      // Set approval (only Approved / Rejected / Completed are valid choices)
+      setApproval({
+        status: PANEL_STATUS_OPTIONS.includes(order.panelStatus) ? order.panelStatus : "",
+        remarks: order.approvalRemarks || "",
+      });
 
     } catch (error) {
       console.error('Error fetching order:', error);
@@ -1354,8 +1352,19 @@ export default function ApproveOrderPanel() {
   };
 
   const handleApprove = async () => {
-    if (!approval.status) {
-      alert("Please select approval status");
+    if (!canApproveHere) {
+      alert("You don't have permission to approve orders");
+      return;
+    }
+
+    const action = ACTION_BY_STATUS[approval.status];
+    if (!action) {
+      alert("Please select Approved, Rejected or Completed");
+      return;
+    }
+
+    if (action === 'reject' && !approval.remarks.trim()) {
+      alert("Please enter remarks for rejection");
       return;
     }
 
@@ -1364,17 +1373,15 @@ export default function ApproveOrderPanel() {
       const token = localStorage.getItem('token');
 
       const res = await fetch('/api/order-panel', {
-        method: 'PUT',
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           id: orderId,
-          panelStatus: approval.status,
-          approvalRemarks: approval.remarks,
-          approvedBy: 'Approver', // This would come from the user context
-          approvedAt: new Date().toISOString()
+          action,
+          remarks: approval.remarks,
         }),
       });
 
@@ -1450,8 +1457,8 @@ export default function ApproveOrderPanel() {
           <div className="flex items-center gap-3">
             <button
               onClick={handleApprove}
-              disabled={saving}
-              className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${saving
+              disabled={saving || !canApproveHere}
+              className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${(saving || !canApproveHere)
                 ? 'bg-gray-400 cursor-not-allowed'
                 : 'bg-yellow-600 hover:bg-yellow-700'
                 }`}

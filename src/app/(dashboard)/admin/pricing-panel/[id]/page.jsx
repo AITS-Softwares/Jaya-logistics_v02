@@ -70,23 +70,23 @@
 //     setError(null);
 //     try {
 //       const token = localStorage.getItem('token');
-      
+
 //       const vnRes = await fetch('/api/vehicle-negotiation', {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       if (!vnRes.ok) {
 //         throw new Error(`HTTP error! status: ${vnRes.status}`);
 //       }
-      
+
 //       const vnData = await vnRes.json();
-      
+
 //       const pricingRes = await fetch('/api/pricing-panel?format=table', {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       const pricingData = await pricingRes.json();
-      
+
 //       const usedVnns = new Set();
 //       if (pricingData.success && Array.isArray(pricingData.data)) {
 //         pricingData.data.forEach(item => {
@@ -97,7 +97,7 @@
 //           }
 //         });
 //       }
-      
+
 //       if (vnData.success && Array.isArray(vnData.data)) {
 //         const availableVNs = vnData.data.filter(vn => 
 //           !usedVnns.has(vn.vnnNo) || vn.vnnNo === currentVnn
@@ -124,13 +124,13 @@
 //       const res = await fetch(`/api/vehicle-negotiation?id=${id}`, {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       if (!res.ok) {
 //         throw new Error(`HTTP error! status: ${res.status}`);
 //       }
-      
+
 //       const data = await res.json();
-      
+
 //       if (data.success && data.data) {
 //         return data.data;
 //       } else {
@@ -175,7 +175,7 @@
 //       const res = await fetch('/api/rate-master', {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       const data = await res.json();
 //       if (data.success && Array.isArray(data.data)) {
 //         const processedData = data.data.map(rm => ({
@@ -449,7 +449,7 @@
 //   const handleSearch = (query) => {
 //     if (readOnly) return;
 //     setSearchQuery(query);
-    
+
 //     if (!query.trim()) {
 //       setFilteredItems(items);
 //     } else {
@@ -460,7 +460,7 @@
 //       );
 //       setFilteredItems(filtered);
 //     }
-    
+
 //     if (selectedItem && query !== getDisplayValue(selectedItem)) {
 //       setSelectedItem(null);
 //       onSelect?.(null);
@@ -492,7 +492,7 @@
 //         autoComplete="off"
 //         readOnly={readOnly}
 //       />
-      
+
 //       {showDropdown && !readOnly && (
 //         <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
 //           {filteredItems.length > 0 ? (
@@ -552,13 +552,13 @@
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
 //       const data = await res.json();
-      
+
 //       if (data.success && Array.isArray(data.data)) {
 //         const pricingRes = await fetch('/api/pricing-panel?format=table', {
 //           headers: { Authorization: `Bearer ${token}` },
 //         });
 //         const pricingData = await pricingRes.json();
-        
+
 //         const usedVnns = new Set();
 //         if (pricingData.success && Array.isArray(pricingData.data)) {
 //           pricingData.data.forEach(item => {
@@ -569,7 +569,7 @@
 //             }
 //           });
 //         }
-        
+
 //         const availableVNs = data.data.filter(vn => 
 //           !usedVnns.has(vn.vnnNo) || vn.vnnNo === currentVnn
 //         );
@@ -606,13 +606,13 @@
 //     if (readOnly) return;
 //     setSearchQuery(`${vn.vnnNo} - ${vn.customerName || ''}`);
 //     setShowDropdown(false);
-    
+
 //     try {
 //       const token = localStorage.getItem('token');
 //       const res = await fetch(`/api/vehicle-negotiation?id=${vn._id}`, {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       if (res.ok) {
 //         const data = await res.json();
 //         if (data.success && data.data) {
@@ -663,7 +663,7 @@
 //         placeholder={placeholder}
 //         autoComplete="off"
 //       />
-      
+
 //       {showDropdown && !readOnly && (
 //         <div 
 //           ref={dropdownRef}
@@ -742,11 +742,11 @@
 //     if (!selectedRateMaster) {
 //       return [];
 //     }
-    
+
 //     if (availableLocationNames.length === 0) {
 //       return [];
 //     }
-    
+
 //     return (locations || []).filter(loc => 
 //       availableLocationNames.includes(loc.name)
 //     );
@@ -832,7 +832,7 @@
 //           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
 //         </svg>
 //       </div>
-      
+
 //       {showDropdown && !readOnly && selectedRateMaster && filteredLocationsByRateMaster.length > 0 && (
 //         <div className="absolute z-[9999] w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg overflow-y-auto max-h-60">
 //           <div className="sticky top-0 bg-gray-50 px-3 py-2 text-xs font-semibold text-slate-600 border-b">
@@ -878,7 +878,7 @@
 
 //   const filteredRateMasters = useMemo(() => {
 //     let filtered = rateMasters || [];
-    
+
 //     if (branchId) {
 //       filtered = filtered.filter(rm => {
 //         const rmBranchId = rm.branchId?._id || rm.branchId;
@@ -887,7 +887,7 @@
 //     } else {
 //       return [];
 //     }
-    
+
 //     if (customerId) {
 //       filtered = filtered.filter(rm => {
 //         const rmCustomerId = rm.customerId?._id || rm.customerId;
@@ -896,7 +896,7 @@
 //     } else {
 //       return [];
 //     }
-    
+
 //     return filtered;
 //   }, [rateMasters, branchId, customerId]);
 
@@ -963,7 +963,7 @@
 //           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
 //         </svg>
 //       </div>
-      
+
 //       {showDropdown && !readOnly && filteredRateMasters.length > 0 && (
 //         <div className="absolute z-[9999] w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg overflow-y-auto max-h-60">
 //           <div className="sticky top-0 bg-gray-50 px-3 py-2 text-xs font-semibold text-slate-600 border-b">
@@ -1107,7 +1107,7 @@
 //     onChange(rowId, 'districtName', '');
 //     onChange(rowId, 'talukaId', '');
 //     onChange(rowId, 'talukaName', '');
-    
+
 //     if (stateId) {
 //       await onFetchDistricts(stateId);
 //     }
@@ -1118,7 +1118,7 @@
 //     onChange(rowId, 'districtName', districtName);
 //     onChange(rowId, 'talukaId', '');
 //     onChange(rowId, 'talukaName', '');
-    
+
 //     if (districtId) {
 //       await onFetchTalukas(districtId);
 //     }
@@ -1139,13 +1139,13 @@
 
 //   const handleLocationRateSelect = (rowId, locationName) => {
 //     onChange(rowId, 'locationRate', locationName);
-    
+
 //     const currentRow = rows.find(r => r._id === rowId);
 //     if (currentRow && currentRow.selectedRateMaster && currentRow.weight) {
 //       const locationRate = currentRow.selectedRateMaster.locationRates?.find(lr => 
 //         lr.locationName === locationName
 //       );
-      
+
 //       if (locationRate) {
 //         const weightNum = parseFloat(currentRow.weight);
 //         if (weightNum >= locationRate.fromQty && weightNum <= locationRate.toQty) {
@@ -1160,13 +1160,13 @@
 
 //   const handleWeightChange = (rowId, weight) => {
 //     onChange(rowId, 'weight', weight);
-    
+
 //     const currentRow = rows.find(r => r._id === rowId);
 //     if (currentRow && currentRow.selectedRateMaster && currentRow.locationRate) {
 //       const locationRate = currentRow.selectedRateMaster.locationRates?.find(lr => 
 //         lr.locationName === currentRow.locationRate
 //       );
-      
+
 //       if (locationRate) {
 //         const weightNum = parseFloat(weight);
 //         if (weightNum >= locationRate.fromQty && weightNum <= locationRate.toQty) {
@@ -1208,7 +1208,7 @@
 //             const districtOptions = districts[row.stateId] || [];
 //             const talukaOptions = talukas[row.districtId] || [];
 //             const currentCustomerId = row.customerId || headerCustomerId;
-            
+
 //             return (
 //               <tr key={row._id} className="hover:bg-yellow-50 even:bg-slate-50">
 //                 <td className="border border-yellow-300 px-1 py-1">
@@ -1525,7 +1525,7 @@
 //   const [saving, setSaving] = useState(false);
 //   const [saveError, setSaveError] = useState(null);
 //   const [saveSuccess, setSaveSuccess] = useState(false);
-  
+
 //   const locationData = useLocationData();
 //   const customerSearch = useCustomerSearch();
 //   const rateMasterSearch = useRateMasterSearch();
@@ -1579,35 +1579,35 @@
 //     setFetchLoading(true);
 //     try {
 //       const token = localStorage.getItem('token');
-      
+
 //       const res = await fetch(`/api/pricing-panel?id=${panelId}`, {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       const data = await res.json();
-      
+
 //       if (!data.success) {
 //         throw new Error(data.message || 'Failed to fetch pricing panel');
 //       }
 
 //       const panel = data.data;
-      
+
 //       // Get VNN from orders
 //       if (panel.orders && panel.orders.length > 0) {
 //         const firstOrder = panel.orders[0];
 //         let vnnValue = null;
-        
+
 //         if (firstOrder.vnnNumber) {
 //           vnnValue = firstOrder.vnnNumber;
 //         } else if (firstOrder.vnn) {
 //           vnnValue = firstOrder.vnn;
 //         }
-        
+
 //         if (vnnValue) {
 //           setCurrentVnn(vnnValue);
 //         }
 //       }
-      
+
 //       setHeader({
 //         pricingSerialNo: panel.pricingSerialNo || "",
 //         branch: panel.branch || "",
@@ -1796,7 +1796,7 @@
 //       localStatus: order.localStatus || "unknown", // ✅ ADD THIS
 //       localStatusLabel: order.localStatusLabel || "Unknown" // ✅ ADD THIS
 //     }));
-    
+
 //     setOrders(newOrders);
 //   }
 // };
@@ -1841,7 +1841,7 @@
 //       alert("Please select a branch");
 //       return;
 //     }
-    
+
 //     const hasInvalidOrders = orders.some(order => !order.orderNo);
 //     if (hasInvalidOrders) {
 //       alert("Please enter Order No for all order rows");
@@ -1936,11 +1936,11 @@
 
 //       setSaveSuccess(true);
 //       alert(`✅ Pricing panel updated successfully!\nPricing Serial No: ${header.pricingSerialNo}`);
-      
+
 //       setTimeout(() => {
 //         router.push('/admin/pricing-panel');
 //       }, 2000);
-      
+
 //     } catch (error) {
 //       console.error('Error updating pricing panel:', error);
 //       setSaveError(error.message || 'Failed to update pricing panel');
@@ -2046,7 +2046,7 @@
 //                 </div>
 //               )}
 //             </div>
-            
+
 //             <div className="col-span-12 md:col-span-3">
 //               <label className="text-xs font-bold text-slate-600">Branch *</label>
 //               <SearchableDropdown
@@ -2083,7 +2083,7 @@
 //               onChange={(v) => setHeader((p) => ({ ...p, date: v }))}
 //               readOnly={true}
 //             />
-            
+
 //             <div className="col-span-12 md:col-span-3 relative">
 //               <label className="text-xs font-bold text-slate-600">Party Name</label>
 //               <input
@@ -2106,7 +2106,7 @@
 //               <div className="text-sm font-bold text-slate-700">
 //                 Orders - {billing.billingType} - {orders.length} row{orders.length !== 1 ? 's' : ''}
 //               </div>
-              
+
 //               {billing.billingType === "Multi - Order" && !selectedVehicleNegotiation && (
 //                 <button
 //                   onClick={addOrder}
@@ -2116,7 +2116,7 @@
 //                 </button>
 //               )}
 //             </div>
-            
+
 //             <OrdersTable
 //               rows={orders}
 //               onChange={updateOrder}
@@ -2267,23 +2267,23 @@ function useVehicleNegotiationSearch(currentVnn) {
     setError(null);
     try {
       const token = localStorage.getItem('token');
-      
+
       const vnRes = await fetch('/api/vehicle-negotiation', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       if (!vnRes.ok) {
         throw new Error(`HTTP error! status: ${vnRes.status}`);
       }
-      
+
       const vnData = await vnRes.json();
-      
+
       const pricingRes = await fetch('/api/pricing-panel?format=table', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       const pricingData = await pricingRes.json();
-      
+
       const usedVnns = new Set();
       if (pricingData.success && Array.isArray(pricingData.data)) {
         pricingData.data.forEach(item => {
@@ -2294,9 +2294,9 @@ function useVehicleNegotiationSearch(currentVnn) {
           }
         });
       }
-      
+
       if (vnData.success && Array.isArray(vnData.data)) {
-        const availableVNs = vnData.data.filter(vn => 
+        const availableVNs = vnData.data.filter(vn =>
           !usedVnns.has(vn.vnnNo) || vn.vnnNo === currentVnn
         );
         setVehicleNegotiations(availableVNs);
@@ -2321,13 +2321,13 @@ function useVehicleNegotiationSearch(currentVnn) {
       const res = await fetch(`/api/vehicle-negotiation?id=${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       if (!res.ok) {
         throw new Error(`HTTP error! status: ${res.status}`);
       }
-      
+
       const data = await res.json();
-      
+
       if (data.success && data.data) {
         return data.data;
       } else {
@@ -2347,12 +2347,12 @@ function useVehicleNegotiationSearch(currentVnn) {
     searchVehicleNegotiations();
   }, [currentVnn]);
 
-  return { 
-    vehicleNegotiations, 
-    loading, 
-    error, 
-    searchVehicleNegotiations, 
-    getVehicleNegotiationById 
+  return {
+    vehicleNegotiations,
+    loading,
+    error,
+    searchVehicleNegotiations,
+    getVehicleNegotiationById
   };
 }
 
@@ -2372,7 +2372,7 @@ function useRateMasterSearch() {
       const res = await fetch('/api/pricing-panel/reference-data', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       const data = await res.json();
       const masters = data?.data?.rateMasters;
       if (data.success && Array.isArray(masters)) {
@@ -2579,9 +2579,8 @@ function Input({ label, value, onChange, col = "", type = "text", readOnly = fal
         onChange={(e) => onChange?.(e.target.value)}
         readOnly={readOnly}
         placeholder={placeholder}
-        className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${
-          readOnly ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-        }`}
+        className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${readOnly ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+          }`}
       />
     </div>
   );
@@ -2595,9 +2594,8 @@ function Select({ label, value, onChange, options = [], col = "", readOnly = fal
         value={value || ""}
         onChange={(e) => onChange?.(e.target.value)}
         disabled={readOnly}
-        className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${
-          readOnly ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-        }`}
+        className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${readOnly ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+          }`}
       >
         <option value="">Select {label}</option>
         {options.map((o) => (
@@ -2613,10 +2611,10 @@ function Select({ label, value, onChange, options = [], col = "", readOnly = fal
 /* =========================
   SEARCHABLE DROPDOWN COMPONENTS
 ========================= */
-function SearchableDropdown({ 
-  items, 
-  selectedId, 
-  onSelect, 
+function SearchableDropdown({
+  items,
+  selectedId,
+  onSelect,
   placeholder = "Search...",
   required = false,
   displayField = 'name',
@@ -2659,7 +2657,7 @@ function SearchableDropdown({
   const handleSearch = (query) => {
     if (readOnly) return;
     setSearchQuery(query);
-    
+
     if (!query.trim()) {
       setFilteredItems(items);
     } else {
@@ -2670,7 +2668,7 @@ function SearchableDropdown({
       );
       setFilteredItems(filtered);
     }
-    
+
     if (selectedItem && query !== getDisplayValue(selectedItem)) {
       setSelectedItem(null);
       onSelect?.(null);
@@ -2693,16 +2691,15 @@ function SearchableDropdown({
         onChange={(e) => handleSearch(e.target.value)}
         onFocus={() => !readOnly && setShowDropdown(true)}
         onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
-        className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${
-          readOnly ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-        }`}
+        className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${readOnly ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+          }`}
         placeholder={placeholder}
         required={required}
         disabled={disabled || readOnly}
         autoComplete="off"
         readOnly={readOnly}
       />
-      
+
       {showDropdown && !readOnly && (
         <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
           {filteredItems.length > 0 ? (
@@ -2710,9 +2707,8 @@ function SearchableDropdown({
               <div
                 key={item._id}
                 onMouseDown={() => handleSelectItem(item)}
-                className={`p-3 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors ${
-                  selectedItem?._id === item._id ? 'bg-sky-50' : ''
-                }`}
+                className={`p-3 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors ${selectedItem?._id === item._id ? 'bg-sky-50' : ''
+                  }`}
               >
                 <div className="font-medium text-slate-800">
                   {item[displayField] || item.customerName}
@@ -2726,8 +2722,8 @@ function SearchableDropdown({
             ))
           ) : (
             <div className="p-3 text-center text-sm text-slate-500">
-              {searchQuery.trim() ? 
-                `No items found for "${searchQuery}"` : 
+              {searchQuery.trim() ?
+                `No items found for "${searchQuery}"` :
                 "No items available"
               }
             </div>
@@ -2741,7 +2737,7 @@ function SearchableDropdown({
 /* =========================
   VEHICLE NEGOTIATION DROPDOWN
 ========================= */
-function VehicleNegotiationHeaderDropdown({ 
+function VehicleNegotiationHeaderDropdown({
   onSelect,
   placeholder = "Search vehicle negotiation...",
   currentVnn = null,
@@ -2762,7 +2758,7 @@ function VehicleNegotiationHeaderDropdown({
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-      
+
       if (res.ok && data.success && Array.isArray(data.data?.vehicleNegotiations)) {
         setVnList(data.data.vehicleNegotiations);
       } else {
@@ -2815,7 +2811,7 @@ function VehicleNegotiationHeaderDropdown({
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target) &&
-          inputRef.current && !inputRef.current.contains(event.target)) {
+        inputRef.current && !inputRef.current.contains(event.target)) {
         setShowDropdown(false);
       }
     };
@@ -2836,15 +2832,14 @@ function VehicleNegotiationHeaderDropdown({
         onClick={() => setShowDropdown(true)}
         onFocus={() => setShowDropdown(true)}
         readOnly={readOnly}
-        className={`w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${
-          readOnly ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-        }`}
+        className={`w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${readOnly ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+          }`}
         placeholder={placeholder}
         autoComplete="off"
       />
-      
+
       {showDropdown && !readOnly && (
-        <div 
+        <div
           ref={dropdownRef}
           className="absolute z-[9999] w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg overflow-y-auto"
           style={{ maxHeight: '300px' }}
@@ -2859,9 +2854,8 @@ function VehicleNegotiationHeaderDropdown({
               <div
                 key={vn._id}
                 onClick={() => handleSelectVN(vn)}
-                className={`p-3 hover:bg-yellow-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors ${
-                  vn.vnnNo === currentVnn ? 'bg-blue-50' : ''
-                }`}
+                className={`p-3 hover:bg-yellow-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors ${vn.vnnNo === currentVnn ? 'bg-blue-50' : ''
+                  }`}
               >
                 <div className="font-semibold text-slate-800">
                   {vn.vnnNo}
@@ -2882,8 +2876,8 @@ function VehicleNegotiationHeaderDropdown({
             ))
           ) : (
             <div className="p-4 text-center text-sm text-slate-500">
-              {searchQuery.trim() ? 
-                `No results found for "${searchQuery}"` : 
+              {searchQuery.trim() ?
+                `No results found for "${searchQuery}"` :
                 "No vehicle negotiations available"
               }
             </div>
@@ -2897,10 +2891,10 @@ function VehicleNegotiationHeaderDropdown({
 /* =========================
   LOCATION RATE DROPDOWN
 ========================= */
-function LocationRateDropdown({ 
-  locations, 
-  selectedName, 
-  onSelect, 
+function LocationRateDropdown({
+  locations,
+  selectedName,
+  onSelect,
   placeholder = "Select Location...",
   readOnly = false,
   selectedRateMaster = null,
@@ -2929,11 +2923,11 @@ function LocationRateDropdown({
     if (!selectedRateMaster) {
       return [];
     }
-    
+
     if (availableLocationNames.length === 0) {
       return [];
     }
-    
+
     return allowAllLocations
       ? (locations || [])
       : (locations || []).filter(loc => availableLocationNames.includes(loc.name));
@@ -2983,7 +2977,7 @@ function LocationRateDropdown({
 
   const searchedLocations = useMemo(() => {
     if (!searchQuery.trim()) return filteredLocationsByRateMaster;
-    return filteredLocationsByRateMaster.filter(loc => 
+    return filteredLocationsByRateMaster.filter(loc =>
       loc.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [filteredLocationsByRateMaster, searchQuery]);
@@ -3061,9 +3055,8 @@ function LocationRateDropdown({
         onChange={(e) => { if (!selectedItem) setSearchQuery(e.target.value); }}
         onFocus={handleInputFocus}
         onKeyDown={handleKeyDown}
-        className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${
-          (readOnly || !selectedRateMaster || filteredLocationsByRateMaster.length === 0) ? 'bg-slate-50 cursor-not-allowed' : 'bg-white cursor-pointer'
-        }`}
+        className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${(readOnly || !selectedRateMaster || filteredLocationsByRateMaster.length === 0) ? 'bg-slate-50 cursor-not-allowed' : 'bg-white cursor-pointer'
+          }`}
         placeholder={getPlaceholder()}
         readOnly={readOnly || !!selectedItem || !selectedRateMaster || filteredLocationsByRateMaster.length === 0}
         autoComplete="off"
@@ -3074,7 +3067,7 @@ function LocationRateDropdown({
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </div>
-      
+
       {showDropdown && !readOnly && selectedRateMaster && filteredLocationsByRateMaster.length > 0 && menuPosition && typeof document !== 'undefined' && createPortal(
         <div ref={menuRef} role="listbox" className="fixed z-[10000] bg-white border border-slate-200 rounded-lg shadow-xl overflow-y-auto" style={{ top: menuPosition.top, left: menuPosition.left, width: menuPosition.width, maxHeight: menuPosition.maxHeight }}>
           <div className="sticky top-0 bg-gray-50 px-3 py-2 text-xs font-semibold text-slate-600 border-b">
@@ -3087,9 +3080,8 @@ function LocationRateDropdown({
               aria-selected={activeIndex === index}
               onMouseDown={(event) => { event.preventDefault(); handleSelectItem(location); }}
               onMouseEnter={() => setActiveIndex(index)}
-              className={`px-3 py-2 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors ${
-                selectedItem?._id === location._id || activeIndex === index ? 'bg-sky-50' : ''
-              }`}
+              className={`px-3 py-2 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors ${selectedItem?._id === location._id || activeIndex === index ? 'bg-sky-50' : ''
+                }`}
             >
               <div className="font-medium text-slate-800 text-sm">
                 {location.name}
@@ -3106,10 +3098,10 @@ function LocationRateDropdown({
 /* =========================
   PRICE LIST DROPDOWN
 ========================= */
-function PriceListDropdown({ 
-  rateMasters, 
-  selectedValue, 
-  onSelect, 
+function PriceListDropdown({
+  rateMasters,
+  selectedValue,
+  onSelect,
   locationName,
   branchId,
   customerId,
@@ -3132,7 +3124,7 @@ function PriceListDropdown({
       return filtered.filter((rm) => rm.usageMode === 'manual_rate_default');
     }
     filtered = filtered.filter((rm) => (rm.usageMode || 'standard') === 'standard');
-    
+
     if (branchId) {
       filtered = filtered.filter(rm => {
         const rmBranchId = rm.branchId?._id || rm.branchId;
@@ -3141,7 +3133,7 @@ function PriceListDropdown({
     } else {
       return [];
     }
-    
+
     if (customerId) {
       filtered = filtered.filter(rm => {
         const rmCustomerId = rm.customerId?._id || rm.customerId;
@@ -3150,7 +3142,7 @@ function PriceListDropdown({
     } else {
       return [];
     }
-    
+
     return filtered;
   }, [rateMasters, branchId, customerId, rateCalculationMode]);
 
@@ -3183,7 +3175,7 @@ function PriceListDropdown({
 
   const searchedItems = useMemo(() => {
     if (!searchQuery.trim()) return filteredRateMasters;
-    return filteredRateMasters.filter(rm => 
+    return filteredRateMasters.filter(rm =>
       rm.title.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [filteredRateMasters, searchQuery]);
@@ -3249,9 +3241,8 @@ function PriceListDropdown({
         onChange={(e) => { if (!selectedItem) setSearchQuery(e.target.value); }}
         onFocus={handleInputFocus}
         onKeyDown={handleKeyDown}
-        className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${
-          readOnly ? 'bg-slate-50 cursor-not-allowed' : 'bg-white cursor-pointer'
-        }`}
+        className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${readOnly ? 'bg-slate-50 cursor-not-allowed' : 'bg-white cursor-pointer'
+          }`}
         placeholder={placeholder}
         readOnly={readOnly || !!selectedItem}
         autoComplete="off"
@@ -3262,7 +3253,7 @@ function PriceListDropdown({
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </div>
-      
+
       {showDropdown && !readOnly && filteredRateMasters.length > 0 && menuPosition && typeof document !== 'undefined' && createPortal(
         <div ref={menuRef} role="listbox" className="fixed z-[10000] bg-white border border-slate-200 rounded-lg shadow-xl overflow-y-auto" style={{ top: menuPosition.top, left: menuPosition.left, width: menuPosition.width, maxHeight: menuPosition.maxHeight }}>
           <div className="sticky top-0 bg-gray-50 px-3 py-2 text-xs font-semibold text-slate-600 border-b">
@@ -3276,9 +3267,8 @@ function PriceListDropdown({
                 aria-selected={activeIndex === index}
                 onMouseDown={(event) => { event.preventDefault(); handleSelectItem(rm); }}
                 onMouseEnter={() => setActiveIndex(index)}
-                className={`px-3 py-2 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors ${
-                  selectedItem?._id === rm._id || activeIndex === index ? 'bg-sky-50' : ''
-                }`}
+                className={`px-3 py-2 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors ${selectedItem?._id === rm._id || activeIndex === index ? 'bg-sky-50' : ''
+                  }`}
               >
                 <div className="font-medium text-slate-800 text-sm">
                   {rm.title}
@@ -3290,8 +3280,8 @@ function PriceListDropdown({
             ))
           ) : (
             <div className="p-3 text-center text-sm text-slate-500">
-              {searchQuery.trim() ? 
-                `No price lists found for "${searchQuery}"` : 
+              {searchQuery.trim() ?
+                `No price lists found for "${searchQuery}"` :
                 `No price lists available`
               }
             </div>
@@ -3361,11 +3351,11 @@ function BillingTypeTable({ billing, billingColumns }) {
 /* =========================
   ORDERS TABLE COMPONENT - WITH SUB-COMPANY
 ========================= */
-function OrdersTable({ 
-  rows, 
-  onChange, 
-  onRemove, 
-  billingType, 
+function OrdersTable({
+  rows,
+  onChange,
+  onRemove,
+  billingType,
   selectedVehicleNegotiation,
   states,
   districts,
@@ -3381,32 +3371,32 @@ function OrdersTable({
   onFetchTalukas,
   canViewFinancialRates
 }) {
- const columns = [
-  { key: "orderNo", label: "Order No *", width: "100px" },
-  { key: "partyName", label: "Party Name", width: "130px" },
-  { key: "plantCode", label: "Plant Code", width: "90px" },
-  { key: "plantName", label: "Plant Name *Auto", width: "110px", readOnly: true },
-  { key: "plantCodeValue", label: "Plant Code Value *Auto", width: "110px", readOnly: true },
-  { key: "orderType", label: "Order Type", width: "90px" },
-  { key: "pinCode", label: "Pin Code", width: "90px" },
-  { key: "from", label: "From", width: "100px" },
-  { key: "to", label: "To", width: "100px" },
-  { key: "state", label: "State", width: "100px" },
-  { key: "district", label: "District", width: "100px" },
-  { key: "taluka", label: "Taluka", width: "100px" },
-  { key: "localStatus", label: "Local/Not Local", width: "110px" },
-  { key: "rateCalculationMode", label: "Rate Calculation", width: "170px" },
-  { key: "priceList", label: "Price List", width: "160px" },
-  { key: "locationRate", label: "Location Rate", width: "140px" },
-  { key: "weight", label: "Weight", type: "number", width: "70px" },
-  { key: "rate", label: "Rate (₹)", type: "number", width: "80px", readOnly: true },
-  { key: "totalAmount", label: "Total Amount", type: "number", width: "90px", readOnly: true },
-  { key: "collectionCharges", label: "Collection Charges", type: "number", width: "110px" },
-  { key: "cancellationCharges", label: "Cancellation Charges", width: "120px" },
-  { key: "loadingCharges", label: "Loading Charges", width: "110px" },
-  { key: "otherCharges", label: "Other Charges", type: "number", width: "100px" },
-  { key: "subCompanyName", label: "Sub-Company", width: "120px" },
-];
+  const columns = [
+    { key: "orderNo", label: "Order No *", width: "100px" },
+    { key: "partyName", label: "Party Name", width: "130px" },
+    { key: "plantCode", label: "Plant Code", width: "90px" },
+    { key: "plantName", label: "Plant Name *Auto", width: "110px", readOnly: true },
+    { key: "plantCodeValue", label: "Plant Code Value *Auto", width: "110px", readOnly: true },
+    { key: "orderType", label: "Order Type", width: "90px" },
+    { key: "pinCode", label: "Pin Code", width: "90px" },
+    { key: "from", label: "From", width: "100px" },
+    { key: "to", label: "To", width: "100px" },
+    { key: "state", label: "State", width: "100px" },
+    { key: "district", label: "District", width: "100px" },
+    { key: "taluka", label: "Taluka", width: "100px" },
+    { key: "localStatus", label: "Local/Not Local", width: "110px" },
+    { key: "rateCalculationMode", label: "Rate Calculation", width: "170px" },
+    { key: "priceList", label: "Price List", width: "160px" },
+    { key: "locationRate", label: "Location Rate", width: "140px" },
+    { key: "weight", label: "Weight", type: "number", width: "70px" },
+    { key: "rate", label: "Rate (₹)", type: "number", width: "80px", readOnly: true },
+    { key: "totalAmount", label: "Total Amount", type: "number", width: "90px", readOnly: true },
+    { key: "collectionCharges", label: "Collection Charges", type: "number", width: "110px" },
+    { key: "cancellationCharges", label: "Cancellation Charges", width: "120px" },
+    { key: "loadingCharges", label: "Loading Charges", width: "110px" },
+    { key: "otherCharges", label: "Other Charges", type: "number", width: "100px" },
+    { key: "subCompanyName", label: "Sub-Company", width: "120px" },
+  ];
   const isReadOnlyMode = !!selectedVehicleNegotiation;
 
   const handleStateChange = async (rowId, stateId, stateName) => {
@@ -3416,7 +3406,7 @@ function OrdersTable({
     onChange(rowId, 'districtName', '');
     onChange(rowId, 'talukaId', '');
     onChange(rowId, 'talukaName', '');
-    
+
     if (stateId) {
       await onFetchDistricts(stateId);
     }
@@ -3427,7 +3417,7 @@ function OrdersTable({
     onChange(rowId, 'districtName', districtName);
     onChange(rowId, 'talukaId', '');
     onChange(rowId, 'talukaName', '');
-    
+
     if (districtId) {
       await onFetchTalukas(districtId);
     }
@@ -3491,7 +3481,7 @@ function OrdersTable({
 
   const handleWeightChange = (rowId, weight) => {
     onChange(rowId, 'weight', weight);
-    
+
     const nextRows = rows.map((row) => row._id === rowId ? { ...row, weight } : row);
     const totalWeight = nextRows.reduce((sum, row) => sum + Number(row.weight || 0), 0);
     nextRows.forEach((row) => {
@@ -3501,8 +3491,9 @@ function OrdersTable({
 
   return (
     <div className="overflow-auto rounded-xl border border-yellow-300 max-h-[600px]">
-      <style jsx>{`.hide-pricing-financial th:nth-child(16),.hide-pricing-financial td:nth-child(16),.hide-pricing-financial th:nth-child(17),.hide-pricing-financial td:nth-child(17),.hide-pricing-financial th:nth-child(18),.hide-pricing-financial td:nth-child(18),.hide-pricing-financial th:nth-child(19),.hide-pricing-financial td:nth-child(19){display:none}`}</style>
-      <table className={`min-w-max w-full text-sm ${canViewFinancialRates ? '' : 'hide-pricing-financial'}`}>
+      {/* <style jsx>{`.hide-pricing-financial th:nth-child(16),.hide-pricing-financial td:nth-child(16),.hide-pricing-financial th:nth-child(17),.hide-pricing-financial td:nth-child(17),.hide-pricing-financial th:nth-child(18),.hide-pricing-financial td:nth-child(18),.hide-pricing-financial th:nth-child(19),.hide-pricing-financial td:nth-child(19){display:none}`}</style> */}
+      {/* <table className={`min-w-max w-full text-sm ${canViewFinancialRates ? '' : 'hide-pricing-financial'}`}> */}
+      <table className="min-w-max w-full text-sm">
         <thead className="sticky top-0 bg-yellow-400 z-10">
           <tr>
             {columns.map((col) => (
@@ -3530,20 +3521,19 @@ function OrdersTable({
             const districtOptions = districts[row.stateId] || [];
             const talukaOptions = talukas[row.districtId] || [];
             const currentCustomerId = row.customerId || headerCustomerId;
-            
+
             // Get sub-company info (from row, header, or fallback)
             const displaySubCompanyName = row.subCompanyName || headerSubCompanyName || '-';
             const displaySubCompanyCode = row.subCompanyCode || headerSubCompanyCode || '';
-            
+
             return (
               <tr key={row._id} className="hover:bg-yellow-50 even:bg-slate-50">
                 <td className="border border-yellow-300 px-1 py-1">
                   <input
                     value={row.orderNo || ""}
                     onChange={(e) => onChange(row._id, 'orderNo', e.target.value)}
-                    className={`w-full min-w-[80px] rounded border border-slate-200 px-1 py-1 text-xs outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-200 ${
-                      isFromVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-                    }`}
+                    className={`w-full min-w-[80px] rounded border border-slate-200 px-1 py-1 text-xs outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-200 ${isFromVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+                      }`}
                     placeholder="Order No"
                     readOnly={isFromVehicleNegotiation}
                   />
@@ -3562,9 +3552,8 @@ function OrdersTable({
                   <input
                     value={isFromVehicleNegotiation ? (row.plantCodeValue || row.plantCode || "") : (row.plantCode || "")}
                     onChange={(e) => onChange(row._id, isFromVehicleNegotiation ? 'plantCodeValue' : 'plantCode', e.target.value)}
-                    className={`w-full min-w-[70px] rounded border border-slate-200 px-1 py-1 text-xs outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-200 ${
-                      isFromVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-                    }`}
+                    className={`w-full min-w-[70px] rounded border border-slate-200 px-1 py-1 text-xs outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-200 ${isFromVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+                      }`}
                     placeholder="Plant Code"
                     readOnly={isFromVehicleNegotiation}
                   />
@@ -3594,9 +3583,8 @@ function OrdersTable({
                   <select
                     value={row.orderType || ""}
                     onChange={(e) => onChange(row._id, 'orderType', e.target.value)}
-                    className={`w-full min-w-[80px] rounded border border-slate-200 px-1 py-1 text-xs outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-200 ${
-                      isFromVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-                    }`}
+                    className={`w-full min-w-[80px] rounded border border-slate-200 px-1 py-1 text-xs outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-200 ${isFromVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+                      }`}
                     disabled={isFromVehicleNegotiation}
                   >
                     <option value="">Select</option>
@@ -3611,9 +3599,8 @@ function OrdersTable({
                     type="text"
                     value={row.pinCode || ""}
                     onChange={(e) => onChange(row._id, 'pinCode', e.target.value)}
-                    className={`w-full min-w-[70px] rounded border border-slate-200 px-1 py-1 text-xs outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-200 ${
-                      isFromVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-                    }`}
+                    className={`w-full min-w-[70px] rounded border border-slate-200 px-1 py-1 text-xs outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-200 ${isFromVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+                      }`}
                     placeholder="Pin Code"
                     readOnly={isFromVehicleNegotiation}
                   />
@@ -3623,9 +3610,8 @@ function OrdersTable({
                   <input
                     value={row.fromName || ""}
                     onChange={(e) => onChange(row._id, 'fromName', e.target.value)}
-                    className={`w-full min-w-[80px] rounded border border-slate-200 px-1 py-1 text-xs outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-200 ${
-                      isFromVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-                    }`}
+                    className={`w-full min-w-[80px] rounded border border-slate-200 px-1 py-1 text-xs outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-200 ${isFromVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+                      }`}
                     placeholder="From"
                     readOnly={isFromVehicleNegotiation}
                   />
@@ -3635,9 +3621,8 @@ function OrdersTable({
                   <input
                     value={row.toName || ""}
                     onChange={(e) => onChange(row._id, 'toName', e.target.value)}
-                    className={`w-full min-w-[80px] rounded border border-slate-200 px-1 py-1 text-xs outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-200 ${
-                      isFromVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-                    }`}
+                    className={`w-full min-w-[80px] rounded border border-slate-200 px-1 py-1 text-xs outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-200 ${isFromVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+                      }`}
                     placeholder="To"
                     readOnly={isFromVehicleNegotiation}
                   />
@@ -3647,21 +3632,21 @@ function OrdersTable({
                   {isFromVehicleNegotiation ? (
                     <input readOnly value={row.stateName || row.state || '-'} className="w-full min-w-[100px] rounded border border-slate-200 bg-slate-50 px-1 py-1 text-xs text-slate-700" />
                   ) : (
-                  <select
-                    value={row.stateId || ""}
-                    onChange={(e) => {
-                      const selectedState = states.find(s => s._id === e.target.value);
-                      handleStateChange(row._id, e.target.value, selectedState?.name || "");
-                    }}
-                    className="w-full min-w-[100px] rounded border border-slate-200 bg-white px-1 py-1 text-xs outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-200"
-                  >
-                    <option value="">Select State</option>
-                    {states.map((state) => (
-                      <option key={state._id} value={state._id}>
-                        {state.name}
-                      </option>
-                    ))}
-                  </select>
+                    <select
+                      value={row.stateId || ""}
+                      onChange={(e) => {
+                        const selectedState = states.find(s => s._id === e.target.value);
+                        handleStateChange(row._id, e.target.value, selectedState?.name || "");
+                      }}
+                      className="w-full min-w-[100px] rounded border border-slate-200 bg-white px-1 py-1 text-xs outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-200"
+                    >
+                      <option value="">Select State</option>
+                      {states.map((state) => (
+                        <option key={state._id} value={state._id}>
+                          {state.name}
+                        </option>
+                      ))}
+                    </select>
                   )}
                 </td>
 
@@ -3669,22 +3654,22 @@ function OrdersTable({
                   {isFromVehicleNegotiation ? (
                     <input readOnly value={row.districtName || row.district || '-'} className="w-full min-w-[100px] rounded border border-slate-200 bg-slate-50 px-1 py-1 text-xs text-slate-700" />
                   ) : (
-                  <select
-                    value={row.districtId || ""}
-                    onChange={(e) => {
-                      const selectedDistrict = districtOptions.find(d => d._id === e.target.value);
-                      handleDistrictChange(row._id, e.target.value, selectedDistrict?.name || "");
-                    }}
-                    className="w-full min-w-[100px] rounded border border-slate-200 bg-white px-1 py-1 text-xs outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-200 disabled:bg-slate-50"
-                    disabled={!row.stateId}
-                  >
-                    <option value="">Select District</option>
-                    {districtOptions.map((district) => (
-                      <option key={district._id} value={district._id}>
-                        {district.name}
-                      </option>
-                    ))}
-                  </select>
+                    <select
+                      value={row.districtId || ""}
+                      onChange={(e) => {
+                        const selectedDistrict = districtOptions.find(d => d._id === e.target.value);
+                        handleDistrictChange(row._id, e.target.value, selectedDistrict?.name || "");
+                      }}
+                      className="w-full min-w-[100px] rounded border border-slate-200 bg-white px-1 py-1 text-xs outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-200 disabled:bg-slate-50"
+                      disabled={!row.stateId}
+                    >
+                      <option value="">Select District</option>
+                      {districtOptions.map((district) => (
+                        <option key={district._id} value={district._id}>
+                          {district.name}
+                        </option>
+                      ))}
+                    </select>
                   )}
                 </td>
 
@@ -3692,33 +3677,32 @@ function OrdersTable({
                   {isFromVehicleNegotiation ? (
                     <input readOnly value={row.talukaName || row.taluka || '-'} className="w-full min-w-[100px] rounded border border-slate-200 bg-slate-50 px-1 py-1 text-xs text-slate-700" />
                   ) : (
-                  <select
-                    value={row.talukaId || ""}
-                    onChange={(e) => {
-                      const selectedTaluka = talukaOptions.find(t => t._id === e.target.value);
-                      handleTalukaChange(row._id, e.target.value, selectedTaluka?.name || "");
-                    }}
-                    className="w-full min-w-[100px] rounded border border-slate-200 bg-white px-1 py-1 text-xs outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-200 disabled:bg-slate-50"
-                    disabled={!row.districtId}
-                  >
-                    <option value="">Select Taluka</option>
-                    {talukaOptions.map((taluka) => (
-                      <option key={taluka._id} value={taluka._id}>
-                        {taluka.name}
-                      </option>
-                    ))}
-                  </select>
+                    <select
+                      value={row.talukaId || ""}
+                      onChange={(e) => {
+                        const selectedTaluka = talukaOptions.find(t => t._id === e.target.value);
+                        handleTalukaChange(row._id, e.target.value, selectedTaluka?.name || "");
+                      }}
+                      className="w-full min-w-[100px] rounded border border-slate-200 bg-white px-1 py-1 text-xs outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-200 disabled:bg-slate-50"
+                      disabled={!row.districtId}
+                    >
+                      <option value="">Select Taluka</option>
+                      {talukaOptions.map((taluka) => (
+                        <option key={taluka._id} value={taluka._id}>
+                          {taluka.name}
+                        </option>
+                      ))}
+                    </select>
                   )}
                 </td>
 
                 {/* Local Status */}
                 <td className="border border-yellow-300 px-1 py-1 text-center">
                   {row.fromState && row.stateName ? (
-                    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${
-                      row.fromState.trim().toUpperCase() === row.stateName.trim().toUpperCase()
-                        ? 'bg-green-100 text-green-800 border border-green-300'
-                        : 'bg-red-100 text-red-800 border border-red-300'
-                    }`}>
+                    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${row.fromState.trim().toUpperCase() === row.stateName.trim().toUpperCase()
+                      ? 'bg-green-100 text-green-800 border border-green-300'
+                      : 'bg-red-100 text-red-800 border border-red-300'
+                      }`}>
                       {row.fromState.trim().toUpperCase() === row.stateName.trim().toUpperCase() ? '✅ Local' : '❌ Not Local'}
                     </span>
                   ) : (
@@ -3775,9 +3759,8 @@ function OrdersTable({
                     step="0.01"
                     value={row.weight || ""}
                     onChange={(e) => handleWeightChange(row._id, e.target.value)}
-                    className={`w-full min-w-[60px] rounded border border-slate-200 px-1 py-1 text-xs outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-200 ${
-                      isFromVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-                    }`}
+                    className={`w-full min-w-[60px] rounded border border-slate-200 px-1 py-1 text-xs outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-200 ${isFromVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+                      }`}
                     placeholder="Weight"
                     readOnly={isFromVehicleNegotiation}
                   />
@@ -3893,7 +3876,7 @@ export default function EditPricingPanel() {
   const [workflowPhase, setWorkflowPhase] = useState('part1');
   const [approvalDirty, setApprovalDirty] = useState(false);
   const [workflowSaving, setWorkflowSaving] = useState(false);
-  
+
   const locationData = useLocationData();
   const customerSearch = useCustomerSearch();
   const rateMasterSearch = useRateMasterSearch();
@@ -3967,26 +3950,26 @@ export default function EditPricingPanel() {
     setFetchLoading(true);
     try {
       const token = localStorage.getItem('token');
-      
+
       const res = await fetch(`/api/pricing-panel?id=${panelId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       const data = await res.json();
-      
+
       if (!data.success) {
         throw new Error(data.message || 'Failed to fetch pricing panel');
       }
 
       const panel = data.data;
       setWorkflowPhase(panel.rateApproval?.workflowPhase || 'part1');
-      
+
       // New panels persist a VNN number snapshot. For older panels that only
       // contain the VNN ID, fetch it once so their saved source remains visible.
       const firstVnnOrder = panel.orders?.find((order) => order.vehicleNegotiationId);
       const storedVnn = firstVnnOrder?.vnnNumber || firstVnnOrder?.vnn || '';
       if (storedVnn) setCurrentVnn(storedVnn);
-      
+
       setHeader({
         pricingSerialNo: panel.pricingSerialNo || "",
         branch: panel.branch || "",
@@ -4175,7 +4158,7 @@ export default function EditPricingPanel() {
         subCompanyName: fullVN.subCompanyName || "",
         subCompanyCode: fullVN.subCompanyCode || ""
       }));
-      
+
       setOrders(newOrders);
     }
   };
@@ -4312,7 +4295,7 @@ export default function EditPricingPanel() {
       alert("Please select a branch");
       return;
     }
-    
+
     const hasInvalidOrders = orders.some(order => !order.orderNo);
     if (hasInvalidOrders) {
       alert("Please enter Order No for all order rows");
@@ -4430,7 +4413,7 @@ export default function EditPricingPanel() {
       setSaveSuccess(true);
       alert(`✅ Pricing panel updated successfully.\nSubmit this revision for approval when it is ready.`);
       await fetchPricingPanelData();
-      
+
     } catch (error) {
       console.error('Error updating pricing panel:', error);
       setSaveError(error.message || 'Failed to update pricing panel');
@@ -4533,9 +4516,8 @@ export default function EditPricingPanel() {
             <button
               onClick={handleUpdate}
               disabled={saving || !part1Editable}
-              className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${
-                saving || !part1Editable ? 'bg-gray-400 cursor-not-allowed' : 'bg-yellow-600 hover:bg-yellow-700'
-              }`}
+              className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${saving || !part1Editable ? 'bg-gray-400 cursor-not-allowed' : 'bg-yellow-600 hover:bg-yellow-700'
+                }`}
             >
               {saving ? (
                 <span className="flex items-center gap-2">
@@ -4555,151 +4537,151 @@ export default function EditPricingPanel() {
         {/* Do not use pointer-events-none here. Part 2 approvers must be able
             to scroll and inspect every Part 1 table cell before approving. */}
         <fieldset disabled={!part1Editable} className="min-w-0">
-        <Card title={`Pricing Panel - Part -1${part1Editable ? '' : ' (Read only)'}`}>
-          <div className="grid grid-cols-12 gap-3 mb-4">
-            <div className="col-span-12 md:col-span-3">
-              <label className="text-xs font-bold text-slate-600">Pricing Serial No</label>
-              <div className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">
-                {header.pricingSerialNo}
-              </div>
-            </div>
-
-            <div className="col-span-12 md:col-span-3 relative">
-              <label className="text-xs font-bold text-slate-600">Search Vehicle Negotiation</label>
-              <VehicleNegotiationHeaderDropdown
-                onSelect={handleSelectVehicleNegotiation}
-                placeholder="Search by VNN..."
-                currentVnn={currentVnn}
-                readOnly={false}
-              />
-              {selectedVehicleNegotiation && (
-                <div className="text-xs text-slate-500 mt-1">
-                  Selected: {selectedVehicleNegotiation.vnnNo}
+          <Card title={`Pricing Panel - Part -1${part1Editable ? '' : ' (Read only)'}`}>
+            <div className="grid grid-cols-12 gap-3 mb-4">
+              <div className="col-span-12 md:col-span-3">
+                <label className="text-xs font-bold text-slate-600">Pricing Serial No</label>
+                <div className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">
+                  {header.pricingSerialNo}
                 </div>
-              )}
-            </div>
-            
-            <div className="col-span-12 md:col-span-3">
-              <label className="text-xs font-bold text-slate-600">Branch *</label>
-              <SearchableDropdown
-                items={branches}
-                selectedId={header.branch}
-                onSelect={(branch) => setHeader(p => ({ 
-                  ...p, 
-                  branch: branch?._id || '',
-                  branchName: branch?.name || '',
-                  branchCode: branch?.code || ''
-                }))}
-                placeholder="Search branch... *"
-                required={true}
-                displayField="name"
-                codeField="code"
-                fallbackLabel={header.branchName ? `${header.branchName}${header.branchCode ? ` (${header.branchCode})` : ''}` : ''}
-                readOnly={true}
-              />
-            </div>
+              </div>
 
-            {/* Sub-Company Display */}
-            <div className="col-span-12 md:col-span-3">
-              <label className="text-xs font-bold text-slate-600">Sub-Company</label>
-              <div className="mt-1 w-full rounded-xl border border-slate-200 bg-blue-50 px-3 py-2 text-sm text-blue-700 font-medium">
-                {header.subCompanyName || '-'}
-                {header.subCompanyCode && (
-                  <span className="text-xs text-gray-500 ml-1 font-normal">({header.subCompanyCode})</span>
+              <div className="col-span-12 md:col-span-3 relative">
+                <label className="text-xs font-bold text-slate-600">Search Vehicle Negotiation</label>
+                <VehicleNegotiationHeaderDropdown
+                  onSelect={handleSelectVehicleNegotiation}
+                  placeholder="Search by VNN..."
+                  currentVnn={currentVnn}
+                  readOnly={false}
+                />
+                {selectedVehicleNegotiation && (
+                  <div className="text-xs text-slate-500 mt-1">
+                    Selected: {selectedVehicleNegotiation.vnnNo}
+                  </div>
                 )}
               </div>
-            </div>
 
-            <Select
-              col="col-span-12 md:col-span-3"
-              label="Delivery"
-              value={header.delivery}
-              onChange={(v) => setHeader((p) => ({ ...p, delivery: v }))}
-              options={DELIVERY_TYPES}
-              readOnly={true}
-            />
+              <div className="col-span-12 md:col-span-3">
+                <label className="text-xs font-bold text-slate-600">Branch *</label>
+                <SearchableDropdown
+                  items={branches}
+                  selectedId={header.branch}
+                  onSelect={(branch) => setHeader(p => ({
+                    ...p,
+                    branch: branch?._id || '',
+                    branchName: branch?.name || '',
+                    branchCode: branch?.code || ''
+                  }))}
+                  placeholder="Search branch... *"
+                  required={true}
+                  displayField="name"
+                  codeField="code"
+                  fallbackLabel={header.branchName ? `${header.branchName}${header.branchCode ? ` (${header.branchCode})` : ''}` : ''}
+                  readOnly={true}
+                />
+              </div>
 
-            <Input
-              type="date"
-              col="col-span-12 md:col-span-3"
-              label="Date"
-              value={header.date}
-              onChange={(v) => setHeader((p) => ({ ...p, date: v }))}
-              readOnly={true}
-            />
-            
-            <div className="col-span-12 md:col-span-3 relative">
-              <label className="text-xs font-bold text-slate-600">Party Name</label>
-              <input
-                type="text"
-                value={selectedCustomer ? selectedCustomer.customerName : header.partyName}
+              {/* Sub-Company Display */}
+              <div className="col-span-12 md:col-span-3">
+                <label className="text-xs font-bold text-slate-600">Sub-Company</label>
+                <div className="mt-1 w-full rounded-xl border border-slate-200 bg-blue-50 px-3 py-2 text-sm text-blue-700 font-medium">
+                  {header.subCompanyName || '-'}
+                  {header.subCompanyCode && (
+                    <span className="text-xs text-gray-500 ml-1 font-normal">({header.subCompanyCode})</span>
+                  )}
+                </div>
+              </div>
+
+              <Select
+                col="col-span-12 md:col-span-3"
+                label="Delivery"
+                value={header.delivery}
+                onChange={(v) => setHeader((p) => ({ ...p, delivery: v }))}
+                options={DELIVERY_TYPES}
                 readOnly={true}
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none cursor-not-allowed"
-                placeholder="Party Name"
+              />
+
+              <Input
+                type="date"
+                col="col-span-12 md:col-span-3"
+                label="Date"
+                value={header.date}
+                onChange={(v) => setHeader((p) => ({ ...p, date: v }))}
+                readOnly={true}
+              />
+
+              <div className="col-span-12 md:col-span-3 relative">
+                <label className="text-xs font-bold text-slate-600">Party Name</label>
+                <input
+                  type="text"
+                  value={selectedCustomer ? selectedCustomer.customerName : header.partyName}
+                  readOnly={true}
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none cursor-not-allowed"
+                  placeholder="Party Name"
+                />
+              </div>
+              <Input
+                col="col-span-12 md:col-span-3"
+                label="Customer Code"
+                value={header.customerCode}
+                readOnly={true}
               />
             </div>
-            <Input
-              col="col-span-12 md:col-span-3"
-              label="Customer Code"
-              value={header.customerCode}
-              readOnly={true}
-            />
-          </div>
 
-          <div className="mb-4">
-            <div className="text-sm font-bold text-slate-700 mb-2">Billing Type / Charges (Read Only)</div>
-            <BillingTypeTable billing={billing} billingColumns={billingColumns} />
-          </div>
+            <div className="mb-4">
+              <div className="text-sm font-bold text-slate-700 mb-2">Billing Type / Charges (Read Only)</div>
+              <BillingTypeTable billing={billing} billingColumns={billingColumns} />
+            </div>
 
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <div className="text-sm font-bold text-slate-700">
-                Orders - {billing.billingType} - {orders.length} row{orders.length !== 1 ? 's' : ''}
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <div className="text-sm font-bold text-slate-700">
+                  Orders - {billing.billingType} - {orders.length} row{orders.length !== 1 ? 's' : ''}
+                </div>
+
+                {billing.billingType === "Multi - Order" && !selectedVehicleNegotiation && (
+                  <button
+                    onClick={addOrder}
+                    className="rounded-xl bg-yellow-600 px-4 py-2 text-sm font-bold text-white hover:bg-yellow-700"
+                  >
+                    + Add Row
+                  </button>
+                )}
               </div>
-              
-              {billing.billingType === "Multi - Order" && !selectedVehicleNegotiation && (
-                <button
-                  onClick={addOrder}
-                  className="rounded-xl bg-yellow-600 px-4 py-2 text-sm font-bold text-white hover:bg-yellow-700"
-                >
-                  + Add Row
-                </button>
-              )}
-            </div>
-            
-            <OrdersTable
-              rows={orders}
-              onChange={updateOrder}
-              onRemove={removeOrder}
-              billingType={billing.billingType}
-              selectedVehicleNegotiation={selectedVehicleNegotiation}
-              states={locationData.states}
-              districts={locationData.districts}
-              talukas={locationData.talukas}
-              locations={locationData.locations}
-              rateMasters={rateMasterSearch.rateMasters}
-              headerBranch={header.branch}
-              headerCustomerId={header.customerId}
-              headerSubCompanyId={header.subCompanyId}
-              headerSubCompanyName={header.subCompanyName}
-              headerSubCompanyCode={header.subCompanyCode}
-              onFetchDistricts={locationData.fetchDistrictsByState}
-              onFetchTalukas={locationData.fetchTalukasByDistrict}
-              canViewFinancialRates={canViewFinancialRates('Pricing Panel')}
-            />
-          </div>
 
-          <div className="flex justify-end gap-4 mt-4">
-            <div className="flex items-center gap-3 border border-yellow-300 px-6 py-3 bg-yellow-50 rounded-xl">
-              <div className="text-sm font-extrabold text-slate-900">Total Weight (MT):</div>
-              <div className="text-xl font-extrabold text-emerald-700">{totalWeight} MT</div>
+              <OrdersTable
+                rows={orders}
+                onChange={updateOrder}
+                onRemove={removeOrder}
+                billingType={billing.billingType}
+                selectedVehicleNegotiation={selectedVehicleNegotiation}
+                states={locationData.states}
+                districts={locationData.districts}
+                talukas={locationData.talukas}
+                locations={locationData.locations}
+                rateMasters={rateMasterSearch.rateMasters}
+                headerBranch={header.branch}
+                headerCustomerId={header.customerId}
+                headerSubCompanyId={header.subCompanyId}
+                headerSubCompanyName={header.subCompanyName}
+                headerSubCompanyCode={header.subCompanyCode}
+                onFetchDistricts={locationData.fetchDistrictsByState}
+                onFetchTalukas={locationData.fetchTalukasByDistrict}
+                canViewFinancialRates={canViewFinancialRates('Pricing Panel')}
+              />
             </div>
-            <div className="flex items-center gap-3 border border-yellow-300 px-6 py-3 bg-yellow-50 rounded-xl">
-              <div className="text-sm font-extrabold text-slate-900">Total Amount:</div>
-              <div className="text-xl font-extrabold text-emerald-700">{totalAmount}</div>
+
+            <div className="flex justify-end gap-4 mt-4">
+              <div className="flex items-center gap-3 border border-yellow-300 px-6 py-3 bg-yellow-50 rounded-xl">
+                <div className="text-sm font-extrabold text-slate-900">Total Weight (MT):</div>
+                <div className="text-xl font-extrabold text-emerald-700">{totalWeight} MT</div>
+              </div>
+              <div className="flex items-center gap-3 border border-yellow-300 px-6 py-3 bg-yellow-50 rounded-xl">
+                <div className="text-sm font-extrabold text-slate-900">Total Amount:</div>
+                <div className="text-xl font-extrabold text-emerald-700">{totalAmount}</div>
+              </div>
             </div>
-          </div>
-        </Card>
+          </Card>
         </fieldset>
 
         <Card
@@ -4712,9 +4694,8 @@ export default function EditPricingPanel() {
                 onClick={() => approvalDirty
                   ? handleWorkflowAction('update-approval', { approvalStatus: rateApproval.approvalStatus, remarks: rateApproval.remarks })
                   : handleWorkflowAction('approve-with-update', { remarks: rateApproval.remarks })}
-                className={`rounded-xl px-4 py-2 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-slate-400 ${
-                  approvalDirty ? 'bg-sky-600 hover:bg-sky-700' : 'bg-emerald-600 hover:bg-emerald-700'
-                }`}
+                className={`rounded-xl px-4 py-2 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-slate-400 ${approvalDirty ? 'bg-sky-600 hover:bg-sky-700' : 'bg-emerald-600 hover:bg-emerald-700'
+                  }`}
               >
                 {workflowSaving ? 'Saving...' : approvalDirty ? 'Save Approval Details' : 'Approve Part 2'}
               </button>

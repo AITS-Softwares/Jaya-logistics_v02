@@ -4,6 +4,7 @@ import connectDb from "@/lib/db";
 import PurchasePanel from "./PurchasePanel";
 import ConsignmentNote from "../consignment-note/ConsignmentNote";
 import LoadingPanel from "../loading-panel/LoadingPanel";
+import { findLRsForPanel } from "../loading-panel/findLRs";
 import DetentionRule from "../detention-rules/DetentionRule";
 import { calculateDetention, selectDetentionRule } from "@/lib/detentionCalculation";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
@@ -118,22 +119,33 @@ function arrivalFromLoadingInfo(loadingInfo) {
   };
 }
 
-// Departure is the creation time of the first LR linked to the Loading Info.
-// This does not depend on out-date/time copies stored on the Loading Info.
+// Departure (Out) = approval time of the first approved LR linked to the Loading Info,
+// using the same lookup as the Loading Info "Documents & Consignment Note (LR)" section.
+// An LR approved before the vehicle arrived cannot be this vehicle's departure.
 async function arrivalWithLR(user, loadingInfo) {
   const base = arrivalFromLoadingInfo(loadingInfo);
   if (!loadingInfo?.vehicleArrivalNo) return base;
 
-  const lr = await ConsignmentNote.findOne(
-    companyScopeFilter(user, { loadingInfoNo: loadingInfo.vehicleArrivalNo })
-  ).sort({ createdAt: 1 }).select('createdAt').lean();
-  if (!lr?.createdAt) return base;
+  const lrs = await findLRsForPanel(
+    user,
+    loadingInfo,
+    {},
+    'loadingInfoNo header.orderNo header.to header.approvedAt consignmentBreakdown createdAt updatedAt'
+  );
+  const arrivalAt = loadingInfo.vehicleSlipUploadedAt
+    ? new Date(loadingInfo.vehicleSlipUploadedAt).getTime()
+    : 0;
+  const times = lrs
+    .map((l) => new Date(l.header?.approvedAt || l.updatedAt).getTime())
+    .filter((t) => Number.isFinite(t) && t >= arrivalAt);
+  if (!times.length) return base;
+  const approvedAt = new Date(Math.min(...times));
 
   const p = new Intl.DateTimeFormat('en-GB', {
     timeZone: 'Asia/Kolkata',
     year: 'numeric', month: '2-digit', day: '2-digit',
     hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
-  }).formatToParts(new Date(lr.createdAt))
+  }).formatToParts(approvedAt)
     .reduce((r, part) => ({ ...r, [part.type]: part.value }), {});
 
   return {

@@ -12,6 +12,7 @@ import { withAuth } from "@/lib/auth";
 import { companyScopeFilter } from "@/lib/companyScope";
 import LoadingPanel from "@/app/api/loading-panel/LoadingPanel";
 import ConsignmentNote from "@/app/api/consignment-note/ConsignmentNote";
+import { findLRsForPanel } from "../../findLRs";
 
 export const runtime = "nodejs";
 
@@ -26,21 +27,18 @@ export const GET = withAuth(async (req, context, user) => {
         await connectDb();
 
         const panel = await LoadingPanel.findOne(companyScopeFilter(user, { _id: panelId }))
-            .select("vehicleArrivalNo consignmentNote")
+            .select("vehicleArrivalNo consignmentNote orderRows.orderNo orderRows.to orderRows.toName orderRows.weight")
             .lean();
         if (!panel) {
             return NextResponse.json({ success: false, message: "Loading Info not found." }, { status: 404 });
         }
 
-        const notes = panel.vehicleArrivalNo
-            ? await ConsignmentNote.find(companyScopeFilter(user, {
-                loadingInfoNo: panel.vehicleArrivalNo,
-                "header.status": { $in: ["Approved", "Completed"] },
-            }))
-                .select("-companyId -createdBy -updatedBy -__v")
-                .sort({ createdAt: 1 })
-                .lean()
-            : [];
+        const rowIds = (panel.orderRows || []).map((r) => String(r._id));
+        const links = [];
+        if (panel.vehicleArrivalNo) links.push({ loadingInfoNo: panel.vehicleArrivalNo });
+        if (rowIds.length) links.push({ orderRowId: { $in: rowIds } });
+
+        const notes = await findLRsForPanel(user, panel, {}, "-companyId -createdBy -updatedBy -__v");
 
         return NextResponse.json({
             success: true,

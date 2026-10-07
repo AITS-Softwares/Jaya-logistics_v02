@@ -189,9 +189,9 @@
 // function ChargesTable({ rows, type }) {
 //   const isAddition = type === 'addition';
 //   const bgColor = isAddition ? 'green' : 'red';
-  
+
 //   const total = rows.reduce((sum, row) => sum + num(row.amount), 0);
-  
+
 //   return (
 //     <div className={`overflow-auto rounded-xl border border-${bgColor}-300`}>
 //       <table className="min-w-full w-full text-sm">
@@ -268,36 +268,36 @@
 //     setLoading(true);
 //     try {
 //       const token = localStorage.getItem('token');
-      
+
 //       const res = await fetch(`/api/Advance-Payment?id=${paymentId}`, {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       if (!res.ok) {
 //         throw new Error(`HTTP error! status: ${res.status}`);
 //       }
-      
+
 //       const data = await res.json();
-      
+
 //       if (!data.success) {
 //         throw new Error(data.message || 'Failed to fetch advance payment');
 //       }
 
 //       const payment = data.data;
 //       console.log("📦 Payment Data for Approval:", payment);
-      
+
 //       setPaymentNo(payment.paymentNo || "");
-      
+
 //       // Set Purchase Amount from VNN
 //       if (payment.purchaseAmountFromVNN) {
 //         setPurchaseAmountFromVNN(payment.purchaseAmountFromVNN);
 //       }
-      
+
 //       // Set Memo File
 //       if (payment.memoFile) {
 //         setMemoFileInfo(payment.memoFile);
 //       }
-      
+
 //       // Set header (READ-ONLY)
 //       if (payment.header) {
 //         setHeader({
@@ -384,7 +384,7 @@
 //           bankVendorCode: pd.bankVendorCode || "",
 //           paymentDate: pd.paymentDate ? new Date(pd.paymentDate).toLocaleDateString('en-GB') : "",
 //         });
-        
+
 //         // Set payment status (EDITABLE)
 //         setPaymentStatus(pd.paymentStatus || "Pending");
 //         setRemarks(pd.remarks || "ADV Payment");
@@ -408,7 +408,7 @@
 //     setSaving(true);
 //     try {
 //       const token = localStorage.getItem('token');
-      
+
 //       const res = await fetch('/api/Advance-Payment', {
 //         method: 'PUT',
 //         headers: {
@@ -543,7 +543,7 @@
 
 //       {/* ===== Main Layout ===== */}
 //       <div className="mx-auto max-w-full p-4 space-y-4">
-        
+
 //         {/* ===== HEADER INFORMATION (READ ONLY) ===== */}
 //         <Card title="Purchase Information (Read Only)">
 //           <div className="grid grid-cols-12 gap-3">
@@ -757,7 +757,7 @@
 //             <Input col="col-span-12 md:col-span-2" label="Payment Date" value={paymentDetails.paymentDate} readOnly={true} />
 //             <Input col="col-span-12 md:col-span-2" label="Transaction ID" value={paymentDetails.transactionId} readOnly={true} />
 //             <Input col="col-span-12 md:col-span-3" label="Bank Vendor Code" value={paymentDetails.bankVendorCode} readOnly={true} />
-            
+
 //             {/* Payment Status - EDITABLE */}
 //             <div className="col-span-12 md:col-span-3">
 //               <label className="text-xs font-bold text-slate-600">Payment Status *</label>
@@ -843,6 +843,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { usePermission } from "../../../hooks/usePermission";
 
 /** =========================
  * CONSTANTS
@@ -853,10 +854,10 @@ const ORDER_TYPES = ["Sales", "STO Order", "Export", "Import"];
 const BILLING_TYPES = ["Single - Order", "Multi - Order"];
 const PURCHASE_TYPE_OPTIONS = ["Loading & Unloading", "Unloading Only", "Safi Vehicle"];
 const PAYMENT_TERMS_OPTIONS = [
-  "80 % Advance", 
-  "90 % Advance", 
-  "Rs.10,000/- Balance Only", 
-  "Rs. 5000/- Balance Only", 
+  "80 % Advance",
+  "90 % Advance",
+  "Rs.10,000/- Balance Only",
+  "Rs. 5000/- Balance Only",
   "Full Payment after Delivery"
 ];
 const RATE_TYPE_OPTIONS = ["Per MT", "Fixed"];
@@ -890,9 +891,8 @@ function Input({ label, value, col = "", type = "text", readOnly = true }) {
         type={type}
         value={value || ""}
         readOnly={readOnly}
-        className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none ${
-          readOnly ? 'bg-slate-50 cursor-not-allowed' : 'bg-white focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200'
-        }`}
+        className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none ${readOnly ? 'bg-slate-50 cursor-not-allowed' : 'bg-white focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200'
+          }`}
       />
     </div>
   );
@@ -906,9 +906,8 @@ function Select({ label, value, onChange, options = [], col = "", readOnly = fal
         value={value || ""}
         onChange={(e) => onChange?.(e.target.value)}
         disabled={readOnly}
-        className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none ${
-          readOnly ? 'bg-slate-50 cursor-not-allowed' : 'bg-white focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200'
-        }`}
+        className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none ${readOnly ? 'bg-slate-50 cursor-not-allowed' : 'bg-white focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200'
+          }`}
       >
         <option value="">Select {label}</option>
         {options.map((o) => (
@@ -959,9 +958,8 @@ function OrdersTable({ rows }) {
     if (row.fromState && row.state) {
       const isLocal = row.fromState.trim().toUpperCase() === row.state.trim().toUpperCase();
       return (
-        <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${
-          isLocal ? 'bg-green-100 text-green-800 border border-green-300' : 'bg-red-100 text-red-800 border border-red-300'
-        }`}>
+        <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${isLocal ? 'bg-green-100 text-green-800 border border-green-300' : 'bg-red-100 text-red-800 border border-red-300'
+          }`}>
           {isLocal ? '✅ Local' : '❌ Not Local'}
         </span>
       );
@@ -1029,9 +1027,9 @@ function OrdersTable({ rows }) {
 function ChargesTable({ rows, type }) {
   const isAddition = type === 'addition';
   const bgColor = isAddition ? 'green' : 'red';
-  
+
   const total = rows.reduce((sum, row) => sum + num(row.amount), 0);
-  
+
   return (
     <div className={`overflow-auto rounded-xl border border-${bgColor}-300`}>
       <table className="min-w-full w-full text-sm">
@@ -1075,6 +1073,8 @@ export default function ApproveAdvancePayment() {
   const router = useRouter();
   const params = useParams();
   const paymentId = params.id;
+  const { hasPermission, loading: permLoading } = usePermission();
+  const canApprove = hasPermission("Advance Payment", "approve");
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -1109,32 +1109,32 @@ export default function ApproveAdvancePayment() {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      
+
       const res = await fetch(`/api/Advance-Payment?id=${paymentId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       if (!res.ok) {
         throw new Error(`HTTP error! status: ${res.status}`);
       }
-      
+
       const data = await res.json();
-      
+
       if (!data.success) {
         throw new Error(data.message || 'Failed to fetch advance payment');
       }
 
       const payment = data.data;
       console.log("📦 Payment Data for Approval:", payment);
-      
+
       setPaymentNo(payment.paymentNo || "");
-      
+
       // ✅ SET COMPANY NAME - Extract from payment data
       // The company name might be in different places depending on your data structure
       // Option 1: Direct field
       if (payment.companyName) {
         setCompanyName(payment.companyName);
-      } 
+      }
       // Option 2: From header
       else if (payment.header?.companyName) {
         setCompanyName(payment.header.companyName);
@@ -1147,17 +1147,17 @@ export default function ApproveAdvancePayment() {
       else if (payment.subCompanyName) {
         setCompanyName(payment.subCompanyName);
       }
-      
+
       // Set Purchase Amount from VNN
       if (payment.purchaseAmountFromVNN) {
         setPurchaseAmountFromVNN(payment.purchaseAmountFromVNN);
       }
-      
+
       // Set Memo File
       if (payment.memoFile) {
         setMemoFileInfo(payment.memoFile);
       }
-      
+
       // Set header (READ-ONLY)
       if (payment.header) {
         setHeader({
@@ -1246,7 +1246,7 @@ export default function ApproveAdvancePayment() {
           bankVendorCode: pd.bankVendorCode || "",
           paymentDate: pd.paymentDate ? new Date(pd.paymentDate).toLocaleDateString('en-GB') : "",
         });
-        
+
         // Set payment status (EDITABLE)
         setPaymentStatus(pd.paymentStatus || "Pending");
         setRemarks(pd.remarks || "ADV Payment");
@@ -1262,6 +1262,10 @@ export default function ApproveAdvancePayment() {
   };
 
   const handleApprove = async () => {
+    if (!canApprove) {
+      alert("You do not have permission to approve Advance Payment.");
+      return;
+    }
     if (!paymentStatus) {
       alert("Please select payment status");
       return;
@@ -1270,7 +1274,7 @@ export default function ApproveAdvancePayment() {
     setSaving(true);
     try {
       const token = localStorage.getItem('token');
-      
+
       const res = await fetch('/api/Advance-Payment', {
         method: 'PUT',
         headers: {
@@ -1395,12 +1399,12 @@ export default function ApproveAdvancePayment() {
           <div className="flex items-center gap-3">
             <button
               onClick={handleApprove}
-              disabled={saving}
-              className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${
-                saving
-                  ? 'bg-gray-400 cursor-not-allowed' 
-                  : 'bg-yellow-600 hover:bg-yellow-700'
-              }`}
+              disabled={saving || permLoading || !canApprove}
+              title={!canApprove ? "You need Approve permission" : undefined}
+              className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${saving
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-yellow-600 hover:bg-yellow-700'
+                }`}
             >
               {saving ? (
                 <span className="flex items-center gap-2">
@@ -1418,7 +1422,7 @@ export default function ApproveAdvancePayment() {
 
       {/* ===== Main Layout ===== */}
       <div className="mx-auto max-w-full p-4 space-y-4">
-        
+
         {/* ===== COMPANY INFORMATION (NEW - READ ONLY) ===== */}
         <Card title="Company Information (Read Only)">
           <div className="grid grid-cols-12 gap-3">
@@ -1514,7 +1518,7 @@ export default function ApproveAdvancePayment() {
                   MEMO from Vehicle Negotiation
                 </h3>
                 {memoFileInfo ? (
-                  <div 
+                  <div
                     className="relative group cursor-pointer overflow-hidden rounded-xl border-2 border-green-300 bg-white shadow-lg hover:shadow-xl transition-all duration-300"
                     onClick={() => { if (memoFileInfo.filePath) window.open(memoFileInfo.filePath, '_blank'); }}
                   >
@@ -1642,7 +1646,7 @@ export default function ApproveAdvancePayment() {
             <Input col="col-span-12 md:col-span-2" label="Payment Date" value={paymentDetails.paymentDate} readOnly={true} />
             <Input col="col-span-12 md:col-span-2" label="Transaction ID" value={paymentDetails.transactionId} readOnly={true} />
             <Input col="col-span-12 md:col-span-3" label="Bank Vendor Code" value={paymentDetails.bankVendorCode} readOnly={true} />
-            
+
             {/* Payment Status - EDITABLE */}
             <div className="col-span-12 md:col-span-3">
               <label className="text-xs font-bold text-slate-600">Payment Status *</label>
@@ -1703,13 +1707,12 @@ export default function ApproveAdvancePayment() {
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span className="text-sm text-slate-600">Payment Status:</span>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      paymentStatus === 'Approved' ? 'bg-green-100 text-green-800' :
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${paymentStatus === 'Approved' ? 'bg-green-100 text-green-800' :
                       paymentStatus === 'Rejected' ? 'bg-red-100 text-red-800' :
-                      paymentStatus === 'Paid' ? 'bg-blue-100 text-blue-800' :
-                      paymentStatus === 'Completed' ? 'bg-purple-100 text-purple-800' :
-                      'bg-yellow-100 text-yellow-800'
-                    }`}>
+                        paymentStatus === 'Paid' ? 'bg-blue-100 text-blue-800' :
+                          paymentStatus === 'Completed' ? 'bg-purple-100 text-purple-800' :
+                            'bg-yellow-100 text-yellow-800'
+                      }`}>
                       {paymentStatus}
                     </span>
                   </div>

@@ -1162,6 +1162,7 @@ import mongoose from 'mongoose';
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import { activeOperatingCompanyId, companyScopeFilter } from "@/lib/companyScope";
 import VehicleNegotiation from '@/app/api/vehicle-negotiation/VehicleNegotiation';
+import { findLRsForPanel } from "./findLRs";
 
 // ── PERMISSION FUNCTIONS ──
 
@@ -1300,6 +1301,30 @@ export async function GET(req) {
         }, { status: 404 });
       }
 
+      // Out Date/Time: when not stored, derive it from the first approved LR linked to
+      // this Loading Info (same lookup as the Documents & Consignment Note section),
+      // ignoring LRs approved before the vehicle arrived.
+      let derivedOut = null;
+      if (!loadingPanel.arrivalDetails?.outDate) {
+        const lrs = await findLRsForPanel(
+          user, loadingPanel, {},
+          'loadingInfoNo header.orderNo header.to header.approvedAt consignmentBreakdown createdAt updatedAt'
+        );
+        const arrivalAt = loadingPanel.vehicleSlipUploadedAt
+          ? new Date(loadingPanel.vehicleSlipUploadedAt).getTime() : 0;
+        const times = lrs
+          .map((l) => new Date(l.header?.approvedAt || l.updatedAt).getTime())
+          .filter((t) => Number.isFinite(t) && t >= arrivalAt);
+        if (times.length) {
+          const p = new Intl.DateTimeFormat('en-GB', {
+            timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit',
+            hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+          }).formatToParts(new Date(Math.min(...times)))
+            .reduce((r, x) => ({ ...r, [x.type]: x.value }), {});
+          derivedOut = { outDate: `${p.year}-${p.month}-${p.day}`, outTime: `${p.hour}:${p.minute}` };
+        }
+      }
+
       // Format dates for frontend
       const formattedPanel = {
         ...loadingPanel,
@@ -1309,7 +1334,8 @@ export async function GET(req) {
           date: loadingPanel.arrivalDetails?.date ?
             new Date(loadingPanel.arrivalDetails.date).toISOString().split('T')[0] : '',
           outDate: loadingPanel.arrivalDetails?.outDate ?
-            new Date(loadingPanel.arrivalDetails.outDate).toISOString().split('T')[0] : ''
+            new Date(loadingPanel.arrivalDetails.outDate).toISOString().split('T')[0] : (derivedOut?.outDate || ''),
+          outTime: loadingPanel.arrivalDetails?.outTime || derivedOut?.outTime || ''
         },
         // Convert Map to object for frontend
         vlPhotoDetails: loadingPanel.vlPhotoDetails instanceof Map
@@ -1759,7 +1785,7 @@ export async function POST(req) {
       vl14: body.vlUploads?.vl14 || '',
       vl15: body.vlUploads?.vl15 || '',
       videoVl: body.vlUploads?.videoVl || '',
-      approval: body.vlUploads?.approval || '',
+      approval: '',
       loadingStatus: body.vlUploads?.loadingStatus && body.vlUploads.loadingStatus !== ''
         ? body.vlUploads.loadingStatus
         : 'Not Loaded'
@@ -1871,7 +1897,7 @@ export async function POST(req) {
         vbp6: body.vbpUploads?.vbp6 || '',
         vbp7: body.vbpUploads?.vbp7 || '',
         videoVbp: body.vbpUploads?.videoVbp || '',
-        approval: body.vbpUploads?.approval || '',
+        approval: '',
         remark: body.vbpUploads?.remark || ''
       },
 
@@ -1885,7 +1911,7 @@ export async function POST(req) {
         vft6: body.vftUploads?.vft6 || '',
         vft7: body.vftUploads?.vft7 || '',
         videoVft: body.vftUploads?.videoVft || '',
-        approval: body.vftUploads?.approval || ''
+        approval: ''
       },
 
       // Upload sections - VOT
@@ -1898,7 +1924,7 @@ export async function POST(req) {
         vot6: body.votUploads?.vot6 || '',
         vot7: body.votUploads?.vot7 || '',
         videoVot: body.votUploads?.videoVot || '',
-        approval: body.votUploads?.approval || ''
+        approval: ''
       },
 
       // Upload sections - VL
@@ -1907,7 +1933,7 @@ export async function POST(req) {
       // Loaded weighment
       loadedWeighment: {
         weighSlip: body.loadedWeighment?.weighSlip || '',
-        approval: body.loadedWeighment?.approval || '',
+        approval: '',
         loadingCharges: num(body.loadedWeighment?.loadingCharges),
         loadingStaffMunshiyana: num(body.loadedWeighment?.loadingStaffMunshiyana),
         otherExpenses: num(body.loadedWeighment?.otherExpenses),
@@ -2024,6 +2050,16 @@ export async function PUT(req) {
         success: false,
         message: "Loading panel not found"
       }, { status: 404 });
+    }
+
+    // Merge vehicleInfo instead of replacing it, and never let a save blank the vehicle number.
+    if (updateData.vehicleInfo) {
+      const prev = existingPanel.vehicleInfo?.toObject
+        ? existingPanel.vehicleInfo.toObject()
+        : (existingPanel.vehicleInfo || {});
+      const next = { ...prev, ...updateData.vehicleInfo };
+      if (!updateData.vehicleInfo.vehicleNo && prev.vehicleNo) next.vehicleNo = prev.vehicleNo;
+      updateData.vehicleInfo = next;
     }
 
     // First vehicle-slip upload is the authoritative vehicle-arrival event.

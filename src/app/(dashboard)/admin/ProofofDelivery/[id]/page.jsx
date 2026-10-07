@@ -25,13 +25,13 @@
 // // Helper function to get latest POD Date from LR entries
 // function getLatestPodDate(lrEntries) {
 //   if (!lrEntries || lrEntries.length === 0) return "";
-  
+
 //   const podDates = lrEntries
 //     .filter(lr => lr.podDate && lr.podDate.trim() !== '')
 //     .map(lr => new Date(lr.podDate));
-  
+
 //   if (podDates.length === 0) return "";
-  
+
 //   const latestDate = new Date(Math.max(...podDates));
 //   return latestDate.toISOString().split('T')[0];
 // }
@@ -53,7 +53,7 @@
 //   const router = useRouter();
 //   const params = useParams();
 //   const podId = params.id;
-  
+
 //   const [loading, setLoading] = useState(true);
 //   const [saving, setSaving] = useState(false);
 //   const [purchases, setPurchases] = useState([]);
@@ -62,7 +62,7 @@
 //   const [filteredLRs, setFilteredLRs] = useState([]);
 //   const [loadingLR, setLoadingLR] = useState(false);
 //   const [suppliers, setSuppliers] = useState([]);
-  
+
 //   // ==================== HEADER STATE ====================
 //   const [header, setHeader] = useState({
 //     podNo: "",
@@ -206,11 +206,11 @@
 //   // Update Last POD Date and recalculate Due Date & Payment Date
 //   const updateLastPodDateAndRecalculate = (newLastPodDate, dueDays) => {
 //     setPodStatusSection(prev => ({ ...prev, lastPodDate: newLastPodDate }));
-    
+
 //     if (newLastPodDate && dueDays) {
 //       const newDueDate = calculateDueDate(newLastPodDate, dueDays);
 //       setPodStatusSection(prev => ({ ...prev, dueDate: newDueDate }));
-      
+
 //       if (newDueDate) {
 //         const newPaymentDate = calculatePaymentDate(newDueDate);
 //         setPodStatusSection(prev => ({ ...prev, paymentDate: newPaymentDate }));
@@ -252,11 +252,11 @@
 //       setFilteredLRs([]);
 //       return;
 //     }
-    
+
 //     const matchedLRs = allConsignmentNotes.filter(lr => 
 //       purchaseOrderNumbers.includes(lr.orderNo)
 //     );
-    
+
 //     setFilteredLRs(matchedLRs);
 //     return matchedLRs;
 //   };
@@ -269,15 +269,15 @@
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
 //       const data = await res.json();
-      
+
 //       if (data.success && data.data) {
 //         const lrData = data.data;
-        
+
 //         // Clear existing products for this LR
 //         setProducts(prev => prev.filter(p => p.lrRefId !== lrId));
-        
+
 //         const allProducts = [];
-        
+
 //         const addProduct = (item, sourceType) => {
 //           if (item && item.productName && item.productName.trim() !== '') {
 //             allProducts.push({
@@ -298,37 +298,37 @@
 //             });
 //           }
 //         };
-        
+
 //         // Get Palletization Data
 //         if (lrData.packData?.PALLETIZATION && lrData.packData.PALLETIZATION.length > 0) {
 //           lrData.packData.PALLETIZATION.forEach(item => addProduct(item, 'PALLETIZATION'));
 //         }
-        
+
 //         // Get Uniform Data
 //         if (lrData.packData?.['UNIFORM - BAGS/BOXES'] && lrData.packData['UNIFORM - BAGS/BOXES'].length > 0) {
 //           lrData.packData['UNIFORM - BAGS/BOXES'].forEach(item => addProduct(item, 'UNIFORM'));
 //         }
-        
+
 //         // Get Loose Cargo Data
 //         if (lrData.packData?.['LOOSE - CARGO'] && lrData.packData['LOOSE - CARGO'].length > 0) {
 //           lrData.packData['LOOSE - CARGO'].forEach(item => addProduct(item, 'LOOSE_CARGO'));
 //         }
-        
+
 //         // Get Non-Uniform Data
 //         if (lrData.packData?.['NON-UNIFORM - GENERAL CARGO'] && lrData.packData['NON-UNIFORM - GENERAL CARGO'].length > 0) {
 //           lrData.packData['NON-UNIFORM - GENERAL CARGO'].forEach(item => addProduct(item, 'NON_UNIFORM'));
 //         }
-        
+
 //         // Also check for productRows (alternative structure)
 //         if (lrData.productRows && lrData.productRows.length > 0) {
 //           lrData.productRows.forEach(item => addProduct(item, 'PRODUCT_ROWS'));
 //         }
-        
+
 //         setProducts(prev => [...prev, ...allProducts]);
-        
+
 //         // Get POD Date from LR
 //         const podDateFromLR = lrData.lrDetails?.podDate || lrData.podDate || '';
-        
+
 //         // Update LR entry
 //         setLrEntries(prev => prev.map(lr => 
 //           lr._id === lrId ? { 
@@ -339,7 +339,7 @@
 //             podDate: podDateFromLR
 //           } : lr
 //         ));
-        
+
 //         // After updating LR entries, recalculate Last POD Date
 //         setTimeout(() => {
 //           setLrEntries(current => {
@@ -353,7 +353,7 @@
 //             return updated;
 //           });
 //         }, 100);
-        
+
 //         if (allProducts.length > 0) {
 //           alert(`✅ Loaded ${allProducts.length} products from LR: ${lrNo}\n📅 POD Date: ${podDateFromLR || 'Not set'}`);
 //         } else {
@@ -375,10 +375,10 @@
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
 //       const data = await res.json();
-      
+
 //       if (data.success && data.data) {
 //         const pod = data.data;
-        
+
 //         // Set header
 //         setHeader({
 //           podNo: pod.podNo || "",
@@ -388,7 +388,7 @@
 //           date: pod.header?.date ? new Date(pod.header.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
 //           delivery: pod.header?.delivery || "Normal"
 //         });
-        
+
 //         // Set billing
 //         if (pod.billing) {
 //           setBilling({
@@ -397,7 +397,7 @@
 //             noOfDroppingPoint: pod.billing.noOfDroppingPoint || ""
 //           });
 //         }
-        
+
 //         // Set purchase orders - preserve fromState
 //         if (pod.purchaseOrders) {
 //           const ordersWithState = pod.purchaseOrders.map(order => ({
@@ -411,17 +411,17 @@
 //           }));
 //           setPurchaseOrders(ordersWithState);
 //         }
-        
+
 //         // Set LR entries
 //         if (pod.lrEntries) {
 //           setLrEntries(pod.lrEntries);
 //         }
-        
+
 //         // Set products
 //         if (pod.products) {
 //           setProducts(pod.products);
 //         }
-        
+
 //         // Set vendor financial
 //         if (pod.vendorFinancial) {
 //           setVendorFinancial({
@@ -436,7 +436,7 @@
 //             dueDays: pod.vendorFinancial.dueDays || 0
 //           });
 //         }
-        
+
 //         // Set pod status section
 //         if (pod.podStatusSection) {
 //           setPodStatusSection({
@@ -448,15 +448,15 @@
 //             note: pod.podStatusSection.note || ""
 //           });
 //         }
-        
+
 //         // Set remarks
 //         if (pod.remarks) {
 //           setRemarks(pod.remarks);
 //         }
-        
+
 //         // Fetch consignment notes
 //         await fetchAllConsignmentNotes();
-        
+
 //         // Extract order numbers from purchase orders
 //         const orderNumbers = pod.purchaseOrders?.map(o => o.orderNo) || [];
 //         filterLRsByPurchaseOrders(orderNumbers);
@@ -473,18 +473,18 @@
 //   const handlePurchaseSelect = async (purchaseNo) => {
 //     setHeader({ ...header, purchaseNo });
 //     setLoading(true);
-    
+
 //     try {
 //       const token = localStorage.getItem('token');
 //       const res = await fetch(`/api/purchase-panel?purchaseNo=${purchaseNo}`, {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
 //       const data = await res.json();
-      
+
 //       if (data.success && data.data) {
 //         const purchase = data.data;
 //         setSelectedPurchase(purchase);
-        
+
 //         // Extract orders from purchase - UPDATED with fromState
 //         const orderNumbers = [];
 //         if (purchase.orderRows && purchase.orderRows.length > 0) {
@@ -509,12 +509,12 @@
 //             localStatusLabel: row.localStatusLabel || 'Unknown' // ✅ ADDED
 //           }));
 //           setPurchaseOrders(mappedOrders);
-          
+
 //           mappedOrders.forEach(order => {
 //             if (order.orderNo) orderNumbers.push(order.orderNo);
 //           });
 //         }
-        
+
 //         // Update header (keep existing POD No)
 //         setHeader({
 //           ...header,
@@ -524,7 +524,7 @@
 //           date: purchase.header?.date ? new Date(purchase.header.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
 //           delivery: purchase.header?.delivery || 'Normal'
 //         });
-        
+
 //         // Update billing (readonly)
 //         const orderCount = purchase.orderRows?.length || 0;
 //         setBilling({
@@ -532,13 +532,13 @@
 //           noOfLoadingPoints: purchase.billing?.noOfLoadingPoints || '',
 //           noOfDroppingPoint: purchase.billing?.noOfDroppingPoint || ''
 //         });
-        
+
 //         // Get vendor code and PO deduction from purchase
 //         const vendorCode = purchase.purchaseDetails?.vendorCode || '';
 //         const vendorName = purchase.purchaseDetails?.vendorName || '';
 //         const poDeductionFromPurchase = purchase.purchaseDetails?.poDeduction || purchase.poDeduction || purchase.totalDeductions || 0;
 //         const dueDays = getDueDaysFromSupplier(vendorCode);
-        
+
 //         // Update vendor financial - preserve existing podDeduction
 //         setVendorFinancial(prev => ({
 //           ...prev,
@@ -550,7 +550,7 @@
 //           dueDays: dueDays,
 //           podDeduction: prev.podDeduction || 0
 //         }));
-        
+
 //         // Create new LR entries for each order with inPersonParsal field
 //         if (orderNumbers.length > 0) {
 //           const newLrEntries = orderNumbers.map((orderNo, index) => ({
@@ -567,13 +567,13 @@
 //           }));
 //           setLrEntries(newLrEntries);
 //         }
-        
+
 //         // Clear products
 //         setProducts([]);
-        
+
 //         // Filter LRs
 //         filterLRsByPurchaseOrders(orderNumbers);
-        
+
 //         alert(`✅ Loaded Purchase: ${purchase.purchaseNo}\n📋 Orders found: ${orderNumbers.join(', ') || 'None'}`);
 //       }
 //     } catch (error) {
@@ -600,7 +600,7 @@
 //   // Handle LR Selection
 //   const handleLRSelect = async (lrId, selectedLRNo, orderNo) => {
 //     const selectedLR = filteredLRs.find(c => c.lrNo === selectedLRNo && c.orderNo === orderNo);
-    
+
 //     if (selectedLR) {
 //       setLrEntries(prev => prev.map(lr => 
 //         lr._id === lrId ? { 
@@ -646,7 +646,7 @@
 //       alert("❌ File size should be less than 5MB");
 //       return;
 //     }
-    
+
 //     updateLREntry(lrId, 'podUpload', 'UPLOADED');
 //     updateLREntry(lrId, 'podReceived', 'Received');
 //     alert(`✅ File ${file.name} selected for upload`);
@@ -680,10 +680,10 @@
 //     }
 
 //     setSaving(true);
-    
+
 //     try {
 //       const token = localStorage.getItem('token');
-      
+
 //       const payload = {
 //         id: podId,
 //         header: {
@@ -799,7 +799,7 @@
 
 //       {/* Main Content */}
 //       <div className="mx-auto max-w-full p-4">
-        
+
 //         {/* ==================== PURCHASE SELECTION ==================== */}
 //         <Card title="Select Purchase Order">
 //           <div className="grid grid-cols-12 gap-4">
@@ -817,12 +817,12 @@
 //                   const fromLoc = p.fromLocation || p.orderRows?.[0]?.from || '';
 //                   const toLoc = p.toLocation || p.orderRows?.[0]?.to || '';
 //                   const lrCode = p.lrCode || p.consignmentNo || '';
-                  
+
 //                   let displayText = `${p.purchaseNo} - ${p.vendorName || p.purchaseDetails?.vendorName || 'Unknown'}`;
 //                   if (vehicleNo) displayText += ` | 🚛 ${vehicleNo}`;
 //                   if (fromLoc && toLoc) displayText += ` | 📍 ${fromLoc} → ${toLoc}`;
 //                   if (lrCode) displayText += ` | 📋 ${lrCode}`;
-                  
+
 //                   return (
 //                     <option key={p._id} value={p.purchaseNo} title={displayText}>
 //                       {displayText}
@@ -834,7 +834,7 @@
 //                 Select a purchase to auto-fill order and LR details
 //               </p>
 //             </div>
-            
+
 //             {selectedPurchase && (
 //               <div className="col-span-12 md:col-span-6">
 //                 <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-3 rounded-xl border border-blue-200">
@@ -866,7 +866,7 @@
 //                 </div>
 //               </div>
 //             )}
-            
+
 //             {loading && (
 //               <div className="col-span-12">
 //                 <div className="bg-yellow-50 p-3 rounded-lg text-yellow-600 text-sm border border-yellow-200">
@@ -992,7 +992,7 @@
 //                   // Determine local status
 //                   const isLocal = order.fromState && order.state && 
 //                     order.fromState.trim().toUpperCase() === order.state.trim().toUpperCase();
-                  
+
 //                   return (
 //                     <tr key={idx} className="hover:bg-yellow-50 even:bg-slate-50">
 //                       <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.orderNo || '-'}</td>
@@ -1038,12 +1038,12 @@
 //         <div className="mt-4">
 //           <div className="text-sm font-extrabold text-slate-900 mb-2">LR Details (One per Order)</div>
 //         </div>
-        
+
 //         {lrEntries.map((lr, lrIndex) => {
 //           const availableLRs = getAvailableLRsForOrder(lr.orderNo);
 //           const order = purchaseOrders.find(o => o.orderNo === lr.orderNo);
 //           const lrProducts = products.filter(p => p.lrRefId === lr._id);
-          
+
 //           return (
 //             <div key={lr._id} className="mb-6">
 //               <Card 
@@ -1101,7 +1101,7 @@
 //                       className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm cursor-not-allowed" 
 //                     />
 //                   </div>
-                  
+
 //                   {/* In Person / Parsal */}
 //                   <div className="col-span-12 md:col-span-3">
 //                     <label className="text-xs font-bold text-slate-600">In Person / Parsal *</label>
@@ -1117,7 +1117,7 @@
 //                     </select>
 //                     <p className="text-xs text-slate-400 mt-1">Select delivery type</p>
 //                   </div>
-                  
+
 //                   <div className="col-span-12 md:col-span-3">
 //                     <label className="text-xs font-bold text-slate-600">Docket No</label>
 //                     <input 
@@ -1157,7 +1157,7 @@
 //                     </div>
 //                     <p className="text-xs text-slate-400 mt-1">Upload PDF or Image (Max 5MB)</p>
 //                   </div>
-                  
+
 //                   <div className="col-span-12 md:col-span-2">
 //                     <label className="text-xs font-bold text-slate-600">POD Received</label>
 //                     <select 
@@ -1347,7 +1347,7 @@
 //               />
 //               <p className="text-xs text-blue-600 mt-1">Auto-set from latest LR POD Date</p>
 //             </div>
-            
+
 //             <div className="col-span-12 md:col-span-3">
 //               <label className="text-xs font-bold text-slate-600">POD Status</label>
 //               <select 
@@ -1360,7 +1360,7 @@
 //                 <option value="Deductions">Deductions</option>
 //               </select>
 //             </div>
-            
+
 //             <div className="col-span-12 md:col-span-3">
 //               <label className="text-xs font-bold text-slate-600">Due Date</label>
 //               <input 
@@ -1371,7 +1371,7 @@
 //               />
 //               <p className="text-xs text-blue-600 mt-1">Last POD Date + {vendorFinancial.dueDays} days</p>
 //             </div>
-            
+
 //             <div className="col-span-12 md:col-span-3">
 //               <label className="text-xs font-bold text-slate-600">Payment Date</label>
 //               <input 
@@ -1382,7 +1382,7 @@
 //               />
 //               <p className="text-xs text-green-600 mt-1">Due Date + 3 days</p>
 //             </div>
-            
+
 //             <div className="col-span-12 md:col-span-4">
 //               <label className="text-xs font-bold text-slate-600 flex items-center gap-2">
 //                 <input 
@@ -1395,7 +1395,7 @@
 //               </label>
 //               <p className="text-xs text-slate-500 mt-1">Shot a Mail on the Registered Vendor mail ID</p>
 //             </div>
-            
+
 //             <div className="col-span-12">
 //               <label className="text-xs font-bold text-slate-600">Note</label>
 //               <textarea 
@@ -1406,7 +1406,7 @@
 //                 placeholder="Enter any additional notes about POD status..." 
 //               />
 //             </div>
-            
+
 //             <div className="col-span-12">
 //               <label className="text-xs font-bold text-slate-600">Remarks</label>
 //               <textarea 
@@ -1484,13 +1484,13 @@ function addDays(dateString, days) {
 // Helper function to get latest POD Date from LR entries
 function getLatestPodDate(lrEntries) {
   if (!lrEntries || lrEntries.length === 0) return "";
-  
+
   const podDates = lrEntries
     .filter(lr => lr.podDate && lr.podDate.trim() !== '')
     .map(lr => new Date(lr.podDate));
-  
+
   if (podDates.length === 0) return "";
-  
+
   const latestDate = new Date(Math.max(...podDates));
   return latestDate.toISOString().split('T')[0];
 }
@@ -1512,7 +1512,7 @@ export default function EditPOD() {
   const router = useRouter();
   const params = useParams();
   const podId = params.id;
-  
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [purchases, setPurchases] = useState([]);
@@ -1521,7 +1521,7 @@ export default function EditPOD() {
   const [filteredLRs, setFilteredLRs] = useState([]);
   const [loadingLR, setLoadingLR] = useState(false);
   const [suppliers, setSuppliers] = useState([]);
-  
+
   // ==================== COMPANY INFO STATE ====================
   const [companyInfo, setCompanyInfo] = useState({
     companyName: '',
@@ -1530,7 +1530,7 @@ export default function EditPOD() {
     subCompanyName: '',
     subCompanyCode: ''
   });
-  
+
   // ==================== HEADER STATE ====================
   const [header, setHeader] = useState({
     podNo: "",
@@ -1583,6 +1583,8 @@ export default function EditPOD() {
 
   // ==================== REMARKS ====================
   const [remarks, setRemarks] = useState("");
+  const [vehicleUnloadedDate, setVehicleUnloadedDate] = useState("");
+  const [unloadRemarks, setUnloadRemarks] = useState("");
 
   // Order Columns - UPDATED with fromState and Local/Not Local
   const orderColumns = [
@@ -1675,11 +1677,11 @@ export default function EditPOD() {
   // Update Last POD Date and recalculate Due Date & Payment Date
   const updateLastPodDateAndRecalculate = (newLastPodDate, dueDays) => {
     setPodStatusSection(prev => ({ ...prev, lastPodDate: newLastPodDate }));
-    
+
     if (newLastPodDate && dueDays) {
       const newDueDate = calculateDueDate(newLastPodDate, dueDays);
       setPodStatusSection(prev => ({ ...prev, dueDate: newDueDate }));
-      
+
       if (newDueDate) {
         const newPaymentDate = calculatePaymentDate(newDueDate);
         setPodStatusSection(prev => ({ ...prev, paymentDate: newPaymentDate }));
@@ -1721,11 +1723,11 @@ export default function EditPOD() {
       setFilteredLRs([]);
       return;
     }
-    
-    const matchedLRs = allConsignmentNotes.filter(lr => 
+
+    const matchedLRs = allConsignmentNotes.filter(lr =>
       purchaseOrderNumbers.includes(lr.orderNo)
     );
-    
+
     setFilteredLRs(matchedLRs);
     return matchedLRs;
   };
@@ -1738,15 +1740,15 @@ export default function EditPOD() {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-      
+
       if (data.success && data.data) {
         const lrData = data.data;
-        
+
         // Clear existing products for this LR
         setProducts(prev => prev.filter(p => p.lrRefId !== lrId));
-        
+
         const allProducts = [];
-        
+
         const addProduct = (item, sourceType) => {
           if (item && item.productName && item.productName.trim() !== '') {
             allProducts.push({
@@ -1767,62 +1769,62 @@ export default function EditPOD() {
             });
           }
         };
-        
+
         // Get Palletization Data
         if (lrData.packData?.PALLETIZATION && lrData.packData.PALLETIZATION.length > 0) {
           lrData.packData.PALLETIZATION.forEach(item => addProduct(item, 'PALLETIZATION'));
         }
-        
+
         // Get Uniform Data
         if (lrData.packData?.['UNIFORM - BAGS/BOXES'] && lrData.packData['UNIFORM - BAGS/BOXES'].length > 0) {
           lrData.packData['UNIFORM - BAGS/BOXES'].forEach(item => addProduct(item, 'UNIFORM'));
         }
-        
+
         // Get Loose Cargo Data
         if (lrData.packData?.['LOOSE - CARGO'] && lrData.packData['LOOSE - CARGO'].length > 0) {
           lrData.packData['LOOSE - CARGO'].forEach(item => addProduct(item, 'LOOSE_CARGO'));
         }
-        
+
         // Get Non-Uniform Data
         if (lrData.packData?.['NON-UNIFORM - GENERAL CARGO'] && lrData.packData['NON-UNIFORM - GENERAL CARGO'].length > 0) {
           lrData.packData['NON-UNIFORM - GENERAL CARGO'].forEach(item => addProduct(item, 'NON_UNIFORM'));
         }
-        
+
         // Also check for productRows (alternative structure)
         if (lrData.productRows && lrData.productRows.length > 0) {
           lrData.productRows.forEach(item => addProduct(item, 'PRODUCT_ROWS'));
         }
-        
+
         setProducts(prev => [...prev, ...allProducts]);
-        
+
         // Get POD Date from LR
         const podDateFromLR = lrData.lrDetails?.podDate || lrData.podDate || '';
-        
+
         // Update LR entry
-        setLrEntries(prev => prev.map(lr => 
-          lr._id === lrId ? { 
-            ...lr, 
+        setLrEntries(prev => prev.map(lr =>
+          lr._id === lrId ? {
+            ...lr,
             lrNo: lrData.lrNo,
             lrDate: lrData.header?.lrDate || lrData.lrDate || '',
             orderNo: lrData.header?.orderNo || lrData.orderNo || '',
             podDate: podDateFromLR
           } : lr
         ));
-        
+
         // After updating LR entries, recalculate Last POD Date
         setTimeout(() => {
           setLrEntries(current => {
-            const updated = current.map(lr => 
-              lr._id === lrId ? { 
-                ...lr, 
-                podDate: podDateFromLR 
+            const updated = current.map(lr =>
+              lr._id === lrId ? {
+                ...lr,
+                podDate: podDateFromLR
               } : lr
             );
             autoUpdateLastPodDate(updated, vendorFinancial.dueDays);
             return updated;
           });
         }, 100);
-        
+
         if (allProducts.length > 0) {
           alert(`✅ Loaded ${allProducts.length} products from LR: ${lrNo}\n📅 POD Date: ${podDateFromLR || 'Not set'}`);
         } else {
@@ -1844,12 +1846,12 @@ export default function EditPOD() {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-      
+
       if (data.success && data.data) {
         const pod = data.data;
-        
+
         console.log('📋 Loaded POD Data:', pod);
-        
+
         // ✅ Set Company Info
         setCompanyInfo({
           companyName: pod.companyName || pod.header?.companyName || '',
@@ -1858,7 +1860,7 @@ export default function EditPOD() {
           subCompanyName: pod.subCompanyName || pod.header?.subCompanyName || '',
           subCompanyCode: pod.subCompanyCode || pod.header?.subCompanyCode || ''
         });
-        
+
         // Set header with branch code
         setHeader({
           podNo: pod.podNo || "",
@@ -1869,7 +1871,7 @@ export default function EditPOD() {
           date: pod.header?.date ? new Date(pod.header.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
           delivery: pod.header?.delivery || "Normal"
         });
-        
+
         // Set billing
         if (pod.billing) {
           setBilling({
@@ -1878,7 +1880,7 @@ export default function EditPOD() {
             noOfDroppingPoint: pod.billing.noOfDroppingPoint || ""
           });
         }
-        
+
         // Set purchase orders - preserve fromState
         if (pod.purchaseOrders) {
           const ordersWithState = pod.purchaseOrders.map(order => ({
@@ -1892,17 +1894,17 @@ export default function EditPOD() {
           }));
           setPurchaseOrders(ordersWithState);
         }
-        
+
         // Set LR entries
         if (pod.lrEntries) {
           setLrEntries(pod.lrEntries);
         }
-        
+
         // Set products
         if (pod.products) {
           setProducts(pod.products);
         }
-        
+
         // Set vendor financial
         if (pod.vendorFinancial) {
           setVendorFinancial({
@@ -1917,7 +1919,7 @@ export default function EditPOD() {
             dueDays: pod.vendorFinancial.dueDays || 0
           });
         }
-        
+
         // Set pod status section
         if (pod.podStatusSection) {
           setPodStatusSection({
@@ -1929,15 +1931,18 @@ export default function EditPOD() {
             note: pod.podStatusSection.note || ""
           });
         }
-        
+
         // Set remarks
         if (pod.remarks) {
           setRemarks(pod.remarks);
         }
-        
+
+        setVehicleUnloadedDate(pod.vehicleUnloadedDate || "");
+        setUnloadRemarks(pod.unloadRemarks || "");
+
         // Fetch consignment notes
         await fetchAllConsignmentNotes();
-        
+
         // Extract order numbers from purchase orders
         const orderNumbers = pod.purchaseOrders?.map(o => o.orderNo) || [];
         filterLRsByPurchaseOrders(orderNumbers);
@@ -1954,27 +1959,27 @@ export default function EditPOD() {
   const handlePurchaseSelect = async (purchaseNo) => {
     setHeader({ ...header, purchaseNo });
     setLoading(true);
-    
+
     try {
       const token = localStorage.getItem('token');
       const res = await fetch(`/api/purchase-panel?purchaseNo=${purchaseNo}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-      
+
       if (data.success && data.data) {
         const purchase = data.data;
         setSelectedPurchase(purchase);
-        
+
         // ✅ Extract company information from purchase
         const companyName = purchase.companyName || purchase.header?.companyName || '';
         const companyCode = purchase.companyCode || purchase.header?.companyCode || '';
         const subCompanyId = purchase.subCompanyId || purchase.header?.subCompanyId || null;
         const subCompanyName = purchase.subCompanyName || purchase.header?.subCompanyName || '';
         const subCompanyCode = purchase.subCompanyCode || purchase.header?.subCompanyCode || '';
-        
+
         console.log('🏢 Company Info from Purchase:', { companyName, companyCode, subCompanyName, subCompanyCode });
-        
+
         // ✅ Update company info
         setCompanyInfo({
           companyName,
@@ -1983,7 +1988,7 @@ export default function EditPOD() {
           subCompanyName,
           subCompanyCode
         });
-        
+
         // Extract orders from purchase - UPDATED with fromState
         const orderNumbers = [];
         if (purchase.orderRows && purchase.orderRows.length > 0) {
@@ -2008,12 +2013,12 @@ export default function EditPOD() {
             localStatusLabel: row.localStatusLabel || 'Unknown'
           }));
           setPurchaseOrders(mappedOrders);
-          
+
           mappedOrders.forEach(order => {
             if (order.orderNo) orderNumbers.push(order.orderNo);
           });
         }
-        
+
         // Update header with company info
         setHeader({
           ...header,
@@ -2024,7 +2029,7 @@ export default function EditPOD() {
           date: purchase.header?.date ? new Date(purchase.header.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
           delivery: purchase.header?.delivery || 'Normal'
         });
-        
+
         // Update billing (readonly)
         const orderCount = purchase.orderRows?.length || 0;
         setBilling({
@@ -2032,13 +2037,13 @@ export default function EditPOD() {
           noOfLoadingPoints: purchase.billing?.noOfLoadingPoints || '',
           noOfDroppingPoint: purchase.billing?.noOfDroppingPoint || ''
         });
-        
+
         // Get vendor code and PO deduction from purchase
         const vendorCode = purchase.purchaseDetails?.vendorCode || '';
         const vendorName = purchase.purchaseDetails?.vendorName || '';
         const poDeductionFromPurchase = purchase.purchaseDetails?.poDeduction || purchase.poDeduction || purchase.totalDeductions || 0;
         const dueDays = getDueDaysFromSupplier(vendorCode);
-        
+
         // Update vendor financial - preserve existing podDeduction
         setVendorFinancial(prev => ({
           ...prev,
@@ -2050,7 +2055,7 @@ export default function EditPOD() {
           dueDays: dueDays,
           podDeduction: prev.podDeduction || 0
         }));
-        
+
         // Create new LR entries for each order with inPersonParsal field
         if (orderNumbers.length > 0) {
           const newLrEntries = orderNumbers.map((orderNo, index) => ({
@@ -2067,13 +2072,13 @@ export default function EditPOD() {
           }));
           setLrEntries(newLrEntries);
         }
-        
+
         // Clear products
         setProducts([]);
-        
+
         // Filter LRs
         filterLRsByPurchaseOrders(orderNumbers);
-        
+
         alert(`✅ Loaded Purchase: ${purchase.purchaseNo}\n📋 Orders found: ${orderNumbers.join(', ') || 'None'}\n🏢 Company: ${companyName || 'N/A'}`);
       }
     } catch (error) {
@@ -2100,11 +2105,11 @@ export default function EditPOD() {
   // Handle LR Selection
   const handleLRSelect = async (lrId, selectedLRNo, orderNo) => {
     const selectedLR = filteredLRs.find(c => c.lrNo === selectedLRNo && c.orderNo === orderNo);
-    
+
     if (selectedLR) {
-      setLrEntries(prev => prev.map(lr => 
-        lr._id === lrId ? { 
-          ...lr, 
+      setLrEntries(prev => prev.map(lr =>
+        lr._id === lrId ? {
+          ...lr,
           lrNo: selectedLRNo,
           lrDate: selectedLR.lrDate || '',
           orderNo: orderNo
@@ -2146,7 +2151,7 @@ export default function EditPOD() {
       alert("❌ File size should be less than 5MB");
       return;
     }
-    
+
     updateLREntry(lrId, 'podUpload', 'UPLOADED');
     updateLREntry(lrId, 'podReceived', 'Received');
     alert(`✅ File ${file.name} selected for upload`);
@@ -2180,10 +2185,10 @@ export default function EditPOD() {
     }
 
     setSaving(true);
-    
+
     try {
       const token = localStorage.getItem('token');
-      
+
       const payload = {
         id: podId,
         // ✅ Company info at root level
@@ -2229,6 +2234,8 @@ export default function EditPOD() {
           note: podStatusSection.note
         },
         remarks,
+        vehicleUnloadedDate,
+        unloadRemarks,
         purchaseNo: header.purchaseNo,
         pricingSerialNo: header.pricingSerialNo
       };
@@ -2310,9 +2317,8 @@ export default function EditPOD() {
             <button
               onClick={handleUpdate}
               disabled={saving}
-              className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${
-                saving ? 'bg-gray-400 cursor-not-allowed' : 'bg-yellow-600 hover:bg-yellow-700'
-              }`}
+              className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${saving ? 'bg-gray-400 cursor-not-allowed' : 'bg-yellow-600 hover:bg-yellow-700'
+                }`}
             >
               {saving ? 'Updating...' : 'Update POD'}
             </button>
@@ -2322,7 +2328,7 @@ export default function EditPOD() {
 
       {/* Main Content */}
       <div className="mx-auto max-w-full p-4">
-        
+
         {/* ==================== PURCHASE SELECTION ==================== */}
         <Card title="Select Purchase Order">
           <div className="grid grid-cols-12 gap-4">
@@ -2341,13 +2347,13 @@ export default function EditPOD() {
                   const toLoc = p.toLocation || p.orderRows?.[0]?.to || '';
                   const lrCode = p.lrCode || p.consignmentNo || '';
                   const companyName = p.companyName || p.header?.companyName || '';
-                  
+
                   let displayText = `${p.purchaseNo} - ${p.vendorName || p.purchaseDetails?.vendorName || 'Unknown'}`;
                   if (companyName) displayText += ` | 🏢 ${companyName}`;
                   if (vehicleNo) displayText += ` | 🚛 ${vehicleNo}`;
                   if (fromLoc && toLoc) displayText += ` | 📍 ${fromLoc} → ${toLoc}`;
                   if (lrCode) displayText += ` | 📋 ${lrCode}`;
-                  
+
                   return (
                     <option key={p._id} value={p.purchaseNo} title={displayText}>
                       {displayText}
@@ -2359,7 +2365,7 @@ export default function EditPOD() {
                 Select a purchase to auto-fill order and LR details
               </p>
             </div>
-            
+
             {selectedPurchase && (
               <div className="col-span-12 md:col-span-6">
                 <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-3 rounded-xl border border-blue-200">
@@ -2404,7 +2410,7 @@ export default function EditPOD() {
                 </div>
               </div>
             )}
-            
+
             {loading && (
               <div className="col-span-12">
                 <div className="bg-yellow-50 p-3 rounded-lg text-yellow-600 text-sm border border-yellow-200">
@@ -2422,26 +2428,26 @@ export default function EditPOD() {
         {/* ==================== COMPANY INFORMATION CARD (NEW) ==================== */}
         <Card title="Company Information">
           <div className="grid grid-cols-12 gap-3">
-          
+
             <div className="col-span-12 md:col-span-3">
               <label className="text-xs font-bold text-slate-600">Sub-Company Name</label>
-              <input 
-                type="text" 
-                value={companyInfo.subCompanyName || '-'} 
-                readOnly 
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700" 
+              <input
+                type="text"
+                value={companyInfo.subCompanyName || '-'}
+                readOnly
+                className="mt-1 w-full rounded-xl border border-slate-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700"
               />
             </div>
             <div className="col-span-12 md:col-span-2">
               <label className="text-xs font-bold text-slate-600">Sub-Company Code</label>
-              <input 
-                type="text" 
-                value={companyInfo.subCompanyCode || '-'} 
-                readOnly 
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700" 
+              <input
+                type="text"
+                value={companyInfo.subCompanyCode || '-'}
+                readOnly
+                className="mt-1 w-full rounded-xl border border-slate-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700"
               />
             </div>
-           
+
           </div>
           <p className="text-xs text-slate-400 mt-2">Company information is auto-loaded from the selected purchase</p>
         </Card>
@@ -2451,66 +2457,66 @@ export default function EditPOD() {
           <div className="grid grid-cols-12 gap-3">
             <div className="col-span-12 md:col-span-2">
               <label className="text-xs font-bold text-slate-600">POD No</label>
-              <input 
-                type="text" 
-                value={header.podNo} 
+              <input
+                type="text"
+                value={header.podNo}
                 onChange={(e) => setHeader({ ...header, podNo: e.target.value })}
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200" 
+                className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200"
                 placeholder="POD-2026-00001"
               />
             </div>
             <div className="col-span-12 md:col-span-2">
               <label className="text-xs font-bold text-slate-600">Purchase No</label>
-              <input 
-                type="text" 
-                value={header.purchaseNo} 
+              <input
+                type="text"
+                value={header.purchaseNo}
                 readOnly
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm cursor-not-allowed" 
+                className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm cursor-not-allowed"
               />
             </div>
             <div className="col-span-12 md:col-span-2">
               <label className="text-xs font-bold text-slate-600">Pricing Serial No</label>
-              <input 
-                type="text" 
-                value={header.pricingSerialNo} 
+              <input
+                type="text"
+                value={header.pricingSerialNo}
                 readOnly
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm cursor-not-allowed" 
+                className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm cursor-not-allowed"
               />
             </div>
             <div className="col-span-12 md:col-span-2">
               <label className="text-xs font-bold text-slate-600">Branch</label>
-              <input 
-                type="text" 
-                value={header.branch} 
+              <input
+                type="text"
+                value={header.branch}
                 readOnly
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm cursor-not-allowed" 
+                className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm cursor-not-allowed"
               />
             </div>
             <div className="col-span-12 md:col-span-2">
               <label className="text-xs font-bold text-slate-600">Branch Code</label>
-              <input 
-                type="text" 
-                value={header.branchCode} 
+              <input
+                type="text"
+                value={header.branchCode}
                 readOnly
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm cursor-not-allowed" 
+                className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm cursor-not-allowed"
               />
             </div>
             <div className="col-span-12 md:col-span-1">
               <label className="text-xs font-bold text-slate-600">Date</label>
-              <input 
-                type="date" 
-                value={header.date} 
+              <input
+                type="date"
+                value={header.date}
                 readOnly
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm cursor-not-allowed" 
+                className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm cursor-not-allowed"
               />
             </div>
             <div className="col-span-12 md:col-span-1">
               <label className="text-xs font-bold text-slate-600">Delivery</label>
-              <input 
-                type="text" 
-                value={header.delivery} 
+              <input
+                type="text"
+                value={header.delivery}
                 readOnly
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm cursor-not-allowed" 
+                className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm cursor-not-allowed"
               />
             </div>
           </div>
@@ -2564,9 +2570,9 @@ export default function EditPOD() {
               <tbody>
                 {purchaseOrders.length > 0 ? purchaseOrders.map((order, idx) => {
                   // Determine local status
-                  const isLocal = order.fromState && order.state && 
+                  const isLocal = order.fromState && order.state &&
                     order.fromState.trim().toUpperCase() === order.state.trim().toUpperCase();
-                  
+
                   return (
                     <tr key={idx} className="hover:bg-yellow-50 even:bg-slate-50">
                       <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.orderNo || '-'}</td>
@@ -2578,11 +2584,10 @@ export default function EditPOD() {
                       <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.fromState || '-'}</td>
                       <td className="border border-yellow-300 px-2 py-2 text-center">
                         {order.fromState && order.state ? (
-                          <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${
-                            isLocal
-                              ? 'bg-green-100 text-green-800 border border-green-300'
-                              : 'bg-red-100 text-red-800 border border-red-300'
-                          }`}>
+                          <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${isLocal
+                            ? 'bg-green-100 text-green-800 border border-green-300'
+                            : 'bg-red-100 text-red-800 border border-red-300'
+                            }`}>
                             {isLocal ? '✅ Local' : '❌ Not Local'}
                           </span>
                         ) : (
@@ -2612,15 +2617,15 @@ export default function EditPOD() {
         <div className="mt-4">
           <div className="text-sm font-extrabold text-slate-900 mb-2">LR Details (One per Order)</div>
         </div>
-        
+
         {lrEntries.map((lr, lrIndex) => {
           const availableLRs = getAvailableLRsForOrder(lr.orderNo);
           const order = purchaseOrders.find(o => o.orderNo === lr.orderNo);
           const lrProducts = products.filter(p => p.lrRefId === lr._id);
-          
+
           return (
             <div key={lr._id} className="mb-6">
-              <Card 
+              <Card
                 title={`LR Details for Order: ${lr.orderNo || `Order #${lrIndex + 1}`}`}
               >
                 <div className="grid grid-cols-12 gap-3">
@@ -2650,32 +2655,32 @@ export default function EditPOD() {
                   </div>
                   <div className="col-span-12 md:col-span-2">
                     <label className="text-xs font-bold text-slate-600">LR Date</label>
-                    <input 
-                      type="text" 
-                      value={lr.lrDate} 
+                    <input
+                      type="text"
+                      value={lr.lrDate}
                       readOnly
-                      className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm cursor-not-allowed" 
+                      className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm cursor-not-allowed"
                     />
                   </div>
                   <div className="col-span-12 md:col-span-2">
                     <label className="text-xs font-bold text-slate-600">Order No</label>
-                    <input 
-                      type="text" 
-                      value={lr.orderNo} 
+                    <input
+                      type="text"
+                      value={lr.orderNo}
                       readOnly
-                      className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm cursor-not-allowed" 
+                      className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm cursor-not-allowed"
                     />
                   </div>
                   <div className="col-span-12 md:col-span-2">
                     <label className="text-xs font-bold text-slate-600">Party Name</label>
-                    <input 
-                      type="text" 
-                      value={order?.partyName || '-'} 
+                    <input
+                      type="text"
+                      value={order?.partyName || '-'}
                       readOnly
-                      className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm cursor-not-allowed" 
+                      className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm cursor-not-allowed"
                     />
                   </div>
-                  
+
                   {/* In Person / Parsal */}
                   <div className="col-span-12 md:col-span-3">
                     <label className="text-xs font-bold text-slate-600">In Person / Parsal *</label>
@@ -2691,24 +2696,24 @@ export default function EditPOD() {
                     </select>
                     <p className="text-xs text-slate-400 mt-1">Select delivery type</p>
                   </div>
-                  
+
                   <div className="col-span-12 md:col-span-3">
                     <label className="text-xs font-bold text-slate-600">Docket No</label>
-                    <input 
-                      type="text" 
-                      value={lr.docketNo} 
-                      onChange={(e) => updateLREntry(lr._id, 'docketNo', e.target.value)} 
-                      className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-yellow-500" 
+                    <input
+                      type="text"
+                      value={lr.docketNo}
+                      onChange={(e) => updateLREntry(lr._id, 'docketNo', e.target.value)}
+                      className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-yellow-500"
                       placeholder="48126412412"
                     />
                   </div>
                   <div className="col-span-12 md:col-span-2">
                     <label className="text-xs font-bold text-slate-600">POD Date</label>
-                    <input 
-                      type="date" 
-                      value={lr.podDate} 
-                      onChange={(e) => updateLREntry(lr._id, 'podDate', e.target.value)} 
-                      className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-yellow-500" 
+                    <input
+                      type="date"
+                      value={lr.podDate}
+                      onChange={(e) => updateLREntry(lr._id, 'podDate', e.target.value)}
+                      className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-yellow-500"
                     />
                   </div>
                   <div className="col-span-12 md:col-span-3">
@@ -2731,11 +2736,11 @@ export default function EditPOD() {
                     </div>
                     <p className="text-xs text-slate-400 mt-1">Upload PDF or Image (Max 5MB)</p>
                   </div>
-                  
+
                   <div className="col-span-12 md:col-span-2">
                     <label className="text-xs font-bold text-slate-600">POD Received</label>
-                    <select 
-                      value={lr.podReceived} 
+                    <select
+                      value={lr.podReceived}
                       className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm outline-none cursor-not-allowed"
                       disabled
                     >
@@ -2813,8 +2818,8 @@ export default function EditPOD() {
                         )) : (
                           <tr>
                             <td colSpan={productColumns.length} className="border border-yellow-300 px-4 py-8 text-center text-slate-400">
-                              {lr.lrNo ? 
-                                `No products found for LR ${lr.lrNo}` : 
+                              {lr.lrNo ?
+                                `No products found for LR ${lr.lrNo}` :
                                 `Select an LR No for Order ${lr.orderNo || 'this order'} to load products`}
                             </td>
                           </tr>
@@ -2868,41 +2873,41 @@ export default function EditPOD() {
             </div>
             <div className="col-span-12 md:col-span-2">
               <label className="text-xs font-bold text-slate-600">PO - Deduction (from Purchase)</label>
-              <input 
-                type="text" 
-                value={`₹${vendorFinancial.poDeduction.toLocaleString()}`} 
-                readOnly 
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm cursor-not-allowed" 
+              <input
+                type="text"
+                value={`₹${vendorFinancial.poDeduction.toLocaleString()}`}
+                readOnly
+                className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm cursor-not-allowed"
               />
               <p className="text-xs text-slate-400 mt-1">Auto-filled from Purchase Panel</p>
             </div>
             <div className="col-span-12 md:col-span-2">
               <label className="text-xs font-bold text-slate-600">POD - Deduction</label>
-              <input 
-                type="number" 
-                value={vendorFinancial.podDeduction} 
-                onChange={(e) => setVendorFinancial({ ...vendorFinancial, podDeduction: num(e.target.value) })} 
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-yellow-500" 
+              <input
+                type="number"
+                value={vendorFinancial.podDeduction}
+                onChange={(e) => setVendorFinancial({ ...vendorFinancial, podDeduction: num(e.target.value) })}
+                className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-yellow-500"
                 placeholder="Enter POD deduction"
               />
             </div>
             <div className="col-span-12 md:col-span-3">
               <label className="text-xs font-bold text-slate-600">Total POD Deduction</label>
-              <input 
-                type="text" 
-                value={`₹${(vendorFinancial.poDeduction + vendorFinancial.podDeduction).toLocaleString()}`} 
-                readOnly 
-                className="mt-1 w-full rounded-xl border border-purple-200 bg-purple-50 px-3 py-2 text-sm font-bold text-purple-700" 
+              <input
+                type="text"
+                value={`₹${(vendorFinancial.poDeduction + vendorFinancial.podDeduction).toLocaleString()}`}
+                readOnly
+                className="mt-1 w-full rounded-xl border border-purple-200 bg-purple-50 px-3 py-2 text-sm font-bold text-purple-700"
               />
               <p className="text-xs text-slate-400 mt-1">PO Deduction + POD Deduction</p>
             </div>
             <div className="col-span-12 md:col-span-4">
               <label className="text-xs font-bold text-slate-600">Final Balance</label>
-              <input 
-                type="text" 
-                value={`₹${calculateFinalBalance().toLocaleString()}`} 
-                readOnly 
-                className="mt-1 w-full rounded-xl border border-purple-200 bg-purple-50 px-3 py-2 text-sm font-bold text-purple-700" 
+              <input
+                type="text"
+                value={`₹${calculateFinalBalance().toLocaleString()}`}
+                readOnly
+                className="mt-1 w-full rounded-xl border border-purple-200 bg-purple-50 px-3 py-2 text-sm font-bold text-purple-700"
               />
             </div>
           </div>
@@ -2913,19 +2918,19 @@ export default function EditPOD() {
           <div className="grid grid-cols-12 gap-4">
             <div className="col-span-12 md:col-span-3">
               <label className="text-xs font-bold text-slate-600">Last POD Date</label>
-              <input 
-                type="date" 
-                value={podStatusSection.lastPodDate} 
+              <input
+                type="date"
+                value={podStatusSection.lastPodDate}
                 readOnly
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm cursor-not-allowed" 
+                className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm cursor-not-allowed"
               />
               <p className="text-xs text-blue-600 mt-1">Auto-set from latest LR POD Date</p>
             </div>
-            
+
             <div className="col-span-12 md:col-span-3">
               <label className="text-xs font-bold text-slate-600">POD Status</label>
-              <select 
-                value={podStatusSection.podStatus || "Pending"} 
+              <select
+                value={podStatusSection.podStatus || "Pending"}
                 onChange={(e) => setPodStatusSection({ ...podStatusSection, podStatus: e.target.value })}
                 className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-yellow-500"
               >
@@ -2934,65 +2939,94 @@ export default function EditPOD() {
                 <option value="Deductions">Deductions</option>
               </select>
             </div>
-            
+
             <div className="col-span-12 md:col-span-3">
               <label className="text-xs font-bold text-slate-600">Due Date</label>
-              <input 
-                type="date" 
-                value={podStatusSection.dueDate} 
+              <input
+                type="date"
+                value={podStatusSection.dueDate}
                 readOnly
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm cursor-not-allowed" 
+                className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm cursor-not-allowed"
               />
               <p className="text-xs text-blue-600 mt-1">Last POD Date + {vendorFinancial.dueDays} days</p>
             </div>
-            
+
             <div className="col-span-12 md:col-span-3">
               <label className="text-xs font-bold text-slate-600">Payment Date</label>
-              <input 
-                type="date" 
-                value={podStatusSection.paymentDate} 
+              <input
+                type="date"
+                value={podStatusSection.paymentDate}
                 readOnly
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm cursor-not-allowed" 
+                className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm cursor-not-allowed"
               />
               <p className="text-xs text-green-600 mt-1">Due Date + 3 days</p>
             </div>
-            
+
             <div className="col-span-12 md:col-span-4">
               <label className="text-xs font-bold text-slate-600 flex items-center gap-2">
-                <input 
-                  type="checkbox" 
-                  checked={podStatusSection.acknowledgementMail} 
-                  onChange={(e) => setPodStatusSection({ ...podStatusSection, acknowledgementMail: e.target.checked })} 
-                  className="rounded border-slate-300" 
+                <input
+                  type="checkbox"
+                  checked={podStatusSection.acknowledgementMail}
+                  onChange={(e) => setPodStatusSection({ ...podStatusSection, acknowledgementMail: e.target.checked })}
+                  className="rounded border-slate-300"
                 />
                 Acknowledgement Mail Sent
               </label>
               <p className="text-xs text-slate-500 mt-1">Shot a Mail on the Registered Vendor mail ID</p>
             </div>
-            
+
             <div className="col-span-12">
               <label className="text-xs font-bold text-slate-600">Note</label>
-              <textarea 
-                value={podStatusSection.note || ""} 
-                onChange={(e) => setPodStatusSection({ ...podStatusSection, note: e.target.value })} 
-                rows={2} 
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-yellow-500" 
-                placeholder="Enter any additional notes about POD status..." 
+              <textarea
+                value={podStatusSection.note || ""}
+                onChange={(e) => setPodStatusSection({ ...podStatusSection, note: e.target.value })}
+                rows={2}
+                className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-yellow-500"
+                placeholder="Enter any additional notes about POD status..."
               />
             </div>
-            
+
             <div className="col-span-12">
               <label className="text-xs font-bold text-slate-600">Remarks</label>
-              <textarea 
-                value={remarks} 
-                onChange={(e) => setRemarks(e.target.value)} 
-                rows={2} 
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-yellow-500" 
-                placeholder="Enter remarks..." 
+              <textarea
+                value={remarks}
+                onChange={(e) => setRemarks(e.target.value)}
+                rows={2}
+                className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-yellow-500"
+                placeholder="Enter remarks..."
               />
             </div>
           </div>
         </Card>
+
+        {/* ===== Vehicle Unloaded & Remarks ===== */}
+        <div className="mt-4">
+          <Card title="Vehicle Unloaded & Remarks">
+            <div className="grid grid-cols-12 gap-4">
+              <div className="col-span-12 md:col-span-4">
+                <label className="text-xs font-bold text-slate-600">Vehicle Unloaded Date</label>
+                <input
+                  type="date"
+                  value={vehicleUnloadedDate}
+                  onChange={(e) => setVehicleUnloadedDate(e.target.value)}
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-yellow-500"
+                />
+                <div className="text-xs text-slate-400 mt-1">Date when vehicle was unloaded</div>
+              </div>
+              <div className="col-span-12 md:col-span-8">
+                <label className="text-xs font-bold text-slate-600">Remarks / Notes</label>
+                <textarea
+                  value={unloadRemarks}
+                  onChange={(e) => setUnloadRemarks(e.target.value)}
+                  rows={3}
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-yellow-500"
+                  placeholder="Enter any additional remarks or notes..."
+                />
+                <div className="text-xs text-slate-400 mt-1">Optional: Add any special instructions or notes</div>
+              </div>
+            </div>
+          </Card>
+        </div>
 
         {/* Summary Cards */}
         <div className="grid grid-cols-12 gap-4 mt-4">

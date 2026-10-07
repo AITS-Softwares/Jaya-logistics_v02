@@ -3803,6 +3803,7 @@ import { useMemo, useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import LRInvoiceUpload from "@/components/LRInvoiceUpload";
 
+
 /** =========================
  * CONSTANTS
  ========================= */
@@ -4018,8 +4019,8 @@ export default function CreateConsignmentNote() {
     lrType: "Normal",
     vehicleReach: "Not Reach",
     verification: "Not Verified",
-    vehicleUnloadedDate: "",
-    remarks: "",
+    // vehicleUnloadedDate: "",
+    // remarks: "",
     // ✅ ADD SUB-COMPANY FIELDS
     subCompanyId: "",
     subCompanyName: "",
@@ -4073,11 +4074,36 @@ export default function CreateConsignmentNote() {
    * E-WAYBILL & CONTAINER STATE
    ========================= */
   const [ewaybill, setEwaybill] = useState({
+    status: "",
     ewaybillNo: "",
     expiryDate: "",
     containerNo: "",
   });
+  const ewbGenerated = ewaybill.status === "To Be Generated" && Boolean(ewaybill.ewaybillNo);
+  const openEwayPortal = () => window.open("https://ewaybillgst.gov.in", "_blank", "noopener,noreferrer");
+  const [ewbScan, setEwbScan] = useState("idle"); // idle | scanning | found | notfound | unavailable
 
+  const handleInvoiceFile = async (f) => {
+    setInvoice((p) => ({ ...p, file: f }));
+    if (!f) { setEwbScan("idle"); return; }
+    setEwbScan("scanning");
+    try {
+      const res = await fetch("/api/consignment-note/extract-ewaybill", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("token")}` },
+        body: JSON.stringify({ filePath: f.filePath }),
+      });
+      const d = await res.json();
+      if (!res.ok || !d.success || d.ocr !== "ok") { setEwbScan("unavailable"); return; }
+      if (d.found) {
+        setEwaybill((p) => ({ ...p, status: "Provided by Customer", ewaybillNo: d.ewaybillNo, expiryDate: d.expiryDate || p.expiryDate }));
+        setEwbScan("found");
+      } else {
+        setEwaybill((p) => (p.ewaybillNo ? p : { ...p, status: "To Be Generated" }));
+        setEwbScan("notfound");
+      }
+    } catch { setEwbScan("unavailable"); }
+  };
   /** =========================
    * PRODUCT ROWS FOR EACH PACK TYPE
    ========================= */
@@ -4868,21 +4894,21 @@ export default function CreateConsignmentNote() {
     return total;
   };
 
-  const handleInvoiceFile = async (e) => {
-    const file = e.target.files?.[0]; e.target.value = "";
-    if (!file) return;
-    try {
-      const fd = new FormData(); fd.append("file", file);
-      const res = await fetch("/api/consignment-note/upload-invoice", {
-        method: "POST", headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }, body: fd
-      });
-      const d = await res.json().catch(() => null);
-      if (!res.ok || !d?.success) return alert(d?.message || `Upload failed (HTTP ${res.status})`);
-      setInvoice(p => ({ ...p, file: d.data }));
-    } catch (err) {
-      alert(`Upload failed: ${err.message}`);
-    }
-  };
+  // const handleInvoiceFile = async (e) => {
+  //   const file = e.target.files?.[0]; e.target.value = "";
+  //   if (!file) return;
+  //   try {
+  //     const fd = new FormData(); fd.append("file", file);
+  //     const res = await fetch("/api/consignment-note/upload-invoice", {
+  //       method: "POST", headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }, body: fd
+  //     });
+  //     const d = await res.json().catch(() => null);
+  //     if (!res.ok || !d?.success) return alert(d?.message || `Upload failed (HTTP ${res.status})`);
+  //     setInvoice(p => ({ ...p, file: d.data }));
+  //   } catch (err) {
+  //     alert(`Upload failed: ${err.message}`);
+  //   }
+  // };
 
   const viewInvoiceFile = async () => {
     const w = window.open("", "_blank"); // open first so pop-up blockers allow it
@@ -4916,6 +4942,15 @@ export default function CreateConsignmentNote() {
       if (!info) { alert("Please choose which order row this LR is for"); return; }
       if (info.lr) { alert(`This row already has LR ${info.lr.lrNo}`); return; }
     }
+
+    if (!ewaybill.status) { alert("Please select the E-waybill option"); return; }
+    const ewbDigits = String(ewaybill.ewaybillNo).replace(/\s/g, "");
+    if (ewaybill.status === "Provided by Customer" && !/^\d{12}$/.test(ewbDigits)) {
+      alert("E-waybill number must be 12 digits"); return;
+    }
+    if (ewaybill.status === "To Be Generated" && ewbDigits && !/^\d{12}$/.test(ewbDigits)) {
+      alert("E-waybill number must be 12 digits"); return;
+    }
     setSaving(true);
 
     try {
@@ -4946,8 +4981,8 @@ export default function CreateConsignmentNote() {
         lrType: header.lrType,
         vehicleReach: header.vehicleReach,
         verification: header.verification,
-        vehicleUnloadedDate: header.vehicleUnloadedDate,
-        remarks: header.remarks,
+        // vehicleUnloadedDate: header.vehicleUnloadedDate,
+        // remarks: header.remarks,
         // ✅ Add sub-company at root level
         subCompanyId: header.subCompanyId || '',
         subCompanyName: header.subCompanyName || '',
@@ -5588,7 +5623,7 @@ export default function CreateConsignmentNote() {
               <div className="col-span-12 md:col-span-6">
                 <LRInvoiceUpload
                   file={invoice.file}
-                  onChange={(f) => setInvoice((p) => ({ ...p, file: f }))}
+                  onChange={handleInvoiceFile}
                 />
               </div>
             </div>
@@ -5596,31 +5631,49 @@ export default function CreateConsignmentNote() {
         </div>
 
         {/* ===== E-waybill & Container ===== */}
+        {/* ===== E-waybill & Container ===== */}
         <div className="mt-4">
           <Card title="E-waybill & Container Details">
             <div className="grid grid-cols-12 gap-4">
-              <div className="col-span-12 md:col-span-4">
+              <div className="col-span-12 md:col-span-3">
+                <label className="text-xs font-bold text-slate-600">E-waybill</label>
+                <select
+                  value={ewaybill.status}
+                  onChange={(e) => setEwaybill({ ...ewaybill, status: e.target.value })}
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200"
+                >
+                  <option value="">— Select —</option>
+                  <option value="Provided by Customer">Provided by Customer</option>
+                  <option value="To Be Generated">To Be Generated</option>
+                </select>
+              </div>
+
+              <div className="col-span-12 md:col-span-3">
                 <label className="text-xs font-bold text-slate-600">E-waybill No</label>
                 <input
                   type="text"
+                  inputMode="numeric"
+                  maxLength={14}
                   value={ewaybill.ewaybillNo}
+                  readOnly={!ewaybill.status}
                   onChange={(e) => setEwaybill({ ...ewaybill, ewaybillNo: e.target.value })}
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200"
+                  className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 ${ewaybill.status ? "bg-white" : "bg-slate-100 text-slate-400"}`}
                   placeholder="5641 3563 6264"
                 />
               </div>
 
-              <div className="col-span-12 md:col-span-4">
+              <div className="col-span-12 md:col-span-3">
                 <label className="text-xs font-bold text-slate-600">Expiry Date</label>
                 <input
                   type="date"
                   value={ewaybill.expiryDate}
+                  readOnly={!ewaybill.status}
                   onChange={(e) => setEwaybill({ ...ewaybill, expiryDate: e.target.value })}
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200"
+                  className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 ${ewaybill.status ? "bg-white" : "bg-slate-100 text-slate-400"}`}
                 />
               </div>
 
-              <div className="col-span-12 md:col-span-4">
+              <div className="col-span-12 md:col-span-3">
                 <label className="text-xs font-bold text-slate-600">Container No</label>
                 <input
                   type="text"
@@ -5630,6 +5683,30 @@ export default function CreateConsignmentNote() {
                   placeholder="TEU8753185M"
                 />
               </div>
+              {ewbScan !== "idle" && (
+                <div className={`col-span-12 rounded-xl px-3 py-2 text-xs ${ewbScan === "found" ? "bg-green-50 text-green-700" : "bg-slate-50 text-slate-600"}`}>
+                  {ewbScan === "scanning" && "Reading the invoice for an e-waybill number…"}
+                  {ewbScan === "found" && "✓ E-waybill number found on the invoice and filled in. Please check it."}
+                  {ewbScan === "notfound" && "No e-waybill found on the invoice, so it is set to To Be Generated."}
+                  {ewbScan === "unavailable" && "The invoice could not be read automatically. Please choose the e-waybill option yourself."}
+                </div>
+              )}
+              {ewaybill.status === "To Be Generated" && (
+                <div className="col-span-12 flex flex-wrap items-center gap-3 rounded-xl border border-green-200 bg-green-50 px-3 py-2">
+                  <button
+                    type="button"
+                    onClick={openEwayPortal}
+                    className="rounded-lg bg-green-600 px-4 py-2 text-xs font-bold text-white hover:bg-green-700"
+                  >
+                    Generate E-waybill
+                  </button>
+                  <span className="text-xs text-slate-600">
+                    {ewbGenerated
+                      ? "✓ Generated. Number saved with this LR."
+                      : "Generate it on the e-way bill portal, then enter the number and expiry here."}
+                  </span>
+                </div>
+              )}
             </div>
           </Card>
         </div>
@@ -5960,10 +6037,10 @@ export default function CreateConsignmentNote() {
                       <span className="text-sm text-slate-600">Total Weight:</span>
                       <span className="text-xl font-bold text-purple-800">{calculateTotalActualWt().toFixed(2)} {header.unit}</span>
                     </div>
-                    <div className="flex justify-between">
+                    {/* <div className="flex justify-between">
                       <span className="text-sm text-slate-600">Vehicle Unloaded:</span>
                       <span className="font-bold text-purple-800">{header.vehicleUnloadedDate || 'N/A'}</span>
-                    </div>
+                    </div> */}
                   </div>
                 </div>
               </div>

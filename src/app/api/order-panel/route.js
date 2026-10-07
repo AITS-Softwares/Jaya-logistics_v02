@@ -770,6 +770,7 @@ export const GET = withAuth(async (req, context, user) => {
         partyName: orderPanel.partyName || orderPanel.customerName || 'N/A',
         totalWeight: orderPanel.totalWeight || 0,
         panelStatus: orderPanel.panelStatus || 'Draft',
+        approvalRemarks: orderPanel.approvalRemarks || '',
         delivery: orderPanel.delivery || 'Normal',
         plantRows: (orderPanel.plantRows || []).map(row => ({
           ...row,
@@ -1382,18 +1383,21 @@ export const PATCH = withAuth(async (req, context, user) => {
     }
 
     // Check if action is allowed
+    const remarks = (body.remarks || '').trim();
+
     if (action === 'approve') {
       orderPanel.panelStatus = 'Approved';
       orderPanel.approvedBy = user.id;
       orderPanel.approvedAt = new Date();
-      orderPanel.approvalRemarks = body.remarks || 'Approved via quick action';
+      orderPanel.approvalRemarks = remarks || 'Approved via quick action';
     } else if (action === 'reject') {
       orderPanel.panelStatus = 'Rejected';
       orderPanel.approvedBy = user.id;
       orderPanel.approvedAt = new Date();
-      orderPanel.approvalRemarks = body.remarks || 'Rejected via quick action';
+      orderPanel.approvalRemarks = remarks || 'Rejected via quick action';
     } else if (action === 'complete') {
       orderPanel.panelStatus = 'Completed';
+      if (remarks) orderPanel.approvalRemarks = remarks;
     } else {
       return NextResponse.json({
         success: false,
