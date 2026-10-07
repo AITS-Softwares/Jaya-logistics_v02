@@ -1625,8 +1625,8 @@ export default function ApproveConsignmentNote() {
     lrType: "Normal",
     vehicleReach: "Not Reach",
     verification: "Not Verified",
-    vehicleUnloadedDate: "",
-    remarks: "",
+    // vehicleUnloadedDate: "",
+    // remarks: "",
     // ✅ ADD SUB-COMPANY FIELDS
     subCompanyId: "",
     subCompanyName: "",
@@ -1659,6 +1659,7 @@ export default function ApproveConsignmentNote() {
     ewaybillNo: "",
     expiryDate: "",
     containerNo: "",
+    status: ""
   });
 
   // Pack data states
@@ -1736,8 +1737,8 @@ export default function ApproveConsignmentNote() {
         lrType: note.lrType || note.header?.lrType || "Normal",
         vehicleReach: note.vehicleReach || note.header?.vehicleReach || "Not Reach",
         verification: note.verification || note.header?.verification || "Not Verified",
-        vehicleUnloadedDate: note.vehicleUnloadedDate || note.header?.vehicleUnloadedDate || "",
-        remarks: note.remarks || note.header?.remarks || "",
+        // vehicleUnloadedDate: note.vehicleUnloadedDate || note.header?.vehicleUnloadedDate || "",
+        // remarks: note.remarks || note.header?.remarks || "",
         // ✅ Set sub-company
         subCompanyId: subCompanyId,
         subCompanyName: subCompanyName,
@@ -1773,7 +1774,8 @@ export default function ApproveConsignmentNote() {
       setEwaybill({
         ewaybillNo: note.ewaybill?.ewaybillNo || "",
         expiryDate: note.ewaybill?.expiryDate || "",
-        containerNo: note.ewaybill?.containerNo || ""
+        containerNo: note.ewaybill?.containerNo || "",
+        status: note.ewaybill?.status || ""
       });
 
       // Set pack data from note
@@ -2129,7 +2131,7 @@ export default function ApproveConsignmentNote() {
               <span class="info-label">Transport GST:</span>
               <span class="info-value">${businessInfo.transportGst || '27AAMFS9446C1ZU'}</span>
               <span class="info-label">E-Way Bill No:</span>
-              <span class="info-value">${ewaybill.ewaybillNo || '202184919358'}</span>
+              <span class="info-value">${ewaybill.ewaybillNo || (ewaybill.status ? ewaybill.status : '')}</span>
             </div>
             <div class="info-row">
               <span class="info-label">Container No:</span>
@@ -2157,18 +2159,18 @@ export default function ApproveConsignmentNote() {
               <span class="info-label">Verification:</span>
               <span class="info-value"><strong>${header.verification || 'Not Verified'}</strong></span>
             </div>
-            ${header.vehicleUnloadedDate ? `
-            <div class="info-row">
-              <span class="info-label">Vehicle Unloaded:</span>
-              <span class="info-value"><strong>${header.vehicleUnloadedDate}</strong></span>
-            </div>
-            ` : ''}
-            ${header.remarks ? `
-            <div class="info-row">
-              <span class="info-label">Remarks:</span>
-              <span class="info-value">${header.remarks}</span>
-            </div>
-            ` : ''}
+            // ${header.vehicleUnloadedDate ? `
+            // <div class="info-row">
+            //   <span class="info-label">Vehicle Unloaded:</span>
+            //   <span class="info-value"><strong>${header.vehicleUnloadedDate}</strong></span>
+            // </div>
+            // ` : ''}
+            // ${header.remarks ? `
+            // <div class="info-row">
+            //   <span class="info-label">Remarks:</span>
+            //   <span class="info-value">${header.remarks}</span>
+            // </div>
+            // ` : ''}
 
             <!-- Sub-Company Display -->
             ${header.subCompanyName ? `
@@ -2598,6 +2600,7 @@ export default function ApproveConsignmentNote() {
         {/* ===== E-WAYBILL & CONTAINER (READ ONLY) ===== */}
         <Card title="E-waybill & Container Details - Read Only">
           <div className="grid grid-cols-12 gap-4">
+            <Input col="col-span-12 md:col-span-4" label="E-waybill Status" value={ewaybill.status || "—"} readOnly={true} />
             <Input col="col-span-12 md:col-span-4" label="E-waybill No" value={ewaybill.ewaybillNo} readOnly={true} />
             <Input col="col-span-12 md:col-span-4" label="Expiry Date" value={ewaybill.expiryDate} readOnly={true} />
             <Input col="col-span-12 md:col-span-4" label="Container No" value={ewaybill.containerNo} readOnly={true} />
@@ -2713,8 +2716,8 @@ export default function ApproveConsignmentNote() {
                     <span className="text-sm text-slate-600">Total Weight:</span>
                     <span className="text-xl font-bold text-purple-800">{totalWeight.toFixed(2)} {header.unit}</span>
                   </div>
-                  <InfoRow label="Vehicle Unloaded" value={header.vehicleUnloadedDate || '-'} />
-                  <InfoRow label="Current Status" value={header.status} />
+                  {/* <InfoRow label="Vehicle Unloaded" value={header.vehicleUnloadedDate || '-'} />
+                  <InfoRow label="Current Status" value={header.status} /> */}
                 </div>
               </div>
             </div>

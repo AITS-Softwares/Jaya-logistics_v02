@@ -6343,10 +6343,13 @@ export default function CreateLoadingInfoPanel() {
   const [stream, setStream] = useState(null);
   const [cameraTarget, setCameraTarget] = useState(null);
   const [mediaPickerTarget, setMediaPickerTarget] = useState(null);
+  const [cameraFallback, setCameraFallback] = useState(null);
 
   useEffect(() => {
     if (showCamera && stream && videoRef.current) {
       videoRef.current.srcObject = stream;
+      // Some browsers keep a black frame unless play() is called explicitly.
+      videoRef.current.play?.().catch(() => {});
     }
   }, [showCamera, stream]);
 
@@ -6491,9 +6494,9 @@ export default function CreateLoadingInfoPanel() {
       setShowCamera(true);
     } catch (err) {
       console.error("Error accessing camera:", err);
-      // A denied/unavailable live stream should still allow phone users to
-      // take a picture through the browser's native file chooser.
-      openNativeCameraPicker(target);
+      // input.click() after an await is blocked by browsers (no user gesture),
+      // so ask the user to tap a real button/label to open the native camera.
+      setCameraFallback(target);
     }
   };
 
@@ -6709,6 +6712,7 @@ export default function CreateLoadingInfoPanel() {
   };
 
   const handleSelectVehicleNegotiation = async (negotiation) => {
+    if (isReadOnly) return;
     setSelectedVehicleNegotiation(negotiation);
     setVehicleNegotiationNo(negotiation.vnnNo);
     setShowVehicleNegotiationDropdown(false);
@@ -6750,8 +6754,8 @@ export default function CreateLoadingInfoPanel() {
         // placement snapshots. They are read-only after VNN selection.
         setVehicleInfo((previous) => ({
           ...previous,
-          vehicleNo: fullNegotiation.vehicleNo || "",
-          driverMobileNo: fullNegotiation.driverMobileNo || "",
+          vehicleNo: fullNegotiation.vehicleNo || previous.vehicleNo || "",
+          driverMobileNo: fullNegotiation.driverMobileNo || previous.driverMobileNo || "",
         }));
 
         if (Array.isArray(fullNegotiation.orders) && fullNegotiation.orders.length > 0) {
@@ -7741,8 +7745,8 @@ export default function CreateLoadingInfoPanel() {
               onClick={handleSave}
               disabled={saving || uploading}
               className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${saving || uploading
-                  ? 'bg-gray-400 cursor-not-allowed'
-                  : 'bg-emerald-600 hover:bg-emerald-700'
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-emerald-600 hover:bg-emerald-700'
                 }`}
             >
               {saving || uploading ? (
@@ -7793,6 +7797,48 @@ export default function CreateLoadingInfoPanel() {
               </button>
             </div>
             {typeof window !== 'undefined' && !window.isSecureContext && <p className="mt-3 text-xs text-amber-700">On this HTTP server, Take photo opens your device’s native image picker. Live webcam preview requires HTTPS.</p>}
+          </div>
+        </div>
+      )}
+
+      {/* Fallback when live camera is blocked/unavailable: a real tap opens the device camera */}
+      {cameraFallback && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl">
+            <h3 className="text-base font-extrabold text-slate-900">Camera not available</h3>
+            <p className="mt-1 text-xs text-slate-500">
+              Live camera preview is blocked (check browser camera permission, or use HTTPS). You can still take or choose a photo below.
+            </p>
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <label className="cursor-pointer rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-4 text-center text-sm font-bold text-emerald-700 hover:bg-emerald-100">
+                Take photo
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    const target = cameraFallback;
+                    setCameraFallback(null);
+                    if (file && target) {
+                      appendUploadFile(target.section, target.field, file);
+                      if (target.section === 'vehicle') {
+                        const now = new Date();
+                        setArrivalDetails(prev => ({ ...prev, date: now.toISOString().split('T')[0], time: now.toLocaleTimeString() }));
+                      }
+                    }
+                  }}
+                />
+              </label>
+              <button
+                type="button"
+                onClick={() => setCameraFallback(null)}
+                className="rounded-xl border border-slate-300 bg-white px-3 py-4 text-sm font-bold text-slate-700 hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -8246,8 +8292,8 @@ export default function CreateLoadingInfoPanel() {
                 onClick={addOrderRow}
                 disabled={!!selectedVehicleNegotiation}
                 className={`rounded-xl px-4 py-1.5 text-xs font-bold text-white transition ${selectedVehicleNegotiation
-                    ? 'bg-gray-400 cursor-not-allowed'
-                    : 'bg-yellow-600 hover:bg-yellow-700'
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-yellow-600 hover:bg-yellow-700'
                   }`}
               >
                 + Add Order
@@ -8405,8 +8451,8 @@ export default function CreateLoadingInfoPanel() {
                       <td className="border border-yellow-300 px-2 py-2 text-center">
                         {row.fromState && row.stateName ? (
                           <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${row.fromState.trim().toUpperCase() === row.stateName.trim().toUpperCase()
-                              ? 'bg-green-100 text-green-800 border border-green-300'
-                              : 'bg-red-100 text-red-800 border border-red-300'
+                            ? 'bg-green-100 text-green-800 border border-green-300'
+                            : 'bg-red-100 text-red-800 border border-red-300'
                             }`}>
                             {row.fromState.trim().toUpperCase() === row.stateName.trim().toUpperCase() ? '✅ Local' : '❌ Not Local'}
                           </span>
@@ -8474,8 +8520,8 @@ export default function CreateLoadingInfoPanel() {
                           onClick={() => removeOrderRow(row._id)}
                           disabled={!!selectedVehicleNegotiation}
                           className={`rounded-lg px-3 py-1.5 text-xs font-bold text-white ${selectedVehicleNegotiation
-                              ? 'bg-gray-400 cursor-not-allowed'
-                              : 'bg-red-500 hover:bg-red-600'
+                            ? 'bg-gray-400 cursor-not-allowed'
+                            : 'bg-red-500 hover:bg-red-600'
                             }`}
                         >
                           Remove
@@ -9101,8 +9147,8 @@ export default function CreateLoadingInfoPanel() {
                         <button
                           onClick={() => openImageMediaPicker('vbp', `vbp${num}`, `VBP-${num}`)}
                           className={`w-full rounded-lg px-2 py-3 text-xs font-bold border hover:bg-opacity-80 ${vbpFiles[`vbp${num}`].length > 0
-                              ? 'bg-green-50 text-green-700 border-green-200'
-                              : 'bg-blue-50 text-blue-700 border-blue-200'
+                            ? 'bg-green-50 text-green-700 border-green-200'
+                            : 'bg-blue-50 text-blue-700 border-blue-200'
                             }`}
                         >
                           {vbpFiles[`vbp${num}`].length > 0 ? `✓ ${vbpFiles[`vbp${num}`].length} file(s)` : 'Select'}
@@ -9123,8 +9169,8 @@ export default function CreateLoadingInfoPanel() {
                       <button
                         onClick={() => handleFileSelect('vbp', 'videoVbp', true)}
                         className={`w-full rounded-lg px-2 py-3 text-xs font-bold border hover:bg-opacity-80 ${vbpFiles.videoVbp.length > 0
-                            ? 'bg-green-50 text-green-700 border-green-200'
-                            : 'bg-purple-50 text-purple-700 border-purple-200'
+                          ? 'bg-green-50 text-green-700 border-green-200'
+                          : 'bg-purple-50 text-purple-700 border-purple-200'
                           }`}
                       >
                         {vbpFiles.videoVbp.length > 0 ? `✓ ${vbpFiles.videoVbp.length} file(s)` : 'Select'}
@@ -9176,8 +9222,8 @@ export default function CreateLoadingInfoPanel() {
                     <button
                       onClick={() => openImageMediaPicker('vft', `vft${num}`, `VFT-${num}`)}
                       className={`w-full rounded-lg px-2 py-3 text-xs font-bold border hover:bg-opacity-80 ${vftFiles[`vft${num}`].length > 0
-                          ? 'bg-green-50 text-green-700 border-green-200'
-                          : 'bg-blue-50 text-blue-700 border-blue-200'
+                        ? 'bg-green-50 text-green-700 border-green-200'
+                        : 'bg-blue-50 text-blue-700 border-blue-200'
                         }`}
                     >
                       {vftFiles[`vft${num}`].length > 0 ? `✓ ${vftFiles[`vft${num}`].length} file(s)` : 'Select'}
@@ -9198,8 +9244,8 @@ export default function CreateLoadingInfoPanel() {
                   <button
                     onClick={() => handleFileSelect('vft', 'videoVft', true)}
                     className={`w-full rounded-lg px-2 py-3 text-xs font-bold border hover:bg-opacity-80 ${vftFiles.videoVft.length > 0
-                        ? 'bg-green-50 text-green-700 border-green-200'
-                        : 'bg-purple-50 text-purple-700 border-purple-200'
+                      ? 'bg-green-50 text-green-700 border-green-200'
+                      : 'bg-purple-50 text-purple-700 border-purple-200'
                       }`}
                   >
                     {vftFiles.videoVft.length > 0 ? `✓ ${vftFiles.videoVft.length} file(s)` : 'Select'}
@@ -9296,10 +9342,10 @@ export default function CreateLoadingInfoPanel() {
                           onClick={() => openImageMediaPicker('vl', `vl${fieldNum}`, `VL(stack)-${fieldNum}`)}
                           disabled={isDisabled}
                           className={`w-full rounded-lg py-2.5 text-sm font-bold border transition-all ${currentCount > 0
-                              ? 'bg-green-50 text-green-700 border-green-300 hover:bg-green-100'
-                              : isDisabled
-                                ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
-                                : 'bg-blue-50 text-blue-700 border-blue-300 hover:bg-blue-100'
+                            ? 'bg-green-50 text-green-700 border-green-300 hover:bg-green-100'
+                            : isDisabled
+                              ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                              : 'bg-blue-50 text-blue-700 border-blue-300 hover:bg-blue-100'
                             }`}
                           title={isDisabled ? "Maximum 25 photos reached" : `Upload VL(stack)-${fieldNum} photos`}
                         >
@@ -9420,8 +9466,8 @@ export default function CreateLoadingInfoPanel() {
                     <button
                       onClick={() => handleFileSelect('vl', 'videoVl', true)}
                       className={`rounded-lg px-4 py-2 text-xs font-bold border hover:bg-opacity-80 ${vlFiles.videoVl && vlFiles.videoVl.length > 0
-                          ? 'bg-green-50 text-green-700 border-green-300'
-                          : 'bg-purple-100 text-purple-700 border-purple-300 hover:bg-purple-200'
+                        ? 'bg-green-50 text-green-700 border-green-300'
+                        : 'bg-purple-100 text-purple-700 border-purple-300 hover:bg-purple-200'
                         }`}
                     >
                       {vlFiles.videoVl && vlFiles.videoVl.length > 0
@@ -9449,8 +9495,8 @@ export default function CreateLoadingInfoPanel() {
                 <div className="w-full bg-slate-200 rounded-full h-2.5">
                   <div
                     className={`h-2.5 rounded-full transition-all duration-300 ${getTotalVlPhotosCount() >= 5
-                        ? 'bg-green-500'
-                        : 'bg-yellow-500'
+                      ? 'bg-green-500'
+                      : 'bg-yellow-500'
                       }`}
                     style={{
                       width: `${Math.min(100, (getTotalVlPhotosCount() / 25) * 100)}%`
@@ -9512,8 +9558,8 @@ export default function CreateLoadingInfoPanel() {
                     <button
                       onClick={() => openImageMediaPicker('vot', `vot${num}`, `VOT-${num}`)}
                       className={`w-full rounded-lg px-2 py-3 text-xs font-bold border hover:bg-opacity-80 ${votFiles[`vot${num}`].length > 0
-                          ? 'bg-green-50 text-green-700 border-green-200'
-                          : 'bg-blue-50 text-blue-700 border-blue-200'
+                        ? 'bg-green-50 text-green-700 border-green-200'
+                        : 'bg-blue-50 text-blue-700 border-blue-200'
                         }`}
                     >
                       {votFiles[`vot${num}`].length > 0 ? `✓ ${votFiles[`vot${num}`].length} file(s)` : 'Select'}
@@ -9534,8 +9580,8 @@ export default function CreateLoadingInfoPanel() {
                   <button
                     onClick={() => handleFileSelect('vot', 'videoVot', true)}
                     className={`w-full rounded-lg px-2 py-3 text-xs font-bold border hover:bg-opacity-80 ${votFiles.videoVot.length > 0
-                        ? 'bg-green-50 text-green-700 border-green-200'
-                        : 'bg-purple-50 text-purple-700 border-purple-200'
+                      ? 'bg-green-50 text-green-700 border-green-200'
+                      : 'bg-purple-50 text-purple-700 border-purple-200'
                       }`}
                   >
                     {votFiles.videoVot.length > 0 ? `✓ ${votFiles.videoVot.length} file(s)` : 'Select'}
@@ -9576,8 +9622,8 @@ export default function CreateLoadingInfoPanel() {
                       <button
                         onClick={() => handleFileSelect('weighment', 'weighSlip')}
                         className={`rounded-lg px-4 py-2 text-xs font-bold border hover:bg-opacity-80 ${weighmentFiles.weighSlip.length > 0
-                            ? 'bg-green-50 text-green-700 border-green-200'
-                            : 'bg-blue-50 text-blue-700 border-blue-200'
+                          ? 'bg-green-50 text-green-700 border-green-200'
+                          : 'bg-blue-50 text-blue-700 border-blue-200'
                           }`}
                       >
                         {weighmentFiles.weighSlip.length > 0 ? `✓ ${weighmentFiles.weighSlip.length} file(s)` : 'Select'}
@@ -9692,7 +9738,7 @@ export default function CreateLoadingInfoPanel() {
                         onChange={(e) => setArrivalDetails({ ...arrivalDetails, date: e.target.value })}
                         className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500"
                       />
-                      <p className="text-xs text-green-600 mt-1">Auto-filled from camera capture</p>
+                      <p className="text-xs text-green-600 mt-1">Auto-filled when the vehicle slip is uploaded</p>
                     </div>
                   </div>
                   <div className="col-span-12 md:col-span-3">
@@ -9705,7 +9751,7 @@ export default function CreateLoadingInfoPanel() {
                         className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500"
                         placeholder="HH:MM"
                       />
-                      <p className="text-xs text-green-600 mt-1">Auto-filled from camera capture</p>
+                      <p className="text-xs text-green-600 mt-1">Auto-filled when the vehicle slip is uploaded</p>
                     </div>
                   </div>
                   <div className="col-span-12 md:col-span-3">
@@ -9717,7 +9763,7 @@ export default function CreateLoadingInfoPanel() {
                         onChange={(e) => setArrivalDetails({ ...arrivalDetails, outDate: e.target.value })}
                         className="mt-1 w-full rounded-lg border border-orange-200 bg-white px-3 py-2 text-sm outline-none focus:border-orange-500"
                       />
-                      <p className="text-xs text-orange-600 mt-1">Auto-filled when generating LR</p>
+                      <p className="text-xs text-orange-600 mt-1">Auto-filled when the LR is approved</p>
                     </div>
                   </div>
                   <div className="col-span-12 md:col-span-3">
@@ -9730,7 +9776,7 @@ export default function CreateLoadingInfoPanel() {
                         className="mt-1 w-full rounded-lg border border-orange-200 bg-white px-3 py-2 text-sm outline-none focus:border-orange-500"
                         placeholder="HH:MM"
                       />
-                      <p className="text-xs text-orange-600 mt-1">Auto-filled when generating LR</p>
+                      <p className="text-xs text-orange-600 mt-1">Auto-filled when the LR is approved</p>
                     </div>
                   </div>
                 </div>
@@ -9747,12 +9793,16 @@ export default function CreateLoadingInfoPanel() {
                 <div className="bg-white p-4 rounded-xl border border-slate-200">
                   <h3 className="text-sm font-bold text-slate-800 mb-2">Consignment Note (LR)</h3>
                   <button
-                    onClick={handleGenerateLR}
-                    className="w-full rounded-lg bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700"
+                    type="button"
+                    disabled
+                    title="Available once the LR is created"
+                    className="w-full cursor-not-allowed rounded-lg bg-gray-400 px-4 py-2 text-xs font-bold text-white"
                   >
-                    Generate LR
+                    View LR
                   </button>
-                  <p className="text-xs text-slate-500 mt-2">Click to generate LR and auto-fill Out Time & Date</p>
+                  <p className="text-xs text-slate-500 mt-2">
+                    Save this Loading Info first. The LR is created by the Consignment Note team and will appear here.
+                  </p>
                 </div>
               </div>
               <div className="col-span-12 md:col-span-4">

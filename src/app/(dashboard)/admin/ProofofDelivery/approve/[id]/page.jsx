@@ -25,7 +25,7 @@
 //   const router = useRouter();
 //   const params = useParams();
 //   const podId = params.id;
-  
+
 //   const [loading, setLoading] = useState(true);
 //   const [saving, setSaving] = useState(false);
 //   const [sendingEmail, setSendingEmail] = useState(false);
@@ -33,7 +33,7 @@
 //   const [supplierEmail, setSupplierEmail] = useState("");
 //   const [supplierName, setSupplierName] = useState("");
 //   const [supplierCode, setSupplierCode] = useState("");
-  
+
 //   // ==================== READONLY STATE (from DB) ====================
 //   const [header, setHeader] = useState({
 //     podNo: "",
@@ -124,11 +124,11 @@
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
 //       const data = await res.json();
-      
+
 //       if (data.success && data.data) {
 //         const pod = data.data;
 //         setPodData(pod);
-        
+
 //         // Set header (readonly)
 //         setHeader({
 //           podNo: pod.podNo || "",
@@ -138,7 +138,7 @@
 //           date: pod.header?.date ? new Date(pod.header.date).toISOString().split('T')[0] : "",
 //           delivery: pod.header?.delivery || "Normal"
 //         });
-        
+
 //         // Set billing (readonly)
 //         if (pod.billing) {
 //           setBilling({
@@ -147,29 +147,29 @@
 //             noOfDroppingPoint: pod.billing.noOfDroppingPoint || ""
 //           });
 //         }
-        
+
 //         // Set purchase orders (readonly)
 //         if (pod.purchaseOrders) {
 //           setPurchaseOrders(pod.purchaseOrders);
 //         }
-        
+
 //         // Set LR entries (readonly)
 //         if (pod.lrEntries) {
 //           setLrEntries(pod.lrEntries);
 //         }
-        
+
 //         // Set products (readonly)
 //         if (pod.products) {
 //           setProducts(pod.products);
 //         }
-        
+
 //         // Get vendor code from purchase
 //         const vendorCode = pod.vendorFinancial?.vendorCode || pod.purchaseDetails?.vendorCode || "";
 //         const vendorName = pod.vendorFinancial?.vendorName || pod.purchaseDetails?.vendorName || "";
-        
+
 //         setSupplierCode(vendorCode);
 //         setSupplierName(vendorName);
-        
+
 //         // Set vendor financial (readonly)
 //         if (pod.vendorFinancial) {
 //           setVendorFinancial({
@@ -183,7 +183,7 @@
 //             finalBalance: pod.vendorFinancial.finalBalance || 0
 //           });
 //         }
-        
+
 //         // Try to get supplier email from vendors API using vendor code
 //         if (vendorCode) {
 //           try {
@@ -192,7 +192,7 @@
 //             });
 //             const vendorsData = await vendorsRes.json();
 //             console.log("Suppliers API response:", vendorsData);
-            
+
 //             if (vendorsData.success && vendorsData.data && vendorsData.data.length > 0) {
 //               const supplier = vendorsData.data[0];
 //               const email = supplier.emailId || supplier.email || supplier.contactEmail || "";
@@ -211,7 +211,7 @@
 //         } else {
 //           setSupplierName(vendorName);
 //         }
-        
+
 //         // Set pod status section (editable fields)
 //         if (pod.podStatusSection) {
 //           setPodStatusSection({
@@ -223,7 +223,7 @@
 //             note: pod.podStatusSection.note || ""
 //           });
 //         }
-        
+
 //         // Set remarks (editable)
 //         if (pod.remarks) {
 //           setRemarks(pod.remarks);
@@ -245,13 +245,13 @@
 //     }
 
 //     setSendingEmail(true);
-    
+
 //     try {
 //       const totalPodDeduction = products.reduce((sum, p) => sum + num(p.value), 0);
 //       const finalBalance = vendorFinancial.total - vendorFinancial.advance - vendorFinancial.poDeduction - totalPodDeduction;
 //       const totalQuantity = products.reduce((sum, p) => sum + num(p.totalPkgs), 0);
 //       const totalActualWt = products.reduce((sum, p) => sum + num(p.actualWt), 0);
-      
+
 //       const emailContent = `
 //         <!DOCTYPE html>
 //         <html>
@@ -284,7 +284,7 @@
 //               <p>${header.podNo}</p>
 //             </div>
 //             <div class="content">
-              
+
 //               <h2>📄 POD Information</h2>
 //               <table>
 //                 <tr><th style="width:40%">POD No</th><td><strong>${header.podNo}</strong></td></tr>
@@ -436,7 +436,7 @@
 //     setSaving(true);
 //     try {
 //       const token = localStorage.getItem('token');
-      
+
 //       const payload = {
 //         id: podId,
 //         podStatusSection: {
@@ -545,7 +545,7 @@
 
 //       {/* Main Content */}
 //       <div className="mx-auto max-w-full p-4">
-        
+
 //         {/* Summary Cards */}
 //         <div className="grid grid-cols-12 gap-4 mb-4">
 //           <div className="col-span-12 md:col-span-3">
@@ -648,7 +648,7 @@
 //     // Determine local status
 //     const isLocal = order.fromState && order.state && 
 //       order.fromState.trim().toUpperCase() === order.state.trim().toUpperCase();
-    
+
 //     return (
 //       <tr key={idx} className="hover:bg-yellow-50 even:bg-slate-50">
 //         <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.orderNo || '-'}</td>
@@ -694,7 +694,7 @@
 //         {lrEntries.map((lr, lrIndex) => {
 //           const lrProducts = products.filter(p => p.lrRefId === lr._id);
 //           const order = purchaseOrders.find(o => o.orderNo === lr.orderNo);
-          
+
 //           return (
 //             <div key={lr._id} className="mb-6">
 //               <Card title={`LR Details for Order: ${lr.orderNo || `Order #${lrIndex + 1}`}`}>
@@ -715,7 +715,7 @@
 //                     <label className="text-xs font-bold text-slate-600">Party Name</label>
 //                     <input type="text" value={order?.partyName || '-'} readOnly className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm" />
 //                   </div>
-                  
+
 //                   {/* NEW FIELD: In Person / Parsal (Readonly) */}
 //                   <div className="col-span-12 md:col-span-3">
 //                     <label className="text-xs font-bold text-slate-600">In Person / Parsal</label>
@@ -726,7 +726,7 @@
 //                       className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm font-medium text-blue-700" 
 //                     />
 //                   </div>
-                  
+
 //                   <div className="col-span-12 md:col-span-3">
 //                     <label className="text-xs font-bold text-slate-600">Docket No</label>
 //                     <input type="text" value={lr.docketNo} readOnly className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm" />
@@ -967,6 +967,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { usePermission } from "../../../hooks/usePermission";
 
 function num(v) {
   const n = Number(v);
@@ -990,7 +991,9 @@ export default function ApprovePOD() {
   const router = useRouter();
   const params = useParams();
   const podId = params.id;
-  
+  const { hasPermission, loading: permLoading } = usePermission();
+  const canApprove = hasPermission("Proof Of Delivery", "approve");
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [sendingEmail, setSendingEmail] = useState(false);
@@ -998,7 +1001,7 @@ export default function ApprovePOD() {
   const [supplierEmail, setSupplierEmail] = useState("");
   const [supplierName, setSupplierName] = useState("");
   const [supplierCode, setSupplierCode] = useState("");
-  
+
   // ==================== COMPANY INFO STATE ====================
   const [companyInfo, setCompanyInfo] = useState({
     companyName: '',
@@ -1007,7 +1010,7 @@ export default function ApprovePOD() {
     subCompanyName: '',
     subCompanyCode: ''
   });
-  
+
   // ==================== READONLY STATE (from DB) ====================
   const [header, setHeader] = useState({
     podNo: "",
@@ -1050,6 +1053,8 @@ export default function ApprovePOD() {
   });
 
   const [remarks, setRemarks] = useState("");
+  const [vehicleUnloadedDate, setVehicleUnloadedDate] = useState("");
+  const [unloadRemarks, setUnloadRemarks] = useState("");
 
   // Product Columns
   const productColumns = [
@@ -1098,13 +1103,13 @@ export default function ApprovePOD() {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-      
+
       if (data.success && data.data) {
         const pod = data.data;
         setPodData(pod);
-        
+
         console.log('📋 Loaded POD Data:', pod);
-        
+
         // ✅ Set Company Info
         setCompanyInfo({
           companyName: pod.companyName || pod.header?.companyName || '',
@@ -1113,7 +1118,7 @@ export default function ApprovePOD() {
           subCompanyName: pod.subCompanyName || pod.header?.subCompanyName || '',
           subCompanyCode: pod.subCompanyCode || pod.header?.subCompanyCode || ''
         });
-        
+
         // Set header (readonly)
         setHeader({
           podNo: pod.podNo || "",
@@ -1124,7 +1129,7 @@ export default function ApprovePOD() {
           date: pod.header?.date ? new Date(pod.header.date).toISOString().split('T')[0] : "",
           delivery: pod.header?.delivery || "Normal"
         });
-        
+
         // Set billing (readonly)
         if (pod.billing) {
           setBilling({
@@ -1133,29 +1138,29 @@ export default function ApprovePOD() {
             noOfDroppingPoint: pod.billing.noOfDroppingPoint || ""
           });
         }
-        
+
         // Set purchase orders (readonly)
         if (pod.purchaseOrders) {
           setPurchaseOrders(pod.purchaseOrders);
         }
-        
+
         // Set LR entries (readonly)
         if (pod.lrEntries) {
           setLrEntries(pod.lrEntries);
         }
-        
+
         // Set products (readonly)
         if (pod.products) {
           setProducts(pod.products);
         }
-        
+
         // Get vendor code from purchase
         const vendorCode = pod.vendorFinancial?.vendorCode || pod.purchaseDetails?.vendorCode || "";
         const vendorName = pod.vendorFinancial?.vendorName || pod.purchaseDetails?.vendorName || "";
-        
+
         setSupplierCode(vendorCode);
         setSupplierName(vendorName);
-        
+
         // Set vendor financial (readonly)
         if (pod.vendorFinancial) {
           setVendorFinancial({
@@ -1169,7 +1174,7 @@ export default function ApprovePOD() {
             finalBalance: pod.vendorFinancial.finalBalance || 0
           });
         }
-        
+
         // Try to get supplier email from vendors API using vendor code
         if (vendorCode) {
           try {
@@ -1178,7 +1183,7 @@ export default function ApprovePOD() {
             });
             const vendorsData = await vendorsRes.json();
             console.log("Suppliers API response:", vendorsData);
-            
+
             if (vendorsData.success && vendorsData.data && vendorsData.data.length > 0) {
               const supplier = vendorsData.data[0];
               const email = supplier.emailId || supplier.email || supplier.contactEmail || "";
@@ -1197,7 +1202,7 @@ export default function ApprovePOD() {
         } else {
           setSupplierName(vendorName);
         }
-        
+
         // Set pod status section (editable fields)
         if (pod.podStatusSection) {
           setPodStatusSection({
@@ -1209,11 +1214,13 @@ export default function ApprovePOD() {
             note: pod.podStatusSection.note || ""
           });
         }
-        
+
         // Set remarks (editable)
         if (pod.remarks) {
           setRemarks(pod.remarks);
         }
+        setVehicleUnloadedDate(pod.vehicleUnloadedDate || "");
+        setUnloadRemarks(pod.unloadRemarks || "");
       }
     } catch (error) {
       console.error('Error fetching POD:', error);
@@ -1231,13 +1238,13 @@ export default function ApprovePOD() {
     }
 
     setSendingEmail(true);
-    
+
     try {
       const totalPodDeduction = products.reduce((sum, p) => sum + num(p.value), 0);
       const finalBalance = vendorFinancial.total - vendorFinancial.advance - vendorFinancial.poDeduction - totalPodDeduction;
       const totalQuantity = products.reduce((sum, p) => sum + num(p.totalPkgs), 0);
       const totalActualWt = products.reduce((sum, p) => sum + num(p.actualWt), 0);
-      
+
       const emailContent = `
         <!DOCTYPE html>
         <html>
@@ -1373,7 +1380,9 @@ export default function ApprovePOD() {
                 <tr><th>POD Status</th><td><span class="badge ${podStatusSection.podStatus === 'Clear & Ok' ? 'badge-success' : 'badge-warning'}">${podStatusSection.podStatus || 'Pending'}</span></td></tr>
                 <tr><th>Due Date</th><td>${podStatusSection.dueDate || '-'}</td></tr>
                 <tr><th>Payment Date</th><td>${podStatusSection.paymentDate || '-'}</td></tr>
-                <tr><th>Remarks</th><td>${remarks || '-'}</td></tr>
+                   <tr><th>Remarks</th><td>${remarks || '-'}</td></tr>
+    <tr><th>Vehicle Unloaded</th><td>${vehicleUnloadedDate || '-'}</td></tr>
+   <tr><th>Unload Remarks</th><td>${unloadRemarks || '-'}</td></tr>
               </table>
             </div>
             <div class="footer">
@@ -1421,6 +1430,10 @@ export default function ApprovePOD() {
 
   // Handle Approval Submit
   const handleApprove = async () => {
+    if (!canApprove) {
+      alert("You do not have permission to approve Proof of Delivery.");
+      return;
+    }
     if (!podStatusSection.podStatus) {
       alert("Please select POD Received status");
       return;
@@ -1429,7 +1442,7 @@ export default function ApprovePOD() {
     setSaving(true);
     try {
       const token = localStorage.getItem('token');
-      
+
       const payload = {
         id: podId,
         podStatusSection: {
@@ -1540,10 +1553,10 @@ export default function ApprovePOD() {
           <div className="flex items-center gap-3">
             <button
               onClick={handleApprove}
-              disabled={saving}
-              className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${
-                saving ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'
-              }`}
+              disabled={saving || permLoading || !canApprove}
+              title={!canApprove ? "You need Approve permission" : undefined}
+              className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${(saving || permLoading || !canApprove) ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'
+                }`}
             >
               {saving ? 'Submitting...' : 'Submit Approval'}
             </button>
@@ -1553,7 +1566,7 @@ export default function ApprovePOD() {
 
       {/* Main Content */}
       <div className="mx-auto max-w-full p-4">
-        
+
         {/* Summary Cards */}
         <div className="grid grid-cols-12 gap-4 mb-4">
           <div className="col-span-12 md:col-span-3">
@@ -1615,26 +1628,26 @@ export default function ApprovePOD() {
         {/* ==================== COMPANY INFORMATION CARD (NEW) ==================== */}
         <Card title="Company Information">
           <div className="grid grid-cols-12 gap-3">
-            
+
             <div className="col-span-12 md:col-span-3">
               <label className="text-xs font-bold text-slate-600">Sub-Company Name</label>
-              <input 
-                type="text" 
-                value={companyInfo.subCompanyName || '-'} 
-                readOnly 
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700" 
+              <input
+                type="text"
+                value={companyInfo.subCompanyName || '-'}
+                readOnly
+                className="mt-1 w-full rounded-xl border border-slate-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700"
               />
             </div>
             <div className="col-span-12 md:col-span-2">
               <label className="text-xs font-bold text-slate-600">Sub-Company Code</label>
-              <input 
-                type="text" 
-                value={companyInfo.subCompanyCode || '-'} 
-                readOnly 
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700" 
+              <input
+                type="text"
+                value={companyInfo.subCompanyCode || '-'}
+                readOnly
+                className="mt-1 w-full rounded-xl border border-slate-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700"
               />
             </div>
-           
+
           </div>
           <p className="text-xs text-slate-400 mt-2">Company information is auto-loaded from the POD data</p>
         </Card>
@@ -1680,9 +1693,9 @@ export default function ApprovePOD() {
               </thead>
               <tbody>
                 {purchaseOrders.length > 0 ? purchaseOrders.map((order, idx) => {
-                  const isLocal = order.fromState && order.state && 
+                  const isLocal = order.fromState && order.state &&
                     order.fromState.trim().toUpperCase() === order.state.trim().toUpperCase();
-                  
+
                   return (
                     <tr key={idx} className="hover:bg-yellow-50 even:bg-slate-50">
                       <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.orderNo || '-'}</td>
@@ -1694,11 +1707,10 @@ export default function ApprovePOD() {
                       <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.fromState || '-'}</td>
                       <td className="border border-yellow-300 px-2 py-2 text-center">
                         {order.fromState && order.state ? (
-                          <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${
-                            isLocal
-                              ? 'bg-green-100 text-green-800 border border-green-300'
-                              : 'bg-red-100 text-red-800 border border-red-300'
-                          }`}>
+                          <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${isLocal
+                            ? 'bg-green-100 text-green-800 border border-green-300'
+                            : 'bg-red-100 text-red-800 border border-red-300'
+                            }`}>
                             {isLocal ? '✅ Local' : '❌ Not Local'}
                           </span>
                         ) : (
@@ -1728,7 +1740,7 @@ export default function ApprovePOD() {
         {lrEntries.map((lr, lrIndex) => {
           const lrProducts = products.filter(p => p.lrRefId === lr._id);
           const order = purchaseOrders.find(o => o.orderNo === lr.orderNo);
-          
+
           return (
             <div key={lr._id} className="mb-6">
               <Card title={`LR Details for Order: ${lr.orderNo || `Order #${lrIndex + 1}`}`}>
@@ -1749,18 +1761,18 @@ export default function ApprovePOD() {
                     <label className="text-xs font-bold text-slate-600">Party Name</label>
                     <input type="text" value={order?.partyName || '-'} readOnly className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm" />
                   </div>
-                  
+
                   {/* NEW FIELD: In Person / Parsal (Readonly) */}
                   <div className="col-span-12 md:col-span-3">
                     <label className="text-xs font-bold text-slate-600">In Person / Parsal</label>
-                    <input 
-                      type="text" 
-                      value={lr.inPersonParsal || '-'} 
-                      readOnly 
-                      className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm font-medium text-blue-700" 
+                    <input
+                      type="text"
+                      value={lr.inPersonParsal || '-'}
+                      readOnly
+                      className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm font-medium text-blue-700"
                     />
                   </div>
-                  
+
                   <div className="col-span-12 md:col-span-3">
                     <label className="text-xs font-bold text-slate-600">Docket No</label>
                     <input type="text" value={lr.docketNo} readOnly className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm" />
@@ -1896,10 +1908,10 @@ export default function ApprovePOD() {
 
             <div className="col-span-12 md:col-span-5">
               <label className="text-xs font-bold text-slate-600 flex items-center gap-2 mb-1">
-                <input 
-                  type="checkbox" 
-                  checked={podStatusSection.acknowledgementMail} 
-                  onChange={(e) => setPodStatusSection({ ...podStatusSection, acknowledgementMail: e.target.checked })} 
+                <input
+                  type="checkbox"
+                  checked={podStatusSection.acknowledgementMail}
+                  onChange={(e) => setPodStatusSection({ ...podStatusSection, acknowledgementMail: e.target.checked })}
                   className="rounded border-slate-300 w-4 h-4"
                 />
                 Acknowledgement Mail Sent
@@ -1909,11 +1921,10 @@ export default function ApprovePOD() {
                 <button
                   onClick={sendEmailToSupplier}
                   disabled={sendingEmail || !supplierEmail}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                    sendingEmail || !supplierEmail
-                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                      : 'bg-blue-600 text-white hover:bg-blue-700'
-                  }`}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${sendingEmail || !supplierEmail
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                    }`}
                 >
                   {sendingEmail ? (
                     <>
@@ -1953,16 +1964,38 @@ export default function ApprovePOD() {
 
             <div className="col-span-12">
               <label className="text-xs font-bold text-slate-600">Remarks</label>
-              <textarea 
-                value={remarks} 
-                onChange={(e) => setRemarks(e.target.value)} 
-                rows={3} 
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200" 
+              <textarea
+                value={remarks}
+                onChange={(e) => setRemarks(e.target.value)}
+                rows={3}
+                className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200"
                 placeholder="Enter approval remarks..."
               />
             </div>
           </div>
         </Card>
+
+        <div className="mt-4">
+          <Card title="Vehicle Unloaded & Remarks">
+            <div className="grid grid-cols-12 gap-4">
+              <div className="col-span-12 md:col-span-4">
+                <label className="text-xs font-bold text-slate-600">Vehicle Unloaded Date</label>
+                <input
+                  type="text"
+                  value={vehicleUnloadedDate || '-'}
+                  readOnly
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm cursor-not-allowed"
+                />
+              </div>
+              <div className="col-span-12 md:col-span-8">
+                <label className="text-xs font-bold text-slate-600">Remarks / Notes</label>
+                <div className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm text-slate-700 min-h-[60px]">
+                  {unloadRemarks || '-'}
+                </div>
+              </div>
+            </div>
+          </Card>
+        </div>
 
         {/* Summary Cards */}
         <div className="grid grid-cols-12 gap-4 mt-4">

@@ -1740,6 +1740,47 @@ export async function GET(req) {
   }
 }
 
+
+// Finds the Loading Info this LR belongs to, from the order no.
+async function resolveLoadingInfoNo(user, body) {
+  const norm = (v) => String(v || '').replace(/[\s-]/g, '').toUpperCase();
+  const orderNo = String(body.header?.orderNo || '').trim();
+  if (!orderNo) return '';
+
+  const b = body.consignmentBreakdown?.[0] || {};
+  const to = norm(b.to || body.header?.to);
+  const wt = Number(b.weight) || 0;
+  const veh = norm(body.header?.vehicleNo);
+
+  const panels = await LoadingPanel.find(companyScopeFilter(user, { 'orderRows.orderNo': orderNo }))
+    .select('vehicleArrivalNo vehicleInfo.vehicleNo orderRows.orderNo orderRows.to orderRows.toName orderRows.weight')
+    .lean();
+  if (!panels.length) return '';
+
+  const lrs = await ConsignmentNote.find(companyScopeFilter(user, {
+    loadingInfoNo: { $in: panels.map((p) => p.vehicleArrivalNo) },
+    'header.orderNo': orderNo,
+    'header.status': { $nin: ['Rejected'] },
+  })).select('loadingInfoNo header.to consignmentBreakdown').lean();
+
+  // Keep only Loading Infos that have a matching row with no LR yet.
+  let candidates = panels.filter((p) => {
+    const rows = (p.orderRows || []).filter((r) =>
+      r.orderNo === orderNo && norm(r.toName || r.to) === to && (!wt || Number(r.weight) === wt)).length;
+    const used = lrs.filter((l) => {
+      const lb = l.consignmentBreakdown?.[0] || {};
+      return l.loadingInfoNo === p.vehicleArrivalNo
+        && norm(lb.to || l.header?.to) === to && (!wt || Number(lb.weight) === wt);
+    }).length;
+    return rows > used;
+  });
+
+  // Order is in more than one open Loading Info: use the vehicle number to decide.
+  if (candidates.length > 1 && veh) {
+    candidates = candidates.filter((p) => norm(p.vehicleInfo?.vehicleNo) === veh);
+  }
+  return candidates.length === 1 ? candidates[0].vehicleArrivalNo : '';
+}
 /* ========================================
    POST /api/consignment-note - Requires 'create' permission
 ======================================== */
@@ -1775,9 +1816,16 @@ export async function POST(req) {
       }
     }
     // Check if loadingInfoNo is already used (if provided)
+    // Link to the Loading Info automatically from the order no (when not given)
+    let autoLinked = false;
+    if (!body.loadingInfoNo) {
+      const auto = await resolveLoadingInfoNo(user, body);
+      if (auto) { body.loadingInfoNo = auto; autoLinked = true; }
+    }
+    // Check if loadingInfoNo is already used (if provided)
     let linkedLoadingInfo = null;
     if (body.loadingInfoNo) {
-      const existing = orderRowId ? null : await ConsignmentNote.findOne(companyScopeFilter(user, { loadingInfoNo: body.loadingInfoNo }));
+      const existing = (orderRowId || autoLinked) ? null : await ConsignmentNote.findOne(companyScopeFilter(user, { loadingInfoNo: body.loadingInfoNo }));
       if (existing) {
         return NextResponse.json({
           success: false,
@@ -1955,6 +2003,7 @@ export async function POST(req) {
         file: cleanInvoiceFile(body.invoice?.file)
       },
       ewaybill: {
+        status: body.ewaybill?.status || '',
         ewaybillNo: body.ewaybill?.ewaybillNo || '',
         expiryDate: body.ewaybill?.expiryDate || '',
         containerNo: body.ewaybill?.containerNo || ''
@@ -1976,20 +2025,11 @@ export async function POST(req) {
       );
     }
 
-    // A Loading Info can have one LR only.  Use the LR's persisted server
-    // timestamp as the shared source for the vehicle Out Date and Out Time.
+    // Out Date/Time is NOT set on LR creation. It is stamped when the LR is
+    // approved (see PATCH below).
     if (linkedLoadingInfo && !linkedLoadingInfo.consignmentNote) {
-      const lrGeneratedAt = consignmentNote.createdAt;
-      const { date: outDate, time: outTime } = formatIndiaDateTime(lrGeneratedAt);
-
-      linkedLoadingInfo.arrivalDetails = linkedLoadingInfo.arrivalDetails || {};
-      linkedLoadingInfo.arrivalDetails.outDate = new Date(`${outDate}T00:00:00.000Z`);
-      linkedLoadingInfo.arrivalDetails.outTime = outTime;
       linkedLoadingInfo.consignmentNote = consignmentNote.lrNo;
       await linkedLoadingInfo.save();
-      // LR generation is the approved departure event.  Copy both source timestamps
-      // and the master-rule calculation to the linked Purchase record.
-      await synchronizePurchaseDetention(user, linkedLoadingInfo, outDate, outTime);
     }
 
     return NextResponse.json({
@@ -2368,11 +2408,32 @@ export async function PATCH(req) {
       'complete': 'Completed'
     };
 
+    const wasApproved = ['Approved', 'Completed'].includes(note.header.status);
+
     // Update status
     note.header.status = statusMap[action];
+    if (action === 'approve' && !wasApproved) {
+      note.header.approvedAt = new Date();
+    }
     note.updatedAt = Date.now();
 
     await note.save();
+
+    // The first approved LR of a Loading Info sets the vehicle Out Date/Time
+    // and carries it (with the detention calculation) to the linked Purchase.
+    if (action === 'approve' && note.loadingInfoNo) {
+      const loadingInfo = await LoadingPanel.findOne(
+        companyScopeFilter(user, { vehicleArrivalNo: note.loadingInfoNo })
+      );
+      if (loadingInfo && !loadingInfo.arrivalDetails?.outDate) {
+        const { date: outDate, time: outTime } = formatIndiaDateTime(note.header.approvedAt || new Date());
+        loadingInfo.arrivalDetails = loadingInfo.arrivalDetails || {};
+        loadingInfo.arrivalDetails.outDate = new Date(`${outDate}T00:00:00.000Z`);
+        loadingInfo.arrivalDetails.outTime = outTime;
+        await loadingInfo.save();
+        await synchronizePurchaseDetention(user, loadingInfo, outDate, outTime);
+      }
+    }
 
     return NextResponse.json({
       success: true,

@@ -2122,7 +2122,7 @@ export async function POST(req) {
 export async function PUT(req) {
   try {
     await connectDb();
-    const { user, error, status } = await validateUser(req, 'edit');
+    const { user, error, status } = await validateUser(req);
     if (error) {
       return NextResponse.json({
         success: false,
@@ -2131,8 +2131,32 @@ export async function PUT(req) {
       }, { status });
     }
 
+    const canEdit = hasPermission(user, 'edit');
+    const canApprove = hasPermission(user, 'approve');
+    if (!canEdit && !canApprove) {
+      return NextResponse.json({
+        success: false,
+        message: "Permission denied: edit or approve action required for Advance Payment.",
+        code: 'FORBIDDEN'
+      }, { status: 403 });
+    }
+
     const body = await req.json();
     const { id } = body;
+
+    // Approve-only users: only id + paymentDetails.paymentStatus/remarks.
+    if (!canEdit) {
+      const extra = Object.keys(body).filter((k) => k !== 'id' && k !== 'paymentDetails');
+      const pdExtra = Object.keys(body.paymentDetails || {})
+        .filter((k) => k !== 'paymentStatus' && k !== 'remarks');
+      if (extra.length || pdExtra.length || !body.paymentDetails) {
+        return NextResponse.json({
+          success: false,
+          message: "Permission denied: edit action not allowed for Advance Payment.",
+          code: 'FORBIDDEN'
+        }, { status: 403 });
+      }
+    }
 
     if (!id) {
       return NextResponse.json({
@@ -2276,11 +2300,23 @@ export async function PUT(req) {
     }
 
     if (body.paymentDetails) {
+      // Only users with approve permission may change the payment (approval) status.
+      if (!canApprove) {
+        const currentStatus = payment.paymentDetails?.paymentStatus || 'Pending';
+        const nextStatus = body.paymentDetails.paymentStatus || currentStatus;
+        if (nextStatus !== currentStatus) {
+          return NextResponse.json({
+            success: false,
+            message: "Permission denied: approve action not allowed for Advance Payment.",
+            code: 'FORBIDDEN'
+          }, { status: 403 });
+        }
+      }
       const sourcePurchase = payment.purchaseId
         ? await PurchasePanel.findOne(companyScopeFilter(user, { _id: payment.purchaseId })).lean()
         : await PurchasePanel.findOne(companyScopeFilter(user, { purchaseNo: payment.purchaseNo })).lean();
       payment.paymentDetails = {
-        ...payment.paymentDetails,
+        ...payment.paymentDetails,  
         ...body.paymentDetails,
         finalAmount: sourcePurchase ? num(sourcePurchase.netEffect) : payment.paymentDetails.finalAmount,
         paymentDate: body.paymentDetails.paymentDate ? new Date(body.paymentDetails.paymentDate) : payment.paymentDetails.paymentDate

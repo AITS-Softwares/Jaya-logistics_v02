@@ -239,6 +239,19 @@ export default function LoadingInfoLRViewer({ panelId }) {
                                     <div className="truncate text-[11px] text-slate-500">
                                         {note.header?.orderNo ? `Order ${note.header.orderNo} · ` : ""}{formatIST(note.createdAt)}
                                     </div>
+                                    {note.ewaybill?.status && (
+                                        <div className="truncate text-[11px] text-slate-500">E-waybill: {note.ewaybill.status}{note.ewaybill.ewaybillNo ? ` · ${note.ewaybill.ewaybillNo}` : ""}</div>
+                                    )}
+                                    <div className="mt-0.5 flex items-center gap-1 text-[11px]">
+                                        <span className="text-slate-400">↔</span>
+                                        {note.invoice?.file?.filePath ? (
+                                            <span className="rounded bg-purple-100 px-1.5 py-0.5 font-bold text-purple-700">
+                                                Invoice {note.invoice.boeInvoiceNo || "uploaded"}
+                                            </span>
+                                        ) : (
+                                            <span className="rounded bg-gray-100 px-1.5 py-0.5 font-bold text-gray-500">No invoice</span>
+                                        )}
+                                    </div>
                                 </div>
                                 <div className="flex shrink-0 gap-1.5">
                                     <button
@@ -398,14 +411,17 @@ export function LoadingInfoInvoiceViewer({ panelId }) {
                             <div key={n._id || n.lrNo} className="rounded-lg border border-slate-200 bg-slate-50 p-2">
                                 <div className="flex items-center justify-between gap-2">
                                     <div className="min-w-0">
-                                        <div className="truncate text-sm font-extrabold text-slate-900">{n.lrNo}</div>
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-bold text-blue-700">LR</span>
+                                            <span className="truncate text-sm font-extrabold text-slate-900">{n.lrNo}</span>
+                                        </div>
                                         <div className="truncate text-[11px] text-slate-500">
                                             {n.header?.orderNo ? `Order ${n.header.orderNo} · ` : ""}
                                             To {n.consignmentBreakdown?.[0]?.to || n.header?.to || "—"}
                                         </div>
                                         <div className="truncate text-[11px] text-slate-500">
                                             {has
-                                                ? `Invoice ${n.invoice.boeInvoiceNo || "—"} · ${n.invoice.file.fileName}`
+                                                ? `Invoice ${n.invoice.boeInvoiceNo || "(no. not entered)"} · ${n.invoice.file.fileName}`
                                                 : "No invoice uploaded"}
                                         </div>
                                     </div>

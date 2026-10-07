@@ -212,6 +212,8 @@
 
 import mongoose from 'mongoose';
 
+
+
 // Address Schema for Consignor/Consignee
 const addressSchema = new mongoose.Schema({
   name: { type: String, default: '' },
@@ -235,6 +237,11 @@ const invoiceSchema = new mongoose.Schema({
 
 // E-waybill Schema
 const ewaybillSchema = new mongoose.Schema({
+  status: {
+    type: String,
+    enum: ['', 'Provided by Customer', 'To Be Generated'],
+    default: ''
+  },
   ewaybillNo: { type: String, default: '' },
   expiryDate: { type: String, default: '' },
   containerNo: { type: String, default: '' }
@@ -388,6 +395,7 @@ const consignmentNoteSchema = new mongoose.Schema({
     lrDate: { type: String, default: '' },
     unit: { type: String, enum: ['MT', 'KG', 'LTR', 'TON', 'M3', 'PCS'], default: 'MT' },
     status: { type: String, enum: ['Pending', 'Approved', 'Rejected', 'Completed', 'Draft'], default: 'Pending' },
+    approvedAt: { type: Date, default: null },
     lcStatus: { type: String, enum: ['LC', 'Not LC'], default: 'Not LC' },
     lrType: { type: String, enum: ['Export', 'Import', 'Normal'], default: 'Normal' },
     vehicleReach: { type: String, enum: ['Reach', 'Not Reach'], default: 'Not Reach' },

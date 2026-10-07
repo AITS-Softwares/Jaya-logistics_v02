@@ -30,7 +30,7 @@ export default function VehicleNegotiationList() {
     setError(null);
     try {
       const token = localStorage.getItem('token');
-      
+
       // Build query string with filters
       const params = new URLSearchParams({ format: 'table' });
       if (filters.search) params.append('search', filters.search);
@@ -38,13 +38,13 @@ export default function VehicleNegotiationList() {
       if (filters.memoStatus) params.append('memoStatus', filters.memoStatus);
       if (filters.fromDate) params.append('fromDate', filters.fromDate);
       if (filters.toDate) params.append('toDate', filters.toDate);
-      
+
       const res = await fetch(`/api/vehicle-negotiation?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       const data = await res.json();
-      
+
       if (data.success) {
         // Group by VNN to show unique VNN numbers
         const groupedData = groupByVNN(data.data || []);
@@ -63,7 +63,7 @@ export default function VehicleNegotiationList() {
   // Group data by VNN number to show unique VNN rows
   const groupByVNN = (data) => {
     const vnnMap = new Map();
-    
+
     data.forEach(item => {
       if (!vnnMap.has(item.vnn)) {
         vnnMap.set(item.vnn, {
@@ -79,13 +79,13 @@ export default function VehicleNegotiationList() {
         existing.totalWeight += (item.weight || 0);
         existing.orders.push(item);
         if (item.order && !existing.orderNumbers.includes(item.order)) existing.orderNumbers.push(item.order);
-        
+
         if (!existing.order && item.order) existing.order = item.order;
         if (!existing.from && item.from) existing.from = item.from;
         if (!existing.to && item.to) existing.to = item.to;
       }
     });
-    
+
     return Array.from(vnnMap.values());
   };
 
@@ -198,7 +198,7 @@ export default function VehicleNegotiationList() {
         <div className="text-center max-w-md p-8 bg-white rounded-xl shadow-lg">
           <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg className="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                 d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
           </div>
@@ -339,7 +339,7 @@ export default function VehicleNegotiationList() {
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">From → To</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Total Weight</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Approval</th>
-                  <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Memo</th>
+                  {/* <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Memo</th> */}
                   <th className="px-4 py-3 text-center text-xs font-extrabold text-slate-900 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
@@ -380,22 +380,21 @@ export default function VehicleNegotiationList() {
                       </td>
                       <td className="px-4 py-3 font-medium">{item.totalWeight} MT</td>
                       <td className="px-4 py-3">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          item.approval === 'Approved' ? 'bg-green-100 text-green-800' :
-                          item.approval === 'Reject' ? 'bg-red-100 text-red-800' :
-                          'bg-yellow-100 text-yellow-800'
-                        }`}>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${item.approval === 'Approved' ? 'bg-green-100 text-green-800' :
+                            item.approval === 'Reject' ? 'bg-red-100 text-red-800' :
+                              'bg-yellow-100 text-yellow-800'
+                          }`}>
                           {item.approval || 'Pending'}
                         </span>
                       </td>
-                      <td className="px-4 py-3">
+                      {/* <td className="px-4 py-3">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                           item.memo === 'Uploaded' ? 'bg-green-100 text-green-800' :
                           'bg-yellow-100 text-yellow-800'
                         }`}>
                           {item.memo || 'Pending'}
                         </span>
-                      </td>
+                      </td> */}
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-center gap-2 flex-wrap">
                           {/* Edit Button - Only shown if user has edit permission */}
@@ -410,7 +409,7 @@ export default function VehicleNegotiationList() {
                               </svg>
                             </button>
                           )}
-                          
+
                           {/* ✅ Approve Button - Only shown if user has approve permission */}
                           {canApprove(MODULE_NAME) && (
                             <button
@@ -423,7 +422,7 @@ export default function VehicleNegotiationList() {
                               </svg>
                             </button>
                           )}
-                          
+
                           {/* Delete Button - Only shown if user has delete permission */}
                           {canDelete(MODULE_NAME) && (
                             <button

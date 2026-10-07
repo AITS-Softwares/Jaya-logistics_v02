@@ -201,7 +201,7 @@
 // //     }
 
 // //     const body = await req.json();
-    
+
 // //     console.log("📝 Creating new POD");
 
 // //     // Generate POD number
@@ -256,7 +256,7 @@
 // //     const totalQuantity = products.reduce((sum, p) => sum + num(p.totalPkgs), 0);
 // //     const totalActualWt = products.reduce((sum, p) => sum + num(p.actualWt), 0);
 // //     const podDeduction = products.reduce((sum, p) => sum + num(p.value), 0);
-    
+
 // //     const vendorTotal = body.vendorFinancial?.total || 0;
 // //     const advance = body.vendorFinancial?.advance || 0;
 // //     const poDeduction = body.vendorFinancial?.poDeduction || 0;
@@ -267,7 +267,7 @@
 // //       podNo,
 // //       purchaseNo: body.purchaseNo || '',
 // //       pricingSerialNo: body.pricingSerialNo || '',
-      
+
 // //       header: {
 // //         podNo,
 // //         purchaseNo: body.purchaseNo || '',
@@ -276,17 +276,17 @@
 // //         date: body.header?.date ? new Date(body.header.date) : new Date(),
 // //         delivery: body.header?.delivery || 'Normal'
 // //       },
-      
+
 // //       billing: {
 // //         billingType: body.billing?.billingType || 'Multi - Order',
 // //         noOfLoadingPoints: body.billing?.noOfLoadingPoints || '',
 // //         noOfDroppingPoint: body.billing?.noOfDroppingPoint || ''
 // //       },
-      
+
 // //       purchaseOrders,
 // //       lrEntries,
 // //       products,
-      
+
 // //       // In POST method, update vendorFinancial:
 // // vendorFinancial: {
 // //   vendorName: body.vendorFinancial?.vendorName || '',
@@ -298,7 +298,7 @@
 // //   podDeduction: body.vendorFinancial?.podDeduction || 0,  // ADD THIS
 // //   finalBalance: finalBalance
 // // },
-      
+
 // //       podStatusSection: {
 // //         lastPodDate: body.podStatusSection?.lastPodDate || '',
 // //         podStatus: body.podStatusSection?.podStatus || 'Pending',
@@ -307,17 +307,17 @@
 // //         acknowledgementMail: body.podStatusSection?.acknowledgementMail || false,
 // //         note: body.podStatusSection?.note || ''
 // //       },
-      
+
 // //       remarks: body.remarks || '',
-      
+
 // //       totalQuantity,
 // //       totalActualWt,
 // //       podDeduction,
 // //       finalBalance,
-      
+
 // //       podStatus: body.podStatus || 'Pending',
 // //       paymentStatus: body.paymentStatus || 'Pending',
-      
+
 // //       companyId: user.companyId,
 // //       createdBy: user.id
 // //     });
@@ -372,7 +372,7 @@
 
 // //     const body = await req.json();
 // //     const { id } = body;
-    
+
 // //     if (!id) {
 // //       return NextResponse.json({ 
 // //         success: false, 
@@ -498,7 +498,7 @@
 // //     pod.totalQuantity = pod.products.reduce((sum, p) => sum + num(p.totalPkgs), 0);
 // //     pod.totalActualWt = pod.products.reduce((sum, p) => sum + num(p.actualWt), 0);
 // //     pod.podDeduction = pod.products.reduce((sum, p) => sum + num(p.value), 0);
-    
+
 // //     const total = pod.vendorFinancial?.total || 0;
 // //     const advance = pod.vendorFinancial?.advance || 0;
 // //     const poDeduction = pod.vendorFinancial?.poDeduction || 0;
@@ -538,7 +538,7 @@
 
 // //     const url = new URL(req.url);
 // //     const id = url.searchParams.get("id");
-    
+
 // //     if (!id) {
 // //       return NextResponse.json({ 
 // //         success: false, 
@@ -598,19 +598,19 @@
 
 // function isAuthorized(user) {
 //   if (!user) return false;
-  
+
 //   // Company admins have full access
 //   if (user.type === "company") return true;
-  
+
 //   // Admin role has full access
 //   if (user.roles && user.roles.includes("Admin")) return true;
-  
+
 //   // Check module-based permissions for "Proof Of Delivery"
 //   const modules = user.modules || {};
 //   const moduleData = modules["Proof Of Delivery"];
-  
+
 //   if (!moduleData || !moduleData.selected) return false;
-  
+
 //   return true;
 // }
 
@@ -618,12 +618,12 @@
 //   if (!user) return false;
 //   if (user.type === "company") return true;
 //   if (user.roles && user.roles.includes("Admin")) return true;
-  
+
 //   const modules = user.modules || {};
 //   const moduleData = modules["Proof Of Delivery"];
-  
+
 //   if (!moduleData || !moduleData.selected) return false;
-  
+
 //   const permissions = moduleData.permissions || {};
 //   return permissions[action] === true;
 // }
@@ -635,21 +635,21 @@
 //   try {
 //     const user = verifyJWT(token);
 //     if (!user) return { error: "Invalid or expired token. Please login again.", status: 401 };
-    
+
 //     if (!isAuthorized(user)) {
 //       return { 
 //         error: "Access denied. You don't have permission to access Proof of Delivery.", 
 //         status: 403 
 //       };
 //     }
-    
+
 //     if (requiredAction && !hasPermission(user, requiredAction)) {
 //       return { 
 //         error: `Permission denied: ${requiredAction} action not allowed for Proof of Delivery.`, 
 //         status: 403 
 //       };
 //     }
-    
+
 //     return { user, error: null, status: 200 };
 //   } catch (err) {
 //     console.error("JWT Verification Failed:", err?.message || err);
@@ -842,7 +842,7 @@
 //     }
 
 //     const body = await req.json();
-    
+
 //     console.log("📝 Creating new POD");
 
 //     const podNo = await getNextPODNumber(user.companyId);
@@ -894,7 +894,7 @@
 //     const totalQuantity = products.reduce((sum, p) => sum + num(p.totalPkgs), 0);
 //     const totalActualWt = products.reduce((sum, p) => sum + num(p.actualWt), 0);
 //     const podDeduction = products.reduce((sum, p) => sum + num(p.value), 0);
-    
+
 //     const vendorTotal = body.vendorFinancial?.total || 0;
 //     const advance = body.vendorFinancial?.advance || 0;
 //     const poDeduction = body.vendorFinancial?.poDeduction || 0;
@@ -904,7 +904,7 @@
 //       podNo,
 //       purchaseNo: body.purchaseNo || '',
 //       pricingSerialNo: body.pricingSerialNo || '',
-      
+
 //       header: {
 //         podNo,
 //         purchaseNo: body.purchaseNo || '',
@@ -913,17 +913,17 @@
 //         date: body.header?.date ? new Date(body.header.date) : new Date(),
 //         delivery: body.header?.delivery || 'Normal'
 //       },
-      
+
 //       billing: {
 //         billingType: body.billing?.billingType || 'Multi - Order',
 //         noOfLoadingPoints: body.billing?.noOfLoadingPoints || '',
 //         noOfDroppingPoint: body.billing?.noOfDroppingPoint || ''
 //       },
-      
+
 //       purchaseOrders,
 //       lrEntries,
 //       products,
-      
+
 //       vendorFinancial: {
 //         vendorName: body.vendorFinancial?.vendorName || '',
 //         vendorCode: body.vendorFinancial?.vendorCode || '',
@@ -934,7 +934,7 @@
 //         podDeduction: body.vendorFinancial?.podDeduction || 0,
 //         finalBalance: finalBalance
 //       },
-      
+
 //       podStatusSection: {
 //         lastPodDate: body.podStatusSection?.lastPodDate || '',
 //         podStatus: body.podStatusSection?.podStatus || 'Pending',
@@ -943,17 +943,17 @@
 //         acknowledgementMail: body.podStatusSection?.acknowledgementMail || false,
 //         note: body.podStatusSection?.note || ''
 //       },
-      
+
 //       remarks: body.remarks || '',
-      
+
 //       totalQuantity,
 //       totalActualWt,
 //       podDeduction,
 //       finalBalance,
-      
+
 //       podStatus: body.podStatus || 'Pending',
 //       paymentStatus: body.paymentStatus || 'Pending',
-      
+
 //       companyId: user.companyId,
 //       createdBy: user.id
 //     });
@@ -1012,7 +1012,7 @@
 
 //     const body = await req.json();
 //     const { id } = body;
-    
+
 //     if (!id) {
 //       return NextResponse.json({ 
 //         success: false, 
@@ -1138,7 +1138,7 @@
 //     pod.totalQuantity = pod.products.reduce((sum, p) => sum + num(p.totalPkgs), 0);
 //     pod.totalActualWt = pod.products.reduce((sum, p) => sum + num(p.actualWt), 0);
 //     pod.podDeduction = pod.products.reduce((sum, p) => sum + num(p.value), 0);
-    
+
 //     const total = pod.vendorFinancial?.total || 0;
 //     const advance = pod.vendorFinancial?.advance || 0;
 //     const poDeduction = pod.vendorFinancial?.poDeduction || 0;
@@ -1182,7 +1182,7 @@
 
 //     const url = new URL(req.url);
 //     const id = url.searchParams.get("id");
-    
+
 //     if (!id) {
 //       return NextResponse.json({ 
 //         success: false, 
@@ -1249,7 +1249,7 @@
 //     const url = new URL(req.url);
 //     const id = url.searchParams.get("id");
 //     const action = url.searchParams.get("action");
-    
+
 //     if (!id || !isValidObjectId(id)) {
 //       return NextResponse.json({ 
 //         success: false, 
@@ -1277,7 +1277,7 @@
 //       // Update pod status
 //       pod.podStatus = body.podStatus || 'Received';
 //       pod.paymentStatus = 'Approved';
-      
+
 //       // Update pod status section
 //       if (pod.podStatusSection) {
 //         if (body.podStatusSection) {
@@ -1290,19 +1290,19 @@
 //           pod.podStatusSection.podStatus = 'Received';
 //         }
 //       }
-      
+
 //       // Update remarks if provided
 //       if (body.remarks !== undefined) {
 //         pod.remarks = body.remarks;
 //       }
-      
+
 //       // Update LR entries pod received status
 //       if (pod.lrEntries && pod.lrEntries.length > 0) {
 //         pod.lrEntries.forEach(lr => {
 //           lr.podReceived = body.podStatus || 'Received';
 //         });
 //       }
-      
+
 //       await pod.save();
 
 //       return NextResponse.json({ 
@@ -1320,7 +1320,7 @@
 //     if (action === 'reject') {
 //       pod.podStatus = body.podStatus || 'Rejected';
 //       pod.paymentStatus = 'Rejected';
-      
+
 //       if (pod.podStatusSection) {
 //         if (body.podStatusSection) {
 //           pod.podStatusSection = {
@@ -1332,18 +1332,18 @@
 //           pod.podStatusSection.podStatus = 'Rejected';
 //         }
 //       }
-      
+
 //       if (body.remarks !== undefined) {
 //         pod.remarks = body.remarks;
 //       }
-      
+
 //       // Update LR entries pod received status
 //       if (pod.lrEntries && pod.lrEntries.length > 0) {
 //         pod.lrEntries.forEach(lr => {
 //           lr.podReceived = 'Rejected';
 //         });
 //       }
-      
+
 //       await pod.save();
 
 //       return NextResponse.json({ 
@@ -1361,7 +1361,7 @@
 //     if (action === 'complete') {
 //       pod.podStatus = body.podStatus || 'Completed';
 //       pod.paymentStatus = 'Paid';
-      
+
 //       if (pod.podStatusSection) {
 //         if (body.podStatusSection) {
 //           pod.podStatusSection = {
@@ -1375,18 +1375,18 @@
 //           pod.podStatusSection.paymentDate = new Date().toISOString();
 //         }
 //       }
-      
+
 //       if (body.remarks !== undefined) {
 //         pod.remarks = body.remarks;
 //       }
-      
+
 //       // Update LR entries pod received status
 //       if (pod.lrEntries && pod.lrEntries.length > 0) {
 //         pod.lrEntries.forEach(lr => {
 //           lr.podReceived = 'Completed';
 //         });
 //       }
-      
+
 //       await pod.save();
 
 //       return NextResponse.json({ 
@@ -1409,18 +1409,18 @@
 //           pod.podStatusSection.podStatus = body.podStatus;
 //         }
 //       }
-      
+
 //       if (body.remarks !== undefined) {
 //         pod.remarks = body.remarks;
 //       }
-      
+
 //       if (body.podStatusSection) {
 //         pod.podStatusSection = {
 //           ...pod.podStatusSection,
 //           ...body.podStatusSection
 //         };
 //       }
-      
+
 //       await pod.save();
 
 //       return NextResponse.json({ 
@@ -1461,16 +1461,16 @@ import mongoose from 'mongoose';
 
 function isAuthorized(user) {
   if (!user) return false;
-  
+
   if (user.type === "company") return true;
-  
+
   if (user.roles && user.roles.includes("Admin")) return true;
-  
+
   const modules = user.modules || {};
   const moduleData = modules["Proof Of Delivery"];
-  
+
   if (!moduleData || !moduleData.selected) return false;
-  
+
   return true;
 }
 
@@ -1478,12 +1478,12 @@ function hasPermission(user, action) {
   if (!user) return false;
   if (user.type === "company") return true;
   if (user.roles && user.roles.includes("Admin")) return true;
-  
+
   const modules = user.modules || {};
   const moduleData = modules["Proof Of Delivery"];
-  
+
   if (!moduleData || !moduleData.selected) return false;
-  
+
   const permissions = moduleData.permissions || {};
   return permissions[action] === true;
 }
@@ -1496,21 +1496,21 @@ async function validateUser(req, requiredAction = null) {
     const user = verifyJWT(token);
     if (!user) return { error: "Invalid or expired token. Please login again.", status: 401 };
     activeOperatingCompanyId(user);
-    
+
     if (!isAuthorized(user)) {
-      return { 
-        error: "Access denied. You don't have permission to access Proof of Delivery.", 
-        status: 403 
+      return {
+        error: "Access denied. You don't have permission to access Proof of Delivery.",
+        status: 403
       };
     }
-    
+
     if (requiredAction && !hasPermission(user, requiredAction)) {
-      return { 
-        error: `Permission denied: ${requiredAction} action not allowed for Proof of Delivery.`, 
-        status: 403 
+      return {
+        error: `Permission denied: ${requiredAction} action not allowed for Proof of Delivery.`,
+        status: 403
       };
     }
-    
+
     return { user, error: null, status: 200 };
   } catch (err) {
     console.error("JWT Verification Failed:", err?.message || err);
@@ -1538,8 +1538,8 @@ export async function GET(req) {
     await connectDb();
     const { user, error, status } = await validateUser(req, 'view');
     if (error) {
-      return NextResponse.json({ 
-        success: false, 
+      return NextResponse.json({
+        success: false,
         message: error,
         code: status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN'
       }, { status });
@@ -1557,24 +1557,24 @@ export async function GET(req) {
     // CASE 1: GET SINGLE POD BY ID
     if (id) {
       if (!isValidObjectId(id)) {
-        return NextResponse.json({ 
-          success: false, 
-          message: "Invalid POD ID format" 
+        return NextResponse.json({
+          success: false,
+          message: "Invalid POD ID format"
         }, { status: 400 });
       }
 
       const pod = await POD.findOne(companyScopeFilter(user, { _id: id })).lean();
 
       if (!pod) {
-        return NextResponse.json({ 
-          success: false, 
-          message: "POD not found" 
+        return NextResponse.json({
+          success: false,
+          message: "POD not found"
         }, { status: 404 });
       }
 
-      return NextResponse.json({ 
-        success: true, 
-        data: pod 
+      return NextResponse.json({
+        success: true,
+        data: pod
       }, { status: 200 });
     }
 
@@ -1583,15 +1583,15 @@ export async function GET(req) {
       const pod = await POD.findOne(companyScopeFilter(user, { podNo })).lean();
 
       if (!pod) {
-        return NextResponse.json({ 
-          success: false, 
-          message: "POD not found" 
+        return NextResponse.json({
+          success: false,
+          message: "POD not found"
         }, { status: 404 });
       }
 
-      return NextResponse.json({ 
-        success: true, 
-        data: pod 
+      return NextResponse.json({
+        success: true,
+        data: pod
       }, { status: 200 });
     }
 
@@ -1665,9 +1665,9 @@ export async function GET(req) {
 
     // CASE 4: LIST FOR DROPDOWNS
     const pods = await POD.find(companyScopeFilter(user))
-    .select('podNo purchaseNo podStatus companyName subCompanyName')
-    .sort({ createdAt: -1 })
-    .lean();
+      .select('podNo purchaseNo podStatus companyName subCompanyName')
+      .sort({ createdAt: -1 })
+      .lean();
 
     return NextResponse.json({
       success: true,
@@ -1676,8 +1676,8 @@ export async function GET(req) {
 
   } catch (error) {
     console.error("❌ GET /pod-panel error:", error);
-    return NextResponse.json({ 
-      success: false, 
+    return NextResponse.json({
+      success: false,
       message: error.message || "Failed to fetch PODs"
     }, { status: 500 });
   }
@@ -1691,15 +1691,15 @@ export async function POST(req) {
     await connectDb();
     const { user, error, status } = await validateUser(req, 'create');
     if (error) {
-      return NextResponse.json({ 
-        success: false, 
+      return NextResponse.json({
+        success: false,
         message: error,
         code: status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN'
       }, { status });
     }
 
     const body = await req.json();
-    
+
     console.log("📝 Creating new POD");
 
     const podNo = await getNextPODNumber(user.companyId, user.activeOperatingCompanyId, user.activeOperatingCompanyCode);
@@ -1765,7 +1765,7 @@ export async function POST(req) {
     const totalQuantity = products.reduce((sum, p) => sum + num(p.totalPkgs), 0);
     const totalActualWt = products.reduce((sum, p) => sum + num(p.actualWt), 0);
     const podDeduction = products.reduce((sum, p) => sum + num(p.value), 0);
-    
+
     const vendorTotal = body.vendorFinancial?.total || 0;
     const advance = body.vendorFinancial?.advance || 0;
     const poDeduction = body.vendorFinancial?.poDeduction || 0;
@@ -1775,7 +1775,7 @@ export async function POST(req) {
       podNo,
       purchaseNo: body.purchaseNo || '',
       pricingSerialNo: body.pricingSerialNo || '',
-      
+
       // ✅ COMPANY INFORMATION
       companyId: user.companyId,
       companyName: companyName,
@@ -1783,7 +1783,7 @@ export async function POST(req) {
       subCompanyId: subCompanyId,
       subCompanyName: subCompanyName,
       subCompanyCode: subCompanyCode,
-      
+
       header: {
         podNo,
         purchaseNo: body.purchaseNo || '',
@@ -1797,17 +1797,17 @@ export async function POST(req) {
         subCompanyName: subCompanyName,
         subCompanyCode: subCompanyCode
       },
-      
+
       billing: {
         billingType: body.billing?.billingType || 'Multi - Order',
         noOfLoadingPoints: body.billing?.noOfLoadingPoints || '',
         noOfDroppingPoint: body.billing?.noOfDroppingPoint || ''
       },
-      
+
       purchaseOrders,
       lrEntries,
       products,
-      
+
       vendorFinancial: {
         vendorName: body.vendorFinancial?.vendorName || '',
         vendorCode: body.vendorFinancial?.vendorCode || '',
@@ -1818,7 +1818,7 @@ export async function POST(req) {
         podDeduction: body.vendorFinancial?.podDeduction || 0,
         finalBalance: finalBalance
       },
-      
+
       podStatusSection: {
         lastPodDate: body.podStatusSection?.lastPodDate || '',
         podStatus: body.podStatusSection?.podStatus || 'Pending',
@@ -1827,24 +1827,26 @@ export async function POST(req) {
         acknowledgementMail: body.podStatusSection?.acknowledgementMail || false,
         note: body.podStatusSection?.note || ''
       },
-      
+
       remarks: body.remarks || '',
-      
+      vehicleUnloadedDate: body.vehicleUnloadedDate || '',
+      unloadRemarks: body.unloadRemarks || '',
+
       totalQuantity,
       totalActualWt,
       podDeduction,
       finalBalance,
-      
+
       podStatus: body.podStatus || 'Pending',
       paymentStatus: body.paymentStatus || 'Pending',
-      
+
       createdBy: user.id
     });
 
     await pod.save();
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       message: "POD created successfully",
       data: {
         _id: pod._id,
@@ -1859,22 +1861,22 @@ export async function POST(req) {
     console.error("❌ POST /pod-panel error:", error);
 
     if (error.code === 11000) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "POD number already exists" 
+      return NextResponse.json({
+        success: false,
+        message: "POD number already exists"
       }, { status: 400 });
     }
 
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(err => err.message);
-      return NextResponse.json({ 
-        success: false, 
-        message: messages.join(', ') 
+      return NextResponse.json({
+        success: false,
+        message: messages.join(', ')
       }, { status: 400 });
     }
 
-    return NextResponse.json({ 
-      success: false, 
+    return NextResponse.json({
+      success: false,
       message: error.message || "Failed to create POD"
     }, { status: 500 });
   }
@@ -1886,38 +1888,64 @@ export async function POST(req) {
 export async function PUT(req) {
   try {
     await connectDb();
-    const { user, error, status } = await validateUser(req, 'edit');
+    const { user, error, status } = await validateUser(req);
     if (error) {
-      return NextResponse.json({ 
-        success: false, 
+      return NextResponse.json({
+        success: false,
         message: error,
         code: status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN'
       }, { status });
     }
 
+    const canEdit = hasPermission(user, 'edit');
+    const canApprove = hasPermission(user, 'approve');
+    if (!canEdit && !canApprove) {
+      return NextResponse.json({
+        success: false,
+        message: "Permission denied: edit or approve action required for Proof of Delivery.",
+        code: 'FORBIDDEN'
+      }, { status: 403 });
+    }
+
     const body = await req.json();
     const { id } = body;
-    
+
+    // Approve-only users may send nothing except the approval fields.
+    if (!canEdit) {
+      const APPROVE_ONLY_KEYS = [
+        'id', 'podStatus', 'paymentStatus', 'podStatusSection',
+        'remarks', 'approvalStatus', 'approvedBy', 'approvedAt'
+      ];
+      const extra = Object.keys(body).filter((k) => !APPROVE_ONLY_KEYS.includes(k));
+      if (extra.length) {
+        return NextResponse.json({
+          success: false,
+          message: "Permission denied: edit action not allowed for Proof of Delivery.",
+          code: 'FORBIDDEN'
+        }, { status: 403 });
+      }
+    }
+
     if (!id) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "POD ID is required" 
+      return NextResponse.json({
+        success: false,
+        message: "POD ID is required"
       }, { status: 400 });
     }
 
     if (!isValidObjectId(id)) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Invalid POD ID format" 
+      return NextResponse.json({
+        success: false,
+        message: "Invalid POD ID format"
       }, { status: 400 });
     }
 
     const pod = await POD.findOne(companyScopeFilter(user, { _id: id }));
 
     if (!pod) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "POD not found" 
+      return NextResponse.json({
+        success: false,
+        message: "POD not found"
       }, { status: 404 });
     }
 
@@ -2029,15 +2057,36 @@ export async function PUT(req) {
       pod.remarks = body.remarks;
     }
 
-    // Update statuses
-    if (body.podStatus) pod.podStatus = body.podStatus;
-    if (body.paymentStatus) pod.paymentStatus = body.paymentStatus;
+    if (body.vehicleUnloadedDate !== undefined) {
+      pod.vehicleUnloadedDate = body.vehicleUnloadedDate;
+    }
+    if (body.unloadRemarks !== undefined) {
+      pod.unloadRemarks = body.unloadRemarks;
+    }
+
+    // Only users with approve permission may change podStatus / paymentStatus.
+    if (!canApprove) {
+      const currentPodStatus = pod.podStatus || 'Pending';
+      const currentPaymentStatus = pod.paymentStatus || 'Pending';
+      const podStatusChanged = body.podStatus && body.podStatus !== currentPodStatus;
+      const paymentStatusChanged = body.paymentStatus && body.paymentStatus !== currentPaymentStatus;
+      if (podStatusChanged || paymentStatusChanged) {
+        return NextResponse.json({
+          success: false,
+          message: "Permission denied: approve action not allowed for Proof of Delivery.",
+          code: 'FORBIDDEN'
+        }, { status: 403 });
+      }
+    } else {
+      if (body.podStatus) pod.podStatus = body.podStatus;
+      if (body.paymentStatus) pod.paymentStatus = body.paymentStatus;
+    }
 
     // Recalculate totals
     pod.totalQuantity = pod.products.reduce((sum, p) => sum + num(p.totalPkgs), 0);
     pod.totalActualWt = pod.products.reduce((sum, p) => sum + num(p.actualWt), 0);
     pod.podDeduction = pod.products.reduce((sum, p) => sum + num(p.value), 0);
-    
+
     const total = pod.vendorFinancial?.total || 0;
     const advance = pod.vendorFinancial?.advance || 0;
     const poDeduction = pod.vendorFinancial?.poDeduction || 0;
@@ -2045,8 +2094,8 @@ export async function PUT(req) {
 
     await pod.save();
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       message: "POD updated successfully",
       data: {
         _id: pod._id,
@@ -2059,8 +2108,8 @@ export async function PUT(req) {
 
   } catch (error) {
     console.error("❌ PUT /pod-panel error:", error);
-    return NextResponse.json({ 
-      success: false, 
+    return NextResponse.json({
+      success: false,
       message: error.message || "Failed to update POD"
     }, { status: 500 });
   }
@@ -2074,8 +2123,8 @@ export async function DELETE(req) {
     await connectDb();
     const { user, error, status } = await validateUser(req, 'delete');
     if (error) {
-      return NextResponse.json({ 
-        success: false, 
+      return NextResponse.json({
+        success: false,
         message: error,
         code: status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN'
       }, { status });
@@ -2083,27 +2132,27 @@ export async function DELETE(req) {
 
     const url = new URL(req.url);
     const id = url.searchParams.get("id");
-    
+
     if (!id) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "POD ID is required" 
+      return NextResponse.json({
+        success: false,
+        message: "POD ID is required"
       }, { status: 400 });
     }
 
     if (!isValidObjectId(id)) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Invalid POD ID format" 
+      return NextResponse.json({
+        success: false,
+        message: "Invalid POD ID format"
       }, { status: 400 });
     }
 
     const pod = await POD.findOne(companyScopeFilter(user, { _id: id }));
 
     if (!pod) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "POD not found" 
+      return NextResponse.json({
+        success: false,
+        message: "POD not found"
       }, { status: 404 });
     }
 
@@ -2111,8 +2160,8 @@ export async function DELETE(req) {
 
     console.log(`✅ POD deleted: ${pod.podNo}`);
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       message: "POD deleted successfully",
       data: {
         podNo: pod.podNo,
@@ -2122,8 +2171,8 @@ export async function DELETE(req) {
 
   } catch (error) {
     console.error("❌ DELETE /pod-panel error:", error);
-    return NextResponse.json({ 
-      success: false, 
+    return NextResponse.json({
+      success: false,
       message: error.message || "Failed to delete POD"
     }, { status: 500 });
   }
@@ -2137,8 +2186,8 @@ export async function PATCH(req) {
     await connectDb();
     const { user, error, status } = await validateUser(req, 'approve');
     if (error) {
-      return NextResponse.json({ 
-        success: false, 
+      return NextResponse.json({
+        success: false,
         message: error,
         code: status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN'
       }, { status });
@@ -2147,20 +2196,20 @@ export async function PATCH(req) {
     const url = new URL(req.url);
     const id = url.searchParams.get("id");
     const action = url.searchParams.get("action");
-    
+
     if (!id || !isValidObjectId(id)) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Valid ID is required" 
+      return NextResponse.json({
+        success: false,
+        message: "Valid ID is required"
       }, { status: 400 });
     }
 
     const pod = await POD.findOne(companyScopeFilter(user, { _id: id }));
 
     if (!pod) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "POD not found" 
+      return NextResponse.json({
+        success: false,
+        message: "POD not found"
       }, { status: 404 });
     }
 
@@ -2169,25 +2218,25 @@ export async function PATCH(req) {
     if (action === 'approve') {
       pod.podStatus = body.podStatus || 'Received';
       pod.paymentStatus = 'Approved';
-      
+
       if (pod.podStatusSection) {
         pod.podStatusSection.podStatus = body.podStatus || 'Received';
       }
-      
+
       if (body.remarks !== undefined) {
         pod.remarks = body.remarks;
       }
-      
+
       if (pod.lrEntries && pod.lrEntries.length > 0) {
         pod.lrEntries.forEach(lr => {
           lr.podReceived = body.podStatus || 'Received';
         });
       }
-      
+
       await pod.save();
 
-      return NextResponse.json({ 
-        success: true, 
+      return NextResponse.json({
+        success: true,
         message: "POD approved successfully",
         data: {
           _id: pod._id,
@@ -2201,25 +2250,25 @@ export async function PATCH(req) {
     if (action === 'reject') {
       pod.podStatus = body.podStatus || 'Rejected';
       pod.paymentStatus = 'Rejected';
-      
+
       if (pod.podStatusSection) {
         pod.podStatusSection.podStatus = body.podStatus || 'Rejected';
       }
-      
+
       if (body.remarks !== undefined) {
         pod.remarks = body.remarks;
       }
-      
+
       if (pod.lrEntries && pod.lrEntries.length > 0) {
         pod.lrEntries.forEach(lr => {
           lr.podReceived = 'Rejected';
         });
       }
-      
+
       await pod.save();
 
-      return NextResponse.json({ 
-        success: true, 
+      return NextResponse.json({
+        success: true,
         message: "POD rejected successfully",
         data: {
           _id: pod._id,
@@ -2233,26 +2282,26 @@ export async function PATCH(req) {
     if (action === 'complete') {
       pod.podStatus = body.podStatus || 'Completed';
       pod.paymentStatus = 'Paid';
-      
+
       if (pod.podStatusSection) {
         pod.podStatusSection.podStatus = body.podStatus || 'Completed';
         pod.podStatusSection.paymentDate = new Date().toISOString();
       }
-      
+
       if (body.remarks !== undefined) {
         pod.remarks = body.remarks;
       }
-      
+
       if (pod.lrEntries && pod.lrEntries.length > 0) {
         pod.lrEntries.forEach(lr => {
           lr.podReceived = 'Completed';
         });
       }
-      
+
       await pod.save();
 
-      return NextResponse.json({ 
-        success: true, 
+      return NextResponse.json({
+        success: true,
         message: "POD completed successfully",
         data: {
           _id: pod._id,
@@ -2270,22 +2319,22 @@ export async function PATCH(req) {
           pod.podStatusSection.podStatus = body.podStatus;
         }
       }
-      
+
       if (body.remarks !== undefined) {
         pod.remarks = body.remarks;
       }
-      
+
       if (body.podStatusSection) {
         pod.podStatusSection = {
           ...pod.podStatusSection,
           ...body.podStatusSection
         };
       }
-      
+
       await pod.save();
 
-      return NextResponse.json({ 
-        success: true, 
+      return NextResponse.json({
+        success: true,
         message: `POD status updated to ${pod.podStatus}`,
         data: {
           _id: pod._id,
@@ -2296,15 +2345,15 @@ export async function PATCH(req) {
       }, { status: 200 });
     }
 
-    return NextResponse.json({ 
-      success: false, 
-      message: "Invalid action. Allowed: approve, reject, complete, update-status" 
+    return NextResponse.json({
+      success: false,
+      message: "Invalid action. Allowed: approve, reject, complete, update-status"
     }, { status: 400 });
 
   } catch (error) {
     console.error("❌ PATCH /pod-panel error:", error);
-    return NextResponse.json({ 
-      success: false, 
+    return NextResponse.json({
+      success: false,
       message: error.message || "Failed to update POD status"
     }, { status: 500 });
   }

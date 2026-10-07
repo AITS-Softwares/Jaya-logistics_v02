@@ -6374,6 +6374,16 @@ export default function EditLoadingInfoPanel() {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const [stream, setStream] = useState(null);
+  const [cameraTarget, setCameraTarget] = useState(null);
+  const [mediaPickerTarget, setMediaPickerTarget] = useState(null);
+
+  // The <video> element only exists after the modal renders, so attach the
+  // stream here instead of right after getUserMedia (it was null at that time).
+  useEffect(() => {
+    if (showCamera && stream && videoRef.current) {
+      videoRef.current.srcObject = stream;
+    }
+  }, [showCamera, stream]);
 
   /** =========================
    * FETCH SUB-COMPANIES FUNCTION
@@ -7036,8 +7046,8 @@ export default function EditLoadingInfoPanel() {
 
         setVehicleInfo((previous) => ({
           ...previous,
-          vehicleNo: fullNegotiation.vehicleNo || "",
-          driverMobileNo: fullNegotiation.driverMobileNo || "",
+          vehicleNo: fullNegotiation.vehicleNo || previous.vehicleNo || "",
+          driverMobileNo: fullNegotiation.driverMobileNo || previous.driverMobileNo || "",
         }));
 
         if (fullNegotiation.orders && fullNegotiation.orders.length > 0) {
@@ -7548,19 +7558,65 @@ export default function EditLoadingInfoPanel() {
   };
 
   // Camera functions
-  const startCamera = async () => {
+  const appendCameraFile = (section, field, file) => {
+    const append = (setter) => setter(prev => ({
+      ...prev,
+      [field]: [...(prev[field] || []), file],
+    }));
+
+    if (section === 'vehicle') append(setVehicleFiles);
+    if (section === 'vbp') append(setVbpFiles);
+    if (section === 'vft') append(setVftFiles);
+    if (section === 'vot') append(setVotFiles);
+    if (section === 'vl') append(setVlFiles);
+    if (section === 'weighment') append(setWeighmentFiles);
+  };
+
+  // Fallback: native camera/file picker. Works on phones and on plain HTTP,
+  // where live webcam access (getUserMedia) is blocked by the browser.
+  const openNativeCameraPicker = (target) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.setAttribute('capture', 'environment');
+    input.onchange = (event) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      appendCameraFile(target.section, target.field, file);
+      if (target.section === 'vehicle' && target.field === 'photo') {
+        const now = new Date();
+        setArrivalDetails(prev => ({
+          ...prev,
+          date: now.toISOString().split('T')[0],
+          time: now.toLocaleTimeString(),
+        }));
+      }
+    };
+    input.click();
+  };
+
+  const openCamera = async (target) => {
     if (isReadOnly) return;
     try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
-      setStream(mediaStream);
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
+      if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+        openNativeCameraPicker(target);
+        return;
       }
+
+      const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
+      setCameraTarget(target);
+      setStream(mediaStream);
       setShowCamera(true);
     } catch (err) {
       console.error("Error accessing camera:", err);
-      alert("Unable to access camera. Please check permissions.");
+      openNativeCameraPicker(target);
     }
+  };
+
+  const startCamera = () => openCamera({ section: 'vehicle', field: 'photo', label: 'Driver Photo' });
+  const openImageMediaPicker = (section, field, label) => {
+    if (isReadOnly) return;
+    setMediaPickerTarget({ section, field, label });
   };
 
   const stopCamera = () => {
@@ -7569,6 +7625,7 @@ export default function EditLoadingInfoPanel() {
       setStream(null);
     }
     setShowCamera(false);
+    setCameraTarget(null);
   };
 
   const capturePhoto = () => {
@@ -7584,21 +7641,22 @@ export default function EditLoadingInfoPanel() {
 
       canvas.toBlob((blob) => {
         const now = new Date();
-        const filename = `driver_photo_${now.getTime()}.jpg`;
+        const section = cameraTarget?.section || 'vehicle';
+        const field = cameraTarget?.field || 'photo';
+        const filename = `${field}_${now.getTime()}.jpg`;
         const file = new File([blob], filename, { type: 'image/jpeg' });
 
-        setVehicleFiles(prev => ({
-          ...prev,
-          photo: [...prev.photo, file]
-        }));
+        appendCameraFile(section, field, file);
 
-        setArrivalDetails(prev => ({
-          ...prev,
-          date: now.toISOString().split('T')[0],
-          time: now.toLocaleTimeString(),
-        }));
+        if (section === 'vehicle' && field === 'photo') {
+          setArrivalDetails(prev => ({
+            ...prev,
+            date: now.toISOString().split('T')[0],
+            time: now.toLocaleTimeString(),
+          }));
+        }
 
-        alert(`✅ Driver photo captured successfully!\n📅 Date: ${now.toLocaleDateString()}\n⏰ Time: ${now.toLocaleTimeString()}`);
+        alert(`✅ ${cameraTarget?.label || 'Photo'} captured successfully!`);
 
         stopCamera();
       }, 'image/jpeg', 0.9);
@@ -8198,12 +8256,44 @@ export default function EditLoadingInfoPanel() {
         </div>
       </div>
 
+      {/* Source chooser: upload a file or take a photo */}
+      {mediaPickerTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <h3 className="text-base font-extrabold text-slate-900">Add {mediaPickerTarget.label}</h3>
+                <p className="mt-1 text-xs text-slate-500">Choose an existing image or take one now.</p>
+              </div>
+              <button type="button" onClick={() => setMediaPickerTarget(null)} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-800" aria-label="Close">×</button>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => { const target = mediaPickerTarget; setMediaPickerTarget(null); handleFileSelect(target.section, target.field); }}
+                className="rounded-xl border border-sky-200 bg-sky-50 px-3 py-4 text-sm font-bold text-sky-700 hover:bg-sky-100"
+              >
+                Upload file
+              </button>
+              <button
+                type="button"
+                onClick={() => { const target = mediaPickerTarget; setMediaPickerTarget(null); openCamera(target); }}
+                className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-4 text-sm font-bold text-emerald-700 hover:bg-emerald-100"
+              >
+                Take photo
+              </button>
+            </div>
+            {typeof window !== 'undefined' && !window.isSecureContext && <p className="mt-3 text-xs text-amber-700">On this HTTP server, Take photo opens your device’s native image picker. Live webcam preview requires HTTPS.</p>}
+          </div>
+        </div>
+      )}
+
       {/* Camera Modal */}
       {showCamera && (
         <div className="fixed inset-0 z-50 bg-black bg-opacity-90 flex items-center justify-center">
           <div className="bg-white rounded-2xl p-4 max-w-2xl w-full mx-4">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold text-slate-900">Capture Driver Photo</h3>
+              <h3 className="text-lg font-bold text-slate-900">Capture {cameraTarget?.label || "Photo"}</h3>
               <button
                 onClick={stopCamera}
                 className="text-red-500 hover:text-red-700 p-2"
@@ -9035,7 +9125,7 @@ export default function EditLoadingInfoPanel() {
                           <label className="text-xs font-bold text-slate-600">Driver Photo</label>
                           {!isReadOnly && (
                             <button
-                              onClick={() => handleFileSelect('vehicle', 'photo')}
+                              onClick={() => openImageMediaPicker('vehicle', 'photo', 'Driver Photo')}
                               className="mt-1 w-full rounded-lg bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700 border border-blue-200 hover:bg-blue-100"
                             >
                               {vehicleFiles.photo.length > 0 ? `✓ ${vehicleFiles.photo.length} new` : '+ Select'}
@@ -10070,7 +10160,7 @@ export default function EditLoadingInfoPanel() {
                         className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none ${isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
                           }`}
                       />
-                      <p className="text-xs text-green-600 mt-1">Auto-filled from camera capture</p>
+                      <p className="text-xs text-green-600 mt-1">Auto-filled when the vehicle slip is uploaded</p>
                     </div>
                   </div>
                   <div className="col-span-12 md:col-span-3">
@@ -10085,7 +10175,7 @@ export default function EditLoadingInfoPanel() {
                           }`}
                         placeholder="HH:MM"
                       />
-                      <p className="text-xs text-green-600 mt-1">Auto-filled from camera capture</p>
+                      <p className="text-xs text-green-600 mt-1">Auto-filled when the vehicle slip is uploaded</p>
                     </div>
                   </div>
                   <div className="col-span-12 md:col-span-3">
@@ -10099,7 +10189,7 @@ export default function EditLoadingInfoPanel() {
                         className={`mt-1 w-full rounded-lg border border-orange-200 px-3 py-2 text-sm outline-none ${isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
                           }`}
                       />
-                      <p className="text-xs text-orange-600 mt-1">Auto-filled when generating LR</p>
+                      <p className="text-xs text-orange-600 mt-1">Auto-filled when the LR is approved </p>
                     </div>
                   </div>
                   <div className="col-span-12 md:col-span-3">
@@ -10114,7 +10204,7 @@ export default function EditLoadingInfoPanel() {
                           }`}
                         placeholder="HH:MM"
                       />
-                      <p className="text-xs text-orange-600 mt-1">Auto-filled when generating LR</p>
+                      <p className="text-xs text-orange-600 mt-1">Auto-filled when the LR is approved</p>
                     </div>
                   </div>
                 </div>
@@ -10296,4 +10386,4 @@ export default function EditLoadingInfoPanel() {
       </div>
     </div>
   );
-} 
+}

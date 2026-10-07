@@ -1754,6 +1754,7 @@
 
 import { useMemo, useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { usePermission } from "../../../hooks/usePermission";
 import { LoadingInfoInvoiceViewer } from "@/components/LoadingInfoLRViewer";
 import LoadingInfoLRViewer from "@/components/LoadingInfoLRViewer";
 
@@ -2273,6 +2274,9 @@ export default function ApproveLoadingPanel() {
   const router = useRouter();
   const params = useParams();
   const panelId = params.id;
+  const { hasPermission, loading: permLoading } = usePermission();
+  const canEdit = hasPermission("Loading Info", "edit");
+  const canApprove = hasPermission("Loading Info", "approve");
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -2678,6 +2682,10 @@ export default function ApproveLoadingPanel() {
   };
 
   const handleApprove = async () => {
+    if (!canApprove) {
+      alert("You do not have permission to approve Loading Info.");
+      return;
+    }
     setSaving(true);
     try {
       const token = localStorage.getItem('token');
@@ -2755,22 +2763,27 @@ export default function ApproveLoadingPanel() {
         }
       };
 
-      // Send update
-      const res = await fetch('/api/loading-panel', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          id: panelId,
-          ...updatedData
-        }),
-      });
+      // Approve-only users skip the PUT (it needs 'edit') and go straight to PATCH.
+      let putOk = true;
+      let putMessage = '';
+      if (canEdit) {
+        const res = await fetch('/api/loading-panel', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            id: panelId,
+            ...updatedData
+          }),
+        });
+        const data = await res.json();
+        putOk = !!data.success;
+        putMessage = data.message || '';
+      }
 
-      const data = await res.json();
-
-      if (data.success) {
+      if (putOk) {
         // Keep the single submit action, but send each section's chosen status.
         // The API otherwise defaults omitted statuses to the action's Approved
         // value and overwrites Pending/Rejected selections.
@@ -2804,7 +2817,7 @@ export default function ApproveLoadingPanel() {
         alert(`✅ Loading Panel submitted successfully!`);
         router.push('/admin/Loading-Info');
       } else {
-        alert(data.message || 'Failed to update approval');
+        alert(putMessage || 'Failed to update approval');
       }
     } catch (error) {
       console.error('Error updating approval:', error);
@@ -2865,7 +2878,8 @@ export default function ApproveLoadingPanel() {
           <div className="flex items-center gap-3">
             <button
               onClick={handleApprove}
-              disabled={saving}
+              disabled={saving || permLoading || !canApprove}
+              title={!canApprove ? "You need Approve permission" : undefined}
               className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${saving
                 ? 'bg-gray-400 cursor-not-allowed'
                 : 'bg-emerald-600 hover:bg-emerald-700'
