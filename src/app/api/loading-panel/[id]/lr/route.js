@@ -12,7 +12,7 @@ import { withAuth } from "@/lib/auth";
 import { companyScopeFilter } from "@/lib/companyScope";
 import LoadingPanel from "@/app/api/loading-panel/LoadingPanel";
 import ConsignmentNote from "@/app/api/consignment-note/ConsignmentNote";
-import { findLRsForPanel } from "../../findLRs";
+import { getLRCompletion, getLoadingApprovals, LOADING_APPROVAL_SELECT } from "../../findLRs";
 
 export const runtime = "nodejs";
 
@@ -27,27 +27,33 @@ export const GET = withAuth(async (req, context, user) => {
         await connectDb();
 
         const panel = await LoadingPanel.findOne(companyScopeFilter(user, { _id: panelId }))
-            .select("vehicleArrivalNo consignmentNote orderRows.orderNo orderRows.to orderRows.toName orderRows.weight")
+            .select("vehicleArrivalNo consignmentNote orderRows._id orderRows.orderNo orderRows.to orderRows.toName orderRows.weight " + LOADING_APPROVAL_SELECT)
             .lean();
         if (!panel) {
             return NextResponse.json({ success: false, message: "Loading Info not found." }, { status: 404 });
         }
 
-        const rowIds = (panel.orderRows || []).map((r) => String(r._id));
-        const links = [];
-        if (panel.vehicleArrivalNo) links.push({ loadingInfoNo: panel.vehicleArrivalNo });
-        if (rowIds.length) links.push({ orderRowId: { $in: rowIds } });
-
-        const notes = await findLRsForPanel(user, panel, {}, "-companyId -createdBy -updatedBy -__v");
+        // Each LR is released on its own once it is approved AND has its invoice.
+        // Rows still waiting are returned as a light summary (no LR content).
+        const c = await getLRCompletion(user, panel);
+        // LRs / invoices open only when VBP, VFT, VOT and VL are all Approved.
+        const approvals = getLoadingApprovals(panel);
 
         return NextResponse.json({
             success: true,
             data: {
                 loadingInfoNo: panel.vehicleArrivalNo || "",
-                // Primary LR number stored on the Loading Info (may be empty for old records).
-                consignmentNote: panel.consignmentNote || notes[0]?.lrNo || "",
-                generated: notes.length > 0,
-                notes,
+                consignmentNote: c.complete && approvals.allApproved ? (panel.consignmentNote || c.notes[0]?.lrNo || "") : "",
+                rows: c.rows,
+                counts: c.counts,
+                generated: c.complete,
+                complete: c.complete,
+                total: c.total,
+                ready: c.ready,
+                pending: c.pending,
+                message: approvals.allApproved ? c.message : approvals.message,
+                approvals,
+                notes: approvals.allApproved ? c.notes : [],
             },
         });
     } catch (error) {

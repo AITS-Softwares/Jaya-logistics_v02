@@ -1414,6 +1414,7 @@ import DetentionRule from "../detention-rules/DetentionRule";
 import { calculateDetention, selectDetentionRule } from "@/lib/detentionCalculation";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import { getNextLRNumber } from "./ConsignmentCounter";
+import { getLRCompletion, LR_COMPLETION_SELECT } from "../loading-panel/findLRs";
 import mongoose from 'mongoose';
 import { activeOperatingCompanyId, companyScopeFilter } from "@/lib/companyScope";
 
@@ -1521,6 +1522,28 @@ function formatIndiaDateTime(timestamp) {
   };
 }
 
+
+// Out Date/Time is recorded ONCE, at the moment the LAST LR of a Loading Info becomes
+// approved with its invoice (every order row covered). Called after an LR is approved
+// and after an LR is saved with its invoice. It never overwrites a stored Out Date/Time,
+// and it does nothing while any LR is still missing, unapproved or without an invoice.
+async function recordOutWhenAllLRsDone(user, loadingInfoNo) {
+  if (!loadingInfoNo) return;
+  const loadingInfo = await LoadingPanel.findOne(
+    companyScopeFilter(user, { vehicleArrivalNo: loadingInfoNo })
+  );
+  if (!loadingInfo || loadingInfo.arrivalDetails?.outDate) return;
+
+  const completion = await getLRCompletion(user, loadingInfo.toObject(), LR_COMPLETION_SELECT);
+  if (!completion.complete) return;
+
+  const { date: outDate, time: outTime } = formatIndiaDateTime(new Date());
+  loadingInfo.arrivalDetails = loadingInfo.arrivalDetails || {};
+  loadingInfo.arrivalDetails.outDate = new Date(`${outDate}T00:00:00.000Z`);
+  loadingInfo.arrivalDetails.outTime = outTime;
+  await loadingInfo.save();
+  await synchronizePurchaseDetention(user, loadingInfo, outDate, outTime);
+}
 
 async function synchronizePurchaseDetention(user, loadingInfo, outDate, outTime) {
   const purchase = await PurchasePanel.findOne(companyScopeFilter(user, {
@@ -2255,6 +2278,12 @@ export async function PUT(req) {
     note.updatedAt = Date.now();
     await note.save();
 
+    // An invoice uploaded on an already-approved LR can be the last missing piece.
+    // if (note.loadingInfoNo && ['Approved', 'Completed'].includes(note.header?.status)) {
+    //   try { await recordOutWhenAllLRsDone(user, note.loadingInfoNo); }
+    //   catch (e) { console.error("recordOutWhenAllLRsDone (PUT) failed:", e); }
+    // }
+
     return NextResponse.json({
       success: true,
       message: "Consignment note updated successfully",
@@ -2419,22 +2448,11 @@ export async function PATCH(req) {
 
     await note.save();
 
-    // The first approved LR of a Loading Info sets the vehicle Out Date/Time
-    // and carries it (with the detention calculation) to the linked Purchase.
-    if (action === 'approve' && note.loadingInfoNo) {
-      const loadingInfo = await LoadingPanel.findOne(
-        companyScopeFilter(user, { vehicleArrivalNo: note.loadingInfoNo })
-      );
-      if (loadingInfo && !loadingInfo.arrivalDetails?.outDate) {
-        const { date: outDate, time: outTime } = formatIndiaDateTime(note.header.approvedAt || new Date());
-        loadingInfo.arrivalDetails = loadingInfo.arrivalDetails || {};
-        loadingInfo.arrivalDetails.outDate = new Date(`${outDate}T00:00:00.000Z`);
-        loadingInfo.arrivalDetails.outTime = outTime;
-        await loadingInfo.save();
-        await synchronizePurchaseDetention(user, loadingInfo, outDate, outTime);
-      }
-    }
-
+    // Out Date/Time (and the Purchase detention) are set only when the LAST LR of
+    // this Loading Info is approved with its invoice - not by the first LR.
+    // if (action === 'approve' && note.loadingInfoNo) {
+    //   await recordOutWhenAllLRsDone(user, note.loadingInfoNo);
+    // }
     return NextResponse.json({
       success: true,
       message: `Consignment note ${action}d successfully`,

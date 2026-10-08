@@ -5204,6 +5204,16 @@ function normalizeVlPhotoDetails(details) {
     return normalized;
   }, {});
 }
+// Arrival/out stamps use India time as "YYYY-MM-DD" and 24-hour "HH:mm", which is what
+// <input type="date"> / <input type="time"> can display (toLocaleTimeString() cannot be shown).
+function istStamp(d = new Date()) {
+  const p = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+  }).formatToParts(d).reduce((r, x) => ({ ...r, [x.type]: x.value }), {});
+  return { date: `${p.year}-${p.month}-${p.day}`, time: `${p.hour}:${p.minute}` };
+}
+
 
 function toHtmlTime(value) {
   const time = String(value || "").trim();
@@ -6356,7 +6366,7 @@ export default function EditLoadingInfoPanel() {
    * ARRIVAL DETAILS with OUT DATE
    ========================= */
   const [arrivalDetails, setArrivalDetails] = useState({
-    date: new Date().toISOString().split('T')[0],
+    date: "",
     time: "",
     outDate: "",
     outTime: "",
@@ -6737,7 +6747,7 @@ export default function EditLoadingInfoPanel() {
 
       if (panel.arrivalDetails) {
         setArrivalDetails({
-          date: panel.arrivalDetails.date ? new Date(panel.arrivalDetails.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+          date: panel.arrivalDetails.date ? new Date(panel.arrivalDetails.date).toISOString().split('T')[0] : "",
           time: toHtmlTime(panel.arrivalDetails.time),
           outDate: panel.arrivalDetails.outDate ? new Date(panel.arrivalDetails.outDate).toISOString().split('T')[0] : "",
           outTime: toHtmlTime(panel.arrivalDetails.outTime),
@@ -7587,8 +7597,7 @@ export default function EditLoadingInfoPanel() {
         const now = new Date();
         setArrivalDetails(prev => ({
           ...prev,
-          date: now.toISOString().split('T')[0],
-          time: now.toLocaleTimeString(),
+          ...istStamp(now),
         }));
       }
     };
@@ -7651,8 +7660,7 @@ export default function EditLoadingInfoPanel() {
         if (section === 'vehicle' && field === 'photo') {
           setArrivalDetails(prev => ({
             ...prev,
-            date: now.toISOString().split('T')[0],
-            time: now.toLocaleTimeString(),
+            ...istStamp(now),
           }));
         }
 

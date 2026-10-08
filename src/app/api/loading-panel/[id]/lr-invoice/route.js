@@ -7,7 +7,7 @@ import { withAuth } from "@/lib/auth";
 import { companyScopeFilter } from "@/lib/companyScope";
 import LoadingPanel from "@/app/api/loading-panel/LoadingPanel";
 import ConsignmentNote from "@/app/api/consignment-note/ConsignmentNote";
-import { findLRsForPanel } from "../../findLRs";
+import { getLRCompletion, LR_COMPLETION_SELECT, getLoadingApprovals, LOADING_APPROVAL_SELECT } from "../../findLRs";
 
 export const runtime = "nodejs";
 
@@ -32,10 +32,18 @@ export const GET = withAuth(async (req, context, user) => {
 
     await connectDb();
     const panel = await LoadingPanel.findOne(companyScopeFilter(user, { _id: id }))
-        .select("vehicleArrivalNo consignmentNote orderRows.orderNo orderRows.to orderRows.toName orderRows.weight").lean();
+        .select("vehicleArrivalNo consignmentNote orderRows._id orderRows.orderNo orderRows.to orderRows.toName orderRows.weight " + LOADING_APPROVAL_SELECT).lean();
     if (!panel) return fail("Loading Info not found.", 404);
 
-    const note = (await findLRsForPanel(user, panel, { _id: lrId }, "invoice.file loadingInfoNo header.orderNo header.to consignmentBreakdown"))[0];
+    // Block unless VBP, VFT, VOT and VL are all Approved.
+    const approvals = getLoadingApprovals(panel);
+    if (!approvals.allApproved) return fail(approvals.message, 403);
+
+    // Invoices are released only when every LR of this Loading Info is approved with its invoice.
+    const c = await getLRCompletion(user, panel, LR_COMPLETION_SELECT);
+    // Each invoice opens as soon as its own LR is approved and the invoice is uploaded.
+    const note = c.notes.find((n) => String(n._id) === String(lrId));
+    if (!note) return fail("This invoice is available once its LR is approved and the invoice is uploaded.", 403);
     const f = note?.invoice?.file;
     if (!f?.filePath) return fail("No invoice uploaded for this LR.", 404);
 

@@ -1162,7 +1162,7 @@ import mongoose from 'mongoose';
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import { activeOperatingCompanyId, companyScopeFilter } from "@/lib/companyScope";
 import VehicleNegotiation from '@/app/api/vehicle-negotiation/VehicleNegotiation';
-import { findLRsForPanel } from "./findLRs";
+import { findLRsForPanel, getLRCompletion, LR_COMPLETION_SELECT } from "./findLRs";
 
 // ── PERMISSION FUNCTIONS ──
 
@@ -1252,6 +1252,30 @@ function isValidObjectId(id) {
   return id && mongoose.Types.ObjectId.isValid(id);
 }
 
+// Uploaded slips are stored as ".../<Date.now()>-<uuid>-<name>", so for records saved
+// before `vehicleSlipUploadedAt` existed the upload moment can still be recovered.
+function slipUploadedAtFromFiles(slips = []) {
+  const stamps = (slips || [])
+    .map((f) => String(f || '').split('/').pop().match(/^(\d{13})-/))
+    .filter(Boolean)
+    .map((m) => Number(m[1]))
+    .filter((t) => t > Date.UTC(2020, 0, 1) && t < Date.now() + 86400000);
+  return stamps.length ? new Date(Math.min(...stamps)) : null;
+}
+
+// Arrival date/time come ONLY from the vehicle slip upload. A date without a time is never valid.
+function arrivalFromPanel(panel) {
+  const stored = panel.arrivalDetails || {};
+  const at = panel.vehicleSlipUploadedAt
+    ? new Date(panel.vehicleSlipUploadedAt)
+    : ((panel.vehicleSlips || []).length && !stored.time ? slipUploadedAtFromFiles(panel.vehicleSlips) : null);
+  if (at) return indiaUploadDateTime(at);
+  if (stored.date && stored.time) {
+    return { date: new Date(stored.date).toISOString().split('T')[0], time: stored.time };
+  }
+  return { date: '', time: '' };
+}
+
 /* ========================================
    GET /api/loading-panel - Requires 'view' permission
 ======================================== */
@@ -1301,29 +1325,18 @@ export async function GET(req) {
         }, { status: 404 });
       }
 
-      // Out Date/Time: when not stored, derive it from the first approved LR linked to
-      // this Loading Info (same lookup as the Documents & Consignment Note section),
-      // ignoring LRs approved before the vehicle arrived.
+      // Out Date/Time is the moment the LAST LR of this Loading Info was approved with its
+      // invoice. It is saved once at that moment (see the consignment-note route); for
+      // records saved before that, derive it from the same event instead of the first LR.
       let derivedOut = null;
       if (!loadingPanel.arrivalDetails?.outDate) {
-        const lrs = await findLRsForPanel(
-          user, loadingPanel, {},
-          'loadingInfoNo header.orderNo header.to header.approvedAt consignmentBreakdown createdAt updatedAt'
-        );
-        const arrivalAt = loadingPanel.vehicleSlipUploadedAt
-          ? new Date(loadingPanel.vehicleSlipUploadedAt).getTime() : 0;
-        const times = lrs
-          .map((l) => new Date(l.header?.approvedAt || l.updatedAt).getTime())
-          .filter((t) => Number.isFinite(t) && t >= arrivalAt);
-        if (times.length) {
-          const p = new Intl.DateTimeFormat('en-GB', {
-            timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit',
-            hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
-          }).formatToParts(new Date(Math.min(...times)))
-            .reduce((r, x) => ({ ...r, [x.type]: x.value }), {});
-          derivedOut = { outDate: `${p.year}-${p.month}-${p.day}`, outTime: `${p.hour}:${p.minute}` };
+        const completion = await getLRCompletion(user, loadingPanel, LR_COMPLETION_SELECT);
+        if (completion.completedAt) {
+          const p = indiaUploadDateTime(completion.completedAt);
+          derivedOut = { outDate: p.date, outTime: p.time };
         }
       }
+      const arrival = arrivalFromPanel(loadingPanel);
 
       // Format dates for frontend
       const formattedPanel = {
@@ -1331,8 +1344,8 @@ export async function GET(req) {
         date: loadingPanel.date ? new Date(loadingPanel.date).toISOString().split('T')[0] : '',
         arrivalDetails: {
           ...loadingPanel.arrivalDetails,
-          date: loadingPanel.arrivalDetails?.date ?
-            new Date(loadingPanel.arrivalDetails.date).toISOString().split('T')[0] : '',
+          date: arrival.date,
+          time: arrival.time,
           outDate: loadingPanel.arrivalDetails?.outDate ?
             new Date(loadingPanel.arrivalDetails.outDate).toISOString().split('T')[0] : (derivedOut?.outDate || ''),
           outTime: loadingPanel.arrivalDetails?.outTime || derivedOut?.outTime || ''
@@ -1950,11 +1963,13 @@ export async function POST(req) {
       // Arrival details
       arrivalDetails: {
         // A vehicle slip is authoritative; do not allow client-supplied arrival
-        // values to replace its upload timestamp.
-        date: vehicleSlipArrival ? new Date(vehicleSlipArrival.date) : (body.arrivalDetails?.date ? new Date(body.arrivalDetails.date) : null),
-        time: vehicleSlipArrival?.time || body.arrivalDetails?.time || '',
-        outDate: body.arrivalDetails?.outDate ? new Date(body.arrivalDetails.outDate) : null,
-        outTime: body.arrivalDetails?.outTime || ''
+        // values to replace its upload timestamp. Without a slip, a date is only
+        // accepted together with its time (e.g. a driver-photo capture).
+        date: vehicleSlipArrival ? new Date(vehicleSlipArrival.date) : (body.arrivalDetails?.date && body.arrivalDetails?.time ? new Date(body.arrivalDetails.date) : null),
+        time: vehicleSlipArrival?.time || (body.arrivalDetails?.date && body.arrivalDetails?.time ? body.arrivalDetails.time : ''),
+        // Out Date/Time is set by the system once the last LR is approved with its invoice.
+        outDate: null,
+        outTime: ''
       },
 
       // Totals
@@ -2072,6 +2087,14 @@ export async function PUT(req) {
       updateData.arrivalDetails = { ...(updateData.arrivalDetails || {}), date: captured.date, time: captured.time };
     }
 
+    // Heal records whose slip was saved before `vehicleSlipUploadedAt` existed.
+    if (!isFirstVehicleSlip && (existingPanel.vehicleSlips || []).length && !existingPanel.vehicleSlipUploadedAt) {
+      const at = slipUploadedAtFromFiles(existingPanel.vehicleSlips) || existingPanel.createdAt || new Date();
+      const captured = indiaUploadDateTime(at);
+      updateData.vehicleSlipUploadedAt = at;
+      updateData.arrivalDetails = { ...(updateData.arrivalDetails || {}), date: captured.date, time: captured.time };
+    }
+
     updateData.subCompanyId = user.activeOperatingCompanyId;
     updateData.subCompanyName = user.activeOperatingCompanyName || '';
     updateData.subCompanyCode = user.activeOperatingCompanyCode || '';
@@ -2172,13 +2195,17 @@ export async function PUT(req) {
       updateData.vlPhotoDetails = Object.fromEntries(processedDetails);
     }
 
-    // Process arrivalDetails with outDate
+    // Process arrivalDetails. A date is only accepted together with its time, and
+    // Out Date/Time can never be edited here: it is stored once, by the system, when
+    // the last LR of this Loading Info is approved with its invoice.
     if (updateData.arrivalDetails) {
+      const incoming = updateData.arrivalDetails;
+      const pair = Boolean(incoming.date && incoming.time);
       updateData.arrivalDetails = {
-        date: updateData.arrivalDetails.date ? new Date(updateData.arrivalDetails.date) : existingPanel.arrivalDetails?.date,
-        time: updateData.arrivalDetails.time || existingPanel.arrivalDetails?.time || '',
-        outDate: updateData.arrivalDetails.outDate ? new Date(updateData.arrivalDetails.outDate) : existingPanel.arrivalDetails?.outDate,
-        outTime: updateData.arrivalDetails.outTime || existingPanel.arrivalDetails?.outTime || ''
+        date: pair ? new Date(incoming.date) : (existingPanel.arrivalDetails?.date || null),
+        time: pair ? incoming.time : (existingPanel.arrivalDetails?.time || ''),
+        outDate: existingPanel.arrivalDetails?.outDate || null,
+        outTime: existingPanel.arrivalDetails?.outTime || ''
       };
     }
 
