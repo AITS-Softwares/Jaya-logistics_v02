@@ -603,6 +603,9 @@ export default function TrackingPlanPage() {
   const [geo, setGeo] = useState({});               // stop sequence -> { lat, lng, accuracy }
   const [routeInfo, setRouteInfo] = useState(null); // { distanceKm, plan, ... } from /api/tracking/route
   const [mapNote, setMapNote] = useState("");
+  const [liveTracking, setLiveTracking] = useState(null);
+  const [liveLoading, setLiveLoading] = useState(false);
+  const [liveError, setLiveError] = useState("");
   const mapCacheRef = useRef(new Map());              // address signature -> { at, located, routeInfo }, this tab only
   const requestRef = useRef(0);                      // ignores answers for a loading the user has already left
 
@@ -623,9 +626,37 @@ export default function TrackingPlanPage() {
     return () => { active = false; };
   }, [permissionLoading, canView]);
 
+  const loadLiveTracking = async (id, headers, requestId = requestRef.current) => {
+    if (!id) return;
+    setLiveLoading(true); setLiveError("");
+    try {
+      const response = await fetch(`/api/mobile/v1/admin/live-tracking?loadingId=${encodeURIComponent(id)}`, { headers });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.success) throw new Error(data.message || "Unable to load the driver's live status.");
+      if (requestId === requestRef.current) setLiveTracking(data.data);
+    } catch (requestError) {
+      if (requestId === requestRef.current) { setLiveTracking(null); setLiveError(requestError.message || "Unable to load live tracking."); }
+    } finally { if (requestId === requestRef.current) setLiveLoading(false); }
+  };
+  const approveRouteBaseline = async (tripId) => {
+    if (!routeInfo) { setLiveError("Create the normal route plan first, then approve it as the driver ETA baseline."); return; }
+    setLiveLoading(true); setLiveError("");
+    try {
+      const response = await fetch(`/api/mobile/v1/admin/trips/${tripId}/route-baseline`, {
+        method: "POST", headers: { Authorization: `Bearer ${localStorage.getItem("token") || ""}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ distanceKm: routeInfo.distanceKm, durationMinutes: routeInfo.durationMinutes, expectedDays: routeInfo.plan?.expectedDays || 1 }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.success) throw new Error(data.message || "Unable to approve route baseline.");
+      setMapNote("Route baseline approved for driver ETA status. GPS will not change this baseline automatically.");
+      await loadLiveTracking(selectedId, { Authorization: `Bearer ${localStorage.getItem("token") || ""}` });
+    } catch (requestError) { setLiveError(requestError.message || "Unable to approve route baseline."); }
+    finally { setLiveLoading(false); }
+  };
+
   const selectLoading = async (id) => {
     const requestId = ++requestRef.current;
-    setSelectedId(id); setSelected(null); setError(""); setStops([]); setGeo({}); setRouteInfo(null); setMapNote("");
+    setSelectedId(id); setSelected(null); setError(""); setStops([]); setGeo({}); setRouteInfo(null); setMapNote(""); setLiveTracking(null); setLiveError("");
     if (!id) return;
     setDetailLoading(true);
     try {
@@ -652,9 +683,18 @@ export default function TrackingPlanPage() {
       const built = buildStops(lpData.data, lrList, master);
       setStops(built);
       locateStops(built, headers, requestId); // map and route load after the page is already usable
+      loadLiveTracking(id, headers, requestId); // live mobile telemetry is optional and never blocks ERP data
     } catch (requestError) { setError(requestError.message || "Unable to load the selected Loading Info."); }
     finally { setDetailLoading(false); }
   };
+
+  // Refresh the staff map without reloading the Loading Info, LR, or route plan.
+  useEffect(() => {
+    if (!selectedId || !selected) return undefined;
+    const headers = { Authorization: `Bearer ${localStorage.getItem("token") || ""}` };
+    const timer = window.setInterval(() => loadLiveTracking(selectedId, headers), 30000);
+    return () => window.clearInterval(timer);
+  }, [selectedId, selected]);
   // Geocode the stops, then plan the route through the located ones. Both are extras: a failure only sets the map note.
   const locateStops = async (list, headers, requestId) => {
     // Re-selecting a loading within 10 minutes reuses the last answer: no geocode and no route request at all.
@@ -692,6 +732,12 @@ export default function TrackingPlanPage() {
 
   const mapStops = useMemo(() => stops.map((s) => ({ ...s, geo: geo[String(s.sequence)] || null })), [stops, geo]);
   const tracking = useMemo(() => makeTrackingValues(selected, routeInfo), [selected, routeInfo]);
+  const primaryLiveTrip = liveTracking?.trips?.find((trip) => trip.latestLocation) || liveTracking?.trips?.[0] || null;
+  const liveVehicle = primaryLiveTrip?.latestLocation ? {
+    lat: primaryLiveTrip.latestLocation.latitude, lng: primaryLiveTrip.latestLocation.longitude,
+    label: `${primaryLiveTrip.vehicleNo || "Vehicle"} · ${primaryLiveTrip.driver?.displayName || "Driver"}`,
+  } : null;
+  const liveMapStatus = primaryLiveTrip?.session ? `GPS ${formatLiveStatus(primaryLiveTrip.session.status)}${primaryLiveTrip.session.lastRecordedAt ? ` · ${relativeTime(primaryLiveTrip.session.lastRecordedAt)}` : ""}` : "No active driver tracking";
 
   if (permissionLoading) return <LoadingState text="Loading permissions…" />;
   if (!canView(MODULE_NAME)) return <AccessDenied />;
@@ -705,6 +751,7 @@ export default function TrackingPlanPage() {
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-yellow-700">Transport operations</p>
             <h1 className="mt-1 text-2xl font-extrabold text-slate-900">Tracking Plan</h1>
             <p className="mt-1 text-sm text-slate-600">Read-only delivery and live-location planning for loadings.</p>
+            <Link href="/admin/Driver-Mobile" className="mt-2 inline-flex text-sm font-bold text-yellow-800 underline decoration-yellow-400 underline-offset-4 hover:text-yellow-950">Set up driver mobile access →</Link>
           </div>
           <div className="w-full sm:w-[28rem]">
             <label htmlFor="lr-combobox" className="text-xs font-bold uppercase tracking-wide text-slate-600">Loading Info / Vehicle No</label>
@@ -765,7 +812,8 @@ export default function TrackingPlanPage() {
               </div>
             </section>
             <StopsTable stops={stops} />
-            <TrackingMap stops={mapStops} route={routeInfo} fallback={<MapPlaceholder />} />
+            <LiveTrackingPanel data={liveTracking} loading={liveLoading} error={liveError} routeInfo={routeInfo} onApproveBaseline={approveRouteBaseline} onRefresh={() => loadLiveTracking(selectedId, { Authorization: `Bearer ${localStorage.getItem("token") || ""}` })} />
+            <TrackingMap stops={mapStops} vehicle={liveVehicle} status={liveMapStatus} route={routeInfo} fallback={<MapPlaceholder />} />
             {mapNote && <div role="status" className="rounded-xl border border-yellow-300 bg-yellow-50 px-4 py-2.5 text-sm text-yellow-800">{mapNote}</div>}
             <TrackingTable tracking={tracking} />
           </>
@@ -980,6 +1028,37 @@ const CHIP_TONES = {
   yellow: "border-yellow-300 bg-yellow-100 text-yellow-800",
   slate: "border-slate-200 bg-slate-100 text-slate-700",
 };
+const formatLiveStatus = (value) => ({ active: "active", stale: "stale", not_started: "not started", ended: "ended" }[value] || value || "unknown");
+const relativeTime = (value) => {
+  const seconds = Math.max(0, Math.round((Date.now() - new Date(value).getTime()) / 1000));
+  if (seconds < 60) return "just now";
+  if (seconds < 3600) return `${Math.floor(seconds / 60)} min ago`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)} hr ago`;
+  return `${Math.floor(seconds / 86400)} d ago`;
+};
+function LiveTrackingPanel({ data, loading, error, routeInfo, onApproveBaseline, onRefresh }) {
+  const trips = data?.trips || [];
+  return (
+    <section className={`${CARD} overflow-hidden`}>
+      <SectionHeader title="Driver live status" right={<button type="button" onClick={onRefresh} disabled={loading} className="rounded-lg border border-yellow-700/30 bg-yellow-100 px-2.5 py-1 text-xs font-bold text-yellow-950 hover:bg-yellow-50 disabled:opacity-60">{loading ? "Refreshing…" : "Refresh GPS"}</button>} />
+      {error && <div role="status" className="border-b border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-700">Mobile tracking is unavailable: {error}</div>}
+      {!error && trips.length === 0 && <div className="px-4 py-5 text-sm text-slate-600">No driver trip has been assigned to this loading yet. Existing Loading Info and route planning remain available.</div>}
+      {trips.length > 0 && <div className="divide-y divide-slate-100">{trips.map((trip) => {
+        const tone = trip.session?.status === "active" ? "green" : trip.session?.status === "stale" ? "yellow" : "slate";
+        return <div key={trip.tripId} className="grid gap-3 px-4 py-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+          <div><div className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Driver / vehicle</div><div className="mt-1 font-bold text-slate-900">{trip.driver?.displayName || "Driver unavailable"}</div><div className="text-sm text-slate-600">{trip.vehicleNo || "Vehicle pending"}</div></div>
+          <div><div className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Trip status</div><div className="mt-1"><Chip tone={tone}>{formatLiveStatus(trip.session?.status)}</Chip></div><div className="mt-1 text-sm text-slate-600">{trip.tripState?.replaceAll("_", " ") || "—"}</div></div>
+          <div><div className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Last GPS update</div><div className="mt-1 font-bold text-slate-900">{trip.session?.lastRecordedAt ? relativeTime(trip.session.lastRecordedAt) : "No point received"}</div><div className="text-sm text-slate-600">{trip.latestLocation ? `Accuracy ${Math.round(trip.latestLocation.accuracyM)} m` : "Tracking starts after trip start"}</div></div>
+          <div><div className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Coordinates</div><div className="mt-1 font-mono text-sm font-bold text-slate-900">{trip.latestLocation ? `${trip.latestLocation.latitude.toFixed(5)}, ${trip.latestLocation.longitude.toFixed(5)}` : "—"}</div><div className="text-sm text-slate-600">{trip.latestLocation?.isMocked ? "Mock location flagged" : trip.latestLocation?.speedMps != null ? `${Math.round(trip.latestLocation.speedMps * 3.6)} km/h` : ""}</div></div>
+          <div><div className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Operational stop</div><div className="mt-1 text-sm font-semibold text-slate-800">{trip.operationalStop ? `${Math.max(1, Math.floor(trip.operationalStop.durationSec / 60))} min stationary` : "No sustained stop"}</div><div className="text-sm text-slate-600">{trip.operationalStop ? `${trip.operationalStop.classification} · ${Math.round(trip.operationalStop.confidence * 100)}% confidence` : "Driver action confirms actual delivery"}</div></div>
+          <div><div className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Delivery ETA</div><div className="mt-1 text-sm font-semibold text-slate-800">{trip.eta?.status === "available" ? "Baseline available" : "Not shown"}</div><div className="text-sm text-slate-600">{trip.eta?.message || ""}</div>{trip.eta?.status !== "available" && routeInfo && <button type="button" disabled={loading} onClick={() => onApproveBaseline(trip.tripId)} className="mt-2 rounded-md border border-yellow-400 bg-yellow-50 px-2 py-1 text-xs font-bold text-yellow-900 disabled:opacity-60">Approve current route baseline</button>}</div>
+          <div><div className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Operational action</div><div className="mt-1 text-sm font-semibold text-slate-800">{trip.session?.status === "stale" ? "Call driver / check device data" : trip.session?.status === "active" ? "Monitoring normally" : "Start trip to enable GPS"}</div></div>
+        </div>;
+      })}</div>}
+      <div className="border-t border-slate-100 bg-slate-50 px-4 py-2 text-xs text-slate-500">Auto-refreshes every 30 seconds while this loading is open. GPS is shown only for approved driver devices and active assigned trips.</div>
+    </section>
+  );
+}
 function Chip({ tone = "slate", children }) {
   return <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-bold ${CHIP_TONES[tone]}`}>{children}</span>;
 }
