@@ -5206,7 +5206,17 @@ function num(v) {
 
 /* =======================
   Vehicle Search Hook
-========================= */
+========================= */// Arrival/out stamps use India time as "YYYY-MM-DD" and 24-hour "HH:mm", which is what
+// <input type="date"> / <input type="time"> can display (toLocaleTimeString() cannot be shown).
+function istStamp(d = new Date()) {
+  const p = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+  }).formatToParts(d).reduce((r, x) => ({ ...r, [x.type]: x.value }), {});
+  return { date: `${p.year}-${p.month}-${p.day}`, time: `${p.hour}:${p.minute}` };
+}
+
+
 function useVehicleSearch() {
   const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -6328,7 +6338,7 @@ export default function CreateLoadingInfoPanel() {
    * ARRIVAL DETAILS
    ========================= */
   const [arrivalDetails, setArrivalDetails] = useState({
-    date: new Date().toISOString().split('T')[0],
+    date: "",
     time: "",
     outDate: "",
     outTime: "",
@@ -6349,7 +6359,7 @@ export default function CreateLoadingInfoPanel() {
     if (showCamera && stream && videoRef.current) {
       videoRef.current.srcObject = stream;
       // Some browsers keep a black frame unless play() is called explicitly.
-      videoRef.current.play?.().catch(() => {});
+      videoRef.current.play?.().catch(() => { });
     }
   }, [showCamera, stream]);
 
@@ -6533,8 +6543,7 @@ export default function CreateLoadingInfoPanel() {
         if (cameraTarget?.section === "vehicle") {
           setArrivalDetails(prev => ({
             ...prev,
-            date: now.toISOString().split('T')[0],
-            time: now.toLocaleTimeString(),
+            ...istStamp(now),
           }));
         }
 
@@ -7673,7 +7682,7 @@ export default function CreateLoadingInfoPanel() {
       isTrackingActive: false,
     });
 
-    setArrivalDetails({ date: new Date().toISOString().split('T')[0], time: "", outDate: "", outTime: "" });
+    setArrivalDetails({ date: "", time: "", outDate: "", outTime: "" });
 
     if (stream) {
       stream.getTracks().forEach(track => track.stop());
@@ -7825,7 +7834,7 @@ export default function CreateLoadingInfoPanel() {
                       appendUploadFile(target.section, target.field, file);
                       if (target.section === 'vehicle') {
                         const now = new Date();
-                        setArrivalDetails(prev => ({ ...prev, date: now.toISOString().split('T')[0], time: now.toLocaleTimeString() }));
+                        setArrivalDetails(prev => ({ ...prev, ...istStamp(now) }));
                       }
                     }
                   }}

@@ -396,6 +396,7 @@ const consignmentNoteSchema = new mongoose.Schema({
     unit: { type: String, enum: ['MT', 'KG', 'LTR', 'TON', 'M3', 'PCS'], default: 'MT' },
     status: { type: String, enum: ['Pending', 'Approved', 'Rejected', 'Completed', 'Draft'], default: 'Pending' },
     approvedAt: { type: Date, default: null },
+    printedAt: { type: Date, default: null }, 
     lcStatus: { type: String, enum: ['LC', 'Not LC'], default: 'Not LC' },
     lrType: { type: String, enum: ['Export', 'Import', 'Normal'], default: 'Normal' },
     vehicleReach: { type: String, enum: ['Reach', 'Not Reach'], default: 'Not Reach' },

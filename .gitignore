@@ -2,6 +2,7 @@
 
 # dependencies
 /node_modules
+**/node_modules/
 /.pnp
 .pnp.*
 .yarn/*
@@ -12,17 +13,28 @@
 
 # testing
 /coverage
+**/coverage/
 
 # next.js
 /.next/
 /out/
+**/.next/
 
 # production
 /build
+**/build/
+
+# generated tooling caches
+**/.cache/
+**/.pnpm-store/
+mobile/driver/android/.gradle/
+mobile/driver/android/app/build/
 
 # misc
 .DS_Store
 *.pem
+*.jks
+mobile/driver/android/keystore.properties
 
 # debug
 npm-debug.log*

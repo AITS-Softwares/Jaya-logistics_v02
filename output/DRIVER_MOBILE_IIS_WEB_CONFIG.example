@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Dedicated IIS SITE ONLY for driver.staging.your-company.example.
+  Do not replace the existing ERP web.config with this file.
+  Requires IIS URL Rewrite + Application Request Routing (ARR).
+  Change 3000 only if the Next.js/PM2 process uses a different local port.
+-->
+<configuration>
+  <system.webServer>
+    <rewrite>
+      <rules>
+        <rule name="Driver root to driver app" stopProcessing="true">
+          <match url="^$" />
+          <action type="Redirect" url="/m/driver" redirectType="Found" />
+        </rule>
+        <rule name="Driver application only" stopProcessing="true">
+          <match url="^m/driver/?$" />
+          <action type="Rewrite" url="http://127.0.0.1:3000/{R:0}" />
+        </rule>
+        <rule name="Next static assets required by driver app" stopProcessing="true">
+          <match url="^_next/(.*)" />
+          <action type="Rewrite" url="http://127.0.0.1:3000/_next/{R:1}" />
+        </rule>
+        <rule name="Driver mobile API only" stopProcessing="true">
+          <match url="^api/mobile/v1/(.*)" />
+          <action type="Rewrite" url="http://127.0.0.1:3000/api/mobile/v1/{R:1}" />
+        </rule>
+        <rule name="Deny every other ERP route" stopProcessing="true">
+          <match url=".*" />
+          <action type="CustomResponse" statusCode="404" subStatusCode="0" statusReason="Not Found" statusDescription="This driver hostname exposes only the driver application." />
+        </rule>
+      </rules>
+    </rewrite>
+  </system.webServer>
+</configuration>

@@ -4,7 +4,7 @@ import connectDb from "@/lib/db";
 import PurchasePanel from "./PurchasePanel";
 import ConsignmentNote from "../consignment-note/ConsignmentNote";
 import LoadingPanel from "../loading-panel/LoadingPanel";
-import { findLRsForPanel } from "../loading-panel/findLRs";
+import { getLRCompletion, LR_COMPLETION_SELECT } from "../loading-panel/findLRs";
 import DetentionRule from "../detention-rules/DetentionRule";
 import { calculateDetention, selectDetentionRule } from "@/lib/detentionCalculation";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
@@ -119,33 +119,22 @@ function arrivalFromLoadingInfo(loadingInfo) {
   };
 }
 
-// Departure (Out) = approval time of the first approved LR linked to the Loading Info,
-// using the same lookup as the Loading Info "Documents & Consignment Note (LR)" section.
-// An LR approved before the vehicle arrived cannot be this vehicle's departure.
+// Departure (Out) = the moment the LAST LR of the Loading Info was approved with its
+// invoice (every order row covered). A stored Out Date/Time always wins, because it is
+// recorded once at that moment. Until all LRs are done there is no Out Date/Time.
 async function arrivalWithLR(user, loadingInfo) {
   const base = arrivalFromLoadingInfo(loadingInfo);
   if (!loadingInfo?.vehicleArrivalNo) return base;
+  if (base?.outDate) return base;
 
-  const lrs = await findLRsForPanel(
-    user,
-    loadingInfo,
-    {},
-    'loadingInfoNo header.orderNo header.to header.approvedAt consignmentBreakdown createdAt updatedAt'
-  );
-  const arrivalAt = loadingInfo.vehicleSlipUploadedAt
-    ? new Date(loadingInfo.vehicleSlipUploadedAt).getTime()
-    : 0;
-  const times = lrs
-    .map((l) => new Date(l.header?.approvedAt || l.updatedAt).getTime())
-    .filter((t) => Number.isFinite(t) && t >= arrivalAt);
-  if (!times.length) return base;
-  const approvedAt = new Date(Math.min(...times));
+  const completion = await getLRCompletion(user, loadingInfo, LR_COMPLETION_SELECT);
+  if (!completion.completedAt) return base;
 
   const p = new Intl.DateTimeFormat('en-GB', {
     timeZone: 'Asia/Kolkata',
     year: 'numeric', month: '2-digit', day: '2-digit',
     hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
-  }).formatToParts(approvedAt)
+  }).formatToParts(completion.completedAt)
     .reduce((r, part) => ({ ...r, [part.type]: part.value }), {});
 
   return {

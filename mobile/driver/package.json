@@ -1,0 +1,11 @@
+{
+  "name": "jaya-logistics-driver-shell",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "@capacitor/android": "^7.6.9",
+    "@capacitor/cli": "^7.6.9",
+    "@capacitor/core": "^7.6.9",
+    "typescript": "^5.9.3"
+  }
+}
