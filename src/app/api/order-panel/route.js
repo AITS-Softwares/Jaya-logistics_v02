@@ -1,5 +1,3 @@
-
-
 // // app/api/order-panel/route.js
 // import { NextResponse } from "next/server";
 // import connectDb from "@/lib/db";
@@ -825,6 +823,7 @@ export const GET = withAuth(async (req, context, user) => {
               plantName: row.plantName || '',
               orderType: row.orderType || 'Sales',
               pinCode: row.pinCode || '',
+              locationRemark: row.locationRemark || '',
               from: row.fromName || row.from || '',
               to: row.toName || row.to || '',
               taluka: row.talukaName || row.taluka || '',
@@ -859,6 +858,7 @@ export const GET = withAuth(async (req, context, user) => {
             plantName: 'N/A',
             orderType: 'Sales',
             pinCode: 'N/A',
+            locationRemark: '',
             from: 'N/A',
             to: 'N/A',
             district: 'N/A',
@@ -971,6 +971,7 @@ export const POST = withAuth(async (req, context, user) => {
         plantCodeValue: row.plantCodeValue || '',
         orderType: row.orderType || "Sales",
         pinCode: row.pinCode || "",
+        locationRemark: row.locationRemark || "",
         from: fromField,
         fromName: row.fromName || '',
         to: toField,
@@ -1219,6 +1220,7 @@ export const PUT = withAuth(async (req, context, user) => {
           plantCodeValue: row.plantCodeValue || '',
           orderType: row.orderType || "Sales",
           pinCode: row.pinCode || "",
+          locationRemark: row.locationRemark || "",
           from: fromField,
           fromName: row.fromName || '',
           to: toField,

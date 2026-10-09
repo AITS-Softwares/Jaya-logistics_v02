@@ -44,13 +44,13 @@
 //       const res = await fetch('/api/purchase-panel?format=table', {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       if (!res.ok) {
 //         console.warn('Purchase API returned', res.status);
 //         setPurchases([]);
 //         return;
 //       }
-      
+
 //       const data = await res.json();
 //       if (data.success && Array.isArray(data.data)) {
 //         const availablePurchases = data.data.filter(p => 
@@ -73,12 +73,12 @@
 //       const res = await fetch(`/api/purchase-panel?purchaseNo=${encodeURIComponent(purchaseNo)}`, {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       if (!res.ok) {
 //         console.error(`API returned ${res.status}`);
 //         return null;
 //       }
-      
+
 //       const data = await res.json();
 //       return data.success ? data.data : null;
 //     } catch (error) {
@@ -107,9 +107,9 @@
 //       const res = await fetch('/api/suppliers', {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       const data = await res.json();
-      
+
 //       if (data.success && Array.isArray(data.data)) {
 //         const mappedVendors = data.data.map(supplier => ({
 //           _id: supplier._id,
@@ -125,7 +125,7 @@
 //           glAccount: supplier.glAccount,
 //           displayName: `${supplier.supplierName} (${supplier.supplierCode})`
 //         }));
-        
+
 //         setVendors(mappedVendors);
 //       }
 //     } catch (error) {
@@ -140,15 +140,15 @@
 //     try {
 //       const token = localStorage.getItem('token');
 //       if (!vendorCode) return null;
-      
+
 //       const res = await fetch(`/api/suppliers/by-code/${encodeURIComponent(vendorCode)}`, {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       if (!res.ok) return null;
-      
+
 //       const data = await res.json();
-      
+
 //       if (data.success && data.data) {
 //         const supplier = data.data;
 //         return {
@@ -208,13 +208,13 @@
 // //   const handleSelectPurchase = async (purchase) => {
 // //     setSearchQuery(purchase.purchaseNo);
 // //     setShowDropdown(false);
-    
+
 // //     try {
 // //       const token = localStorage.getItem('token');
 // //       const res = await fetch(`/api/purchase-panel?purchaseNo=${encodeURIComponent(purchase.purchaseNo)}`, {
 // //         headers: { Authorization: `Bearer ${token}` },
 // //       });
-      
+
 // //       if (res.ok) {
 // //         const data = await res.json();
 // //         if (data.success && data.data) onSelect(data.data);
@@ -346,13 +346,13 @@
 //   const handleSelectPurchase = async (purchase) => {
 //     setSearchQuery(purchase.purchaseNo);
 //     setShowDropdown(false);
-    
+
 //     try {
 //       const token = localStorage.getItem('token');
 //       const res = await fetch(`/api/purchase-panel?purchaseNo=${encodeURIComponent(purchase.purchaseNo)}`, {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       if (res.ok) {
 //         const data = await res.json();
 //         if (data.success && data.data) onSelect(data.data);
@@ -465,7 +465,7 @@
 //                   </button>
 //                 </div>
 //               </div>
-              
+
 //               {/* Grid Layout - Multiple Cards Per Row */}
 //               <div className="overflow-auto flex-1 p-4" style={{ maxHeight: 'calc(80vh - 60px)' }}>
 //                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -488,19 +488,19 @@
 //                             {p.status || 'Pending'}
 //                           </span>
 //                         </div>
-                        
+
 //                         {/* ROW 2: Vendor Name */}
 //                         <div className="text-sm text-slate-700 mb-1 truncate">
 //                           <span className="text-xs text-slate-500">Vendor: </span>
 //                           {p.vendorName || 'N/A'}
 //                         </div>
-                        
+
 //                         {/* ROW 3: Vehicle No */}
 //                         <div className="text-sm text-slate-700 mb-2 truncate">
 //                           <span className="text-xs text-slate-500">Vehicle: </span>
 //                           {p.vehicleNo || 'N/A'}
 //                         </div>
-                        
+
 //                         {/* ROW 4: Amount + Balance */}
 //                         <div className="flex items-center justify-between pt-2 border-t border-slate-100">
 //                           <div>
@@ -526,7 +526,7 @@
 //                   ))}
 //                 </div>
 //               </div>
-              
+
 //               {/* Footer */}
 //               <div className="bg-slate-50 px-6 py-2 border-t border-slate-200 text-xs text-slate-500 flex justify-between items-center flex-shrink-0">
 //                 <span>Total: {filteredList.length} purchases</span>
@@ -808,7 +808,7 @@
 //     if (purchaseData.purchaseDetails) {
 //       const pd = purchaseData.purchaseDetails;
 //       const vendorCode = pd.vendorCode || pd.supplierCode || "";
-      
+
 //       setVendorDetails(prev => ({
 //         ...prev,
 //         vendorStatus: pd.vendorStatus || "Active",
@@ -856,11 +856,11 @@
 
 //   const handleVendorSelect = (vendor) => {
 //     if (!vendor) return;
-    
+
 //     const bankAccountNumber = vendor.bankAccountNumber || vendor.accountNo || '';
 //     const bankName = vendor.bankName || '';
 //     const ifscCode = vendor.ifscCode || vendor.ifsc || '';
-    
+
 //     setVendorDetails(prev => ({
 //       ...prev,
 //       vendorName: vendor.supplierName || "",
@@ -870,7 +870,7 @@
 //       bankName: bankName,
 //       ifscCode: ifscCode,
 //     }));
-    
+
 //     setPaymentDetails(prev => ({
 //       ...prev,
 //       vendorNameDebit: vendor.supplierName || "",
@@ -1338,7 +1338,7 @@
 //                     <div><label className="text-xs font-bold text-slate-600">Vendor Code</label><input type="text" value={vendorDetails.vendorCode} readOnly className="mt-1 w-full rounded-lg border border-slate-200 bg-gray-100 px-3 py-2 text-sm outline-none cursor-not-allowed" placeholder="Auto-filled from purchase" /></div>
 //                     <div><label className="text-xs font-bold text-slate-600">Vendor Name *</label><input type="text" value={vendorDetails.vendorName} readOnly className="mt-1 w-full rounded-lg border border-slate-200 bg-gray-100 px-3 py-2 text-sm outline-none cursor-not-allowed" placeholder="Auto-filled from vendor" /></div>
 //                     <div><label className="text-xs font-bold text-slate-600">Vehicle No</label><input type="text" value={vendorDetails.vehicleNo} readOnly className="mt-1 w-full rounded-lg border border-slate-200 bg-gray-100 px-3 py-2 text-sm outline-none cursor-not-allowed" placeholder="Enter vehicle number" /></div>
-                    
+
 //                     <div className="grid grid-cols-2 gap-2 mt-2"><div><label className="text-xs font-bold text-slate-600">Rate (₹)</label><input type="number" value={vendorDetails.rate} readOnly className="mt-1 w-full rounded-lg border border-slate-200 bg-gray-100 px-3 py-2 text-sm outline-none cursor-not-allowed" placeholder="0" /></div><div><label className="text-xs font-bold text-slate-600">Weight (MT)</label><input type="number" value={vendorDetails.weight} readOnly className="mt-1 w-full rounded-lg border border-slate-200 bg-gray-100 px-3 py-2 text-sm outline-none cursor-not-allowed" placeholder="0" /></div></div>
 //                     <div><label className="text-xs font-bold text-slate-600">Amount (₹)</label><input type="number" value={purchaseAmountFromVNN} readOnly className="mt-1 w-full rounded-lg border border-purple-200 bg-purple-50 px-3 py-2 text-sm font-bold text-purple-700 cursor-not-allowed" placeholder="Purchase Amount from VNN" /><p className="text-xs text-purple-600 mt-1">Auto-filled from Purchase (A x B)</p></div>
 //                     <div><label className="text-xs font-bold text-slate-600">Advance (₹)</label><input type="number" value={vendorDetails.advance} readOnly className="mt-1 w-full rounded-lg border border-slate-200 bg-gray-100 px-3 py-2 text-sm outline-none cursor-not-allowed" placeholder="Enter advance amount" /></div>
@@ -1543,10 +1543,10 @@ const ORDER_TYPES = ["Sales", "STO Order", "Export", "Import"];
 const BILLING_TYPES = ["Single - Order", "Multi - Order"];
 const PURCHASE_TYPE_OPTIONS = ["Loading & Unloading", "Unloading Only", "Safi Vehicle"];
 const PAYMENT_TERMS_OPTIONS = [
-  "80 % Advance", 
-  "90 % Advance", 
-  "Rs.10,000/- Balance Only", 
-  "Rs. 5000/- Balance Only", 
+  "80 % Advance",
+  "90 % Advance",
+  "Rs.10,000/- Balance Only",
+  "Rs. 5000/- Balance Only",
   "Full Payment after Delivery"
 ];
 const RATE_TYPE_OPTIONS = ["Per MT", "Fixed"];
@@ -1577,19 +1577,19 @@ function usePurchasePanel() {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/purchase-panel?format=table', {
+      const res = await fetch('/api/purchase-panel?for=advance-payment&format=table', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       if (!res.ok) {
         console.warn('Purchase API returned', res.status);
         setPurchases([]);
         return;
       }
-      
+
       const data = await res.json();
       if (data.success && Array.isArray(data.data)) {
-        const availablePurchases = data.data.filter(p => 
+        const availablePurchases = data.data.filter(p =>
           p.status !== 'Completed' && p.status !== 'Paid'
         );
         setPurchases(availablePurchases);
@@ -1606,15 +1606,15 @@ function usePurchasePanel() {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`/api/purchase-panel?purchaseNo=${encodeURIComponent(purchaseNo)}`, {
+      const res = await fetch(`/api/purchase-panel?for=advance-payment&purchaseNo=${encodeURIComponent(purchaseNo)}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       if (!res.ok) {
         console.error(`API returned ${res.status}`);
         return null;
       }
-      
+
       const data = await res.json();
       return data.success ? data.data : null;
     } catch (error) {
@@ -1643,9 +1643,9 @@ function useVendors() {
       const res = await fetch('/api/suppliers', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       const data = await res.json();
-      
+
       if (data.success && Array.isArray(data.data)) {
         const mappedVendors = data.data.map(supplier => ({
           _id: supplier._id,
@@ -1661,7 +1661,7 @@ function useVendors() {
           glAccount: supplier.glAccount,
           displayName: `${supplier.supplierName} (${supplier.supplierCode})`
         }));
-        
+
         setVendors(mappedVendors);
       }
     } catch (error) {
@@ -1676,15 +1676,15 @@ function useVendors() {
     try {
       const token = localStorage.getItem('token');
       if (!vendorCode) return null;
-      
+
       const res = await fetch(`/api/suppliers/by-code/${encodeURIComponent(vendorCode)}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       if (!res.ok) return null;
-      
+
       const data = await res.json();
-      
+
       if (data.success && data.data) {
         const supplier = data.data;
         return {
@@ -1720,7 +1720,7 @@ function useVendors() {
 /* =========================
   PURCHASE DROPDOWN COMPONENT (GRID VIEW - MULTIPLE CARDS PER ROW)
 ========================= */
-function PurchaseDropdown({ 
+function PurchaseDropdown({
   onSelect,
   placeholder = "Search purchase..."
 }) {
@@ -1745,13 +1745,13 @@ function PurchaseDropdown({
     const orderNumbers = getPurchaseOrderNumbers(purchase);
     setSearchQuery(orderNumbers.join(', ') || purchase.purchaseNo);
     setShowDropdown(false);
-    
+
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`/api/purchase-panel?purchaseNo=${encodeURIComponent(purchase.purchaseNo)}`, {
+      const res = await fetch(`/api/purchase-panel?for=advance-payment&purchaseNo=${encodeURIComponent(purchase.purchaseNo)}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       if (res.ok) {
         const data = await res.json();
         if (data.success && data.data) onSelect(data.data);
@@ -1823,16 +1823,16 @@ function PurchaseDropdown({
         autoComplete="off"
       />
       {showDropdown && (
-        <div 
+        <div
           ref={dropdownRef}
-          style={{ 
-            position: 'fixed', 
-            top: dropdownPosition.top, 
+          style={{
+            position: 'fixed',
+            top: dropdownPosition.top,
             left: '50%',
             transform: 'translateX(-50%)',
             width: '95%',
             maxWidth: '1400px',
-            zIndex: 9999, 
+            zIndex: 9999,
             maxHeight: '80vh',
             minWidth: '600px'
           }}
@@ -1865,13 +1865,13 @@ function PurchaseDropdown({
                   </button>
                 </div>
               </div>
-              
+
               {/* Grid Layout - Multiple Cards Per Row */}
               <div className="overflow-auto flex-1 p-4" style={{ maxHeight: 'calc(80vh - 60px)' }}>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                   {filteredList.map((p) => (
-                    <div 
-                      key={p._id} 
+                    <div
+                      key={p._id}
                       onMouseDown={() => handleSelectPurchase(p)}
                       className="bg-white border border-slate-200 rounded-xl hover:border-emerald-400 hover:shadow-lg cursor-pointer transition-all duration-200 overflow-hidden"
                     >
@@ -1885,25 +1885,24 @@ function PurchaseDropdown({
                             </div>
                             <div className="mt-0.5 text-xs font-semibold text-emerald-700">Purchase: {p.purchaseNo}</div>
                           </div>
-                          <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${
-                            (p.status || '').toLowerCase() === 'completed' ? 'bg-green-100 text-green-800' :
+                          <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${(p.status || '').toLowerCase() === 'completed' ? 'bg-green-100 text-green-800' :
                             (p.status || '').toLowerCase() === 'paid' ? 'bg-blue-100 text-blue-800' :
-                            'bg-yellow-100 text-yellow-800'
-                          }`}>
+                              'bg-yellow-100 text-yellow-800'
+                            }`}>
                             {p.status || 'Pending'}
                           </span>
                         </div>
-                        
+
                         <div className="text-sm text-slate-700 mb-1 truncate">
                           <span className="text-xs text-slate-500">Vendor: </span>
                           {p.vendorName || 'N/A'}
                         </div>
-                        
+
                         <div className="text-sm text-slate-700 mb-2 truncate">
                           <span className="text-xs text-slate-500">Vehicle: </span>
                           {p.vehicleNo || 'N/A'}
                         </div>
-                        
+
                         <div className="flex items-center justify-between pt-2 border-t border-slate-100">
                           <div>
                             <div className="text-xs text-slate-500">Amount</div>
@@ -1913,7 +1912,7 @@ function PurchaseDropdown({
                             <div className="text-xs text-slate-500">Balance</div>
                             <div className="font-bold text-blue-700 text-sm">₹{num(p.balance).toLocaleString()}</div>
                           </div>
-                          <button 
+                          <button
                             onClick={(e) => {
                               e.stopPropagation();
                               handleSelectPurchase(p);
@@ -1928,7 +1927,7 @@ function PurchaseDropdown({
                   ))}
                 </div>
               </div>
-              
+
               {/* Footer */}
               <div className="bg-slate-50 px-6 py-2 border-t border-slate-200 text-xs text-slate-500 flex justify-between items-center flex-shrink-0">
                 <span>Total: {filteredList.length} purchases</span>
@@ -1971,11 +1970,11 @@ function defaultOrderRow() {
     fromName: "",
     to: "",
     toName: "",
-    locationRate: "",
-    priceList: "",
+    // locationRate: "",
+    // priceList: "",
     weight: "",
-    rate: "",
-    totalAmount: "",
+    // rate: "",
+    // totalAmount: "",
     collectionCharges: "0",
     cancellationCharges: "Nil",
     loadingCharges: "Nil",
@@ -2158,7 +2157,7 @@ export default function CreateAdvancePayment() {
     } else if (purchaseData.purchaseDetails?.amount) {
       setPurchaseAmountFromVNN(num(purchaseData.purchaseDetails.amount));
     }
-    setPaymentDetails(prev => ({ ...prev, finalAmount: num(purchaseData.netEffect).toString() }));
+    // Final amount is kept in sync with "Advance (Generate Queue)" by the effect below
 
     // Set Memo from VNN
     if (purchaseData.memoFile) {
@@ -2210,11 +2209,11 @@ export default function CreateAdvancePayment() {
         fromName: row.fromName || row.from || "",
         to: row.to || "",
         toName: row.toName || row.to || "",
-        locationRate: row.locationRate?.toString() || "",
-        priceList: row.priceList || "",
+        // locationRate: row.locationRate?.toString() || "",
+        // priceList: row.priceList || "",
         weight: row.weight?.toString() || "",
-        rate: row.rate?.toString() || "",
-        totalAmount: row.totalAmount?.toString() || "",
+        // rate: row.rate?.toString() || "",
+        // totalAmount: row.totalAmount?.toString() || "",
         collectionCharges: row.collectionCharges?.toString() || "0",
         cancellationCharges: row.cancellationCharges || "Nil",
         loadingCharges: row.loadingCharges || "Nil",
@@ -2238,7 +2237,7 @@ export default function CreateAdvancePayment() {
     if (purchaseData.purchaseDetails) {
       const pd = purchaseData.purchaseDetails;
       const vendorCode = pd.vendorCode || pd.supplierCode || "";
-      
+
       setVendorDetails(prev => ({
         ...prev,
         vendorStatus: pd.vendorStatus || "Active",
@@ -2286,11 +2285,11 @@ export default function CreateAdvancePayment() {
 
   const handleVendorSelect = (vendor) => {
     if (!vendor) return;
-    
+
     const bankAccountNumber = vendor.bankAccountNumber || vendor.accountNo || '';
     const bankName = vendor.bankName || '';
     const ifscCode = vendor.ifscCode || vendor.ifsc || '';
-    
+
     setVendorDetails(prev => ({
       ...prev,
       vendorName: vendor.supplierName || "",
@@ -2300,7 +2299,7 @@ export default function CreateAdvancePayment() {
       bankName: bankName,
       ifscCode: ifscCode,
     }));
-    
+
     setPaymentDetails(prev => ({
       ...prev,
       vendorNameDebit: vendor.supplierName || "",
@@ -2400,12 +2399,27 @@ export default function CreateAdvancePayment() {
     return (amount - advance).toFixed(2);
   };
 
+  // Loading charges & expenses from the Purchase Panel are deducted at the warehouse
+  const calculateWarehouseDeduction = () => {
+    const le = purchaseData?.loadingExpenses || {};
+    const fromFields = ['loadingCharges', 'loadingStaffMunshiyana', 'otherExpenses', 'vehicleFloorTarpaulin', 'vehicleOuterTarpaulin']
+      .reduce((sum, key) => sum + num(le[key]), 0);
+    return fromFields || num(purchaseData?.totalLoadingExpenses);
+  };
+
   const calculateAdvanceWithAdjustment = () => {
     const advance = num(vendorDetails.advance);
     const totalAdditions = num(additions.totalAddition);
     const totalDeductions = num(deductions.totalDeduction);
-    return (advance + totalAdditions - totalDeductions).toFixed(2);
+    return (advance + totalAdditions - totalDeductions - calculateWarehouseDeduction()).toFixed(2);
   };
+
+  // Final Advance Amount / Final Amount always equal "Advance (Generate Queue)"
+  useEffect(() => {
+    if (!purchaseData) return;
+    setPaymentDetails(prev => ({ ...prev, finalAmount: calculateAdvanceWithAdjustment() }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [purchaseData, vendorDetails.advance, additions.totalAddition, deductions.totalDeduction]);
 
   const handleGenerateQueue = () => {
     if (!memoFileInfo?.filePath) {
@@ -2710,11 +2724,11 @@ export default function CreateAdvancePayment() {
                     <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[120px]">District</th>
                     <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[120px]">From</th>
                     <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[120px]">To</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[100px]">Location Rate</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[100px]">Price List</th>
+                    {/* <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[100px]">Location Rate</th> */}
+                    {/* <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[100px]">Price List</th> */}
                     <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[80px]">Weight</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[80px]">Rate</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[100px]">Total Amount</th>
+                    {/* <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[80px]">Rate</th> */}
+                    {/* <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[100px]">Total Amount</th> */}
                     <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[130px]">Collection Charges</th>
                     <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[140px]">Cancellation Charges</th>
                     <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[130px]">Loading Charges</th>
@@ -2733,11 +2747,10 @@ export default function CreateAdvancePayment() {
                       <td className="border border-yellow-300 px-2 py-2"><input type="text" value={row.fromState || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="From State" /></td>
                       <td className="border border-yellow-300 px-2 py-2 text-center">
                         {row.fromState && row.state ? (
-                          <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${
-                            row.fromState.trim().toUpperCase() === row.state.trim().toUpperCase()
-                              ? 'bg-green-100 text-green-800 border border-green-300'
-                              : 'bg-red-100 text-red-800 border border-red-300'
-                          }`}>
+                          <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${row.fromState.trim().toUpperCase() === row.state.trim().toUpperCase()
+                            ? 'bg-green-100 text-green-800 border border-green-300'
+                            : 'bg-red-100 text-red-800 border border-red-300'
+                            }`}>
                             {row.fromState.trim().toUpperCase() === row.state.trim().toUpperCase() ? '✅ Local' : '❌ Not Local'}
                           </span>
                         ) : (
@@ -2747,11 +2760,11 @@ export default function CreateAdvancePayment() {
                       <td className="border border-yellow-300 px-2 py-2"><input type="text" value={row.district || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="District" /></td>
                       <td className="border border-yellow-300 px-2 py-2"><input type="text" value={row.from || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="From" /></td>
                       <td className="border border-yellow-300 px-2 py-2"><input type="text" value={row.to || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="To" /></td>
-                      <td className="border border-yellow-300 px-2 py-2"><input type="text" value={row.locationRate || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Location Rate" /></td>
-                      <td className="border border-yellow-300 px-2 py-2"><input type="text" value={row.priceList || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Price List" /></td>
+                      {/* <td className="border border-yellow-300 px-2 py-2"><input type="text" value={row.locationRate || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Location Rate" /></td> */}
+                      {/* <td className="border border-yellow-300 px-2 py-2"><input type="text" value={row.priceList || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Price List" /></td> */}
                       <td className="border border-yellow-300 px-2 py-2"><input type="number" value={row.weight || ""} readOnly className="w-20 rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="0" /></td>
-                      <td className="border border-yellow-300 px-2 py-2"><input type="number" value={row.rate || ""} readOnly className="w-20 rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="0" /></td>
-                      <td className="border border-yellow-300 px-2 py-2"><input type="number" value={row.totalAmount || ""} readOnly className="w-24 rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm font-bold text-emerald-700 cursor-not-allowed" placeholder="Auto" /></td>
+                      {/* <td className="border border-yellow-300 px-2 py-2"><input type="number" value={row.rate || ""} readOnly className="w-20 rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="0" /></td> */}
+                      {/* <td className="border border-yellow-300 px-2 py-2"><input type="number" value={row.totalAmount || ""} readOnly className="w-24 rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm font-bold text-emerald-700 cursor-not-allowed" placeholder="Auto" /></td> */}
                       <td className="border border-yellow-300 px-2 py-2"><input type="number" value={row.collectionCharges || "0"} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Collection Charges" /></td>
                       <td className="border border-yellow-300 px-2 py-2"><input type="text" value={row.cancellationCharges || "Nil"} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Cancellation Charges" /></td>
                       <td className="border border-yellow-300 px-2 py-2"><input type="text" value={row.loadingCharges || "Nil"} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Loading Charges" /></td>
@@ -2759,9 +2772,9 @@ export default function CreateAdvancePayment() {
                     </tr>
                   ))}
                 </tbody>
-                <tfoot className="bg-yellow-100">
+                {/* <tfoot className="bg-yellow-100">
                   <tr><td colSpan="13" className="border border-yellow-300 px-3 py-2 text-right font-bold">Total Order Amount:</td><td className="border border-yellow-300 px-3 py-2 font-bold text-emerald-800" colSpan="5">₹{calculateTotalOrderAmount().toLocaleString()}</td></tr>
-                </tfoot>
+                </tfoot> */}
               </table>
             </div>
           </Card>
@@ -2800,7 +2813,7 @@ export default function CreateAdvancePayment() {
                     <div><label className="text-xs font-bold text-slate-600">Vendor Code</label><input type="text" value={vendorDetails.vendorCode} readOnly className="mt-1 w-full rounded-lg border border-slate-200 bg-gray-100 px-3 py-2 text-sm outline-none cursor-not-allowed" placeholder="Auto-filled from purchase" /></div>
                     <div><label className="text-xs font-bold text-slate-600">Vendor Name *</label><input type="text" value={vendorDetails.vendorName} readOnly className="mt-1 w-full rounded-lg border border-slate-200 bg-gray-100 px-3 py-2 text-sm outline-none cursor-not-allowed" placeholder="Auto-filled from vendor" /></div>
                     <div><label className="text-xs font-bold text-slate-600">Vehicle No</label><input type="text" value={vendorDetails.vehicleNo} readOnly className="mt-1 w-full rounded-lg border border-slate-200 bg-gray-100 px-3 py-2 text-sm outline-none cursor-not-allowed" placeholder="Enter vehicle number" /></div>
-                    
+
                     <div className="grid grid-cols-2 gap-2 mt-2"><div><label className="text-xs font-bold text-slate-600">Rate (₹)</label><input type="number" value={vendorDetails.rate} readOnly className="mt-1 w-full rounded-lg border border-slate-200 bg-gray-100 px-3 py-2 text-sm outline-none cursor-not-allowed" placeholder="0" /></div><div><label className="text-xs font-bold text-slate-600">Weight (MT)</label><input type="number" value={vendorDetails.weight} readOnly className="mt-1 w-full rounded-lg border border-slate-200 bg-gray-100 px-3 py-2 text-sm outline-none cursor-not-allowed" placeholder="0" /></div></div>
                     <div><label className="text-xs font-bold text-slate-600">Amount (₹)</label><input type="number" value={purchaseAmountFromVNN} readOnly className="mt-1 w-full rounded-lg border border-purple-200 bg-purple-50 px-3 py-2 text-sm font-bold text-purple-700 cursor-not-allowed" placeholder="Purchase Amount from VNN" /><p className="text-xs text-purple-600 mt-1">Auto-filled from Purchase (A x B)</p></div>
                     <div><label className="text-xs font-bold text-slate-600">Advance (₹)</label><input type="number" value={vendorDetails.advance} readOnly className="mt-1 w-full rounded-lg border border-slate-200 bg-gray-100 px-3 py-2 text-sm outline-none cursor-not-allowed" placeholder="Enter advance amount" /></div>
@@ -2851,33 +2864,33 @@ export default function CreateAdvancePayment() {
 
         {/* Purchase adjustments are carried from Purchase Panel and are not editable here. */}
         {false && <>
-        {/* Additions Section - EDITABLE */}
-        <div className="mt-4">
-          <Card title="Additions (+) - Extra Charges" right={<button onClick={addAdditionItem} className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-green-700">+ Add Addition</button>}>
-            <div className="grid grid-cols-12 gap-4">
-              <div className="col-span-12 md:col-span-6"><div className="bg-green-50 p-4 rounded-xl border border-green-200"><h4 className="text-sm font-bold text-green-800 mb-3">Addition Items</h4>{additions.items.length === 0 ? (<div className="text-center py-4 text-slate-500 border-2 border-dashed border-green-200 rounded-lg"><p>No additions added. Click "Add Addition" to add charges.</p></div>) : (<div className="space-y-3">{additions.items.map((item) => (<div key={item._id} className="flex gap-2 items-center"><input type="text" value={item.description} onChange={(e) => updateAdditionItem(item._id, 'description', e.target.value)} className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-green-500" placeholder="Description" /><input type="number" value={item.amount} onChange={(e) => updateAdditionItem(item._id, 'amount', e.target.value)} className="w-32 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-green-500 text-right" placeholder="Amount" /><button onClick={() => removeAdditionItem(item._id)} className="p-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button></div>))}</div>)}</div></div>
-              <div className="col-span-12 md:col-span-6"><div className="bg-green-100 p-4 rounded-xl border border-green-300 h-full flex items-center justify-center"><div className="text-center"><div className="text-sm font-bold text-green-800 mb-2">Total Additions</div><div className="text-3xl font-bold text-green-700">₹{num(additions.totalAddition).toLocaleString()}</div></div></div></div>
-            </div>
-          </Card>
-        </div>
+          {/* Additions Section - EDITABLE */}
+          <div className="mt-4">
+            <Card title="Additions (+) - Extra Charges" right={<button onClick={addAdditionItem} className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-green-700">+ Add Addition</button>}>
+              <div className="grid grid-cols-12 gap-4">
+                <div className="col-span-12 md:col-span-6"><div className="bg-green-50 p-4 rounded-xl border border-green-200"><h4 className="text-sm font-bold text-green-800 mb-3">Addition Items</h4>{additions.items.length === 0 ? (<div className="text-center py-4 text-slate-500 border-2 border-dashed border-green-200 rounded-lg"><p>No additions added. Click "Add Addition" to add charges.</p></div>) : (<div className="space-y-3">{additions.items.map((item) => (<div key={item._id} className="flex gap-2 items-center"><input type="text" value={item.description} onChange={(e) => updateAdditionItem(item._id, 'description', e.target.value)} className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-green-500" placeholder="Description" /><input type="number" value={item.amount} onChange={(e) => updateAdditionItem(item._id, 'amount', e.target.value)} className="w-32 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-green-500 text-right" placeholder="Amount" /><button onClick={() => removeAdditionItem(item._id)} className="p-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button></div>))}</div>)}</div></div>
+                <div className="col-span-12 md:col-span-6"><div className="bg-green-100 p-4 rounded-xl border border-green-300 h-full flex items-center justify-center"><div className="text-center"><div className="text-sm font-bold text-green-800 mb-2">Total Additions</div><div className="text-3xl font-bold text-green-700">₹{num(additions.totalAddition).toLocaleString()}</div></div></div></div>
+              </div>
+            </Card>
+          </div>
 
-        {/* Deductions Section - EDITABLE */}
-        <div className="mt-4">
-          <Card title="Deductions (-) - Adjustments" right={<button onClick={addDeductionItem} className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-red-700">+ Add Deduction</button>}>
-            <div className="grid grid-cols-12 gap-4">
-              <div className="col-span-12 md:col-span-6"><div className="bg-red-50 p-4 rounded-xl border border-red-200"><h4 className="text-sm font-bold text-red-800 mb-3">Deduction Items</h4>{deductions.items.length === 0 ? (<div className="text-center py-4 text-slate-500 border-2 border-dashed border-red-200 rounded-lg"><p>No deductions added. Click "Add Deduction" to add adjustments.</p></div>) : (<div className="space-y-3">{deductions.items.map((item) => (<div key={item._id} className="flex gap-2 items-center"><input type="text" value={item.description} onChange={(e) => updateDeductionItem(item._id, 'description', e.target.value)} className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-red-500" placeholder="Description" /><input type="number" value={item.amount} onChange={(e) => updateDeductionItem(item._id, 'amount', e.target.value)} className="w-32 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-red-500 text-right" placeholder="Amount" /><button onClick={() => removeDeductionItem(item._id)} className="p-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button></div>))}</div>)}</div></div>
-              <div className="col-span-12 md:col-span-6"><div className="bg-red-100 p-4 rounded-xl border border-red-300 h-full flex items-center justify-center"><div className="text-center"><div className="text-sm font-bold text-red-800 mb-2">Total Deductions</div><div className="text-3xl font-bold text-red-700">₹{num(deductions.totalDeduction).toLocaleString()}</div></div></div></div>
-            </div>
-          </Card>
-        </div>
+          {/* Deductions Section - EDITABLE */}
+          <div className="mt-4">
+            <Card title="Deductions (-) - Adjustments" right={<button onClick={addDeductionItem} className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-red-700">+ Add Deduction</button>}>
+              <div className="grid grid-cols-12 gap-4">
+                <div className="col-span-12 md:col-span-6"><div className="bg-red-50 p-4 rounded-xl border border-red-200"><h4 className="text-sm font-bold text-red-800 mb-3">Deduction Items</h4>{deductions.items.length === 0 ? (<div className="text-center py-4 text-slate-500 border-2 border-dashed border-red-200 rounded-lg"><p>No deductions added. Click "Add Deduction" to add adjustments.</p></div>) : (<div className="space-y-3">{deductions.items.map((item) => (<div key={item._id} className="flex gap-2 items-center"><input type="text" value={item.description} onChange={(e) => updateDeductionItem(item._id, 'description', e.target.value)} className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-red-500" placeholder="Description" /><input type="number" value={item.amount} onChange={(e) => updateDeductionItem(item._id, 'amount', e.target.value)} className="w-32 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-red-500 text-right" placeholder="Amount" /><button onClick={() => removeDeductionItem(item._id)} className="p-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button></div>))}</div>)}</div></div>
+                <div className="col-span-12 md:col-span-6"><div className="bg-red-100 p-4 rounded-xl border border-red-300 h-full flex items-center justify-center"><div className="text-center"><div className="text-sm font-bold text-red-800 mb-2">Total Deductions</div><div className="text-3xl font-bold text-red-700">₹{num(deductions.totalDeduction).toLocaleString()}</div></div></div></div>
+              </div>
+            </Card>
+          </div>
 
         </>}
         {/* Balance & Final Amount */}
         <div className="mt-4">
           <div className="grid grid-cols-12 gap-4">
             <div className="col-span-12 md:col-span-4"><div className="bg-purple-50 p-6 rounded-xl border border-purple-200"><h3 className="text-sm font-bold text-purple-800 mb-3">Balance Calculation</h3><div className="space-y-2"><div className="flex justify-between text-sm"><span>Purchase Amount (A x B):</span><span className="font-bold">₹{purchaseAmountFromVNN.toLocaleString()}</span></div><div className="flex justify-between text-sm"><span>Advance Payment:</span><span className="font-bold text-blue-600">- ₹{num(vendorDetails.advance).toLocaleString()}</span></div><div className="border-t border-purple-200 pt-2 flex justify-between font-bold"><span>Calculated Balance:</span><span>₹{num(calculateBalance()).toLocaleString()}</span></div></div></div></div>
-            <div className="col-span-12 md:col-span-4"><div className="bg-amber-50 p-6 rounded-xl border border-amber-200"><h3 className="text-sm font-bold text-amber-800 mb-3">Advance Amount with Adjustment</h3><div className="space-y-2 text-sm"><div className="flex justify-between"><span>Advance Amount:</span><span className="font-bold">₹{num(vendorDetails.advance).toLocaleString()}</span></div><div className="flex justify-between"><span>Additions:</span><span className="font-bold text-green-600">+ ₹{num(additions.totalAddition).toLocaleString()}</span></div><div className="flex justify-between"><span>Deductions:</span><span className="font-bold text-red-600">- ₹{num(deductions.totalDeduction).toLocaleString()}</span></div><div className="border-t border-amber-200 pt-2 flex justify-between font-bold"><span>Advance (Generate Queue):</span><span>₹{num(calculateAdvanceWithAdjustment()).toLocaleString()}</span></div></div></div></div>
-            <div className="col-span-12 md:col-span-4"><div className="bg-blue-50 p-6 rounded-xl border border-blue-200 h-full flex items-center justify-center"><div className="text-center w-full"><h3 className="text-sm font-bold text-blue-800 mb-2">Final Advance Amount</h3><div className="text-4xl font-bold text-blue-700 bg-white border border-blue-300 rounded-lg px-4 py-4 text-center">₹{num(paymentDetails.finalAmount).toLocaleString()}</div><p className="text-xs text-blue-600 mt-2">Mapped from Purchase Panel Net Effect</p></div></div></div>
+            <div className="col-span-12 md:col-span-4"><div className="bg-amber-50 p-6 rounded-xl border border-amber-200"><h3 className="text-sm font-bold text-amber-800 mb-3">Advance Amount with Adjustment</h3><div className="space-y-2 text-sm"><div className="flex justify-between"><span>Advance Amount:</span><span className="font-bold">₹{num(vendorDetails.advance).toLocaleString()}</span></div><div className="flex justify-between"><span>Additions:</span><span className="font-bold text-green-600">+ ₹{num(additions.totalAddition).toLocaleString()}</span></div><div className="flex justify-between"><span>Deductions:</span><span className="font-bold text-red-600">- ₹{num(deductions.totalDeduction).toLocaleString()}</span></div><div className="flex justify-between"><span>Deduct at Warehouse:</span><span className="font-bold text-red-600">- ₹{calculateWarehouseDeduction().toLocaleString()}</span></div><div className="border-t border-amber-200 pt-2 flex justify-between font-bold"><span>Advance (Generate Queue):</span><span>₹{num(calculateAdvanceWithAdjustment()).toLocaleString()}</span></div></div></div></div>
+            <div className="col-span-12 md:col-span-4"><div className="bg-blue-50 p-6 rounded-xl border border-blue-200 h-full flex items-center justify-center"><div className="text-center w-full"><h3 className="text-sm font-bold text-blue-800 mb-2">Final Advance Amount</h3><div className="text-4xl font-bold text-blue-700 bg-white border border-blue-300 rounded-lg px-4 py-4 text-center">₹{num(paymentDetails.finalAmount).toLocaleString()}</div><p className="text-xs text-blue-600 mt-2">Same as Advance (Generate Queue)</p></div></div></div>
           </div>
         </div>
 

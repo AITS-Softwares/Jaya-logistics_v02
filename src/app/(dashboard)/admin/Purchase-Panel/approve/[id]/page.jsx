@@ -1,4 +1,3 @@
-
 // "use client";
 
 // import { useMemo, useState, useEffect, useRef } from "react";
@@ -1453,12 +1452,7 @@ export default function ApprovePurchasePanel() {
     );
   }, [loadingExpenses]);
 
-  const totalWarehouseExpenses = useMemo(() => {
-    return (
-      num(warehouseExpenses.wVehicleFloorTarpaulin) +
-      num(warehouseExpenses.wVehicleOuterTarpaulin)
-    );
-  }, [warehouseExpenses]);
+  const totalWarehouseExpenses = totalLoadingExpenses; // loading charges & expenses are deducted at the warehouse
 
   const balance = useMemo(() => {
     return purchaseAmountFromVNN - num(purchaseDetails.advance);
@@ -1466,8 +1460,8 @@ export default function ApprovePurchasePanel() {
 
   const netEffect = useMemo(() => {
     const advance = num(purchaseDetails.advance);
-    return advance + totalAdditions - totalDeductions - totalLoadingExpenses - totalWarehouseExpenses;
-  }, [purchaseDetails.advance, totalAdditions, totalDeductions, totalLoadingExpenses, totalWarehouseExpenses]);
+    return advance + totalAdditions - totalDeductions - totalWarehouseExpenses; // office additions/deductions and warehouse deductions
+  }, [purchaseDetails.advance, totalAdditions, totalDeductions, totalWarehouseExpenses]);
 
   // Get status badge color
   const getStatusBadgeColor = (status) => {
@@ -2011,14 +2005,14 @@ export default function ApprovePurchasePanel() {
           </Card>
         </div>
 
-        {/* Loading Charges & Expenses - Deduct at Office */}
+        {/* Loading Charges & Expenses - Deduct at Warehouse */}
         <div className="mt-4">
-          <Card title="Loading Charges & Expenses - Deduct at Office (Read Only)">
+          <Card title="Loading Charges & Expenses - Deduct at Warehouse (Read Only)">
             <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-sm font-bold text-slate-800">Deduct at Office</h3>
+                <h3 className="text-sm font-bold text-slate-800">Deduct at Warehouse</h3>
                 <div className="bg-orange-100 text-orange-800 text-xs px-3 py-1 rounded-full font-medium">
-                  Will be deducted from Total Amount
+                  Will be deducted at Warehouse
                 </div>
               </div>
 
@@ -2029,31 +2023,8 @@ export default function ApprovePurchasePanel() {
                 <InfoRow label={`Vehicle - Floor Tarpaulin (${purchaseDetails.vehicleType || "Truck"})`} value={`₹${num(loadingExpenses.vehicleFloorTarpaulin).toLocaleString()}`} />
                 <InfoRow label={`Vehicle - Outer Tarpaulin (${purchaseDetails.vehicleType || "Truck"})`} value={`₹${num(loadingExpenses.vehicleOuterTarpaulin).toLocaleString()}`} />
                 <div className="flex justify-between items-center pt-2 border-t border-slate-200 mt-2">
-                  <span className="text-sm font-bold text-slate-800">Total Deduct at Office:</span>
-                  <span className="font-bold text-orange-700 text-lg">₹{totalLoadingExpenses.toLocaleString()}</span>
-                </div>
-              </div>
-            </div>
-          </Card>
-        </div>
-
-        {/* Warehouse Charges & Expenses - Deduct at Warehouse */}
-        <div className="mt-4">
-          <Card title="Warehouse Charges & Expenses - Deduct at Warehouse (Read Only)">
-            <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-200">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-sm font-bold text-slate-800">Deduct at Warehouse</h3>
-                <div className="bg-indigo-100 text-indigo-800 text-xs px-3 py-1 rounded-full font-medium">
-                  Will be deducted at Warehouse
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <InfoRow label={`W-Vehicle - Floor Tarpaulin (${purchaseDetails.vehicleType || "Truck"})`} value={`₹${num(warehouseExpenses.wVehicleFloorTarpaulin).toLocaleString()}`} />
-                <InfoRow label={`W-Vehicle - Outer Tarpaulin (${purchaseDetails.vehicleType || "Truck"})`} value={`₹${num(warehouseExpenses.wVehicleOuterTarpaulin).toLocaleString()}`} />
-                <div className="flex justify-between items-center pt-2 border-t border-indigo-200 mt-2">
                   <span className="text-sm font-bold text-slate-800">Total Deduct at Warehouse:</span>
-                  <span className="font-bold text-indigo-700 text-lg">₹{totalWarehouseExpenses.toLocaleString()}</span>
+                  <span className="font-bold text-orange-700 text-lg">₹{totalLoadingExpenses.toLocaleString()}</span>
                 </div>
               </div>
             </div>
@@ -2117,17 +2088,13 @@ export default function ApprovePurchasePanel() {
         {/* Additions & Deductions Section */}
         <div className="mt-4">
           <div className="grid grid-cols-12 gap-4">
-            {/* Advance + Deduct at Office + Deduct at Warehouse Summary */}
+            {/* Advance + Deduct at Warehouse Summary */}
             <div className="col-span-12">
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-200 mb-4">
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                   <div className="text-center">
                     <div className="text-xs text-slate-500">Advance Paid</div>
                     <div className="text-2xl font-bold text-emerald-700">₹{num(purchaseDetails.advance).toLocaleString()}</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-xs text-slate-500">Deduct at Office</div>
-                    <div className="text-2xl font-bold text-orange-700">₹{totalLoadingExpenses.toLocaleString()}</div>
                   </div>
                   <div className="text-center">
                     <div className="text-xs text-slate-500">Deduct at Warehouse</div>
@@ -2176,10 +2143,9 @@ export default function ApprovePurchasePanel() {
                     <h3 className="text-sm font-bold text-slate-800 mb-3">Additions & Deductions</h3>
                     <div className="space-y-2">
                       <InfoRow label="Advance Paid" value={`₹${num(purchaseDetails.advance).toLocaleString()}`} />
-                      <InfoRow label="Deduct at Office" value={`₹${totalLoadingExpenses.toLocaleString()}`} />
-                      <InfoRow label="Deduct at Warehouse" value={`₹${totalWarehouseExpenses.toLocaleString()}`} />
-                      <InfoRow label="Total Additions (+)" value={`₹${totalAdditions.toLocaleString()}`} />
-                      <InfoRow label="Total Deductions (-)" value={`₹${totalDeductions.toLocaleString()}`} />
+                      <InfoRow label="Deduct at Warehouse (-)" value={`₹${totalWarehouseExpenses.toLocaleString()}`} />
+                      <InfoRow label="Total Additions at Office (+)" value={`₹${totalAdditions.toLocaleString()}`} />
+                      <InfoRow label="Total Deductions at Office (-)" value={`₹${totalDeductions.toLocaleString()}`} />
                       <div className="flex justify-between items-center pt-2 border-t border-amber-200">
                         <span className="text-sm font-bold text-slate-800">Net Effect:</span>
                         <span className={`font-bold ${netEffect >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>

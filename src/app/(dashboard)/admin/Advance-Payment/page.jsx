@@ -25,23 +25,23 @@
 // //     setLoading(true);
 // //     try {
 // //       const token = localStorage.getItem('token');
-      
+
 // //       const params = new URLSearchParams({ format: 'table' });
 // //       if (filters.search) params.append('search', filters.search);
 // //       if (filters.fromDate) params.append('fromDate', filters.fromDate);
 // //       if (filters.toDate) params.append('toDate', filters.toDate);
 // //       if (filters.status) params.append('status', filters.status);
-      
+
 // //       const res = await fetch(`/api/Advance-Payment?${params.toString()}`, {
 // //         headers: { Authorization: `Bearer ${token}` },
 // //       });
-      
+
 // //       if (!res.ok) {
 // //         throw new Error(`HTTP error! status: ${res.status}`);
 // //       }
-      
+
 // //       const data = await res.json();
-      
+
 // //       if (data.success) {
 // //         setPayments(data.data || []);
 // //       } else {
@@ -139,11 +139,11 @@
 // //   const handleEdit = (paymentId) => {
 // //     router.push(`/admin/Advance-Payment/${paymentId}`);
 // //   };
-  
+
 // //   const handleApprove = (paymentId) => {
 // //     router.push(`/admin/Advance-Payment/approve/${paymentId}`);
 // //   };
-  
+
 // //   const handleCreateNew = () => {
 // //     router.push('/admin/Advance-Payment/create');
 // //   };
@@ -446,23 +446,23 @@
 //     setError(null);
 //     try {
 //       const token = localStorage.getItem('token');
-      
+
 //       const params = new URLSearchParams({ format: 'table' });
 //       if (filters.search) params.append('search', filters.search);
 //       if (filters.fromDate) params.append('fromDate', filters.fromDate);
 //       if (filters.toDate) params.append('toDate', filters.toDate);
 //       if (filters.status) params.append('status', filters.status);
-      
+
 //       const res = await fetch(`/api/Advance-Payment?${params.toString()}`, {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       if (!res.ok) {
 //         throw new Error(`HTTP error! status: ${res.status}`);
 //       }
-      
+
 //       const data = await res.json();
-      
+
 //       if (data.success) {
 //         setPayments(data.data || []);
 //       } else {
@@ -584,7 +584,7 @@
 //     }
 //     router.push(`/admin/Advance-Payment/${paymentId}`);
 //   };
-  
+
 //   const handleApprove = (paymentId) => {
 //     if (!canApprove(MODULE_NAME)) {
 //       alert('You don\'t have permission to approve advance payments');
@@ -592,7 +592,7 @@
 //     }
 //     router.push(`/admin/Advance-Payment/approve/${paymentId}`);
 //   };
-  
+
 //   const handleCreateNew = () => {
 //     if (!canCreate(MODULE_NAME)) {
 //       alert('You don\'t have permission to create advance payments');
@@ -846,7 +846,7 @@
 //                               </svg>
 //                             </button>
 //                           )}
-                          
+
 //                           {/* Approve Button - Only shown if user has approve permission */}
 //                           {canApprove(MODULE_NAME) && (
 //                             <button
@@ -859,7 +859,7 @@
 //                               </svg>
 //                             </button>
 //                           )}
-                          
+
 //                           {/* Delete Button - Only shown if user has delete permission */}
 //                           {canDelete(MODULE_NAME) && item.status !== 'Paid' && item.status !== 'Completed' && (
 //                             <button
@@ -949,23 +949,23 @@ export default function AdvancePaymentList() {
     setError(null);
     try {
       const token = localStorage.getItem('token');
-      
+
       const params = new URLSearchParams({ format: 'table' });
       if (filters.search) params.append('search', filters.search);
       if (filters.fromDate) params.append('fromDate', filters.fromDate);
       if (filters.toDate) params.append('toDate', filters.toDate);
       if (filters.status) params.append('status', filters.status);
-      
+
       const res = await fetch(`/api/Advance-Payment?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       if (!res.ok) {
         throw new Error(`HTTP error! status: ${res.status}`);
       }
-      
+
       const data = await res.json();
-      
+
       if (data.success) {
         setPayments(data.data || []);
       } else {
@@ -1063,9 +1063,9 @@ export default function AdvancePaymentList() {
       const data = await res.json();
 
       if (data.success) {
-        setPayments(prev => prev.map(item => 
-          item._id === paymentId 
-            ? { ...item, queueGenerated: true, status: 'Paid' } 
+        setPayments(prev => prev.map(item =>
+          item._id === paymentId
+            ? { ...item, queueGenerated: true, status: 'Paid' }
             : item
         ));
         alert('✅ Payment queue generated successfully!');
@@ -1087,7 +1087,7 @@ export default function AdvancePaymentList() {
     }
     router.push(`/admin/Advance-Payment/${paymentId}`);
   };
-  
+
   // ✅ Quick Approve function - approves without going to approve page
   const handleQuickApprove = async (paymentId, paymentNo) => {
     if (!canApprove(MODULE_NAME)) {
@@ -1134,7 +1134,7 @@ export default function AdvancePaymentList() {
     }
     router.push(`/admin/Advance-Payment/approve/${paymentId}`);
   };
-  
+
   const handleCreateNew = () => {
     if (!canCreate(MODULE_NAME)) {
       alert('You don\'t have permission to create advance payments');
@@ -1148,7 +1148,7 @@ export default function AdvancePaymentList() {
   };
 
   const getStatusColor = (status) => {
-    switch(status?.toLowerCase()) {
+    switch (status?.toLowerCase()) {
       case 'paid': return 'bg-green-100 text-green-800';
       case 'approved': return 'bg-blue-100 text-blue-800';
       case 'rejected': return 'bg-red-100 text-red-800';
@@ -1192,7 +1192,7 @@ export default function AdvancePaymentList() {
         <div className="text-center max-w-md p-8 bg-white rounded-xl shadow-lg">
           <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg className="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                 d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
           </div>
@@ -1321,6 +1321,7 @@ export default function AdvancePaymentList() {
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Date</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Payment No</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Purchase No</th>
+                  <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Order No</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Vendor</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Vehicle</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Amount</th>
@@ -1353,6 +1354,7 @@ export default function AdvancePaymentList() {
                           <div className="text-xs text-slate-500">{item.pricingSerialNo}</div>
                         </div>
                       </td>
+                      <td className="px-4 py-3 font-medium text-slate-800 max-w-[180px] break-words">{item.orderNo || <span className="text-slate-400">-</span>}</td>
                       <td className="px-4 py-3">
                         <div>
                           <div className="font-medium text-slate-800">{item.vendorName}</div>
@@ -1390,7 +1392,7 @@ export default function AdvancePaymentList() {
                               </svg>
                             </button>
                           )}
-                          
+
                           {/* ✅ Quick Approve Button - Green (with checkmark) */}
                           {canApprove(MODULE_NAME) && !isFinalStatus(item.status) && (
                             <button
@@ -1408,7 +1410,7 @@ export default function AdvancePaymentList() {
                               )}
                             </button>
                           )}
-                          
+
                           {/* ✅ Full Approve Button - Blue (with details) */}
                           {canApprove(MODULE_NAME) && !isFinalStatus(item.status) && (
                             <button
@@ -1421,7 +1423,7 @@ export default function AdvancePaymentList() {
                               </svg>
                             </button>
                           )}
-                          
+
                           {/* Queue Generate Button - Only shown if user has approve permission */}
                           {canApprove(MODULE_NAME) && !item.queueGenerated && item.status !== 'Rejected' && item.status !== 'Completed' && (
                             <button
@@ -1439,7 +1441,7 @@ export default function AdvancePaymentList() {
                               )}
                             </button>
                           )}
-                          
+
                           {/* Delete Button - Only shown if user has delete permission */}
                           {canDelete(MODULE_NAME) && !isFinalStatus(item.status) && (
                             <button

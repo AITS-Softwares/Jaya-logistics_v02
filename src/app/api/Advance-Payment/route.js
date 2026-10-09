@@ -1,4 +1,3 @@
-
 // // import { NextResponse } from "next/server";
 // // import connectDb from "@/lib/db";
 // // import AdvancePayment from "./AdvancePayment";
@@ -1705,6 +1704,17 @@ function isValidObjectId(id) {
 /* ========================================
    GET /api/advance-payment - Requires 'view' permission
 ======================================== */
+// Net amount for Advance Payment = Purchase Panel advance + additions - deductions - warehouse deductions
+// (computed from the purchase's own rows so older records with a stale netEffect still match)
+function purchaseOfficeNetEffect(purchase) {
+  if (!purchase) return 0;
+  const sumRows = (rows) => (rows || []).reduce((sum, item) => sum + (Number(item?.amount) || 0), 0);
+  const le = purchase.loadingExpenses || {};
+  const warehouseDeduct = ['loadingCharges', 'loadingStaffMunshiyana', 'otherExpenses', 'vehicleFloorTarpaulin', 'vehicleOuterTarpaulin']
+    .reduce((sum, key) => sum + (Number(le[key]) || 0), 0);
+  return (Number(purchase.purchaseDetails?.advance) || 0) + sumRows(purchase.additions) - sumRows(purchase.deductions) - warehouseDeduct;
+}
+
 export async function GET(req) {
   try {
     await connectDb();
@@ -1791,6 +1801,7 @@ export async function GET(req) {
         query.$or = [
           { paymentNo: { $regex: search, $options: 'i' } },
           { purchaseNo: { $regex: search, $options: 'i' } },
+          { 'orderRows.orderNo': { $regex: search, $options: 'i' } },
           { pricingSerialNo: { $regex: search, $options: 'i' } },
           { subCompanyName: { $regex: search, $options: 'i' } },
           { subCompanyCode: { $regex: search, $options: 'i' } },
@@ -1823,6 +1834,7 @@ export async function GET(req) {
         date: payment.createdAt ? new Date(payment.createdAt).toLocaleDateString('en-GB') : '',
         paymentNo: payment.paymentNo || 'N/A',
         purchaseNo: payment.purchaseNo || 'N/A',
+        orderNo: [...new Set((payment.orderRows || []).map(r => r.orderNo).filter(Boolean))].join(', '),
         pricingSerialNo: payment.pricingSerialNo || 'N/A',
         subCompanyName: payment.subCompanyName || '',
         subCompanyCode: payment.subCompanyCode || '',
@@ -1975,7 +1987,7 @@ export async function POST(req) {
     // Balance is independent of adjustments.  The payment to queue is the
     // Purchase Panel's Net Effect, which includes its approved adjustments.
     const balance = purchaseAmountFromVNN - advance;
-    const finalAdvanceAmount = num(sourcePurchase.netEffect);
+    const finalAdvanceAmount = purchaseOfficeNetEffect(sourcePurchase);
 
     let branchId = null;
     if (body.header?.branch) {
@@ -2316,9 +2328,9 @@ export async function PUT(req) {
         ? await PurchasePanel.findOne(companyScopeFilter(user, { _id: payment.purchaseId })).lean()
         : await PurchasePanel.findOne(companyScopeFilter(user, { purchaseNo: payment.purchaseNo })).lean();
       payment.paymentDetails = {
-        ...payment.paymentDetails,  
+        ...payment.paymentDetails,
         ...body.paymentDetails,
-        finalAmount: sourcePurchase ? num(sourcePurchase.netEffect) : payment.paymentDetails.finalAmount,
+        finalAmount: sourcePurchase ? purchaseOfficeNetEffect(sourcePurchase) : payment.paymentDetails.finalAmount,
         paymentDate: body.paymentDetails.paymentDate ? new Date(body.paymentDetails.paymentDate) : payment.paymentDetails.paymentDate
       };
     }

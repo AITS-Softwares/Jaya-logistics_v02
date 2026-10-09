@@ -9667,7 +9667,7 @@ export default function CreateLoadingInfoPanel() {
                   <div className="flex justify-between items-center mb-3">
                     <h3 className="text-sm font-bold text-slate-800">Loading Charges & Expenses</h3>
                     <div className="bg-orange-100 text-orange-800 text-xs px-3 py-1 rounded-full font-medium">
-                      Deduct at Office
+                      Deduct at Warehouse
                     </div>
                   </div>
 
@@ -9772,7 +9772,7 @@ export default function CreateLoadingInfoPanel() {
                         onChange={(e) => setArrivalDetails({ ...arrivalDetails, outDate: e.target.value })}
                         className="mt-1 w-full rounded-lg border border-orange-200 bg-white px-3 py-2 text-sm outline-none focus:border-orange-500"
                       />
-                      <p className="text-xs text-orange-600 mt-1">Auto-filled when the LR is approved</p>
+                      <p className="text-xs text-orange-600 mt-1">Auto-filled when the Last LR is Printed</p>
                     </div>
                   </div>
                   <div className="col-span-12 md:col-span-3">
@@ -9785,7 +9785,7 @@ export default function CreateLoadingInfoPanel() {
                         className="mt-1 w-full rounded-lg border border-orange-200 bg-white px-3 py-2 text-sm outline-none focus:border-orange-500"
                         placeholder="HH:MM"
                       />
-                      <p className="text-xs text-orange-600 mt-1">Auto-filled when the LR is approved</p>
+                      <p className="text-xs text-orange-600 mt-1">Auto-filled when the Last LR is Printed</p>
                     </div>
                   </div>
                 </div>

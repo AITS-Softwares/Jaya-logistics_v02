@@ -1,5 +1,3 @@
-
-
 // "use client";
 
 // import React, { useMemo, useState, useEffect, useRef, useCallback } from "react";
@@ -179,21 +177,21 @@
 //     setLoading(true);
 //     setError(null);
 //     setMultipleCities([]);
-    
+
 //     try {
 //       const response = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
 //       const data = await response.json();
-      
+
 //       if (data && data[0] && data[0].Status === "Success" && data[0].PostOffice && data[0].PostOffice.length > 0) {
 //         const postOffices = data[0].PostOffice;
-        
+
 //         const uniqueLocations = [];
 //         const seen = new Set();
-        
+
 //         postOffices.forEach(po => {
 //           const cityName = po.Name;
 //           const key = `${po.Name}-${po.District}-${po.State}`;
-          
+
 //           if (!seen.has(key)) {
 //             seen.add(key);
 //             uniqueLocations.push({
@@ -214,11 +212,11 @@
 //             });
 //           }
 //         });
-        
+
 //         if (uniqueLocations.length > 1) {
 //           setMultipleCities(uniqueLocations);
 //         }
-        
+
 //         const firstLocation = uniqueLocations[0];
 //         const result = {
 //           taluka: firstLocation.taluka,
@@ -235,7 +233,7 @@
 //           hasMultiple: uniqueLocations.length > 1,
 //           allLocations: uniqueLocations
 //         };
-        
+
 //         setPincodeData(result);
 //         return result;
 //       } else {
@@ -303,7 +301,7 @@
 //   const [pkgTypes, setPkgTypes] = useState([]);
 //   const [uoms, setUoms] = useState([]);
 //   const [skuSizes, setSkuSizes] = useState([]);
-  
+
 //   /** =========================
 //    * CUSTOMER SEARCH STATE
 //    ========================= */
@@ -547,7 +545,7 @@
 //    ========================= */
 //   const handleCustomerSearch = (query) => {
 //     setCustomerSearchQuery(query);
-    
+
 //     if (query.trim() === "") {
 //       setFilteredCustomers(customerSearch.customers);
 //     } else {
@@ -558,7 +556,7 @@
 //       );
 //       setFilteredCustomers(filtered);
 //     }
-    
+
 //     if (selectedCustomer && query !== selectedCustomer.customerName) {
 //       setSelectedCustomer(null);
 //       setTop(prev => ({
@@ -576,7 +574,7 @@
 //     setSelectedCustomer(customer);
 //     setCustomerSearchQuery(customer.customerName);
 //     setShowCustomerDropdown(false);
-    
+
 //     setTop(prev => ({
 //       ...prev,
 //       customerId: customer._id,
@@ -652,10 +650,10 @@
 //   const handlePincodeChange = async (rowId, pincode) => {
 //     updatePlantRow(rowId, 'pinCode', pincode);
 //     setPincodeInput(prev => ({ ...prev, [rowId]: pincode }));
-    
+
 //     if (pincode && pincode.length === 6) {
 //       const result = await pincodeAPI.fetchPincodeDetails(pincode);
-      
+
 //       if (result) {
 //         if (result.hasMultiple && result.allLocations && result.allLocations.length > 0) {
 //           setCityOptionsByRow(prev => ({ 
@@ -702,7 +700,7 @@
 //     if (row) {
 //       const fromState = row.fromState?.trim().toUpperCase() || '';
 //       const toState = row.stateName?.trim().toUpperCase() || '';
-      
+
 //       if (!fromState || !toState) {
 //         updatePlantRow(rowId, 'localStatus', 'unknown');
 //         updatePlantRow(rowId, 'localStatusLabel', 'Unknown');
@@ -749,7 +747,7 @@
 //     const rowIndex = plantRows.findIndex(r => r._id === rowId);
 //     const fields = ['plantCode', 'orderType', 'pinCode', 'from', 'to', 'weight', 'status'];
 //     const currentIndex = fields.indexOf(currentField);
-    
+
 //     if (currentIndex !== -1 && currentIndex < fields.length - 1) {
 //       const nextField = fields[currentIndex + 1];
 //       const nextRef = {
@@ -761,7 +759,7 @@
 //         weight: weightRefs.current[rowId],
 //         status: statusRefs.current[rowId]
 //       }[nextField];
-      
+
 //       if (nextRef) {
 //         setTimeout(() => nextRef.focus(), 50);
 //       }
@@ -780,26 +778,26 @@
 //   /** =========================
 //    * PACK DATA FUNCTIONS - Single array
 //    ========================= */
-  
+
 //   const recalculatePalletizationWeights = (row) => {
 //     const updatedRow = { ...row };
-    
+
 //     const noOfPallets = num(updatedRow.noOfPallets);
 //     const unitPerPallets = num(updatedRow.unitPerPallets);
 //     const packWeight = num(updatedRow.packWeight);
 //     const uom = (updatedRow.uom || "").toUpperCase().trim();
-    
+
 //     let totalPkgs = num(updatedRow.totalPkgs);
-    
+
 //     if (noOfPallets > 0 && unitPerPallets > 0) {
 //       const calculatedTotalPkgs = noOfPallets * unitPerPallets;
 //       totalPkgs = calculatedTotalPkgs;
 //       updatedRow.totalPkgs = String(calculatedTotalPkgs);
 //     }
-    
+
 //     if (totalPkgs > 0 && packWeight > 0) {
 //       const isLTR = uom === "LTR" || uom === "L" || uom === "LITRE" || uom === "LITRES";
-      
+
 //       if (isLTR) {
 //         const wtLtr = totalPkgs * packWeight;
 //         updatedRow.wtLtr = wtLtr.toFixed(2);
@@ -814,20 +812,20 @@
 //       updatedRow.wtLtr = "";
 //       updatedRow.actualWt = "";
 //     }
-    
+
 //     return updatedRow;
 //   };
-  
+
 //   const recalculateUniformWeights = (row) => {
 //     const updatedRow = { ...row };
-    
+
 //     const totalPkgs = num(updatedRow.totalPkgs);
 //     const packWeight = num(updatedRow.packWeight);
 //     const uom = (updatedRow.uom || "").toUpperCase().trim();
-    
+
 //     if (totalPkgs > 0 && packWeight > 0) {
 //       const isLTR = uom === "LTR" || uom === "L" || uom === "LITRE" || uom === "LITRES";
-      
+
 //       if (isLTR) {
 //         const wtLtr = totalPkgs * packWeight;
 //         updatedRow.wtLtr = wtLtr.toFixed(2);
@@ -842,7 +840,7 @@
 //       updatedRow.wtLtr = "";
 //       updatedRow.actualWt = "";
 //     }
-    
+
 //     return updatedRow;
 //   };
 
@@ -851,20 +849,20 @@
 //       prev.map((r) => {
 //         if (r._id === rowId) {
 //           let updatedRow = { ...r, [key]: value };
-          
+
 //           if (r.packType === "PALLETIZATION") {
 //             updatedRow = recalculatePalletizationWeights(updatedRow);
 //           } else if (r.packType === "UNIFORM - BAGS/BOXES") {
 //             updatedRow = recalculateUniformWeights(updatedRow);
 //           }
-          
+
 //           return updatedRow;
 //         }
 //         return r;
 //       })
 //     );
 //   };
-  
+
 //   const addRow = () => {
 //     if (packRows.length === 1 && packRows[0].packType === "PALLETIZATION") {
 //       setPackRows([
@@ -903,7 +901,7 @@
 //       alert("Please select a branch");
 //       return;
 //     }
-    
+
 //     const hasInvalidPlantRows = plantRows.some(row => !row.plantCode);
 //     if (hasInvalidPlantRows) {
 //       alert("Please select plant for all plant rows");
@@ -919,7 +917,7 @@
 //       if (!token) {
 //         throw new Error("No authentication token found. Please login again.");
 //       }
-      
+
 //       // Build packData from packRows
 //       const packDataGrouped = {
 //         PALLETIZATION: [],
@@ -927,7 +925,7 @@
 //         'LOOSE - CARGO': [],
 //         'NON-UNIFORM - GENERAL CARGO': []
 //       };
-      
+
 //       packRows.forEach(row => {
 //         if (row.packType === "PALLETIZATION") {
 //           packDataGrouped.PALLETIZATION.push({
@@ -978,7 +976,7 @@
 //           });
 //         }
 //       });
-      
+
 //       // Remove empty arrays
 //       Object.keys(packDataGrouped).forEach(key => {
 //         if (packDataGrouped[key].length === 0) {
@@ -1000,7 +998,7 @@
 //         customerName: selectedCustomer?.customerName || '',
 //         contactPerson: selectedCustomer?.contactPersonName || '',
 //         partyName: selectedCustomer?.customerName || top.partyName || '',
-        
+
 //         plantRows: plantRows.map(row => ({
 //           plantCode: row.plantCode || '',
 //           plantName: row.plantName || '',
@@ -1031,7 +1029,7 @@
 //           localStatus: row.localStatus || 'unknown',
 //           localStatusLabel: row.localStatusLabel || 'Unknown'
 //         })),
-        
+
 //         packData: packDataGrouped,
 //         branches: branches,
 //         plants: plants,
@@ -1039,7 +1037,7 @@
 //         states: states,
 //         districts: districts
 //       };
-      
+
 //       const res = await fetch('/api/order-panel', {
 //         method: 'POST',
 //         headers: {
@@ -1057,12 +1055,12 @@
 
 //       setSaveSuccess(true);
 //       setOrderNumber(data.data?.orderPanelNo || "Generated");
-      
+
 //       const orderPanelNo = data.data?.orderPanelNo || data.data?.orderNo || "Generated";
 //       alert(`✅ Order saved successfully!\nOrder Panel Number: ${orderPanelNo}`);
-      
+
 //       resetForm();
-      
+
 //     } catch (error) {
 //       console.error('Error saving order:', error);
 //       setSaveError(error.message || 'Failed to save order');
@@ -1096,11 +1094,11 @@
 //       customerName: "",
 //       contactPerson: "",
 //     });
-    
+
 //     setPlantRows([defaultPlantRow()]);
-    
+
 //     setPackRows([{ ...defaultRow("PALLETIZATION"), packType: "PALLETIZATION" }]);
-    
+
 //     setSelectedCustomer(null);
 //     setCustomerSearchQuery("");
 //     setFilteredCustomers([]);
@@ -1108,9 +1106,9 @@
 //     setShowCityDropdown({});
 //     setCityOptionsByRow({});
 //     setShowCharges(false);
-    
+
 //     setActivePack("PALLETIZATION");
-    
+
 //     window.scrollTo({ top: 0, behavior: 'smooth' });
 //   };
 
@@ -1211,7 +1209,7 @@
 //                 {orderNumber || "Auto-generated on save"}
 //               </div>
 //             </div>
-            
+
 //             <div className="col-span-12 md:col-span-4 relative">
 //               <label className="text-xs font-bold text-slate-600">Branch *</label>
 //               <div className="flex items-center gap-2">
@@ -1261,7 +1259,7 @@
 //                 ))}
 //               </select>
 //             </div>
-            
+
 //             <Select
 //               col="col-span-12 md:col-span-4"
 //               label="Delivery"
@@ -1281,7 +1279,7 @@
 //               ref={dateRef}
 //               onKeyDown={(e) => handleKeyDown(e, partyNameRef)}
 //             />
-            
+
 //             <div className="col-span-12 md:col-span-8 relative">
 //               <label className="text-xs font-bold text-slate-600">Party Name *</label>
 //               <div className="flex items-center gap-2">
@@ -1306,7 +1304,7 @@
 //                       }
 //                     }}
 //                   />
-                  
+
 //                   {showCustomerDropdown && (
 //                     <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
 //                       {customerSearch.loading ? (
@@ -1398,7 +1396,7 @@
 //               focusNextPlantField={focusNextPlantField}
 //             />
 //           </Card>
-          
+
 //           {/* PACK TYPE SECTIONS - Single table with all rows */}
 //           <div className="mt-4">
 //             <Card title="Pack Type">
@@ -1427,7 +1425,7 @@
 //                   </div>
 //                 </div>
 //               </div>
-              
+
 //               {/* Single Table showing ALL rows with Pack Type column */}
 //               <PackTypeTable
 //                 rows={packRows}
@@ -1554,7 +1552,7 @@
 
 //   const handleSearch = (query) => {
 //     setSearchQuery(query);
-    
+
 //     if (!query.trim()) {
 //       setFilteredItems(items);
 //     } else {
@@ -1564,7 +1562,7 @@
 //       );
 //       setFilteredItems(filtered);
 //     }
-    
+
 //     if (selectedItem && query !== getDisplayValue(selectedItem)) {
 //       setSelectedItem(null);
 //       onSelect?.(null);
@@ -1582,7 +1580,7 @@
 //     if (!showDropdown) {
 //       setFilteredItems(items);
 //       setShowDropdown(true);
-      
+
 //       if (inputRef.current) {
 //         const rect = inputRef.current.getBoundingClientRect();
 //         setDropdownPosition({
@@ -1616,10 +1614,10 @@
 //         });
 //       }
 //     };
-    
+
 //     window.addEventListener('scroll', handleScroll, true);
 //     window.addEventListener('resize', handleScroll);
-    
+
 //     return () => {
 //       window.removeEventListener('scroll', handleScroll, true);
 //       window.removeEventListener('resize', handleScroll);
@@ -1641,7 +1639,7 @@
 //         disabled={disabled}
 //         autoComplete="off"
 //       />
-      
+
 //       {showDropdown && (
 //         <div 
 //           className="fixed z-[9999] bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto"
@@ -1771,7 +1769,7 @@
 //     if (row) {
 //       const fromState = row.fromState?.trim().toUpperCase() || '';
 //       const toState = row.stateName?.trim().toUpperCase() || '';
-      
+
 //       if (!fromState || !toState) {
 //         onChange(rowId, 'localStatus', 'unknown');
 //         onChange(rowId, 'localStatusLabel', 'Unknown');
@@ -1846,10 +1844,10 @@
 //         });
 //       }
 //     };
-    
+
 //     window.addEventListener('scroll', handleScroll, true);
 //     window.addEventListener('resize', handleScroll);
-    
+
 //     return () => {
 //       window.removeEventListener('scroll', handleScroll, true);
 //       window.removeEventListener('resize', handleScroll);
@@ -1885,7 +1883,7 @@
 //               const isPincodeLoading = pincodeAPI.loading && pincodeInput[r._id]?.length === 6;
 //               const cityOptions = cityOptionsByRow[r._id] || [];
 //               const hasCities = cityOptions.length > 0;
-              
+
 //               return (
 //                 <tr key={r._id} className="hover:bg-yellow-50 even:bg-slate-50">
 //                   {/* Plant Code */}
@@ -2248,7 +2246,7 @@
 //                 </tr>
 //               );
 //             })}
-            
+
 //             {rows.length === 0 && (
 //               <tr>
 //                 <td colSpan={cols.length + 1} className="border border-yellow-300 px-4 py-8 text-center text-slate-400">
@@ -2349,7 +2347,7 @@
 
 //   const handleSearch = (query) => {
 //     setSearchQuery(query);
-    
+
 //     if (!query.trim()) {
 //       setFilteredItems(items);
 //     } else {
@@ -2362,7 +2360,7 @@
 //       });
 //       setFilteredItems(filtered);
 //     }
-    
+
 //     if (selectedItem && query !== getDisplayValue(selectedItem)) {
 //       setSelectedItem(null);
 //       onSelect?.(null);
@@ -2379,20 +2377,20 @@
 //   const handleInputFocus = () => {
 //     if (!showDropdown && ref.current) {
 //       setFilteredItems(items);
-      
+
 //       const rect = ref.current.getBoundingClientRect();
 //       const viewportHeight = window.innerHeight;
 //       const spaceBelow = viewportHeight - rect.bottom;
 //       const dropdownHeight = 300;
 //       const direction = spaceBelow < dropdownHeight ? 'up' : 'down';
-      
+
 //       setDropdownPosition({
 //         top: direction === 'down' ? rect.bottom + window.scrollY : rect.top + window.scrollY - dropdownHeight,
 //         left: rect.left + window.scrollX,
 //         width: rect.width,
 //         direction: direction
 //       });
-      
+
 //       setShowDropdown(true);
 //     }
 //   };
@@ -2438,7 +2436,7 @@
 //           </div>
 //         )}
 //       </div>
-      
+
 //       {showDropdown && (
 //         <div 
 //           ref={dropdownRef}
@@ -2513,7 +2511,7 @@
 //   onNavigateToCreateSKUSize,
 //   onNavigateToCreateItem
 // }) {
-  
+
 //   const [showItemDropdown, setShowItemDropdown] = useState({});
 //   const [itemSearchQuery, setItemSearchQuery] = useState({});
 //   const [filteredItems, setFilteredItems] = useState({});
@@ -2597,7 +2595,7 @@
 //   // Handle item search
 //   const handleItemSearch = (rowId, query) => {
 //     setItemSearchQuery(prev => ({ ...prev, [rowId]: query }));
-    
+
 //     if (!query.trim()) {
 //       setFilteredItems(prev => ({ ...prev, [rowId]: items }));
 //     } else {
@@ -2619,20 +2617,20 @@
 //   const handleItemInputFocus = (rowId, event) => {
 //     if (!showItemDropdown[rowId]) {
 //       setFilteredItems(prev => ({ ...prev, [rowId]: items }));
-      
+
 //       const rect = event.target.getBoundingClientRect();
 //       const viewportHeight = window.innerHeight;
 //       const spaceBelow = viewportHeight - rect.bottom;
 //       const dropdownHeight = 300;
 //       const direction = spaceBelow < dropdownHeight ? 'up' : 'down';
-      
+
 //       setItemDropdownPosition({
 //         top: direction === 'down' ? rect.bottom + window.scrollY : rect.top + window.scrollY - dropdownHeight,
 //         left: rect.left + window.scrollX,
 //         width: rect.width,
 //         direction: direction
 //       });
-      
+
 //       setShowItemDropdown(prev => ({ ...prev, [rowId]: true }));
 //       setActiveItemRowId(rowId);
 //     }
@@ -2656,7 +2654,7 @@
 //         const spaceBelow = viewportHeight - rect.bottom;
 //         const dropdownHeight = 300;
 //         const direction = spaceBelow < dropdownHeight ? 'up' : 'down';
-        
+
 //         setItemDropdownPosition({
 //           top: direction === 'down' ? rect.bottom + window.scrollY : rect.top + window.scrollY - dropdownHeight,
 //           left: rect.left + window.scrollX,
@@ -2665,10 +2663,10 @@
 //         });
 //       }
 //     };
-    
+
 //     window.addEventListener('scroll', handleScroll, true);
 //     window.addEventListener('resize', handleScroll);
-    
+
 //     return () => {
 //       window.removeEventListener('scroll', handleScroll, true);
 //       window.removeEventListener('resize', handleScroll);
@@ -2718,7 +2716,7 @@
 //           {rows.length > 0 ? (
 //             rows.map((r) => {
 //               const cols = getColumnsForRow(r.packType);
-              
+
 //               return (
 //                 <tr key={r._id} className="hover:bg-yellow-50 even:bg-slate-50">
 //                   <td className="border border-yellow-300 px-2 py-2 text-center font-semibold bg-yellow-50 text-xs">
@@ -2727,7 +2725,7 @@
 //                      r.packType === "LOOSE - CARGO" ? "Loose Cargo" :
 //                      "Non-uniform"}
 //                   </td>
-                  
+
 //                   {cols.map((c) => {
 //                     // Handle WT UOM field - always show MT as readonly
 //                     if (c.key === "wtUom") {
@@ -2742,7 +2740,7 @@
 //                         </td>
 //                       );
 //                     }
-                    
+
 //                     // For read-only calculated fields
 //                     if (c.readOnly && (c.key === "actualWt" || c.key === "totalPkgs" || c.key === "wtLtr")) {
 //                       return (
@@ -2757,7 +2755,7 @@
 //                         </td>
 //                       );
 //                     }
-                    
+
 //                     return (
 //                       <td key={c.key} className="border border-yellow-300 px-2 py-2">
 //                         {c.isDynamic ? (
@@ -3033,6 +3031,7 @@ function defaultPlantRow() {
     plantCodeValue: "",
     orderType: "",
     pinCode: "",
+    locationRemark: "",
     from: null,
     fromName: "",
     fromState: "",
@@ -3052,8 +3051,8 @@ function defaultPlantRow() {
     cancellationCharges: "",
     loadingCharges: "",
     otherCharges: "",
-    localStatus: "unknown", 
-    localStatusLabel: "Unknown" 
+    localStatus: "unknown",
+    localStatusLabel: "Unknown"
   };
 }
 
@@ -3109,21 +3108,21 @@ function useExternalPincodeAPI() {
     setLoading(true);
     setError(null);
     setMultipleCities([]);
-    
+
     try {
       const response = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
       const data = await response.json();
-      
+
       if (data && data[0] && data[0].Status === "Success" && data[0].PostOffice && data[0].PostOffice.length > 0) {
         const postOffices = data[0].PostOffice;
-        
+
         const uniqueLocations = [];
         const seen = new Set();
-        
+
         postOffices.forEach(po => {
           const cityName = po.Name;
           const key = `${po.Name}-${po.District}-${po.State}`;
-          
+
           if (!seen.has(key)) {
             seen.add(key);
             uniqueLocations.push({
@@ -3144,11 +3143,11 @@ function useExternalPincodeAPI() {
             });
           }
         });
-        
+
         if (uniqueLocations.length > 1) {
           setMultipleCities(uniqueLocations);
         }
-        
+
         const firstLocation = uniqueLocations[0];
         const result = {
           taluka: firstLocation.taluka,
@@ -3165,7 +3164,7 @@ function useExternalPincodeAPI() {
           hasMultiple: uniqueLocations.length > 1,
           allLocations: uniqueLocations
         };
-        
+
         setPincodeData(result);
         return result;
       } else {
@@ -3193,7 +3192,7 @@ export default function CreateOrderPanel() {
   const deliveryRef = useRef(null);
   const dateRef = useRef(null);
   const partyNameRef = useRef(null);
-  
+
   // ✅ Refs for plant rows - ALL fields
   const plantCodeRefs = useRef({});
   const plantNameRefs = useRef({});
@@ -3233,7 +3232,7 @@ export default function CreateOrderPanel() {
   const [pkgTypes, setPkgTypes] = useState([]);
   const [uoms, setUoms] = useState([]);
   const [skuSizes, setSkuSizes] = useState([]);
-  
+
   /** =========================
    * CUSTOMER SEARCH STATE
    ========================= */
@@ -3398,7 +3397,7 @@ export default function CreateOrderPanel() {
     fetchPkgTypes();
     fetchUOMs();
     fetchSKUSizes();
-    fetchItems(); 
+    fetchItems();
   }, []);
 
   useEffect(() => {
@@ -3496,7 +3495,7 @@ export default function CreateOrderPanel() {
    ========================= */
   const handleCustomerSearch = (query) => {
     setCustomerSearchQuery(query);
-    
+
     if (query.trim() === "") {
       setFilteredCustomers(customerSearch.customers);
     } else {
@@ -3507,7 +3506,7 @@ export default function CreateOrderPanel() {
       );
       setFilteredCustomers(filtered);
     }
-    
+
     if (selectedCustomer && query !== selectedCustomer.customerName) {
       setSelectedCustomer(null);
       setTop(prev => ({
@@ -3525,7 +3524,7 @@ export default function CreateOrderPanel() {
     setSelectedCustomer(customer);
     setCustomerSearchQuery(customer.customerName);
     setShowCustomerDropdown(false);
-    
+
     setTop(prev => ({
       ...prev,
       customerId: customer._id,
@@ -3601,15 +3600,15 @@ export default function CreateOrderPanel() {
   const handlePincodeChange = async (rowId, pincode) => {
     updatePlantRow(rowId, 'pinCode', pincode);
     setPincodeInput(prev => ({ ...prev, [rowId]: pincode }));
-    
+
     if (pincode && pincode.length === 6) {
       const result = await pincodeAPI.fetchPincodeDetails(pincode);
-      
+
       if (result) {
         if (result.hasMultiple && result.allLocations && result.allLocations.length > 0) {
-          setCityOptionsByRow(prev => ({ 
-            ...prev, 
-            [rowId]: result.allLocations 
+          setCityOptionsByRow(prev => ({
+            ...prev,
+            [rowId]: result.allLocations
           }));
         } else {
           setCityOptionsByRow(prev => ({ ...prev, [rowId]: [] }));
@@ -3651,7 +3650,7 @@ export default function CreateOrderPanel() {
     if (row) {
       const fromState = row.fromState?.trim().toUpperCase() || '';
       const toState = row.stateName?.trim().toUpperCase() || '';
-      
+
       if (!fromState || !toState) {
         updatePlantRow(rowId, 'localStatus', 'unknown');
         updatePlantRow(rowId, 'localStatusLabel', 'Unknown');
@@ -3726,7 +3725,7 @@ export default function CreateOrderPanel() {
     const fields = getAllPlantFields(rowId);
     const currentIndex = fields.indexOf(currentField);
     const rowIndex = plantRows.findIndex(r => r._id === rowId);
-    
+
     if (currentIndex !== -1 && currentIndex < fields.length - 1) {
       const nextField = fields[currentIndex + 1];
       const refMap = getPlantRefMap(rowId);
@@ -3757,7 +3756,7 @@ export default function CreateOrderPanel() {
     const fields = getAllPlantFields(rowId);
     const currentIndex = fields.indexOf(currentField);
     const rowIndex = plantRows.findIndex(r => r._id === rowId);
-    
+
     if (currentIndex > 0) {
       const prevField = fields[currentIndex - 1];
       const refMap = getPlantRefMap(rowId);
@@ -3788,12 +3787,12 @@ export default function CreateOrderPanel() {
    ========================= */
   const recalculatePalletizationWeights = (row) => {
     const updatedRow = { ...row };
-    
+
     const noOfPallets = num(updatedRow.noOfPallets);
     const unitPerPallets = num(updatedRow.unitPerPallets);
     const packWeight = num(updatedRow.packWeight);
     const uom = (updatedRow.uom || "").toUpperCase().trim();
-    
+
     const hasPalletInputs = hasNumericValue(updatedRow.noOfPallets) && hasNumericValue(updatedRow.unitPerPallets);
     const hasPackWeight = hasNumericValue(updatedRow.packWeight);
     let totalPkgs = 0;
@@ -3807,7 +3806,7 @@ export default function CreateOrderPanel() {
 
     if (hasPalletInputs && hasPackWeight) {
       const isLTR = uom === "LTR" || uom === "L" || uom === "LITRE" || uom === "LITRES";
-      
+
       if (isLTR) {
         const wtLtr = totalPkgs * packWeight;
         updatedRow.wtLtr = wtLtr.toFixed(2);
@@ -3822,13 +3821,13 @@ export default function CreateOrderPanel() {
       updatedRow.wtLtr = "";
       updatedRow.actualWt = "";
     }
-    
+
     return updatedRow;
   };
-  
+
   const recalculateUniformWeights = (row) => {
     const updatedRow = { ...row };
-    
+
     const totalPkgs = num(updatedRow.totalPkgs);
     const packWeight = num(updatedRow.packWeight);
     const uom = (updatedRow.uom || "").toUpperCase().trim();
@@ -3837,7 +3836,7 @@ export default function CreateOrderPanel() {
 
     if (hasTotalPkgs && hasPackWeight) {
       const isLTR = uom === "LTR" || uom === "L" || uom === "LITRE" || uom === "LITRES";
-      
+
       if (isLTR) {
         const wtLtr = totalPkgs * packWeight;
         updatedRow.wtLtr = wtLtr.toFixed(2);
@@ -3852,7 +3851,7 @@ export default function CreateOrderPanel() {
       updatedRow.wtLtr = "";
       updatedRow.actualWt = "";
     }
-    
+
     return updatedRow;
   };
 
@@ -3861,20 +3860,20 @@ export default function CreateOrderPanel() {
       prev.map((r) => {
         if (r._id === rowId) {
           let updatedRow = { ...r, [key]: value };
-          
+
           if (r.packType === "PALLETIZATION") {
             updatedRow = recalculatePalletizationWeights(updatedRow);
           } else if (r.packType === "UNIFORM - BAGS/BOXES") {
             updatedRow = recalculateUniformWeights(updatedRow);
           }
-          
+
           return updatedRow;
         }
         return r;
       })
     );
   };
-  
+
   const addRow = () => {
     const newRow = { ...defaultRow(activePack), packType: activePack };
     setPackRows((prev) => [...prev, newRow]);
@@ -3962,11 +3961,11 @@ export default function CreateOrderPanel() {
   const focusNextPackField = (rowId, currentFieldKey) => {
     const row = packRows.find(r => r._id === rowId);
     if (!row) return;
-    
+
     const columns = getPackColumns(row.packType);
     const currentIndex = columns.findIndex(c => c.key === currentFieldKey);
     const rowIndex = packRows.findIndex(r => r._id === rowId);
-    
+
     if (currentIndex !== -1 && currentIndex < columns.length - 1) {
       const nextKey = columns[currentIndex + 1].key;
       const refs = packInputRefs.current[rowId];
@@ -3991,11 +3990,11 @@ export default function CreateOrderPanel() {
   const focusPrevPackField = (rowId, currentFieldKey) => {
     const row = packRows.find(r => r._id === rowId);
     if (!row) return;
-    
+
     const columns = getPackColumns(row.packType);
     const currentIndex = columns.findIndex(c => c.key === currentFieldKey);
     const rowIndex = packRows.findIndex(r => r._id === rowId);
-    
+
     if (currentIndex > 0) {
       const prevKey = columns[currentIndex - 1].key;
       const refs = packInputRefs.current[rowId];
@@ -4023,7 +4022,7 @@ export default function CreateOrderPanel() {
       alert("Please select a branch");
       return;
     }
-    
+
     const hasInvalidPlantRows = plantRows.some(row => !row.plantCode);
     if (hasInvalidPlantRows) {
       alert("Please select plant for all plant rows");
@@ -4039,14 +4038,14 @@ export default function CreateOrderPanel() {
       if (!token) {
         throw new Error("No authentication token found. Please login again.");
       }
-      
+
       const packDataGrouped = {
         PALLETIZATION: [],
         'UNIFORM - BAGS/BOXES': [],
         'LOOSE - CARGO': [],
         'NON-UNIFORM - GENERAL CARGO': []
       };
-      
+
       packRows.forEach(row => {
         if (row.packType === "PALLETIZATION") {
           packDataGrouped.PALLETIZATION.push({
@@ -4101,7 +4100,7 @@ export default function CreateOrderPanel() {
           });
         }
       });
-      
+
       Object.keys(packDataGrouped).forEach(key => {
         if (packDataGrouped[key].length === 0) {
           delete packDataGrouped[key];
@@ -4122,13 +4121,14 @@ export default function CreateOrderPanel() {
         customerName: selectedCustomer?.customerName || '',
         contactPerson: selectedCustomer?.contactPersonName || '',
         partyName: selectedCustomer?.customerName || top.partyName || '',
-        
+
         plantRows: plantRows.map(row => ({
           plantCode: row.plantCode || '',
           plantName: row.plantName || '',
           plantCodeValue: row.plantCodeValue || '',
           orderType: row.orderType || "Sales",
           pinCode: row.pinCode || "",
+          locationRemark: row.locationRemark || "",
           from: row.from || null,
           fromName: row.fromName || "",
           fromState: row.fromState || "",
@@ -4153,7 +4153,7 @@ export default function CreateOrderPanel() {
           localStatus: row.localStatus || 'unknown',
           localStatusLabel: row.localStatusLabel || 'Unknown'
         })),
-        
+
         packData: packDataGrouped,
         branches: branches,
         plants: plants,
@@ -4161,7 +4161,7 @@ export default function CreateOrderPanel() {
         states: states,
         districts: districts
       };
-      
+
       const res = await fetch('/api/order-panel', {
         method: 'POST',
         headers: {
@@ -4179,12 +4179,12 @@ export default function CreateOrderPanel() {
 
       setSaveSuccess(true);
       setOrderNumber(data.data?.orderPanelNo || "Generated");
-      
+
       const orderPanelNo = data.data?.orderPanelNo || data.data?.orderNo || "Generated";
       alert(`✅ Order saved successfully!\nOrder Panel Number: ${orderPanelNo}`);
-      
+
       resetForm();
-      
+
     } catch (error) {
       console.error('Error saving order:', error);
       setSaveError(error.message || 'Failed to save order');
@@ -4218,12 +4218,12 @@ export default function CreateOrderPanel() {
       customerName: "",
       contactPerson: "",
     });
-    
+
     setPlantRows([defaultPlantRow()]);
-    
+
     setPackRows([{ ...defaultRow("PALLETIZATION"), packType: "PALLETIZATION" }]);
     setHasReplacedInitialPackRow(false);
-    
+
     setSelectedCustomer(null);
     setCustomerSearchQuery("");
     setFilteredCustomers([]);
@@ -4231,9 +4231,9 @@ export default function CreateOrderPanel() {
     setShowCityDropdown({});
     setCityOptionsByRow({});
     setShowCharges(false);
-    
+
     setActivePack("PALLETIZATION");
-    
+
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -4287,7 +4287,7 @@ export default function CreateOrderPanel() {
               </div>
             </div>
             <div className="text-xs text-slate-500 mt-0.5">
-              ⚡ Press <kbd className="px-1 py-0.5 bg-slate-200 rounded text-xs">Enter</kbd> to move to next field, 
+              ⚡ Press <kbd className="px-1 py-0.5 bg-slate-200 rounded text-xs">Enter</kbd> to move to next field,
               <kbd className="px-1 py-0.5 bg-slate-200 rounded text-xs ml-1">Backspace</kbd> (empty) to go back
             </div>
             {saveSuccess && (
@@ -4306,11 +4306,10 @@ export default function CreateOrderPanel() {
             <button
               onClick={handleSave}
               disabled={saving}
-              className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${
-                saving 
-                  ? 'bg-gray-400 cursor-not-allowed' 
+              className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${saving
+                  ? 'bg-gray-400 cursor-not-allowed'
                   : 'bg-emerald-600 hover:bg-emerald-700'
-              }`}
+                }`}
             >
               {saving ? (
                 <span className="flex items-center gap-2">
@@ -4337,7 +4336,7 @@ export default function CreateOrderPanel() {
                 {orderNumber || "Auto-generated on save"}
               </div>
             </div>
-            
+
             <div className="col-span-12 md:col-span-4 relative">
               <label className="text-xs font-bold text-slate-600">Branch *</label>
               <div className="flex items-center gap-2">
@@ -4409,7 +4408,7 @@ export default function CreateOrderPanel() {
                 ))}
               </select>
             </div>
-            
+
             <div className="col-span-12 md:col-span-4">
               <SelectWithRef
                 ref={deliveryRef}
@@ -4447,7 +4446,7 @@ export default function CreateOrderPanel() {
                 }}
               />
             </div>
-            
+
             <div className="col-span-12 md:col-span-8 relative">
               <label className="text-xs font-bold text-slate-600">Party Name *</label>
               <div className="flex items-center gap-2">
@@ -4474,7 +4473,7 @@ export default function CreateOrderPanel() {
                       }
                     }}
                   />
-                  
+
                   {showCustomerDropdown && (
                     <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
                       {customerSearch.loading ? (
@@ -4500,8 +4499,8 @@ export default function CreateOrderPanel() {
                         ))
                       ) : (
                         <div className="p-3 text-center text-sm text-slate-500">
-                          {customerSearchQuery.trim() ? 
-                            `No customers found for "${customerSearchQuery}"` : 
+                          {customerSearchQuery.trim() ?
+                            `No customers found for "${customerSearchQuery}"` :
                             "No customers available"
                           }
                         </div>
@@ -4523,11 +4522,10 @@ export default function CreateOrderPanel() {
               <div className="flex gap-2">
                 <button
                   onClick={() => setShowCharges(!showCharges)}
-                  className={`rounded-xl px-4 py-2 text-sm font-bold transition ${
-                    showCharges 
-                      ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                  className={`rounded-xl px-4 py-2 text-sm font-bold transition ${showCharges
+                      ? 'bg-blue-600 text-white hover:bg-blue-700'
                       : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
+                    }`}
                 >
                   {showCharges ? 'Hide Charges' : 'Charges'}
                 </button>
@@ -4577,7 +4575,7 @@ export default function CreateOrderPanel() {
               focusPrevPlantField={focusPrevPlantField}
             />
           </Card>
-          
+
           {/* PACK TYPE SECTIONS - Single table with all rows */}
           <div className="mt-4">
             <Card title="Pack Type">
@@ -4606,7 +4604,7 @@ export default function CreateOrderPanel() {
                   </div>
                 </div>
               </div>
-              
+
               {/* Single Table showing ALL rows with Pack Type column */}
               <PackTypeTable
                 rows={packRows}
@@ -4699,10 +4697,10 @@ SelectWithRef.displayName = 'SelectWithRef';
 /** =========================
  * Searchable Dropdown Component with Keyboard Navigation
  ========================= */
-function SearchableDropdown({ 
-  items, 
-  selectedId, 
-  onSelect, 
+function SearchableDropdown({
+  items,
+  selectedId,
+  onSelect,
   placeholder = "Search...",
   required = false,
   displayField = 'name',
@@ -4745,7 +4743,7 @@ function SearchableDropdown({
   const handleSearch = (query) => {
     setSearchQuery(query);
     setHighlightedIndex(-1);
-    
+
     if (!query.trim()) {
       setFilteredItems(items);
     } else {
@@ -4758,7 +4756,7 @@ function SearchableDropdown({
       });
       setFilteredItems(filtered);
     }
-    
+
     if (selectedItem && query !== getDisplayValue(selectedItem)) {
       setSelectedItem(null);
       onSelect?.(null);
@@ -4800,20 +4798,20 @@ function SearchableDropdown({
     onOpen?.();
     if (!showDropdown && ref.current) {
       setFilteredItems(items);
-      
+
       const rect = ref.current.getBoundingClientRect();
       const viewportHeight = window.innerHeight;
       const spaceBelow = viewportHeight - rect.bottom;
       const dropdownHeight = 300;
       const direction = spaceBelow < dropdownHeight ? 'up' : 'down';
-      
+
       setDropdownPosition({
         top: direction === 'down' ? rect.bottom + window.scrollY : rect.top + window.scrollY - dropdownHeight,
         left: rect.left + window.scrollX,
         width: rect.width,
         direction: direction
       });
-      
+
       setShowDropdown(true);
     }
   };
@@ -4854,9 +4852,9 @@ function SearchableDropdown({
           autoComplete="off"
         />
       </div>
-      
+
       {showDropdown && (
-        <div 
+        <div
           ref={dropdownRef}
           className="fixed z-[100000] bg-white border border-slate-200 rounded-lg shadow-xl overflow-y-auto"
           style={{
@@ -4875,9 +4873,8 @@ function SearchableDropdown({
                   e.preventDefault();
                   handleSelectItem(item);
                 }}
-                className={`p-2 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors ${
-                  selectedItem?._id === item._id || highlightedIndex === filteredItems.indexOf(item) ? 'bg-sky-100' : ''
-                }`}
+                className={`p-2 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors ${selectedItem?._id === item._id || highlightedIndex === filteredItems.indexOf(item) ? 'bg-sky-100' : ''
+                  }`}
               >
                 <div className="font-medium text-slate-800 text-sm">
                   {item[displayField]}
@@ -4891,8 +4888,8 @@ function SearchableDropdown({
             ))
           ) : (
             <div className="p-3 text-center text-sm text-slate-500">
-              {searchQuery.trim() ? 
-                `No items found for "${searchQuery}"` : 
+              {searchQuery.trim() ?
+                `No items found for "${searchQuery}"` :
                 "No items available"
               }
             </div>
@@ -4906,10 +4903,10 @@ function SearchableDropdown({
 // ============================================================
 // PLANT GRID TABLE COMPONENT (with Enter/Backspace key support)
 // ============================================================
-function PlantGridTable({ 
-  rows, 
-  onChange, 
-  onRemove, 
+function PlantGridTable({
+  rows,
+  onChange,
+  onRemove,
   onPlantChange,
   onPincodeChange,
   onSelectCity,
@@ -4994,7 +4991,7 @@ function PlantGridTable({
     if (row) {
       const fromState = row.fromState?.trim().toUpperCase() || '';
       const toState = row.stateName?.trim().toUpperCase() || '';
-      
+
       if (!fromState || !toState) {
         onChange(rowId, 'localStatus', 'unknown');
         onChange(rowId, 'localStatusLabel', 'Unknown');
@@ -5046,6 +5043,8 @@ function PlantGridTable({
     );
   }
 
+  cols.push({ key: "locationRemark", label: "Location Remark", width: "220px" });
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -5069,10 +5068,10 @@ function PlantGridTable({
         });
       }
     };
-    
+
     window.addEventListener('scroll', handleScroll, true);
     window.addEventListener('resize', handleScroll);
-    
+
     return () => {
       window.removeEventListener('scroll', handleScroll, true);
       window.removeEventListener('resize', handleScroll);
@@ -5092,7 +5091,7 @@ function PlantGridTable({
                   className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 text-center"
                 >
                   {c.label}
-                  {(c.key === "plantName" || c.key === "taluka" || c.key === "district" || c.key === "state" || c.key === "country") && 
+                  {(c.key === "plantName" || c.key === "taluka" || c.key === "district" || c.key === "state" || c.key === "country") &&
                     <span className="ml-1 text-xs text-blue-600">*Auto</span>
                   }
                 </th>
@@ -5108,7 +5107,7 @@ function PlantGridTable({
               const isPincodeLoading = pincodeAPI.loading && pincodeInput[r._id]?.length === 6;
               const cityOptions = cityOptionsByRow[r._id] || [];
               const hasCities = cityOptions.length > 0;
-              
+
               return (
                 <tr key={r._id} className="hover:bg-yellow-50 even:bg-slate-50">
                   {/* Plant Code */}
@@ -5297,9 +5296,8 @@ function PlantGridTable({
                             focusPrevPlantField(r._id, 'to');
                           }
                         }}
-                        className={`city-input-field w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${
-                          hasCities ? 'cursor-pointer bg-yellow-50 hover:bg-yellow-100' : ''
-                        }`}
+                        className={`city-input-field w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${hasCities ? 'cursor-pointer bg-yellow-50 hover:bg-yellow-100' : ''
+                          }`}
                         placeholder={hasCities ? "Click to select city/area" : "Enter city name"}
                       />
                       {hasCities && (
@@ -5378,11 +5376,10 @@ function PlantGridTable({
                   {/* Local Status */}
                   <td className="border border-yellow-300 px-2 py-2 text-center">
                     {r.fromState && r.stateName ? (
-                      <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${
-                        r.fromState.trim().toUpperCase() === r.stateName.trim().toUpperCase()
+                      <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${r.fromState.trim().toUpperCase() === r.stateName.trim().toUpperCase()
                           ? 'bg-green-100 text-green-800 border border-green-300'
                           : 'bg-red-100 text-red-800 border border-red-300'
-                      }`}>
+                        }`}>
                         {r.fromState.trim().toUpperCase() === r.stateName.trim().toUpperCase() ? '✅ Local' : '❌ Not Local'}
                       </span>
                     ) : (
@@ -5540,6 +5537,18 @@ function PlantGridTable({
                     </>
                   )}
 
+                  {/* Location Remark */}
+                  <td className="border border-yellow-300 px-2 py-2">
+                    <input
+                      type="text"
+                      value={r.locationRemark || ""}
+                      onChange={(e) => onChange(r._id, 'locationRemark', e.target.value)}
+                      maxLength={200}
+                      className="w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+                      placeholder="Exact area / landmark (optional)"
+                    />
+                  </td>
+
                   {/* Action */}
                   <td className="border border-yellow-300 px-2 py-2 text-center">
                     <button
@@ -5552,7 +5561,7 @@ function PlantGridTable({
                 </tr>
               );
             })}
-            
+
             {rows.length === 0 && (
               <tr>
                 <td colSpan={cols.length + 1} className="border border-yellow-300 px-4 py-8 text-center text-slate-400">
@@ -5566,7 +5575,7 @@ function PlantGridTable({
 
       {/* City Dropdown - Portal style positioning */}
       {activeCityRowId && cityOptionsByRow[activeCityRowId] && cityOptionsByRow[activeCityRowId].length > 0 && (
-        <div 
+        <div
           className="fixed z-[99999] bg-white border border-slate-200 rounded-lg shadow-xl overflow-y-auto"
           style={{
             position: 'fixed',
@@ -5608,10 +5617,10 @@ function PlantGridTable({
 /** =========================
  * Table Searchable Dropdown Component
  ========================= */
-function TableSearchableDropdown({ 
-  items, 
-  selectedId, 
-  onSelect, 
+function TableSearchableDropdown({
+  items,
+  selectedId,
+  onSelect,
   placeholder = "Search...",
   required = false,
   displayField = 'name',
@@ -5656,7 +5665,7 @@ function TableSearchableDropdown({
   const handleSearch = (query) => {
     setSearchQuery(query);
     setHighlightedIndex(-1);
-    
+
     if (!query.trim()) {
       setFilteredItems(items);
     } else {
@@ -5669,7 +5678,7 @@ function TableSearchableDropdown({
       });
       setFilteredItems(filtered);
     }
-    
+
     if (selectedItem && query !== getDisplayValue(selectedItem)) {
       setSelectedItem(null);
       onSelect?.(null);
@@ -5711,20 +5720,20 @@ function TableSearchableDropdown({
     onOpen?.();
     if (!showDropdown && ref.current) {
       setFilteredItems(items);
-      
+
       const rect = ref.current.getBoundingClientRect();
       const viewportHeight = window.innerHeight;
       const spaceBelow = viewportHeight - rect.bottom;
       const dropdownHeight = 300;
       const direction = spaceBelow < dropdownHeight ? 'up' : 'down';
-      
+
       setDropdownPosition({
         top: direction === 'down' ? rect.bottom + window.scrollY : rect.top + window.scrollY - dropdownHeight,
         left: rect.left + window.scrollX,
         width: rect.width,
         direction: direction
       });
-      
+
       setShowDropdown(true);
     }
   };
@@ -5770,9 +5779,9 @@ function TableSearchableDropdown({
           </div>
         )}
       </div>
-      
+
       {showDropdown && (
-        <div 
+        <div
           ref={dropdownRef}
           className="fixed z-[100000] bg-white border border-slate-200 rounded-lg shadow-xl overflow-y-auto"
           style={{
@@ -5796,9 +5805,8 @@ function TableSearchableDropdown({
                   e.preventDefault();
                   handleSelectItem(item);
                 }}
-                className={`p-2 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors ${
-                  selectedItem?._id === item._id || highlightedIndex === filteredItems.indexOf(item) ? 'bg-sky-100' : ''
-                }`}
+                className={`p-2 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors ${selectedItem?._id === item._id || highlightedIndex === filteredItems.indexOf(item) ? 'bg-sky-100' : ''
+                  }`}
               >
                 {renderItem ? (
                   renderItem(item)
@@ -5818,8 +5826,8 @@ function TableSearchableDropdown({
             ))
           ) : (
             <div className="p-3 text-center text-sm text-slate-500">
-              {searchQuery.trim() ? 
-                `No items found for "${searchQuery}"` : 
+              {searchQuery.trim() ?
+                `No items found for "${searchQuery}"` :
                 "No items available"
               }
             </div>
@@ -5831,14 +5839,14 @@ function TableSearchableDropdown({
 }
 
 /** ===== Pack Type Table Component - Single Table with all rows ===== */
-function PackTypeTable({ 
-  rows, 
-  onChange, 
-  onRemove, 
-  onDuplicate, 
-  pkgTypes = [], 
-  uoms = [], 
-  skuSizes = [], 
+function PackTypeTable({
+  rows,
+  onChange,
+  onRemove,
+  onDuplicate,
+  pkgTypes = [],
+  uoms = [],
+  skuSizes = [],
   items = [],
   onRefreshItems,
   onRefreshPkgTypes,
@@ -5847,12 +5855,12 @@ function PackTypeTable({
   packInputRefs,
   focusNextPackField,
   focusPrevPackField,
-  onNavigateToCreate, 
-  onNavigateToCreateUOM, 
+  onNavigateToCreate,
+  onNavigateToCreateUOM,
   onNavigateToCreateSKUSize,
   onNavigateToCreateItem
 }) {
-  
+
   const [showItemDropdown, setShowItemDropdown] = useState({});
   const [itemHighlightedIndex, setItemHighlightedIndex] = useState({});
   const [itemSearchQuery, setItemSearchQuery] = useState({});
@@ -5882,9 +5890,9 @@ function PackTypeTable({
         next[row._id] = !searchLower
           ? items
           : items.filter(item =>
-              item.itemName?.toLowerCase().includes(searchLower) ||
-              item.itemCode?.toLowerCase().includes(searchLower)
-            );
+            item.itemName?.toLowerCase().includes(searchLower) ||
+            item.itemCode?.toLowerCase().includes(searchLower)
+          );
       });
       return next;
     });
@@ -5958,7 +5966,7 @@ function PackTypeTable({
     // chooses an Item Master record from the result list.
     onChange(rowId, 'productId', '');
     onChange(rowId, 'productName', '');
-    
+
     if (!query.trim()) {
       setFilteredItems(prev => ({ ...prev, [rowId]: items }));
     } else {
@@ -5982,20 +5990,20 @@ function PackTypeTable({
     onRefreshItems?.();
     if (!showItemDropdown[rowId]) {
       setFilteredItems(prev => ({ ...prev, [rowId]: items }));
-      
+
       const rect = event.target.getBoundingClientRect();
       const viewportHeight = window.innerHeight;
       const spaceBelow = viewportHeight - rect.bottom;
       const dropdownHeight = 300;
       const direction = spaceBelow < dropdownHeight ? 'up' : 'down';
-      
+
       setItemDropdownPosition({
         top: direction === 'down' ? rect.bottom + window.scrollY : rect.top + window.scrollY - dropdownHeight,
         left: rect.left + window.scrollX,
         width: rect.width,
         direction: direction
       });
-      
+
       setShowItemDropdown(prev => ({ ...prev, [rowId]: true }));
       setActiveItemRowId(rowId);
     }
@@ -6019,7 +6027,7 @@ function PackTypeTable({
         const spaceBelow = viewportHeight - rect.bottom;
         const dropdownHeight = 300;
         const direction = spaceBelow < dropdownHeight ? 'up' : 'down';
-        
+
         setItemDropdownPosition({
           top: direction === 'down' ? rect.bottom + window.scrollY : rect.top + window.scrollY - dropdownHeight,
           left: rect.left + window.scrollX,
@@ -6028,10 +6036,10 @@ function PackTypeTable({
         });
       }
     };
-    
+
     window.addEventListener('scroll', handleScroll, true);
     window.addEventListener('resize', handleScroll);
-    
+
     return () => {
       window.removeEventListener('scroll', handleScroll, true);
       window.removeEventListener('resize', handleScroll);
@@ -6043,7 +6051,7 @@ function PackTypeTable({
     const handleClickOutside = (event) => {
       if (activeItemRowId) {
         const isClickInside = itemDropdownRef.current[activeItemRowId]?.contains(event.target) ||
-                             itemInputRefs.current[activeItemRowId]?.contains(event.target);
+          itemInputRefs.current[activeItemRowId]?.contains(event.target);
         if (!isClickInside) {
           setShowItemDropdown(prev => ({ ...prev, [activeItemRowId]: false }));
           setActiveItemRowId(null);
@@ -6072,12 +6080,12 @@ function PackTypeTable({
           {rows.length > 0 ? (
             rows.map((r) => {
               const cols = getColumnsForRow(r.packType);
-              
+
               // Initialize refs for this row if not exists
               if (!packInputRefs.current[r._id]) {
                 packInputRefs.current[r._id] = {};
               }
-              
+
               return (
                 <React.Fragment key={r._id}>
                   <tr className="bg-yellow-50">
@@ -6095,315 +6103,316 @@ function PackTypeTable({
                     </th>
                   </tr>
                   <tr className="hover:bg-yellow-50 even:bg-slate-50">
-                  <td className="border border-yellow-300 px-2 py-2 text-center font-semibold bg-yellow-50 text-xs">
-                    {r.packType === "PALLETIZATION" ? "Palletization" :
-                     r.packType === "UNIFORM - BAGS/BOXES" ? "Uniform" :
-                     r.packType === "LOOSE - CARGO" ? "Loose Cargo" :
-                     "Non-uniform"}
-                  </td>
-                  
-                  {cols.map((c) => {
-                    // Handle WT UOM field - always show MT as readonly
-                    if (c.key === "wtUom") {
+                    <td className="border border-yellow-300 px-2 py-2 text-center font-semibold bg-yellow-50 text-xs">
+                      {r.packType === "PALLETIZATION" ? "Palletization" :
+                        r.packType === "UNIFORM - BAGS/BOXES" ? "Uniform" :
+                          r.packType === "LOOSE - CARGO" ? "Loose Cargo" :
+                            "Non-uniform"}
+                    </td>
+
+                    {cols.map((c) => {
+                      // Handle WT UOM field - always show MT as readonly
+                      if (c.key === "wtUom") {
+                        return (
+                          <td key={c.key} className="border border-yellow-300 px-2 py-2">
+                            <input
+                              type="text"
+                              value="MT"
+                              readOnly
+                              className="w-full rounded-lg border border-slate-200 bg-slate-100 px-2 py-1.5 text-sm text-slate-700 font-medium"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  focusNextPackField(r._id, c.key);
+                                } else if (e.key === 'Backspace') {
+                                  e.preventDefault();
+                                  focusPrevPackField(r._id, c.key);
+                                }
+                              }}
+                            />
+                          </td>
+                        );
+                      }
+
+                      // For read-only calculated fields
+                      if (c.readOnly && (c.key === "actualWt" || c.key === "totalPkgs" || c.key === "wtLtr")) {
+                        return (
+                          <td key={c.key} className="border border-yellow-300 px-2 py-2">
+                            <input
+                              type="text"
+                              value={r[c.key] ?? ""}
+                              readOnly
+                              className="w-full rounded-lg border border-slate-200 bg-slate-100 px-2 py-1.5 text-sm text-slate-700 font-medium"
+                              placeholder="Auto"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  focusNextPackField(r._id, c.key);
+                                } else if (e.key === 'Backspace') {
+                                  e.preventDefault();
+                                  focusPrevPackField(r._id, c.key);
+                                }
+                              }}
+                            />
+                          </td>
+                        );
+                      }
+
                       return (
                         <td key={c.key} className="border border-yellow-300 px-2 py-2">
-                          <input
-                            type="text"
-                            value="MT"
-                            readOnly
-                            className="w-full rounded-lg border border-slate-200 bg-slate-100 px-2 py-1.5 text-sm text-slate-700 font-medium"
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                focusNextPackField(r._id, c.key);
-                              } else if (e.key === 'Backspace') {
-                                e.preventDefault();
-                                focusPrevPackField(r._id, c.key);
-                              }
-                            }}
-                          />
-                        </td>
-                      );
-                    }
-                    
-                    // For read-only calculated fields
-                    if (c.readOnly && (c.key === "actualWt" || c.key === "totalPkgs" || c.key === "wtLtr")) {
-                      return (
-                        <td key={c.key} className="border border-yellow-300 px-2 py-2">
-                          <input
-                            type="text"
-                            value={r[c.key] ?? ""}
-                            readOnly
-                            className="w-full rounded-lg border border-slate-200 bg-slate-100 px-2 py-1.5 text-sm text-slate-700 font-medium"
-                            placeholder="Auto"
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                focusNextPackField(r._id, c.key);
-                              } else if (e.key === 'Backspace') {
-                                e.preventDefault();
-                                focusPrevPackField(r._id, c.key);
-                              }
-                            }}
-                          />
-                        </td>
-                      );
-                    }
-                    
-                    return (
-                      <td key={c.key} className="border border-yellow-300 px-2 py-2">
-                        {c.isDynamic ? (
-                          <select
-                            ref={el => {
-                              if (!packInputRefs.current[r._id]) {
-                                packInputRefs.current[r._id] = {};
-                              }
-                              packInputRefs.current[r._id][c.key] = el;
-                            }}
-                            value={r[c.key] ?? ""}
-                            onFocus={onRefreshPkgTypes}
-                            onChange={(e) => handleChange(r._id, c.key, e.target.value)}
-                            className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                focusNextPackField(r._id, c.key);
-                              } else if (e.key === 'Backspace' && e.target.value === '') {
-                                e.preventDefault();
-                                focusPrevPackField(r._id, c.key);
-                              }
-                            }}
-                          >
-                            <option value="">Select</option>
-                            {c.options && c.options.map((opt) => (
-                              <option key={opt._id} value={opt.name}>
-                                {opt.name}
-                              </option>
-                            ))}
-                          </select>
-                        ) : c.isUOM ? (
-                          <select
-                            ref={el => {
-                              if (!packInputRefs.current[r._id]) {
-                                packInputRefs.current[r._id] = {};
-                              }
-                              packInputRefs.current[r._id][c.key] = el;
-                            }}
-                            value={r[c.key] ?? ""}
-                            onFocus={onRefreshUOMs}
-                            onChange={(e) => handleChange(r._id, c.key, e.target.value)}
-                            className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                focusNextPackField(r._id, c.key);
-                              } else if (e.key === 'Backspace' && e.target.value === '') {
-                                e.preventDefault();
-                                focusPrevPackField(r._id, c.key);
-                              }
-                            }}
-                          >
-                            <option value="">Select</option>
-                            {c.options && c.options.map((opt) => (
-                              <option key={opt._id} value={opt.name}>
-                                {opt.name}
-                              </option>
-                            ))}
-                          </select>
-                        ) : c.isSKUSize ? (
-                          <select
-                            ref={el => {
-                              if (!packInputRefs.current[r._id]) {
-                                packInputRefs.current[r._id] = {};
-                              }
-                              packInputRefs.current[r._id][c.key] = el;
-                            }}
-                            value={r[c.key] ?? ""}
-                            onFocus={onRefreshSKUSizes}
-                            onChange={(e) => handleChange(r._id, c.key, e.target.value)}
-                            className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                focusNextPackField(r._id, c.key);
-                              } else if (e.key === 'Backspace' && e.target.value === '') {
-                                e.preventDefault();
-                                focusPrevPackField(r._id, c.key);
-                              }
-                            }}
-                          >
-                            <option value="">Select</option>
-                            {c.options && c.options.map((opt) => (
-                              <option key={opt._id} value={opt.display}>
-                                {opt.display}
-                              </option>
-                            ))}
-                          </select>
-                        ) : c.isItem ? (
-                          <div className="relative w-full">
-                            <div className="flex-1 relative">
-                              <input
-                                ref={el => {
-                                  itemInputRefs.current[r._id] = el;
-                                  if (!packInputRefs.current[r._id]) {
-                                    packInputRefs.current[r._id] = {};
-                                  }
-                                  packInputRefs.current[r._id][c.key] = el;
-                                }}
-                                type="text"
-                                value={itemSearchQuery[r._id] ?? r[c.key] ?? ""}
-                                onChange={(e) => handleItemSearch(r._id, e.target.value)}
-                                onFocus={(e) => handleItemInputFocus(r._id, e)}
-                                onBlur={() => handleItemInputBlur(r._id)}
-                                className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-                                placeholder="Search product..."
-                                autoComplete="off"
-                                onKeyDown={(e) => {
-                                  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-                                    e.preventDefault();
-                                    const options = filteredItems[r._id] || items;
-                                    if (!showItemDropdown[r._id]) handleItemInputFocus(r._id, e);
-                                    if (options.length) {
-                                      setItemHighlightedIndex(prev => {
-                                        const index = prev[r._id] ?? -1;
-                                        return { ...prev, [r._id]: e.key === 'ArrowDown'
-                                          ? (index + 1) % options.length
-                                          : (index <= 0 ? options.length - 1 : index - 1) };
-                                      });
+                          {c.isDynamic ? (
+                            <select
+                              ref={el => {
+                                if (!packInputRefs.current[r._id]) {
+                                  packInputRefs.current[r._id] = {};
+                                }
+                                packInputRefs.current[r._id][c.key] = el;
+                              }}
+                              value={r[c.key] ?? ""}
+                              onFocus={onRefreshPkgTypes}
+                              onChange={(e) => handleChange(r._id, c.key, e.target.value)}
+                              className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  focusNextPackField(r._id, c.key);
+                                } else if (e.key === 'Backspace' && e.target.value === '') {
+                                  e.preventDefault();
+                                  focusPrevPackField(r._id, c.key);
+                                }
+                              }}
+                            >
+                              <option value="">Select</option>
+                              {c.options && c.options.map((opt) => (
+                                <option key={opt._id} value={opt.name}>
+                                  {opt.name}
+                                </option>
+                              ))}
+                            </select>
+                          ) : c.isUOM ? (
+                            <select
+                              ref={el => {
+                                if (!packInputRefs.current[r._id]) {
+                                  packInputRefs.current[r._id] = {};
+                                }
+                                packInputRefs.current[r._id][c.key] = el;
+                              }}
+                              value={r[c.key] ?? ""}
+                              onFocus={onRefreshUOMs}
+                              onChange={(e) => handleChange(r._id, c.key, e.target.value)}
+                              className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  focusNextPackField(r._id, c.key);
+                                } else if (e.key === 'Backspace' && e.target.value === '') {
+                                  e.preventDefault();
+                                  focusPrevPackField(r._id, c.key);
+                                }
+                              }}
+                            >
+                              <option value="">Select</option>
+                              {c.options && c.options.map((opt) => (
+                                <option key={opt._id} value={opt.name}>
+                                  {opt.name}
+                                </option>
+                              ))}
+                            </select>
+                          ) : c.isSKUSize ? (
+                            <select
+                              ref={el => {
+                                if (!packInputRefs.current[r._id]) {
+                                  packInputRefs.current[r._id] = {};
+                                }
+                                packInputRefs.current[r._id][c.key] = el;
+                              }}
+                              value={r[c.key] ?? ""}
+                              onFocus={onRefreshSKUSizes}
+                              onChange={(e) => handleChange(r._id, c.key, e.target.value)}
+                              className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  focusNextPackField(r._id, c.key);
+                                } else if (e.key === 'Backspace' && e.target.value === '') {
+                                  e.preventDefault();
+                                  focusPrevPackField(r._id, c.key);
+                                }
+                              }}
+                            >
+                              <option value="">Select</option>
+                              {c.options && c.options.map((opt) => (
+                                <option key={opt._id} value={opt.display}>
+                                  {opt.display}
+                                </option>
+                              ))}
+                            </select>
+                          ) : c.isItem ? (
+                            <div className="relative w-full">
+                              <div className="flex-1 relative">
+                                <input
+                                  ref={el => {
+                                    itemInputRefs.current[r._id] = el;
+                                    if (!packInputRefs.current[r._id]) {
+                                      packInputRefs.current[r._id] = {};
                                     }
-                                  } else if (e.key === 'Enter' || e.key === 'Tab') {
-                                    if (e.key === 'Enter') e.preventDefault();
-                                    const options = filteredItems[r._id] || items;
-                                    if (showItemDropdown[r._id] && options.length > 0) {
-                                      handleSelectItem(r._id, options[itemHighlightedIndex[r._id] >= 0 ? itemHighlightedIndex[r._id] : 0]);
-                                    } else {
-                                      focusNextPackField(r._id, c.key);
-                                    }
-                                  } else if (e.key === 'Backspace' && e.target.value === '') {
-                                    e.preventDefault();
-                                    focusPrevPackField(r._id, c.key);
-                                  }
-                                }}
-                              />
-                              {showItemDropdown[r._id] && (
-                                <div 
-                                  ref={el => itemDropdownRef.current[r._id] = el}
-                                  className="fixed z-[100000] bg-white border border-slate-200 rounded-lg shadow-xl overflow-y-auto"
-                                  style={{
-                                    top: `${itemDropdownPosition.top}px`,
-                                    left: `${itemDropdownPosition.left}px`,
-                                    width: `${itemDropdownPosition.width}px`,
-                                    maxHeight: '300px',
-                                    minWidth: '200px'
+                                    packInputRefs.current[r._id][c.key] = el;
                                   }}
-                                >
-                                  <div className="sticky top-0 bg-gray-50 px-3 py-2 text-xs font-semibold text-slate-600 border-b">
-                                    Select Product
-                                  </div>
-                                  {(filteredItems[r._id] || items).length > 0 ? (
-                                    (filteredItems[r._id] || items).map((item) => (
-                                      <div
-                                        key={item._id}
-                                        onMouseDown={(e) => {
-                                          e.preventDefault();
-                                          handleSelectItem(r._id, item);
-                                        }}
-                                        className={`px-3 py-2 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors ${itemHighlightedIndex[r._id] === (filteredItems[r._id] || items).indexOf(item) ? 'bg-sky-100' : ''}`}
-                                      >
-                                        <div className="font-medium text-slate-800 text-sm">
-                                          {item.itemName}
-                                        </div>
-                                        <div className="text-xs text-slate-500 mt-0.5">
-                                          Code: {item.itemCode}
-                                        </div>
-                                      </div>
-                                    ))
-                                  ) : (
-                                    <div className="p-3 text-center text-sm text-slate-500">
-                                      No items found
+                                  type="text"
+                                  value={itemSearchQuery[r._id] ?? r[c.key] ?? ""}
+                                  onChange={(e) => handleItemSearch(r._id, e.target.value)}
+                                  onFocus={(e) => handleItemInputFocus(r._id, e)}
+                                  onBlur={() => handleItemInputBlur(r._id)}
+                                  className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+                                  placeholder="Search product..."
+                                  autoComplete="off"
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                                      e.preventDefault();
+                                      const options = filteredItems[r._id] || items;
+                                      if (!showItemDropdown[r._id]) handleItemInputFocus(r._id, e);
+                                      if (options.length) {
+                                        setItemHighlightedIndex(prev => {
+                                          const index = prev[r._id] ?? -1;
+                                          return {
+                                            ...prev, [r._id]: e.key === 'ArrowDown'
+                                              ? (index + 1) % options.length
+                                              : (index <= 0 ? options.length - 1 : index - 1)
+                                          };
+                                        });
+                                      }
+                                    } else if (e.key === 'Enter' || e.key === 'Tab') {
+                                      if (e.key === 'Enter') e.preventDefault();
+                                      const options = filteredItems[r._id] || items;
+                                      if (showItemDropdown[r._id] && options.length > 0) {
+                                        handleSelectItem(r._id, options[itemHighlightedIndex[r._id] >= 0 ? itemHighlightedIndex[r._id] : 0]);
+                                      } else {
+                                        focusNextPackField(r._id, c.key);
+                                      }
+                                    } else if (e.key === 'Backspace' && e.target.value === '') {
+                                      e.preventDefault();
+                                      focusPrevPackField(r._id, c.key);
+                                    }
+                                  }}
+                                />
+                                {showItemDropdown[r._id] && (
+                                  <div
+                                    ref={el => itemDropdownRef.current[r._id] = el}
+                                    className="fixed z-[100000] bg-white border border-slate-200 rounded-lg shadow-xl overflow-y-auto"
+                                    style={{
+                                      top: `${itemDropdownPosition.top}px`,
+                                      left: `${itemDropdownPosition.left}px`,
+                                      width: `${itemDropdownPosition.width}px`,
+                                      maxHeight: '300px',
+                                      minWidth: '200px'
+                                    }}
+                                  >
+                                    <div className="sticky top-0 bg-gray-50 px-3 py-2 text-xs font-semibold text-slate-600 border-b">
+                                      Select Product
                                     </div>
-                                  )}
-                                </div>
-                              )}
+                                    {(filteredItems[r._id] || items).length > 0 ? (
+                                      (filteredItems[r._id] || items).map((item) => (
+                                        <div
+                                          key={item._id}
+                                          onMouseDown={(e) => {
+                                            e.preventDefault();
+                                            handleSelectItem(r._id, item);
+                                          }}
+                                          className={`px-3 py-2 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors ${itemHighlightedIndex[r._id] === (filteredItems[r._id] || items).indexOf(item) ? 'bg-sky-100' : ''}`}
+                                        >
+                                          <div className="font-medium text-slate-800 text-sm">
+                                            {item.itemName}
+                                          </div>
+                                          <div className="text-xs text-slate-500 mt-0.5">
+                                            Code: {item.itemCode}
+                                          </div>
+                                        </div>
+                                      ))
+                                    ) : (
+                                      <div className="p-3 text-center text-sm text-slate-500">
+                                        No items found
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        ) : c.options && !c.isDynamic && !c.isUOM && !c.isSKUSize && !c.isItem ? (
-                          <select
-                            ref={el => {
-                              if (!packInputRefs.current[r._id]) {
-                                packInputRefs.current[r._id] = {};
-                              }
-                              packInputRefs.current[r._id][c.key] = el;
-                            }}
-                            value={r[c.key] ?? ""}
-                            onChange={(e) => handleChange(r._id, c.key, e.target.value)}
-                            className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                focusNextPackField(r._id, c.key);
-                              } else if (e.key === 'Backspace' && e.target.value === '') {
-                                e.preventDefault();
-                                focusPrevPackField(r._id, c.key);
-                              }
-                            }}
-                          >
-                            <option value="">Select</option>
-                            {c.options.map((opt) => (
-                              <option key={opt} value={opt}>
-                                {opt}
-                              </option>
-                            ))}
-                          </select>
-                        ) : (
-                          <input
-                            ref={el => {
-                              if (!packInputRefs.current[r._id]) {
-                                packInputRefs.current[r._id] = {};
-                              }
-                              packInputRefs.current[r._id][c.key] = el;
-                            }}
-                            type={c.type || "text"}
-                            value={r[c.key] ?? ""}
-                            readOnly={c.readOnly}
-                            onChange={(e) => handleChange(r._id, c.key, e.target.value)}
-                            className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${
-                              c.readOnly 
-                                ? 'bg-slate-100 text-slate-700' 
-                                : 'bg-white'
-                            }`}
-                            placeholder={c.readOnly ? "Auto" : `Enter`}
-                            step={c.type === "number" ? "0.001" : undefined}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                focusNextPackField(r._id, c.key);
-                              } else if (e.key === 'Backspace' && e.target.value === '') {
-                                e.preventDefault();
-                                focusPrevPackField(r._id, c.key);
-                              }
-                            }}
-                          />
-                        )}
-                      </td>
-                    );
-                  })}
-                  <td className="sticky right-0 z-10 border border-yellow-300 bg-white px-2 py-2">
-                    <div className="flex gap-1 justify-center">
-                      <button
-                        onClick={() => onDuplicate(r._id)}
-                        className="rounded-lg border border-yellow-500 bg-yellow-100 px-2 py-1.5 text-xs font-bold text-yellow-800 hover:bg-yellow-200 transition"
-                      >
-                        Duplicate
-                      </button>
-                      <button
-                        onClick={() => onRemove(r._id)}
-                        className="rounded-lg bg-red-500 px-2 py-1.5 text-xs font-bold text-white hover:bg-red-600 transition"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  </td>
+                          ) : c.options && !c.isDynamic && !c.isUOM && !c.isSKUSize && !c.isItem ? (
+                            <select
+                              ref={el => {
+                                if (!packInputRefs.current[r._id]) {
+                                  packInputRefs.current[r._id] = {};
+                                }
+                                packInputRefs.current[r._id][c.key] = el;
+                              }}
+                              value={r[c.key] ?? ""}
+                              onChange={(e) => handleChange(r._id, c.key, e.target.value)}
+                              className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  focusNextPackField(r._id, c.key);
+                                } else if (e.key === 'Backspace' && e.target.value === '') {
+                                  e.preventDefault();
+                                  focusPrevPackField(r._id, c.key);
+                                }
+                              }}
+                            >
+                              <option value="">Select</option>
+                              {c.options.map((opt) => (
+                                <option key={opt} value={opt}>
+                                  {opt}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <input
+                              ref={el => {
+                                if (!packInputRefs.current[r._id]) {
+                                  packInputRefs.current[r._id] = {};
+                                }
+                                packInputRefs.current[r._id][c.key] = el;
+                              }}
+                              type={c.type || "text"}
+                              value={r[c.key] ?? ""}
+                              readOnly={c.readOnly}
+                              onChange={(e) => handleChange(r._id, c.key, e.target.value)}
+                              className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${c.readOnly
+                                  ? 'bg-slate-100 text-slate-700'
+                                  : 'bg-white'
+                                }`}
+                              placeholder={c.readOnly ? "Auto" : `Enter`}
+                              step={c.type === "number" ? "0.001" : undefined}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  focusNextPackField(r._id, c.key);
+                                } else if (e.key === 'Backspace' && e.target.value === '') {
+                                  e.preventDefault();
+                                  focusPrevPackField(r._id, c.key);
+                                }
+                              }}
+                            />
+                          )}
+                        </td>
+                      );
+                    })}
+                    <td className="sticky right-0 z-10 border border-yellow-300 bg-white px-2 py-2">
+                      <div className="flex gap-1 justify-center">
+                        <button
+                          onClick={() => onDuplicate(r._id)}
+                          className="rounded-lg border border-yellow-500 bg-yellow-100 px-2 py-1.5 text-xs font-bold text-yellow-800 hover:bg-yellow-200 transition"
+                        >
+                          Duplicate
+                        </button>
+                        <button
+                          onClick={() => onRemove(r._id)}
+                          className="rounded-lg bg-red-500 px-2 py-1.5 text-xs font-bold text-white hover:bg-red-600 transition"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 </React.Fragment>
               );

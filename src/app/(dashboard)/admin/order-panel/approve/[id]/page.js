@@ -995,6 +995,7 @@ function OrdersTable({ rows }) {
     { key: "to", label: "To" },
     // { key: "locationRate", label: "Location Rate" },
     { key: "weight", label: "Weight (MT)" },
+    { key: "locationRemark", label: "Location Remark" },
     // { key: "rate", label: "Rate (₹)" },
     // { key: "totalAmount", label: "Total Amount" },
     // { key: "collectionCharges", label: "Collection Charges" },
@@ -1050,6 +1051,7 @@ function OrdersTable({ rows }) {
                 <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.toName || row.to || '-'}</td>
                 {/* <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.locationRate || '-'}</td> */}
                 <td className="border border-yellow-300 px-2 py-2 text-slate-700 text-right">{row.weight || '0'}</td>
+                <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.locationRemark || '-'}</td>
                 {/* <td className="border border-yellow-300 px-2 py-2 text-slate-700 text-right">₹{num(row.rate).toLocaleString()}</td> */}
                 {/* <td className="border border-yellow-300 px-2 py-2 text-slate-700 text-right font-medium">₹{num(row.totalAmount).toLocaleString()}</td> */}
                 {/* <td className="border border-yellow-300 px-2 py-2 text-slate-700 text-right">₹{num(row.collectionCharges).toLocaleString()}</td> */}

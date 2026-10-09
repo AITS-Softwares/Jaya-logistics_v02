@@ -1,4 +1,3 @@
-
 // "use client";
 
 // import { useMemo, useState, useEffect, useRef } from "react";
@@ -3585,6 +3584,7 @@ export default function CreatePurchasePanel() {
         ...header,
         branch: vnnData.branch || "",
         branchName: vnnData.branchName || "",
+        branchCode: vnnData.branchCode || "",
         subCompanyId: subCompanyId,
         subCompanyName: subCompanyName,
         subCompanyCode: subCompanyCode,
@@ -3964,12 +3964,7 @@ export default function CreatePurchasePanel() {
     );
   };
 
-  const calculateTotalWarehouseExpenses = () => {
-    return (
-      num(warehouseExpenses.wVehicleFloorTarpaulin) +
-      num(warehouseExpenses.wVehicleOuterTarpaulin)
-    );
-  };
+  const calculateTotalWarehouseExpenses = () => calculateTotalLoadingExpenses(); // loading charges & expenses are deducted at the warehouse
 
   // Calculate Advance Paid + Deduct at Office
   const calculateAdvancePlusDeduct = () => {
@@ -3989,7 +3984,7 @@ export default function CreatePurchasePanel() {
     const totalLoadingExpenses = calculateTotalLoadingExpenses();
     const totalWarehouseExpenses = calculateTotalWarehouseExpenses();
 
-    return advance + totalAdditions - totalDeductions - totalLoadingExpenses - totalWarehouseExpenses;
+    return advance + totalAdditions - totalDeductions - totalWarehouseExpenses; // office additions/deductions and warehouse deductions
   };
 
   /** =========================
@@ -4243,8 +4238,8 @@ export default function CreatePurchasePanel() {
               onClick={handleSave}
               disabled={saving || fetchingData}
               className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${saving || fetchingData
-                  ? 'bg-gray-400 cursor-not-allowed'
-                  : 'bg-emerald-600 hover:bg-emerald-700'
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-emerald-600 hover:bg-emerald-700'
                 }`}
             >
               {saving ? (
@@ -4646,8 +4641,8 @@ export default function CreatePurchasePanel() {
                       <td className="border border-yellow-300 px-2 py-2 text-center">
                         {row.fromState && row.state ? (
                           <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${row.fromState.trim().toUpperCase() === row.state.trim().toUpperCase()
-                              ? 'bg-green-100 text-green-800 border border-green-300'
-                              : 'bg-red-100 text-red-800 border border-red-300'
+                            ? 'bg-green-100 text-green-800 border border-green-300'
+                            : 'bg-red-100 text-red-800 border border-red-300'
                             }`}>
                             {row.fromState.trim().toUpperCase() === row.state.trim().toUpperCase() ? '✅ Local' : '❌ Not Local'}
                           </span>
@@ -5051,12 +5046,12 @@ export default function CreatePurchasePanel() {
 
         {/* Loading Charges & Expenses Section - Deduct at Office */}
         <div className="mt-4">
-          <Card title="Loading Charges & Expenses - Deduct at Office">
+          <Card title="Loading Charges & Expenses - Deduct at Warehouse">
             <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-sm font-bold text-slate-800">Deduct at Office</h3>
+                <h3 className="text-sm font-bold text-slate-800">Deduct at Warehouse</h3>
                 <div className="bg-orange-100 text-orange-800 text-xs px-3 py-1 rounded-full font-medium">
-                  Will be deducted from Total Amount
+                  Fetched from Loading Info - deducted at Warehouse
                 </div>
               </div>
 
@@ -5066,9 +5061,10 @@ export default function CreatePurchasePanel() {
                   <span className="text-sm text-slate-700">Loading Charges:</span>
                   <input
                     type="number"
+                    readOnly
                     value={loadingExpenses.loadingCharges}
                     onChange={(e) => setLoadingExpenses({ ...loadingExpenses, loadingCharges: e.target.value })}
-                    className="w-32 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-right focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                    className="w-32 rounded-lg border border-slate-200 bg-slate-100 text-slate-700 cursor-not-allowed px-3 py-1.5 text-sm text-right focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
                     placeholder="0"
                   />
                 </div>
@@ -5078,9 +5074,10 @@ export default function CreatePurchasePanel() {
                   <span className="text-sm text-slate-700">Loading Staff Munshiyana:</span>
                   <input
                     type="number"
+                    readOnly
                     value={loadingExpenses.loadingStaffMunshiyana}
                     onChange={(e) => setLoadingExpenses({ ...loadingExpenses, loadingStaffMunshiyana: e.target.value })}
-                    className="w-32 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-right focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                    className="w-32 rounded-lg border border-slate-200 bg-slate-100 text-slate-700 cursor-not-allowed px-3 py-1.5 text-sm text-right focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
                     placeholder="0"
                   />
                 </div>
@@ -5090,9 +5087,10 @@ export default function CreatePurchasePanel() {
                   <span className="text-sm text-slate-700">Other Expenses:</span>
                   <input
                     type="number"
+                    readOnly
                     value={loadingExpenses.otherExpenses}
                     onChange={(e) => setLoadingExpenses({ ...loadingExpenses, otherExpenses: e.target.value })}
-                    className="w-32 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-right focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                    className="w-32 rounded-lg border border-slate-200 bg-slate-100 text-slate-700 cursor-not-allowed px-3 py-1.5 text-sm text-right focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
                     placeholder="0"
                   />
                 </div>
@@ -5103,9 +5101,10 @@ export default function CreatePurchasePanel() {
                   <div className="flex items-center gap-2">
                     <input
                       type="number"
+                      readOnly
                       value={loadingExpenses.vehicleFloorTarpaulin}
                       onChange={(e) => setLoadingExpenses({ ...loadingExpenses, vehicleFloorTarpaulin: e.target.value })}
-                      className="w-32 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-right focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                      className="w-32 rounded-lg border border-slate-200 bg-slate-100 text-slate-700 cursor-not-allowed px-3 py-1.5 text-sm text-right focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
                       placeholder="0"
                     />
                     <span className="text-xs font-medium text-slate-600 whitespace-nowrap bg-slate-100 px-2 py-1 rounded-lg">
@@ -5120,9 +5119,10 @@ export default function CreatePurchasePanel() {
                   <div className="flex items-center gap-2">
                     <input
                       type="number"
+                      readOnly
                       value={loadingExpenses.vehicleOuterTarpaulin}
                       onChange={(e) => setLoadingExpenses({ ...loadingExpenses, vehicleOuterTarpaulin: e.target.value })}
-                      className="w-32 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-right focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                      className="w-32 rounded-lg border border-slate-200 bg-slate-100 text-slate-700 cursor-not-allowed px-3 py-1.5 text-sm text-right focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
                       placeholder="0"
                     />
                     <span className="text-xs font-medium text-slate-600 whitespace-nowrap bg-slate-100 px-2 py-1 rounded-lg">
@@ -5133,7 +5133,7 @@ export default function CreatePurchasePanel() {
 
                 {/* Total Line */}
                 <div className="flex justify-between items-center pt-2 border-t border-slate-200 mt-2">
-                  <span className="text-sm font-bold text-slate-800">Total Deduct at Office:</span>
+                  <span className="text-sm font-bold text-slate-800">Total Deduct at Warehouse:</span>
                   <span className="font-bold text-orange-700 text-lg">
                     ₹{calculateTotalLoadingExpenses().toLocaleString()}
                   </span>
@@ -5232,17 +5232,13 @@ export default function CreatePurchasePanel() {
         {/* Additions & Deductions Section */}
         <div className="mt-4">
           <div className="grid grid-cols-12 gap-4">
-            {/* Advance + Deduct at Office + Deduct at Warehouse Summary */}
+            {/* Advance + Deduct at Warehouse Summary */}
             <div className="col-span-12">
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-200 mb-4">
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                   <div className="text-center">
                     <div className="text-xs text-slate-500">Advance Paid</div>
                     <div className="text-2xl font-bold text-emerald-700">₹{num(purchaseDetails.advance).toLocaleString()}</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-xs text-slate-500">Deduct at Office</div>
-                    <div className="text-2xl font-bold text-orange-700">₹{calculateTotalLoadingExpenses().toLocaleString()}</div>
                   </div>
                   <div className="text-center">
                     <div className="text-xs text-slate-500">Deduct at Warehouse</div>
@@ -5441,19 +5437,15 @@ export default function CreatePurchasePanel() {
                         <span className="font-bold text-emerald-700">₹{num(purchaseDetails.advance).toLocaleString()}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-sm text-slate-600">Deduct at Office:</span>
-                        <span className="font-bold text-orange-700">₹{calculateTotalLoadingExpenses().toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-slate-600">Deduct at Warehouse:</span>
+                        <span className="text-sm text-slate-600">Deduct at Warehouse (-):</span>
                         <span className="font-bold text-indigo-700">₹{calculateTotalWarehouseExpenses().toLocaleString()}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-sm text-slate-600">Total Additions (+):</span>
+                        <span className="text-sm text-slate-600">Total Additions at Office (+):</span>
                         <span className="font-bold text-emerald-700">₹{calculateTotalAdditions().toLocaleString()}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-sm text-slate-600">Total Deductions (-):</span>
+                        <span className="text-sm text-slate-600">Total Deductions at Office (-):</span>
                         <span className="font-bold text-red-700">₹{calculateTotalDeductions().toLocaleString()}</span>
                       </div>
                       <div className="flex justify-between pt-2 border-t border-amber-200">
