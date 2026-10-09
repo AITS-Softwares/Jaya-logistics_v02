@@ -1620,6 +1620,7 @@ import { NextResponse } from "next/server";
 import connectDb from "@/lib/db";
 import AdvancePayment from "./AdvancePayment";
 import PurchasePanel from "../purchase-panel/PurchasePanel";
+import LoadingPanel from "@/app/api/loading-panel/LoadingPanel";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import { getNextAdvancePaymentNumber } from "./AdvancePaymentCounter";
 import mongoose from 'mongoose';
@@ -1706,13 +1707,23 @@ function isValidObjectId(id) {
 ======================================== */
 // Net amount for Advance Payment = Purchase Panel advance + additions - deductions - warehouse deductions
 // (computed from the purchase's own rows so older records with a stale netEffect still match)
-function purchaseOfficeNetEffect(purchase) {
+function purchaseOfficeNetEffect(purchase, loadingInfo = null) {
   if (!purchase) return 0;
   const sumRows = (rows) => (rows || []).reduce((sum, item) => sum + (Number(item?.amount) || 0), 0);
-  const le = purchase.loadingExpenses || {};
+  // Loading Info is the source of truth for loading charges & expenses; the copy
+  // saved on the purchase can be stale if Loading Info was edited afterwards.
+  const le = loadingInfo?.loadedWeighment || purchase.loadingExpenses || {};
   const warehouseDeduct = ['loadingCharges', 'loadingStaffMunshiyana', 'otherExpenses', 'vehicleFloorTarpaulin', 'vehicleOuterTarpaulin']
     .reduce((sum, key) => sum + (Number(le[key]) || 0), 0);
   return (Number(purchase.purchaseDetails?.advance) || 0) + sumRows(purchase.additions) - sumRows(purchase.deductions) - warehouseDeduct;
+}
+
+async function liveOfficeNetEffect(user, purchase) {
+  if (!purchase) return 0;
+  const loadingInfo = purchase.loadingInfoNo
+    ? await LoadingPanel.findOne(companyScopeFilter(user, { vehicleArrivalNo: purchase.loadingInfoNo })).lean()
+    : null;
+  return purchaseOfficeNetEffect(purchase, loadingInfo);
 }
 
 export async function GET(req) {
@@ -1987,7 +1998,7 @@ export async function POST(req) {
     // Balance is independent of adjustments.  The payment to queue is the
     // Purchase Panel's Net Effect, which includes its approved adjustments.
     const balance = purchaseAmountFromVNN - advance;
-    const finalAdvanceAmount = purchaseOfficeNetEffect(sourcePurchase);
+    const finalAdvanceAmount = await liveOfficeNetEffect(user, sourcePurchase);
 
     let branchId = null;
     if (body.header?.branch) {
@@ -2330,7 +2341,7 @@ export async function PUT(req) {
       payment.paymentDetails = {
         ...payment.paymentDetails,
         ...body.paymentDetails,
-        finalAmount: sourcePurchase ? purchaseOfficeNetEffect(sourcePurchase) : payment.paymentDetails.finalAmount,
+        finalAmount: sourcePurchase ? await liveOfficeNetEffect(user, sourcePurchase) : payment.paymentDetails.finalAmount,
         paymentDate: body.paymentDetails.paymentDate ? new Date(body.paymentDetails.paymentDate) : payment.paymentDetails.paymentDate
       };
     }

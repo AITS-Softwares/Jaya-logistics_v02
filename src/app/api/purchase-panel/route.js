@@ -212,6 +212,23 @@ async function getLRCodeForPurchase(purchase, companyId) {
 /* ========================================
    GET /api/purchase-panel - Requires 'view' permission
 ======================================== */
+// Loading charges & expenses are entered on Loading Info (loadedWeighment).
+// Loading Info is the source of truth, so Purchase Panel always mirrors it.
+function loadingExpensesFromLoadingInfo(loadingInfo) {
+  const w = loadingInfo?.loadedWeighment;
+  if (!w) return null;
+  const n = (v) => Number(v) || 0;
+  const loadingExpenses = {
+    loadingCharges: n(w.loadingCharges),
+    loadingStaffMunshiyana: n(w.loadingStaffMunshiyana),
+    otherExpenses: n(w.otherExpenses),
+    vehicleFloorTarpaulin: n(w.vehicleFloorTarpaulin),
+    vehicleOuterTarpaulin: n(w.vehicleOuterTarpaulin),
+  };
+  const totalLoadingExpenses = Object.values(loadingExpenses).reduce((a, b) => a + b, 0);
+  return { loadingExpenses, totalLoadingExpenses };
+}
+
 export async function GET(req) {
   try {
     await connectDb();
@@ -258,8 +275,11 @@ export async function GET(req) {
         }
         : purchase.arrivalDetails;
 
+      const loadingFromInfo = loadingExpensesFromLoadingInfo(loadingInfo);
+
       return {
         ...purchase,
+        ...(loadingFromInfo || {}),
         arrivalDetails,
         fromLocation,
         toLocation,
@@ -914,7 +934,14 @@ export async function PUT(req) {
       };
     }
 
-    // Update loading expenses
+    // Update loading expenses (Loading Info wins over whatever the form sent)
+    const putLoadingSource = purchase.loadingInfoNo
+      ? await LoadingPanel.findOne(companyScopeFilter(user, { vehicleArrivalNo: purchase.loadingInfoNo })).lean()
+      : null;
+    const putLoadingFromInfo = loadingExpensesFromLoadingInfo(putLoadingSource);
+    if (putLoadingFromInfo) {
+      body.loadingExpenses = putLoadingFromInfo.loadingExpenses;
+    }
     if (body.loadingExpenses) {
       purchase.loadingExpenses = {
         loadingCharges: num(body.loadingExpenses.loadingCharges),
@@ -1165,4 +1192,3 @@ export async function PATCH(req) {
     }, { status: 500 });
   }
 }
-
