@@ -12,11 +12,11 @@
 // //   if (!date) return '';
 // //   const d = new Date(date);
 // //   if (isNaN(d.getTime())) return '';
-  
+
 // //   const day = String(d.getDate()).padStart(2, '0');
 // //   const month = String(d.getMonth() + 1).padStart(2, '0');
 // //   const year = d.getFullYear();
-  
+
 // //   return `${day}/${month}/${year}`;
 // // }
 
@@ -29,19 +29,19 @@
 
 // // function isAuthorized(user) {
 // //   if (!user) return false;
-  
+
 // //   // Company admins have full access
 // //   if (user.type === "company") return true;
-  
+
 // //   // Admin role has full access
 // //   if (user.roles && user.roles.includes("Admin")) return true;
-  
+
 // //   // Check module-based permissions for "Vehicle Negotiation"
 // //   const modules = user.modules || {};
 // //   const moduleData = modules["Vehicle Negotiation"];
-  
+
 // //   if (!moduleData || !moduleData.selected) return false;
-  
+
 // //   return true;
 // // }
 
@@ -49,12 +49,12 @@
 // //   if (!user) return false;
 // //   if (user.type === "company") return true;
 // //   if (user.roles && user.roles.includes("Admin")) return true;
-  
+
 // //   const modules = user.modules || {};
 // //   const moduleData = modules["Vehicle Negotiation"];
-  
+
 // //   if (!moduleData || !moduleData.selected) return false;
-  
+
 // //   const permissions = moduleData.permissions || {};
 // //   return permissions[action] === true;
 // // }
@@ -66,7 +66,7 @@
 // //   try {
 // //     const user = verifyJWT(token);
 // //     if (!user) return { error: "Invalid or expired token. Please login again.", status: 401 };
-    
+
 // //     // Check if user is authorized at all
 // //     if (!isAuthorized(user)) {
 // //       return { 
@@ -74,7 +74,7 @@
 // //         status: 403 
 // //       };
 // //     }
-    
+
 // //     // If specific action is required, check it
 // //     if (requiredAction && !hasPermission(user, requiredAction)) {
 // //       return { 
@@ -82,7 +82,7 @@
 // //         status: 403 
 // //       };
 // //     }
-    
+
 // //     return { user, error: null, status: 200 };
 // //   } catch (err) {
 // //     console.error("JWT Verification Failed:", err?.message || err);
@@ -110,11 +110,11 @@
 // //     const memoStatus = url.searchParams.get("memoStatus");
 // //     const fromDate = url.searchParams.get("fromDate");
 // //     const toDate = url.searchParams.get("toDate");
-    
+
 // //     // CASE 1: GET BY VNN NUMBER
 // //     if (vnnNo) {
 // //       console.log(` GET vehicle negotiation by VNN: ${vnnNo}`);
-      
+
 // //       const vehicleNegotiation = await VehicleNegotiation.findOne({
 // //         vnnNo: vnnNo,
 // //         companyId: user.companyId
@@ -132,18 +132,18 @@
 // //         data: vehicleNegotiation 
 // //       }, { status: 200 });
 // //     }
-    
+
 // //     // CASE 2: GET BY ID
 // //     if (id) {
 // //       console.log(` GET single vehicle negotiation: ${id}`);
-      
+
 // //       if (!mongoose.Types.ObjectId.isValid(id)) {
 // //         return NextResponse.json({ 
 // //           success: false, 
 // //           message: "Invalid vehicle negotiation ID format" 
 // //         }, { status: 400 });
 // //       }
-      
+
 // //       const vehicleNegotiation = await VehicleNegotiation.findOne({
 // //         _id: id,
 // //         companyId: user.companyId
@@ -161,14 +161,14 @@
 // //         data: vehicleNegotiation 
 // //       }, { status: 200 });
 // //     }
-    
+
 // //     // CASE 3: TABLE FORMAT with filters
 // //     if (format === 'table') {
 // //       console.log(" Fetching table format data");
-      
+
 // //       // Build query
 // //       let query = { companyId: user.companyId };
-      
+
 // //       // Apply search filter
 // //       if (search) {
 // //         query.$or = [
@@ -180,17 +180,17 @@
 // //           { subCompanyCode: { $regex: search, $options: 'i' } }
 // //         ];
 // //       }
-      
+
 // //       // Apply approval status filter
 // //       if (approvalStatus) {
 // //         query['approval.approvalStatus'] = approvalStatus;
 // //       }
-      
+
 // //       // Apply memo status filter
 // //       if (memoStatus) {
 // //         query['approval.memoStatus'] = memoStatus;
 // //       }
-      
+
 // //       // Apply date range filters
 // //       if (fromDate) {
 // //         query.date = { $gte: new Date(fromDate) };
@@ -200,16 +200,16 @@
 // //         endDate.setHours(23, 59, 59, 999);
 // //         query.date = { ...query.date, $lte: endDate };
 // //       }
-      
+
 // //       const vehicleNegotiations = await VehicleNegotiation.find(query)
 // //         .sort({ date: -1, createdAt: -1 })
 // //         .lean();
 
 // //       const tableData = [];
-      
+
 // //       vehicleNegotiations.forEach(vn => {
 // //         const formattedDate = vn.date ? formatDateDDMMYYYY(vn.date) : '';
-        
+
 // //         if (vn.orders && vn.orders.length > 0) {
 // //           vn.orders.forEach(order => {
 // //             tableData.push({
@@ -312,12 +312,12 @@
 // //     }
 
 // //     const body = await req.json();
-    
+
 // //     console.log(" Creating new vehicle negotiation");
-    
+
 // //     // Generate vehicle negotiation number
 // //     let vnnNo = await getNextVehicleNegotiationNumber(user.companyId);
-    
+
 // //     // Check if VNN number already exists
 // //     const existing = await VehicleNegotiation.findOne({ vnnNo, companyId: user.companyId });
 // //     if (existing) {
@@ -428,7 +428,7 @@
 // //       vendors: processedVendors,
 // //       voiceNote: body.voiceUrl || '',
 // //       voiceNoteFile: body.voiceFileInfo || null,
-      
+
 // //       // Complete APPROVAL SECTION with ALL fields from frontend
 // //       approval: {
 // //         vendorName: body.approval?.vendorName || '',
@@ -467,7 +467,7 @@
 
 // //   } catch (error) {
 // //     console.error("❌ POST /vehicle-negotiation error:", error);
-    
+
 // //     if (error.name === 'ValidationError') {
 // //       const messages = Object.values(error.errors).map(err => err.message);
 // //       return NextResponse.json({ 
@@ -475,7 +475,7 @@
 // //         message: messages.join(', ') 
 // //       }, { status: 400 });
 // //     }
-    
+
 // //     return NextResponse.json({ 
 // //       success: false, 
 // //       message: error.message || "Failed to create vehicle negotiation"
@@ -496,7 +496,7 @@
 
 // //     const body = await req.json();
 // //     const { id } = body;
-    
+
 // //     if (!id) {
 // //       return NextResponse.json({ 
 // //         success: false, 
@@ -505,7 +505,7 @@
 // //     }
 
 // //     console.log(` Updating vehicle negotiation: ${id}`);
-    
+
 // //     // Validate ID format
 // //     if (!mongoose.Types.ObjectId.isValid(id)) {
 // //       return NextResponse.json({ 
@@ -513,7 +513,7 @@
 // //         message: "Invalid vehicle negotiation ID format" 
 // //       }, { status: 400 });
 // //     }
-    
+
 // //     // Find the vehicle negotiation
 // //     const vehicleNegotiation = await VehicleNegotiation.findOne({
 // //       _id: id,
@@ -534,21 +534,21 @@
 // //         : (vehicleNegotiation.branch || null);
 // //       vehicleNegotiation.branchName = body.header.branchName || vehicleNegotiation.branchName || '';
 // //       vehicleNegotiation.branchCode = body.header.branchCode || vehicleNegotiation.branchCode || '';
-      
+
 // //       // Update sub-company fields
 // //       vehicleNegotiation.subCompanyId = body.header.subCompanyId && isValidObjectId(body.header.subCompanyId) 
 // //         ? body.header.subCompanyId 
 // //         : (vehicleNegotiation.subCompanyId || null);
 // //       vehicleNegotiation.subCompanyName = body.header.subCompanyName || vehicleNegotiation.subCompanyName || '';
 // //       vehicleNegotiation.subCompanyCode = body.header.subCompanyCode || vehicleNegotiation.subCompanyCode || '';
-      
+
 // //       const validDeliveryValues = ['Urgent', 'Normal', 'Express', 'Scheduled'];
 // //       let delivery = body.header.delivery || vehicleNegotiation.delivery || 'Normal';
 // //       if (!validDeliveryValues.includes(delivery)) {
 // //         delivery = 'Normal';
 // //       }
 // //       vehicleNegotiation.delivery = delivery;
-      
+
 // //       vehicleNegotiation.date = body.header.date ? new Date(body.header.date) : vehicleNegotiation.date;
 // //       vehicleNegotiation.customerId = body.header.customerId && isValidObjectId(body.header.customerId) 
 // //         ? body.header.customerId 
@@ -619,7 +619,7 @@
 // //         subCompanyName: order.subCompanyName || '',
 // //         subCompanyCode: order.subCompanyCode || ''
 // //       }));
-      
+
 // //       vehicleNegotiation.orders = processedOrders;
 // //       vehicleNegotiation.totalWeight = processedOrders.reduce((sum, order) => sum + (order.weight || 0), 0);
 // //     }
@@ -656,7 +656,7 @@
 // //     // Update approval with ALL fields
 // //     if (body.approval) {
 // //       const currentApproval = vehicleNegotiation.approval || {};
-      
+
 // //       const updatedApproval = {
 // //         vendorName: body.approval.vendorName !== undefined ? body.approval.vendorName : (currentApproval.vendorName || ''),
 // //         vendorCode: body.approval.vendorCode !== undefined ? body.approval.vendorCode : (currentApproval.vendorCode || ''),
@@ -682,7 +682,7 @@
 // //           const hasFileData = body.approval.memoFile.filePath || 
 // //                              body.approval.memoFile.filename || 
 // //                              body.approval.memoFile.originalName;
-          
+
 // //           if (hasFileData) {
 // //             updatedApproval.memoFile = {
 // //               filePath: body.approval.memoFile.filePath || '',
@@ -722,7 +722,7 @@
 
 // //   } catch (error) {
 // //     console.error("❌ PUT /vehicle-negotiation error:", error);
-    
+
 // //     if (error.name === 'ValidationError') {
 // //       const messages = Object.values(error.errors).map(err => err.message);
 // //       return NextResponse.json({ 
@@ -730,7 +730,7 @@
 // //         message: messages.join(', ') 
 // //       }, { status: 400 });
 // //     }
-    
+
 // //     return NextResponse.json({ 
 // //       success: false, 
 // //       message: error.message || "Failed to update vehicle negotiation"
@@ -751,7 +751,7 @@
 
 // //     const url = new URL(req.url);
 // //     const id = url.searchParams.get("id");
-    
+
 // //     if (!id) {
 // //       return NextResponse.json({ 
 // //         success: false, 
@@ -760,14 +760,14 @@
 // //     }
 
 // //     console.log(`️ Deleting vehicle negotiation: ${id}`);
-    
+
 // //     if (!mongoose.Types.ObjectId.isValid(id)) {
 // //       return NextResponse.json({ 
 // //         success: false, 
 // //         message: "Invalid vehicle negotiation ID format" 
 // //       }, { status: 400 });
 // //     }
-    
+
 // //     const result = await VehicleNegotiation.deleteOne({
 // //       _id: id,
 // //       companyId: user.companyId
@@ -807,7 +807,7 @@
 
 // //     const body = await req.json();
 // //     const { id, action } = body;
-    
+
 // //     if (!id) {
 // //       return NextResponse.json({ 
 // //         success: false, 
@@ -816,14 +816,14 @@
 // //     }
 
 // //     console.log(` Updating vehicle negotiation status: ${id} - Action: ${action}`);
-    
+
 // //     if (!mongoose.Types.ObjectId.isValid(id)) {
 // //       return NextResponse.json({ 
 // //         success: false, 
 // //         message: "Invalid vehicle negotiation ID format" 
 // //       }, { status: 400 });
 // //     }
-    
+
 // //     const vehicleNegotiation = await VehicleNegotiation.findOne({
 // //       _id: id,
 // //       companyId: user.companyId
@@ -841,7 +841,7 @@
 // //       // Update approval status
 // //       vehicleNegotiation.approval.approvalStatus = 'Approved';
 // //       vehicleNegotiation.panelStatus = 'Approved';
-      
+
 // //       // You can also update other fields if needed
 // //       // For example, if you want to allow updating vendor details during approval:
 // //       if (body.vendorName) vehicleNegotiation.approval.vendorName = body.vendorName;
@@ -854,7 +854,7 @@
 // //       if (body.paymentTerms) vehicleNegotiation.approval.paymentTerms = body.paymentTerms;
 // //       if (body.remarks) vehicleNegotiation.approval.remarks = body.remarks;
 // //       if (body.memoStatus) vehicleNegotiation.approval.memoStatus = body.memoStatus;
-      
+
 // //       await vehicleNegotiation.save();
 
 // //       return NextResponse.json({ 
@@ -868,14 +868,14 @@
 // //         }
 // //       }, { status: 200 });
 // //     }
-    
+
 // //     // Handle reject action
 // //     else if (action === 'reject') {
 // //       vehicleNegotiation.approval.approvalStatus = 'Reject';
 // //       vehicleNegotiation.panelStatus = 'Rejected';
-      
+
 // //       if (body.remarks) vehicleNegotiation.approval.remarks = body.remarks;
-      
+
 // //       await vehicleNegotiation.save();
 
 // //       return NextResponse.json({ 
@@ -889,11 +889,11 @@
 // //         }
 // //       }, { status: 200 });
 // //     }
-    
+
 // //     // Handle update-approval action (for editing approval details without changing status)
 // //     else if (action === 'update-approval') {
 // //       const currentApproval = vehicleNegotiation.approval || {};
-      
+
 // //       // Update only the fields that are provided
 // //       if (body.vendorName !== undefined) vehicleNegotiation.approval.vendorName = body.vendorName;
 // //       if (body.vendorCode !== undefined) vehicleNegotiation.approval.vendorCode = body.vendorCode;
@@ -910,14 +910,14 @@
 // //       if (body.remarks !== undefined) vehicleNegotiation.approval.remarks = body.remarks;
 // //       if (body.memoStatus !== undefined) vehicleNegotiation.approval.memoStatus = body.memoStatus;
 // //       if (body.memoFile !== undefined) vehicleNegotiation.approval.memoFile = body.memoFile;
-      
+
 // //       // Keep existing approval status
 // //       if (body.approvalStatus === undefined) {
 // //         vehicleNegotiation.approval.approvalStatus = currentApproval.approvalStatus || 'Pending';
 // //       } else {
 // //         vehicleNegotiation.approval.approvalStatus = body.approvalStatus;
 // //       }
-      
+
 // //       await vehicleNegotiation.save();
 
 // //       return NextResponse.json({ 
@@ -930,7 +930,7 @@
 // //         }
 // //       }, { status: 200 });
 // //     }
-    
+
 // //     // Handle approve-with-update action (approve and update details)
 // //     else if (action === 'approve-with-update') {
 // //       // Update all fields
@@ -947,11 +947,11 @@
 // //       if (body.remarks !== undefined) vehicleNegotiation.approval.remarks = body.remarks;
 // //       if (body.memoStatus !== undefined) vehicleNegotiation.approval.memoStatus = body.memoStatus;
 // //       if (body.memoFile !== undefined) vehicleNegotiation.approval.memoFile = body.memoFile;
-      
+
 // //       // Set status to Approved
 // //       vehicleNegotiation.approval.approvalStatus = 'Approved';
 // //       vehicleNegotiation.panelStatus = 'Approved';
-      
+
 // //       await vehicleNegotiation.save();
 
 // //       return NextResponse.json({ 
@@ -964,7 +964,7 @@
 // //         }
 // //       }, { status: 200 });
 // //     }
-    
+
 // //     else {
 // //       return NextResponse.json({ 
 // //         success: false, 
@@ -993,11 +993,11 @@
 // //   if (!date) return '';
 // //   const d = new Date(date);
 // //   if (isNaN(d.getTime())) return '';
-  
+
 // //   const day = String(d.getDate()).padStart(2, '0');
 // //   const month = String(d.getMonth() + 1).padStart(2, '0');
 // //   const year = d.getFullYear();
-  
+
 // //   return `${day}/${month}/${year}`;
 // // }
 
@@ -1010,19 +1010,19 @@
 
 // // function isAuthorized(user) {
 // //   if (!user) return false;
-  
+
 // //   // Company admins have full access
 // //   if (user.type === "company") return true;
-  
+
 // //   // Admin role has full access
 // //   if (user.roles && user.roles.includes("Admin")) return true;
-  
+
 // //   // Check module-based permissions for "Vehicle Negotiation"
 // //   const modules = user.modules || {};
 // //   const moduleData = modules["Vehicle Negotiation"];
-  
+
 // //   if (!moduleData || !moduleData.selected) return false;
-  
+
 // //   return true;
 // // }
 
@@ -1030,12 +1030,12 @@
 // //   if (!user) return false;
 // //   if (user.type === "company") return true;
 // //   if (user.roles && user.roles.includes("Admin")) return true;
-  
+
 // //   const modules = user.modules || {};
 // //   const moduleData = modules["Vehicle Negotiation"];
-  
+
 // //   if (!moduleData || !moduleData.selected) return false;
-  
+
 // //   const permissions = moduleData.permissions || {};
 // //   return permissions[action] === true;
 // // }
@@ -1047,7 +1047,7 @@
 // //   try {
 // //     const user = verifyJWT(token);
 // //     if (!user) return { error: "Invalid or expired token. Please login again.", status: 401 };
-    
+
 // //     // Check if user is authorized at all
 // //     if (!isAuthorized(user)) {
 // //       return { 
@@ -1055,7 +1055,7 @@
 // //         status: 403 
 // //       };
 // //     }
-    
+
 // //     // If specific action is required, check it
 // //     if (requiredAction && !hasPermission(user, requiredAction)) {
 // //       return { 
@@ -1063,7 +1063,7 @@
 // //         status: 403 
 // //       };
 // //     }
-    
+
 // //     return { user, error: null, status: 200 };
 // //   } catch (err) {
 // //     console.error("JWT Verification Failed:", err?.message || err);
@@ -1091,11 +1091,11 @@
 // //     const memoStatus = url.searchParams.get("memoStatus");
 // //     const fromDate = url.searchParams.get("fromDate");
 // //     const toDate = url.searchParams.get("toDate");
-    
+
 // //     // CASE 1: GET BY VNN NUMBER
 // //     if (vnnNo) {
 // //       console.log(`📄 GET vehicle negotiation by VNN: ${vnnNo}`);
-      
+
 // //       const vehicleNegotiation = await VehicleNegotiation.findOne({
 // //         vnnNo: vnnNo,
 // //         companyId: user.companyId
@@ -1113,18 +1113,18 @@
 // //         data: vehicleNegotiation 
 // //       }, { status: 200 });
 // //     }
-    
+
 // //     // CASE 2: GET BY ID
 // //     if (id) {
 // //       console.log(`📄 GET single vehicle negotiation: ${id}`);
-      
+
 // //       if (!mongoose.Types.ObjectId.isValid(id)) {
 // //         return NextResponse.json({ 
 // //           success: false, 
 // //           message: "Invalid vehicle negotiation ID format" 
 // //         }, { status: 400 });
 // //       }
-      
+
 // //       const vehicleNegotiation = await VehicleNegotiation.findOne({
 // //         _id: id,
 // //         companyId: user.companyId
@@ -1142,14 +1142,14 @@
 // //         data: vehicleNegotiation 
 // //       }, { status: 200 });
 // //     }
-    
+
 // //     // CASE 3: TABLE FORMAT with filters
 // //     if (format === 'table') {
 // //       console.log("📋 Fetching table format data");
-      
+
 // //       // Build query
 // //       let query = { companyId: user.companyId };
-      
+
 // //       // Apply search filter
 // //       if (search) {
 // //         query.$or = [
@@ -1161,17 +1161,17 @@
 // //           { subCompanyCode: { $regex: search, $options: 'i' } }
 // //         ];
 // //       }
-      
+
 // //       // Apply approval status filter
 // //       if (approvalStatus) {
 // //         query['approval.approvalStatus'] = approvalStatus;
 // //       }
-      
+
 // //       // Apply memo status filter
 // //       if (memoStatus) {
 // //         query['approval.memoStatus'] = memoStatus;
 // //       }
-      
+
 // //       // Apply date range filters
 // //       if (fromDate) {
 // //         query.date = { $gte: new Date(fromDate) };
@@ -1181,16 +1181,16 @@
 // //         endDate.setHours(23, 59, 59, 999);
 // //         query.date = { ...query.date, $lte: endDate };
 // //       }
-      
+
 // //       const vehicleNegotiations = await VehicleNegotiation.find(query)
 // //         .sort({ date: -1, createdAt: -1 })
 // //         .lean();
 
 // //       const tableData = [];
-      
+
 // //       vehicleNegotiations.forEach(vn => {
 // //         const formattedDate = vn.date ? formatDateDDMMYYYY(vn.date) : '';
-        
+
 // //         if (vn.orders && vn.orders.length > 0) {
 // //           vn.orders.forEach(order => {
 // //             tableData.push({
@@ -1293,12 +1293,12 @@
 // //     }
 
 // //     const body = await req.json();
-    
+
 // //     console.log("📝 Creating new vehicle negotiation");
-    
+
 // //     // Generate vehicle negotiation number
 // //     let vnnNo = await getNextVehicleNegotiationNumber(user.companyId);
-    
+
 // //     // Check if VNN number already exists
 // //     const existing = await VehicleNegotiation.findOne({ vnnNo, companyId: user.companyId });
 // //     if (existing) {
@@ -1409,7 +1409,7 @@
 // //       vendors: processedVendors,
 // //       voiceNote: body.voiceUrl || '',
 // //       voiceNoteFile: body.voiceFileInfo || null,
-      
+
 // //       // Complete APPROVAL SECTION with ALL fields from frontend
 // //       approval: {
 // //         vendorName: body.approval?.vendorName || '',
@@ -1448,7 +1448,7 @@
 
 // //   } catch (error) {
 // //     console.error("❌ POST /vehicle-negotiation error:", error);
-    
+
 // //     if (error.name === 'ValidationError') {
 // //       const messages = Object.values(error.errors).map(err => err.message);
 // //       return NextResponse.json({ 
@@ -1456,7 +1456,7 @@
 // //         message: messages.join(', ') 
 // //       }, { status: 400 });
 // //     }
-    
+
 // //     return NextResponse.json({ 
 // //       success: false, 
 // //       message: error.message || "Failed to create vehicle negotiation"
@@ -1477,7 +1477,7 @@
 
 // //     const body = await req.json();
 // //     const { id } = body;
-    
+
 // //     if (!id) {
 // //       return NextResponse.json({ 
 // //         success: false, 
@@ -1486,7 +1486,7 @@
 // //     }
 
 // //     console.log(`📝 Updating vehicle negotiation: ${id}`);
-    
+
 // //     // Validate ID format
 // //     if (!mongoose.Types.ObjectId.isValid(id)) {
 // //       return NextResponse.json({ 
@@ -1494,7 +1494,7 @@
 // //         message: "Invalid vehicle negotiation ID format" 
 // //       }, { status: 400 });
 // //     }
-    
+
 // //     // Find the vehicle negotiation
 // //     const vehicleNegotiation = await VehicleNegotiation.findOne({
 // //       _id: id,
@@ -1515,21 +1515,21 @@
 // //         : (vehicleNegotiation.branch || null);
 // //       vehicleNegotiation.branchName = body.header.branchName || vehicleNegotiation.branchName || '';
 // //       vehicleNegotiation.branchCode = body.header.branchCode || vehicleNegotiation.branchCode || '';
-      
+
 // //       // Update sub-company fields
 // //       vehicleNegotiation.subCompanyId = body.header.subCompanyId && isValidObjectId(body.header.subCompanyId) 
 // //         ? body.header.subCompanyId 
 // //         : (vehicleNegotiation.subCompanyId || null);
 // //       vehicleNegotiation.subCompanyName = body.header.subCompanyName || vehicleNegotiation.subCompanyName || '';
 // //       vehicleNegotiation.subCompanyCode = body.header.subCompanyCode || vehicleNegotiation.subCompanyCode || '';
-      
+
 // //       const validDeliveryValues = ['Urgent', 'Normal', 'Express', 'Scheduled'];
 // //       let delivery = body.header.delivery || vehicleNegotiation.delivery || 'Normal';
 // //       if (!validDeliveryValues.includes(delivery)) {
 // //         delivery = 'Normal';
 // //       }
 // //       vehicleNegotiation.delivery = delivery;
-      
+
 // //       vehicleNegotiation.date = body.header.date ? new Date(body.header.date) : vehicleNegotiation.date;
 // //       vehicleNegotiation.customerId = body.header.customerId && isValidObjectId(body.header.customerId) 
 // //         ? body.header.customerId 
@@ -1600,7 +1600,7 @@
 // //         subCompanyName: order.subCompanyName || '',
 // //         subCompanyCode: order.subCompanyCode || ''
 // //       }));
-      
+
 // //       vehicleNegotiation.orders = processedOrders;
 // //       vehicleNegotiation.totalWeight = processedOrders.reduce((sum, order) => sum + (order.weight || 0), 0);
 // //     }
@@ -1637,7 +1637,7 @@
 // //     // Update approval with ALL fields
 // //     if (body.approval) {
 // //       const currentApproval = vehicleNegotiation.approval || {};
-      
+
 // //       const updatedApproval = {
 // //         vendorName: body.approval.vendorName !== undefined ? body.approval.vendorName : (currentApproval.vendorName || ''),
 // //         vendorCode: body.approval.vendorCode !== undefined ? body.approval.vendorCode : (currentApproval.vendorCode || ''),
@@ -1663,7 +1663,7 @@
 // //           const hasFileData = body.approval.memoFile.filePath || 
 // //                              body.approval.memoFile.filename || 
 // //                              body.approval.memoFile.originalName;
-          
+
 // //           if (hasFileData) {
 // //             updatedApproval.memoFile = {
 // //               filePath: body.approval.memoFile.filePath || '',
@@ -1703,7 +1703,7 @@
 
 // //   } catch (error) {
 // //     console.error("❌ PUT /vehicle-negotiation error:", error);
-    
+
 // //     if (error.name === 'ValidationError') {
 // //       const messages = Object.values(error.errors).map(err => err.message);
 // //       return NextResponse.json({ 
@@ -1711,7 +1711,7 @@
 // //         message: messages.join(', ') 
 // //       }, { status: 400 });
 // //     }
-    
+
 // //     return NextResponse.json({ 
 // //       success: false, 
 // //       message: error.message || "Failed to update vehicle negotiation"
@@ -1732,7 +1732,7 @@
 
 // //     const url = new URL(req.url);
 // //     const id = url.searchParams.get("id");
-    
+
 // //     if (!id) {
 // //       return NextResponse.json({ 
 // //         success: false, 
@@ -1741,14 +1741,14 @@
 // //     }
 
 // //     console.log(`🗑️ Deleting vehicle negotiation: ${id}`);
-    
+
 // //     if (!mongoose.Types.ObjectId.isValid(id)) {
 // //       return NextResponse.json({ 
 // //         success: false, 
 // //         message: "Invalid vehicle negotiation ID format" 
 // //       }, { status: 400 });
 // //     }
-    
+
 // //     const result = await VehicleNegotiation.deleteOne({
 // //       _id: id,
 // //       companyId: user.companyId
@@ -1788,7 +1788,7 @@
 
 // //     const body = await req.json();
 // //     const { id, action } = body;
-    
+
 // //     if (!id) {
 // //       return NextResponse.json({ 
 // //         success: false, 
@@ -1797,14 +1797,14 @@
 // //     }
 
 // //     console.log(`📝 Updating vehicle negotiation status: ${id} - Action: ${action}`);
-    
+
 // //     if (!mongoose.Types.ObjectId.isValid(id)) {
 // //       return NextResponse.json({ 
 // //         success: false, 
 // //         message: "Invalid vehicle negotiation ID format" 
 // //       }, { status: 400 });
 // //     }
-    
+
 // //     const vehicleNegotiation = await VehicleNegotiation.findOne({
 // //       _id: id,
 // //       companyId: user.companyId
@@ -1822,7 +1822,7 @@
 // //       // Update approval status
 // //       vehicleNegotiation.approval.approvalStatus = 'Approved';
 // //       vehicleNegotiation.panelStatus = 'Approved';
-      
+
 // //       // You can also update other fields if needed
 // //       if (body.vendorName) vehicleNegotiation.approval.vendorName = body.vendorName;
 // //       if (body.vendorCode) vehicleNegotiation.approval.vendorCode = body.vendorCode;
@@ -1834,7 +1834,7 @@
 // //       if (body.paymentTerms) vehicleNegotiation.approval.paymentTerms = body.paymentTerms;
 // //       if (body.remarks) vehicleNegotiation.approval.remarks = body.remarks;
 // //       if (body.memoStatus) vehicleNegotiation.approval.memoStatus = body.memoStatus;
-      
+
 // //       await vehicleNegotiation.save();
 
 // //       return NextResponse.json({ 
@@ -1848,14 +1848,14 @@
 // //         }
 // //       }, { status: 200 });
 // //     }
-    
+
 // //     // Handle reject action
 // //     else if (action === 'reject') {
 // //       vehicleNegotiation.approval.approvalStatus = 'Reject';
 // //       vehicleNegotiation.panelStatus = 'Rejected';
-      
+
 // //       if (body.remarks) vehicleNegotiation.approval.remarks = body.remarks;
-      
+
 // //       await vehicleNegotiation.save();
 
 // //       return NextResponse.json({ 
@@ -1869,11 +1869,11 @@
 // //         }
 // //       }, { status: 200 });
 // //     }
-    
+
 // //     // Handle update-approval action (for editing approval details without changing status)
 // //     else if (action === 'update-approval') {
 // //       const currentApproval = vehicleNegotiation.approval || {};
-      
+
 // //       // Update only the fields that are provided
 // //       if (body.vendorName !== undefined) vehicleNegotiation.approval.vendorName = body.vendorName;
 // //       if (body.vendorCode !== undefined) vehicleNegotiation.approval.vendorCode = body.vendorCode;
@@ -1890,14 +1890,14 @@
 // //       if (body.remarks !== undefined) vehicleNegotiation.approval.remarks = body.remarks;
 // //       if (body.memoStatus !== undefined) vehicleNegotiation.approval.memoStatus = body.memoStatus;
 // //       if (body.memoFile !== undefined) vehicleNegotiation.approval.memoFile = body.memoFile;
-      
+
 // //       // Keep existing approval status
 // //       if (body.approvalStatus === undefined) {
 // //         vehicleNegotiation.approval.approvalStatus = currentApproval.approvalStatus || 'Pending';
 // //       } else {
 // //         vehicleNegotiation.approval.approvalStatus = body.approvalStatus;
 // //       }
-      
+
 // //       await vehicleNegotiation.save();
 
 // //       return NextResponse.json({ 
@@ -1910,7 +1910,7 @@
 // //         }
 // //       }, { status: 200 });
 // //     }
-    
+
 // //     // Handle approve-with-update action (approve and update details)
 // //     else if (action === 'approve-with-update') {
 // //       // Update all fields
@@ -1927,11 +1927,11 @@
 // //       if (body.remarks !== undefined) vehicleNegotiation.approval.remarks = body.remarks;
 // //       if (body.memoStatus !== undefined) vehicleNegotiation.approval.memoStatus = body.memoStatus;
 // //       if (body.memoFile !== undefined) vehicleNegotiation.approval.memoFile = body.memoFile;
-      
+
 // //       // Set status to Approved
 // //       vehicleNegotiation.approval.approvalStatus = 'Approved';
 // //       vehicleNegotiation.panelStatus = 'Approved';
-      
+
 // //       await vehicleNegotiation.save();
 
 // //       return NextResponse.json({ 
@@ -1944,7 +1944,7 @@
 // //         }
 // //       }, { status: 200 });
 // //     }
-    
+
 // //     else {
 // //       return NextResponse.json({ 
 // //         success: false, 
@@ -1973,11 +1973,11 @@
 //   if (!date) return '';
 //   const d = new Date(date);
 //   if (isNaN(d.getTime())) return '';
-  
+
 //   const day = String(d.getDate()).padStart(2, '0');
 //   const month = String(d.getMonth() + 1).padStart(2, '0');
 //   const year = d.getFullYear();
-  
+
 //   return `${day}/${month}/${year}`;
 // }
 
@@ -1990,19 +1990,19 @@
 
 // function isAuthorized(user) {
 //   if (!user) return false;
-  
+
 //   // Company admins have full access
 //   if (user.type === "company") return true;
-  
+
 //   // Admin role has full access
 //   if (user.roles && user.roles.includes("Admin")) return true;
-  
+
 //   // Check module-based permissions for "Vehicle Negotiation"
 //   const modules = user.modules || {};
 //   const moduleData = modules["Vehicle Negotiation"];
-  
+
 //   if (!moduleData || !moduleData.selected) return false;
-  
+
 //   return true;
 // }
 
@@ -2010,12 +2010,12 @@
 //   if (!user) return false;
 //   if (user.type === "company") return true;
 //   if (user.roles && user.roles.includes("Admin")) return true;
-  
+
 //   const modules = user.modules || {};
 //   const moduleData = modules["Vehicle Negotiation"];
-  
+
 //   if (!moduleData || !moduleData.selected) return false;
-  
+
 //   const permissions = moduleData.permissions || {};
 //   return permissions[action] === true;
 // }
@@ -2027,7 +2027,7 @@
 //   try {
 //     const user = verifyJWT(token);
 //     if (!user) return { error: "Invalid or expired token. Please login again.", status: 401 };
-    
+
 //     // Check if user is authorized at all
 //     if (!isAuthorized(user)) {
 //       return { 
@@ -2035,7 +2035,7 @@
 //         status: 403 
 //       };
 //     }
-    
+
 //     // If specific action is required, check it
 //     if (requiredAction && !hasPermission(user, requiredAction)) {
 //       return { 
@@ -2043,7 +2043,7 @@
 //         status: 403 
 //       };
 //     }
-    
+
 //     return { user, error: null, status: 200 };
 //   } catch (err) {
 //     console.error("JWT Verification Failed:", err?.message || err);
@@ -2071,11 +2071,11 @@
 //     const memoStatus = url.searchParams.get("memoStatus");
 //     const fromDate = url.searchParams.get("fromDate");
 //     const toDate = url.searchParams.get("toDate");
-    
+
 //     // CASE 1: GET BY VNN NUMBER
 //     if (vnnNo) {
 //       console.log(`📄 GET vehicle negotiation by VNN: ${vnnNo}`);
-      
+
 //       const vehicleNegotiation = await VehicleNegotiation.findOne({
 //         vnnNo: vnnNo,
 //         companyId: user.companyId
@@ -2093,18 +2093,18 @@
 //         data: vehicleNegotiation 
 //       }, { status: 200 });
 //     }
-    
+
 //     // CASE 2: GET BY ID
 //     if (id) {
 //       console.log(`📄 GET single vehicle negotiation: ${id}`);
-      
+
 //       if (!mongoose.Types.ObjectId.isValid(id)) {
 //         return NextResponse.json({ 
 //           success: false, 
 //           message: "Invalid vehicle negotiation ID format" 
 //         }, { status: 400 });
 //       }
-      
+
 //       const vehicleNegotiation = await VehicleNegotiation.findOne({
 //         _id: id,
 //         companyId: user.companyId
@@ -2122,14 +2122,14 @@
 //         data: vehicleNegotiation 
 //       }, { status: 200 });
 //     }
-    
+
 //     // CASE 3: TABLE FORMAT with filters
 //     if (format === 'table') {
 //       console.log("📋 Fetching table format data");
-      
+
 //       // Build query
 //       let query = { companyId: user.companyId };
-      
+
 //       // Apply search filter
 //       if (search) {
 //         query.$or = [
@@ -2141,7 +2141,7 @@
 //           { subCompanyCode: { $regex: search, $options: 'i' } }
 //         ];
 //       }
-      
+
 //       // Apply approval status filter - check all three parts
 //       if (approvalStatus) {
 //         query.$or = query.$or || [];
@@ -2151,12 +2151,12 @@
 //           { 'approval.part3Status': approvalStatus }
 //         );
 //       }
-      
+
 //       // Apply memo status filter
 //       if (memoStatus) {
 //         query['approval.memoStatus'] = memoStatus;
 //       }
-      
+
 //       // Apply date range filters
 //       if (fromDate) {
 //         query.date = { $gte: new Date(fromDate) };
@@ -2166,18 +2166,18 @@
 //         endDate.setHours(23, 59, 59, 999);
 //         query.date = { ...query.date, $lte: endDate };
 //       }
-      
+
 //       const vehicleNegotiations = await VehicleNegotiation.find(query)
 //         .sort({ date: -1, createdAt: -1 })
 //         .lean();
 
 //       const tableData = [];
-      
+
 //       vehicleNegotiations.forEach(vn => {
 //         const formattedDate = vn.date ? formatDateDDMMYYYY(vn.date) : '';
 //         // Use part1Status as the main approval for display
 //         const displayApproval = vn.approval?.part1Status || 'Pending';
-        
+
 //         if (vn.orders && vn.orders.length > 0) {
 //           vn.orders.forEach(order => {
 //             tableData.push({
@@ -2280,12 +2280,12 @@
 //     }
 
 //     const body = await req.json();
-    
+
 //     console.log("📝 Creating new vehicle negotiation");
-    
+
 //     // Generate vehicle negotiation number
 //     let vnnNo = await getNextVehicleNegotiationNumber(user.companyId);
-    
+
 //     // Check if VNN number already exists
 //     const existing = await VehicleNegotiation.findOne({ vnnNo, companyId: user.companyId });
 //     if (existing) {
@@ -2396,7 +2396,7 @@
 //       vendors: processedVendors,
 //       voiceNote: body.voiceUrl || '',
 //       voiceNoteFile: body.voiceFileInfo || null,
-      
+
 //       // APPROVAL SECTION WITH SEPARATE FIELDS FOR EACH PART
 //       approval: {
 //         // Part 1 Approval
@@ -2443,7 +2443,7 @@
 
 //   } catch (error) {
 //     console.error("❌ POST /vehicle-negotiation error:", error);
-    
+
 //     if (error.name === 'ValidationError') {
 //       const messages = Object.values(error.errors).map(err => err.message);
 //       return NextResponse.json({ 
@@ -2451,7 +2451,7 @@
 //         message: messages.join(', ') 
 //       }, { status: 400 });
 //     }
-    
+
 //     return NextResponse.json({ 
 //       success: false, 
 //       message: error.message || "Failed to create vehicle negotiation"
@@ -2472,7 +2472,7 @@
 
 // //     const body = await req.json();
 // //     const { id } = body;
-    
+
 // //     if (!id) {
 // //       return NextResponse.json({ 
 // //         success: false, 
@@ -2481,7 +2481,7 @@
 // //     }
 
 // //     console.log(`📝 Updating vehicle negotiation: ${id}`);
-    
+
 // //     // Validate ID format
 // //     if (!mongoose.Types.ObjectId.isValid(id)) {
 // //       return NextResponse.json({ 
@@ -2489,7 +2489,7 @@
 // //         message: "Invalid vehicle negotiation ID format" 
 // //       }, { status: 400 });
 // //     }
-    
+
 // //     // Find the vehicle negotiation
 // //     const vehicleNegotiation = await VehicleNegotiation.findOne({
 // //       _id: id,
@@ -2510,21 +2510,21 @@
 // //         : (vehicleNegotiation.branch || null);
 // //       vehicleNegotiation.branchName = body.header.branchName || vehicleNegotiation.branchName || '';
 // //       vehicleNegotiation.branchCode = body.header.branchCode || vehicleNegotiation.branchCode || '';
-      
+
 // //       // Update sub-company fields
 // //       vehicleNegotiation.subCompanyId = body.header.subCompanyId && isValidObjectId(body.header.subCompanyId) 
 // //         ? body.header.subCompanyId 
 // //         : (vehicleNegotiation.subCompanyId || null);
 // //       vehicleNegotiation.subCompanyName = body.header.subCompanyName || vehicleNegotiation.subCompanyName || '';
 // //       vehicleNegotiation.subCompanyCode = body.header.subCompanyCode || vehicleNegotiation.subCompanyCode || '';
-      
+
 // //       const validDeliveryValues = ['Urgent', 'Normal', 'Express', 'Scheduled'];
 // //       let delivery = body.header.delivery || vehicleNegotiation.delivery || 'Normal';
 // //       if (!validDeliveryValues.includes(delivery)) {
 // //         delivery = 'Normal';
 // //       }
 // //       vehicleNegotiation.delivery = delivery;
-      
+
 // //       vehicleNegotiation.date = body.header.date ? new Date(body.header.date) : vehicleNegotiation.date;
 // //       vehicleNegotiation.customerId = body.header.customerId && isValidObjectId(body.header.customerId) 
 // //         ? body.header.customerId 
@@ -2595,7 +2595,7 @@
 // //         subCompanyName: order.subCompanyName || '',
 // //         subCompanyCode: order.subCompanyCode || ''
 // //       }));
-      
+
 // //       vehicleNegotiation.orders = processedOrders;
 // //       vehicleNegotiation.totalWeight = processedOrders.reduce((sum, order) => sum + (order.weight || 0), 0);
 // //     }
@@ -2640,7 +2640,7 @@
 // //       if (body.approval.part1Remarks !== undefined) {
 // //         vehicleNegotiation.approval.part1Remarks = body.approval.part1Remarks;
 // //       }
-      
+
 // //       // Update Part 2 fields
 // //       if (body.approval.part2Status !== undefined) {
 // //         vehicleNegotiation.approval.part2Status = body.approval.part2Status;
@@ -2648,7 +2648,7 @@
 // //       if (body.approval.part2Remarks !== undefined) {
 // //         vehicleNegotiation.approval.part2Remarks = body.approval.part2Remarks;
 // //       }
-      
+
 // //       // Update Part 3 fields
 // //       if (body.approval.part3Status !== undefined) {
 // //         vehicleNegotiation.approval.part3Status = body.approval.part3Status;
@@ -2656,7 +2656,7 @@
 // //       if (body.approval.part3Remarks !== undefined) {
 // //         vehicleNegotiation.approval.part3Remarks = body.approval.part3Remarks;
 // //       }
-      
+
 // //       // Update shared fields
 // //       if (body.approval.vendorName !== undefined) {
 // //         vehicleNegotiation.approval.vendorName = body.approval.vendorName;
@@ -2700,14 +2700,14 @@
 // //       if (body.approval.memoStatus !== undefined) {
 // //         vehicleNegotiation.approval.memoStatus = body.approval.memoStatus;
 // //       }
-      
+
 // //       // Handle memoFile
 // //       if (body.approval.memoFile !== undefined) {
 // //         if (body.approval.memoFile && typeof body.approval.memoFile === 'object') {
 // //           const hasFileData = body.approval.memoFile.filePath || 
 // //                              body.approval.memoFile.filename || 
 // //                              body.approval.memoFile.originalName;
-          
+
 // //           if (hasFileData) {
 // //             vehicleNegotiation.approval.memoFile = {
 // //               filePath: body.approval.memoFile.filePath || '',
@@ -2741,7 +2741,7 @@
 
 // //   } catch (error) {
 // //     console.error("❌ PUT /vehicle-negotiation error:", error);
-    
+
 // //     if (error.name === 'ValidationError') {
 // //       const messages = Object.values(error.errors).map(err => err.message);
 // //       return NextResponse.json({ 
@@ -2749,7 +2749,7 @@
 // //         message: messages.join(', ') 
 // //       }, { status: 400 });
 // //     }
-    
+
 // //     return NextResponse.json({ 
 // //       success: false, 
 // //       message: error.message || "Failed to update vehicle negotiation"
@@ -2764,10 +2764,10 @@
 // export async function PUT(req) {
 //   try {
 //     await connectDb();
-    
+
 //     const body = await req.json();
 //     const { id } = body;
-    
+
 //     if (!id) {
 //       return NextResponse.json({ 
 //         success: false, 
@@ -2776,7 +2776,7 @@
 //     }
 
 //     console.log(`📝 Updating vehicle negotiation: ${id}`);
-    
+
 //     // Validate ID format
 //     if (!mongoose.Types.ObjectId.isValid(id)) {
 //       return NextResponse.json({ 
@@ -2784,7 +2784,7 @@
 //         message: "Invalid vehicle negotiation ID format" 
 //       }, { status: 400 });
 //     }
-    
+
 //     // ─── CHECK PERMISSIONS ───
 //     // First, validate the user exists
 //     const token = getTokenFromHeader(req);
@@ -2873,7 +2873,7 @@
 
 //     // ─── PROCEED WITH UPDATE ───
 //     await connectDb();
-    
+
 //     // Find the vehicle negotiation
 //     const vehicleNegotiation = await VehicleNegotiation.findOne({
 //       _id: id,
@@ -2894,20 +2894,20 @@
 //         : (vehicleNegotiation.branch || null);
 //       vehicleNegotiation.branchName = body.header.branchName || vehicleNegotiation.branchName || '';
 //       vehicleNegotiation.branchCode = body.header.branchCode || vehicleNegotiation.branchCode || '';
-      
+
 //       vehicleNegotiation.subCompanyId = body.header.subCompanyId && isValidObjectId(body.header.subCompanyId) 
 //         ? body.header.subCompanyId 
 //         : (vehicleNegotiation.subCompanyId || null);
 //       vehicleNegotiation.subCompanyName = body.header.subCompanyName || vehicleNegotiation.subCompanyName || '';
 //       vehicleNegotiation.subCompanyCode = body.header.subCompanyCode || vehicleNegotiation.subCompanyCode || '';
-      
+
 //       const validDeliveryValues = ['Urgent', 'Normal', 'Express', 'Scheduled'];
 //       let delivery = body.header.delivery || vehicleNegotiation.delivery || 'Normal';
 //       if (!validDeliveryValues.includes(delivery)) {
 //         delivery = 'Normal';
 //       }
 //       vehicleNegotiation.delivery = delivery;
-      
+
 //       vehicleNegotiation.date = body.header.date ? new Date(body.header.date) : vehicleNegotiation.date;
 //       vehicleNegotiation.customerId = body.header.customerId && isValidObjectId(body.header.customerId) 
 //         ? body.header.customerId 
@@ -2977,7 +2977,7 @@
 //         subCompanyName: order.subCompanyName || '',
 //         subCompanyCode: order.subCompanyCode || ''
 //       }));
-      
+
 //       vehicleNegotiation.orders = processedOrders;
 //       vehicleNegotiation.totalWeight = processedOrders.reduce((sum, order) => sum + (order.weight || 0), 0);
 //     }
@@ -3024,7 +3024,7 @@
 //       if (body.approval.part1Remarks !== undefined) {
 //         vehicleNegotiation.approval.part1Remarks = body.approval.part1Remarks;
 //       }
-      
+
 //       // Update Part 2 fields
 //       if (body.approval.part2Status !== undefined) {
 //         vehicleNegotiation.approval.part2Status = body.approval.part2Status;
@@ -3032,7 +3032,7 @@
 //       if (body.approval.part2Remarks !== undefined) {
 //         vehicleNegotiation.approval.part2Remarks = body.approval.part2Remarks;
 //       }
-      
+
 //       // Update Part 3 fields
 //       if (body.approval.part3Status !== undefined) {
 //         vehicleNegotiation.approval.part3Status = body.approval.part3Status;
@@ -3040,7 +3040,7 @@
 //       if (body.approval.part3Remarks !== undefined) {
 //         vehicleNegotiation.approval.part3Remarks = body.approval.part3Remarks;
 //       }
-      
+
 //       // Update shared approval fields
 //       if (body.approval.vendorName !== undefined) {
 //         vehicleNegotiation.approval.vendorName = body.approval.vendorName;
@@ -3084,14 +3084,14 @@
 //       if (body.approval.memoStatus !== undefined) {
 //         vehicleNegotiation.approval.memoStatus = body.approval.memoStatus;
 //       }
-      
+
 //       // Handle memoFile
 //       if (body.approval.memoFile !== undefined) {
 //         if (body.approval.memoFile && typeof body.approval.memoFile === 'object') {
 //           const hasFileData = body.approval.memoFile.filePath || 
 //                              body.approval.memoFile.filename || 
 //                              body.approval.memoFile.originalName;
-          
+
 //           if (hasFileData) {
 //             vehicleNegotiation.approval.memoFile = {
 //               filePath: body.approval.memoFile.filePath || '',
@@ -3132,7 +3132,7 @@
 
 //   } catch (error) {
 //     console.error("❌ PUT /vehicle-negotiation error:", error);
-    
+
 //     if (error.name === 'ValidationError') {
 //       const messages = Object.values(error.errors).map(err => err.message);
 //       return NextResponse.json({ 
@@ -3140,7 +3140,7 @@
 //         message: messages.join(', ') 
 //       }, { status: 400 });
 //     }
-    
+
 //     return NextResponse.json({ 
 //       success: false, 
 //       message: error.message || "Failed to update vehicle negotiation"
@@ -3152,19 +3152,19 @@
 
 // function isAuthorized(user) {
 //   if (!user) return false;
-  
+
 //   // Company admins have full access
 //   if (user.type === "company") return true;
-  
+
 //   // Admin role has full access
 //   if (user.roles && user.roles.includes("Admin")) return true;
-  
+
 //   // Check module-based permissions for "Vehicle Negotiation"
 //   const modules = user.modules || {};
 //   const moduleData = modules["Vehicle Negotiation"];
-  
+
 //   if (!moduleData || !moduleData.selected) return false;
-  
+
 //   return true;
 // }
 
@@ -3172,12 +3172,12 @@
 //   if (!user) return false;
 //   if (user.type === "company") return true;
 //   if (user.roles && user.roles.includes("Admin")) return true;
-  
+
 //   const modules = user.modules || {};
 //   const moduleData = modules["Vehicle Negotiation"];
-  
+
 //   if (!moduleData || !moduleData.selected) return false;
-  
+
 //   const permissions = moduleData.permissions || {};
 //   return permissions[action] === true;
 // }
@@ -3194,7 +3194,7 @@
 
 //     const url = new URL(req.url);
 //     const id = url.searchParams.get("id");
-    
+
 //     if (!id) {
 //       return NextResponse.json({ 
 //         success: false, 
@@ -3203,14 +3203,14 @@
 //     }
 
 //     console.log(`🗑️ Deleting vehicle negotiation: ${id}`);
-    
+
 //     if (!mongoose.Types.ObjectId.isValid(id)) {
 //       return NextResponse.json({ 
 //         success: false, 
 //         message: "Invalid vehicle negotiation ID format" 
 //       }, { status: 400 });
 //     }
-    
+
 //     const result = await VehicleNegotiation.deleteOne({
 //       _id: id,
 //       companyId: user.companyId
@@ -3250,7 +3250,7 @@
 
 //     const body = await req.json();
 //     const { id, action, part } = body;
-    
+
 //     if (!id) {
 //       return NextResponse.json({ 
 //         success: false, 
@@ -3259,14 +3259,14 @@
 //     }
 
 //     console.log(`📝 Updating vehicle negotiation status: ${id} - Action: ${action} - Part: ${part || 'all'}`);
-    
+
 //     if (!mongoose.Types.ObjectId.isValid(id)) {
 //       return NextResponse.json({ 
 //         success: false, 
 //         message: "Invalid vehicle negotiation ID format" 
 //       }, { status: 400 });
 //     }
-    
+
 //     const vehicleNegotiation = await VehicleNegotiation.findOne({
 //       _id: id,
 //       companyId: user.companyId
@@ -3282,7 +3282,7 @@
 //     // Handle approve action for specific part
 //     if (action === 'approve') {
 //       const partToUpdate = part || 'part1';
-      
+
 //       // Update specific part status
 //       if (partToUpdate === 'part1') {
 //         vehicleNegotiation.approval.part1Status = 'Approved';
@@ -3294,7 +3294,7 @@
 //         vehicleNegotiation.approval.part3Status = 'Approved';
 //         if (body.remarks !== undefined) vehicleNegotiation.approval.part3Remarks = body.remarks;
 //       }
-      
+
 //       // Update shared fields if provided
 //       if (body.vendorName) vehicleNegotiation.approval.vendorName = body.vendorName;
 //       if (body.vendorCode) vehicleNegotiation.approval.vendorCode = body.vendorCode;
@@ -3305,7 +3305,7 @@
 //       if (body.purchaseType) vehicleNegotiation.approval.purchaseType = body.purchaseType;
 //       if (body.paymentTerms) vehicleNegotiation.approval.paymentTerms = body.paymentTerms;
 //       if (body.memoStatus) vehicleNegotiation.approval.memoStatus = body.memoStatus;
-      
+
 //       await vehicleNegotiation.save();
 
 //       return NextResponse.json({ 
@@ -3320,11 +3320,11 @@
 //         }
 //       }, { status: 200 });
 //     }
-    
+
 //     // Handle reject action for specific part
 //     else if (action === 'reject') {
 //       const partToUpdate = part || 'part1';
-      
+
 //       if (partToUpdate === 'part1') {
 //         vehicleNegotiation.approval.part1Status = 'Reject';
 //         if (body.remarks !== undefined) vehicleNegotiation.approval.part1Remarks = body.remarks;
@@ -3335,7 +3335,7 @@
 //         vehicleNegotiation.approval.part3Status = 'Reject';
 //         if (body.remarks !== undefined) vehicleNegotiation.approval.part3Remarks = body.remarks;
 //       }
-      
+
 //       await vehicleNegotiation.save();
 
 //       return NextResponse.json({ 
@@ -3350,7 +3350,7 @@
 //         }
 //       }, { status: 200 });
 //     }
-    
+
 //     else {
 //       return NextResponse.json({ 
 //         success: false, 
@@ -3385,11 +3385,11 @@ function formatDateDDMMYYYY(date) {
   if (!date) return '';
   const d = new Date(date);
   if (isNaN(d.getTime())) return '';
-  
+
   const day = String(d.getDate()).padStart(2, '0');
   const month = String(d.getMonth() + 1).padStart(2, '0');
   const year = d.getFullYear();
-  
+
   return `${day}/${month}/${year}`;
 }
 
@@ -3402,19 +3402,19 @@ function isValidObjectId(id) {
 
 function isAuthorized(user) {
   if (!user) return false;
-  
+
   // Company admins have full access
   if (user.type === "company") return true;
-  
+
   // Admin role has full access
   if (user.roles && user.roles.includes("Admin")) return true;
-  
+
   // Check module-based permissions for "Vehicle Negotiation"
   const modules = user.modules || {};
   const moduleData = modules["Vehicle Negotiation"];
-  
+
   if (!moduleData || !moduleData.selected) return false;
-  
+
   return true;
 }
 
@@ -3422,12 +3422,12 @@ function hasPermission(user, action) {
   if (!user) return false;
   if (user.type === "company") return true;
   if (user.roles && user.roles.includes("Admin")) return true;
-  
+
   const modules = user.modules || {};
   const moduleData = modules["Vehicle Negotiation"];
-  
+
   if (!moduleData || !moduleData.selected) return false;
-  
+
   const permissions = moduleData.permissions || {};
   return permissions[action] === true;
 }
@@ -3444,23 +3444,23 @@ async function validateUser(req, requiredAction = null) {
     } catch (scopeError) {
       return { error: scopeError.message, status: 401 };
     }
-    
+
     // Check if user is authorized at all
     if (!isAuthorized(user)) {
-      return { 
-        error: "Access denied. You don't have permission to access Vehicle Negotiation.", 
-        status: 403 
+      return {
+        error: "Access denied. You don't have permission to access Vehicle Negotiation.",
+        status: 403
       };
     }
-    
+
     // If specific action is required, check it
     if (requiredAction && !hasPermission(user, requiredAction)) {
-      return { 
-        error: `Permission denied: ${requiredAction} action not allowed for Vehicle Negotiation.`, 
-        status: 403 
+      return {
+        error: `Permission denied: ${requiredAction} action not allowed for Vehicle Negotiation.`,
+        status: 403
       };
     }
-    
+
     return { user, error: null, status: 200 };
   } catch (err) {
     console.error("JWT Verification Failed:", err?.message || err);
@@ -3489,63 +3489,63 @@ export async function GET(req) {
     const eligibleFor = url.searchParams.get('eligibleFor');
     const fromDate = url.searchParams.get("fromDate");
     const toDate = url.searchParams.get("toDate");
-    
+
     // CASE 1: GET BY VNN NUMBER
     if (vnnNo) {
       console.log(`📄 GET vehicle negotiation by VNN: ${vnnNo}`);
-      
+
       const vehicleNegotiation = await VehicleNegotiation.findOne(
         companyScopeFilter(user, { vnnNo })
       ).lean();
 
       if (!vehicleNegotiation) {
-        return NextResponse.json({ 
-          success: false, 
-          message: "Vehicle negotiation not found" 
+        return NextResponse.json({
+          success: false,
+          message: "Vehicle negotiation not found"
         }, { status: 404 });
       }
 
-      return NextResponse.json({ 
-        success: true, 
-        data: vehicleNegotiation 
+      return NextResponse.json({
+        success: true,
+        data: vehicleNegotiation
       }, { status: 200 });
     }
-    
+
     // CASE 2: GET BY ID
     if (id) {
       console.log(`📄 GET single vehicle negotiation: ${id}`);
-      
+
       if (!mongoose.Types.ObjectId.isValid(id)) {
-        return NextResponse.json({ 
-          success: false, 
-          message: "Invalid vehicle negotiation ID format" 
+        return NextResponse.json({
+          success: false,
+          message: "Invalid vehicle negotiation ID format"
         }, { status: 400 });
       }
-      
+
       const vehicleNegotiation = await VehicleNegotiation.findOne(
         companyScopeFilter(user, { _id: id })
       ).lean();
 
       if (!vehicleNegotiation) {
-        return NextResponse.json({ 
-          success: false, 
-          message: "Vehicle negotiation not found" 
+        return NextResponse.json({
+          success: false,
+          message: "Vehicle negotiation not found"
         }, { status: 404 });
       }
 
-      return NextResponse.json({ 
-        success: true, 
-        data: vehicleNegotiation 
+      return NextResponse.json({
+        success: true,
+        data: vehicleNegotiation
       }, { status: 200 });
     }
-    
+
     // CASE 3: TABLE FORMAT with filters
     if (format === 'table') {
       console.log("📋 Fetching table format data");
-      
+
       // Build query
       let query = {};
-      
+
       // Apply search filter
       if (search) {
         query.$or = [
@@ -3557,12 +3557,12 @@ export async function GET(req) {
           { subCompanyCode: { $regex: search, $options: 'i' } }
         ];
       }
-      
+
       // Apply memo status filter
       if (memoStatus) {
         query['approval.memoStatus'] = memoStatus;
       }
-      
+
       // Apply date range filters
       if (fromDate) {
         query.date = { $gte: new Date(fromDate) };
@@ -3572,7 +3572,7 @@ export async function GET(req) {
         endDate.setHours(23, 59, 59, 999);
         query.date = { ...query.date, $lte: endDate };
       }
-      
+
       let vehicleNegotiations = await VehicleNegotiation.find(companyScopeFilter(user, query))
         .sort({ date: -1, createdAt: -1 })
         .lean();
@@ -3585,11 +3585,11 @@ export async function GET(req) {
       }
 
       const tableData = [];
-      
+
       vehicleNegotiations.forEach(vn => {
         const formattedDate = vn.date ? formatDateDDMMYYYY(vn.date) : '';
         const displayApproval = getFinalVnnStatus(vn);
-        
+
         if (vn.orders && vn.orders.length > 0) {
           vn.orders.forEach(order => {
             tableData.push({
@@ -3616,6 +3616,7 @@ export async function GET(req) {
               vnId: vn._id.toString(),
               orderId: order._id ? order._id.toString() : null,
               branchName: vn.branchName || '',
+              branchCode: vn.branchCode || '',
               subCompanyName: order.subCompanyName || vn.subCompanyName || '',
               subCompanyCode: order.subCompanyCode || vn.subCompanyCode || ''
             });
@@ -3645,6 +3646,7 @@ export async function GET(req) {
             vnId: vn._id.toString(),
             orderId: null,
             branchName: vn.branchName || '',
+            branchCode: vn.branchCode || '',
             subCompanyName: vn.subCompanyName || '',
             subCompanyCode: vn.subCompanyCode || ''
           });
@@ -3677,10 +3679,10 @@ export async function GET(req) {
 
   } catch (error) {
     console.error("❌ GET /vehicle-negotiation error:", error);
-    return NextResponse.json({ 
-      success: false, 
+    return NextResponse.json({
+      success: false,
       message: "Failed to fetch vehicle negotiations",
-      error: error.message 
+      error: error.message
     }, { status: 500 });
   }
 }
@@ -3697,12 +3699,12 @@ export async function POST(req) {
     }
 
     const body = await req.json();
-    
+
     console.log("📝 Creating new vehicle negotiation");
-    
+
     // Generate vehicle negotiation number
     let vnnNo = await getNextVehicleNegotiationNumber(user.companyId, user.activeOperatingCompanyId, user.activeOperatingCompanyCode);
-    
+
     // Check if VNN number already exists
     const existing = await VehicleNegotiation.findOne(companyScopeFilter(user, { vnnNo }));
     if (existing) {
@@ -3814,7 +3816,7 @@ export async function POST(req) {
       vendors: processedVendors,
       voiceNote: body.voiceUrl || '',
       voiceNoteFile: body.voiceFileInfo || null,
-      
+
       approval: {
         part1Status: body.approval?.part1Status || 'Pending',
         part1Remarks: body.approval?.part1Remarks || '',
@@ -3851,8 +3853,8 @@ export async function POST(req) {
 
     await newVehicleNegotiation.save();
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       message: "Vehicle negotiation created successfully",
       data: {
         _id: newVehicleNegotiation._id,
@@ -3862,17 +3864,17 @@ export async function POST(req) {
 
   } catch (error) {
     console.error("❌ POST /vehicle-negotiation error:", error);
-    
+
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(err => err.message);
-      return NextResponse.json({ 
-        success: false, 
-        message: messages.join(', ') 
+      return NextResponse.json({
+        success: false,
+        message: messages.join(', ')
       }, { status: 400 });
     }
-    
-    return NextResponse.json({ 
-      success: false, 
+
+    return NextResponse.json({
+      success: false,
       message: error.message || "Failed to create vehicle negotiation"
     }, { status: 500 });
   }
@@ -3884,32 +3886,32 @@ export async function POST(req) {
 export async function PUT(req) {
   try {
     await connectDb();
-    
+
     const body = await req.json();
     const { id } = body;
-    
+
     if (!id) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Vehicle negotiation ID is required" 
+      return NextResponse.json({
+        success: false,
+        message: "Vehicle negotiation ID is required"
       }, { status: 400 });
     }
 
     console.log(`📝 Updating vehicle negotiation: ${id}`);
-    
+
     // Validate ID format
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Invalid vehicle negotiation ID format" 
+      return NextResponse.json({
+        success: false,
+        message: "Invalid vehicle negotiation ID format"
       }, { status: 400 });
     }
-    
+
     // ─── CHECK PERMISSIONS ───
     const token = getTokenFromHeader(req);
     if (!token) {
-      return NextResponse.json({ 
-        success: false, 
+      return NextResponse.json({
+        success: false,
         message: "Authentication required. Please login.",
         code: 'UNAUTHORIZED'
       }, { status: 401 });
@@ -3919,8 +3921,8 @@ export async function PUT(req) {
     try {
       user = verifyJWT(token);
       if (!user) {
-        return NextResponse.json({ 
-          success: false, 
+        return NextResponse.json({
+          success: false,
           message: "Invalid or expired token. Please login again.",
           code: 'UNAUTHORIZED'
         }, { status: 401 });
@@ -3928,8 +3930,8 @@ export async function PUT(req) {
       activeOperatingCompanyId(user);
     } catch (err) {
       console.error("JWT Verification Failed:", err?.message || err);
-      return NextResponse.json({ 
-        success: false, 
+      return NextResponse.json({
+        success: false,
         message: "Authentication failed. Please login again.",
         code: 'UNAUTHORIZED'
       }, { status: 401 });
@@ -3937,8 +3939,8 @@ export async function PUT(req) {
 
     // Check if user is authorized at all
     if (!isAuthorized(user)) {
-      return NextResponse.json({ 
-        success: false, 
+      return NextResponse.json({
+        success: false,
         message: "Access denied. You don't have permission to access Vehicle Negotiation.",
         code: 'FORBIDDEN'
       }, { status: 403 });
@@ -3952,17 +3954,17 @@ export async function PUT(req) {
       body.approval.part3Remarks !== undefined
     );
 
-    const isGeneralEdit = body.header || body.orders || body.negotiation || 
-                         body.vendors || body.selectedOrderPanels || 
-                         body.voiceUrl !== undefined || body.voiceFileInfo;
+    const isGeneralEdit = body.header || body.orders || body.negotiation ||
+      body.vendors || body.selectedOrderPanels ||
+      body.voiceUrl !== undefined || body.voiceFileInfo;
 
     let hasEditPermission = hasPermission(user, 'edit');
     let hasApprovePermission = hasPermission(user, 'approve');
 
     // If it's an approval update, user needs approve permission
     if (isApprovalUpdate && !hasApprovePermission) {
-      return NextResponse.json({ 
-        success: false, 
+      return NextResponse.json({
+        success: false,
         message: "Permission denied: You need 'approve' permission to update approval status.",
         code: 'FORBIDDEN'
       }, { status: 403 });
@@ -3970,8 +3972,8 @@ export async function PUT(req) {
 
     // If it's a general edit, user needs edit permission
     if (isGeneralEdit && !hasEditPermission) {
-      return NextResponse.json({ 
-        success: false, 
+      return NextResponse.json({
+        success: false,
         message: "Permission denied: You need 'edit' permission to modify vehicle negotiation.",
         code: 'FORBIDDEN'
       }, { status: 403 });
@@ -3979,8 +3981,8 @@ export async function PUT(req) {
 
     // If it's both approval and general edit, user needs both permissions
     if (isApprovalUpdate && isGeneralEdit && !(hasEditPermission && hasApprovePermission)) {
-      return NextResponse.json({ 
-        success: false, 
+      return NextResponse.json({
+        success: false,
         message: "Permission denied: This update requires both 'edit' and 'approve' permissions.",
         code: 'FORBIDDEN'
       }, { status: 403 });
@@ -3991,9 +3993,9 @@ export async function PUT(req) {
     const vehicleNegotiation = await VehicleNegotiation.findOne(companyScopeFilter(user, { _id: id }));
 
     if (!vehicleNegotiation) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Vehicle negotiation not found" 
+      return NextResponse.json({
+        success: false,
+        message: "Vehicle negotiation not found"
       }, { status: 404 });
     }
 
@@ -4006,26 +4008,26 @@ export async function PUT(req) {
 
     // ─── UPDATE HEADER FIELDS (requires 'edit' permission) ───
     if (body.header && hasEditPermission) {
-      vehicleNegotiation.branch = body.header.branch && isValidObjectId(body.header.branch) 
-        ? body.header.branch 
+      vehicleNegotiation.branch = body.header.branch && isValidObjectId(body.header.branch)
+        ? body.header.branch
         : (vehicleNegotiation.branch || null);
       vehicleNegotiation.branchName = body.header.branchName || vehicleNegotiation.branchName || '';
       vehicleNegotiation.branchCode = body.header.branchCode || vehicleNegotiation.branchCode || '';
-      
+
       vehicleNegotiation.subCompanyId = user.activeOperatingCompanyId;
       vehicleNegotiation.subCompanyName = user.activeOperatingCompanyName || '';
       vehicleNegotiation.subCompanyCode = user.activeOperatingCompanyCode || '';
-      
+
       const validDeliveryValues = ['Urgent', 'Normal', 'Express', 'Scheduled'];
       let delivery = body.header.delivery || vehicleNegotiation.delivery || 'Normal';
       if (!validDeliveryValues.includes(delivery)) {
         delivery = 'Normal';
       }
       vehicleNegotiation.delivery = delivery;
-      
+
       vehicleNegotiation.date = body.header.date ? new Date(body.header.date) : vehicleNegotiation.date;
-      vehicleNegotiation.customerId = body.header.customerId && isValidObjectId(body.header.customerId) 
-        ? body.header.customerId 
+      vehicleNegotiation.customerId = body.header.customerId && isValidObjectId(body.header.customerId)
+        ? body.header.customerId
         : (vehicleNegotiation.customerId || null);
       vehicleNegotiation.customerName = body.header.customerName || vehicleNegotiation.customerName || '';
       vehicleNegotiation.customerCode = body.header.customerCode || vehicleNegotiation.customerCode || '';
@@ -4053,8 +4055,8 @@ export async function PUT(req) {
     // ─── UPDATE ORDERS (requires 'edit' permission) ───
     if (body.orders && hasEditPermission) {
       const processedOrders = body.orders.map(order => ({
-        _id: order._id && isValidObjectId(order._id) 
-          ? new mongoose.Types.ObjectId(order._id) 
+        _id: order._id && isValidObjectId(order._id)
+          ? new mongoose.Types.ObjectId(order._id)
           : new mongoose.Types.ObjectId(),
         orderNo: order.orderNo || '',
         orderPanelId: order.orderPanelId || '',
@@ -4095,7 +4097,7 @@ export async function PUT(req) {
         subCompanyName: user.activeOperatingCompanyName || '',
         subCompanyCode: user.activeOperatingCompanyCode || ''
       }));
-      
+
       vehicleNegotiation.orders = processedOrders;
       vehicleNegotiation.totalWeight = processedOrders.reduce((sum, order) => sum + (order.weight || 0), 0);
     }
@@ -4115,8 +4117,8 @@ export async function PUT(req) {
     // ─── UPDATE VENDORS (requires 'edit' permission) ───
     if (body.vendors && hasEditPermission) {
       vehicleNegotiation.vendors = body.vendors.map(v => ({
-        _id: v._id && isValidObjectId(v._id) 
-          ? new mongoose.Types.ObjectId(v._id) 
+        _id: v._id && isValidObjectId(v._id)
+          ? new mongoose.Types.ObjectId(v._id)
           : new mongoose.Types.ObjectId(),
         vendorName: v.vendorName || '',
         vendorCode: v.vendorCode || '',
@@ -4142,7 +4144,7 @@ export async function PUT(req) {
       if (body.approval.part1Remarks !== undefined) {
         vehicleNegotiation.approval.part1Remarks = body.approval.part1Remarks;
       }
-      
+
       // Update Part 3 fields
       if (body.approval.part3Status !== undefined) {
         vehicleNegotiation.approval.part3Status = body.approval.part3Status;
@@ -4150,7 +4152,7 @@ export async function PUT(req) {
       if (body.approval.part3Remarks !== undefined) {
         vehicleNegotiation.approval.part3Remarks = body.approval.part3Remarks;
       }
-      
+
       // Update shared fields
       if (body.approval.vendorName !== undefined) {
         vehicleNegotiation.approval.vendorName = body.approval.vendorName;
@@ -4182,8 +4184,8 @@ export async function PUT(req) {
     // Save the updated vehicle negotiation
     await vehicleNegotiation.save();
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       message: "Vehicle negotiation updated successfully",
       data: {
         _id: vehicleNegotiation._id,
@@ -4193,17 +4195,17 @@ export async function PUT(req) {
 
   } catch (error) {
     console.error("❌ PUT /vehicle-negotiation error:", error);
-    
+
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(err => err.message);
-      return NextResponse.json({ 
-        success: false, 
-        message: messages.join(', ') 
+      return NextResponse.json({
+        success: false,
+        message: messages.join(', ')
       }, { status: 400 });
     }
-    
-    return NextResponse.json({ 
-      success: false, 
+
+    return NextResponse.json({
+      success: false,
       message: error.message || "Failed to update vehicle negotiation"
     }, { status: 500 });
   }
@@ -4222,23 +4224,23 @@ export async function DELETE(req) {
 
     const url = new URL(req.url);
     const id = url.searchParams.get("id");
-    
+
     if (!id) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Vehicle negotiation ID is required" 
+      return NextResponse.json({
+        success: false,
+        message: "Vehicle negotiation ID is required"
       }, { status: 400 });
     }
 
     console.log(`🗑️ Deleting vehicle negotiation: ${id}`);
-    
+
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Invalid vehicle negotiation ID format" 
+      return NextResponse.json({
+        success: false,
+        message: "Invalid vehicle negotiation ID format"
       }, { status: 400 });
     }
-    
+
     const vehicleNegotiation = await VehicleNegotiation.findOne(companyScopeFilter(user, { _id: id })).select('vnnNo').lean();
 
     if (!vehicleNegotiation) {
@@ -4270,21 +4272,21 @@ export async function DELETE(req) {
     const result = await VehicleNegotiation.deleteOne(companyScopeFilter(user, { _id: id }));
 
     if (result.deletedCount === 0) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Vehicle negotiation not found" 
+      return NextResponse.json({
+        success: false,
+        message: "Vehicle negotiation not found"
       }, { status: 404 });
     }
 
-    return NextResponse.json({ 
-      success: true, 
-      message: "Vehicle negotiation deleted successfully" 
+    return NextResponse.json({
+      success: true,
+      message: "Vehicle negotiation deleted successfully"
     }, { status: 200 });
 
   } catch (error) {
     console.error("❌ DELETE /vehicle-negotiation error:", error);
-    return NextResponse.json({ 
-      success: false, 
+    return NextResponse.json({
+      success: false,
       message: error.message || "Failed to delete vehicle negotiation"
     }, { status: 500 });
   }
@@ -4308,29 +4310,29 @@ export async function PATCH(req) {
 
     const body = await req.json();
     const { id, action, part, remarks, vendorName, vendorCode, finalPerMT, finalFix, memoStatus } = body;
-    
+
     if (!id) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Vehicle negotiation ID is required" 
+      return NextResponse.json({
+        success: false,
+        message: "Vehicle negotiation ID is required"
       }, { status: 400 });
     }
 
     console.log(`📝 Updating vehicle negotiation status: ${id} - Action: ${action} - Part: ${part || 'all'}`);
-    
+
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Invalid vehicle negotiation ID format" 
+      return NextResponse.json({
+        success: false,
+        message: "Invalid vehicle negotiation ID format"
       }, { status: 400 });
     }
-    
+
     const vehicleNegotiation = await VehicleNegotiation.findOne(companyScopeFilter(user, { _id: id }));
 
     if (!vehicleNegotiation) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Vehicle negotiation not found" 
+      return NextResponse.json({
+        success: false,
+        message: "Vehicle negotiation not found"
       }, { status: 404 });
     }
 
@@ -4357,7 +4359,7 @@ export async function PATCH(req) {
           message: 'Part 3 can be approved only after Part 1 is approved and locked, and Rate Target is completed.'
         }, { status: 409 });
       }
-      
+
       // Update specific part status
       if (partToUpdate === 'part1') {
         vehicleNegotiation.approval.part1Status = 'Approved';
@@ -4367,18 +4369,18 @@ export async function PATCH(req) {
         if (remarks !== undefined) vehicleNegotiation.approval.part3Remarks = remarks;
         vehicleNegotiation.panelStatus = 'Approved';
       }
-      
+
       // Update shared fields if provided
       if (vendorName) vehicleNegotiation.approval.vendorName = vendorName;
       if (vendorCode) vehicleNegotiation.approval.vendorCode = vendorCode;
       if (finalPerMT !== undefined) vehicleNegotiation.approval.finalPerMT = Number(finalPerMT);
       if (finalFix !== undefined) vehicleNegotiation.approval.finalFix = Number(finalFix);
       if (memoStatus) vehicleNegotiation.approval.memoStatus = memoStatus;
-      
+
       await vehicleNegotiation.save();
 
-      return NextResponse.json({ 
-        success: true, 
+      return NextResponse.json({
+        success: true,
         message: `Part ${partToUpdate} approved successfully`,
         data: {
           _id: vehicleNegotiation._id,
@@ -4388,7 +4390,7 @@ export async function PATCH(req) {
         }
       }, { status: 200 });
     }
-    
+
     // Handle reject action for specific part
     else if (action === 'reject') {
       const partToUpdate = part || 'part1';
@@ -4399,7 +4401,7 @@ export async function PATCH(req) {
           message: 'Rate Target has no separate approval. Update the Rate Target record instead.'
         }, { status: 409 });
       }
-      
+
       if (partToUpdate === 'part1') {
         vehicleNegotiation.approval.part1Status = 'Reject';
         if (remarks !== undefined) vehicleNegotiation.approval.part1Remarks = remarks;
@@ -4408,11 +4410,11 @@ export async function PATCH(req) {
         if (remarks !== undefined) vehicleNegotiation.approval.part3Remarks = remarks;
         vehicleNegotiation.panelStatus = 'Rejected';
       }
-      
+
       await vehicleNegotiation.save();
 
-      return NextResponse.json({ 
-        success: true, 
+      return NextResponse.json({
+        success: true,
         message: `Part ${partToUpdate} rejected successfully`,
         data: {
           _id: vehicleNegotiation._id,
@@ -4422,18 +4424,18 @@ export async function PATCH(req) {
         }
       }, { status: 200 });
     }
-    
+
     else {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Invalid action. Allowed: approve, reject" 
+      return NextResponse.json({
+        success: false,
+        message: "Invalid action. Allowed: approve, reject"
       }, { status: 400 });
     }
 
   } catch (error) {
     console.error("❌ PATCH /vehicle-negotiation error:", error);
-    return NextResponse.json({ 
-      success: false, 
+    return NextResponse.json({
+      success: false,
       message: error.message || "Failed to update vehicle negotiation status"
     }, { status: 500 });
   }

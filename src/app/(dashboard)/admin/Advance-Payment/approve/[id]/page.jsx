@@ -943,11 +943,11 @@ function OrdersTable({ rows }) {
     { key: "district", label: "District" },
     { key: "from", label: "From" },
     { key: "to", label: "To" },
-    { key: "locationRate", label: "Location Rate" },
-    { key: "priceList", label: "Price List" },
+    // { key: "locationRate", label: "Location Rate" },
+    // { key: "priceList", label: "Price List" },
     { key: "weight", label: "Weight" },
-    { key: "rate", label: "Rate" },
-    { key: "totalAmount", label: "Total Amount" },
+    // { key: "rate", label: "Rate" },
+    // { key: "totalAmount", label: "Total Amount" },
     { key: "collectionCharges", label: "Collection Charges" },
     { key: "cancellationCharges", label: "Cancellation Charges" },
     { key: "loadingCharges", label: "Loading Charges" },
@@ -997,15 +997,15 @@ function OrdersTable({ rows }) {
                 <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.district || '-'}</td>
                 <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.from || '-'}</td>
                 <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.to || '-'}</td>
-                <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.locationRate || '-'}</td>
-                <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.priceList || '-'}</td>
+                {/* <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.locationRate || '-'}</td> */}
+                {/* <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.priceList || '-'}</td> */}
                 <td className="border border-yellow-300 px-2 py-2 text-slate-700 text-right">{row.weight || '0'}</td>
-                <td className="border border-yellow-300 px-2 py-2 text-slate-700 text-right">₹{row.rate || '0'}</td>
-                <td className="border border-yellow-300 px-2 py-2 text-slate-700 text-right font-medium">₹{row.totalAmount || '0'}</td>
-                <td className="border border-yellow-300 px-2 py-2 text-slate-700 text-right">₹{row.collectionCharges || '0'}</td>
+                {/* <td className="border border-yellow-300 px-2 py-2 text-slate-700 text-right">₹{row.rate || '0'}</td> */}
+                {/* <td className="border border-yellow-300 px-2 py-2 text-slate-700 text-right font-medium">₹{row.totalAmount || '0'}</td> */}
+                {/* <td className="border border-yellow-300 px-2 py-2 text-slate-700 text-right">₹{row.collectionCharges || '0'}</td>
                 <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.cancellationCharges || '-'}</td>
                 <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.loadingCharges || '-'}</td>
-                <td className="border border-yellow-300 px-2 py-2 text-slate-700 text-right">₹{row.otherCharges || '0'}</td>
+                <td className="border border-yellow-300 px-2 py-2 text-slate-700 text-right">₹{row.otherCharges || '0'}</td> */}
               </tr>
             ))
           ) : (
@@ -1456,12 +1456,12 @@ export default function ApproveAdvancePayment() {
         {/* ===== ORDERS TABLE (READ ONLY with all charges) ===== */}
         <Card title="Order Details (Read Only)">
           <OrdersTable rows={orderRows} />
-          <div className="flex justify-end mt-4">
+          {/* <div className="flex justify-end mt-4">
             <div className="flex items-center gap-3 border border-yellow-300 px-6 py-3 bg-yellow-50 rounded-xl">
               <div className="text-sm font-extrabold text-slate-900">Total Order Amount:</div>
               <div className="text-xl font-extrabold text-yellow-700">₹{calculateTotalOrderAmount().toLocaleString()}</div>
             </div>
-          </div>
+          </div> */}
         </Card>
 
         {/* ===== PURCHASE TERMS (READ ONLY) ===== */}
@@ -1685,7 +1685,7 @@ export default function ApproveAdvancePayment() {
                   <InfoRow label="Company" value={companyName || header.companyName || '-'} />
                   <InfoRow label="Purchase No" value={header.purchaseNo} />
                   <InfoRow label="Total Orders" value={orderRows.length} />
-                  <InfoRow label="Total Order Amount" value={formatCurrency(calculateTotalOrderAmount())} />
+                  {/* <InfoRow label="Total Order Amount" value={formatCurrency(calculateTotalOrderAmount())} /> */}
                 </div>
               </div>
             </div>

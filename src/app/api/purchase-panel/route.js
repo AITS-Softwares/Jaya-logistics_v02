@@ -76,6 +76,42 @@ async function validateUser(req, requiredAction = null) {
   }
 }
 
+// Read-only access for other modules that must pick a Purchase Panel record
+// (e.g. Advance Payment). Their users get access based on THEIR OWN module
+// permission, so they do not also need "Purchase Panel" permission.
+const PURCHASE_LOOKUP_MODULES = {
+  "advance-payment": "Advance Payment",
+};
+
+async function validateUserForPurchaseLookup(req, forKey) {
+  const moduleName = PURCHASE_LOOKUP_MODULES[forKey];
+  if (!moduleName) return validateUser(req, "view");
+
+  const token = getTokenFromHeader(req);
+  if (!token) return { error: "Authentication required. Please login.", status: 401 };
+
+  try {
+    const user = verifyJWT(token);
+    if (!user) return { error: "Invalid or expired token. Please login again.", status: 401 };
+    try { activeOperatingCompanyId(user); } catch (error) { return { error: error.message, status: 401 }; }
+
+    const isAdmin = user.type === "company" || user.roles?.includes("Admin");
+    const moduleData = user.modules?.[moduleName];
+    const canUseModule =
+      isAdmin ||
+      (moduleData?.selected === true &&
+        (moduleData.permissions?.create === true || moduleData.permissions?.view === true));
+
+    if (!canUseModule) {
+      return { error: `Access denied. You don't have permission to access ${moduleName}.`, status: 403 };
+    }
+    return { user, error: null, status: 200 };
+  } catch (err) {
+    console.error("JWT Verification Failed:", err?.message || err);
+    return { error: "Authentication failed. Please login again.", status: 401 };
+  }
+}
+
 // ── HELPER FUNCTIONS ──
 
 function num(value) {
@@ -179,7 +215,8 @@ async function getLRCodeForPurchase(purchase, companyId) {
 export async function GET(req) {
   try {
     await connectDb();
-    const { user, error, status } = await validateUser(req, 'view');
+    const forKey = new URL(req.url).searchParams.get("for");
+    const { user, error, status } = await validateUserForPurchaseLookup(req, forKey);
     if (error) {
       return NextResponse.json({
         success: false,
@@ -441,8 +478,19 @@ export async function POST(req) {
 
     const [existingPurchase, existingConsignment] = await Promise.all([
       PurchasePanel.findOne(companyScopeFilter(user, { loadingInfoNo: body.loadingInfoNo })).lean(),
-      ConsignmentNote.findOne(companyScopeFilter(user, { loadingInfoNo: body.loadingInfoNo })).lean(),
+      ConsignmentNote.findOne(companyScopeFilter(user, {
+        $or: [
+          { loadingInfoNo: body.loadingInfoNo },
+          ...(eligibleLoadingInfo.selectedVehicleNegotiation?.id
+            ? [{
+              vehicleNegotiationRef: eligibleLoadingInfo.selectedVehicleNegotiation.id,
+              "header.status": { $ne: "Rejected" },
+            }]
+            : []),
+        ],
+      })).lean(),
     ]);
+
     if (existingPurchase) {
       return NextResponse.json({ success: false, message: `Loading Info ${body.loadingInfoNo} is already used in purchase ${existingPurchase.purchaseNo}.` }, { status: 409 });
     }

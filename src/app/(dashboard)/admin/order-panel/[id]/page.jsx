@@ -1,6 +1,3 @@
-
-
-
 // "use client";
 
 // import { useMemo, useState, useEffect, useRef, useCallback } from "react";
@@ -180,21 +177,21 @@
 //     setLoading(true);
 //     setError(null);
 //     setMultipleCities([]);
-    
+
 //     try {
 //       const response = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
 //       const data = await response.json();
-      
+
 //       if (data && data[0] && data[0].Status === "Success" && data[0].PostOffice && data[0].PostOffice.length > 0) {
 //         const postOffices = data[0].PostOffice;
-        
+
 //         const uniqueLocations = [];
 //         const seen = new Set();
-        
+
 //         postOffices.forEach(po => {
 //           const cityName = po.Name;
 //           const key = `${po.Name}-${po.District}-${po.State}`;
-          
+
 //           if (!seen.has(key)) {
 //             seen.add(key);
 //             uniqueLocations.push({
@@ -215,11 +212,11 @@
 //             });
 //           }
 //         });
-        
+
 //         if (uniqueLocations.length > 1) {
 //           setMultipleCities(uniqueLocations);
 //         }
-        
+
 //         const firstLocation = uniqueLocations[0];
 //         const result = {
 //           taluka: firstLocation.taluka,
@@ -236,7 +233,7 @@
 //           hasMultiple: uniqueLocations.length > 1,
 //           allLocations: uniqueLocations
 //         };
-        
+
 //         setPincodeData(result);
 //         return result;
 //       } else {
@@ -458,23 +455,23 @@
 //    ========================= */
 //   const recalculatePalletizationWeights = (row) => {
 //     const updatedRow = { ...row };
-    
+
 //     const noOfPallets = num(updatedRow.noOfPallets);
 //     const unitPerPallets = num(updatedRow.unitPerPallets);
 //     const packWeight = num(updatedRow.packWeight);
 //     const uom = (updatedRow.uom || "").toUpperCase().trim();
-    
+
 //     let totalPkgs = num(updatedRow.totalPkgs);
-    
+
 //     if (noOfPallets > 0 && unitPerPallets > 0) {
 //       const calculatedTotalPkgs = noOfPallets * unitPerPallets;
 //       totalPkgs = calculatedTotalPkgs;
 //       updatedRow.totalPkgs = String(calculatedTotalPkgs);
 //     }
-    
+
 //     if (totalPkgs > 0 && packWeight > 0) {
 //       const isLTR = uom === "LTR" || uom === "L" || uom === "LITRE" || uom === "LITRES";
-      
+
 //       if (isLTR) {
 //         const wtLtr = totalPkgs * packWeight;
 //         updatedRow.wtLtr = wtLtr.toFixed(2);
@@ -489,20 +486,20 @@
 //       updatedRow.wtLtr = "";
 //       updatedRow.actualWt = "";
 //     }
-    
+
 //     return updatedRow;
 //   };
 
 //   const recalculateUniformWeights = (row) => {
 //     const updatedRow = { ...row };
-    
+
 //     const totalPkgs = num(updatedRow.totalPkgs);
 //     const packWeight = num(updatedRow.packWeight);
 //     const uom = (updatedRow.uom || "").toUpperCase().trim();
-    
+
 //     if (totalPkgs > 0 && packWeight > 0) {
 //       const isLTR = uom === "LTR" || uom === "L" || uom === "LITRE" || uom === "LITRES";
-      
+
 //       if (isLTR) {
 //         const wtLtr = totalPkgs * packWeight;
 //         updatedRow.wtLtr = wtLtr.toFixed(2);
@@ -517,7 +514,7 @@
 //       updatedRow.wtLtr = "";
 //       updatedRow.actualWt = "";
 //     }
-    
+
 //     return updatedRow;
 //   };
 
@@ -542,21 +539,21 @@
 //     setFetchLoading(true);
 //     try {
 //       const token = localStorage.getItem('token');
-      
+
 //       const res = await fetch(`/api/order-panel?id=${orderId}`, {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       const data = await res.json();
-      
+
 //       if (!data.success) {
 //         throw new Error(data.message || 'Failed to fetch order');
 //       }
 
 //       const order = data.data;
-      
+
 //       setOrderNumber(order.orderPanelNo || order.orderNo || "");
-      
+
 //       setTop({
 //         orderNo: order.orderPanelNo || order.orderNo || "",
 //         branch: order.branch || null,
@@ -617,7 +614,7 @@
 //       // Convert packData to packRows (single array like create page)
 //       if (order.packData) {
 //         const allRows = [];
-        
+
 //         if (order.packData.PALLETIZATION) {
 //           order.packData.PALLETIZATION.forEach(row => {
 //             allRows.push({
@@ -634,7 +631,7 @@
 //             });
 //           });
 //         }
-        
+
 //         if (order.packData["UNIFORM - BAGS/BOXES"]) {
 //           order.packData["UNIFORM - BAGS/BOXES"].forEach(row => {
 //             allRows.push({
@@ -649,7 +646,7 @@
 //             });
 //           });
 //         }
-        
+
 //         if (order.packData["LOOSE - CARGO"]) {
 //           order.packData["LOOSE - CARGO"].forEach(row => {
 //             allRows.push({
@@ -661,7 +658,7 @@
 //             });
 //           });
 //         }
-        
+
 //         if (order.packData["NON-UNIFORM - GENERAL CARGO"]) {
 //           order.packData["NON-UNIFORM - GENERAL CARGO"].forEach(row => {
 //             allRows.push({
@@ -677,7 +674,7 @@
 //             });
 //           });
 //         }
-        
+
 //         if (allRows.length > 0) {
 //           setPackRows(allRows);
 //         } else {
@@ -700,7 +697,7 @@
 //    ========================= */
 //   const handleCustomerSearch = (query) => {
 //     setCustomerSearchQuery(query);
-    
+
 //     if (query.trim() === "") {
 //       setFilteredCustomers(customerSearch.customers);
 //     } else {
@@ -711,7 +708,7 @@
 //       );
 //       setFilteredCustomers(filtered);
 //     }
-    
+
 //     if (selectedCustomer && query !== selectedCustomer.customerName) {
 //       setSelectedCustomer(null);
 //       setTop(prev => ({
@@ -729,7 +726,7 @@
 //     setSelectedCustomer(customer);
 //     setCustomerSearchQuery(customer.customerName);
 //     setShowCustomerDropdown(false);
-    
+
 //     setTop(prev => ({
 //       ...prev,
 //       customerId: customer._id,
@@ -805,10 +802,10 @@
 //   const handlePincodeChange = async (rowId, pincode) => {
 //     updatePlantRow(rowId, 'pinCode', pincode);
 //     setPincodeInput(prev => ({ ...prev, [rowId]: pincode }));
-    
+
 //     if (pincode && pincode.length === 6) {
 //       const result = await pincodeAPI.fetchPincodeDetails(pincode);
-      
+
 //       if (result) {
 //         if (result.hasMultiple && result.allLocations && result.allLocations.length > 0) {
 //           setCityOptionsByRow(prev => ({ 
@@ -861,7 +858,7 @@
 //     updatePlantRow(rowId, 'toName', location.cityName);
 //     updatePlantRow(rowId, 'to', null);
 //     setShowCityDropdown(prev => ({ ...prev, [rowId]: false }));
-    
+
 //     // Update local status after state changes
 //     const row = plantRows.find(r => r._id === rowId);
 //     if (row) {
@@ -906,13 +903,13 @@
 //       prev.map((r) => {
 //         if (r._id === rowId) {
 //           let updatedRow = { ...r, [key]: value };
-          
+
 //           if (r.packType === "PALLETIZATION") {
 //             updatedRow = recalculatePalletizationWeights(updatedRow);
 //           } else if (r.packType === "UNIFORM - BAGS/BOXES") {
 //             updatedRow = recalculateUniformWeights(updatedRow);
 //           }
-          
+
 //           return updatedRow;
 //         }
 //         return r;
@@ -952,7 +949,7 @@
 //       alert("Please select a branch");
 //       return;
 //     }
-    
+
 //     const hasInvalidPlantRows = plantRows.some(row => !row.plantCode);
 //     if (hasInvalidPlantRows) {
 //       alert("Please select plant for all plant rows");
@@ -968,7 +965,7 @@
 //       if (!token) {
 //         throw new Error("No authentication token found. Please login again.");
 //       }
-      
+
 //       const payload = {
 //         id: orderId,
 //         branch: top.branch,
@@ -1080,11 +1077,11 @@
 
 //       setSaveSuccess(true);
 //       alert(`✅ Order updated successfully!\nOrder Panel Number: ${top.orderNo}`);
-      
+
 //       setTimeout(() => {
 //         router.push('/admin/order-panel');
 //       }, 2000);
-      
+
 //     } catch (error) {
 //       console.error('Error updating order:', error);
 //       setSaveError(error.message || 'Failed to update order');
@@ -1172,7 +1169,7 @@
 //                 {top.orderNo || "N/A"}
 //               </div>
 //             </div>
-            
+
 //             <div className="col-span-12 md:col-span-4 relative">
 //               <label className="text-xs font-bold text-slate-600">Branch *</label>
 //               <div className="flex items-center gap-2">
@@ -1196,7 +1193,7 @@
 //                 </button>
 //               </div>
 //             </div>
-            
+
 //             <Select
 //               col="col-span-12 md:col-span-4"
 //               label="Delivery"
@@ -1212,7 +1209,7 @@
 //               value={top.date}
 //               onChange={(v) => setTop((p) => ({ ...p, date: v }))}
 //             />
-            
+
 //             <div className="col-span-12 md:col-span-8 relative">
 //               <label className="text-xs font-bold text-slate-600">Party Name *</label>
 //               <div className="flex items-center gap-2">
@@ -1226,7 +1223,7 @@
 //                     className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
 //                     placeholder="Search customer by name... *"
 //                   />
-                  
+
 //                   {showCustomerDropdown && (
 //                     <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
 //                       {customerSearch.loading ? (
@@ -1337,7 +1334,7 @@
 //                   + Add Row
 //                 </button>
 //               </div>
-              
+
 //               {/* Single Table showing ALL rows with Pack Type column */}
 //               <PackTypeTable
 //                 rows={packRows}
@@ -1453,7 +1450,7 @@
 
 //   const handleSearch = (query) => {
 //     setSearchQuery(query);
-    
+
 //     if (!query.trim()) {
 //       setFilteredItems(items);
 //     } else {
@@ -1463,7 +1460,7 @@
 //       );
 //       setFilteredItems(filtered);
 //     }
-    
+
 //     if (selectedItem && query !== getDisplayValue(selectedItem)) {
 //       setSelectedItem(null);
 //       onSelect?.(null);
@@ -1481,7 +1478,7 @@
 //     if (!showDropdown) {
 //       setFilteredItems(items);
 //       setShowDropdown(true);
-      
+
 //       if (inputRef.current) {
 //         const rect = inputRef.current.getBoundingClientRect();
 //         setDropdownPosition({
@@ -1515,10 +1512,10 @@
 //         });
 //       }
 //     };
-    
+
 //     window.addEventListener('scroll', handleScroll, true);
 //     window.addEventListener('resize', handleScroll);
-    
+
 //     return () => {
 //       window.removeEventListener('scroll', handleScroll, true);
 //       window.removeEventListener('resize', handleScroll);
@@ -1540,7 +1537,7 @@
 //         disabled={disabled}
 //         autoComplete="off"
 //       />
-      
+
 //       {showDropdown && (
 //         <div 
 //           className="fixed z-[9999] bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto"
@@ -1612,7 +1609,7 @@
 //     if (row) {
 //       const fromState = row.fromState?.trim().toUpperCase() || '';
 //       const toState = row.stateName?.trim().toUpperCase() || '';
-      
+
 //       if (!fromState || !toState) {
 //         onChange(rowId, 'localStatus', 'unknown');
 //         onChange(rowId, 'localStatusLabel', 'Unknown');
@@ -1708,10 +1705,10 @@
 //         });
 //       }
 //     };
-    
+
 //     window.addEventListener('scroll', handleScroll, true);
 //     window.addEventListener('resize', handleScroll);
-    
+
 //     return () => {
 //       window.removeEventListener('scroll', handleScroll, true);
 //       window.removeEventListener('resize', handleScroll);
@@ -1746,7 +1743,7 @@
 //             const isPincodeLoading = pincodeAPI.loading && pincodeInput[r._id]?.length === 6;
 //             const cityOptions = cityOptionsByRow[r._id] || [];
 //             const hasCities = cityOptions.length > 0;
-            
+
 //             return (
 //               <tr key={r._id} className="hover:bg-yellow-50 even:bg-slate-50">
 //                 <td className="border border-yellow-300 px-2 py-2">
@@ -1993,7 +1990,7 @@
 //               </tr>
 //             );
 //           })}
-          
+
 //           {rows.length === 0 && (
 //             <tr>
 //               <td colSpan={cols.length + 1} className="border border-yellow-300 px-4 py-8 text-center text-slate-400">
@@ -2087,7 +2084,7 @@
 
 //   const handleSearch = (query) => {
 //     setSearchQuery(query);
-    
+
 //     if (!query.trim()) {
 //       setFilteredItems(items);
 //     } else {
@@ -2100,7 +2097,7 @@
 //       });
 //       setFilteredItems(filtered);
 //     }
-    
+
 //     if (selectedItem && query !== getDisplayValue(selectedItem)) {
 //       setSelectedItem(null);
 //       onSelect?.(null);
@@ -2117,14 +2114,14 @@
 //   const handleInputFocus = () => {
 //     if (!showDropdown && inputRef.current) {
 //       setFilteredItems(items);
-      
+
 //       const rect = inputRef.current.getBoundingClientRect();
 //       setDropdownPosition({
 //         top: rect.bottom + window.scrollY,
 //         left: rect.left + window.scrollX,
 //         width: rect.width
 //       });
-      
+
 //       setShowDropdown(true);
 //     }
 //   };
@@ -2162,7 +2159,7 @@
 //           </div>
 //         )}
 //       </div>
-      
+
 //       {showDropdown && (
 //         <div 
 //           ref={dropdownRef}
@@ -2235,7 +2232,7 @@
 //   onNavigateToCreateSKUSize,
 //   onNavigateToCreateItem
 // }) {
-  
+
 //   const [showItemDropdown, setShowItemDropdown] = useState({});
 //   const [itemSearchQuery, setItemSearchQuery] = useState({});
 //   const [filteredItems, setFilteredItems] = useState({});
@@ -2303,7 +2300,7 @@
 
 //   const handleItemSearch = (rowId, query) => {
 //     setItemSearchQuery(prev => ({ ...prev, [rowId]: query }));
-    
+
 //     if (!query.trim()) {
 //       setFilteredItems(prev => ({ ...prev, [rowId]: items }));
 //     } else {
@@ -2324,14 +2321,14 @@
 //   const handleItemInputFocus = (rowId, event) => {
 //     if (!showItemDropdown[rowId]) {
 //       setFilteredItems(prev => ({ ...prev, [rowId]: items }));
-      
+
 //       const rect = event.target.getBoundingClientRect();
 //       setItemDropdownPosition({
 //         top: rect.bottom + window.scrollY,
 //         left: rect.left + window.scrollX,
 //         width: rect.width
 //       });
-      
+
 //       setShowItemDropdown(prev => ({ ...prev, [rowId]: true }));
 //     }
 //   };
@@ -2357,10 +2354,10 @@
 //         }
 //       });
 //     };
-    
+
 //     window.addEventListener('scroll', handleScroll, true);
 //     window.addEventListener('resize', handleScroll);
-    
+
 //     return () => {
 //       window.removeEventListener('scroll', handleScroll, true);
 //       window.removeEventListener('resize', handleScroll);
@@ -2405,7 +2402,7 @@
 //           {rows.length > 0 ? (
 //             rows.map((r) => {
 //               const cols = getColumnsForRow(r.packType);
-              
+
 //               return (
 //                 <tr key={r._id} className="hover:bg-yellow-50 even:bg-slate-50">
 //                   <td className="border border-yellow-300 px-2 py-2 text-center font-semibold bg-yellow-50">
@@ -2414,7 +2411,7 @@
 //                      r.packType === "LOOSE - CARGO" ? "Loose - Cargo" :
 //                      "Non-uniform - General Cargo"}
 //                   </td>
-                  
+
 //                   {cols.map((c) => {
 //                     if (c.key === "wtUom") {
 //                       return (
@@ -2428,7 +2425,7 @@
 //                         </td>
 //                       );
 //                     }
-                    
+
 //                     if (c.readOnly && (c.key === "wtLtr" || c.key === "actualWt" || c.key === "totalPkgs")) {
 //                       return (
 //                         <td key={c.key} className="border border-yellow-300 px-2 py-2">
@@ -2442,7 +2439,7 @@
 //                         </td>
 //                       );
 //                     }
-                    
+
 //                     return (
 //                       <td key={c.key} className="border border-yellow-300 px-2 py-2">
 //                         {c.isDynamic ? (
@@ -2719,6 +2716,7 @@ function defaultPlantRow() {
     plantCodeValue: "",
     orderType: "",
     pinCode: "",
+    locationRemark: "",
     from: null,
     fromName: "",
     fromState: "",
@@ -2795,21 +2793,21 @@ function useExternalPincodeAPI() {
     setLoading(true);
     setError(null);
     setMultipleCities([]);
-    
+
     try {
       const response = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
       const data = await response.json();
-      
+
       if (data && data[0] && data[0].Status === "Success" && data[0].PostOffice && data[0].PostOffice.length > 0) {
         const postOffices = data[0].PostOffice;
-        
+
         const uniqueLocations = [];
         const seen = new Set();
-        
+
         postOffices.forEach(po => {
           const cityName = po.Name;
           const key = `${po.Name}-${po.District}-${po.State}`;
-          
+
           if (!seen.has(key)) {
             seen.add(key);
             uniqueLocations.push({
@@ -2830,11 +2828,11 @@ function useExternalPincodeAPI() {
             });
           }
         });
-        
+
         if (uniqueLocations.length > 1) {
           setMultipleCities(uniqueLocations);
         }
-        
+
         const firstLocation = uniqueLocations[0];
         const result = {
           taluka: firstLocation.taluka,
@@ -2851,7 +2849,7 @@ function useExternalPincodeAPI() {
           hasMultiple: uniqueLocations.length > 1,
           allLocations: uniqueLocations
         };
-        
+
         setPincodeData(result);
         return result;
       } else {
@@ -2880,7 +2878,7 @@ export default function EditOrderPanel() {
    ========================= */
   const [branches, setBranches] = useState([]);
   const [subCompanies, setSubCompanies] = useState([]);
-  const [locations, setLocations] = useState([]); 
+  const [locations, setLocations] = useState([]);
   const [countries, setCountries] = useState([]);
   const [states, setStates] = useState([]);
   const [districts, setDistricts] = useState([]);
@@ -3092,23 +3090,23 @@ export default function EditOrderPanel() {
    ========================= */
   const recalculatePalletizationWeights = (row) => {
     const updatedRow = { ...row };
-    
+
     const noOfPallets = num(updatedRow.noOfPallets);
     const unitPerPallets = num(updatedRow.unitPerPallets);
     const packWeight = num(updatedRow.packWeight);
     const uom = (updatedRow.uom || "").toUpperCase().trim();
-    
+
     let totalPkgs = num(updatedRow.totalPkgs);
-    
+
     if (noOfPallets > 0 && unitPerPallets > 0) {
       const calculatedTotalPkgs = noOfPallets * unitPerPallets;
       totalPkgs = calculatedTotalPkgs;
       updatedRow.totalPkgs = String(calculatedTotalPkgs);
     }
-    
+
     if (totalPkgs > 0 && packWeight > 0) {
       const isLTR = uom === "LTR" || uom === "L" || uom === "LITRE" || uom === "LITRES";
-      
+
       if (isLTR) {
         const wtLtr = totalPkgs * packWeight;
         updatedRow.wtLtr = wtLtr.toFixed(2);
@@ -3123,20 +3121,20 @@ export default function EditOrderPanel() {
       updatedRow.wtLtr = "";
       updatedRow.actualWt = "";
     }
-    
+
     return updatedRow;
   };
 
   const recalculateUniformWeights = (row) => {
     const updatedRow = { ...row };
-    
+
     const totalPkgs = num(updatedRow.totalPkgs);
     const packWeight = num(updatedRow.packWeight);
     const uom = (updatedRow.uom || "").toUpperCase().trim();
-    
+
     if (totalPkgs > 0 && packWeight > 0) {
       const isLTR = uom === "LTR" || uom === "L" || uom === "LITRE" || uom === "LITRES";
-      
+
       if (isLTR) {
         const wtLtr = totalPkgs * packWeight;
         updatedRow.wtLtr = wtLtr.toFixed(2);
@@ -3151,7 +3149,7 @@ export default function EditOrderPanel() {
       updatedRow.wtLtr = "";
       updatedRow.actualWt = "";
     }
-    
+
     return updatedRow;
   };
 
@@ -3177,21 +3175,21 @@ export default function EditOrderPanel() {
     setFetchLoading(true);
     try {
       const token = localStorage.getItem('token');
-      
+
       const res = await fetch(`/api/order-panel?id=${orderId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       const data = await res.json();
-      
+
       if (!data.success) {
         throw new Error(data.message || 'Failed to fetch order');
       }
 
       const order = data.data;
-      
+
       setOrderNumber(order.orderPanelNo || order.orderNo || "");
-      
+
       setTop({
         orderNo: order.orderPanelNo || order.orderNo || "",
         branch: order.branch || null,
@@ -3227,6 +3225,7 @@ export default function EditOrderPanel() {
           plantCodeValue: row.plantCodeValue || "",
           orderType: row.orderType || "Sales",
           pinCode: row.pinCode || "",
+          locationRemark: row.locationRemark || "",
           from: row.from || null,
           fromName: row.fromName || "",
           fromState: row.fromState || "",
@@ -3255,7 +3254,7 @@ export default function EditOrderPanel() {
       // Convert packData to packRows (single array like create page)
       if (order.packData) {
         const allRows = [];
-        
+
         if (order.packData.PALLETIZATION) {
           order.packData.PALLETIZATION.forEach(row => {
             allRows.push({
@@ -3272,7 +3271,7 @@ export default function EditOrderPanel() {
             });
           });
         }
-        
+
         if (order.packData["UNIFORM - BAGS/BOXES"]) {
           order.packData["UNIFORM - BAGS/BOXES"].forEach(row => {
             allRows.push({
@@ -3287,7 +3286,7 @@ export default function EditOrderPanel() {
             });
           });
         }
-        
+
         if (order.packData["LOOSE - CARGO"]) {
           order.packData["LOOSE - CARGO"].forEach(row => {
             allRows.push({
@@ -3299,7 +3298,7 @@ export default function EditOrderPanel() {
             });
           });
         }
-        
+
         if (order.packData["NON-UNIFORM - GENERAL CARGO"]) {
           order.packData["NON-UNIFORM - GENERAL CARGO"].forEach(row => {
             allRows.push({
@@ -3315,7 +3314,7 @@ export default function EditOrderPanel() {
             });
           });
         }
-        
+
         if (allRows.length > 0) {
           setPackRows(allRows);
         } else {
@@ -3338,7 +3337,7 @@ export default function EditOrderPanel() {
    ========================= */
   const handleCustomerSearch = (query) => {
     setCustomerSearchQuery(query);
-    
+
     if (query.trim() === "") {
       setFilteredCustomers(customerSearch.customers);
     } else {
@@ -3349,7 +3348,7 @@ export default function EditOrderPanel() {
       );
       setFilteredCustomers(filtered);
     }
-    
+
     if (selectedCustomer && query !== selectedCustomer.customerName) {
       setSelectedCustomer(null);
       setTop(prev => ({
@@ -3367,7 +3366,7 @@ export default function EditOrderPanel() {
     setSelectedCustomer(customer);
     setCustomerSearchQuery(customer.customerName);
     setShowCustomerDropdown(false);
-    
+
     setTop(prev => ({
       ...prev,
       customerId: customer._id,
@@ -3443,15 +3442,15 @@ export default function EditOrderPanel() {
   const handlePincodeChange = async (rowId, pincode) => {
     updatePlantRow(rowId, 'pinCode', pincode);
     setPincodeInput(prev => ({ ...prev, [rowId]: pincode }));
-    
+
     if (pincode && pincode.length === 6) {
       const result = await pincodeAPI.fetchPincodeDetails(pincode);
-      
+
       if (result) {
         if (result.hasMultiple && result.allLocations && result.allLocations.length > 0) {
-          setCityOptionsByRow(prev => ({ 
-            ...prev, 
-            [rowId]: result.allLocations 
+          setCityOptionsByRow(prev => ({
+            ...prev,
+            [rowId]: result.allLocations
           }));
         } else {
           setCityOptionsByRow(prev => ({ ...prev, [rowId]: [] }));
@@ -3499,7 +3498,7 @@ export default function EditOrderPanel() {
     updatePlantRow(rowId, 'toName', location.cityName);
     updatePlantRow(rowId, 'to', null);
     setShowCityDropdown(prev => ({ ...prev, [rowId]: false }));
-    
+
     // Update local status after state changes
     const row = plantRows.find(r => r._id === rowId);
     if (row) {
@@ -3544,13 +3543,13 @@ export default function EditOrderPanel() {
       prev.map((r) => {
         if (r._id === rowId) {
           let updatedRow = { ...r, [key]: value };
-          
+
           if (r.packType === "PALLETIZATION") {
             updatedRow = recalculatePalletizationWeights(updatedRow);
           } else if (r.packType === "UNIFORM - BAGS/BOXES") {
             updatedRow = recalculateUniformWeights(updatedRow);
           }
-          
+
           return updatedRow;
         }
         return r;
@@ -3590,7 +3589,7 @@ export default function EditOrderPanel() {
       alert("Please select a branch");
       return;
     }
-    
+
     const hasInvalidPlantRows = plantRows.some(row => !row.plantCode);
     if (hasInvalidPlantRows) {
       alert("Please select plant for all plant rows");
@@ -3606,7 +3605,7 @@ export default function EditOrderPanel() {
       if (!token) {
         throw new Error("No authentication token found. Please login again.");
       }
-      
+
       const payload = {
         id: orderId,
         branch: top.branch,
@@ -3629,6 +3628,7 @@ export default function EditOrderPanel() {
           plantCodeValue: row.plantCodeValue || '',
           orderType: row.orderType || "Sales",
           pinCode: row.pinCode || "",
+          locationRemark: row.locationRemark || "",
           from: row.from || null,
           fromName: row.fromName || "",
           fromState: row.fromState || "",
@@ -3721,11 +3721,11 @@ export default function EditOrderPanel() {
 
       setSaveSuccess(true);
       alert(`✅ Order updated successfully!\nOrder Panel Number: ${top.orderNo}`);
-      
+
       setTimeout(() => {
         router.push('/admin/order-panel');
       }, 2000);
-      
+
     } catch (error) {
       console.error('Error updating order:', error);
       setSaveError(error.message || 'Failed to update order');
@@ -3782,11 +3782,10 @@ export default function EditOrderPanel() {
             <button
               onClick={handleUpdate}
               disabled={saving}
-              className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${
-                saving 
-                  ? 'bg-gray-400 cursor-not-allowed' 
+              className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${saving
+                  ? 'bg-gray-400 cursor-not-allowed'
                   : 'bg-sky-600 hover:bg-sky-700'
-              }`}
+                }`}
             >
               {saving ? (
                 <span className="flex items-center gap-2">
@@ -3813,7 +3812,7 @@ export default function EditOrderPanel() {
                 {top.orderNo || "N/A"}
               </div>
             </div>
-            
+
             <div className="col-span-12 md:col-span-4 relative">
               <label className="text-xs font-bold text-slate-600">Branch *</label>
               <div className="flex items-center gap-2">
@@ -3863,7 +3862,7 @@ export default function EditOrderPanel() {
                 ))}
               </select>
             </div>
-            
+
             <Select
               col="col-span-12 md:col-span-4"
               label="Delivery"
@@ -3879,7 +3878,7 @@ export default function EditOrderPanel() {
               value={top.date}
               onChange={(v) => setTop((p) => ({ ...p, date: v }))}
             />
-            
+
             <div className="col-span-12 md:col-span-8 relative">
               <label className="text-xs font-bold text-slate-600">Party Name *</label>
               <div className="flex items-center gap-2">
@@ -3893,7 +3892,7 @@ export default function EditOrderPanel() {
                     className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
                     placeholder="Search customer by name... *"
                   />
-                  
+
                   {showCustomerDropdown && (
                     <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
                       {customerSearch.loading ? (
@@ -3919,8 +3918,8 @@ export default function EditOrderPanel() {
                         ))
                       ) : (
                         <div className="p-3 text-center text-sm text-slate-500">
-                          {customerSearchQuery.trim() ? 
-                            `No customers found for "${customerSearchQuery}"` : 
+                          {customerSearchQuery.trim() ?
+                            `No customers found for "${customerSearchQuery}"` :
                             "No customers available"
                           }
                         </div>
@@ -3943,11 +3942,10 @@ export default function EditOrderPanel() {
               <div className="flex gap-2">
                 <button
                   onClick={() => setShowCharges(!showCharges)}
-                  className={`rounded-xl px-4 py-2 text-sm font-bold transition ${
-                    showCharges 
-                      ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                  className={`rounded-xl px-4 py-2 text-sm font-bold transition ${showCharges
+                      ? 'bg-blue-600 text-white hover:bg-blue-700'
                       : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
+                    }`}
                 >
                   {showCharges ? 'Hide Charges' : 'Charges'}
                 </button>
@@ -4004,7 +4002,7 @@ export default function EditOrderPanel() {
                   + Add Row
                 </button>
               </div>
-              
+
               {/* Single Table showing ALL rows with Pack Type column */}
               <PackTypeTable
                 rows={packRows}
@@ -4079,10 +4077,10 @@ function Select({ label, value, onChange, options = [], col = "" }) {
   );
 }
 
-function SearchableDropdown({ 
-  items, 
-  selectedId, 
-  onSelect, 
+function SearchableDropdown({
+  items,
+  selectedId,
+  onSelect,
   placeholder = "Search...",
   required = false,
   displayField = 'name',
@@ -4122,7 +4120,7 @@ function SearchableDropdown({
   const handleSearch = (query) => {
     setSearchQuery(query);
     setHighlightedIndex(-1);
-    
+
     if (!query.trim()) {
       setFilteredItems(items);
     } else {
@@ -4132,7 +4130,7 @@ function SearchableDropdown({
       );
       setFilteredItems(filtered);
     }
-    
+
     if (selectedItem && query !== getDisplayValue(selectedItem)) {
       setSelectedItem(null);
       onSelect?.(null);
@@ -4163,7 +4161,7 @@ function SearchableDropdown({
     if (!showDropdown) {
       setFilteredItems(items);
       setShowDropdown(true);
-      
+
       if (inputRef.current) {
         const rect = inputRef.current.getBoundingClientRect();
         setDropdownPosition({
@@ -4197,10 +4195,10 @@ function SearchableDropdown({
         });
       }
     };
-    
+
     window.addEventListener('scroll', handleScroll, true);
     window.addEventListener('resize', handleScroll);
-    
+
     return () => {
       window.removeEventListener('scroll', handleScroll, true);
       window.removeEventListener('resize', handleScroll);
@@ -4223,9 +4221,9 @@ function SearchableDropdown({
         disabled={disabled}
         autoComplete="off"
       />
-      
+
       {showDropdown && (
-        <div 
+        <div
           className="fixed z-[9999] bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto"
           style={{
             top: `${dropdownPosition.top}px`,
@@ -4241,9 +4239,8 @@ function SearchableDropdown({
                   e.preventDefault();
                   handleSelectItem(item);
                 }}
-                className={`p-3 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors ${
-                  selectedItem?._id === item._id || highlightedIndex === filteredItems.indexOf(item) ? 'bg-sky-100' : ''
-                }`}
+                className={`p-3 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors ${selectedItem?._id === item._id || highlightedIndex === filteredItems.indexOf(item) ? 'bg-sky-100' : ''
+                  }`}
               >
                 <div className="font-medium text-slate-800">
                   {item[displayField]}
@@ -4257,8 +4254,8 @@ function SearchableDropdown({
             ))
           ) : (
             <div className="p-3 text-center text-sm text-slate-500">
-              {searchQuery.trim() ? 
-                `No items found for "${searchQuery}"` : 
+              {searchQuery.trim() ?
+                `No items found for "${searchQuery}"` :
                 "No items available"
               }
             </div>
@@ -4271,15 +4268,15 @@ function SearchableDropdown({
 
 // [Note: PlantGridTable, TableSearchableDropdown, and PackTypeTable components remain the same as in the original code]
 
-function PlantGridTable({ 
-  rows, 
-  onChange, 
-  onRemove, 
+function PlantGridTable({
+  rows,
+  onChange,
+  onRemove,
   onPlantChange,
   onPincodeChange,
   onSelectCity,
   plants,
-  locations, 
+  locations,
   branches,
   pincodeAPI,
   pincodeInput,
@@ -4297,7 +4294,7 @@ function PlantGridTable({
     if (row) {
       const fromState = row.fromState?.trim().toUpperCase() || '';
       const toState = row.stateName?.trim().toUpperCase() || '';
-      
+
       if (!fromState || !toState) {
         onChange(rowId, 'localStatus', 'unknown');
         onChange(rowId, 'localStatusLabel', 'Unknown');
@@ -4372,6 +4369,8 @@ function PlantGridTable({
     );
   }
 
+  cols.push({ key: "locationRemark", label: "Location Remark", width: "220px" });
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (activeCityRowId && !event.target.closest('.city-dropdown-container') && !event.target.closest('.city-input-field')) {
@@ -4393,10 +4392,10 @@ function PlantGridTable({
         });
       }
     };
-    
+
     window.addEventListener('scroll', handleScroll, true);
     window.addEventListener('resize', handleScroll);
-    
+
     return () => {
       window.removeEventListener('scroll', handleScroll, true);
       window.removeEventListener('resize', handleScroll);
@@ -4415,7 +4414,7 @@ function PlantGridTable({
                 className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 text-center"
               >
                 {c.label}
-                {(c.key === "plantName" || c.key === "taluka" || c.key === "district" || c.key === "state" || c.key === "country") && 
+                {(c.key === "plantName" || c.key === "taluka" || c.key === "district" || c.key === "state" || c.key === "country") &&
                   <span className="ml-1 text-xs text-blue-600">*Auto</span>
                 }
               </th>
@@ -4431,7 +4430,7 @@ function PlantGridTable({
             const isPincodeLoading = pincodeAPI.loading && pincodeInput[r._id]?.length === 6;
             const cityOptions = cityOptionsByRow[r._id] || [];
             const hasCities = cityOptions.length > 0;
-            
+
             return (
               <tr key={r._id} className="hover:bg-yellow-50 even:bg-slate-50">
                 <td className="border border-yellow-300 px-2 py-2">
@@ -4541,9 +4540,8 @@ function PlantGridTable({
                           handleCityInputClick(e, r._id);
                         }
                       }}
-                      className={`city-input-field w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${
-                        hasCities ? 'cursor-pointer bg-yellow-50 hover:bg-yellow-100' : ''
-                      }`}
+                      className={`city-input-field w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${hasCities ? 'cursor-pointer bg-yellow-50 hover:bg-yellow-100' : ''
+                        }`}
                       placeholder={hasCities ? "Click to select city/area" : "Enter city name"}
                     />
                     {hasCities && (
@@ -4584,11 +4582,10 @@ function PlantGridTable({
                 </td>
                 <td className="border border-yellow-300 px-2 py-2 text-center">
                   {r.fromState && r.stateName ? (
-                    <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${
-                      r.fromState.trim().toUpperCase() === r.stateName.trim().toUpperCase()
+                    <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${r.fromState.trim().toUpperCase() === r.stateName.trim().toUpperCase()
                         ? 'bg-green-100 text-green-800 border border-green-300'
                         : 'bg-red-100 text-red-800 border border-red-300'
-                    }`}>
+                      }`}>
                       {r.fromState.trim().toUpperCase() === r.stateName.trim().toUpperCase() ? '✅ Local' : '❌ Not Local'}
                     </span>
                   ) : (
@@ -4667,6 +4664,18 @@ function PlantGridTable({
                     </td>
                   </>
                 )}
+                {/* Location Remark */}
+                <td className="border border-yellow-300 px-2 py-2">
+                  <input
+                    type="text"
+                    value={r.locationRemark || ""}
+                    onChange={(e) => onChange(r._id, 'locationRemark', e.target.value)}
+                    maxLength={200}
+                    className="w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+                    placeholder="Exact area / landmark (optional)"
+                  />
+                </td>
+
                 <td className="border border-yellow-300 px-2 py-2 text-center">
                   <button
                     onClick={() => onRemove(r._id)}
@@ -4678,7 +4687,7 @@ function PlantGridTable({
               </tr>
             );
           })}
-          
+
           {rows.length === 0 && (
             <tr>
               <td colSpan={cols.length + 1} className="border border-yellow-300 px-4 py-8 text-center text-slate-400">
@@ -4690,7 +4699,7 @@ function PlantGridTable({
       </table>
 
       {activeCityRowId && cityOptionsByRow[activeCityRowId] && cityOptionsByRow[activeCityRowId].length > 0 && (
-        <div 
+        <div
           className="fixed z-[99999] bg-white border border-slate-200 rounded-lg shadow-xl overflow-y-auto"
           style={{
             position: 'fixed',
@@ -4729,10 +4738,10 @@ function PlantGridTable({
   );
 }
 
-function TableSearchableDropdown({ 
-  items, 
-  selectedId, 
-  onSelect, 
+function TableSearchableDropdown({
+  items,
+  selectedId,
+  onSelect,
   placeholder = "Search...",
   required = false,
   displayField = 'name',
@@ -4774,7 +4783,7 @@ function TableSearchableDropdown({
   const handleSearch = (query) => {
     setSearchQuery(query);
     setHighlightedIndex(-1);
-    
+
     if (!query.trim()) {
       setFilteredItems(items);
     } else {
@@ -4787,7 +4796,7 @@ function TableSearchableDropdown({
       });
       setFilteredItems(filtered);
     }
-    
+
     if (selectedItem && query !== getDisplayValue(selectedItem)) {
       setSelectedItem(null);
       onSelect?.(null);
@@ -4817,14 +4826,14 @@ function TableSearchableDropdown({
   const handleInputFocus = () => {
     if (!showDropdown && inputRef.current) {
       setFilteredItems(items);
-      
+
       const rect = inputRef.current.getBoundingClientRect();
       setDropdownPosition({
         top: rect.bottom + window.scrollY,
         left: rect.left + window.scrollX,
         width: rect.width
       });
-      
+
       setShowDropdown(true);
     }
   };
@@ -4863,9 +4872,9 @@ function TableSearchableDropdown({
           </div>
         )}
       </div>
-      
+
       {showDropdown && (
-        <div 
+        <div
           ref={dropdownRef}
           className="fixed z-[10000] bg-white border border-slate-200 rounded-lg shadow-xl overflow-y-auto"
           style={{
@@ -4888,9 +4897,8 @@ function TableSearchableDropdown({
                   e.preventDefault();
                   handleSelectItem(item);
                 }}
-                className={`p-2 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors ${
-                  selectedItem?._id === item._id || highlightedIndex === filteredItems.indexOf(item) ? 'bg-sky-100' : ''
-                }`}
+                className={`p-2 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors ${selectedItem?._id === item._id || highlightedIndex === filteredItems.indexOf(item) ? 'bg-sky-100' : ''
+                  }`}
               >
                 {renderItem ? (
                   renderItem(item)
@@ -4910,8 +4918,8 @@ function TableSearchableDropdown({
             ))
           ) : (
             <div className="p-3 text-center text-sm text-slate-500">
-              {searchQuery.trim() ? 
-                `No items found for "${searchQuery}"` : 
+              {searchQuery.trim() ?
+                `No items found for "${searchQuery}"` :
                 "No items available"
               }
             </div>
@@ -4922,21 +4930,21 @@ function TableSearchableDropdown({
   );
 }
 
-function PackTypeTable({ 
-  rows, 
-  onChange, 
-  onRemove, 
-  onDuplicate, 
-  pkgTypes = [], 
-  uoms = [], 
-  skuSizes = [], 
+function PackTypeTable({
+  rows,
+  onChange,
+  onRemove,
+  onDuplicate,
+  pkgTypes = [],
+  uoms = [],
+  skuSizes = [],
   items = [],
-  onNavigateToCreate, 
-  onNavigateToCreateUOM, 
+  onNavigateToCreate,
+  onNavigateToCreateUOM,
   onNavigateToCreateSKUSize,
   onNavigateToCreateItem
 }) {
-  
+
   const [showItemDropdown, setShowItemDropdown] = useState({});
   const [itemHighlightedIndex, setItemHighlightedIndex] = useState({});
   const [itemSearchQuery, setItemSearchQuery] = useState({});
@@ -5006,7 +5014,7 @@ function PackTypeTable({
   const handleItemSearch = (rowId, query) => {
     setItemSearchQuery(prev => ({ ...prev, [rowId]: query }));
     setItemHighlightedIndex(prev => ({ ...prev, [rowId]: -1 }));
-    
+
     if (!query.trim()) {
       setFilteredItems(prev => ({ ...prev, [rowId]: items }));
     } else {
@@ -5027,14 +5035,14 @@ function PackTypeTable({
   const handleItemInputFocus = (rowId, event) => {
     if (!showItemDropdown[rowId]) {
       setFilteredItems(prev => ({ ...prev, [rowId]: items }));
-      
+
       const rect = event.target.getBoundingClientRect();
       setItemDropdownPosition({
         top: rect.bottom + window.scrollY,
         left: rect.left + window.scrollX,
         width: rect.width
       });
-      
+
       setShowItemDropdown(prev => ({ ...prev, [rowId]: true }));
     }
   };
@@ -5060,10 +5068,10 @@ function PackTypeTable({
         }
       });
     };
-    
+
     window.addEventListener('scroll', handleScroll, true);
     window.addEventListener('resize', handleScroll);
-    
+
     return () => {
       window.removeEventListener('scroll', handleScroll, true);
       window.removeEventListener('resize', handleScroll);
@@ -5108,16 +5116,16 @@ function PackTypeTable({
           {rows.length > 0 ? (
             rows.map((r) => {
               const cols = getColumnsForRow(r.packType);
-              
+
               return (
                 <tr key={r._id} className="hover:bg-yellow-50 even:bg-slate-50">
                   <td className="border border-yellow-300 px-2 py-2 text-center font-semibold bg-yellow-50">
                     {r.packType === "PALLETIZATION" ? "Palletization" :
-                     r.packType === "UNIFORM - BAGS/BOXES" ? "Uniform - Bags/Boxes" :
-                     r.packType === "LOOSE - CARGO" ? "Loose - Cargo" :
-                     "Non-uniform - General Cargo"}
+                      r.packType === "UNIFORM - BAGS/BOXES" ? "Uniform - Bags/Boxes" :
+                        r.packType === "LOOSE - CARGO" ? "Loose - Cargo" :
+                          "Non-uniform - General Cargo"}
                   </td>
-                  
+
                   {cols.map((c) => {
                     if (c.key === "wtUom") {
                       return (
@@ -5131,7 +5139,7 @@ function PackTypeTable({
                         </td>
                       );
                     }
-                    
+
                     if (c.readOnly && (c.key === "wtLtr" || c.key === "actualWt" || c.key === "totalPkgs")) {
                       return (
                         <td key={c.key} className="border border-yellow-300 px-2 py-2">
@@ -5145,7 +5153,7 @@ function PackTypeTable({
                         </td>
                       );
                     }
-                    
+
                     return (
                       <td key={c.key} className="border border-yellow-300 px-2 py-2">
                         {c.isDynamic ? (
@@ -5226,7 +5234,7 @@ function PackTypeTable({
                                   autoComplete="off"
                                 />
                                 {showItemDropdown[r._id] && (
-                                  <div 
+                                  <div
                                     ref={el => itemDropdownRef.current[r._id] = el}
                                     className="fixed z-[10000] bg-white border border-slate-200 rounded-lg shadow-xl overflow-y-auto"
                                     style={{
@@ -5286,11 +5294,10 @@ function PackTypeTable({
                             value={r[c.key] || ""}
                             readOnly={c.readOnly}
                             onChange={(e) => handleChange(r._id, c.key, e.target.value)}
-                            className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${
-                              c.readOnly 
-                                ? 'bg-slate-100 text-slate-700' 
+                            className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${c.readOnly
+                                ? 'bg-slate-100 text-slate-700'
                                 : 'bg-white'
-                            }`}
+                              }`}
                             placeholder={c.readOnly ? "Auto-calculated" : `Enter ${c.label}`}
                             step={c.type === "number" ? "0.001" : undefined}
                           />

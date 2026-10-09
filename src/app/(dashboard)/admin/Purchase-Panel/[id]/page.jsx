@@ -1,6 +1,3 @@
-
-
-
 // "use client";
 
 // import { useMemo, useState, useEffect, useRef } from "react";
@@ -3921,6 +3918,18 @@ export default function EditPurchasePanel() {
           const linkedVnn = referenceData.data?.vehicleNegotiation;
           const linkedLoadingInfo = referenceData.data?.loadingInfo;
 
+          // Loading charges & expenses are entered on Loading Info; always show its latest values here
+          const linkedWeighment = linkedLoadingInfo?.loadedWeighment;
+          if (referenceRes.ok && referenceData.success && linkedWeighment) {
+            setLoadingExpenses({
+              loadingCharges: linkedWeighment.loadingCharges?.toString() || "0",
+              loadingStaffMunshiyana: linkedWeighment.loadingStaffMunshiyana?.toString() || "0",
+              otherExpenses: linkedWeighment.otherExpenses?.toString() || "0",
+              vehicleFloorTarpaulin: linkedWeighment.vehicleFloorTarpaulin?.toString() || "0",
+              vehicleOuterTarpaulin: linkedWeighment.vehicleOuterTarpaulin?.toString() || "0",
+            });
+          }
+
           if (referenceRes.ok && referenceData.success && linkedVnn) {
             setSelectedVNN(linkedVnn);
             setPurchaseDetails((previous) => ({
@@ -4234,6 +4243,7 @@ export default function EditPurchasePanel() {
         ...header,
         branch: vnnData.branch || "",
         branchName: vnnData.branchName || "",
+        branchCode: vnnData.branchCode || "",
         subCompanyId: subCompanyId,
         subCompanyName: subCompanyName,
         subCompanyCode: subCompanyCode,
@@ -4664,15 +4674,10 @@ export default function EditPurchasePanel() {
     );
   };
 
-  const calculateTotalWarehouseExpenses = () => {
-    return (
-      num(warehouseExpenses.wVehicleFloorTarpaulin) +
-      num(warehouseExpenses.wVehicleOuterTarpaulin)
-    );
-  };
+  const calculateTotalWarehouseExpenses = () => calculateTotalLoadingExpenses(); // loading charges & expenses are deducted at the warehouse
 
   const calculateAdvancePlusDeduct = () => {
-    return num(purchaseDetails.advance) + calculateTotalLoadingExpenses() + calculateTotalWarehouseExpenses();
+    return num(purchaseDetails.advance) + calculateTotalLoadingExpenses();
   };
 
   const calculateBalance = () => {
@@ -4686,7 +4691,7 @@ export default function EditPurchasePanel() {
     const totalLoadingExpenses = calculateTotalLoadingExpenses();
     const totalWarehouseExpenses = calculateTotalWarehouseExpenses();
 
-    return advance + totalAdditions - totalDeductions - totalLoadingExpenses - totalWarehouseExpenses;
+    return advance + totalAdditions - totalDeductions - totalWarehouseExpenses; // office additions/deductions and warehouse deductions
   };
 
   /** =========================
@@ -5670,12 +5675,12 @@ export default function EditPurchasePanel() {
 
         {/* Loading Charges & Expenses Section - Deduct at Office */}
         <div className="mt-4">
-          <Card title="Loading Charges & Expenses - Deduct at Office">
+          <Card title="Loading Charges & Expenses - Deduct at Warehouse">
             <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-sm font-bold text-slate-800">Deduct at Office</h3>
+                <h3 className="text-sm font-bold text-slate-800">Deduct at Warehouse</h3>
                 <div className="bg-orange-100 text-orange-800 text-xs px-3 py-1 rounded-full font-medium">
-                  Will be deducted from Total Amount
+                  Fetched from Loading Info - deducted at Warehouse
                 </div>
               </div>
 
@@ -5684,9 +5689,10 @@ export default function EditPurchasePanel() {
                   <span className="text-sm text-slate-700">Loading Charges:</span>
                   <input
                     type="number"
+                    readOnly
                     value={loadingExpenses.loadingCharges}
                     onChange={(e) => setLoadingExpenses({ ...loadingExpenses, loadingCharges: e.target.value })}
-                    className="w-32 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-right focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                    className="w-32 rounded-lg border border-slate-200 bg-slate-100 text-slate-700 cursor-not-allowed px-3 py-1.5 text-sm text-right focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
                     placeholder="0"
                   />
                 </div>
@@ -5695,9 +5701,10 @@ export default function EditPurchasePanel() {
                   <span className="text-sm text-slate-700">Loading Staff Munshiyana:</span>
                   <input
                     type="number"
+                    readOnly
                     value={loadingExpenses.loadingStaffMunshiyana}
                     onChange={(e) => setLoadingExpenses({ ...loadingExpenses, loadingStaffMunshiyana: e.target.value })}
-                    className="w-32 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-right focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                    className="w-32 rounded-lg border border-slate-200 bg-slate-100 text-slate-700 cursor-not-allowed px-3 py-1.5 text-sm text-right focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
                     placeholder="0"
                   />
                 </div>
@@ -5706,9 +5713,10 @@ export default function EditPurchasePanel() {
                   <span className="text-sm text-slate-700">Other Expenses:</span>
                   <input
                     type="number"
+                    readOnly
                     value={loadingExpenses.otherExpenses}
                     onChange={(e) => setLoadingExpenses({ ...loadingExpenses, otherExpenses: e.target.value })}
-                    className="w-32 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-right focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                    className="w-32 rounded-lg border border-slate-200 bg-slate-100 text-slate-700 cursor-not-allowed px-3 py-1.5 text-sm text-right focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
                     placeholder="0"
                   />
                 </div>
@@ -5718,9 +5726,10 @@ export default function EditPurchasePanel() {
                   <div className="flex items-center gap-2">
                     <input
                       type="number"
+                      readOnly
                       value={loadingExpenses.vehicleFloorTarpaulin}
                       onChange={(e) => setLoadingExpenses({ ...loadingExpenses, vehicleFloorTarpaulin: e.target.value })}
-                      className="w-32 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-right focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                      className="w-32 rounded-lg border border-slate-200 bg-slate-100 text-slate-700 cursor-not-allowed px-3 py-1.5 text-sm text-right focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
                       placeholder="0"
                     />
                     <span className="text-xs font-medium text-slate-600 whitespace-nowrap bg-slate-100 px-2 py-1 rounded-lg">
@@ -5734,9 +5743,10 @@ export default function EditPurchasePanel() {
                   <div className="flex items-center gap-2">
                     <input
                       type="number"
+                      readOnly
                       value={loadingExpenses.vehicleOuterTarpaulin}
                       onChange={(e) => setLoadingExpenses({ ...loadingExpenses, vehicleOuterTarpaulin: e.target.value })}
-                      className="w-32 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-right focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                      className="w-32 rounded-lg border border-slate-200 bg-slate-100 text-slate-700 cursor-not-allowed px-3 py-1.5 text-sm text-right focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
                       placeholder="0"
                     />
                     <span className="text-xs font-medium text-slate-600 whitespace-nowrap bg-slate-100 px-2 py-1 rounded-lg">
@@ -5746,64 +5756,9 @@ export default function EditPurchasePanel() {
                 </div>
 
                 <div className="flex justify-between items-center pt-2 border-t border-slate-200 mt-2">
-                  <span className="text-sm font-bold text-slate-800">Total Deduct at Office:</span>
+                  <span className="text-sm font-bold text-slate-800">Total Deduct at Warehouse:</span>
                   <span className="font-bold text-orange-700 text-lg">
                     ₹{calculateTotalLoadingExpenses().toLocaleString()}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </Card>
-        </div>
-
-        {/* Warehouse Charges & Expenses Section - Deduct at Warehouse */}
-        <div className="mt-4">
-          <Card title="Warehouse Charges & Expenses - Deduct at Warehouse">
-            <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-200">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-sm font-bold text-slate-800">Deduct at Warehouse</h3>
-                <div className="bg-indigo-100 text-indigo-800 text-xs px-3 py-1 rounded-full font-medium">
-                  Will be deducted at Warehouse
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-slate-700">W-Vehicle - Floor Tarpaulin:</span>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      value={warehouseExpenses.wVehicleFloorTarpaulin}
-                      onChange={(e) => setWarehouseExpenses({ ...warehouseExpenses, wVehicleFloorTarpaulin: e.target.value })}
-                      className="w-32 rounded-lg border border-indigo-200 bg-white px-3 py-1.5 text-sm text-right focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
-                      placeholder="0"
-                    />
-                    <span className="text-xs font-medium text-slate-600 whitespace-nowrap bg-indigo-100 px-2 py-1 rounded-lg">
-                      {purchaseDetails.vehicleType || "Truck"}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-slate-700">W-Vehicle - Outer Tarpaulin:</span>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      value={warehouseExpenses.wVehicleOuterTarpaulin}
-                      onChange={(e) => setWarehouseExpenses({ ...warehouseExpenses, wVehicleOuterTarpaulin: e.target.value })}
-                      className="w-32 rounded-lg border border-indigo-200 bg-white px-3 py-1.5 text-sm text-right focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
-                      placeholder="0"
-                    />
-                    <span className="text-xs font-medium text-slate-600 whitespace-nowrap bg-indigo-100 px-2 py-1 rounded-lg">
-                      {purchaseDetails.vehicleType || "Truck"}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex justify-between items-center pt-2 border-t border-indigo-200 mt-2">
-                  <span className="text-sm font-bold text-slate-800">Total Deduct at Warehouse:</span>
-                  <span className="font-bold text-indigo-700 text-lg">
-                    ₹{calculateTotalWarehouseExpenses().toLocaleString()}
                   </span>
                 </div>
               </div>
@@ -5900,17 +5855,13 @@ export default function EditPurchasePanel() {
         {/* Additions & Deductions Section */}
         <div className="mt-4">
           <div className="grid grid-cols-12 gap-4">
-            {/* Advance + Deduct at Office + Deduct at Warehouse Summary */}
+            {/* Advance + Deduct at Warehouse Summary */}
             <div className="col-span-12">
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-200 mb-4">
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                   <div className="text-center">
                     <div className="text-xs text-slate-500">Advance Paid</div>
                     <div className="text-2xl font-bold text-emerald-700">₹{num(purchaseDetails.advance).toLocaleString()}</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-xs text-slate-500">Deduct at Office</div>
-                    <div className="text-2xl font-bold text-orange-700">₹{calculateTotalLoadingExpenses().toLocaleString()}</div>
                   </div>
                   <div className="text-center">
                     <div className="text-xs text-slate-500">Deduct at Warehouse</div>
@@ -6109,19 +6060,15 @@ export default function EditPurchasePanel() {
                         <span className="font-bold text-emerald-700">₹{num(purchaseDetails.advance).toLocaleString()}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-sm text-slate-600">Deduct at Office:</span>
-                        <span className="font-bold text-orange-700">₹{calculateTotalLoadingExpenses().toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-slate-600">Deduct at Warehouse:</span>
+                        <span className="text-sm text-slate-600">Deduct at Warehouse (-):</span>
                         <span className="font-bold text-indigo-700">₹{calculateTotalWarehouseExpenses().toLocaleString()}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-sm text-slate-600">Total Additions (+):</span>
+                        <span className="text-sm text-slate-600">Total Additions at Office (+):</span>
                         <span className="font-bold text-emerald-700">₹{calculateTotalAdditions().toLocaleString()}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-sm text-slate-600">Total Deductions (-):</span>
+                        <span className="text-sm text-slate-600">Total Deductions at Office (-):</span>
                         <span className="font-bold text-red-700">₹{calculateTotalDeductions().toLocaleString()}</span>
                       </div>
                       <div className="flex justify-between pt-2 border-t border-amber-200">

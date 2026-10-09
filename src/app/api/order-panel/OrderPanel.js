@@ -9,7 +9,7 @@
 // // //     required: true,
 // // //     index: true
 // // //   },
-  
+
 // // //   // Header Information
 // // //   branch: {
 // // //     type: mongoose.Schema.Types.ObjectId,
@@ -27,7 +27,7 @@
 // // //     type: Date,
 // // //     default: Date.now
 // // //   },
-  
+
 // // //   // Customer Information
 // // //   customerId: {
 // // //     type: mongoose.Schema.Types.ObjectId,
@@ -38,7 +38,7 @@
 // // //   customerName: String,
 // // //   contactPerson: String,
 // // //   partyName: String,
-  
+
 // // //   // Charges
 // // //   collectionCharges: {
 // // //     type: Number,
@@ -56,7 +56,7 @@
 // // //     type: Number,
 // // //     default: 0
 // // //   },
-  
+
 // // //  // In OrderPanel schema - update plantRows section
 // // // plantRows: [{
 // // //   _id: {
@@ -132,7 +132,7 @@
 // // //     default: 0
 // // //   }
 // // // }],
-  
+
 // // //   // Pack Data
 // // //   packData: {
 // // //     PALLETIZATION: [{
@@ -218,7 +218,7 @@
 // // //       }
 // // //     }]
 // // //   },
-  
+
 // // //   // Calculated fields
 // // //   totalWeight: {
 // // //     type: Number,
@@ -228,7 +228,7 @@
 // // //     type: Number,
 // // //     default: 0
 // // //   },
-  
+
 // // //   // Company & User Tracking
 // // //   companyId: {
 // // //     type: mongoose.Schema.Types.ObjectId,
@@ -239,14 +239,14 @@
 // // //     type: mongoose.Schema.Types.ObjectId,
 // // //     ref: 'CompanyUser'
 // // //   },
-  
+
 // // //   // Status
 // // //   panelStatus: {
 // // //     type: String,
 // // //     enum: ['Draft', 'Submitted', 'Approved', 'Completed', 'Cancelled'],
 // // //     default: 'Draft'
 // // //   },
-  
+
 // // //   // Timestamps
 // // //   createdAt: {
 // // //     type: Date,
@@ -291,7 +291,7 @@
 // //     required: true,
 // //     index: true
 // //   },
-  
+
 // //   // Header Information
 // //   branch: {
 // //     type: mongoose.Schema.Types.ObjectId,
@@ -309,7 +309,7 @@
 // //     type: Date,
 // //     default: Date.now
 // //   },
-  
+
 // //   // Customer Information
 // //   customerId: {
 // //     type: mongoose.Schema.Types.ObjectId,
@@ -320,7 +320,7 @@
 // //   customerName: String,
 // //   contactPerson: String,
 // //   partyName: String,
-  
+
 // //   // Charges
 // //   collectionCharges: {
 // //     type: Number,
@@ -338,7 +338,7 @@
 // //     type: Number,
 // //     default: 0
 // //   },
-  
+
 // //   // Updated plantRows with fromState, localStatus, localStatusLabel
 // //   plantRows: [{
 // //     _id: {
@@ -425,7 +425,7 @@
 // //       default: 'Unknown'
 // //     }
 // //   }],
-  
+
 // //   // Pack Data (unchanged)
 // //   packData: {
 // //     PALLETIZATION: [{
@@ -511,7 +511,7 @@
 // //       }
 // //     }]
 // //   },
-  
+
 // //   // Calculated fields
 // //   totalWeight: {
 // //     type: Number,
@@ -521,7 +521,7 @@
 // //     type: Number,
 // //     default: 0
 // //   },
-  
+
 // //   // Company & User Tracking
 // //   companyId: {
 // //     type: mongoose.Schema.Types.ObjectId,
@@ -532,14 +532,14 @@
 // //     type: mongoose.Schema.Types.ObjectId,
 // //     ref: 'CompanyUser'
 // //   },
-  
+
 // //   // Status
 // //   panelStatus: {
 // //     type: String,
 // //     enum: ['Draft', 'Submitted', 'Approved', 'Completed', 'Cancelled'],
 // //     default: 'Draft'
 // //   },
-  
+
 // //   // Timestamps
 // //   createdAt: {
 // //     type: Date,
@@ -584,7 +584,7 @@
 //     required: true,
 //     index: true
 //   },
-  
+
 //   // Header Information
 //   branch: {
 //     type: mongoose.Schema.Types.ObjectId,
@@ -602,7 +602,7 @@
 //     type: Date,
 //     default: Date.now
 //   },
-  
+
 //   // Customer Information
 //   customerId: {
 //     type: mongoose.Schema.Types.ObjectId,
@@ -613,7 +613,7 @@
 //   customerName: String,
 //   contactPerson: String,
 //   partyName: String,
-  
+
 //   // Charges
 //   collectionCharges: {
 //     type: Number,
@@ -631,7 +631,7 @@
 //     type: Number,
 //     default: 0
 //   },
-  
+
 //   // Updated plantRows with fromState, localStatus, localStatusLabel
 //   plantRows: [{
 //     _id: {
@@ -718,7 +718,7 @@
 //       default: 'Unknown'
 //     }
 //   }],
-  
+
 //   // Pack Data
 //   packData: {
 //     PALLETIZATION: [{
@@ -804,7 +804,7 @@
 //       }
 //     }]
 //   },
-  
+
 //   // Calculated fields
 //   totalWeight: {
 //     type: Number,
@@ -814,7 +814,7 @@
 //     type: Number,
 //     default: 0
 //   },
-  
+
 //   // Company & User Tracking
 //   companyId: {
 //     type: mongoose.Schema.Types.ObjectId,
@@ -825,14 +825,14 @@
 //     type: mongoose.Schema.Types.ObjectId,
 //     ref: 'CompanyUser'
 //   },
-  
+
 //   // Status
 //   panelStatus: {
 //     type: String,
 //     enum: ['Draft', 'Submitted', 'Approved', 'Completed', 'Cancelled', 'Rejected'],
 //     default: 'Draft'
 //   },
-  
+
 //   // Approval fields
 //   approvedBy: {
 //     type: mongoose.Schema.Types.ObjectId,
@@ -845,7 +845,7 @@
 //     type: String,
 //     default: ''
 //   },
-  
+
 //   // Timestamps
 //   createdAt: {
 //     type: Date,
@@ -893,7 +893,7 @@ const orderPanelSchema = new mongoose.Schema({
     required: true,
     index: true
   },
-  
+
   // Header Information
   branch: {
     type: mongoose.Schema.Types.ObjectId,
@@ -902,7 +902,7 @@ const orderPanelSchema = new mongoose.Schema({
   },
   branchName: String,
   branchCode: String,
-  
+
   // Sub-Company Information
   subCompanyId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -917,7 +917,7 @@ const orderPanelSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
-  
+
   delivery: {
     type: String,
     enum: ['Urgent', 'Normal', 'Express', 'Scheduled'],
@@ -927,7 +927,7 @@ const orderPanelSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   },
-  
+
   // Customer Information
   customerId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -938,7 +938,7 @@ const orderPanelSchema = new mongoose.Schema({
   customerName: String,
   contactPerson: String,
   partyName: String,
-  
+
   // Charges
   collectionCharges: {
     type: Number,
@@ -956,7 +956,7 @@ const orderPanelSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
-  
+
   // Updated plantRows with fromState, localStatus, localStatusLabel
   plantRows: [{
     _id: {
@@ -979,6 +979,7 @@ const orderPanelSchema = new mongoose.Schema({
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Branch'
     },
+    locationRemark: { type: String, default: '', trim: true, maxlength: 200 },
     fromName: String,
     fromState: { type: String, default: '' },
     to: {
@@ -1043,7 +1044,7 @@ const orderPanelSchema = new mongoose.Schema({
       default: 'Unknown'
     }
   }],
-  
+
   // Pack Data
   packData: {
     PALLETIZATION: [{
@@ -1133,7 +1134,7 @@ const orderPanelSchema = new mongoose.Schema({
       }
     }]
   },
-  
+
   // Calculated fields
   totalWeight: {
     type: Number,
@@ -1143,7 +1144,7 @@ const orderPanelSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
-  
+
   // Company & User Tracking
   companyId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -1154,14 +1155,14 @@ const orderPanelSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'CompanyUser'
   },
-  
+
   // Status
   panelStatus: {
     type: String,
     enum: ['Draft', 'Submitted', 'Approved', 'Completed', 'Cancelled', 'Rejected'],
     default: 'Draft'
   },
-  
+
   // Approval fields
   approvedBy: {
     type: mongoose.Schema.Types.ObjectId,
@@ -1174,7 +1175,7 @@ const orderPanelSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
-  
+
   // Timestamps
   createdAt: {
     type: Date,
@@ -1187,7 +1188,7 @@ const orderPanelSchema = new mongoose.Schema({
 });
 
 // Calculate totals before saving
-orderPanelSchema.pre('save', function(next) {
+orderPanelSchema.pre('save', function (next) {
   this.totalWeight = this.plantRows.reduce((sum, row) => sum + (row.weight || 0), 0);
   this.totalAmount = this.plantRows.reduce((sum, row) => {
     return sum + ((row.weight || 0) * (row.rate || 0));
@@ -1201,7 +1202,7 @@ orderPanelSchema.pre('save', function(next) {
 });
 
 // Update timestamp on save
-orderPanelSchema.pre('save', function(next) {
+orderPanelSchema.pre('save', function (next) {
   this.updatedAt = Date.now();
   next();
 });

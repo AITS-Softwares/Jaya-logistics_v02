@@ -8,7 +8,7 @@
 //     required: true,
 //     index: true
 //   },
-  
+
 //   // References
 //   vehicleNegotiationId: {
 //     type: mongoose.Schema.Types.ObjectId,
@@ -31,13 +31,13 @@
 //     index: true,
 //     sparse: true
 //   },
-  
+
 //   // Purchase Amount from VNN (A x B)
 //   purchaseAmountFromVNN: {
 //     type: Number,
 //     default: 0
 //   },
-  
+
 //   // Header Information
 //   header: {
 //     purchaseNo: { type: String },
@@ -225,13 +225,13 @@
 //     const totalAmount = (row.weight || 0) * (row.rate || 0);
 //     return sum + totalAmount;
 //   }, 0);
-  
+
 //   // Calculate total additions
 //   this.totalAdditions = this.additions.reduce((sum, row) => sum + (row.amount || 0), 0);
-  
+
 //   // Calculate total deductions
 //   this.totalDeductions = this.deductions.reduce((sum, row) => sum + (row.amount || 0), 0);
-  
+
 //   // Calculate total loading expenses (Deduct at Office)
 //   this.totalLoadingExpenses = (
 //     (this.loadingExpenses?.loadingCharges || 0) +
@@ -240,27 +240,27 @@
 //     (this.loadingExpenses?.vehicleFloorTarpaulin || 0) +
 //     (this.loadingExpenses?.vehicleOuterTarpaulin || 0)
 //   );
-  
+
 //   // Calculate total warehouse expenses (Deduct at Warehouse) - NEW
 //   this.totalWarehouseExpenses = (
 //     (this.warehouseExpenses?.wVehicleFloorTarpaulin || 0) +
 //     (this.warehouseExpenses?.wVehicleOuterTarpaulin || 0)
 //   );
-  
+
 //   // Calculate net effect (includes both office and warehouse deductions)
 //   const advance = this.purchaseDetails?.advance || 0;
 //   this.netEffect = advance + this.totalAdditions - this.totalDeductions - this.totalLoadingExpenses - this.totalWarehouseExpenses;
-  
+
 //   // Calculate balance (Purchase Amount from VNN - Advance Paid)
 //   const purchaseAmount = this.purchaseAmountFromVNN || this.purchaseDetails?.amount || 0;
 //   this.balance = purchaseAmount - advance;
-  
+
 //   // Update header with purchase number
 //   if (this.header) {
 //     this.header.purchaseNo = this.purchaseNo;
 //     this.header.pricingSerialNo = this.pricingSerialNo;
 //   }
-  
+
 //   next();
 // });
 
@@ -285,7 +285,7 @@ const purchasePanelSchema = new mongoose.Schema({
     required: true,
     index: true
   },
-  
+
   // References
   vehicleNegotiationId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -308,7 +308,7 @@ const purchasePanelSchema = new mongoose.Schema({
     index: true,
     sparse: true
   },
-  
+
   // Sub-Company Information
   subCompanyId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -323,13 +323,13 @@ const purchasePanelSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
-  
+
   // Purchase Amount from VNN (A x B)
   purchaseAmountFromVNN: {
     type: Number,
     default: 0
   },
-  
+
   // Header Information
   header: {
     purchaseNo: { type: String },
@@ -527,26 +527,26 @@ const purchasePanelSchema = new mongoose.Schema({
     default: 'Draft'
   }
 
-}, { 
+}, {
   timestamps: true,
   toJSON: { virtuals: true },
   toObject: { virtuals: true }
 });
 
 // Pre-save middleware to calculate totals
-purchasePanelSchema.pre('save', function(next) {
+purchasePanelSchema.pre('save', function (next) {
   // Calculate total order amount from orderRows (weight * rate)
   this.totalOrderAmount = this.orderRows.reduce((sum, row) => {
     const totalAmount = (row.weight || 0) * (row.rate || 0);
     return sum + totalAmount;
   }, 0);
-  
+
   // Calculate total additions
   this.totalAdditions = this.additions.reduce((sum, row) => sum + (row.amount || 0), 0);
-  
+
   // Calculate total deductions
   this.totalDeductions = this.deductions.reduce((sum, row) => sum + (row.amount || 0), 0);
-  
+
   // Calculate total loading expenses (Deduct at Office)
   this.totalLoadingExpenses = (
     (this.loadingExpenses?.loadingCharges || 0) +
@@ -555,21 +555,22 @@ purchasePanelSchema.pre('save', function(next) {
     (this.loadingExpenses?.vehicleFloorTarpaulin || 0) +
     (this.loadingExpenses?.vehicleOuterTarpaulin || 0)
   );
-  
+
   // Calculate total warehouse expenses (Deduct at Warehouse)
-  this.totalWarehouseExpenses = (
-    (this.warehouseExpenses?.wVehicleFloorTarpaulin || 0) +
-    (this.warehouseExpenses?.wVehicleOuterTarpaulin || 0)
-  );
-  
+  // this.totalWarehouseExpenses = (
+  //   (this.warehouseExpenses?.wVehicleFloorTarpaulin || 0) +
+  //   (this.warehouseExpenses?.wVehicleOuterTarpaulin || 0)
+  // );
+  this.totalWarehouseExpenses = this.totalLoadingExpenses;
+
   // Calculate net effect (includes both office and warehouse deductions)
   const advance = this.purchaseDetails?.advance || 0;
-  this.netEffect = advance + this.totalAdditions - this.totalDeductions - this.totalLoadingExpenses - this.totalWarehouseExpenses;
-  
+  // this.netEffect = advance + this.totalAdditions - this.totalDeductions - this.totalLoadingExpenses - this.totalWarehouseExpenses;
+  this.netEffect = advance + this.totalAdditions - this.totalDeductions - this.totalWarehouseExpenses;
   // Calculate balance (Purchase Amount from VNN - Advance Paid)
   const purchaseAmount = this.purchaseAmountFromVNN || this.purchaseDetails?.amount || 0;
   this.balance = purchaseAmount - advance;
-  
+
   // Update header with purchase number
   if (this.header) {
     this.header.purchaseNo = this.purchaseNo;
@@ -580,17 +581,17 @@ purchasePanelSchema.pre('save', function(next) {
       this.header.subCompanyCode = this.subCompanyCode;
     }
   }
-  
+
   next();
 });
 
 // Update timestamp on save
-purchasePanelSchema.pre('save', function(next) {
+purchasePanelSchema.pre('save', function (next) {
   this.updatedAt = Date.now();
   next();
 });
 
-const PurchasePanel = mongoose.models.PurchasePanel || 
+const PurchasePanel = mongoose.models.PurchasePanel ||
   mongoose.model('PurchasePanel', purchasePanelSchema);
 
 export default PurchasePanel;

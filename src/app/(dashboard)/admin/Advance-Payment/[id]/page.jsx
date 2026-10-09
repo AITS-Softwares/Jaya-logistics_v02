@@ -41,7 +41,7 @@
 //       const res = await fetch('/api/suppliers', {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       const data = await res.json();
 //       if (data.success && Array.isArray(data.data)) {
 //         setVendors(data.data);
@@ -206,37 +206,37 @@
 //     setFetchLoading(true);
 //     try {
 //       const token = localStorage.getItem('token');
-      
+
 //       const res = await fetch(`/api/Advance-Payment?id=${paymentId}`, {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       if (!res.ok) {
 //         throw new Error(`HTTP error! status: ${res.status}`);
 //       }
-      
+
 //       const data = await res.json();
-      
+
 //       if (!data.success) {
 //         throw new Error(data.message || 'Failed to fetch advance payment');
 //       }
 
 //       const payment = data.data;
 //       console.log("📦 Payment Data:", payment);
-      
+
 //       setPaymentNo(payment.paymentNo || "");
 //       setQueueGenerated(payment.queueGenerated || false);
-      
+
 //       // Set Purchase Amount from VNN
 //       if (payment.purchaseAmountFromVNN) {
 //         setPurchaseAmountFromVNN(payment.purchaseAmountFromVNN);
 //       }
-      
+
 //       // Set Memo File
 //       if (payment.memoFile) {
 //         setMemoFileInfo(payment.memoFile);
 //       }
-      
+
 //       // Set header
 //       if (payment.header) {
 //         setHeader({
@@ -382,7 +382,7 @@
 //         vendorHook.fetchVendors(),
 //         fetchBranches()
 //       ]);
-      
+
 //       setVendors(vendorHook.vendors);
 //     } catch (error) {
 //       console.error('Error fetching data:', error);
@@ -396,11 +396,11 @@
 //     try {
 //       const token = localStorage.getItem('token');
 //       if (!token) return;
-      
+
 //       const res = await fetch('/api/branches', {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       const data = await res.json();
 //       if (data.success && Array.isArray(data.data)) {
 //         setBranches(data.data);
@@ -417,13 +417,13 @@
 //       prev.map((r) => {
 //         if (r._id === rowId) {
 //           const updatedRow = { ...r, [key]: value };
-          
+
 //           if (key === "weight" || key === "rate") {
 //             const weight = num(updatedRow.weight);
 //             const rate = num(updatedRow.rate);
 //             updatedRow.totalAmount = (weight * rate).toString();
 //           }
-          
+
 //           return updatedRow;
 //         }
 //         return r;
@@ -456,9 +456,9 @@
 //     const updatedItems = additions.items.map(item => 
 //       item._id === itemId ? { ...item, [key]: value } : item
 //     );
-    
+
 //     const totalAddition = updatedItems.reduce((sum, item) => sum + num(item.amount), 0);
-    
+
 //     setAdditions({
 //       totalAddition: totalAddition.toString(),
 //       items: updatedItems
@@ -469,7 +469,7 @@
 //     if (additions.items.length > 1) {
 //       const updatedItems = additions.items.filter(item => item._id !== itemId);
 //       const totalAddition = updatedItems.reduce((sum, item) => sum + num(item.amount), 0);
-      
+
 //       setAdditions({
 //         totalAddition: totalAddition.toString(),
 //         items: updatedItems
@@ -490,9 +490,9 @@
 //     const updatedItems = deductions.items.map(item => 
 //       item._id === itemId ? { ...item, [key]: value } : item
 //     );
-    
+
 //     const totalDeduction = updatedItems.reduce((sum, item) => sum + num(item.amount), 0);
-    
+
 //     setDeductions({
 //       totalDeduction: totalDeduction.toString(),
 //       items: updatedItems
@@ -503,7 +503,7 @@
 //     if (deductions.items.length > 1) {
 //       const updatedItems = deductions.items.filter(item => item._id !== itemId);
 //       const totalDeduction = updatedItems.reduce((sum, item) => sum + num(item.amount), 0);
-      
+
 //       setDeductions({
 //         totalDeduction: totalDeduction.toString(),
 //         items: updatedItems
@@ -560,7 +560,7 @@
 //       alert("Queue already generated for this payment");
 //       return;
 //     }
-    
+
 //     const finalAmount = calculateBalance();
 //     alert(`✅ Payment queue ready to generate for ${paymentDetails.vendorNameDebit}\nAmount: ₹${num(finalAmount).toLocaleString()}`);
 //     setQueueGenerated(true);
@@ -586,7 +586,7 @@
 
 //     try {
 //       const token = localStorage.getItem('token');
-      
+
 //       const payload = {
 //         id: paymentId,
 //         header,
@@ -645,9 +645,9 @@
 
 //       const data = await res.json();
 //       alert(`✅ Advance Payment updated successfully!\nPayment No: ${paymentNo}`);
-      
+
 //       router.push('/admin/Advance-Payment');
-      
+
 //     } catch (error) {
 //       console.error('Error updating advance payment:', error);
 //       alert(`❌ Error: ${error.message}`);
@@ -970,7 +970,7 @@
 //               <div className="col-span-12 md:col-span-4">
 //                 <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-200 h-full">
 //                   <h3 className="text-sm font-bold text-slate-800 mb-3">Vendor Information</h3>
-                  
+
 //                   <div className="space-y-3">
 //                     <div>
 //                       <label className="text-xs font-bold text-slate-600">Vendor Status</label>
@@ -1071,7 +1071,7 @@
 //               <div className="col-span-12 md:col-span-4">
 //                 <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-200 h-full">
 //                   <h3 className="text-sm font-bold text-slate-800 mb-3">Bank Details</h3>
-                  
+
 //                   <div className="space-y-3">
 //                     <div>
 //                       <label className="text-xs font-bold text-slate-600">Account Number</label>
@@ -1118,7 +1118,7 @@
 //               <div className="col-span-12 md:col-span-6">
 //                 <div className="bg-green-50 p-4 rounded-xl border border-green-200">
 //                   <h4 className="text-sm font-bold text-green-800 mb-3">Addition Items</h4>
-                  
+
 //                   {additions.items.length === 0 ? (
 //                     <div className="text-center py-4 text-slate-500 border-2 border-dashed border-green-200 rounded-lg">
 //                       <p>No additions added.</p>
@@ -1194,7 +1194,7 @@
 //               <div className="col-span-12 md:col-span-6">
 //                 <div className="bg-red-50 p-4 rounded-xl border border-red-200">
 //                   <h4 className="text-sm font-bold text-red-800 mb-3">Deduction Items</h4>
-                  
+
 //                   {deductions.items.length === 0 ? (
 //                     <div className="text-center py-4 text-slate-500 border-2 border-dashed border-red-200 rounded-lg">
 //                       <p>No deductions added.</p>
@@ -1449,10 +1449,10 @@ const ORDER_TYPES = ["Sales", "STO Order", "Export", "Import"];
 const BILLING_TYPES = ["Single - Order", "Multi - Order"];
 const PURCHASE_TYPE_OPTIONS = ["Loading & Unloading", "Unloading Only", "Safi Vehicle"];
 const PAYMENT_TERMS_OPTIONS = [
-  "80 % Advance", 
-  "90 % Advance", 
-  "Rs.10,000/- Balance Only", 
-  "Rs. 5000/- Balance Only", 
+  "80 % Advance",
+  "90 % Advance",
+  "Rs.10,000/- Balance Only",
+  "Rs. 5000/- Balance Only",
   "Full Payment after Delivery"
 ];
 const RATE_TYPE_OPTIONS = ["Per MT", "Fixed"];
@@ -1479,7 +1479,7 @@ function useVendors() {
       const res = await fetch('/api/suppliers', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       const data = await res.json();
       if (data.success && Array.isArray(data.data)) {
         setVendors(data.data);
@@ -1511,11 +1511,11 @@ function defaultOrderRow() {
     fromName: "",
     to: "",
     toName: "",
-    locationRate: "",
-    priceList: "",
+    // locationRate: "",
+    // priceList: "",
     weight: "",
-    rate: "",
-    totalAmount: "",
+    // rate: "",
+    // totalAmount: "",
     collectionCharges: "0",
     cancellationCharges: "Nil",
     loadingCharges: "Nil",
@@ -1668,42 +1668,42 @@ export default function EditAdvancePayment() {
     setFetchLoading(true);
     try {
       const token = localStorage.getItem('token');
-      
+
       const res = await fetch(`/api/Advance-Payment?id=${paymentId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       if (!res.ok) {
         throw new Error(`HTTP error! status: ${res.status}`);
       }
-      
+
       const data = await res.json();
-      
+
       if (!data.success) {
         throw new Error(data.message || 'Failed to fetch advance payment');
       }
 
       const payment = data.data;
       console.log("📦 Payment Data:", payment);
-      
+
       setPaymentNo(payment.paymentNo || "");
       setQueueGenerated(payment.queueGenerated || false);
-      
+
       // ✅ Set Sub-Company from payment
       const subCompanyId = payment.subCompanyId || payment.header?.subCompanyId || '';
       const subCompanyName = payment.subCompanyName || payment.header?.subCompanyName || '';
       const subCompanyCode = payment.subCompanyCode || payment.header?.subCompanyCode || '';
-      
+
       // Set Purchase Amount from VNN
       if (payment.purchaseAmountFromVNN) {
         setPurchaseAmountFromVNN(payment.purchaseAmountFromVNN);
       }
-      
+
       // Set Memo File
       if (payment.memoFile) {
         setMemoFileInfo(payment.memoFile);
       }
-      
+
       // Set header with sub-company
       if (payment.header) {
         setHeader({
@@ -1760,11 +1760,11 @@ export default function EditAdvancePayment() {
           fromName: row.fromName || row.from || "",
           to: row.to || "",
           toName: row.toName || row.to || "",
-          locationRate: row.locationRate?.toString() || "",
-          priceList: row.priceList || "",
+          // locationRate: row.locationRate?.toString() || "",
+          // priceList: row.priceList || "",
           weight: row.weight?.toString() || "",
-          rate: row.rate?.toString() || "",
-          totalAmount: row.totalAmount?.toString() || "",
+          // rate: row.rate?.toString() || "",
+          // totalAmount: row.totalAmount?.toString() || "",
           collectionCharges: row.collectionCharges?.toString() || "0",
           cancellationCharges: row.cancellationCharges || "Nil",
           loadingCharges: row.loadingCharges || "Nil",
@@ -1855,7 +1855,7 @@ export default function EditAdvancePayment() {
         fetchBranches(),
         fetchSubCompanies()
       ]);
-      
+
       setVendors(vendorHook.vendors);
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -1869,11 +1869,11 @@ export default function EditAdvancePayment() {
     try {
       const token = localStorage.getItem('token');
       if (!token) return;
-      
+
       const res = await fetch('/api/branches', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       const data = await res.json();
       if (data.success && Array.isArray(data.data)) {
         setBranches(data.data);
@@ -1890,13 +1890,13 @@ export default function EditAdvancePayment() {
       prev.map((r) => {
         if (r._id === rowId) {
           const updatedRow = { ...r, [key]: value };
-          
+
           if (key === "weight" || key === "rate") {
             const weight = num(updatedRow.weight);
             const rate = num(updatedRow.rate);
             updatedRow.totalAmount = (weight * rate).toString();
           }
-          
+
           return updatedRow;
         }
         return r;
@@ -1926,12 +1926,12 @@ export default function EditAdvancePayment() {
   };
 
   const updateAdditionItem = (itemId, key, value) => {
-    const updatedItems = additions.items.map(item => 
+    const updatedItems = additions.items.map(item =>
       item._id === itemId ? { ...item, [key]: value } : item
     );
-    
+
     const totalAddition = updatedItems.reduce((sum, item) => sum + num(item.amount), 0);
-    
+
     setAdditions({
       totalAddition: totalAddition.toString(),
       items: updatedItems
@@ -1942,7 +1942,7 @@ export default function EditAdvancePayment() {
     if (additions.items.length > 1) {
       const updatedItems = additions.items.filter(item => item._id !== itemId);
       const totalAddition = updatedItems.reduce((sum, item) => sum + num(item.amount), 0);
-      
+
       setAdditions({
         totalAddition: totalAddition.toString(),
         items: updatedItems
@@ -1960,12 +1960,12 @@ export default function EditAdvancePayment() {
   };
 
   const updateDeductionItem = (itemId, key, value) => {
-    const updatedItems = deductions.items.map(item => 
+    const updatedItems = deductions.items.map(item =>
       item._id === itemId ? { ...item, [key]: value } : item
     );
-    
+
     const totalDeduction = updatedItems.reduce((sum, item) => sum + num(item.amount), 0);
-    
+
     setDeductions({
       totalDeduction: totalDeduction.toString(),
       items: updatedItems
@@ -1976,7 +1976,7 @@ export default function EditAdvancePayment() {
     if (deductions.items.length > 1) {
       const updatedItems = deductions.items.filter(item => item._id !== itemId);
       const totalDeduction = updatedItems.reduce((sum, item) => sum + num(item.amount), 0);
-      
+
       setDeductions({
         totalDeduction: totalDeduction.toString(),
         items: updatedItems
@@ -2042,7 +2042,7 @@ export default function EditAdvancePayment() {
       alert("Attach a MEMO in the linked Purchase Panel before generating the payment queue.");
       return;
     }
-    
+
     try {
       const token = localStorage.getItem('token');
       const res = await fetch(`/api/Advance-Payment?id=${paymentId}&action=generate-queue`, {
@@ -2079,7 +2079,7 @@ export default function EditAdvancePayment() {
 
     try {
       const token = localStorage.getItem('token');
-      
+
       const payload = {
         id: paymentId,
         header: {
@@ -2149,12 +2149,12 @@ export default function EditAdvancePayment() {
       }
 
       const data = await res.json();
-      
+
       const subCompanyMsg = header.subCompanyName ? `\n🏢 Sub-Company: ${header.subCompanyName}` : '';
       alert(`✅ Advance Payment updated successfully!\nPayment No: ${paymentNo}${subCompanyMsg}`);
-      
+
       router.push('/admin/Advance-Payment');
-      
+
     } catch (error) {
       console.error('Error updating advance payment:', error);
       alert(`❌ Error: ${error.message}`);
@@ -2228,11 +2228,10 @@ export default function EditAdvancePayment() {
               <button
                 onClick={handleUpdate}
                 disabled={saving}
-                className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${
-                  saving 
-                    ? 'bg-gray-400 cursor-not-allowed' 
-                    : 'bg-emerald-600 hover:bg-emerald-700'
-                }`}
+                className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${saving
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-emerald-600 hover:bg-emerald-700'
+                  }`}
               >
                 {saving ? (
                   <span className="flex items-center gap-2">
@@ -2368,11 +2367,11 @@ export default function EditAdvancePayment() {
                     <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[120px]">District</th>
                     <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[120px]">From</th>
                     <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[120px]">To</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[100px]">Location Rate</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[100px]">Price List</th>
+                    {/* <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[100px]">Location Rate</th> */}
+                    {/* <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[100px]">Price List</th> */}
                     <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[80px]">Weight (MT)</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[80px]">Rate (₹)</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[100px]">Total Amount</th>
+                    {/* <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[80px]">Rate (₹)</th> */}
+                    {/* <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[100px]">Total Amount</th> */}
                     <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[130px]">Collection Charges</th>
                     <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[140px]">Cancellation Charges</th>
                     <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold min-w-[130px]">Loading Charges</th>
@@ -2405,11 +2404,10 @@ export default function EditAdvancePayment() {
                       </td>
                       <td className="border border-yellow-300 px-2 py-2 text-center">
                         {row.fromState && row.state ? (
-                          <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${
-                            row.fromState.trim().toUpperCase() === row.state.trim().toUpperCase()
-                              ? 'bg-green-100 text-green-800 border border-green-300'
-                              : 'bg-red-100 text-red-800 border border-red-300'
-                          }`}>
+                          <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${row.fromState.trim().toUpperCase() === row.state.trim().toUpperCase()
+                            ? 'bg-green-100 text-green-800 border border-green-300'
+                            : 'bg-red-100 text-red-800 border border-red-300'
+                            }`}>
                             {row.fromState.trim().toUpperCase() === row.state.trim().toUpperCase() ? '✅ Local' : '❌ Not Local'}
                           </span>
                         ) : (
@@ -2425,21 +2423,21 @@ export default function EditAdvancePayment() {
                       <td className="border border-yellow-300 px-2 py-2">
                         <input type="text" value={row.to || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="To" />
                       </td>
-                      <td className="border border-yellow-300 px-2 py-2">
+                      {/* <td className="border border-yellow-300 px-2 py-2">
                         <input type="text" value={row.locationRate || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Location Rate" />
                       </td>
                       <td className="border border-yellow-300 px-2 py-2">
                         <input type="text" value={row.priceList || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Price List" />
-                      </td>
+                      </td> */}
                       <td className="border border-yellow-300 px-2 py-2">
                         <input type="number" value={row.weight || ""} readOnly className="w-20 rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="0" />
                       </td>
-                      <td className="border border-yellow-300 px-2 py-2">
+                      {/* <td className="border border-yellow-300 px-2 py-2">
                         <input type="number" value={row.rate || ""} readOnly className="w-20 rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="0" />
                       </td>
                       <td className="border border-yellow-300 px-2 py-2">
                         <input type="number" value={row.totalAmount || ""} readOnly className="w-24 rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm font-bold text-emerald-700 cursor-not-allowed" placeholder="Auto" />
-                      </td>
+                      </td> */}
                       <td className="border border-yellow-300 px-2 py-2">
                         <input type="number" value={row.collectionCharges || "0"} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Collection Charges" />
                       </td>
@@ -2455,12 +2453,12 @@ export default function EditAdvancePayment() {
                     </tr>
                   ))}
                 </tbody>
-                <tfoot className="bg-yellow-100">
+                {/* <tfoot className="bg-yellow-100">
                   <tr>
                     <td colSpan="13" className="border border-yellow-300 px-3 py-2 text-right font-bold">Total Order Amount:</td>
                     <td className="border border-yellow-300 px-3 py-2 font-bold text-emerald-800" colSpan="5">₹{calculateTotalOrderAmount().toLocaleString()}</td>
                   </tr>
-                </tfoot>
+                </tfoot> */}
               </table>
             </div>
           </Card>
@@ -2494,7 +2492,7 @@ export default function EditAdvancePayment() {
               <div className="col-span-12 md:col-span-4">
                 <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-200 h-full">
                   <h3 className="text-sm font-bold text-slate-800 mb-3">Vendor Information</h3>
-                  
+
                   <div className="space-y-3">
                     <div>
                       <label className="text-xs font-bold text-slate-600">Vendor Status</label>
@@ -2551,7 +2549,7 @@ export default function EditAdvancePayment() {
                     MEMO from Vehicle Negotiation
                   </h3>
                   {memoFileInfo ? (
-                    <div 
+                    <div
                       className="relative group cursor-pointer overflow-hidden rounded-xl border-2 border-green-300 bg-white shadow-lg hover:shadow-xl transition-all duration-300"
                       onClick={() => { if (memoFileInfo.filePath) window.open(memoFileInfo.filePath, '_blank'); }}
                     >
@@ -2595,7 +2593,7 @@ export default function EditAdvancePayment() {
               <div className="col-span-12 md:col-span-4">
                 <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-200 h-full">
                   <h3 className="text-sm font-bold text-slate-800 mb-3">Bank Details</h3>
-                  
+
                   <div className="space-y-3">
                     <div>
                       <label className="text-xs font-bold text-slate-600">Account Number</label>
@@ -2625,157 +2623,157 @@ export default function EditAdvancePayment() {
 
         {/* Purchase adjustments are carried from Purchase Panel and are not editable here. */}
         {false && <>
-        {/* Additions Section - EDITABLE */}
-        <div className="mt-4">
-          <Card 
-            title="Additions (+) - Extra Charges"
-            right={
-              !queueGenerated && (
-                <button
-                  onClick={addAdditionItem}
-                  className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-green-700"
-                >
-                  + Add Addition
-                </button>
-              )
-            }
-          >
-            <div className="grid grid-cols-12 gap-4">
-              <div className="col-span-12 md:col-span-6">
-                <div className="bg-green-50 p-4 rounded-xl border border-green-200">
-                  <h4 className="text-sm font-bold text-green-800 mb-3">Addition Items</h4>
-                  
-                  {additions.items.length === 0 ? (
-                    <div className="text-center py-4 text-slate-500 border-2 border-dashed border-green-200 rounded-lg">
-                      <p>No additions added.</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {additions.items.map((item) => (
-                        <div key={item._id} className="flex gap-2 items-center">
-                          <input
-                            type="text"
-                            value={item.description}
-                            onChange={(e) => updateAdditionItem(item._id, 'description', e.target.value)}
-                            className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-green-500"
-                            placeholder="Description"
-                            disabled={queueGenerated}
-                          />
-                          <input
-                            type="number"
-                            value={item.amount}
-                            onChange={(e) => updateAdditionItem(item._id, 'amount', e.target.value)}
-                            className="w-32 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-green-500 text-right"
-                            placeholder="Amount"
-                            disabled={queueGenerated}
-                          />
-                          {!queueGenerated && (
-                            <button
-                              onClick={() => removeAdditionItem(item._id)}
-                              className="p-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200"
-                              title="Remove"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                            </button>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
+          {/* Additions Section - EDITABLE */}
+          <div className="mt-4">
+            <Card
+              title="Additions (+) - Extra Charges"
+              right={
+                !queueGenerated && (
+                  <button
+                    onClick={addAdditionItem}
+                    className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-green-700"
+                  >
+                    + Add Addition
+                  </button>
+                )
+              }
+            >
+              <div className="grid grid-cols-12 gap-4">
+                <div className="col-span-12 md:col-span-6">
+                  <div className="bg-green-50 p-4 rounded-xl border border-green-200">
+                    <h4 className="text-sm font-bold text-green-800 mb-3">Addition Items</h4>
 
-              <div className="col-span-12 md:col-span-6">
-                <div className="bg-green-100 p-4 rounded-xl border border-green-300 h-full flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="text-sm font-bold text-green-800 mb-2">Total Additions</div>
-                    <div className="text-3xl font-bold text-green-700">
-                      ₹{num(additions.totalAddition).toLocaleString()}
+                    {additions.items.length === 0 ? (
+                      <div className="text-center py-4 text-slate-500 border-2 border-dashed border-green-200 rounded-lg">
+                        <p>No additions added.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {additions.items.map((item) => (
+                          <div key={item._id} className="flex gap-2 items-center">
+                            <input
+                              type="text"
+                              value={item.description}
+                              onChange={(e) => updateAdditionItem(item._id, 'description', e.target.value)}
+                              className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-green-500"
+                              placeholder="Description"
+                              disabled={queueGenerated}
+                            />
+                            <input
+                              type="number"
+                              value={item.amount}
+                              onChange={(e) => updateAdditionItem(item._id, 'amount', e.target.value)}
+                              className="w-32 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-green-500 text-right"
+                              placeholder="Amount"
+                              disabled={queueGenerated}
+                            />
+                            {!queueGenerated && (
+                              <button
+                                onClick={() => removeAdditionItem(item._id)}
+                                className="p-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200"
+                                title="Remove"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="col-span-12 md:col-span-6">
+                  <div className="bg-green-100 p-4 rounded-xl border border-green-300 h-full flex items-center justify-center">
+                    <div className="text-center">
+                      <div className="text-sm font-bold text-green-800 mb-2">Total Additions</div>
+                      <div className="text-3xl font-bold text-green-700">
+                        ₹{num(additions.totalAddition).toLocaleString()}
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </Card>
-        </div>
+            </Card>
+          </div>
 
-        {/* Deductions Section - EDITABLE */}
-        <div className="mt-4">
-          <Card 
-            title="Deductions (-) - Adjustments"
-            right={
-              !queueGenerated && (
-                <button
-                  onClick={addDeductionItem}
-                  className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-red-700"
-                >
-                  + Add Deduction
-                </button>
-              )
-            }
-          >
-            <div className="grid grid-cols-12 gap-4">
-              <div className="col-span-12 md:col-span-6">
-                <div className="bg-red-50 p-4 rounded-xl border border-red-200">
-                  <h4 className="text-sm font-bold text-red-800 mb-3">Deduction Items</h4>
-                  
-                  {deductions.items.length === 0 ? (
-                    <div className="text-center py-4 text-slate-500 border-2 border-dashed border-red-200 rounded-lg">
-                      <p>No deductions added.</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {deductions.items.map((item) => (
-                        <div key={item._id} className="flex gap-2 items-center">
-                          <input
-                            type="text"
-                            value={item.description}
-                            onChange={(e) => updateDeductionItem(item._id, 'description', e.target.value)}
-                            className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-red-500"
-                            placeholder="Description"
-                            disabled={queueGenerated}
-                          />
-                          <input
-                            type="number"
-                            value={item.amount}
-                            onChange={(e) => updateDeductionItem(item._id, 'amount', e.target.value)}
-                            className="w-32 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-red-500 text-right"
-                            placeholder="Amount"
-                            disabled={queueGenerated}
-                          />
-                          {!queueGenerated && (
-                            <button
-                              onClick={() => removeDeductionItem(item._id)}
-                              className="p-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200"
-                              title="Remove"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                            </button>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
+          {/* Deductions Section - EDITABLE */}
+          <div className="mt-4">
+            <Card
+              title="Deductions (-) - Adjustments"
+              right={
+                !queueGenerated && (
+                  <button
+                    onClick={addDeductionItem}
+                    className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-red-700"
+                  >
+                    + Add Deduction
+                  </button>
+                )
+              }
+            >
+              <div className="grid grid-cols-12 gap-4">
+                <div className="col-span-12 md:col-span-6">
+                  <div className="bg-red-50 p-4 rounded-xl border border-red-200">
+                    <h4 className="text-sm font-bold text-red-800 mb-3">Deduction Items</h4>
+
+                    {deductions.items.length === 0 ? (
+                      <div className="text-center py-4 text-slate-500 border-2 border-dashed border-red-200 rounded-lg">
+                        <p>No deductions added.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {deductions.items.map((item) => (
+                          <div key={item._id} className="flex gap-2 items-center">
+                            <input
+                              type="text"
+                              value={item.description}
+                              onChange={(e) => updateDeductionItem(item._id, 'description', e.target.value)}
+                              className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-red-500"
+                              placeholder="Description"
+                              disabled={queueGenerated}
+                            />
+                            <input
+                              type="number"
+                              value={item.amount}
+                              onChange={(e) => updateDeductionItem(item._id, 'amount', e.target.value)}
+                              className="w-32 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-red-500 text-right"
+                              placeholder="Amount"
+                              disabled={queueGenerated}
+                            />
+                            {!queueGenerated && (
+                              <button
+                                onClick={() => removeDeductionItem(item._id)}
+                                className="p-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200"
+                                title="Remove"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
 
-              <div className="col-span-12 md:col-span-6">
-                <div className="bg-red-100 p-4 rounded-xl border border-red-300 h-full flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="text-sm font-bold text-red-800 mb-2">Total Deductions</div>
-                    <div className="text-3xl font-bold text-red-700">
-                      ₹{num(deductions.totalDeduction).toLocaleString()}
+                <div className="col-span-12 md:col-span-6">
+                  <div className="bg-red-100 p-4 rounded-xl border border-red-300 h-full flex items-center justify-center">
+                    <div className="text-center">
+                      <div className="text-sm font-bold text-red-800 mb-2">Total Deductions</div>
+                      <div className="text-3xl font-bold text-red-700">
+                        ₹{num(deductions.totalDeduction).toLocaleString()}
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </Card>
-        </div>
+            </Card>
+          </div>
 
         </>}
         {/* Balance & Final Amount */}
@@ -2938,11 +2936,10 @@ export default function EditAdvancePayment() {
                   onClick={handleGenerateQueue}
                   disabled={queueGenerated || !memoFileInfo?.filePath}
                   title={!memoFileInfo?.filePath ? "A Purchase Panel MEMO is required" : "Generate Queue"}
-                  className={`mt-1 w-full rounded-xl px-4 py-2 text-sm font-bold text-white transition ${
-                    queueGenerated || !memoFileInfo?.filePath
-                      ? 'bg-gray-400 cursor-not-allowed' 
-                      : 'bg-blue-600 hover:bg-blue-700'
-                  }`}
+                  className={`mt-1 w-full rounded-xl px-4 py-2 text-sm font-bold text-white transition ${queueGenerated || !memoFileInfo?.filePath
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : 'bg-blue-600 hover:bg-blue-700'
+                    }`}
                 >
                   {queueGenerated ? 'Queue Generated' : 'Generate Queue'}
                 </button>
