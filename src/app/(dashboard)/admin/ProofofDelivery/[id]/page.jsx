@@ -1,5 +1,3 @@
-
-
 // "use client";
 
 // import { useState, useEffect } from "react";
@@ -1496,6 +1494,92 @@ function getLatestPodDate(lrEntries) {
 }
 
 // Reusable Card Component
+function PodUploadBox({ lr, onSelect, onRemove, onView }) {
+  const uploaded = lr.podUpload === 'UPLOADED';
+  const uploading = lr.podUpload === 'UPLOADING';
+  const inputId = `pod-file-${lr._id}`;
+  return (
+    <div className="mt-1">
+      {uploaded ? (
+        <div className="flex items-center gap-3 rounded-xl border border-green-200 bg-green-50 px-3 py-2">
+          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-green-100 text-green-700">
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-sm font-semibold text-green-800">{lr.podFileName || lr.podFile?.originalName || 'POD uploaded'}</div>
+            {lr.podFile?.filePath || lr.podPreviewUrl
+              ? <div className="text-xs text-green-600">Uploaded</div>
+              : <div className="text-xs text-amber-700">File was not saved earlier - click Replace to upload it again</div>}
+          </div>
+          {onView && (
+            <button type="button" onClick={onView} className="rounded-lg border border-blue-200 bg-white px-2.5 py-1 text-xs font-bold text-blue-600 hover:bg-blue-50">
+              View
+            </button>
+          )}
+          <label htmlFor={inputId} className="cursor-pointer rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-slate-700 hover:bg-slate-50">
+            Replace
+          </label>
+          <button type="button" onClick={onRemove} className="rounded-lg border border-red-200 bg-white px-2.5 py-1 text-xs font-bold text-red-600 hover:bg-red-50">
+            Remove
+          </button>
+        </div>
+      ) : (
+        <label
+          htmlFor={inputId}
+          className="flex cursor-pointer items-center gap-3 rounded-xl border-2 border-dashed border-yellow-300 bg-yellow-50/60 px-3 py-2.5 transition hover:border-yellow-500 hover:bg-yellow-50"
+        >
+          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-yellow-100 text-yellow-700">
+            {uploading ? (
+              <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            ) : (
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M16 8l-4-4m0 0L8 8m4-4v12" />
+              </svg>
+            )}
+          </div>
+          <div className="min-w-0">
+            <div className="text-sm font-bold text-slate-800">{uploading ? 'Uploading...' : 'Click to upload POD'}</div>
+            <div className="text-xs text-slate-500">PDF, JPG or PNG - Max 5MB</div>
+          </div>
+        </label>
+      )}
+      <input
+        id={inputId}
+        type="file"
+        accept=".pdf,.jpg,.jpeg,.png"
+        className="hidden"
+        onChange={(e) => { onSelect(e); e.target.value = ''; }}
+      />
+    </div>
+  );
+}
+
+async function openPodAttachment(podId, filePath) {
+  if (!podId || !filePath) return;
+  const previewWindow = window.open("", "_blank");
+  try {
+    const token = localStorage.getItem("token");
+    const response = await fetch(
+      `/api/pod-panel/${encodeURIComponent(podId)}/attachment?path=${encodeURIComponent(filePath)}`,
+      { headers: { Authorization: `Bearer ${token}` } },
+    );
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const objectUrl = URL.createObjectURL(await response.blob());
+    if (previewWindow) previewWindow.location.replace(objectUrl);
+    else window.open(objectUrl, "_blank");
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 5 * 60 * 1000);
+  } catch (error) {
+    console.error("Unable to open POD file:", error);
+    if (previewWindow) previewWindow.close();
+    alert("The POD file could not be opened. It may no longer be present on the server.");
+  }
+}
+
 function Card({ title, right, children }) {
   return (
     <div className="rounded-2xl border border-slate-200 bg-white shadow-sm mb-4">
@@ -1571,6 +1655,38 @@ export default function EditPOD() {
     dueDays: 0
   });
 
+  // Advance is read-only: it is whatever was really created in Advance Payment for this purchase.
+  const [advanceInfo, setAdvanceInfo] = useState({ loaded: false, found: false, advance: 0, payments: [] });
+  const loadAdvance = async (purchaseNo) => {
+    if (!purchaseNo) return;
+    setAdvanceInfo({ loaded: false, found: false, advance: 0, payments: [] });
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/pod-panel?advanceFor=${encodeURIComponent(purchaseNo)}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success && data.data) {
+        setVendorFinancial(prev => ({ ...prev, advance: Number(data.data.advance) || 0 }));
+        setAdvanceInfo({ loaded: true, found: !!data.data.found, advance: Number(data.data.advance) || 0, payments: data.data.payments || [] });
+      }
+    } catch (err) {
+      console.error('Error loading advance payment:', err);
+    }
+  };
+  // Race-proof: once the real advance is known, any later state update coming from the
+  // purchase / POD loading code can never overwrite it with a stale value.
+  useEffect(() => {
+    if (advanceInfo.loaded && num(vendorFinancial.advance) !== advanceInfo.advance) {
+      setVendorFinancial(prev => ({ ...prev, advance: advanceInfo.advance }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [advanceInfo.loaded, advanceInfo.advance, vendorFinancial.advance]);
+  useEffect(() => {
+    if (header.purchaseNo) loadAdvance(header.purchaseNo);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [header.purchaseNo]);
+
   // ==================== POD STATUS SECTION ====================
   const [podStatusSection, setPodStatusSection] = useState({
     lastPodDate: "",
@@ -1627,7 +1743,7 @@ export default function EditPOD() {
   const fetchPurchases = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/purchase-panel?format=table', {
+      const res = await fetch('/api/purchase-panel?format=table&for=pod', {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -1703,7 +1819,7 @@ export default function EditPOD() {
     setLoadingLR(true);
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/consignment-note?format=table', {
+      const res = await fetch('/api/consignment-note?format=table&for=pod', {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -1736,7 +1852,7 @@ export default function EditPOD() {
   const fetchLRDetails = async (lrNo, lrId) => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`/api/consignment-note?lrNo=${lrNo}`, {
+      const res = await fetch(`/api/consignment-note?lrNo=${lrNo}&for=pod`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -1913,7 +2029,7 @@ export default function EditPOD() {
             total: pod.vendorFinancial.total || 0,
             advance: pod.vendorFinancial.advance || 0,
             balance: pod.vendorFinancial.balance || 0,
-            poDeduction: pod.vendorFinancial.poDeduction || 0,
+            poDeduction: 0,
             podDeduction: pod.vendorFinancial.podDeduction || 0,
             finalBalance: pod.vendorFinancial.finalBalance || 0,
             dueDays: pod.vendorFinancial.dueDays || 0
@@ -1962,7 +2078,7 @@ export default function EditPOD() {
 
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`/api/purchase-panel?purchaseNo=${purchaseNo}`, {
+      const res = await fetch(`/api/purchase-panel?purchaseNo=${purchaseNo}&for=pod`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -2049,9 +2165,9 @@ export default function EditPOD() {
           ...prev,
           vendorName: vendorName,
           vendorCode: vendorCode,
-          advance: num(purchase.purchaseDetails?.advance) || 0,
+          advance: 0, // real value is loaded from Advance Payment
           total: purchase.purchaseAmountFromVNN || purchase.purchaseDetails?.amount || 0,
-          poDeduction: num(poDeductionFromPurchase),
+          poDeduction: 0, // PO deduction is already settled in Advance Payment
           dueDays: dueDays,
           podDeduction: prev.podDeduction || 0
         }));
@@ -2152,9 +2268,52 @@ export default function EditPOD() {
       return;
     }
 
-    updateLREntry(lrId, 'podUpload', 'UPLOADED');
-    updateLREntry(lrId, 'podReceived', 'Received');
-    alert(`✅ File ${file.name} selected for upload`);
+    updateLREntry(lrId, 'podUpload', 'UPLOADING');
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('section', 'pod');
+    formData.append('field', 'pod');
+
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/upload/excel', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'Upload failed');
+
+      setLrEntries(prev => prev.map(lr => lr._id === lrId ? {
+        ...lr,
+        podUpload: 'UPLOADED',
+        podReceived: 'Pending',
+        podFileName: file.name,
+        podPreviewUrl: URL.createObjectURL(file),
+        podFile: {
+          filePath: data.filePath,
+          filename: data.filename,
+          originalName: file.name,
+          size: file.size,
+          mimeType: file.type
+        }
+      } : lr));
+    } catch (error) {
+      console.error('Error uploading POD:', error);
+      setLrEntries(prev => prev.map(lr => lr._id === lrId ? { ...lr, podUpload: '', podFileName: '', podFile: null, podPreviewUrl: '' } : lr));
+      alert('❌ Failed to upload POD. Please try again.');
+    }
+  };
+
+  const removePodUpload = (lrId) => {
+    setLrEntries(prev => prev.map(lr => lr._id === lrId
+      ? { ...lr, podUpload: '', podFileName: '', podFile: null, podPreviewUrl: '' }
+      : lr));
+  };
+
+  const openPodFile = (lr) => {
+    if (lr.podPreviewUrl) window.open(lr.podPreviewUrl, '_blank');
+    else if (lr.podFile?.filePath) openPodAttachment(podId, lr.podFile.filePath);
   };
 
   // Calculations
@@ -2167,7 +2326,7 @@ export default function EditPOD() {
   };
 
   const calculateTotalPODDeduction = () => {
-    return num(vendorFinancial.poDeduction) + num(vendorFinancial.podDeduction);
+    return num(vendorFinancial.podDeduction); // PO deduction is settled in Advance Payment
   };
 
   const calculateFinalBalance = () => {
@@ -2239,8 +2398,6 @@ export default function EditPOD() {
         purchaseNo: header.purchaseNo,
         pricingSerialNo: header.pricingSerialNo
       };
-
-      console.log('📤 Updating POD with company info:', payload);
 
       const res = await fetch('/api/pod-panel', {
         method: 'PUT',
@@ -2718,23 +2875,7 @@ export default function EditPOD() {
                   </div>
                   <div className="col-span-12 md:col-span-3">
                     <label className="text-xs font-bold text-slate-600">POD Upload</label>
-                    <div className="mt-1 flex gap-2 items-center">
-                      <input
-                        type="file"
-                        accept=".pdf,.jpg,.jpeg,.png"
-                        onChange={(e) => handlePodUpload(e, lr._id)}
-                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-yellow-500"
-                      />
-                      {lr.podUpload === 'UPLOADED' && (
-                        <span className="text-green-600 text-sm flex items-center gap-1">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                          Uploaded
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-slate-400 mt-1">Upload PDF or Image (Max 5MB)</p>
+                    <PodUploadBox lr={lr} onSelect={(e) => handlePodUpload(e, lr._id)} onRemove={() => removePodUpload(lr._id)} onView={() => openPodFile(lr)} />
                   </div>
 
                   <div className="col-span-12 md:col-span-2">
@@ -2748,9 +2889,6 @@ export default function EditPOD() {
                       <option value="Received">Received</option>
                       <option value="Partial">Partial</option>
                     </select>
-                    {lr.podUpload === 'UPLOADED' && (
-                      <p className="text-xs text-green-600 mt-1">✓ Auto-set to Received after upload</p>
-                    )}
                   </div>
                 </div>
 
@@ -2865,21 +3003,18 @@ export default function EditPOD() {
             </div>
             <div className="col-span-12 md:col-span-2">
               <label className="text-xs font-bold text-slate-600">Advance</label>
-              <input type="number" value={vendorFinancial.advance} onChange={(e) => setVendorFinancial({ ...vendorFinancial, advance: num(e.target.value) })} className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-yellow-500" />
+              <input type="text" value={`₹${num(vendorFinancial.advance).toLocaleString()}`} readOnly className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm cursor-not-allowed" />
+              <p className={`text-xs mt-1 ${advanceInfo.loaded && !advanceInfo.found ? 'text-red-500' : 'text-slate-400'}`}>
+                {!advanceInfo.loaded
+                  ? 'Loading advance payment...'
+                  : advanceInfo.found
+                    ? `From Advance Payment ${advanceInfo.payments.map(p => p.paymentNo).join(', ')}`
+                    : 'No Advance Payment created for this purchase'}
+              </p>
             </div>
             <div className="col-span-12 md:col-span-2">
               <label className="text-xs font-bold text-slate-600">Balance</label>
               <input type="text" value={`₹${(vendorFinancial.total - vendorFinancial.advance).toLocaleString()}`} readOnly className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm" />
-            </div>
-            <div className="col-span-12 md:col-span-2">
-              <label className="text-xs font-bold text-slate-600">PO - Deduction (from Purchase)</label>
-              <input
-                type="text"
-                value={`₹${vendorFinancial.poDeduction.toLocaleString()}`}
-                readOnly
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm cursor-not-allowed"
-              />
-              <p className="text-xs text-slate-400 mt-1">Auto-filled from Purchase Panel</p>
             </div>
             <div className="col-span-12 md:col-span-2">
               <label className="text-xs font-bold text-slate-600">POD - Deduction</label>
@@ -2895,11 +3030,11 @@ export default function EditPOD() {
               <label className="text-xs font-bold text-slate-600">Total POD Deduction</label>
               <input
                 type="text"
-                value={`₹${(vendorFinancial.poDeduction + vendorFinancial.podDeduction).toLocaleString()}`}
+                value={`₹${num(vendorFinancial.podDeduction).toLocaleString()}`}
                 readOnly
                 className="mt-1 w-full rounded-xl border border-purple-200 bg-purple-50 px-3 py-2 text-sm font-bold text-purple-700"
               />
-              <p className="text-xs text-slate-400 mt-1">PO Deduction + POD Deduction</p>
+              <p className="text-xs text-slate-400 mt-1">POD Deduction only (PO deduction is settled in Advance Payment)</p>
             </div>
             <div className="col-span-12 md:col-span-4">
               <label className="text-xs font-bold text-slate-600">Final Balance</label>
@@ -3046,9 +3181,9 @@ export default function EditPOD() {
             <div className="bg-gradient-to-br from-yellow-50 to-orange-50 p-4 rounded-xl border border-yellow-200">
               <div className="text-xs text-slate-500">Total POD Deduction</div>
               <div className="text-2xl font-bold text-red-600">
-                ₹{(vendorFinancial.poDeduction + vendorFinancial.podDeduction).toLocaleString()}
+                ₹{num(vendorFinancial.podDeduction).toLocaleString()}
               </div>
-              <p className="text-xs text-slate-400 mt-1">PO + POD Deduction</p>
+              <p className="text-xs text-slate-400 mt-1">POD Deduction</p>
             </div>
           </div>
           <div className="col-span-12 md:col-span-3">

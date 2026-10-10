@@ -987,6 +987,27 @@ function Card({ title, right, children }) {
   );
 }
 
+async function openPodAttachment(podId, filePath) {
+  if (!podId || !filePath) return;
+  const previewWindow = window.open("", "_blank");
+  try {
+    const token = localStorage.getItem("token");
+    const response = await fetch(
+      `/api/pod-panel/${encodeURIComponent(podId)}/attachment?path=${encodeURIComponent(filePath)}`,
+      { headers: { Authorization: `Bearer ${token}` } },
+    );
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const objectUrl = URL.createObjectURL(await response.blob());
+    if (previewWindow) previewWindow.location.replace(objectUrl);
+    else window.open(objectUrl, "_blank");
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 5 * 60 * 1000);
+  } catch (error) {
+    console.error("Unable to open POD file:", error);
+    if (previewWindow) previewWindow.close();
+    alert("The POD file could not be opened. It may no longer be present on the server.");
+  }
+}
+
 export default function ApprovePOD() {
   const router = useRouter();
   const params = useParams();
@@ -1038,7 +1059,7 @@ export default function ApprovePOD() {
     total: 0,
     advance: 0,
     balance: 0,
-    poDeduction: 0,
+    podDeduction: 0,
     finalBalance: 0
   });
 
@@ -1170,7 +1191,7 @@ export default function ApprovePOD() {
             total: pod.vendorFinancial.total || 0,
             advance: pod.vendorFinancial.advance || 0,
             balance: pod.vendorFinancial.balance || 0,
-            poDeduction: pod.vendorFinancial.poDeduction || 0,
+            podDeduction: pod.vendorFinancial.podDeduction ?? pod.podDeduction ?? 0,
             finalBalance: pod.vendorFinancial.finalBalance || 0
           });
         }
@@ -1240,8 +1261,8 @@ export default function ApprovePOD() {
     setSendingEmail(true);
 
     try {
-      const totalPodDeduction = products.reduce((sum, p) => sum + num(p.value), 0);
-      const finalBalance = vendorFinancial.total - vendorFinancial.advance - vendorFinancial.poDeduction - totalPodDeduction;
+      const totalPodDeduction = num(vendorFinancial.podDeduction);
+      const finalBalance = num(vendorFinancial.total) - num(vendorFinancial.advance) - totalPodDeduction;
       const totalQuantity = products.reduce((sum, p) => sum + num(p.totalPkgs), 0);
       const totalActualWt = products.reduce((sum, p) => sum + num(p.actualWt), 0);
 
@@ -1368,7 +1389,7 @@ export default function ApprovePOD() {
                 <tr><th>Vendor Code</th><td>${vendorFinancial.vendorCode || '-'}</td></tr>
                 <tr><th>Total Amount</th><td class="amount">₹${vendorFinancial.total?.toLocaleString() || 0}</td></tr>
                 <tr><th>Advance Paid</th><td>₹${vendorFinancial.advance?.toLocaleString() || 0}</td></tr>
-                <tr><th>PO Deduction</th><td>₹${vendorFinancial.poDeduction?.toLocaleString() || 0}</td></tr>
+                // <tr><th>PO Deduction</th><td>₹${vendorFinancial.poDeduction?.toLocaleString() || 0}</td></tr>
                 <tr><th>POD Deduction</th><td class="amount">₹${totalPodDeduction.toLocaleString()}</td></tr>
                 <tr><th>Total Actual WT</th><td>${totalActualWt} MT</td></tr>
                 <tr><th>Final Balance</th><td class="amount">₹${finalBalance.toLocaleString()}</td></tr>
@@ -1450,9 +1471,8 @@ export default function ApprovePOD() {
           podStatus: podStatusSection.podStatus
         },
         remarks: remarks,
-        approvalStatus: "Approved",
-        approvedBy: "Approver",
-        approvedAt: new Date().toISOString()
+        // approvedBy / approvedAt are now written by the server from the logged-in user
+        approvalStatus: "Approved"
       };
 
       const res = await fetch('/api/pod-panel', {
@@ -1468,7 +1488,7 @@ export default function ApprovePOD() {
 
       if (data.success) {
         alert(`✅ POD ${podStatusSection.podStatus === 'Received' ? 'Approved' : 'Updated'} successfully!`);
-        router.push('/admin/ProofOfDelivery');
+        router.push('/admin/ProofofDelivery');
       } else {
         alert(data.message || 'Failed to update approval');
       }
@@ -1489,17 +1509,10 @@ export default function ApprovePOD() {
     return products.reduce((sum, p) => sum + num(p.totalPkgs), 0);
   };
 
-  const calculatePODDeduction = () => {
-    return products.reduce((sum, p) => sum + num(p.value), 0);
-  };
+  const calculatePODDeduction = () => num(vendorFinancial.podDeduction);
 
-  const calculateFinalBalance = () => {
-    const total = vendorFinancial.total;
-    const advance = vendorFinancial.advance;
-    const poDeduction = vendorFinancial.poDeduction;
-    const podDeduction = calculatePODDeduction();
-    return total - advance - poDeduction - podDeduction;
-  };
+  const calculateFinalBalance = () =>
+    num(vendorFinancial.total) - num(vendorFinancial.advance) - calculatePODDeduction();
 
   if (loading) {
     return (
@@ -1518,7 +1531,7 @@ export default function ApprovePOD() {
           <div>
             <div className="flex items-center gap-3">
               <button
-                onClick={() => router.push('/admin/ProofOfDelivery')}
+                onClick={() => router.push('/admin/ProofofDelivery')}
                 className="text-yellow-600 hover:text-yellow-800 font-medium text-sm flex items-center gap-1"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1784,15 +1797,30 @@ export default function ApprovePOD() {
                   <div className="col-span-12 md:col-span-3">
                     <label className="text-xs font-bold text-slate-600">POD Upload</label>
                     <div className="mt-1">
-                      {lr.podUpload === 'UPLOADED' ? (
-                        <span className="text-green-600 text-sm flex items-center gap-1">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      {lr.podUpload === 'UPLOADED' && lr.podFile?.filePath ? (
+                        <div className="flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 px-3 py-2 text-sm font-semibold text-green-800">
+                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                           </svg>
-                          Uploaded
-                        </span>
+                          <span className="flex-1">{lr.podFile?.originalName || 'Uploaded'}</span>
+                          {lr.podFile?.filePath && (
+                            <button
+                              type="button"
+                              onClick={() => openPodAttachment(podId, lr.podFile.filePath)}
+                              className="rounded-lg border border-blue-200 bg-white px-2.5 py-1 text-xs font-bold text-blue-600 hover:bg-blue-50"
+                            >
+                              View
+                            </button>
+                          )}
+                        </div>
                       ) : (
-                        <span className="text-gray-500 text-sm">Not Uploaded</span>
+                        lr.podUpload === 'UPLOADED' ? (
+                          <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                            POD file was not saved - ask for it to be uploaded again from Edit POD
+                          </div>
+                        ) : (
+                          <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">Not uploaded</div>
+                        )
                       )}
                     </div>
                   </div>
@@ -1874,11 +1902,11 @@ export default function ApprovePOD() {
               <label className="text-xs font-bold text-slate-600">Balance</label>
               <input type="text" value={`₹${vendorFinancial.balance?.toLocaleString() || 0}`} readOnly className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm" />
             </div>
-            <div className="col-span-12 md:col-span-2">
+            {/* <div className="col-span-12 md:col-span-2">
               <label className="text-xs font-bold text-slate-600">PO - Deduction</label>
               <input type="text" value={`₹${vendorFinancial.poDeduction?.toLocaleString() || 0}`} readOnly className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm" />
-            </div>
-            <div className="col-span-12 md:col-span-3">
+            </div> */}
+            <div className="col-span-12 md:col-span-2">
               <label className="text-xs font-bold text-slate-600">POD - Deduction</label>
               <input type="text" value={`₹${calculatePODDeduction().toLocaleString()}`} readOnly className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm" />
             </div>

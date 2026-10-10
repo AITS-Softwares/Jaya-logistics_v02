@@ -3560,6 +3560,7 @@ export default function EditPurchasePanel() {
   /** =========================
    * APPROVAL STATE
    ========================= */
+  const [isLocked, setIsLocked] = useState(false); // saved status is Approved/Completed
   const [approval, setApproval] = useState({
     status: "",
     remarks: "",
@@ -3872,6 +3873,11 @@ export default function EditPurchasePanel() {
           isRegistered: purchase.registeredVehicle.isRegistered || false,
         });
       }
+
+      setIsLocked(
+        ["Approved", "Completed"].includes(purchase.panelStatus) ||
+        purchase.approval?.status === "Approved"
+      );
 
       // Set approval
       if (purchase.approval) {
@@ -4699,6 +4705,11 @@ export default function EditPurchasePanel() {
    ========================= */
   const handleUpdate = async () => {
 
+    if (isLocked) {
+      alert("This purchase is approved and can no longer be edited.");
+      return;
+    }
+
     if (!canEditHere) {
       alert("You do not have edit permission.");
       return;
@@ -4854,7 +4865,7 @@ export default function EditPurchasePanel() {
             <button
               onClick={handleUpdate}
 
-              disabled={saving || fetchingData || !canEditHere}
+              disabled={saving || fetchingData || !canEditHere || isLocked}
               className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${saving || fetchingData
                 ? 'bg-gray-400 cursor-not-allowed'
                 : 'bg-emerald-600 hover:bg-emerald-700'
@@ -4876,423 +4887,430 @@ export default function EditPurchasePanel() {
 
       {/* Main Content */}
       <div className="mx-auto max-w-full p-4">
-        {/* Loading Info Search Section */}
-        <div className="mb-4">
-          <Card title="Load from Loading Info">
-            <div className="grid grid-cols-12 gap-4">
-              <div className="col-span-12 md:col-span-4 relative" ref={loadingInfoDropdownRef}>
-                <label className="text-xs font-bold text-slate-600">Loading Info (Vehicle Arrival No)</label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={loadingInfoNo}
-                    onChange={(e) => handleLoadingInfoSearch(e.target.value)}
-                    onFocus={handleLoadingInfoInputFocus}
-                    onBlur={handleLoadingInfoInputBlur}
-                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 pr-8"
-                    placeholder="Search loading info..."
-                  />
-                  {loadingInfoHook.loading && (
-                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                      <svg className="animate-spin h-4 w-4 text-emerald-500" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                    </div>
-                  )}
-                </div>
-
-                {showLoadingInfoDropdown && (
-                  <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
-                    {loadingInfoHook.loading ? (
-                      <div className="p-3 text-center text-sm text-slate-500">Loading...</div>
-                    ) : filteredLoadingInfos.length > 0 ? (
-                      filteredLoadingInfos.map((info) => (
-                        <div
-                          key={info._id}
-                          onMouseDown={() => handleSelectLoadingInfo(info)}
-                          className="p-3 hover:bg-emerald-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors"
-                        >
-                          <div className="font-medium text-slate-800">
-                            {info.vehicleArrivalNo}
-                          </div>
-                          <div className="text-xs text-indigo-600 mt-1 font-medium">
-                            Order No: {(info.orderNumbers || info.orderRows?.map((row) => row.orderNo).filter(Boolean) || []).join(', ') || 'N/A'}
-                          </div>
-                          <div className="text-xs text-slate-500 mt-1">
-                            Vehicle: {info.vehicleNo || 'N/A'} • VNN: {info.vehicleNegotiationNo || 'N/A'}
-                          </div>
-                          <div className="text-xs text-slate-400">
-                            Branch: {info.branch || 'N/A'}
-                          </div>
-                          {info.vehicleNegotiationNo && (
-                            <div className="text-xs text-emerald-600 mt-1 font-bold">
-                              ✓ Has VNN: {info.vehicleNegotiationNo}
-                            </div>
-                          )}
-                        </div>
-                      ))
-                    ) : (
-                      <div className="p-3 text-center text-sm text-slate-500">
-                        No Loading Info found
+        {isLocked && (
+          <div className="mb-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-800">
+            READ ONLY - this purchase is Approved/Completed and can no longer be edited.
+          </div>
+        )}
+        {/* Disables every input, select, textarea and button inside once approved */}
+        <fieldset disabled={isLocked} className="m-0 min-w-0 border-0 p-0">
+          {/* Loading Info Search Section */}
+          <div className="mb-4">
+            <Card title="Load from Loading Info">
+              <div className="grid grid-cols-12 gap-4">
+                <div className="col-span-12 md:col-span-4 relative" ref={loadingInfoDropdownRef}>
+                  <label className="text-xs font-bold text-slate-600">Loading Info (Vehicle Arrival No)</label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={loadingInfoNo}
+                      onChange={(e) => handleLoadingInfoSearch(e.target.value)}
+                      onFocus={handleLoadingInfoInputFocus}
+                      onBlur={handleLoadingInfoInputBlur}
+                      className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 pr-8"
+                      placeholder="Search loading info..."
+                    />
+                    {loadingInfoHook.loading && (
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                        <svg className="animate-spin h-4 w-4 text-emerald-500" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
                       </div>
                     )}
                   </div>
-                )}
-                <div className="text-xs text-slate-400 mt-1">
-                  Select Loading Info to auto-fill from Vehicle Negotiation
-                </div>
-              </div>
 
-              {selectedVNN && (
-                <div className="col-span-12 md:col-span-8">
-                  <div className="bg-green-50 p-3 rounded-lg border border-green-200">
-                    <div className="grid grid-cols-3 gap-4">
-                      <div>
-                        <span className="text-xs font-bold text-slate-600">Loaded VNN:</span>
-                        <span className="ml-2 text-sm font-bold text-green-800">{selectedVNN.vnnNo}</span>
-                      </div>
-                      <div>
-                        <span className="text-xs font-bold text-slate-600">PSN:</span>
-                        <span className="ml-2 text-sm font-bold text-purple-800">{header.pricingSerialNo || 'Not Found'}</span>
-                      </div>
-                      <div>
-                        <span className="text-xs font-bold text-slate-600">Sub-Company:</span>
-                        <span className="ml-2 text-sm font-bold text-blue-800">{header.subCompanyName || 'N/A'}</span>
-                      </div>
-                      <div>
-                        <span className="text-xs font-bold text-slate-600">Vendor:</span>
-                        <span className="ml-2 text-sm text-slate-700">{selectedVNN.approval?.vendorName || 'N/A'}</span>
-                      </div>
-                      <div>
-                        <span className="text-xs font-bold text-slate-600">Vehicle:</span>
-                        <span className="ml-2 text-sm text-slate-700">{selectedVNN.approval?.vehicleNo || 'N/A'}</span>
-                      </div>
-                      <div>
-                        <span className="text-xs font-bold text-slate-600">Orders:</span>
-                        <span className="ml-2 text-sm text-slate-700">{selectedVNN.orders?.length || 0}</span>
+                  {showLoadingInfoDropdown && (
+                    <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                      {loadingInfoHook.loading ? (
+                        <div className="p-3 text-center text-sm text-slate-500">Loading...</div>
+                      ) : filteredLoadingInfos.length > 0 ? (
+                        filteredLoadingInfos.map((info) => (
+                          <div
+                            key={info._id}
+                            onMouseDown={() => handleSelectLoadingInfo(info)}
+                            className="p-3 hover:bg-emerald-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors"
+                          >
+                            <div className="font-medium text-slate-800">
+                              {info.vehicleArrivalNo}
+                            </div>
+                            <div className="text-xs text-indigo-600 mt-1 font-medium">
+                              Order No: {(info.orderNumbers || info.orderRows?.map((row) => row.orderNo).filter(Boolean) || []).join(', ') || 'N/A'}
+                            </div>
+                            <div className="text-xs text-slate-500 mt-1">
+                              Vehicle: {info.vehicleNo || 'N/A'} • VNN: {info.vehicleNegotiationNo || 'N/A'}
+                            </div>
+                            <div className="text-xs text-slate-400">
+                              Branch: {info.branch || 'N/A'}
+                            </div>
+                            {info.vehicleNegotiationNo && (
+                              <div className="text-xs text-emerald-600 mt-1 font-bold">
+                                ✓ Has VNN: {info.vehicleNegotiationNo}
+                              </div>
+                            )}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="p-3 text-center text-sm text-slate-500">
+                          No Loading Info found
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  <div className="text-xs text-slate-400 mt-1">
+                    Select Loading Info to auto-fill from Vehicle Negotiation
+                  </div>
+                </div>
+
+                {selectedVNN && (
+                  <div className="col-span-12 md:col-span-8">
+                    <div className="bg-green-50 p-3 rounded-lg border border-green-200">
+                      <div className="grid grid-cols-3 gap-4">
+                        <div>
+                          <span className="text-xs font-bold text-slate-600">Loaded VNN:</span>
+                          <span className="ml-2 text-sm font-bold text-green-800">{selectedVNN.vnnNo}</span>
+                        </div>
+                        <div>
+                          <span className="text-xs font-bold text-slate-600">PSN:</span>
+                          <span className="ml-2 text-sm font-bold text-purple-800">{header.pricingSerialNo || 'Not Found'}</span>
+                        </div>
+                        <div>
+                          <span className="text-xs font-bold text-slate-600">Sub-Company:</span>
+                          <span className="ml-2 text-sm font-bold text-blue-800">{header.subCompanyName || 'N/A'}</span>
+                        </div>
+                        <div>
+                          <span className="text-xs font-bold text-slate-600">Vendor:</span>
+                          <span className="ml-2 text-sm text-slate-700">{selectedVNN.approval?.vendorName || 'N/A'}</span>
+                        </div>
+                        <div>
+                          <span className="text-xs font-bold text-slate-600">Vehicle:</span>
+                          <span className="ml-2 text-sm text-slate-700">{selectedVNN.approval?.vehicleNo || 'N/A'}</span>
+                        </div>
+                        <div>
+                          <span className="text-xs font-bold text-slate-600">Orders:</span>
+                          <span className="ml-2 text-sm text-slate-700">{selectedVNN.orders?.length || 0}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
+            </Card>
+          </div>
+
+          {/* Header Information - WITH SUB-COMPANY READ-ONLY */}
+          <Card title="Purchase Information">
+            <div className="grid grid-cols-12 gap-3">
+              <div className="col-span-12 md:col-span-2">
+                <label className="text-xs font-bold text-slate-600">Purchase No</label>
+                <input
+                  type="text"
+                  value={header.purchaseNo}
+                  readOnly
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm outline-none cursor-not-allowed"
+                />
+              </div>
+
+              <div className="col-span-12 md:col-span-2">
+                <label className="text-xs font-bold text-slate-600">VNN No</label>
+                <input
+                  type="text"
+                  value={selectedVNN?.vnnNo || selectedVNNNo || ""}
+                  readOnly
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm outline-none cursor-not-allowed"
+                />
+              </div>
+
+              <div className="col-span-12 md:col-span-2">
+                <label className="text-xs font-bold text-slate-600">Pricing Serial No</label>
+                <input
+                  type="text"
+                  value={header.pricingSerialNo}
+                  readOnly
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm outline-none cursor-not-allowed"
+                />
+              </div>
+
+              <div className="col-span-12 md:col-span-2">
+                <label className="text-xs font-bold text-slate-600">Branch *</label>
+                <input
+                  type="text"
+                  value={`${header.branchName || ''} (${header.branchCode || ''})`}
+                  readOnly
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm outline-none cursor-not-allowed"
+                />
+              </div>
+
+              {/* SUB-COMPANY - READ ONLY */}
+              <div className="col-span-12 md:col-span-2">
+                <label className="text-xs font-bold text-slate-600">Sub-Company</label>
+                <input
+                  type="text"
+                  value={header.subCompanyName ? `${header.subCompanyName} (${header.subCompanyCode})` : 'Not Set'}
+                  readOnly
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm outline-none cursor-not-allowed"
+                  placeholder="Auto-filled from VNN"
+                />
+                {header.subCompanyName && (
+                  <div className="text-xs text-blue-600 mt-0.5">✓ Auto-filled from Vehicle Negotiation</div>
+                )}
+              </div>
+
+              <div className="col-span-12 md:col-span-1">
+                <label className="text-xs font-bold text-slate-600">Date</label>
+                <input
+                  type="text"
+                  value={header.date}
+                  readOnly
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm outline-none cursor-not-allowed"
+                />
+              </div>
+
+              <div className="col-span-12 md:col-span-1">
+                <label className="text-xs font-bold text-slate-600">Delivery</label>
+                <input
+                  type="text"
+                  value={header.delivery}
+                  readOnly
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm outline-none cursor-not-allowed"
+                />
+              </div>
             </div>
           </Card>
-        </div>
 
-        {/* Header Information - WITH SUB-COMPANY READ-ONLY */}
-        <Card title="Purchase Information">
-          <div className="grid grid-cols-12 gap-3">
-            <div className="col-span-12 md:col-span-2">
-              <label className="text-xs font-bold text-slate-600">Purchase No</label>
-              <input
-                type="text"
-                value={header.purchaseNo}
-                readOnly
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm outline-none cursor-not-allowed"
-              />
-            </div>
-
-            <div className="col-span-12 md:col-span-2">
-              <label className="text-xs font-bold text-slate-600">VNN No</label>
-              <input
-                type="text"
-                value={selectedVNN?.vnnNo || selectedVNNNo || ""}
-                readOnly
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm outline-none cursor-not-allowed"
-              />
-            </div>
-
-            <div className="col-span-12 md:col-span-2">
-              <label className="text-xs font-bold text-slate-600">Pricing Serial No</label>
-              <input
-                type="text"
-                value={header.pricingSerialNo}
-                readOnly
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm outline-none cursor-not-allowed"
-              />
-            </div>
-
-            <div className="col-span-12 md:col-span-2">
-              <label className="text-xs font-bold text-slate-600">Branch *</label>
-              <input
-                type="text"
-                value={`${header.branchName || ''} (${header.branchCode || ''})`}
-                readOnly
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm outline-none cursor-not-allowed"
-              />
-            </div>
-
-            {/* SUB-COMPANY - READ ONLY */}
-            <div className="col-span-12 md:col-span-2">
-              <label className="text-xs font-bold text-slate-600">Sub-Company</label>
-              <input
-                type="text"
-                value={header.subCompanyName ? `${header.subCompanyName} (${header.subCompanyCode})` : 'Not Set'}
-                readOnly
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm outline-none cursor-not-allowed"
-                placeholder="Auto-filled from VNN"
-              />
-              {header.subCompanyName && (
-                <div className="text-xs text-blue-600 mt-0.5">✓ Auto-filled from Vehicle Negotiation</div>
-              )}
-            </div>
-
-            <div className="col-span-12 md:col-span-1">
-              <label className="text-xs font-bold text-slate-600">Date</label>
-              <input
-                type="text"
-                value={header.date}
-                readOnly
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm outline-none cursor-not-allowed"
-              />
-            </div>
-
-            <div className="col-span-12 md:col-span-1">
-              <label className="text-xs font-bold text-slate-600">Delivery</label>
-              <input
-                type="text"
-                value={header.delivery}
-                readOnly
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm outline-none cursor-not-allowed"
-              />
-            </div>
+          {/* Billing Type / Charges */}
+          <div className="mt-4">
+            <Card title="Billing Type / Charges">
+              <div className="overflow-auto rounded-xl border border-yellow-300">
+                <table className="min-w-full w-full text-sm">
+                  <thead className="sticky top-0 bg-yellow-400">
+                    <tr>
+                      {billingColumns.map((col) => (
+                        <th
+                          key={col.key}
+                          className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 text-center"
+                        >
+                          {col.label}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr className="hover:bg-yellow-50 even:bg-slate-50">
+                      {billingColumns.map((col) => (
+                        <td key={col.key} className="border border-yellow-300 px-2 py-2">
+                          {col.options ? (
+                            <select
+                              value={billing[col.key] || ""}
+                              onChange={(e) => {
+                                if (col.key === "billingType") {
+                                  handleBillingTypeChange(e.target.value);
+                                } else {
+                                  setBilling(prev => ({ ...prev, [col.key]: e.target.value }));
+                                }
+                              }}
+                              className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                            >
+                              <option value="">Select {col.label}</option>
+                              {col.options.map((opt) => (
+                                <option key={opt} value={opt}>
+                                  {opt}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <input
+                              type={col.type || "text"}
+                              value={billing[col.key] || ""}
+                              onChange={(e) => setBilling(prev => ({ ...prev, [col.key]: e.target.value }))}
+                              className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                              placeholder={`Enter ${col.label}`}
+                            />
+                          )}
+                        </td>
+                      ))}
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </Card>
           </div>
-        </Card>
 
-        {/* Billing Type / Charges */}
-        <div className="mt-4">
-          <Card title="Billing Type / Charges">
-            <div className="overflow-auto rounded-xl border border-yellow-300">
-              <table className="min-w-full w-full text-sm">
-                <thead className="sticky top-0 bg-yellow-400">
-                  <tr>
-                    {billingColumns.map((col) => (
-                      <th
-                        key={col.key}
-                        className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 text-center"
-                      >
-                        {col.label}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr className="hover:bg-yellow-50 even:bg-slate-50">
-                    {billingColumns.map((col) => (
-                      <td key={col.key} className="border border-yellow-300 px-2 py-2">
-                        {col.options ? (
-                          <select
-                            value={billing[col.key] || ""}
-                            onChange={(e) => {
-                              if (col.key === "billingType") {
-                                handleBillingTypeChange(e.target.value);
-                              } else {
-                                setBilling(prev => ({ ...prev, [col.key]: e.target.value }));
+          {/* Orders Table - UPDATED with From State and Local/Not Local */}
+          <div className="mt-4">
+            <Card
+              title="Order Details"
+              right={
+                <button
+                  onClick={addOrderRow}
+                  className="rounded-xl bg-yellow-600 px-4 py-1.5 text-xs font-bold text-white hover:bg-yellow-700"
+                >
+                  + Add Order
+                </button>
+              }
+            >
+              <div className="overflow-auto rounded-xl border border-yellow-300">
+                <table className="min-w-max w-full text-sm">
+                  <thead className="sticky top-0 bg-yellow-400 z-10">
+                    <tr>
+                      <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[120px]">Order No</th>
+                      <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[150px]">Party Name</th>
+                      <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[120px]">Plant</th>
+                      <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[100px]">Order Type</th>
+                      <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[100px]">Pin Code</th>
+                      <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[120px]">Taluka</th>
+                      <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[120px]">District</th>
+                      <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[120px]">State</th>
+                      <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[120px]">From State</th>
+                      <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[110px]">Local/Not Local</th>
+                      <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[120px]">Country</th>
+                      <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[120px]">From</th>
+                      <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[120px]">To</th>
+                      {/* <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[100px]">Location Rate</th>
+                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[100px]">Price List</th> */}
+                      <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[80px]">Weight</th>
+                      {/* <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[80px]">Rate</th>
+                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[100px]">Total Amount</th> */}
+                      <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[130px]">Collection Charges</th>
+                      <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[140px]">Cancellation Charges</th>
+                      <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[130px]">Loading Charges</th>
+                      <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[130px]">Other Charges</th>
+                      <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[80px]">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {orderRows.map((row) => (
+                      <tr key={row._id} className="hover:bg-yellow-50 even:bg-slate-50">
+                        <td className="border border-yellow-300 px-2 py-2">
+                          <input
+                            type="text"
+                            value={row.orderNo || ""}
+                            onChange={(e) => updateOrderRow(row._id, 'orderNo', e.target.value)}
+                            className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-emerald-500"
+                            placeholder="Order No"
+                          />
+                        </td>
+                        <td className="border border-yellow-300 px-2 py-2">
+                          <input
+                            type="text"
+                            value={row.partyName || ""}
+                            onChange={(e) => updateOrderRow(row._id, 'partyName', e.target.value)}
+                            className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-emerald-500"
+                            placeholder="Party Name"
+                          />
+                        </td>
+                        <td className="border border-yellow-300 px-2 py-2">
+                          <TableSearchableDropdown
+                            items={plants}
+                            selectedId={row.plantCode}
+                            onSelect={(plant) => {
+                              if (plant) {
+                                updateOrderRow(row._id, 'plantCode', plant._id);
+                                updateOrderRow(row._id, 'plantName', plant.name);
                               }
                             }}
-                            className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                            placeholder="Select Plant"
+                            displayField="name"
+                            codeField="code"
+                          />
+                        </td>
+                        <td className="border border-yellow-300 px-2 py-2">
+                          <select
+                            value={row.orderType || ""}
+                            onChange={(e) => updateOrderRow(row._id, 'orderType', e.target.value)}
+                            className="w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-sm outline-none focus:border-emerald-500"
                           >
-                            <option value="">Select {col.label}</option>
-                            {col.options.map((opt) => (
-                              <option key={opt} value={opt}>
-                                {opt}
-                              </option>
+                            <option value="">Select</option>
+                            {ORDER_TYPES.map((opt) => (
+                              <option key={opt} value={opt}>{opt}</option>
                             ))}
                           </select>
-                        ) : (
+                        </td>
+                        <td className="border border-yellow-300 px-2 py-2">
                           <input
-                            type={col.type || "text"}
-                            value={billing[col.key] || ""}
-                            onChange={(e) => setBilling(prev => ({ ...prev, [col.key]: e.target.value }))}
-                            className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
-                            placeholder={`Enter ${col.label}`}
+                            type="text"
+                            value={row.pinCode || ""}
+                            onChange={(e) => updateOrderRow(row._id, 'pinCode', e.target.value)}
+                            className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-emerald-500"
+                            placeholder="Pin Code"
                           />
-                        )}
-                      </td>
-                    ))}
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </Card>
-        </div>
-
-        {/* Orders Table - UPDATED with From State and Local/Not Local */}
-        <div className="mt-4">
-          <Card
-            title="Order Details"
-            right={
-              <button
-                onClick={addOrderRow}
-                className="rounded-xl bg-yellow-600 px-4 py-1.5 text-xs font-bold text-white hover:bg-yellow-700"
-              >
-                + Add Order
-              </button>
-            }
-          >
-            <div className="overflow-auto rounded-xl border border-yellow-300">
-              <table className="min-w-max w-full text-sm">
-                <thead className="sticky top-0 bg-yellow-400 z-10">
-                  <tr>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[120px]">Order No</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[150px]">Party Name</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[120px]">Plant</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[100px]">Order Type</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[100px]">Pin Code</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[120px]">Taluka</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[120px]">District</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[120px]">State</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[120px]">From State</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[110px]">Local/Not Local</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[120px]">Country</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[120px]">From</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[120px]">To</th>
-                    {/* <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[100px]">Location Rate</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[100px]">Price List</th> */}
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[80px]">Weight</th>
-                    {/* <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[80px]">Rate</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[100px]">Total Amount</th> */}
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[130px]">Collection Charges</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[140px]">Cancellation Charges</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[130px]">Loading Charges</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[130px]">Other Charges</th>
-                    <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 min-w-[80px]">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {orderRows.map((row) => (
-                    <tr key={row._id} className="hover:bg-yellow-50 even:bg-slate-50">
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <input
-                          type="text"
-                          value={row.orderNo || ""}
-                          onChange={(e) => updateOrderRow(row._id, 'orderNo', e.target.value)}
-                          className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-emerald-500"
-                          placeholder="Order No"
-                        />
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <input
-                          type="text"
-                          value={row.partyName || ""}
-                          onChange={(e) => updateOrderRow(row._id, 'partyName', e.target.value)}
-                          className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-emerald-500"
-                          placeholder="Party Name"
-                        />
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <TableSearchableDropdown
-                          items={plants}
-                          selectedId={row.plantCode}
-                          onSelect={(plant) => {
-                            if (plant) {
-                              updateOrderRow(row._id, 'plantCode', plant._id);
-                              updateOrderRow(row._id, 'plantName', plant.name);
-                            }
-                          }}
-                          placeholder="Select Plant"
-                          displayField="name"
-                          codeField="code"
-                        />
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <select
-                          value={row.orderType || ""}
-                          onChange={(e) => updateOrderRow(row._id, 'orderType', e.target.value)}
-                          className="w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-sm outline-none focus:border-emerald-500"
-                        >
-                          <option value="">Select</option>
-                          {ORDER_TYPES.map((opt) => (
-                            <option key={opt} value={opt}>{opt}</option>
-                          ))}
-                        </select>
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <input
-                          type="text"
-                          value={row.pinCode || ""}
-                          onChange={(e) => updateOrderRow(row._id, 'pinCode', e.target.value)}
-                          className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-emerald-500"
-                          placeholder="Pin Code"
-                        />
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <input
-                          type="text"
-                          value={row.taluka || ""}
-                          onChange={(e) => updateOrderRow(row._id, 'taluka', e.target.value)}
-                          className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-emerald-500"
-                          placeholder="Taluka"
-                        />
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <input
-                          type="text"
-                          value={row.district || ""}
-                          onChange={(e) => updateOrderRow(row._id, 'district', e.target.value)}
-                          className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-emerald-500"
-                          placeholder="District"
-                        />
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <input
-                          type="text"
-                          value={row.state || ""}
-                          onChange={(e) => updateOrderRow(row._id, 'state', e.target.value)}
-                          className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-emerald-500"
-                          placeholder="State"
-                        />
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <input
-                          type="text"
-                          value={row.fromState || ""}
-                          onChange={(e) => updateOrderRow(row._id, 'fromState', e.target.value)}
-                          className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-emerald-500"
-                          placeholder="From State"
-                        />
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2 text-center">
-                        {row.fromState && row.state ? (
-                          <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${row.fromState.trim().toUpperCase() === row.state.trim().toUpperCase()
-                            ? 'bg-green-100 text-green-800 border border-green-300'
-                            : 'bg-red-100 text-red-800 border border-red-300'
-                            }`}>
-                            {row.fromState.trim().toUpperCase() === row.state.trim().toUpperCase() ? '✅ Local' : '❌ Not Local'}
-                          </span>
-                        ) : (
-                          <span className="text-xs text-gray-400">-</span>
-                        )}
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <input
-                          type="text"
-                          value={row.country || ""}
-                          onChange={(e) => updateOrderRow(row._id, 'country', e.target.value)}
-                          className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-emerald-500"
-                          placeholder="Country"
-                        />
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <input
-                          type="text"
-                          value={row.from || ""}
-                          onChange={(e) => updateOrderRow(row._id, 'from', e.target.value)}
-                          className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-emerald-500"
-                          placeholder="From"
-                        />
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <input
-                          type="text"
-                          value={row.to || ""}
-                          onChange={(e) => updateOrderRow(row._id, 'to', e.target.value)}
-                          className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-emerald-500"
-                          placeholder="To"
-                        />
-                      </td>
-                      {/* <td className="border border-yellow-300 px-2 py-2">
+                        </td>
+                        <td className="border border-yellow-300 px-2 py-2">
+                          <input
+                            type="text"
+                            value={row.taluka || ""}
+                            onChange={(e) => updateOrderRow(row._id, 'taluka', e.target.value)}
+                            className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-emerald-500"
+                            placeholder="Taluka"
+                          />
+                        </td>
+                        <td className="border border-yellow-300 px-2 py-2">
+                          <input
+                            type="text"
+                            value={row.district || ""}
+                            onChange={(e) => updateOrderRow(row._id, 'district', e.target.value)}
+                            className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-emerald-500"
+                            placeholder="District"
+                          />
+                        </td>
+                        <td className="border border-yellow-300 px-2 py-2">
+                          <input
+                            type="text"
+                            value={row.state || ""}
+                            onChange={(e) => updateOrderRow(row._id, 'state', e.target.value)}
+                            className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-emerald-500"
+                            placeholder="State"
+                          />
+                        </td>
+                        <td className="border border-yellow-300 px-2 py-2">
+                          <input
+                            type="text"
+                            value={row.fromState || ""}
+                            onChange={(e) => updateOrderRow(row._id, 'fromState', e.target.value)}
+                            className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-emerald-500"
+                            placeholder="From State"
+                          />
+                        </td>
+                        <td className="border border-yellow-300 px-2 py-2 text-center">
+                          {row.fromState && row.state ? (
+                            <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${row.fromState.trim().toUpperCase() === row.state.trim().toUpperCase()
+                              ? 'bg-green-100 text-green-800 border border-green-300'
+                              : 'bg-red-100 text-red-800 border border-red-300'
+                              }`}>
+                              {row.fromState.trim().toUpperCase() === row.state.trim().toUpperCase() ? '✅ Local' : '❌ Not Local'}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-gray-400">-</span>
+                          )}
+                        </td>
+                        <td className="border border-yellow-300 px-2 py-2">
+                          <input
+                            type="text"
+                            value={row.country || ""}
+                            onChange={(e) => updateOrderRow(row._id, 'country', e.target.value)}
+                            className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-emerald-500"
+                            placeholder="Country"
+                          />
+                        </td>
+                        <td className="border border-yellow-300 px-2 py-2">
+                          <input
+                            type="text"
+                            value={row.from || ""}
+                            onChange={(e) => updateOrderRow(row._id, 'from', e.target.value)}
+                            className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-emerald-500"
+                            placeholder="From"
+                          />
+                        </td>
+                        <td className="border border-yellow-300 px-2 py-2">
+                          <input
+                            type="text"
+                            value={row.to || ""}
+                            onChange={(e) => updateOrderRow(row._id, 'to', e.target.value)}
+                            className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-emerald-500"
+                            placeholder="To"
+                          />
+                        </td>
+                        {/* <td className="border border-yellow-300 px-2 py-2">
                         <input
                           type="text"
                           value={row.locationRate || ""}
@@ -5310,16 +5328,16 @@ export default function EditPurchasePanel() {
                           placeholder="Price List"
                         />
                       </td> */}
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <input
-                          type="number"
-                          value={row.weight || ""}
-                          onChange={(e) => updateOrderRow(row._id, 'weight', e.target.value)}
-                          className="w-20 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-emerald-500"
-                          placeholder="0"
-                        />
-                      </td>
-                      {/* <td className="border border-yellow-300 px-2 py-2">
+                        <td className="border border-yellow-300 px-2 py-2">
+                          <input
+                            type="number"
+                            value={row.weight || ""}
+                            onChange={(e) => updateOrderRow(row._id, 'weight', e.target.value)}
+                            className="w-20 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-emerald-500"
+                            placeholder="0"
+                          />
+                        </td>
+                        {/* <td className="border border-yellow-300 px-2 py-2">
                         <input
                           type="number"
                           value={row.rate || ""}
@@ -5337,64 +5355,64 @@ export default function EditPurchasePanel() {
                           placeholder="Auto"
                         />
                       </td> */}
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <input
-                          type="number"
-                          value={row.collectionCharges || ""}
-                          onChange={(e) => updateOrderRow(row._id, 'collectionCharges', e.target.value)}
-                          className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-emerald-500"
-                          placeholder="Collection Charges"
-                        />
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <input
-                          type="text"
-                          value={row.cancellationCharges || ""}
-                          onChange={(e) => updateOrderRow(row._id, 'cancellationCharges', e.target.value)}
-                          className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-emerald-500"
-                          placeholder="Cancellation Charges"
-                        />
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <input
-                          type="text"
-                          value={row.loadingCharges || ""}
-                          onChange={(e) => updateOrderRow(row._id, 'loadingCharges', e.target.value)}
-                          className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-emerald-500"
-                          placeholder="Loading Charges"
-                        />
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <input
-                          type="number"
-                          value={row.otherCharges || ""}
-                          onChange={(e) => updateOrderRow(row._id, 'otherCharges', e.target.value)}
-                          className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-emerald-500"
-                          placeholder="Other Charges"
-                        />
-                      </td>
-                      <td className="border border-yellow-300 px-2 py-2">
-                        <div className="flex gap-1">
-                          <button
-                            onClick={() => duplicateOrderRow(row._id)}
-                            className="rounded-lg border border-yellow-500 bg-yellow-100 px-2 py-1.5 text-xs font-bold text-yellow-800 hover:bg-yellow-200"
-                            title="Duplicate Row"
-                          >
-                            📋
-                          </button>
-                          <button
-                            onClick={() => removeOrderRow(row._id)}
-                            className="rounded-lg bg-red-500 px-2 py-1.5 text-xs font-bold text-white hover:bg-red-600"
-                            title="Remove Row"
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-                {/* <tfoot className="bg-yellow-100">
+                        <td className="border border-yellow-300 px-2 py-2">
+                          <input
+                            type="number"
+                            value={row.collectionCharges || ""}
+                            onChange={(e) => updateOrderRow(row._id, 'collectionCharges', e.target.value)}
+                            className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-emerald-500"
+                            placeholder="Collection Charges"
+                          />
+                        </td>
+                        <td className="border border-yellow-300 px-2 py-2">
+                          <input
+                            type="text"
+                            value={row.cancellationCharges || ""}
+                            onChange={(e) => updateOrderRow(row._id, 'cancellationCharges', e.target.value)}
+                            className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-emerald-500"
+                            placeholder="Cancellation Charges"
+                          />
+                        </td>
+                        <td className="border border-yellow-300 px-2 py-2">
+                          <input
+                            type="text"
+                            value={row.loadingCharges || ""}
+                            onChange={(e) => updateOrderRow(row._id, 'loadingCharges', e.target.value)}
+                            className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-emerald-500"
+                            placeholder="Loading Charges"
+                          />
+                        </td>
+                        <td className="border border-yellow-300 px-2 py-2">
+                          <input
+                            type="number"
+                            value={row.otherCharges || ""}
+                            onChange={(e) => updateOrderRow(row._id, 'otherCharges', e.target.value)}
+                            className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-emerald-500"
+                            placeholder="Other Charges"
+                          />
+                        </td>
+                        <td className="border border-yellow-300 px-2 py-2">
+                          <div className="flex gap-1">
+                            <button
+                              onClick={() => duplicateOrderRow(row._id)}
+                              className="rounded-lg border border-yellow-500 bg-yellow-100 px-2 py-1.5 text-xs font-bold text-yellow-800 hover:bg-yellow-200"
+                              title="Duplicate Row"
+                            >
+                              📋
+                            </button>
+                            <button
+                              onClick={() => removeOrderRow(row._id)}
+                              className="rounded-lg bg-red-500 px-2 py-1.5 text-xs font-bold text-white hover:bg-red-600"
+                              title="Remove Row"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  {/* <tfoot className="bg-yellow-100">
                   <tr>
                     <td colSpan="17" className="border border-yellow-300 px-3 py-2 text-right font-bold">
                       Total Order Amount:
@@ -5405,839 +5423,840 @@ export default function EditPurchasePanel() {
                     <td colSpan="5" className="border border-yellow-300 px-3 py-2"></td>
                   </tr>
                 </tfoot> */}
-              </table>
-            </div>
-          </Card>
-        </div>
-
-        {/* Purchase Details Section */}
-        <div className="mt-4">
-          <Card title="Purchase Details">
-            <div className="grid grid-cols-12 gap-4">
-              {/* Left Column - Vendor Info */}
-              <div className="col-span-12 md:col-span-4">
-                <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-200 h-full">
-                  <h3 className="text-sm font-bold text-slate-800 mb-3">Vendor Information</h3>
-
-                  <div className="space-y-3">
-                    <div>
-                      <label className="text-xs font-bold text-slate-600">Vendor Status</label>
-                      <select
-                        value={purchaseDetails.vendorStatus || "Active"}
-                        onChange={(e) => setPurchaseDetails({ ...purchaseDetails, vendorStatus: e.target.value })}
-                        className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500"
-                      >
-                        {VENDOR_STATUS_OPTIONS.map((opt) => (
-                          <option key={opt} value={opt}>{opt}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="text-xs font-bold text-slate-600">Vendor Name *</label>
-                      <input
-                        type="text"
-                        value={purchaseDetails.vendorName}
-                        onChange={(e) => setPurchaseDetails({ ...purchaseDetails, vendorName: e.target.value })}
-                        className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500"
-                        placeholder="Enter vendor name"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-xs font-bold text-slate-600">Vendor Code</label>
-                      <input
-                        type="text"
-                        value={purchaseDetails.vendorCode}
-                        onChange={(e) => setPurchaseDetails({ ...purchaseDetails, vendorCode: e.target.value })}
-                        className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500"
-                        placeholder="Vendor code"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-xs font-bold text-slate-600">Vehicle No</label>
-                      <input
-                        type="text"
-                        value={purchaseDetails.vehicleNo}
-                        onChange={(e) => setPurchaseDetails({ ...purchaseDetails, vehicleNo: e.target.value })}
-                        className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500"
-                        placeholder="Vehicle number"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-xs font-bold text-slate-600">Vehicle Type</label>
-                      <select
-                        value={purchaseDetails.vehicleType || ""}
-                        onChange={(e) => setPurchaseDetails({ ...purchaseDetails, vehicleType: e.target.value })}
-                        className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500"
-                      >
-                        <option value="">Select Vehicle Type</option>
-                        {VEHICLE_TYPE_OPTIONS.map((opt) => (
-                          <option key={opt} value={opt}>{opt}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="text-xs font-bold text-slate-600">Driver Mobile No</label>
-                      <input
-                        type="text"
-                        value={purchaseDetails.driverMobileNo}
-                        onChange={(e) => setPurchaseDetails({ ...purchaseDetails, driverMobileNo: e.target.value })}
-                        className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500"
-                        placeholder="Driver mobile"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-xs font-bold text-slate-600">Purchase Date</label>
-                      <input
-                        type="date"
-                        value={purchaseDetails.purchaseDate}
-                        onChange={(e) => setPurchaseDetails({ ...purchaseDetails, purchaseDate: e.target.value })}
-                        className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Middle Column - Purchase Terms */}
-              <div className="col-span-12 md:col-span-4">
-                <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 h-full">
-                  <h3 className="text-sm font-bold text-slate-800 mb-3">Purchase Terms</h3>
-
-                  <div className="space-y-3">
-                    <div>
-                      <label className="text-xs font-bold text-slate-600">Purchase - Type</label>
-                      <select
-                        value={purchaseDetails.purchaseType || "Loading & Unloading"}
-                        onChange={(e) => setPurchaseDetails({ ...purchaseDetails, purchaseType: e.target.value })}
-                        className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500"
-                      >
-                        {PURCHASE_TYPE_OPTIONS.map((opt) => (
-                          <option key={opt} value={opt}>{opt}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="text-xs font-bold text-slate-600">Payment Terms</label>
-                      <select
-                        value={purchaseDetails.paymentTerms || "80 % Advance"}
-                        onChange={(e) => setPurchaseDetails({ ...purchaseDetails, paymentTerms: e.target.value })}
-                        className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500"
-                      >
-                        {PAYMENT_TERMS_OPTIONS.map((opt) => (
-                          <option key={opt} value={opt}>{opt}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="text-xs font-bold text-slate-600">Rate - Type</label>
-                      <select
-                        value={purchaseDetails.rateType || "Per MT"}
-                        onChange={(e) => setPurchaseDetails({ ...purchaseDetails, rateType: e.target.value })}
-                        className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500"
-                      >
-                        {RATE_TYPE_OPTIONS.map((opt) => (
-                          <option key={opt} value={opt}>{opt}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="text-xs font-bold text-slate-600">Rate (₹)</label>
-                        <input
-                          type="number"
-                          value={purchaseDetails.rate}
-                          onChange={(e) => setPurchaseDetails({ ...purchaseDetails, rate: e.target.value })}
-                          className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500"
-                          placeholder="0"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-xs font-bold text-slate-600">Weight (MT)</label>
-                        <input
-                          type="number"
-                          value={purchaseDetails.weight}
-                          readOnly
-                          className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-sm outline-none cursor-not-allowed"
-                          placeholder="Auto from orders"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Purchase Amount (A x B) from VNN */}
-                    <div className="bg-purple-50 p-3 rounded-lg border border-purple-200">
-                      <label className="text-xs font-bold text-purple-700">Purchase Amount (A x B) from VNN</label>
-                      <div className="text-2xl font-bold text-purple-800 mt-1">
-                        ₹{purchaseAmountFromVNN.toLocaleString()}
-                      </div>
-                      <p className="text-xs text-purple-600 mt-1">Auto-calculated from Vehicle Negotiation</p>
-                    </div>
-
-                    <div>
-                      <label className="text-xs font-bold text-slate-600">Advance (₹)</label>
-                      <input
-                        type="number"
-                        value={purchaseDetails.advance}
-                        onChange={(e) => setPurchaseDetails({ ...purchaseDetails, advance: e.target.value })}
-                        readOnly={purchaseDetails.paymentTerms !== "Custom / Manual"}
-                        className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none ${purchaseDetails.paymentTerms === "Custom / Manual" ? "bg-white focus:border-sky-500" : "bg-slate-100 cursor-not-allowed"}`}
-                        placeholder="0"
-                      />
-                      <p className="text-xs text-slate-500 mt-1">Select Custom / Manual to enter an amount.</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Right Column - MEMO Upload */}
-              <div className="col-span-12 md:col-span-4">
-                <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-4 rounded-xl border border-green-200 h-full">
-                  <h3 className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
-                    <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    Upload MEMO
-                  </h3>
-
-                  {memoFileInfo ? (
-                    <div className="bg-white p-3 rounded-lg border border-green-200">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                          </svg>
-                          <div>
-                            <p className="text-sm font-medium text-slate-700 truncate max-w-[150px]">
-                              {memoFileInfo.originalName}
-                            </p>
-                            <p className="text-xs text-slate-500">
-                              {(memoFileInfo.size / 1024).toFixed(1)} KB
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          {memoFileInfo.filePath && (
-                            <button
-                              type="button"
-                              onClick={() => openPurchaseMemo(purchaseId, memoFileInfo.filePath)}
-                              className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
-                              title="View File"
-                            >
-                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                              </svg>
-                            </button>
-                          )}
-                          <button
-                            onClick={() => setMemoFileInfo(null)}
-                            className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
-                            title="Remove File"
-                          >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center min-h-[180px] bg-white rounded-xl border-2 border-dashed border-green-300">
-                      <svg className="w-12 h-12 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                      <p className="text-sm text-slate-500">No file uploaded</p>
-                      <label className="mt-2 cursor-pointer bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700 transition">
-                        Upload MEMO
-                        <input
-                          type="file"
-                          accept=".pdf,.jpg,.jpeg,.png"
-                          onChange={handleMemoUpload}
-                          className="hidden"
-                        />
-                      </label>
-                      <p className="text-xs text-slate-400 mt-2">PDF, JPG, PNG (Max 5MB)</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </Card>
-        </div>
-
-        {/* Loading Charges & Expenses Section - Deduct at Office */}
-        <div className="mt-4">
-          <Card title="Loading Charges & Expenses - Deduct at Warehouse">
-            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-sm font-bold text-slate-800">Deduct at Warehouse</h3>
-                <div className="bg-orange-100 text-orange-800 text-xs px-3 py-1 rounded-full font-medium">
-                  Fetched from Loading Info - deducted at Warehouse
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-slate-700">Loading Charges:</span>
-                  <input
-                    type="number"
-                    readOnly
-                    value={loadingExpenses.loadingCharges}
-                    onChange={(e) => setLoadingExpenses({ ...loadingExpenses, loadingCharges: e.target.value })}
-                    className="w-32 rounded-lg border border-slate-200 bg-slate-100 text-slate-700 cursor-not-allowed px-3 py-1.5 text-sm text-right focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
-                    placeholder="0"
-                  />
-                </div>
-
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-slate-700">Loading Staff Munshiyana:</span>
-                  <input
-                    type="number"
-                    readOnly
-                    value={loadingExpenses.loadingStaffMunshiyana}
-                    onChange={(e) => setLoadingExpenses({ ...loadingExpenses, loadingStaffMunshiyana: e.target.value })}
-                    className="w-32 rounded-lg border border-slate-200 bg-slate-100 text-slate-700 cursor-not-allowed px-3 py-1.5 text-sm text-right focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
-                    placeholder="0"
-                  />
-                </div>
-
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-slate-700">Other Expenses:</span>
-                  <input
-                    type="number"
-                    readOnly
-                    value={loadingExpenses.otherExpenses}
-                    onChange={(e) => setLoadingExpenses({ ...loadingExpenses, otherExpenses: e.target.value })}
-                    className="w-32 rounded-lg border border-slate-200 bg-slate-100 text-slate-700 cursor-not-allowed px-3 py-1.5 text-sm text-right focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
-                    placeholder="0"
-                  />
-                </div>
-
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-slate-700">Vehicle - Floor Tarpaulin:</span>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      readOnly
-                      value={loadingExpenses.vehicleFloorTarpaulin}
-                      onChange={(e) => setLoadingExpenses({ ...loadingExpenses, vehicleFloorTarpaulin: e.target.value })}
-                      className="w-32 rounded-lg border border-slate-200 bg-slate-100 text-slate-700 cursor-not-allowed px-3 py-1.5 text-sm text-right focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
-                      placeholder="0"
-                    />
-                    <span className="text-xs font-medium text-slate-600 whitespace-nowrap bg-slate-100 px-2 py-1 rounded-lg">
-                      {purchaseDetails.vehicleType || "Truck"}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-slate-700">Vehicle - Outer Tarpaulin:</span>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      readOnly
-                      value={loadingExpenses.vehicleOuterTarpaulin}
-                      onChange={(e) => setLoadingExpenses({ ...loadingExpenses, vehicleOuterTarpaulin: e.target.value })}
-                      className="w-32 rounded-lg border border-slate-200 bg-slate-100 text-slate-700 cursor-not-allowed px-3 py-1.5 text-sm text-right focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
-                      placeholder="0"
-                    />
-                    <span className="text-xs font-medium text-slate-600 whitespace-nowrap bg-slate-100 px-2 py-1 rounded-lg">
-                      {purchaseDetails.vehicleType || "Truck"}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex justify-between items-center pt-2 border-t border-slate-200 mt-2">
-                  <span className="text-sm font-bold text-slate-800">Total Deduct at Warehouse:</span>
-                  <span className="font-bold text-orange-700 text-lg">
-                    ₹{calculateTotalLoadingExpenses().toLocaleString()}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </Card>
-        </div>
-
-        {/* Vehicle Registration Section */}
-        <div className="mt-4">
-          <Card title="Vehicle Registration">
-            <div className="grid grid-cols-12 gap-4 items-center">
-              <div className="col-span-12 md:col-span-5">
-                <div className="flex items-center gap-4 p-3 bg-blue-50 rounded-xl border border-blue-200">
-                  <div className="flex-1">
-                    <label className="text-xs font-bold text-slate-600">Loading Panel Vehicle - Plate</label>
-                    <input
-                      type="text"
-                      value={registeredVehicle.loadingPanelPlate || purchaseDetails.vehicleNo || ""}
-                      readOnly
-                      className="mt-1 w-full rounded-lg border border-slate-200 bg-blue-100 px-3 py-2 text-sm text-blue-800 font-medium outline-none cursor-not-allowed"
-                      placeholder="Auto-filled from Loading Info"
-                    />
-                    <p className="text-xs text-blue-600 mt-1">ⓘ Auto-filled from Vehicle Negotiation</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="col-span-12 md:col-span-5">
-                <div className="flex items-center gap-4 p-3 bg-white rounded-xl border border-slate-200">
-                  <div className="flex-1">
-                    <label className="text-xs font-bold text-slate-600">Registered Vehicle - Plate</label>
-                    <input
-                      type="text"
-                      value={registeredVehicle.registeredPlate}
-                      onChange={(e) => setRegisteredVehicle({
-                        ...registeredVehicle,
-                        registeredPlate: e.target.value
-                      })}
-                      className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-                      placeholder="Enter registered plate number"
-                    />
-                    <p className="text-xs text-slate-500 mt-1">Enter the actual registered plate if different</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="col-span-12 md:col-span-2">
-                <div className="flex items-center gap-2 p-3 bg-white rounded-xl border border-slate-200 h-full">
-                  <div className="flex flex-col items-start">
-                    <label className="text-xs font-bold text-slate-600 mb-1">Verification</label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        id="registered"
-                        checked={registeredVehicle.isRegistered}
-                        onChange={(e) => setRegisteredVehicle({
-                          ...registeredVehicle,
-                          isRegistered: e.target.checked
-                        })}
-                        className="h-5 w-5 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
-                      />
-                      <label htmlFor="registered" className="text-sm font-medium text-slate-700">
-                        Verified Registered
-                      </label>
-                    </div>
-                    <p className="text-xs text-slate-400 mt-1">Check if verified</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {registeredVehicle.loadingPanelPlate && registeredVehicle.registeredPlate && (
-              <div className="mt-3 px-3">
-                {registeredVehicle.loadingPanelPlate === registeredVehicle.registeredPlate ? (
-                  <div className="text-xs text-green-600 bg-green-50 p-2 rounded-lg inline-flex items-center gap-1">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    ✓ Plates match - Verified
-                  </div>
-                ) : (
-                  <div className="text-xs text-amber-600 bg-amber-50 p-2 rounded-lg inline-flex items-center gap-1">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                    </svg>
-                    ⚠️ Different plate entered - Manual verification required
-                  </div>
-                )}
-              </div>
-            )}
-          </Card>
-        </div>
-
-        {/* Additions & Deductions Section */}
-        <div className="mt-4">
-          <div className="grid grid-cols-12 gap-4">
-            {/* Advance + Deduct at Warehouse Summary */}
-            <div className="col-span-12">
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-200 mb-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center">
-                    <div className="text-xs text-slate-500">Advance Paid</div>
-                    <div className="text-2xl font-bold text-emerald-700">₹{num(purchaseDetails.advance).toLocaleString()}</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-xs text-slate-500">Deduct at Warehouse</div>
-                    <div className="text-2xl font-bold text-indigo-700">₹{calculateTotalWarehouseExpenses().toLocaleString()}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Deductions Column */}
-            <div className="col-span-12 md:col-span-6">
-              <Card
-                title="Deductions (-) - Adjustments"
-                right={
-                  <button
-                    onClick={addDeductionRow}
-                    className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-red-700"
-                  >
-                    + Add Deduction
-                  </button>
-                }
-              >
-                {deductions.length === 0 ? (
-                  <div className="text-center py-8 text-slate-500 border-2 border-dashed border-red-200 rounded-lg">
-                    <svg className="mx-auto h-8 w-8 text-red-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
-                    </svg>
-                    <p className="mt-2">No deductions added. Click "Add Deduction" to add deductions.</p>
-                  </div>
-                ) : (
-                  <div className="overflow-auto rounded-xl border border-red-300">
-                    <table className="min-w-full w-full text-sm">
-                      <thead className="bg-red-100">
-                        <tr>
-                          <th className="border border-red-300 px-3 py-2 text-xs font-bold text-slate-800">Description</th>
-                          <th className="border border-red-300 px-3 py-2 text-xs font-bold text-slate-800">Amount (₹)</th>
-                          <th className="border border-red-300 px-3 py-2 text-xs font-bold text-slate-800">Action</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {deductions.map((row) => (
-                          <tr key={row._id} className="hover:bg-red-50">
-                            <td className="border border-red-300 px-2 py-2">
-                              <input
-                                type="text"
-                                value={row.description}
-                                onChange={(e) => updateDeductionRow(row._id, 'description', e.target.value)}
-                                className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm"
-                                placeholder="Description"
-                              />
-                            </td>
-                            <td className="border border-red-300 px-2 py-2">
-                              <input
-                                type="number"
-                                value={row.amount}
-                                onChange={(e) => updateDeductionRow(row._id, 'amount', e.target.value)}
-                                className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm text-right"
-                                placeholder="0.00"
-                              />
-                            </td>
-                            <td className="border border-red-300 px-2 py-2 text-center">
-                              <button
-                                onClick={() => removeDeductionRow(row._id)}
-                                className="rounded-lg bg-red-500 px-2 py-1.5 text-xs font-bold text-white hover:bg-red-600"
-                                title="Remove"
-                              >
-                                ✕
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                        <tr className="bg-red-100 font-bold">
-                          <td className="border border-red-300 px-3 py-2 text-right">Total Deductions:</td>
-                          <td className="border border-red-300 px-3 py-2 text-right text-red-700">
-                            ₹{calculateTotalDeductions().toLocaleString()}
-                          </td>
-                          <td className="border border-red-300 px-3 py-2"></td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </Card>
-            </div>
-
-            {/* Additions Column */}
-            <div className="col-span-12 md:col-span-6">
-              <Card
-                title="Additions (+) - Extra Charges"
-                right={
-                  <button
-                    onClick={addAdditionRow}
-                    className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-green-700"
-                  >
-                    + Add Addition
-                  </button>
-                }
-              >
-                {additions.length === 0 ? (
-                  <div className="text-center py-8 text-slate-500 border-2 border-dashed border-green-200 rounded-lg">
-                    <svg className="mx-auto h-8 w-8 text-green-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                    </svg>
-                    <p className="mt-2">No additions added. Click "Add Addition" to add charges.</p>
-                  </div>
-                ) : (
-                  <div className="overflow-auto rounded-xl border border-green-300">
-                    <table className="min-w-full w-full text-sm">
-                      <thead className="bg-green-100">
-                        <tr>
-                          <th className="border border-green-300 px-3 py-2 text-xs font-bold text-slate-800">Description</th>
-                          <th className="border border-green-300 px-3 py-2 text-xs font-bold text-slate-800">Amount (₹)</th>
-                          <th className="border border-green-300 px-3 py-2 text-xs font-bold text-slate-800">Action</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {additions.map((row) => (
-                          <tr key={row._id} className="hover:bg-green-50">
-                            <td className="border border-green-300 px-2 py-2">
-                              <input
-                                type="text"
-                                value={row.description}
-                                onChange={(e) => updateAdditionRow(row._id, 'description', e.target.value)}
-                                className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm"
-                                placeholder="Description"
-                              />
-                            </td>
-                            <td className="border border-green-300 px-2 py-2">
-                              <input
-                                type="number"
-                                value={row.amount}
-                                onChange={(e) => updateAdditionRow(row._id, 'amount', e.target.value)}
-                                className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm text-right"
-                                placeholder="0.00"
-                              />
-                            </td>
-                            <td className="border border-green-300 px-2 py-2 text-center">
-                              <button
-                                onClick={() => removeAdditionRow(row._id)}
-                                className="rounded-lg bg-red-500 px-2 py-1.5 text-xs font-bold text-white hover:bg-red-600"
-                                title="Remove"
-                              >
-                                ✕
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                        <tr className="bg-green-100 font-bold">
-                          <td className="border border-green-300 px-3 py-2 text-right">Total Additions:</td>
-                          <td className="border border-green-300 px-3 py-2 text-right text-emerald-700">
-                            ₹{calculateTotalAdditions().toLocaleString()}
-                          </td>
-                          <td className="border border-green-300 px-3 py-2"></td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </Card>
-            </div>
-          </div>
-
-          {/* Final Summary & Balance */}
-          <div className="mt-4">
-            <Card title="Purchase Summary & Balance">
-              <div className="grid grid-cols-12 gap-4">
-                <div className="col-span-12 md:col-span-4">
-                  <div className="bg-gradient-to-br from-purple-50 to-indigo-50 p-4 rounded-xl border border-purple-200">
-                    <h3 className="text-sm font-bold text-slate-800 mb-3">Purchase Summary</h3>
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <span className="text-sm text-slate-600">Purchase Amount (A x B):</span>
-                        <span className="font-bold text-purple-800">₹{purchaseAmountFromVNN.toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-slate-600">Advance Paid:</span>
-                        <span className="font-bold text-emerald-700">₹{num(purchaseDetails.advance).toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between pt-2 border-t border-purple-200">
-                        <span className="text-sm font-bold text-slate-800">Final Balance:</span>
-                        <span className="text-xl font-bold text-purple-800">₹{calculateBalance().toLocaleString()}</span>
-                      </div>
-                      <div className="text-xs text-slate-500 mt-1">
-                        Formula: Purchase Amount (from VNN) - Advance Paid
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="col-span-12 md:col-span-4">
-                  <div className="bg-gradient-to-br from-amber-50 to-yellow-50 p-4 rounded-xl border border-amber-200">
-                    <h3 className="text-sm font-bold text-slate-800 mb-3">Additions & Deductions</h3>
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <span className="text-sm text-slate-600">Advance Paid:</span>
-                        <span className="font-bold text-emerald-700">₹{num(purchaseDetails.advance).toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-slate-600">Deduct at Warehouse (-):</span>
-                        <span className="font-bold text-indigo-700">₹{calculateTotalWarehouseExpenses().toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-slate-600">Total Additions at Office (+):</span>
-                        <span className="font-bold text-emerald-700">₹{calculateTotalAdditions().toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-slate-600">Total Deductions at Office (-):</span>
-                        <span className="font-bold text-red-700">₹{calculateTotalDeductions().toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between pt-2 border-t border-amber-200">
-                        <span className="text-sm font-bold text-slate-800">Net Effect:</span>
-                        <span className={`font-bold ${calculateNetEffect() >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
-                          ₹{calculateNetEffect().toLocaleString()}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="col-span-12 md:col-span-4">
-                  <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-4 rounded-xl border border-purple-200">
-                    <h3 className="text-sm font-bold text-slate-800 mb-3">Payment Info</h3>
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <span className="text-sm text-slate-600">Purchase Amount:</span>
-                        <span className="font-bold text-purple-800">₹{purchaseAmountFromVNN.toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-slate-600">Balance Due:</span>
-                        <span className="font-bold text-purple-800">₹{calculateBalance().toLocaleString()}</span>
-                      </div>
-                      <div className="mt-3 pt-2 border-t border-purple-200">
-                        <div className="flex justify-between text-xs">
-                          <span className="text-slate-600">JV Entry Required:</span>
-                          <span className="font-bold text-purple-700">Dr. / Cr.</span>
-                        </div>
-                        <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
-                          <span className="inline-block w-1 h-1 bg-purple-400 rounded-full"></span>
-                          JV need for making the payment in Driver or Motor Owner Account.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                </table>
               </div>
             </Card>
           </div>
 
-          {/* Arrival Details */}
+          {/* Purchase Details Section */}
           <div className="mt-4">
-            <Card title="Arrival Details">
+            <Card title="Purchase Details">
               <div className="grid grid-cols-12 gap-4">
-                <div className="col-span-12 md:col-span-3">
-                  <div className="bg-slate-50 p-3 rounded-lg">
-                    <label className="text-xs font-bold text-slate-600">Arrival In Date</label>
-                    <input
-                      type="date"
-                      value={arrivalDetails.inDate}
-                      onChange={(e) => setArrivalDetails({ ...arrivalDetails, inDate: e.target.value })}
-                      className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
-                    />
-                  </div>
-                </div>
-                <div className="col-span-12 md:col-span-3">
-                  <div className="bg-slate-50 p-3 rounded-lg">
-                    <label className="text-xs font-bold text-slate-600">Arrival In Time</label>
-                    <input
-                      type="time"
-                      value={arrivalDetails.inTime}
-                      onChange={(e) => setArrivalDetails({ ...arrivalDetails, inTime: e.target.value })}
-                      className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
-                      placeholder="HH:MM"
-                    />
-                  </div>
-                </div>
-                <div className="col-span-12 md:col-span-3">
-                  <div className="bg-slate-50 p-3 rounded-lg">
-                    <label className="text-xs font-bold text-slate-600">Departure Out Date</label>
-                    <input
-                      type="date"
-                      value={arrivalDetails.outDate}
-                      onChange={(e) => setArrivalDetails({ ...arrivalDetails, outDate: e.target.value })}
-                      className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
-                    />
-                  </div>
-                </div>
-                <div className="col-span-12 md:col-span-3">
-                  <div className="bg-slate-50 p-3 rounded-lg">
-                    <label className="text-xs font-bold text-slate-600">Departure Out Time</label>
-                    <input
-                      type="time"
-                      value={arrivalDetails.outTime}
-                      onChange={(e) => setArrivalDetails({ ...arrivalDetails, outTime: e.target.value })}
-                      className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
-                      placeholder="HH:MM"
-                    />
-                  </div>
-                </div>
-                <div className="col-span-12 md:col-span-3">
-                  <div className="bg-slate-50 p-3 rounded-lg">
-                    <label className="text-xs font-bold text-slate-600">Detention Days</label>
-                    <input
-                      type="number"
-                      value={arrivalDetails.detentionDays}
-                      readOnly
-                      className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-sm outline-none"
-                      placeholder="Calculated from detention rule"
-                    />
-                  </div>
-                </div>
-                <div className="col-span-12 md:col-span-3">
-                  <div className="bg-slate-50 p-3 rounded-lg">
-                    <label className="text-xs font-bold text-slate-600">Detention Amount (₹)</label>
-                    <input
-                      type="number"
-                      value={arrivalDetails.detentionAmount}
-                      readOnly
-                      className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-sm outline-none"
-                      placeholder="Calculated from detention rule"
-                    />
-                  </div>
-                </div>
-                <div className="col-span-12">
-                  <div className="bg-slate-50 p-3 rounded-lg">
-                    <label className="text-xs font-bold text-slate-600">Remarks</label>
-                    <textarea
-                      value={arrivalDetails.remarks}
-                      onChange={(e) => setArrivalDetails({ ...arrivalDetails, remarks: e.target.value })}
-                      rows={2}
-                      className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
-                      placeholder="Enter arrival/departure remarks..."
-                    />
-                  </div>
-                </div>
-              </div>
-            </Card>
-          </div>
+                {/* Left Column - Vendor Info */}
+                <div className="col-span-12 md:col-span-4">
+                  <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-200 h-full">
+                    <h3 className="text-sm font-bold text-slate-800 mb-3">Vendor Information</h3>
 
-          {/* Approval Section */}
-          <div className="mt-4">
-            <Card title="Approval">
-              <div className="grid grid-cols-12 gap-4">
-                <div className="col-span-12 md:col-span-6">
-                  <div className="bg-white p-4 rounded-xl border border-slate-200">
-                    <h3 className="text-sm font-bold text-slate-800 mb-3">Approval / Rejection</h3>
                     <div className="space-y-3">
-                      <div className="flex items-center gap-3">
+                      <div>
+                        <label className="text-xs font-bold text-slate-600">Vendor Status</label>
                         <select
-                          disabled={!canApproveHere}
-                          value={approval.status}
-                          onChange={(e) => setApproval({ ...approval, status: e.target.value })}
-                          className="flex-1 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                          value={purchaseDetails.vendorStatus || "Active"}
+                          onChange={(e) => setPurchaseDetails({ ...purchaseDetails, vendorStatus: e.target.value })}
+                          className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500"
                         >
-                          <option value="">Select Status</option>
-                          {APPROVAL_OPTIONS.map((opt) => (
+                          {VENDOR_STATUS_OPTIONS.map((opt) => (
                             <option key={opt} value={opt}>{opt}</option>
                           ))}
                         </select>
                       </div>
+
                       <div>
-                        <textarea
-                          disabled={!canApproveHere}
-                          value={approval.remarks}
-                          onChange={(e) => setApproval({ ...approval, remarks: e.target.value })}
-                          rows={2}
-                          className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
-                          placeholder="Enter approval remarks..."
+                        <label className="text-xs font-bold text-slate-600">Vendor Name *</label>
+                        <input
+                          type="text"
+                          value={purchaseDetails.vendorName}
+                          onChange={(e) => setPurchaseDetails({ ...purchaseDetails, vendorName: e.target.value })}
+                          className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500"
+                          placeholder="Enter vendor name"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-bold text-slate-600">Vendor Code</label>
+                        <input
+                          type="text"
+                          value={purchaseDetails.vendorCode}
+                          onChange={(e) => setPurchaseDetails({ ...purchaseDetails, vendorCode: e.target.value })}
+                          className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500"
+                          placeholder="Vendor code"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-bold text-slate-600">Vehicle No</label>
+                        <input
+                          type="text"
+                          value={purchaseDetails.vehicleNo}
+                          onChange={(e) => setPurchaseDetails({ ...purchaseDetails, vehicleNo: e.target.value })}
+                          className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500"
+                          placeholder="Vehicle number"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-bold text-slate-600">Vehicle Type</label>
+                        <select
+                          value={purchaseDetails.vehicleType || ""}
+                          onChange={(e) => setPurchaseDetails({ ...purchaseDetails, vehicleType: e.target.value })}
+                          className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500"
+                        >
+                          <option value="">Select Vehicle Type</option>
+                          {VEHICLE_TYPE_OPTIONS.map((opt) => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-bold text-slate-600">Driver Mobile No</label>
+                        <input
+                          type="text"
+                          value={purchaseDetails.driverMobileNo}
+                          onChange={(e) => setPurchaseDetails({ ...purchaseDetails, driverMobileNo: e.target.value })}
+                          className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500"
+                          placeholder="Driver mobile"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-bold text-slate-600">Purchase Date</label>
+                        <input
+                          type="date"
+                          value={purchaseDetails.purchaseDate}
+                          onChange={(e) => setPurchaseDetails({ ...purchaseDetails, purchaseDate: e.target.value })}
+                          className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500"
                         />
                       </div>
                     </div>
                   </div>
                 </div>
+
+                {/* Middle Column - Purchase Terms */}
+                <div className="col-span-12 md:col-span-4">
+                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 h-full">
+                    <h3 className="text-sm font-bold text-slate-800 mb-3">Purchase Terms</h3>
+
+                    <div className="space-y-3">
+                      <div>
+                        <label className="text-xs font-bold text-slate-600">Purchase - Type</label>
+                        <select
+                          value={purchaseDetails.purchaseType || "Loading & Unloading"}
+                          onChange={(e) => setPurchaseDetails({ ...purchaseDetails, purchaseType: e.target.value })}
+                          className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500"
+                        >
+                          {PURCHASE_TYPE_OPTIONS.map((opt) => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-bold text-slate-600">Payment Terms</label>
+                        <select
+                          value={purchaseDetails.paymentTerms || "80 % Advance"}
+                          onChange={(e) => setPurchaseDetails({ ...purchaseDetails, paymentTerms: e.target.value })}
+                          className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500"
+                        >
+                          {PAYMENT_TERMS_OPTIONS.map((opt) => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-bold text-slate-600">Rate - Type</label>
+                        <select
+                          value={purchaseDetails.rateType || "Per MT"}
+                          onChange={(e) => setPurchaseDetails({ ...purchaseDetails, rateType: e.target.value })}
+                          className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500"
+                        >
+                          {RATE_TYPE_OPTIONS.map((opt) => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-xs font-bold text-slate-600">Rate (₹)</label>
+                          <input
+                            type="number"
+                            value={purchaseDetails.rate}
+                            onChange={(e) => setPurchaseDetails({ ...purchaseDetails, rate: e.target.value })}
+                            className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500"
+                            placeholder="0"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs font-bold text-slate-600">Weight (MT)</label>
+                          <input
+                            type="number"
+                            value={purchaseDetails.weight}
+                            readOnly
+                            className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-sm outline-none cursor-not-allowed"
+                            placeholder="Auto from orders"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Purchase Amount (A x B) from VNN */}
+                      <div className="bg-purple-50 p-3 rounded-lg border border-purple-200">
+                        <label className="text-xs font-bold text-purple-700">Purchase Amount (A x B) from VNN</label>
+                        <div className="text-2xl font-bold text-purple-800 mt-1">
+                          ₹{purchaseAmountFromVNN.toLocaleString()}
+                        </div>
+                        <p className="text-xs text-purple-600 mt-1">Auto-calculated from Vehicle Negotiation</p>
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-bold text-slate-600">Advance (₹)</label>
+                        <input
+                          type="number"
+                          value={purchaseDetails.advance}
+                          onChange={(e) => setPurchaseDetails({ ...purchaseDetails, advance: e.target.value })}
+                          readOnly={purchaseDetails.paymentTerms !== "Custom / Manual"}
+                          className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none ${purchaseDetails.paymentTerms === "Custom / Manual" ? "bg-white focus:border-sky-500" : "bg-slate-100 cursor-not-allowed"}`}
+                          placeholder="0"
+                        />
+                        <p className="text-xs text-slate-500 mt-1">Select Custom / Manual to enter an amount.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Column - MEMO Upload */}
+                <div className="col-span-12 md:col-span-4">
+                  <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-4 rounded-xl border border-green-200 h-full">
+                    <h3 className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
+                      <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      Upload MEMO
+                    </h3>
+
+                    {memoFileInfo ? (
+                      <div className="bg-white p-3 rounded-lg border border-green-200">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <div>
+                              <p className="text-sm font-medium text-slate-700 truncate max-w-[150px]">
+                                {memoFileInfo.originalName}
+                              </p>
+                              <p className="text-xs text-slate-500">
+                                {(memoFileInfo.size / 1024).toFixed(1)} KB
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            {memoFileInfo.filePath && (
+                              <button
+                                type="button"
+                                onClick={() => openPurchaseMemo(purchaseId, memoFileInfo.filePath)}
+                                className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
+                                title="View File"
+                              >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                              </button>
+                            )}
+                            <button
+                              onClick={() => setMemoFileInfo(null)}
+                              className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                              title="Remove File"
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center min-h-[180px] bg-white rounded-xl border-2 border-dashed border-green-300">
+                        <svg className="w-12 h-12 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <p className="text-sm text-slate-500">No file uploaded</p>
+                        <label className="mt-2 cursor-pointer bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700 transition">
+                          Upload MEMO
+                          <input
+                            type="file"
+                            accept=".pdf,.jpg,.jpeg,.png"
+                            onChange={handleMemoUpload}
+                            className="hidden"
+                          />
+                        </label>
+                        <p className="text-xs text-slate-400 mt-2">PDF, JPG, PNG (Max 5MB)</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </Card>
           </div>
-        </div>
+
+          {/* Loading Charges & Expenses Section - Deduct at Office */}
+          <div className="mt-4">
+            <Card title="Loading Charges & Expenses - Deduct at Warehouse">
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-sm font-bold text-slate-800">Deduct at Warehouse</h3>
+                  <div className="bg-orange-100 text-orange-800 text-xs px-3 py-1 rounded-full font-medium">
+                    Fetched from Loading Info - deducted at Warehouse
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-slate-700">Loading Charges:</span>
+                    <input
+                      type="number"
+                      readOnly
+                      value={loadingExpenses.loadingCharges}
+                      onChange={(e) => setLoadingExpenses({ ...loadingExpenses, loadingCharges: e.target.value })}
+                      className="w-32 rounded-lg border border-slate-200 bg-slate-100 text-slate-700 cursor-not-allowed px-3 py-1.5 text-sm text-right focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                      placeholder="0"
+                    />
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-slate-700">Loading Staff Munshiyana:</span>
+                    <input
+                      type="number"
+                      readOnly
+                      value={loadingExpenses.loadingStaffMunshiyana}
+                      onChange={(e) => setLoadingExpenses({ ...loadingExpenses, loadingStaffMunshiyana: e.target.value })}
+                      className="w-32 rounded-lg border border-slate-200 bg-slate-100 text-slate-700 cursor-not-allowed px-3 py-1.5 text-sm text-right focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                      placeholder="0"
+                    />
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-slate-700">Other Expenses:</span>
+                    <input
+                      type="number"
+                      readOnly
+                      value={loadingExpenses.otherExpenses}
+                      onChange={(e) => setLoadingExpenses({ ...loadingExpenses, otherExpenses: e.target.value })}
+                      className="w-32 rounded-lg border border-slate-200 bg-slate-100 text-slate-700 cursor-not-allowed px-3 py-1.5 text-sm text-right focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                      placeholder="0"
+                    />
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-slate-700">Vehicle - Floor Tarpaulin:</span>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        readOnly
+                        value={loadingExpenses.vehicleFloorTarpaulin}
+                        onChange={(e) => setLoadingExpenses({ ...loadingExpenses, vehicleFloorTarpaulin: e.target.value })}
+                        className="w-32 rounded-lg border border-slate-200 bg-slate-100 text-slate-700 cursor-not-allowed px-3 py-1.5 text-sm text-right focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                        placeholder="0"
+                      />
+                      <span className="text-xs font-medium text-slate-600 whitespace-nowrap bg-slate-100 px-2 py-1 rounded-lg">
+                        {purchaseDetails.vehicleType || "Truck"}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-slate-700">Vehicle - Outer Tarpaulin:</span>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        readOnly
+                        value={loadingExpenses.vehicleOuterTarpaulin}
+                        onChange={(e) => setLoadingExpenses({ ...loadingExpenses, vehicleOuterTarpaulin: e.target.value })}
+                        className="w-32 rounded-lg border border-slate-200 bg-slate-100 text-slate-700 cursor-not-allowed px-3 py-1.5 text-sm text-right focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                        placeholder="0"
+                      />
+                      <span className="text-xs font-medium text-slate-600 whitespace-nowrap bg-slate-100 px-2 py-1 rounded-lg">
+                        {purchaseDetails.vehicleType || "Truck"}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center pt-2 border-t border-slate-200 mt-2">
+                    <span className="text-sm font-bold text-slate-800">Total Deduct at Warehouse:</span>
+                    <span className="font-bold text-orange-700 text-lg">
+                      ₹{calculateTotalLoadingExpenses().toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </div>
+
+          {/* Vehicle Registration Section */}
+          <div className="mt-4">
+            <Card title="Vehicle Registration">
+              <div className="grid grid-cols-12 gap-4 items-center">
+                <div className="col-span-12 md:col-span-5">
+                  <div className="flex items-center gap-4 p-3 bg-blue-50 rounded-xl border border-blue-200">
+                    <div className="flex-1">
+                      <label className="text-xs font-bold text-slate-600">Loading Panel Vehicle - Plate</label>
+                      <input
+                        type="text"
+                        value={registeredVehicle.loadingPanelPlate || purchaseDetails.vehicleNo || ""}
+                        readOnly
+                        className="mt-1 w-full rounded-lg border border-slate-200 bg-blue-100 px-3 py-2 text-sm text-blue-800 font-medium outline-none cursor-not-allowed"
+                        placeholder="Auto-filled from Loading Info"
+                      />
+                      <p className="text-xs text-blue-600 mt-1">ⓘ Auto-filled from Vehicle Negotiation</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="col-span-12 md:col-span-5">
+                  <div className="flex items-center gap-4 p-3 bg-white rounded-xl border border-slate-200">
+                    <div className="flex-1">
+                      <label className="text-xs font-bold text-slate-600">Registered Vehicle - Plate</label>
+                      <input
+                        type="text"
+                        value={registeredVehicle.registeredPlate}
+                        onChange={(e) => setRegisteredVehicle({
+                          ...registeredVehicle,
+                          registeredPlate: e.target.value
+                        })}
+                        className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+                        placeholder="Enter registered plate number"
+                      />
+                      <p className="text-xs text-slate-500 mt-1">Enter the actual registered plate if different</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="col-span-12 md:col-span-2">
+                  <div className="flex items-center gap-2 p-3 bg-white rounded-xl border border-slate-200 h-full">
+                    <div className="flex flex-col items-start">
+                      <label className="text-xs font-bold text-slate-600 mb-1">Verification</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id="registered"
+                          checked={registeredVehicle.isRegistered}
+                          onChange={(e) => setRegisteredVehicle({
+                            ...registeredVehicle,
+                            isRegistered: e.target.checked
+                          })}
+                          className="h-5 w-5 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                        />
+                        <label htmlFor="registered" className="text-sm font-medium text-slate-700">
+                          Verified Registered
+                        </label>
+                      </div>
+                      <p className="text-xs text-slate-400 mt-1">Check if verified</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {registeredVehicle.loadingPanelPlate && registeredVehicle.registeredPlate && (
+                <div className="mt-3 px-3">
+                  {registeredVehicle.loadingPanelPlate === registeredVehicle.registeredPlate ? (
+                    <div className="text-xs text-green-600 bg-green-50 p-2 rounded-lg inline-flex items-center gap-1">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      ✓ Plates match - Verified
+                    </div>
+                  ) : (
+                    <div className="text-xs text-amber-600 bg-amber-50 p-2 rounded-lg inline-flex items-center gap-1">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                      ⚠️ Different plate entered - Manual verification required
+                    </div>
+                  )}
+                </div>
+              )}
+            </Card>
+          </div>
+
+          {/* Additions & Deductions Section */}
+          <div className="mt-4">
+            <div className="grid grid-cols-12 gap-4">
+              {/* Advance + Deduct at Warehouse Summary */}
+              <div className="col-span-12">
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-200 mb-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="text-center">
+                      <div className="text-xs text-slate-500">Advance Paid</div>
+                      <div className="text-2xl font-bold text-emerald-700">₹{num(purchaseDetails.advance).toLocaleString()}</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-xs text-slate-500">Deduct at Warehouse</div>
+                      <div className="text-2xl font-bold text-indigo-700">₹{calculateTotalWarehouseExpenses().toLocaleString()}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Deductions Column */}
+              <div className="col-span-12 md:col-span-6">
+                <Card
+                  title="Deductions (-) - Adjustments"
+                  right={
+                    <button
+                      onClick={addDeductionRow}
+                      className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-red-700"
+                    >
+                      + Add Deduction
+                    </button>
+                  }
+                >
+                  {deductions.length === 0 ? (
+                    <div className="text-center py-8 text-slate-500 border-2 border-dashed border-red-200 rounded-lg">
+                      <svg className="mx-auto h-8 w-8 text-red-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+                      </svg>
+                      <p className="mt-2">No deductions added. Click "Add Deduction" to add deductions.</p>
+                    </div>
+                  ) : (
+                    <div className="overflow-auto rounded-xl border border-red-300">
+                      <table className="min-w-full w-full text-sm">
+                        <thead className="bg-red-100">
+                          <tr>
+                            <th className="border border-red-300 px-3 py-2 text-xs font-bold text-slate-800">Description</th>
+                            <th className="border border-red-300 px-3 py-2 text-xs font-bold text-slate-800">Amount (₹)</th>
+                            <th className="border border-red-300 px-3 py-2 text-xs font-bold text-slate-800">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {deductions.map((row) => (
+                            <tr key={row._id} className="hover:bg-red-50">
+                              <td className="border border-red-300 px-2 py-2">
+                                <input
+                                  type="text"
+                                  value={row.description}
+                                  onChange={(e) => updateDeductionRow(row._id, 'description', e.target.value)}
+                                  className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm"
+                                  placeholder="Description"
+                                />
+                              </td>
+                              <td className="border border-red-300 px-2 py-2">
+                                <input
+                                  type="number"
+                                  value={row.amount}
+                                  onChange={(e) => updateDeductionRow(row._id, 'amount', e.target.value)}
+                                  className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm text-right"
+                                  placeholder="0.00"
+                                />
+                              </td>
+                              <td className="border border-red-300 px-2 py-2 text-center">
+                                <button
+                                  onClick={() => removeDeductionRow(row._id)}
+                                  className="rounded-lg bg-red-500 px-2 py-1.5 text-xs font-bold text-white hover:bg-red-600"
+                                  title="Remove"
+                                >
+                                  ✕
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                          <tr className="bg-red-100 font-bold">
+                            <td className="border border-red-300 px-3 py-2 text-right">Total Deductions:</td>
+                            <td className="border border-red-300 px-3 py-2 text-right text-red-700">
+                              ₹{calculateTotalDeductions().toLocaleString()}
+                            </td>
+                            <td className="border border-red-300 px-3 py-2"></td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </Card>
+              </div>
+
+              {/* Additions Column */}
+              <div className="col-span-12 md:col-span-6">
+                <Card
+                  title="Additions (+) - Extra Charges"
+                  right={
+                    <button
+                      onClick={addAdditionRow}
+                      className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-green-700"
+                    >
+                      + Add Addition
+                    </button>
+                  }
+                >
+                  {additions.length === 0 ? (
+                    <div className="text-center py-8 text-slate-500 border-2 border-dashed border-green-200 rounded-lg">
+                      <svg className="mx-auto h-8 w-8 text-green-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                      </svg>
+                      <p className="mt-2">No additions added. Click "Add Addition" to add charges.</p>
+                    </div>
+                  ) : (
+                    <div className="overflow-auto rounded-xl border border-green-300">
+                      <table className="min-w-full w-full text-sm">
+                        <thead className="bg-green-100">
+                          <tr>
+                            <th className="border border-green-300 px-3 py-2 text-xs font-bold text-slate-800">Description</th>
+                            <th className="border border-green-300 px-3 py-2 text-xs font-bold text-slate-800">Amount (₹)</th>
+                            <th className="border border-green-300 px-3 py-2 text-xs font-bold text-slate-800">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {additions.map((row) => (
+                            <tr key={row._id} className="hover:bg-green-50">
+                              <td className="border border-green-300 px-2 py-2">
+                                <input
+                                  type="text"
+                                  value={row.description}
+                                  onChange={(e) => updateAdditionRow(row._id, 'description', e.target.value)}
+                                  className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm"
+                                  placeholder="Description"
+                                />
+                              </td>
+                              <td className="border border-green-300 px-2 py-2">
+                                <input
+                                  type="number"
+                                  value={row.amount}
+                                  onChange={(e) => updateAdditionRow(row._id, 'amount', e.target.value)}
+                                  className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm text-right"
+                                  placeholder="0.00"
+                                />
+                              </td>
+                              <td className="border border-green-300 px-2 py-2 text-center">
+                                <button
+                                  onClick={() => removeAdditionRow(row._id)}
+                                  className="rounded-lg bg-red-500 px-2 py-1.5 text-xs font-bold text-white hover:bg-red-600"
+                                  title="Remove"
+                                >
+                                  ✕
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                          <tr className="bg-green-100 font-bold">
+                            <td className="border border-green-300 px-3 py-2 text-right">Total Additions:</td>
+                            <td className="border border-green-300 px-3 py-2 text-right text-emerald-700">
+                              ₹{calculateTotalAdditions().toLocaleString()}
+                            </td>
+                            <td className="border border-green-300 px-3 py-2"></td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </Card>
+              </div>
+            </div>
+
+            {/* Final Summary & Balance */}
+            <div className="mt-4">
+              <Card title="Purchase Summary & Balance">
+                <div className="grid grid-cols-12 gap-4">
+                  <div className="col-span-12 md:col-span-4">
+                    <div className="bg-gradient-to-br from-purple-50 to-indigo-50 p-4 rounded-xl border border-purple-200">
+                      <h3 className="text-sm font-bold text-slate-800 mb-3">Purchase Summary</h3>
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-sm text-slate-600">Purchase Amount (A x B):</span>
+                          <span className="font-bold text-purple-800">₹{purchaseAmountFromVNN.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-slate-600">Advance Paid:</span>
+                          <span className="font-bold text-emerald-700">₹{num(purchaseDetails.advance).toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between pt-2 border-t border-purple-200">
+                          <span className="text-sm font-bold text-slate-800">Final Balance:</span>
+                          <span className="text-xl font-bold text-purple-800">₹{calculateBalance().toLocaleString()}</span>
+                        </div>
+                        <div className="text-xs text-slate-500 mt-1">
+                          Formula: Purchase Amount (from VNN) - Advance Paid
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="col-span-12 md:col-span-4">
+                    <div className="bg-gradient-to-br from-amber-50 to-yellow-50 p-4 rounded-xl border border-amber-200">
+                      <h3 className="text-sm font-bold text-slate-800 mb-3">Additions & Deductions</h3>
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-sm text-slate-600">Advance Paid:</span>
+                          <span className="font-bold text-emerald-700">₹{num(purchaseDetails.advance).toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-slate-600">Deduct at Warehouse (-):</span>
+                          <span className="font-bold text-indigo-700">₹{calculateTotalWarehouseExpenses().toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-slate-600">Total Additions at Office (+):</span>
+                          <span className="font-bold text-emerald-700">₹{calculateTotalAdditions().toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-slate-600">Total Deductions at Office (-):</span>
+                          <span className="font-bold text-red-700">₹{calculateTotalDeductions().toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between pt-2 border-t border-amber-200">
+                          <span className="text-sm font-bold text-slate-800">Net Effect:</span>
+                          <span className={`font-bold ${calculateNetEffect() >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
+                            ₹{calculateNetEffect().toLocaleString()}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="col-span-12 md:col-span-4">
+                    <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-4 rounded-xl border border-purple-200">
+                      <h3 className="text-sm font-bold text-slate-800 mb-3">Payment Info</h3>
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-sm text-slate-600">Purchase Amount:</span>
+                          <span className="font-bold text-purple-800">₹{purchaseAmountFromVNN.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-slate-600">Balance Due:</span>
+                          <span className="font-bold text-purple-800">₹{calculateBalance().toLocaleString()}</span>
+                        </div>
+                        <div className="mt-3 pt-2 border-t border-purple-200">
+                          <div className="flex justify-between text-xs">
+                            <span className="text-slate-600">JV Entry Required:</span>
+                            <span className="font-bold text-purple-700">Dr. / Cr.</span>
+                          </div>
+                          <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
+                            <span className="inline-block w-1 h-1 bg-purple-400 rounded-full"></span>
+                            JV need for making the payment in Driver or Motor Owner Account.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            </div>
+
+            {/* Arrival Details */}
+            <div className="mt-4">
+              <Card title="Arrival Details">
+                <div className="grid grid-cols-12 gap-4">
+                  <div className="col-span-12 md:col-span-3">
+                    <div className="bg-slate-50 p-3 rounded-lg">
+                      <label className="text-xs font-bold text-slate-600">Arrival In Date</label>
+                      <input
+                        type="date"
+                        value={arrivalDetails.inDate}
+                        onChange={(e) => setArrivalDetails({ ...arrivalDetails, inDate: e.target.value })}
+                        className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                      />
+                    </div>
+                  </div>
+                  <div className="col-span-12 md:col-span-3">
+                    <div className="bg-slate-50 p-3 rounded-lg">
+                      <label className="text-xs font-bold text-slate-600">Arrival In Time</label>
+                      <input
+                        type="time"
+                        value={arrivalDetails.inTime}
+                        onChange={(e) => setArrivalDetails({ ...arrivalDetails, inTime: e.target.value })}
+                        className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                        placeholder="HH:MM"
+                      />
+                    </div>
+                  </div>
+                  <div className="col-span-12 md:col-span-3">
+                    <div className="bg-slate-50 p-3 rounded-lg">
+                      <label className="text-xs font-bold text-slate-600">Departure Out Date</label>
+                      <input
+                        type="date"
+                        value={arrivalDetails.outDate}
+                        onChange={(e) => setArrivalDetails({ ...arrivalDetails, outDate: e.target.value })}
+                        className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                      />
+                    </div>
+                  </div>
+                  <div className="col-span-12 md:col-span-3">
+                    <div className="bg-slate-50 p-3 rounded-lg">
+                      <label className="text-xs font-bold text-slate-600">Departure Out Time</label>
+                      <input
+                        type="time"
+                        value={arrivalDetails.outTime}
+                        onChange={(e) => setArrivalDetails({ ...arrivalDetails, outTime: e.target.value })}
+                        className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                        placeholder="HH:MM"
+                      />
+                    </div>
+                  </div>
+                  <div className="col-span-12 md:col-span-3">
+                    <div className="bg-slate-50 p-3 rounded-lg">
+                      <label className="text-xs font-bold text-slate-600">Detention Days</label>
+                      <input
+                        type="number"
+                        value={arrivalDetails.detentionDays}
+                        readOnly
+                        className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-sm outline-none"
+                        placeholder="Calculated from detention rule"
+                      />
+                    </div>
+                  </div>
+                  <div className="col-span-12 md:col-span-3">
+                    <div className="bg-slate-50 p-3 rounded-lg">
+                      <label className="text-xs font-bold text-slate-600">Detention Amount (₹)</label>
+                      <input
+                        type="number"
+                        value={arrivalDetails.detentionAmount}
+                        readOnly
+                        className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-sm outline-none"
+                        placeholder="Calculated from detention rule"
+                      />
+                    </div>
+                  </div>
+                  <div className="col-span-12">
+                    <div className="bg-slate-50 p-3 rounded-lg">
+                      <label className="text-xs font-bold text-slate-600">Remarks</label>
+                      <textarea
+                        value={arrivalDetails.remarks}
+                        onChange={(e) => setArrivalDetails({ ...arrivalDetails, remarks: e.target.value })}
+                        rows={2}
+                        className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                        placeholder="Enter arrival/departure remarks..."
+                      />
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            </div>
+
+            {/* Approval Section */}
+            <div className="mt-4">
+              <Card title="Approval">
+                <div className="grid grid-cols-12 gap-4">
+                  <div className="col-span-12 md:col-span-6">
+                    <div className="bg-white p-4 rounded-xl border border-slate-200">
+                      <h3 className="text-sm font-bold text-slate-800 mb-3">Approval / Rejection</h3>
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-3">
+                          <select
+                            disabled={!canApproveHere}
+                            value={approval.status}
+                            onChange={(e) => setApproval({ ...approval, status: e.target.value })}
+                            className="flex-1 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                          >
+                            <option value="">Select Status</option>
+                            {APPROVAL_OPTIONS.map((opt) => (
+                              <option key={opt} value={opt}>{opt}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <textarea
+                            disabled={!canApproveHere}
+                            value={approval.remarks}
+                            onChange={(e) => setApproval({ ...approval, remarks: e.target.value })}
+                            rows={2}
+                            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                            placeholder="Enter approval remarks..."
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            </div>
+          </div>
+        </fieldset>
       </div>
     </div>
   );

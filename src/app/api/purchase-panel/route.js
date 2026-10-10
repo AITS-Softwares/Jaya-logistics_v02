@@ -81,6 +81,7 @@ async function validateUser(req, requiredAction = null) {
 // permission, so they do not also need "Purchase Panel" permission.
 const PURCHASE_LOOKUP_MODULES = {
   "advance-payment": "Advance Payment",
+  pod: "Proof Of Delivery",
 };
 
 async function validateUserForPurchaseLookup(req, forKey) {
@@ -842,6 +843,22 @@ export async function PUT(req) {
         }, { status: 403 });
       }
       delete body.approval; // ignore remarks changes too
+    }
+
+    // Once approved/completed the purchase is locked. Only the approval
+    // status/remarks and the MEMO file may still change.
+    const purchaseLocked =
+      ['Approved', 'Completed'].includes(purchase.panelStatus) ||
+      purchase.approval?.status === 'Approved';
+    if (purchaseLocked) {
+      const blockedKeys = Object.keys(body).filter((k) => !['id', 'approval', 'memoFile'].includes(k));
+      if (blockedKeys.length) {
+        return NextResponse.json({
+          success: false,
+          message: `Purchase ${purchase.purchaseNo} is ${purchase.panelStatus || purchase.approval?.status} and can no longer be edited.`,
+          code: 'LOCKED'
+        }, { status: 409 });
+      }
     }
 
     purchase.subCompanyId = user.activeOperatingCompanyId;

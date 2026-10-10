@@ -61,6 +61,7 @@ import { NextResponse } from "next/server";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import { randomUUID } from "crypto";
+import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -68,13 +69,27 @@ export const runtime = "nodejs";
 export async function POST(req) {
   try {
     console.log("📤 Upload API started");
-    
+
     const formData = await req.formData();
     console.log("✅ FormData received");
-    
+
     const file = formData.get("file");
     const section = formData.get("section") || "general";
     const field = formData.get("field") || "file";
+
+    // POD files are private: authenticated users only, stored per company.
+    let podOwner = null;
+    if (field === "pod") {
+      const token = getTokenFromHeader(req);
+      const authUser = token ? verifyJWT(token) : null;
+      if (!authUser || !authUser.companyId) {
+        return NextResponse.json({ success: false, error: "Authentication required" }, { status: 401 });
+      }
+      podOwner = String(authUser.companyId);
+      if (!/^[a-f\d]{24}$/i.test(podOwner)) {
+        return NextResponse.json({ success: false, error: "Invalid company" }, { status: 403 });
+      }
+    }
 
     if (!file) {
       console.log("❌ No file in request");
@@ -96,6 +111,8 @@ export async function POST(req) {
     let uploadType = section;
     if (field === "memo") {
       uploadType = "memo";
+    } else if (field === "pod") {          // add this branch
+      uploadType = "pod";
     } else if (field === "voice") {
       uploadType = "voice";
     }
@@ -112,6 +129,21 @@ export async function POST(req) {
       if (file.size > 5 * 1024 * 1024) {
         return NextResponse.json(
           { success: false, error: "Memo file size should be less than 5MB" },
+          { status: 400 }
+        );
+      }
+    } else if (uploadType === "pod") {
+      const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
+      const ext = path.extname(file.name || "").toLowerCase();
+      if (!allowedTypes.includes(file.type) || !['.pdf', '.jpg', '.jpeg', '.png'].includes(ext)) {
+        return NextResponse.json(
+          { success: false, error: "Only PDF, JPG and PNG files are allowed for POD" },
+          { status: 400 }
+        );
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        return NextResponse.json(
+          { success: false, error: "POD file size should be less than 5MB" },
           { status: 400 }
         );
       }
@@ -137,7 +169,10 @@ export async function POST(req) {
     console.log(`✅ Buffer created: ${buffer.length} bytes`);
 
     // Create upload directory in public folder
-    const uploadDir = path.join(process.cwd(), "public", "uploads", uploadType);
+    // POD files live OUTSIDE /public (not directly downloadable) in uploads/pod/<companyId>/.
+    // They are served only through /api/pod-panel/[id]/attachment.
+    const relDir = uploadType === "pod" ? path.join("uploads", "pod", podOwner) : path.join("public", "uploads", uploadType);
+    const uploadDir = path.join(process.cwd(), relDir);
     console.log(`📂 Upload directory: ${uploadDir}`);
 
     // Ensure directory exists
@@ -158,8 +193,8 @@ export async function POST(req) {
     console.log(`✅ File saved successfully`);
 
     // Return public URL path
-    const publicPath = `/uploads/${uploadType}/${filename}`;
-    const fullPath = path.join(process.cwd(), "public", "uploads", uploadType, filename);
+    const publicPath = uploadType === "pod" ? `/uploads/pod/${podOwner}/${filename}` : `/uploads/${uploadType}/${filename}`;
+    const fullPath = filepath;
 
     return NextResponse.json({
       success: true,
@@ -181,9 +216,9 @@ export async function POST(req) {
 }
 
 export async function GET() {
-  return NextResponse.json({ 
-    success: true, 
-    message: "Upload API is working" 
+  return NextResponse.json({
+    success: true,
+    message: "Upload API is working"
   });
 }
 

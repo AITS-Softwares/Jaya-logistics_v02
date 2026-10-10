@@ -211,7 +211,14 @@ const lrEntrySchema = new mongoose.Schema({
   docketNo: { type: String, default: '' },
   podDate: { type: String, default: '' },
   podUpload: { type: String, default: '' },
-  podReceived: { type: String, enum: ['Pending', 'Received', 'Partial'], default: 'Pending' }
+  podFile: {
+    filePath: { type: String },
+    filename: { type: String },
+    originalName: { type: String },
+    size: { type: Number },
+    mimeType: { type: String }
+  },
+  podReceived: { type: String, enum: ['Pending', 'Received', 'Partial', 'Rejected', 'Completed', 'Clear & Ok', 'Deductions'], default: 'Pending' }
 }, { _id: false });
 
 // Order Schema
@@ -221,6 +228,7 @@ const orderSchema = new mongoose.Schema({
   branch: { type: String, default: '' },
   plantCode: { type: String, default: '' },
   orderType: { type: String, default: '' },
+  vehicleNo: { type: String, default: '' },
   pinCode: { type: String, default: '' },
   state: { type: String, default: '' },
   stateName: { type: String, default: '' },
@@ -324,13 +332,14 @@ const podSchema = new mongoose.Schema({
     balance: { type: Number, default: 0 },
     poDeduction: { type: Number, default: 0 },
     podDeduction: { type: Number, default: 0 },
-    finalBalance: { type: Number, default: 0 }
+    finalBalance: { type: Number, default: 0 },
+    dueDays: { type: Number, default: 0 }
   },
 
   // POD Status Section
   podStatusSection: {
     lastPodDate: { type: String, default: '' },
-    podStatus: { type: String, enum: ['Clear & Ok', 'Deductions', 'Pending', ''], default: 'Pending' },
+    podStatus: { type: String, enum: ['Clear & Ok', 'Deductions', 'Pending', 'Received', 'Partial', 'Rejected', 'Completed', ''], default: 'Pending' },
     dueDate: { type: String, default: '' },
     paymentDate: { type: String, default: '' },
     acknowledgementMail: { type: Boolean, default: false },
@@ -351,8 +360,14 @@ const podSchema = new mongoose.Schema({
   finalBalance: { type: Number, default: 0 },
 
   // Status
-  podStatus: { type: String, enum: ['Pending', 'Received', 'Partial', 'Rejected'], default: 'Pending' },
-  paymentStatus: { type: String, enum: ['Pending', 'Partially Paid', 'Paid'], default: 'Pending' },
+  podStatus: { type: String, enum: ['Pending', 'Received', 'Partial', 'Rejected', 'Completed'], default: 'Pending' },
+  paymentStatus: { type: String, enum: ['Pending', 'Approved', 'Rejected', 'Partially Paid', 'Paid'], default: 'Pending' },
+
+  // Approval audit trail (set by the server only)
+  approvalStatus: { type: String, default: '' },
+  approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'CompanyUser', default: null },
+  approvedByName: { type: String, default: '' },
+  approvedAt: { type: Date, default: null },
 
   // User Tracking
   createdBy: {
@@ -362,24 +377,29 @@ const podSchema = new mongoose.Schema({
 
 }, { timestamps: true });
 
-// Pre-save middleware to calculate totals
+// Pre-save middleware to calculate totals (single source of truth for money maths)
 podSchema.pre('save', function (next) {
-  // Calculate total quantity from products
-  this.totalQuantity = this.products.reduce((sum, p) => sum + (parseFloat(p.totalPkgs) || 0), 0);
+  const n = (v) => { const x = parseFloat(v); return Number.isFinite(x) ? x : 0; };
 
-  // Calculate total actual weight from products
-  this.totalActualWt = this.products.reduce((sum, p) => sum + (parseFloat(p.actualWt) || 0), 0);
+  this.totalQuantity = this.products.reduce((sum, p) => sum + n(p.totalPkgs), 0);
+  this.totalActualWt = this.products.reduce((sum, p) => sum + n(p.actualWt), 0);
 
-  // Calculate POD deduction from products value
-  this.podDeduction = this.products.reduce((sum, p) => sum + (parseFloat(p.value) || 0), 0);
+  // POD deduction: the manual vendor-level figure typed on the screen wins;
+  // if it is empty we fall back to the sum of the per-product deduction values.
+  const productDeduction = this.products.reduce((sum, p) => sum + n(p.value), 0);
+  const manualPodDeduction = n(this.vendorFinancial?.podDeduction);
+  this.podDeduction = manualPodDeduction > 0 ? manualPodDeduction : productDeduction;
 
-  // Calculate final balance
-  const total = this.vendorFinancial?.total || 0;
-  const advance = this.vendorFinancial?.advance || 0;
-  const poDeduction = this.vendorFinancial?.poDeduction || 0;
-  this.finalBalance = total - advance - poDeduction - this.podDeduction;
+  const total = n(this.vendorFinancial?.total);
+  const advance = n(this.vendorFinancial?.advance);
+  // PO deduction is already settled in the Advance Payment, so it is NOT subtracted again here.
+  this.finalBalance = total - advance - this.podDeduction;
 
-  // Update header with POD number and company info
+  if (this.vendorFinancial) {
+    this.vendorFinancial.balance = total - advance;
+    this.vendorFinancial.finalBalance = this.finalBalance;
+  }
+
   if (this.header) {
     this.header.podNo = this.podNo;
     this.header.companyName = this.companyName || '';
