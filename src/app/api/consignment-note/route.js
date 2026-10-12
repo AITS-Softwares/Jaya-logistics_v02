@@ -1570,13 +1570,52 @@ async function synchronizePurchaseDetention(user, loadingInfo, outDate, outTime)
   await purchase.save();
 }
 
+// Read-only access for other modules that must pick an LR (e.g. POD).
+// Those users are checked against THEIR OWN module permission, so they don't
+// also need "Consignment Note" permission.
+const LR_LOOKUP_MODULES = {
+  pod: "Proof Of Delivery",
+};
+
+async function validateUserForLRLookup(req, forKey) {
+  const moduleName = LR_LOOKUP_MODULES[forKey];
+  if (!moduleName) return validateUser(req, "view");
+
+  const token = getTokenFromHeader(req);
+  if (!token) return { error: "Authentication required. Please login.", status: 401 };
+
+  try {
+    const user = verifyJWT(token);
+    if (!user) return { error: "Invalid or expired token. Please login again.", status: 401 };
+    try { activeOperatingCompanyId(user); } catch (error) { return { error: error.message, status: 401 }; }
+
+    const isAdmin = user.type === "company" || user.roles?.includes("Admin");
+    const moduleData = user.modules?.[moduleName];
+    const canUseModule =
+      isAdmin ||
+      (moduleData?.selected === true &&
+        (moduleData.permissions?.create === true ||
+          moduleData.permissions?.edit === true ||
+          moduleData.permissions?.view === true));
+
+    if (!canUseModule) {
+      return { error: `Access denied. You don't have permission to access ${moduleName}.`, status: 403 };
+    }
+    return { user, error: null, status: 200 };
+  } catch (err) {
+    console.error("JWT Verification Failed:", err?.message || err);
+    return { error: "Authentication failed. Please login again.", status: 401 };
+  }
+}
+
 /* ========================================
    GET /api/consignment-note - Requires 'view' permission
 ======================================== */
 export async function GET(req) {
   try {
     await connectDb();
-    const { user, error, status } = await validateUser(req, 'view');
+    const forKey = new URL(req.url).searchParams.get("for");
+    const { user, error, status } = await validateUserForLRLookup(req, forKey);
     if (error) {
       return NextResponse.json({
         success: false,

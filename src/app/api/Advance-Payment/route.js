@@ -1702,6 +1702,20 @@ function isValidObjectId(id) {
   return id && mongoose.Types.ObjectId.isValid(id);
 }
 
+function purchaseWarehouseDeduction(purchase, loadingInfo = null) {
+  const le = loadingInfo?.loadedWeighment || purchase?.loadingExpenses || {};
+  return ['loadingCharges', 'loadingStaffMunshiyana', 'otherExpenses', 'vehicleFloorTarpaulin', 'vehicleOuterTarpaulin']
+    .reduce((sum, key) => sum + (Number(le[key]) || 0), 0);
+}
+
+async function liveWarehouseDeduction(user, purchase) {
+  if (!purchase) return 0;
+  const loadingInfo = purchase.loadingInfoNo
+    ? await LoadingPanel.findOne(companyScopeFilter(user, { vehicleArrivalNo: purchase.loadingInfoNo })).lean()
+    : null;
+  return purchaseWarehouseDeduction(purchase, loadingInfo);
+}
+
 /* ========================================
    GET /api/advance-payment - Requires 'view' permission
 ======================================== */
@@ -1766,9 +1780,14 @@ export async function GET(req) {
         }, { status: 404 });
       }
 
+      const sourcePurchase = payment.purchaseId
+        ? await PurchasePanel.findOne(companyScopeFilter(user, { _id: payment.purchaseId })).lean()
+        : await PurchasePanel.findOne(companyScopeFilter(user, { purchaseNo: payment.purchaseNo })).lean();
+      const warehouseDeduction = await liveWarehouseDeduction(user, sourcePurchase);
+
       return NextResponse.json({
         success: true,
-        data: payment
+        data: { ...payment, warehouseDeduction }
       }, { status: 200 });
     }
 

@@ -1021,6 +1021,60 @@ function OrdersTable({ rows }) {
   );
 }
 
+async function openAdvanceMemo({ filePath, purchaseId, paymentId }) {
+  if (!filePath) return;
+  const previewWindow = window.open("", "_blank");
+  try {
+    const token = localStorage.getItem("token");
+    const qs = new URLSearchParams({ path: filePath });
+    if (paymentId) qs.set("paymentId", paymentId);
+    else if (purchaseId) qs.set("purchaseId", purchaseId);
+    const response = await fetch(`/api/Advance-Payment/attachment?${qs}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const objectUrl = URL.createObjectURL(await response.blob());
+    if (previewWindow) previewWindow.location.replace(objectUrl);
+    else window.open(objectUrl, "_blank");
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 5 * 60 * 1000);
+  } catch (error) {
+    console.error("Unable to open MEMO:", error);
+    if (previewWindow) previewWindow.close();
+    alert("The MEMO could not be opened. It may no longer be present on the server.");
+  }
+}
+
+function MemoImage({ filePath, alt, purchaseId, paymentId }) {
+  const [src, setSrc] = useState("");
+  useEffect(() => {
+    let url = "";
+    let cancelled = false;
+    (async () => {
+      if (!filePath) return;
+      try {
+        const token = localStorage.getItem("token");
+        const qs = new URLSearchParams({ path: filePath });
+        if (paymentId) qs.set("paymentId", paymentId);
+        else if (purchaseId) qs.set("purchaseId", purchaseId);
+        const res = await fetch(`/api/Advance-Payment/attachment?${qs}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) return;
+        url = URL.createObjectURL(await res.blob());
+        if (!cancelled) setSrc(url);
+      } catch (e) {
+        console.error("Memo preview failed:", e);
+      }
+    })();
+    return () => {
+      cancelled = true;
+      if (url) URL.revokeObjectURL(url);
+    };
+  }, [filePath, purchaseId, paymentId]);
+  if (!src) return <div className="flex min-h-[200px] items-center justify-center text-xs text-gray-400">Loading preview…</div>;
+  return <img src={src} alt={alt} className="w-full h-full min-h-[200px] object-contain" />;
+}
+
 /* =======================
   ADDITIONS/DEDUCTIONS TABLE (READ-ONLY)
 ========================= */
@@ -1520,20 +1574,19 @@ export default function ApproveAdvancePayment() {
                 {memoFileInfo ? (
                   <div
                     className="relative group cursor-pointer overflow-hidden rounded-xl border-2 border-green-300 bg-white shadow-lg hover:shadow-xl transition-all duration-300"
-                    onClick={() => { if (memoFileInfo.filePath) window.open(memoFileInfo.filePath, '_blank'); }}
+                    onClick={() => openAdvanceMemo({ filePath: memoFileInfo.filePath, paymentId: params.id })}
                   >
                     <div className="relative w-full min-h-[200px] bg-gray-100">
                       {memoFileInfo.mimeType?.includes('image') ? (
-                        <img src={memoFileInfo.filePath} alt={memoFileInfo.originalName} className="w-full h-full min-h-[200px] object-contain" />
-                      ) : memoFileInfo.mimeType?.includes('pdf') ? (
-                        <div className="flex flex-col items-center justify-center min-h-[200px] bg-red-50">
-                          <svg className="w-16 h-16 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                          </svg>
-                          <span className="text-sm font-medium text-gray-600 mt-2">{memoFileInfo.originalName}</span>
-                          <span className="text-xs text-gray-500 mt-1">Click to view PDF</span>
-                        </div>
-                      ) : (
+                        <MemoImage filePath={memoFileInfo.filePath} alt={memoFileInfo.originalName} paymentId={params.id} />) : memoFileInfo.mimeType?.includes('pdf') ? (
+                          <div className="flex flex-col items-center justify-center min-h-[200px] bg-red-50">
+                            <svg className="w-16 h-16 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                            </svg>
+                            <span className="text-sm font-medium text-gray-600 mt-2">{memoFileInfo.originalName}</span>
+                            <span className="text-xs text-gray-500 mt-1">Click to view PDF</span>
+                          </div>
+                        ) : (
                         <div className="flex flex-col items-center justify-center min-h-[200px] bg-gray-100">
                           <svg className="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />

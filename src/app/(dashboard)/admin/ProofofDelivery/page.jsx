@@ -24,19 +24,19 @@
 // //     setLoading(true);
 // //     try {
 // //       const token = localStorage.getItem('token');
-      
+
 // //       const params = new URLSearchParams({ format: 'table' });
 // //       if (filters.search) params.append('search', filters.search);
 // //       if (filters.fromDate) params.append('fromDate', filters.fromDate);
 // //       if (filters.toDate) params.append('toDate', filters.toDate);
 // //       if (filters.podStatus) params.append('podStatus', filters.podStatus);
-      
+
 // //       const res = await fetch(`/api/pod-panel?${params.toString()}`, {
 // //         headers: { Authorization: `Bearer ${token}` },
 // //       });
-      
+
 // //       const data = await res.json();
-      
+
 // //       if (data.success) {
 // //         setPodList(data.data || []);
 // //       } else {
@@ -286,7 +286,7 @@
 // //                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
 // //                             </svg>
 // //                           </button>
-                          
+
 // //                           <button
 // //                             onClick={() => handleApprove(item._id)}
 // //                             className="p-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition"
@@ -296,7 +296,7 @@
 // //                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
 // //                             </svg>
 // //                           </button>
-                          
+
 // //                           <button
 // //                             onClick={() => handleDelete(item._id, item.podNo)}
 // //                             disabled={deleteLoading === item._id}
@@ -379,19 +379,19 @@
 //     setError(null);
 //     try {
 //       const token = localStorage.getItem('token');
-      
+
 //       const params = new URLSearchParams({ format: 'table' });
 //       if (filters.search) params.append('search', filters.search);
 //       if (filters.fromDate) params.append('fromDate', filters.fromDate);
 //       if (filters.toDate) params.append('toDate', filters.toDate);
 //       if (filters.podStatus) params.append('podStatus', filters.podStatus);
-      
+
 //       const res = await fetch(`/api/pod-panel?${params.toString()}`, {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       const data = await res.json();
-      
+
 //       if (data.success) {
 //         setPodList(data.data || []);
 //       } else {
@@ -747,7 +747,7 @@
 //                               </svg>
 //                             </button>
 //                           )}
-                          
+
 //                           {/* ✅ Quick Approve Button - Green (with checkmark) */}
 //                           {canApprove(MODULE_NAME) && item.podReceived !== 'Received' && item.podReceived !== 'Rejected' && item.podReceived !== 'Completed' && (
 //                             <button
@@ -765,7 +765,7 @@
 //                               )}
 //                             </button>
 //                           )}
-                          
+
 //                           {/* ✅ Full Approve Button - Blue (with details) */}
 //                           {canApprove(MODULE_NAME) && item.podReceived !== 'Received' && item.podReceived !== 'Rejected' && item.podReceived !== 'Completed' && (
 //                             <button
@@ -778,7 +778,7 @@
 //                               </svg>
 //                             </button>
 //                           )}
-                          
+
 //                           {/* Delete Button - Only shown if user has delete permission */}
 //                           {canDelete(MODULE_NAME) && (
 //                             <button
@@ -838,7 +838,7 @@
 
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { usePermission } from "../hooks/usePermission";
 import Link from "next/link";
@@ -851,46 +851,55 @@ export default function PODPanelList() {
   const [error, setError] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(null);
   const [approveLoading, setApproveLoading] = useState(null);
-  const [filters, setFilters] = useState({
-    search: "",
-    fromDate: "",
-    toDate: "",
-    podStatus: ""
-  });
+  const EMPTY_FILTERS = { search: "", fromDate: "", toDate: "", podStatus: "" };
+  // `filters` = what the user is typing, `appliedFilters` = what was actually sent to the API.
+  // Typing no longer fires a request per keystroke; only Filter / Enter / Clear do.
+  const [filters, setFilters] = useState(EMPTY_FILTERS);
+  const [appliedFilters, setAppliedFilters] = useState(EMPTY_FILTERS);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const requestIdRef = useRef(0);
 
   const MODULE_NAME = 'Proof Of Delivery';
 
   // Fetch POD list - wrapped in useCallback to prevent infinite re-renders
   const fetchPODList = useCallback(async () => {
+    const requestId = ++requestIdRef.current; // ignore responses of older requests
     setLoading(true);
     setError(null);
     try {
       const token = localStorage.getItem('token');
-      
+
       const params = new URLSearchParams({ format: 'table' });
-      if (filters.search) params.append('search', filters.search);
-      if (filters.fromDate) params.append('fromDate', filters.fromDate);
-      if (filters.toDate) params.append('toDate', filters.toDate);
-      if (filters.podStatus) params.append('podStatus', filters.podStatus);
-      
+      if (appliedFilters.search.trim()) params.append('search', appliedFilters.search.trim());
+      if (appliedFilters.fromDate) params.append('fromDate', appliedFilters.fromDate);
+      if (appliedFilters.toDate) params.append('toDate', appliedFilters.toDate);
+      if (appliedFilters.podStatus) params.append('podStatus', appliedFilters.podStatus);
+
       const res = await fetch(`/api/pod-panel?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
-      const data = await res.json();
-      
-      if (data.success) {
+
+      const data = await res.json().catch(() => ({}));
+      if (requestId !== requestIdRef.current) return;
+
+      if (res.ok && data.success) {
         setPodList(data.data || []);
+        if (data.truncated) {
+          setError(`Showing the latest ${data.count} of ${data.total} PODs. Use the filters to narrow the list.`);
+        }
       } else {
-        setError(data.message || 'Failed to fetch PODs');
+        setPodList([]);
+        setError(data.message || `Failed to fetch PODs (${res.status})`);
       }
     } catch (err) {
+      if (requestId !== requestIdRef.current) return;
       console.error('Error fetching PODs:', err);
+      setPodList([]);
       setError('Failed to load PODs');
     } finally {
-      setLoading(false);
+      if (requestId === requestIdRef.current) setLoading(false);
     }
-  }, [filters]);
+  }, [appliedFilters, refreshKey]);
 
   // Only fetch when permissions are loaded and user has view permission
   useEffect(() => {
@@ -908,12 +917,18 @@ export default function PODPanelList() {
   };
 
   const applyFilters = () => {
-    fetchPODList();
+    if (filters.fromDate && filters.toDate && filters.fromDate > filters.toDate) {
+      alert('"From" date cannot be after "To" date');
+      return;
+    }
+    setAppliedFilters({ ...filters });
+    setRefreshKey(k => k + 1); // refetch even if the filter values did not change
   };
 
   const clearFilters = () => {
-    setFilters({ search: "", fromDate: "", toDate: "", podStatus: "" });
-    setTimeout(() => fetchPODList(), 100);
+    setFilters(EMPTY_FILTERS);
+    setAppliedFilters(EMPTY_FILTERS);
+    setRefreshKey(k => k + 1);
   };
 
   const handleDelete = async (podId, podNo) => {
@@ -932,9 +947,9 @@ export default function PODPanelList() {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
 
-      if (data.success) {
+      if (res.ok && data.success) {
         setPodList(prev => prev.filter(item => item._id !== podId));
         alert('✅ POD deleted successfully!');
       } else {
@@ -984,11 +999,12 @@ export default function PODPanelList() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
+        body: JSON.stringify({ podStatus: 'Received' }),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
 
-      if (data.success) {
+      if (res.ok && data.success) {
         alert('POD approved successfully!');
         fetchPODList();
       } else {
@@ -1013,7 +1029,7 @@ export default function PODPanelList() {
   };
 
   const getStatusColor = (status) => {
-    switch(status) {
+    switch (status) {
       case 'Received': return 'bg-green-100 text-green-800';
       case 'Clear & Ok': return 'bg-green-100 text-green-800';
       case 'Pending': return 'bg-yellow-100 text-yellow-800';
@@ -1043,7 +1059,7 @@ export default function PODPanelList() {
         <div className="text-center max-w-md p-8 bg-white rounded-xl shadow-lg">
           <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg className="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                 d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
           </div>
@@ -1109,6 +1125,7 @@ export default function PODPanelList() {
                 placeholder="Search by POD No, Purchase No, Vendor..."
                 value={filters.search}
                 onChange={(e) => handleFilterChange('search', e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') applyFilters(); }}
                 className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200"
               />
             </div>
@@ -1239,7 +1256,7 @@ export default function PODPanelList() {
                               </svg>
                             </button>
                           )}
-                          
+
                           {/* ✅ Quick Approve Button - Green (with checkmark) - Based ONLY on permission */}
                           {canApprove(MODULE_NAME) && (
                             <button
@@ -1257,7 +1274,7 @@ export default function PODPanelList() {
                               )}
                             </button>
                           )}
-                          
+
                           {/* ✅ Full Approve Button - Blue (with details) - Based ONLY on permission */}
                           {canApprove(MODULE_NAME) && (
                             <button
@@ -1270,7 +1287,7 @@ export default function PODPanelList() {
                               </svg>
                             </button>
                           )}
-                          
+
                           {/* Delete Button - Only shown if user has delete permission */}
                           {canDelete(MODULE_NAME) && (
                             <button

@@ -1,4 +1,3 @@
-
 // "use client";
 
 // import { useState, useEffect } from "react";
@@ -1461,7 +1460,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 
 function uid() {
@@ -1500,6 +1499,140 @@ function getLatestPodDate(lrEntries) {
 
   const latestDate = new Date(Math.max(...podDates));
   return latestDate.toISOString().split('T')[0];
+}
+
+function PurchaseSelect({ purchases, value, onSelect }) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const boxRef = useRef(null);
+
+  useEffect(() => {
+    const onDown = (e) => {
+      if (boxRef.current && !boxRef.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, []);
+
+  const describe = (p) => {
+    const orderNos = [...new Set((p.orderRows || []).map(r => r.orderNo).filter(Boolean))].join(", ");
+    const vendor = p.vendorName || p.purchaseDetails?.vendorName || "";
+    const vehicleNo = p.vehicleNo || p.purchaseDetails?.vehicleNo || "";
+    const from = p.fromLocation || p.orderRows?.[0]?.from || "";
+    const to = p.toLocation || p.orderRows?.[0]?.to || "";
+    const lrCode = p.lrCode || p.consignmentNo || "";
+    return { orderNos, vendor, vehicleNo, route: from && to ? `${from} → ${to}` : "", lrCode };
+  };
+
+  const q = query.trim().toLowerCase();
+  const items = purchases
+    .map(p => ({ p, d: describe(p) }))
+    .filter(({ p, d }) => !q || [p.purchaseNo, d.orderNos, d.vendor, d.vehicleNo, d.route, d.lrCode, p.companyName]
+      .join(" ").toLowerCase().includes(q));
+
+  const selected = purchases.find(p => p.purchaseNo === value);
+  const selectedText = selected
+    ? `${selected.purchaseNo}${describe(selected).orderNos ? ` | ${describe(selected).orderNos}` : ""}`
+    : "";
+
+  return (
+    <div ref={boxRef} className="relative mt-1">
+      <input
+        type="text"
+        value={open ? query : selectedText}
+        onFocus={() => { setOpen(true); setQuery(""); }}
+        onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
+        placeholder="Search purchase no, order no, vendor, vehicle..."
+        autoComplete="off"
+        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200"
+      />
+      {open && (
+        <div className="absolute z-30 mt-1 w-full max-h-72 overflow-auto rounded-xl border border-slate-200 bg-white shadow-lg">
+          {items.length === 0 ? (
+            <div className="px-3 py-3 text-sm text-slate-400">No purchase found</div>
+          ) : items.map(({ p, d }) => (
+            <button
+              type="button"
+              key={p._id || p.purchaseNo}
+              onClick={() => { onSelect(p.purchaseNo); setOpen(false); setQuery(""); }}
+              className={`block w-full text-left px-3 py-2 border-b border-slate-100 last:border-b-0 hover:bg-yellow-50 ${p.purchaseNo === value ? "bg-yellow-50" : ""}`}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm font-bold text-slate-900">{p.purchaseNo}</span>
+                {d.orderNos && <span className="text-xs font-semibold text-yellow-700">Order: {d.orderNos}</span>}
+              </div>
+              <div className="text-xs text-slate-500">
+                {[d.vendor, d.vehicleNo, d.route, d.lrCode].filter(Boolean).join(" • ")}
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PodUploadBox({ lr, onSelect, onRemove, onView }) {
+  const uploaded = lr.podUpload === 'UPLOADED';
+  const uploading = lr.podUpload === 'UPLOADING';
+  const inputId = `pod-file-${lr._id}`;
+  return (
+    <div className="mt-1">
+      {uploaded ? (
+        <div className="flex items-center gap-3 rounded-xl border border-green-200 bg-green-50 px-3 py-2">
+          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-green-100 text-green-700">
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-sm font-semibold text-green-800">{lr.podFileName || lr.podFile?.originalName || 'POD uploaded'}</div>
+            <div className="text-xs text-green-600">Uploaded</div>
+          </div>
+          {onView && (
+            <button type="button" onClick={onView} className="rounded-lg border border-blue-200 bg-white px-2.5 py-1 text-xs font-bold text-blue-600 hover:bg-blue-50">
+              View
+            </button>
+          )}
+          <label htmlFor={inputId} className="cursor-pointer rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-slate-700 hover:bg-slate-50">
+            Replace
+          </label>
+          <button type="button" onClick={onRemove} className="rounded-lg border border-red-200 bg-white px-2.5 py-1 text-xs font-bold text-red-600 hover:bg-red-50">
+            Remove
+          </button>
+        </div>
+      ) : (
+        <label
+          htmlFor={inputId}
+          className="flex cursor-pointer items-center gap-3 rounded-xl border-2 border-dashed border-yellow-300 bg-yellow-50/60 px-3 py-2.5 transition hover:border-yellow-500 hover:bg-yellow-50"
+        >
+          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-yellow-100 text-yellow-700">
+            {uploading ? (
+              <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            ) : (
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M16 8l-4-4m0 0L8 8m4-4v12" />
+              </svg>
+            )}
+          </div>
+          <div className="min-w-0">
+            <div className="text-sm font-bold text-slate-800">{uploading ? 'Uploading...' : 'Click to upload POD'}</div>
+            <div className="text-xs text-slate-500">PDF, JPG or PNG - Max 5MB</div>
+          </div>
+        </label>
+      )}
+      <input
+        id={inputId}
+        type="file"
+        accept=".pdf,.jpg,.jpeg,.png"
+        className="hidden"
+        onChange={(e) => { onSelect(e); e.target.value = ''; }}
+      />
+    </div>
+  );
 }
 
 function Card({ title, right, children }) {
@@ -1574,6 +1707,38 @@ export default function CreatePOD() {
     dueDays: 0
   });
 
+  // Advance is read-only: it is whatever was really created in Advance Payment for this purchase.
+  const [advanceInfo, setAdvanceInfo] = useState({ loaded: false, found: false, advance: 0, payments: [] });
+  const loadAdvance = async (purchaseNo) => {
+    if (!purchaseNo) return;
+    setAdvanceInfo({ loaded: false, found: false, advance: 0, payments: [] });
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/pod-panel?advanceFor=${encodeURIComponent(purchaseNo)}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success && data.data) {
+        setVendorFinancial(prev => ({ ...prev, advance: Number(data.data.advance) || 0 }));
+        setAdvanceInfo({ loaded: true, found: !!data.data.found, advance: Number(data.data.advance) || 0, payments: data.data.payments || [] });
+      }
+    } catch (err) {
+      console.error('Error loading advance payment:', err);
+    }
+  };
+  // Race-proof: once the real advance is known, any later state update coming from the
+  // purchase / POD loading code can never overwrite it with a stale value.
+  useEffect(() => {
+    if (advanceInfo.loaded && num(vendorFinancial.advance) !== advanceInfo.advance) {
+      setVendorFinancial(prev => ({ ...prev, advance: advanceInfo.advance }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [advanceInfo.loaded, advanceInfo.advance, vendorFinancial.advance]);
+  useEffect(() => {
+    if (header.purchaseNo) loadAdvance(header.purchaseNo);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [header.purchaseNo]);
+
   // ==================== POD STATUS SECTION ====================
   const [podStatusSection, setPodStatusSection] = useState({
     lastPodDate: "",
@@ -1601,7 +1766,6 @@ export default function CreatePOD() {
     { key: "district", label: "District", minWidth: "120px" },
     { key: "from", label: "From", minWidth: "120px" },
     { key: "to", label: "To", minWidth: "120px" },
-    { key: "locationRate", label: "Location Rate", minWidth: "100px" },
     { key: "weight", label: "Weight", minWidth: "80px" }
   ];
 
@@ -1628,7 +1792,7 @@ export default function CreatePOD() {
   const fetchPurchases = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/purchase-panel?format=table', {
+      const res = await fetch('/api/purchase-panel?format=table&for=pod', {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -1714,7 +1878,7 @@ export default function CreatePOD() {
     setLoadingLR(true);
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/consignment-note?format=table', {
+      const res = await fetch('/api/consignment-note?format=table&for=pod', {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -1747,7 +1911,7 @@ export default function CreatePOD() {
   const fetchLRDetails = async (lrNo, lrId) => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`/api/consignment-note?lrNo=${lrNo}`, {
+      const res = await fetch(`/api/consignment-note?lrNo=${lrNo}&for=pod`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -1854,7 +2018,7 @@ export default function CreatePOD() {
 
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`/api/purchase-panel?purchaseNo=${purchaseNo}`, {
+      const res = await fetch(`/api/purchase-panel?purchaseNo=${purchaseNo}&for=pod`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -1961,24 +2125,18 @@ export default function CreatePOD() {
         const vendorCode = purchase.purchaseDetails?.vendorCode || '';
         const vendorName = purchase.purchaseDetails?.vendorName || '';
         const dueDays = getDueDaysFromSupplier(vendorCode);
-        const poDeductionFromPurchase =
-          purchase.purchaseDetails?.poDeduction ||
-          purchase.poDeduction ||
-          purchase.totalDeductions ||
-          0;
-
         setVendorFinancial(prev => ({
           ...prev,
           vendorName: vendorName,
           vendorCode: vendorCode,
-          advance: num(purchase.purchaseDetails?.advance) || 0,
+          advance: 0, // real value is loaded from Advance Payment
           total: purchase.purchaseAmountFromVNN || purchase.purchaseDetails?.amount || 0,
           dueDays: dueDays,
-          poDeduction: num(poDeductionFromPurchase)
+          poDeduction: 0 // PO deduction is already settled in Advance Payment
         }));
 
         const totalAmt = purchase.purchaseAmountFromVNN || purchase.purchaseDetails?.amount || 0;
-        const advanceAmt = num(purchase.purchaseDetails?.advance) || 0;
+        const advanceAmt = 0; // real advance is loaded from Advance Payment
         setVendorFinancial(prev => ({
           ...prev,
           balance: totalAmt - advanceAmt
@@ -2034,11 +2192,20 @@ ${companyMsg}${subCompanyMsg}${vehicleMsg}${routeMsg}${lrMsg}
     }
   }, [allConsignmentNotes, purchaseOrders]);
 
-  const getAvailableLRsForOrder = (orderNo) => {
-    return filteredLRs.filter(lr => lr.orderNo === orderNo);
+  const getAvailableLRsForOrder = (orderNo, currentLrId) => {
+    const pickedElsewhere = lrEntries
+      .filter(e => e._id !== currentLrId && e.lrNo)
+      .map(e => e.lrNo);
+    return filteredLRs.filter(lr => lr.orderNo === orderNo && !pickedElsewhere.includes(lr.lrNo));
   };
 
   const handleLRSelect = async (lrId, selectedLRNo, orderNo) => {
+    if (!selectedLRNo) {
+      setLrEntries(prev => prev.map(lr => lr._id === lrId ? { ...lr, lrNo: '', lrDate: '' } : lr));
+      setProducts(prev => prev.filter(p => p.lrRefId !== lrId));
+      return;
+    }
+
     const selectedLR = filteredLRs.find(c => c.lrNo === selectedLRNo && c.orderNo === orderNo);
 
     if (selectedLR) {
@@ -2080,23 +2247,52 @@ ${companyMsg}${subCompanyMsg}${vehicleMsg}${routeMsg}${lrMsg}
     }
 
     updateLREntry(lrId, 'podUpload', 'UPLOADING');
+    updateLREntry(lrId, 'podFileName', file.name);
 
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('lrId', lrId);
+    formData.append('section', 'pod');
+    formData.append('field', 'pod');
 
     try {
-      setTimeout(() => {
-        updateLREntry(lrId, 'podUpload', 'UPLOADED');
-        updateLREntry(lrId, 'podReceived', 'Received');
-        alert(`✅ POD uploaded successfully for LR`);
-      }, 1000);
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/upload/excel', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'Upload failed');
 
+      setLrEntries(prev => prev.map(lr => lr._id === lrId ? {
+        ...lr,
+        podUpload: 'UPLOADED',
+        podReceived: 'Pending',
+        podFileName: file.name,
+        podPreviewUrl: URL.createObjectURL(file),
+        podFile: {
+          filePath: data.filePath,
+          filename: data.filename,
+          originalName: file.name,
+          size: file.size,
+          mimeType: file.type
+        }
+      } : lr));
     } catch (error) {
       console.error('Error uploading POD:', error);
-      updateLREntry(lrId, 'podUpload', '');
-      alert('❌ Failed to upload POD');
+      setLrEntries(prev => prev.map(lr => lr._id === lrId ? { ...lr, podUpload: '', podFileName: '', podFile: null, podPreviewUrl: '' } : lr));
+      alert('❌ Failed to upload POD. Please try again.');
     }
+  };
+
+  const openPodFile = (lr) => {
+    if (lr.podPreviewUrl) window.open(lr.podPreviewUrl, '_blank');
+  };
+
+  const removePodUpload = (lrId) => {
+    setLrEntries(prev => prev.map(lr => lr._id === lrId
+      ? { ...lr, podUpload: '', podFileName: '', podFile: null, podPreviewUrl: '', podReceived: 'Pending' }
+      : lr));
   };
 
   const updateProduct = (id, key, value) => {
@@ -2111,8 +2307,24 @@ ${companyMsg}${subCompanyMsg}${vehicleMsg}${routeMsg}${lrMsg}
     return products.reduce((sum, p) => sum + num(p.totalPkgs), 0);
   };
 
+  // Deduction amount per product = no. of bags x value per bag
+  const lineDeduction = (p) => (parseFloat(p.deduction) || 0) * num(p.value);
+
+  // Total across all selected LRs
+  const productValueTotal = products.reduce((sum, p) => sum + lineDeduction(p), 0);
+
+  // Keep POD - Deduction in sync with the product Values
+  useEffect(() => {
+    setVendorFinancial(prev =>
+      num(prev.podDeduction) === productValueTotal
+        ? prev
+        : { ...prev, podDeduction: productValueTotal }
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [productValueTotal]);
+
   const calculateTotalPODDeduction = () => {
-    return num(vendorFinancial.poDeduction) + num(vendorFinancial.podDeduction);
+    return num(vendorFinancial.podDeduction);
   };
 
   const calculateFinalBalance = () => {
@@ -2156,7 +2368,7 @@ ${companyMsg}${subCompanyMsg}${vehicleMsg}${routeMsg}${lrMsg}
         vendorFinancial: {
           vendorName: vendorFinancial.vendorName,
           vendorCode: vendorFinancial.vendorCode,
-          total: calculateTotalActualWt() || vendorFinancial.total,
+          total: num(vendorFinancial.total),
           advance: vendorFinancial.advance,
           balance: vendorFinancial.total - vendorFinancial.advance,
           poDeduction: vendorFinancial.poDeduction,
@@ -2177,8 +2389,6 @@ ${companyMsg}${subCompanyMsg}${vehicleMsg}${routeMsg}${lrMsg}
         subCompanyName: companyInfo.subCompanyName || '',
         subCompanyCode: companyInfo.subCompanyCode || ''
       };
-
-      console.log('📤 Saving POD with company info:', JSON.stringify(payload, null, 2));
 
       const res = await fetch('/api/pod-panel', {
         method: 'POST',
@@ -2259,46 +2469,7 @@ ${companyMsg}${subCompanyMsg}${vehicleMsg}${routeMsg}${lrMsg}
           <div className="grid grid-cols-12 gap-4">
             <div className="col-span-12 md:col-span-6">
               <label className="text-xs font-bold text-slate-600">Purchase No *</label>
-              <select
-                value={header.purchaseNo}
-                onChange={(e) => handlePurchaseSelect(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200"
-                style={{ width: '100%', minWidth: '400px' }}
-              >
-                <option value="">Select Purchase No</option>
-                {purchases.map(p => {
-                  const vehicleNo = p.vehicleNo || p.purchaseDetails?.vehicleNo || '';
-                  const fromLoc = p.fromLocation || p.orderRows?.[0]?.from || '';
-                  const toLoc = p.toLocation || p.orderRows?.[0]?.to || '';
-                  const lrCode = p.lrCode || p.consignmentNo || '';
-
-                  let displayText = `${p.purchaseNo} - ${p.vendorName || p.purchaseDetails?.vendorName || 'Unknown'}`;
-
-                  if (p.companyName) {
-                    displayText += ` | 🏢 ${p.companyName}`;
-                  }
-
-                  if (vehicleNo) {
-                    displayText += ` | 🚛 ${vehicleNo}`;
-                  }
-
-                  if (fromLoc && toLoc) {
-                    const shortFrom = fromLoc.length > 15 ? fromLoc.substring(0, 12) + '...' : fromLoc;
-                    const shortTo = toLoc.length > 15 ? toLoc.substring(0, 12) + '...' : toLoc;
-                    displayText += ` | 📍 ${shortFrom} → ${shortTo}`;
-                  }
-
-                  if (lrCode) {
-                    displayText += ` | 📋 ${lrCode}`;
-                  }
-
-                  return (
-                    <option key={p._id} value={p.purchaseNo} title={displayText}>
-                      {displayText}
-                    </option>
-                  );
-                })}
-              </select>
+              <PurchaseSelect purchases={purchases} value={header.purchaseNo} onSelect={handlePurchaseSelect} />
               <p className="text-xs text-slate-400 mt-1">
                 Select a purchase to auto-fill order and LR details
               </p>
@@ -2500,7 +2671,6 @@ ${companyMsg}${subCompanyMsg}${vehicleMsg}${routeMsg}${lrMsg}
                       <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.district || '-'}</td>
                       <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.from || '-'}</td>
                       <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.to || '-'}</td>
-                      <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.locationRate || '-'}</td>
                       <td className="border border-yellow-300 px-2 py-2 text-slate-700 text-right">{order.weight || 0}</td>
                     </tr>
                   );
@@ -2522,7 +2692,7 @@ ${companyMsg}${subCompanyMsg}${vehicleMsg}${routeMsg}${lrMsg}
         </div>
 
         {lrEntries.map((lr, lrIndex) => {
-          const availableLRs = getAvailableLRsForOrder(lr.orderNo);
+          const availableLRs = getAvailableLRsForOrder(lr.orderNo, lr._id);
           const order = purchaseOrders.find(o => o.orderNo === lr.orderNo);
           const lrProducts = products.filter(p => p.lrRefId === lr._id);
 
@@ -2622,53 +2792,17 @@ ${companyMsg}${subCompanyMsg}${vehicleMsg}${routeMsg}${lrMsg}
 
                   <div className="col-span-12 md:col-span-3">
                     <label className="text-xs font-bold text-slate-600">POD Upload</label>
-                    <div className="mt-1 flex gap-2 items-center">
-                      <input
-                        type="file"
-                        accept=".pdf,.jpg,.jpeg,.png"
-                        onChange={(e) => handlePodUpload(e, lr._id)}
-                        className={`w-full rounded-xl border px-3 py-2 text-sm outline-none focus:border-yellow-500 ${lr.podUpload === 'UPLOADED'
-                          ? 'bg-gray-100 cursor-not-allowed'
-                          : 'bg-white border-slate-200'
-                          }`}
-                        disabled={lr.podUpload === 'UPLOADED'}
-                      />
-                      {lr.podUpload === 'UPLOADED' && (
-                        <span className="text-green-600 text-sm flex items-center gap-1">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                          Uploaded
-                        </span>
-                      )}
-                      {lr.podUpload === 'UPLOADING' && (
-                        <span className="text-yellow-600 text-sm flex items-center gap-1">
-                          <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
-                          Uploading...
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-slate-400 mt-1">
-                      {lr.podUpload === 'UPLOADED'
-                        ? 'POD file uploaded - Received status locked'
-                        : 'Upload PDF or Image (Max 5MB)'}
-                    </p>
+                    <PodUploadBox lr={lr} onSelect={(e) => handlePodUpload(e, lr._id)} onRemove={() => removePodUpload(lr._id)} onView={() => openPodFile(lr)} />
                   </div>
 
                   <div className="col-span-12 md:col-span-2">
                     <label className="text-xs font-bold text-slate-600">POD Received</label>
                     <input
                       type="text"
-                      value={lr.podUpload === 'UPLOADED' ? 'Received' : lr.podReceived}
+                      value={lr.podReceived || 'Pending'}
                       readOnly
                       className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm cursor-not-allowed"
                     />
-                    {lr.podUpload === 'UPLOADED' && (
-                      <p className="text-xs text-green-600 mt-1">✓ Auto-set to Received after upload</p>
-                    )}
                   </div>
                 </div>
 
@@ -2716,11 +2850,12 @@ ${companyMsg}${subCompanyMsg}${vehicleMsg}${routeMsg}${lrMsg}
                             </td>
                             <td className="border border-yellow-300 px-2 py-2">
                               <input
-                                type="text"
+                                type="number"
+                                min="0"
                                 value={product.deduction || ''}
                                 onChange={(e) => updateProduct(product._id, 'deduction', e.target.value)}
                                 className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-yellow-500"
-                                placeholder="5 Bags"
+                                placeholder="No. of bags"
                               />
                             </td>
                             <td className="border border-yellow-300 px-2 py-2">
@@ -2783,49 +2918,46 @@ ${companyMsg}${subCompanyMsg}${vehicleMsg}${routeMsg}${lrMsg}
             </div>
             <div className="col-span-12 md:col-span-2">
               <label className="text-xs font-bold text-slate-600">Advance</label>
-              <input type="number" value={vendorFinancial.advance} onChange={(e) => setVendorFinancial({ ...vendorFinancial, advance: num(e.target.value) })} className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-yellow-500" />
+              <input type="text" value={`₹${num(vendorFinancial.advance).toLocaleString()}`} readOnly className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm cursor-not-allowed" />
+              <p className={`text-xs mt-1 ${advanceInfo.loaded && !advanceInfo.found ? 'text-red-500' : 'text-slate-400'}`}>
+                {!advanceInfo.loaded
+                  ? 'Loading advance payment...'
+                  : advanceInfo.found
+                    ? `From Advance Payment ${advanceInfo.payments.map(p => p.paymentNo).join(', ')}`
+                    : 'No Advance Payment created for this purchase'}
+              </p>
             </div>
             <div className="col-span-12 md:col-span-2">
               <label className="text-xs font-bold text-slate-600">Balance</label>
               <input type="text" value={`₹${(vendorFinancial.total - vendorFinancial.advance).toLocaleString()}`} readOnly className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm" />
             </div>
             <div className="col-span-12 md:col-span-2">
-              <label className="text-xs font-bold text-slate-600">PO - Deduction</label>
-              <input
-                type="text"
-                value={`₹${vendorFinancial.poDeduction.toLocaleString()}`}
-                readOnly
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm cursor-not-allowed"
-              />
-              <p className="text-xs text-slate-400 mt-1">Auto-filled from Purchase Panel</p>
-            </div>
-            <div className="col-span-12 md:col-span-2">
               <label className="text-xs font-bold text-slate-600">POD - Deduction</label>
               <input
                 type="number"
                 value={vendorFinancial.podDeduction}
-                onChange={(e) => setVendorFinancial({ ...vendorFinancial, podDeduction: num(e.target.value) })}
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-yellow-500"
-                placeholder="Enter POD deduction"
+                readOnly
+                className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm"
               />
+              <p className="text-xs text-slate-400 mt-1">Auto-calculated from product Values</p>
             </div>
 
             <div className="col-span-12 md:col-span-3">
               <label className="text-xs font-bold text-slate-600">Total POD Deduction</label>
               <input
                 type="text"
-                value={`₹${(vendorFinancial.poDeduction + vendorFinancial.podDeduction).toLocaleString()}`}
+                value={`₹${(vendorFinancial.podDeduction).toLocaleString()}`}
                 readOnly
                 className="mt-1 w-full rounded-xl border border-purple-200 bg-purple-50 px-3 py-2 text-sm font-bold text-purple-700"
               />
-              <p className="text-xs text-slate-400 mt-1">PO Deduction + POD Deduction</p>
+              <p className="text-xs text-slate-400 mt-1">POD Deduction only (PO deduction is settled in Advance Payment)</p>
             </div>
 
             <div className="col-span-12 md:col-span-4">
               <label className="text-xs font-bold text-slate-600">Final Balance</label>
               <input
                 type="text"
-                value={`₹${(vendorFinancial.total - vendorFinancial.advance - (vendorFinancial.poDeduction + vendorFinancial.podDeduction)).toLocaleString()}`}
+                value={`₹${(vendorFinancial.total - vendorFinancial.advance - (vendorFinancial.podDeduction)).toLocaleString()}`}
                 readOnly
                 className="mt-1 w-full rounded-xl border border-purple-200 bg-purple-50 px-3 py-2 text-sm font-bold text-purple-700"
               />
@@ -2963,7 +3095,7 @@ ${companyMsg}${subCompanyMsg}${vehicleMsg}${routeMsg}${lrMsg}
             <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-4 rounded-xl border border-purple-200">
               <div className="text-xs text-slate-500">Total POD Deduction</div>
               <div className="text-2xl font-bold text-purple-700">
-                ₹{(vendorFinancial.poDeduction + vendorFinancial.podDeduction).toLocaleString()}
+                ₹{(vendorFinancial.podDeduction).toLocaleString()}
               </div>
               <p className="text-xs text-slate-400 mt-1">PO + POD Deduction</p>
             </div>
@@ -2972,7 +3104,7 @@ ${companyMsg}${subCompanyMsg}${vehicleMsg}${routeMsg}${lrMsg}
             <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-4 rounded-xl border border-purple-200">
               <div className="text-xs text-slate-500">Balance</div>
               <div className="text-2xl font-bold text-purple-700">
-                ₹{(vendorFinancial.total - vendorFinancial.advance - (vendorFinancial.poDeduction + vendorFinancial.podDeduction)).toLocaleString()}
+                ₹{(vendorFinancial.total - vendorFinancial.advance - (vendorFinancial.podDeduction)).toLocaleString()}
               </div>
               <p className="text-xs text-slate-400 mt-1">Total - Advance - POD Deduction</p>
             </div>
