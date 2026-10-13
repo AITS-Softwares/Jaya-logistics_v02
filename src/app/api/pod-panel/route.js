@@ -9,7 +9,9 @@ import { getNextPODNumber } from "./PODCounter";
 import { activeOperatingCompanyId, companyScopeFilter } from "@/lib/companyScope";
 import Plant from "@/app/api/plants/schema";
 import Company from "@/models/Company";
+import { getPaidAdvanceForPurchase } from "@/lib/advanceSettlement";
 import AdvancePayment from "../Advance-Payment/AdvancePayment";
+import { assertValidAmounts } from "@/lib/paymentRules";
 
 export const runtime = "nodejs";
 
@@ -151,30 +153,11 @@ async function resolveCompany(user, existing = {}) {
 }
 
 // The advance is NEVER taken from the browser or from the Purchase Panel's planned figure.
-// It is the advance of the Advance Payment record(s) actually created for this purchase
-// (rejected ones are ignored). No payment => 0.
+// It is the sum of the Advance Payment record(s) of this purchase that are actually PAID
+// (status Paid/Completed, see lib/paymentRules.js). Draft/Pending/Approved are reported as
+// pendingAdvance but never counted; Rejected is ignored. No paid payment => 0.
 async function getAdvanceForPurchase(user, purchaseNo) {
-  const no = str(purchaseNo).trim();
-  if (!no) return { advance: 0, found: false, payments: [] };
-  const payments = await AdvancePayment.find(
-    companyScopeFilter(user, {
-      purchaseNo: no,
-      status: { $ne: "Rejected" },
-      "paymentDetails.paymentStatus": { $ne: "Rejected" },
-    })
-  )
-    .select("paymentNo status paymentDetails.paymentStatus vendorDetails.advance")
-    .lean();
-  const advance = payments.reduce((sum, p) => sum + num(p.vendorDetails?.advance), 0);
-  return {
-    advance,
-    found: payments.length > 0,
-    payments: payments.map((p) => ({
-      paymentNo: p.paymentNo,
-      status: p.paymentDetails?.paymentStatus || p.status || "",
-      advance: num(p.vendorDetails?.advance),
-    })),
-  };
+  return getPaidAdvanceForPurchase(user, purchaseNo);
 }
 
 /* ── permissions ── */
@@ -323,8 +306,13 @@ function buildStatusSection(input = {}, previous = {}, { canApprove }) {
     podStatus,
     dueDate: pick("dueDate"),
     paymentDate: pick("paymentDate"),
-    acknowledgementMail:
-      input.acknowledgementMail !== undefined ? !!input.acknowledgementMail : !!previous.acknowledgementMail,
+    // Server-controlled: only the /acknowledgement route can set these
+    acknowledgementMail: !!previous.acknowledgementMail,
+    ackMailSentAt: previous.ackMailSentAt || null,
+    ackMailSentBy: previous.ackMailSentBy || "",
+    ackMailTo: previous.ackMailTo || "",
+    ackMailCount: previous.ackMailCount || 0,
+    note: pick("note"),
     note: pick("note"),
   };
 }
@@ -529,6 +517,19 @@ export async function GET(req) {
 /* ========================================
    POST /api/pod-panel - Requires 'create' permission
 ======================================== */
+// A POD can only be created for a purchase whose Advance Payment has its queue generated.
+async function hasQueuedAdvance(user, purchaseNo) {
+  const found = await AdvancePayment.findOne(
+    companyScopeFilter(user, {
+      purchaseNo,
+      queueGenerated: true,
+      status: { $ne: "Rejected" },
+      "paymentDetails.paymentStatus": { $ne: "Rejected" },
+    })
+  ).select("_id").lean();
+  return !!found;
+}
+
 export async function POST(req) {
   try {
     await connectDb();
@@ -540,6 +541,10 @@ export async function POST(req) {
 
     const purchaseNo = str(body.purchaseNo || body.header?.purchaseNo).trim();
     if (!purchaseNo) return fail("Purchase No is required", 400);
+
+    if (!(await hasQueuedAdvance(user, purchaseNo))) {
+      return fail(`Purchase ${purchaseNo} has no Advance Payment with a generated queue. Generate the advance payment queue first.`, 400);
+    }
 
     if (!ALLOW_MULTIPLE_PODS_PER_PURCHASE) {
       const duplicate = await POD.findOne(
@@ -580,6 +585,8 @@ export async function POST(req) {
       existingPaths: new Set(),
     });
     const products = mapProducts(body.products);
+    const amountError = assertValidAmounts({ total: body.vendorFinancial?.total, podDeduction: body.vendorFinancial?.podDeduction, dueDays: body.vendorFinancial?.dueDays });
+    if (amountError) return fail(amountError, 400);
     const advanceInfo = await getAdvanceForPurchase(user, purchaseNo);
     const vendorFinancial = buildVendorFinancial(body.vendorFinancial, {}, { advance: advanceInfo.advance });
 
@@ -736,6 +743,9 @@ export async function PUT(req) {
     // Purchase reference (kept in sync between root and header)
     const newPurchaseNo = str(body.purchaseNo || body.header?.purchaseNo).trim();
     if (newPurchaseNo && newPurchaseNo !== pod.purchaseNo) {
+      if (!(await hasQueuedAdvance(user, newPurchaseNo))) {
+        return fail(`Purchase ${newPurchaseNo} has no Advance Payment with a generated queue.`, 400);
+      }
       if (!ALLOW_MULTIPLE_PODS_PER_PURCHASE) {
         const duplicate = await POD.findOne(
           companyScopeFilter(user, { purchaseNo: newPurchaseNo, _id: { $ne: pod._id }, podStatus: { $ne: "Rejected" } })
@@ -791,10 +801,23 @@ export async function PUT(req) {
       pod.lrEntries = mapLrEntries(body.lrEntries, { user, canApprove, existingLr, existingPaths });
     }
 
+    // Per-LR "POD Received" chosen on the Approve page (approvers only)
+    if (canApprove && Array.isArray(body.lrReceived)) {
+      const LR_RECEIVED_ALLOWED = ["Pending", "Received", "Rejected", "Partial", "Completed", "Clear & Ok", "Deductions"];
+      const chosen = new Map(body.lrReceived.map((x) => [String(x?._id), x?.podReceived]));
+      (pod.lrEntries || []).forEach((lr) => {
+        const value = chosen.get(String(lr._id));
+        if (value !== undefined && LR_RECEIVED_ALLOWED.includes(value)) lr.podReceived = value;
+      });
+    }
+
     if (body.products) pod.products = mapProducts(body.products);
 
     // Advance always follows the real Advance Payment (re-read on every save that touches money or purchase)
-    if (body.vendorFinancial || (newPurchaseNo && newPurchaseNo !== snapshot.purchaseNo)) {
+    {
+      const amountError = assertValidAmounts({ total: body.vendorFinancial?.total, podDeduction: body.vendorFinancial?.podDeduction, dueDays: body.vendorFinancial?.dueDays });
+      if (amountError) return fail(amountError, 400);
+      // refreshed on EVERY save, so a later advance change can never leave a stale figure
       const advanceInfo = await getAdvanceForPurchase(user, pod.purchaseNo);
       pod.vendorFinancial = buildVendorFinancial(body.vendorFinancial || {}, snapshot.vendorFinancial || {}, {
         advance: advanceInfo.advance,
@@ -828,6 +851,10 @@ export async function PUT(req) {
         pod.approvedBy = isValidObjectId(String(user.id)) ? user.id : null;
         pod.approvedByName = user.name || "";
         pod.approvedAt = new Date();
+
+        const resolvedStatus = resolveStatuses(sectionStatus, pod.podStatus);
+        if (resolvedStatus) pod.podStatus = resolvedStatus.pod;
+        if (!["Partially Paid", "Paid"].includes(pod.paymentStatus)) pod.paymentStatus = "Approved";
       }
     }
 

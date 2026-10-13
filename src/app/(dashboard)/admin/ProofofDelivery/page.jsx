@@ -1185,6 +1185,7 @@ export default function PODPanelList() {
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider border border-yellow-500">S.No</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider border border-yellow-500">Date</th>
+                  <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider border border-yellow-500">POD No</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider border border-yellow-500">Purchase No</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider border border-yellow-500">Order</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider border border-yellow-500">Party Name</th>
@@ -1216,6 +1217,7 @@ export default function PODPanelList() {
                     <tr key={item._id} className="hover:bg-yellow-50 transition">
                       <td className="border border-slate-200 px-4 py-3 text-slate-600">{index + 1}</td>
                       <td className="border border-slate-200 px-4 py-3 text-slate-600">{item.date}</td>
+                      <td className="border border-slate-200 px-4 py-3 font-bold text-slate-900">{item.podNo || '-'}</td>
                       <td className="border border-slate-200 px-4 py-3 font-medium text-slate-900">{item.purchaseNo}</td>
                       <td className="border border-slate-200 px-4 py-3 text-slate-600">{item.orderNo || '-'}</td>
                       <td className="border border-slate-200 px-4 py-3 text-slate-800">{item.partyName}</td>
@@ -1258,7 +1260,7 @@ export default function PODPanelList() {
                           )}
 
                           {/* ✅ Quick Approve Button - Green (with checkmark) - Based ONLY on permission */}
-                          {canApprove(MODULE_NAME) && (
+                          {canApprove(MODULE_NAME) && !['Received', 'Clear & Ok', 'Deductions', 'Completed'].includes(item.podReceived) && (
                             <button
                               onClick={() => handleQuickApprove(item._id, item.podNo)}
                               disabled={approveLoading === item._id}
@@ -1276,7 +1278,7 @@ export default function PODPanelList() {
                           )}
 
                           {/* ✅ Full Approve Button - Blue (with details) - Based ONLY on permission */}
-                          {canApprove(MODULE_NAME) && (
+                          {canApprove(MODULE_NAME) && !['Received', 'Clear & Ok', 'Deductions', 'Completed'].includes(item.podReceived) && (
                             <button
                               onClick={() => handleApprove(item._id)}
                               className="p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition"
@@ -1311,7 +1313,7 @@ export default function PODPanelList() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="17" className="border border-slate-200 px-4 py-12 text-center text-slate-500">
+                    <td colSpan="18" className="border border-slate-200 px-4 py-12 text-center text-slate-500">
                       <div className="w-full text-center" style={{ width: "100%" }}>
                         <svg className="mx-auto mb-4 h-16 w-16 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />

@@ -1,6 +1,6 @@
 // "use client";
 
-// import { useState, useEffect } from "react";
+// import { useState, useEffect, useRef } from "react";
 // import { useRouter, useParams } from "next/navigation";
 
 // function uid() {
@@ -1459,7 +1459,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 
 function uid() {
@@ -1494,6 +1494,77 @@ function getLatestPodDate(lrEntries) {
 }
 
 // Reusable Card Component
+function PurchaseSelect({ purchases, value, onSelect }) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const boxRef = useRef(null);
+
+  useEffect(() => {
+    const onDown = (e) => {
+      if (boxRef.current && !boxRef.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, []);
+
+  const describe = (p) => {
+    const orderNos = [...new Set((p.orderRows || []).map(r => r.orderNo).filter(Boolean))].join(", ");
+    const vendor = p.vendorName || p.purchaseDetails?.vendorName || "";
+    const vehicleNo = p.vehicleNo || p.purchaseDetails?.vehicleNo || "";
+    const from = p.fromLocation || p.orderRows?.[0]?.from || "";
+    const to = p.toLocation || p.orderRows?.[0]?.to || "";
+    const lrCode = p.lrCode || p.consignmentNo || "";
+    return { orderNos, vendor, vehicleNo, route: from && to ? `${from} → ${to}` : "", lrCode };
+  };
+
+  const q = query.trim().toLowerCase();
+  const items = purchases
+    .map(p => ({ p, d: describe(p) }))
+    .filter(({ p, d }) => !q || [p.purchaseNo, d.orderNos, d.vendor, d.vehicleNo, d.route, d.lrCode, p.companyName]
+      .join(" ").toLowerCase().includes(q));
+
+  const selected = purchases.find(p => p.purchaseNo === value);
+  const selectedText = selected
+    ? `${selected.purchaseNo}${describe(selected).orderNos ? ` | ${describe(selected).orderNos}` : ""}`
+    : "";
+
+  return (
+    <div ref={boxRef} className="relative mt-1">
+      <input
+        type="text"
+        value={open ? query : selectedText}
+        onFocus={() => { setOpen(true); setQuery(""); }}
+        onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
+        placeholder="Search purchase no, order no, vendor, vehicle..."
+        autoComplete="off"
+        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200"
+      />
+      {open && (
+        <div className="absolute z-30 mt-1 w-full max-h-72 overflow-auto rounded-xl border border-slate-200 bg-white shadow-lg">
+          {items.length === 0 ? (
+            <div className="px-3 py-3 text-sm text-slate-400">No purchase found</div>
+          ) : items.map(({ p, d }) => (
+            <button
+              type="button"
+              key={p._id || p.purchaseNo}
+              onClick={() => { onSelect(p.purchaseNo); setOpen(false); setQuery(""); }}
+              className={`block w-full text-left px-3 py-2 border-b border-slate-100 last:border-b-0 hover:bg-yellow-50 ${p.purchaseNo === value ? "bg-yellow-50" : ""}`}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm font-bold text-slate-900">{p.purchaseNo}</span>
+                {d.orderNos && <span className="text-xs font-semibold text-yellow-700">Order: {d.orderNos}</span>}
+              </div>
+              <div className="text-xs text-slate-500">
+                {[d.vendor, d.vehicleNo, d.route, d.lrCode].filter(Boolean).join(" • ")}
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function PodUploadBox({ lr, onSelect, onRemove, onView }) {
   const uploaded = lr.podUpload === 'UPLOADED';
   const uploading = lr.podUpload === 'UPLOADING';
@@ -1740,20 +1811,38 @@ export default function EditPOD() {
     fetchSuppliers();
   }, []);
 
-  const fetchPurchases = async () => {
+  const fetchPurchases = async (includePurchaseNo = "") => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/purchase-panel?format=table&for=pod', {
+      const qs = includePurchaseNo ? `&includePurchaseNo=${encodeURIComponent(includePurchaseNo)}` : "";
+      const res = await fetch(`/api/purchase-panel?format=table&for=pod${qs}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
       if (data.success) {
-        setPurchases(data.data || []);
+        const enhancedPurchases = (data.data || []).map(purchase => {
+          const lrCode = purchase.lrCode || purchase.consignmentNo || '';
+          const fromLocation = purchase.orderRows?.[0]?.from || '';
+          const toLocation = purchase.orderRows?.[0]?.to || '';
+          return { ...purchase, fromLocation, toLocation, lrCode };
+        });
+        setPurchases(enhancedPurchases);
       }
     } catch (error) {
       console.error('Error fetching purchases:', error);
     }
   };
+
+  // Only queue-generated purchases without a POD are listed, so the purchase of the POD being
+  // edited must be requested explicitly once it is known.
+  const loadedPurchaseNoRef = useRef("");
+  useEffect(() => {
+    if (header.purchaseNo && !loadedPurchaseNoRef.current) {
+      loadedPurchaseNoRef.current = header.purchaseNo;
+      fetchPurchases(header.purchaseNo);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [header.purchaseNo]);
 
   // Fetch Suppliers to get dueDays
   const fetchSuppliers = async () => {
@@ -2491,33 +2580,7 @@ export default function EditPOD() {
           <div className="grid grid-cols-12 gap-4">
             <div className="col-span-12 md:col-span-6">
               <label className="text-xs font-bold text-slate-600">Purchase No *</label>
-              <select
-                value={header.purchaseNo}
-                onChange={(e) => handlePurchaseSelect(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200"
-                style={{ width: '100%', minWidth: '400px' }}
-              >
-                <option value="">Select Purchase No</option>
-                {purchases.map(p => {
-                  const vehicleNo = p.vehicleNo || p.purchaseDetails?.vehicleNo || '';
-                  const fromLoc = p.fromLocation || p.orderRows?.[0]?.from || '';
-                  const toLoc = p.toLocation || p.orderRows?.[0]?.to || '';
-                  const lrCode = p.lrCode || p.consignmentNo || '';
-                  const companyName = p.companyName || p.header?.companyName || '';
-
-                  let displayText = `${p.purchaseNo} - ${p.vendorName || p.purchaseDetails?.vendorName || 'Unknown'}`;
-                  if (companyName) displayText += ` | 🏢 ${companyName}`;
-                  if (vehicleNo) displayText += ` | 🚛 ${vehicleNo}`;
-                  if (fromLoc && toLoc) displayText += ` | 📍 ${fromLoc} → ${toLoc}`;
-                  if (lrCode) displayText += ` | 📋 ${lrCode}`;
-
-                  return (
-                    <option key={p._id} value={p.purchaseNo} title={displayText}>
-                      {displayText}
-                    </option>
-                  );
-                })}
-              </select>
+              <PurchaseSelect purchases={purchases} value={header.purchaseNo} onSelect={handlePurchaseSelect} />
               <p className="text-xs text-slate-400 mt-1">
                 Select a purchase to auto-fill order and LR details
               </p>

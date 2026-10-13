@@ -3802,6 +3802,7 @@
 import { useMemo, useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import LRInvoiceUpload from "@/components/LRInvoiceUpload";
+import LRPreviewModal, { makePreviewNote } from "@/components/LRPreviewModal";
 
 
 /** =========================
@@ -3924,6 +3925,7 @@ export default function CreateConsignmentNote() {
   const [apiError, setApiError] = useState(null);
   const [fetchingOrder, setFetchingOrder] = useState(false);
   const [isReadOnly, setIsReadOnly] = useState(false);
+  const [previewNote, setPreviewNote] = useState(null);
 
   /** =========================
    * SUB-COMPANY STATE
@@ -5094,6 +5096,17 @@ export default function CreateConsignmentNote() {
 
           <div className="flex items-center gap-3">
             <button
+              type="button"
+              onClick={() => setPreviewNote(makePreviewNote({
+                header, consignor, consignee, invoice, ewaybill,
+                palletizationRows, uniformRows, looseCargoRows, nonUniformRows,
+                loadingInfoNo: new URLSearchParams(window.location.search).get("loadingInfoNo") || "",
+              }))}
+              className="rounded-xl border border-blue-300 bg-white px-5 py-2 text-sm font-bold text-blue-700 hover:bg-blue-50"
+            >
+              👁 Preview LR
+            </button>
+            <button
               onClick={handleSave}
               disabled={saving || fetchingOrder}
               className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${saving || fetchingOrder
@@ -6106,6 +6119,7 @@ export default function CreateConsignmentNote() {
           </Card>
         </div> */}
       </div>
+      <LRPreviewModal open={!!previewNote} note={previewNote} onClose={() => setPreviewNote(null)} />
     </div>
   );
 }

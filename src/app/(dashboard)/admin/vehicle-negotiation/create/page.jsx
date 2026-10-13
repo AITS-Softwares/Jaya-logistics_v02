@@ -57,7 +57,7 @@ function useSupplierSearch() {
     try {
       const token = localStorage.getItem('token');
       const url = '/api/suppliers';
-      
+
       const res = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -94,7 +94,7 @@ function useCustomerSearch() {
     try {
       const token = localStorage.getItem('token');
       const url = '/api/customers';
-      
+
       const res = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -131,17 +131,17 @@ function useVehicleSearch() {
     try {
       const token = localStorage.getItem('token');
       const url = query ? `/api/vehicles?search=${encodeURIComponent(query)}` : '/api/vehicles';
-      
+
       const res = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       if (!res.ok) {
         throw new Error(`HTTP error! status: ${res.status}`);
       }
-      
+
       const data = await res.json();
-      
+
       if (data.success && Array.isArray(data.data)) {
         setVehicles(data.data);
       } else {
@@ -165,13 +165,13 @@ function useVehicleSearch() {
       const res = await fetch(`/api/vehicles?id=${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       if (!res.ok) {
         throw new Error(`HTTP error! status: ${res.status}`);
       }
-      
+
       const data = await res.json();
-      
+
       if (data.success && data.data) {
         return data.data;
       } else {
@@ -207,14 +207,14 @@ function useOrderPanelSearch() {
     setError(null);
     try {
       const token = localStorage.getItem('token');
-      
+
       // First, get used order panel IDs from vehicle negotiations
       const vehicleRes = await fetch('/api/vehicle-negotiation?format=table', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       const vehicleData = await vehicleRes.json();
-      
+
       const usedOrderPanelIds = new Set();
       if (vehicleData.success && Array.isArray(vehicleData.data)) {
         vehicleData.data.forEach(item => {
@@ -224,25 +224,25 @@ function useOrderPanelSearch() {
           }
         });
       }
-      
+
       // Fetch order panels
       const res = await fetch('/api/order-panel', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       if (!res.ok) {
         throw new Error(`HTTP error! status: ${res.status}`);
       }
-      
+
       const data = await res.json();
-      
+
       if (data.success && Array.isArray(data.data)) {
         // Filter: only Approved status and not used in vehicle negotiation
-        const availablePanels = data.data.filter(panel => 
-          panel.panelStatus === 'Approved' && 
+        const availablePanels = data.data.filter(panel =>
+          panel.panelStatus === 'Approved' &&
           !usedOrderPanelIds.has(panel.orderPanelNo)
         );
-        
+
         setOrderPanels(availablePanels);
       } else {
         setOrderPanels([]);
@@ -265,13 +265,13 @@ function useOrderPanelSearch() {
       const res = await fetch(`/api/order-panel?id=${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       if (!res.ok) {
         throw new Error(`HTTP error! status: ${res.status}`);
       }
-      
+
       const data = await res.json();
-      
+
       if (data.success && data.data) {
         return data.data;
       } else {
@@ -342,7 +342,7 @@ function defaultVendorRow() {
   return {
     _id: uid(),
     vendorName: "",
-    vendorCode: "", 
+    vendorCode: "",
     marketRate: "",
     purchaseType: "",
   };
@@ -372,9 +372,8 @@ function Input({ label, value, onChange, col = "", type = "text", readOnly = fal
         value={value || ""}
         onChange={(e) => onChange?.(e.target.value)}
         readOnly={readOnly}
-        className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${
-          readOnly ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-        }`}
+        className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${readOnly ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+          }`}
       />
     </div>
   );
@@ -388,9 +387,8 @@ function Select({ label, value, onChange, options = [], col = "", readOnly = fal
         value={value || ""}
         onChange={(e) => onChange?.(e.target.value)}
         disabled={readOnly}
-        className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${
-          readOnly ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-        }`}
+        className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${readOnly ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+          }`}
       >
         <option value="">Select {label}</option>
         {options.map((o) => (
@@ -401,10 +399,10 @@ function Select({ label, value, onChange, options = [], col = "", readOnly = fal
   );
 }
 
-function TableSearchableDropdown({ 
-  items, 
-  selectedId, 
-  onSelect, 
+function TableSearchableDropdown({
+  items,
+  selectedId,
+  onSelect,
   placeholder = "Search...",
   required = false,
   displayField = 'name',
@@ -426,7 +424,7 @@ function TableSearchableDropdown({
 
   useEffect(() => {
     if (isUpdatingRef.current) return;
-    
+
     if (selectedId && typeof selectedId === 'string') {
       const item = items.find(i => i._id === selectedId || i.code === selectedId || i.supplierName === selectedId);
       if (item) {
@@ -455,7 +453,7 @@ function TableSearchableDropdown({
 
   const handleSearch = (query) => {
     setSearchQuery(query);
-    
+
     if (!query.trim()) {
       setFilteredItems(items);
     } else {
@@ -467,7 +465,7 @@ function TableSearchableDropdown({
       });
       setFilteredItems(filtered);
     }
-    
+
   };
 
   const clearSelection = () => {
@@ -493,7 +491,7 @@ function TableSearchableDropdown({
 
   const handleInputFocus = () => {
     if (disabled || selectedItem) return;
-    
+
     if (inputRef.current) {
       const rect = inputRef.current.getBoundingClientRect();
       setDropdownPosition({
@@ -502,7 +500,7 @@ function TableSearchableDropdown({
         width: rect.width
       });
     }
-    
+
     setFilteredItems(items);
     setHighlightedIndex(-1);
     setShowDropdown(true);
@@ -589,9 +587,9 @@ function TableSearchableDropdown({
         aria-activedescendant={highlightedIndex >= 0 ? `${listboxId}-${highlightedIndex}` : undefined}
       />
       {selectedItem && !disabled && <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={clearSelection} className="absolute right-1 top-1/2 -translate-y-1/2 rounded p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-800" aria-label="Clear selected value" title="Clear selection to choose another value">×</button>}
-      
+
       {showDropdown && !disabled && (
-        <div 
+        <div
           ref={dropdownRef}
           style={{
             position: 'fixed',
@@ -616,9 +614,8 @@ function TableSearchableDropdown({
                   e.preventDefault();
                   handleSelectItem(item);
                 }}
-                className={`p-2 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors ${
-                  selectedItem?._id === item._id || highlightedIndex === filteredItems.indexOf(item) ? 'bg-sky-50' : ''
-                }`}
+                className={`p-2 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors ${selectedItem?._id === item._id || highlightedIndex === filteredItems.indexOf(item) ? 'bg-sky-50' : ''
+                  }`}
               >
                 <div className="font-medium text-slate-800 text-sm">
                   {item[displayField]}
@@ -632,8 +629,8 @@ function TableSearchableDropdown({
             ))
           ) : (
             <div className="p-2 text-center text-sm text-slate-500">
-              {searchQuery.trim() ? 
-                `No items found for "${searchQuery}"` : 
+              {searchQuery.trim() ?
+                `No items found for "${searchQuery}"` :
                 "No items available"
               }
             </div>
@@ -644,10 +641,10 @@ function TableSearchableDropdown({
   );
 }
 
-function SearchableDropdown({ 
-  items, 
-  selectedId, 
-  onSelect, 
+function SearchableDropdown({
+  items,
+  selectedId,
+  onSelect,
   placeholder = "Search...",
   required = false,
   displayField = 'name',
@@ -686,27 +683,27 @@ function SearchableDropdown({
 
   const handleSearch = (query) => {
     setSearchQuery(query);
-    
+
     if (!query.trim()) {
       setFilteredItems(items);
     } else {
       const filtered = items.filter(item => {
         if (displayField === 'supplierName') {
           return (item.supplierName && item.supplierName.toLowerCase().includes(query.toLowerCase())) ||
-                 (item.supplierCode && item.supplierCode.toLowerCase().includes(query.toLowerCase()));
+            (item.supplierCode && item.supplierCode.toLowerCase().includes(query.toLowerCase()));
         }
         if (displayField === 'vehicleNumber') {
           return (item.vehicleNumber && item.vehicleNumber.toLowerCase().includes(query.toLowerCase())) ||
-                 (item.ownerName && item.ownerName.toLowerCase().includes(query.toLowerCase())) ||
-                 (item.rcNumber && item.rcNumber.toLowerCase().includes(query.toLowerCase()));
+            (item.ownerName && item.ownerName.toLowerCase().includes(query.toLowerCase())) ||
+            (item.rcNumber && item.rcNumber.toLowerCase().includes(query.toLowerCase()));
         }
         return (item[displayField] && item[displayField].toLowerCase().includes(query.toLowerCase())) ||
-               (item[codeField] && item[codeField].toLowerCase().includes(query.toLowerCase())) ||
-               (item.customerName && item.customerName.toLowerCase().includes(query.toLowerCase()));
+          (item[codeField] && item[codeField].toLowerCase().includes(query.toLowerCase())) ||
+          (item.customerName && item.customerName.toLowerCase().includes(query.toLowerCase()));
       });
       setFilteredItems(filtered);
     }
-    
+
   };
 
   const clearSelection = () => {
@@ -759,9 +756,8 @@ function SearchableDropdown({
         onFocus={handleInputFocus}
         onBlur={handleInputBlur}
         onKeyDown={handleDropdownKeyDown}
-        className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${
-          disabled ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-        }`}
+        className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${disabled ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+          }`}
         placeholder={placeholder}
         required={required}
         disabled={disabled}
@@ -772,7 +768,7 @@ function SearchableDropdown({
         aria-haspopup="listbox"
       />
       {selectedItem && !disabled && <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={clearSelection} className="absolute right-1 top-1/2 -translate-y-1/2 rounded p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-800" aria-label="Clear selected value" title="Clear selection to choose another value">×</button>}
-      
+
       {showDropdown && !disabled && (
         <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto" role="listbox">
           {filteredItems.length > 0 ? (
@@ -782,14 +778,13 @@ function SearchableDropdown({
                 data-keyboard-option
                 role="option"
                 onMouseDown={() => handleSelectItem(item)}
-                className={`p-3 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors ${
-                  selectedItem?._id === item._id || highlightedIndex === filteredItems.indexOf(item) ? 'bg-sky-50' : ''
-                }`}
+                className={`p-3 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors ${selectedItem?._id === item._id || highlightedIndex === filteredItems.indexOf(item) ? 'bg-sky-50' : ''
+                  }`}
               >
                 <div className="font-medium text-slate-800">
-                  {displayField === 'supplierName' ? item.supplierName : 
-                   displayField === 'vehicleNumber' ? item.vehicleNumber : 
-                   (item[displayField] || item.customerName)}
+                  {displayField === 'supplierName' ? item.supplierName :
+                    displayField === 'vehicleNumber' ? item.vehicleNumber :
+                      (item[displayField] || item.customerName)}
                 </div>
                 <div className="text-xs text-slate-500 mt-1">
                   {displayField === 'supplierName' ? (
@@ -808,8 +803,8 @@ function SearchableDropdown({
             ))
           ) : (
             <div className="p-3 text-center text-sm text-slate-500">
-              {searchQuery.trim() ? 
-                `No items found for "${searchQuery}"` : 
+              {searchQuery.trim() ?
+                `No items found for "${searchQuery}"` :
                 "No items available"
               }
             </div>
@@ -820,8 +815,8 @@ function SearchableDropdown({
   );
 }
 
-function SupplierSearchDropdown({ 
-  value, 
+function SupplierSearchDropdown({
+  value,
   onSelect,
   placeholder = "Search supplier...",
   readOnly = false,
@@ -858,11 +853,11 @@ function SupplierSearchDropdown({
   const handleSearch = (query) => {
     if (readOnly) return;
     setSearchQuery(query);
-    
+
     if (!showDropdown) {
       setShowDropdown(true);
     }
-    
+
     if (!query.trim()) {
       setFilteredSuppliers(suppliers);
     } else {
@@ -905,9 +900,8 @@ function SupplierSearchDropdown({
         onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
         onKeyDown={handleDropdownKeyDown}
         readOnly={readOnly || Boolean(value)}
-        className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${
-          readOnly ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-        }`}
+        className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${readOnly ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+          }`}
         placeholder={placeholder}
         autoComplete="off"
         role="combobox"
@@ -915,7 +909,7 @@ function SupplierSearchDropdown({
         aria-haspopup="listbox"
       />
       {value && !readOnly && <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => { onSelect(null); setSearchQuery(''); setShowDropdown(true); }} className="absolute right-1 top-1/2 -translate-y-1/2 rounded p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-800" aria-label="Clear selected supplier" title="Clear selection to choose another supplier">×</button>}
-      
+
       {showDropdown && !readOnly && (
         <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto" role="listbox">
           {loading ? (
@@ -951,7 +945,7 @@ function SupplierSearchDropdown({
   );
 }
 
-function MultiSelectOrderPanelDropdown({ 
+function MultiSelectOrderPanelDropdown({
   selectedPanels = [],
   onSelect,
   placeholder = "Search and select order panels..."
@@ -968,43 +962,43 @@ function MultiSelectOrderPanelDropdown({
   useEffect(() => {
     if (orderPanelSearch.orderPanels.length > 0) {
       setAllPanels(orderPanelSearch.orderPanels);
-      
+
       const selectedIds = selectedPanels.map(p => p._id);
-      
+
       const firstSelectedSubCompanyId = selectedPanels.length > 0 ? selectedPanels[0].subCompanyId : null;
-      
+
       let filtered = orderPanelSearch.orderPanels.filter(
         panel => !selectedIds.includes(panel._id)
       );
-      
+
       if (firstSelectedSubCompanyId) {
-        filtered = filtered.filter(panel => 
+        filtered = filtered.filter(panel =>
           panel.subCompanyId === firstSelectedSubCompanyId
         );
       }
-      
+
       setPanels(filtered);
     }
   }, [orderPanelSearch.orderPanels, selectedPanels]);
 
   const handleSearch = (query) => {
     setSearchQuery(query);
-    
+
     const selectedIds = selectedPanels.map(p => p._id);
     const firstSelectedSubCompanyId = selectedPanels.length > 0 ? selectedPanels[0].subCompanyId : null;
-    
+
     if (!query.trim()) {
       let filtered = allPanels.filter(panel => !selectedIds.includes(panel._id));
-      
+
       if (firstSelectedSubCompanyId) {
-        filtered = filtered.filter(panel => 
+        filtered = filtered.filter(panel =>
           panel.subCompanyId === firstSelectedSubCompanyId
         );
       }
-      
+
       setPanels(filtered);
     } else {
-      let filtered = allPanels.filter(panel => 
+      let filtered = allPanels.filter(panel =>
         !selectedIds.includes(panel._id) && (
           panel.orderPanelNo?.toLowerCase().includes(query.toLowerCase()) ||
           panel.partyName?.toLowerCase().includes(query.toLowerCase()) ||
@@ -1013,25 +1007,25 @@ function MultiSelectOrderPanelDropdown({
           panel.subCompanyCode?.toLowerCase().includes(query.toLowerCase())
         )
       );
-      
+
       if (firstSelectedSubCompanyId) {
-        filtered = filtered.filter(panel => 
+        filtered = filtered.filter(panel =>
           panel.subCompanyId === firstSelectedSubCompanyId
         );
       }
-      
+
       setPanels(filtered);
     }
   };
 
   const handleSelectPanel = async (panel) => {
     setSearchQuery("");
-    
+
     if (selectedPanels.some(p => p._id === panel._id)) {
       alert("This order panel is already selected");
       return;
     }
-    
+
     if (selectedPanels.length > 0) {
       const firstPanelSubCompanyId = selectedPanels[0].subCompanyId;
       if (panel.subCompanyId !== firstPanelSubCompanyId) {
@@ -1039,13 +1033,13 @@ function MultiSelectOrderPanelDropdown({
         return;
       }
     }
-    
+
     setLoading(true);
     try {
       const fullPanel = await orderPanelSearch.getOrderPanelById(panel._id);
       if (fullPanel) {
         onSelect(fullPanel);
-        
+
         setPanels(prev => prev.filter(p => p._id !== panel._id));
         setSearchQuery("");
         setShowDropdown(true);
@@ -1060,13 +1054,13 @@ function MultiSelectOrderPanelDropdown({
   const handleRemovePanel = (panelId) => {
     const removedPanel = selectedPanels.find(p => p._id === panelId);
     onSelect(null, panelId);
-    
+
     if (removedPanel) {
       const panelToAdd = allPanels.find(p => p._id === panelId);
       if (panelToAdd) {
         setPanels(prev => {
           if (!prev.some(p => p._id === panelId)) {
-            return [...prev, panelToAdd].sort((a, b) => 
+            return [...prev, panelToAdd].sort((a, b) =>
               (a.orderPanelNo || '').localeCompare(b.orderPanelNo || '')
             );
           }
@@ -1079,20 +1073,20 @@ function MultiSelectOrderPanelDropdown({
 
   const handleInputFocus = async () => {
     await orderPanelSearch.searchOrderPanels();
-    
+
     const selectedIds = selectedPanels.map(p => p._id);
     const firstSelectedSubCompanyId = selectedPanels.length > 0 ? selectedPanels[0].subCompanyId : null;
-    
+
     let filtered = orderPanelSearch.orderPanels.filter(
       panel => !selectedIds.includes(panel._id)
     );
-    
+
     if (firstSelectedSubCompanyId) {
-      filtered = filtered.filter(panel => 
+      filtered = filtered.filter(panel =>
         panel.subCompanyId === firstSelectedSubCompanyId
       );
     }
-    
+
     setPanels(filtered);
     setShowDropdown(true);
   };
@@ -1101,16 +1095,16 @@ function MultiSelectOrderPanelDropdown({
     setShowDropdown(true);
   };
 
-  const handleInputBlur = () => {};
+  const handleInputBlur = () => { };
 
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target) &&
-          inputRef.current && !inputRef.current.contains(event.target)) {
+        inputRef.current && !inputRef.current.contains(event.target)) {
         setShowDropdown(false);
       }
     };
-    
+
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
@@ -1157,7 +1151,7 @@ function MultiSelectOrderPanelDropdown({
           ))}
         </div>
       )}
-      
+
       <input
         ref={inputRef}
         type="text"
@@ -1174,9 +1168,9 @@ function MultiSelectOrderPanelDropdown({
         aria-expanded={showDropdown}
         aria-haspopup="listbox"
       />
-      
+
       {showDropdown && (
-        <div 
+        <div
           className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto"
           role="listbox"
         >
@@ -1201,8 +1195,8 @@ function MultiSelectOrderPanelDropdown({
                   {panel.orderPanelNo}
                 </div>
                 <div className="text-xs text-slate-500 mt-1">
-                  {panel.partyName || panel.customerName || 'N/A'} | 
-                  Branch: {panel.branchName || panel.branchCode || 'N/A'} | 
+                  {panel.partyName || panel.customerName || 'N/A'} |
+                  Branch: {panel.branchName || panel.branchCode || 'N/A'} |
                   Weight: {panel.totalWeight || 0}
                   {panel.subCompanyName && (
                     <span className="ml-2 text-blue-600">
@@ -1214,9 +1208,9 @@ function MultiSelectOrderPanelDropdown({
             ))
           ) : (
             <div className="p-3 text-center text-sm text-slate-500">
-              {searchQuery.trim() ? 
-                `No matching order panels found for "${searchQuery}"` : 
-                selectedPanels.length > 0 ? 
+              {searchQuery.trim() ?
+                `No matching order panels found for "${searchQuery}"` :
+                selectedPanels.length > 0 ?
                   "No more order panels available from this sub-company" :
                   "No order panels available"
               }
@@ -1283,9 +1277,8 @@ function BillingTypeTable({ header, setHeader, billingColumns, selectedOrderPane
                     value={header[col.key] || ""}
                     onChange={(e) => setHeader(prev => ({ ...prev, [col.key]: e.target.value }))}
                     readOnly={selectedOrderPanels.length > 0}
-                    className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${
-                      selectedOrderPanels.length > 0 ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-                    }`}
+                    className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${selectedOrderPanels.length > 0 ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+                      }`}
                     placeholder={`Enter ${col.label}`}
                   />
                 )}
@@ -1303,7 +1296,7 @@ function BillingTypeTable({ header, setHeader, billingColumns, selectedOrderPane
 ========================= */
 export default function VehicleNegotiationPanel() {
   const router = useRouter();
-  
+
   const [branches, setBranches] = useState([]);
   const [subCompanies, setSubCompanies] = useState([]);
   const [countries, setCountries] = useState([]);
@@ -1320,7 +1313,7 @@ export default function VehicleNegotiationPanel() {
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const vehicleSearch = useVehicleSearch();
   const supplierSearch = useSupplierSearch();
-  
+
   const [customerSearchQuery, setCustomerSearchQuery] = useState("");
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
@@ -1334,10 +1327,10 @@ export default function VehicleNegotiationPanel() {
   const handleOrderPanelSelect = useCallback(async (fullPanel, removePanelId = null) => {
     if (removePanelId) {
       const panelToRemove = selectedOrderPanels.find(p => p._id === removePanelId);
-      
+
       setSelectedOrderPanels(prev => prev.filter(p => p._id !== removePanelId));
       setOrders(prev => prev.filter(order => order.orderPanelId !== removePanelId));
-      
+
       if (panelToRemove) {
         setHeader(prev => ({
           ...prev,
@@ -1349,7 +1342,7 @@ export default function VehicleNegotiationPanel() {
           dropPoints: String(Math.max(0, (Number(prev.dropPoints) || 0) - (Number(panelToRemove.dropPoints) || 0)))
         }));
       }
-      
+
       if (selectedOrderPanels.length === 1) {
         setOrders([defaultOrderRow()]);
         setHeader(prev => ({
@@ -1377,31 +1370,31 @@ export default function VehicleNegotiationPanel() {
         console.log(`⚠️ Order ${fullPanel.orderPanelNo} already selected`);
         return;
       }
-      
+
       if (selectedOrderPanels.length > 0) {
         const currentSubCompanyId = selectedOrderPanels[0].subCompanyId;
         const newSubCompanyId = fullPanel.subCompanyId;
-        
+
         if (currentSubCompanyId && newSubCompanyId && currentSubCompanyId !== newSubCompanyId) {
           alert(`⚠️ You can only select orders from the same sub-company.\nCurrent: ${selectedOrderPanels[0].subCompanyName || 'None'}\nSelected: ${fullPanel.subCompanyName || 'None'}`);
           return;
         }
-        
+
         if (currentSubCompanyId && !newSubCompanyId) {
           alert(`⚠️ This order has no sub-company. Please select orders from the same sub-company: ${selectedOrderPanels[0].subCompanyName}`);
           return;
         }
-        
+
         if (!currentSubCompanyId && newSubCompanyId) {
           alert(`⚠️ This order has sub-company: ${fullPanel.subCompanyName}. Please select orders from the same sub-company or start fresh.`);
           return;
         }
       }
-      
+
       console.log(`➕ Adding order: ${fullPanel.orderPanelNo}`);
-      
+
       setSelectedOrderPanels(prev => [...prev, fullPanel]);
-      
+
       if (fullPanel.plantRows && fullPanel.plantRows.length > 0) {
         const newOrders = fullPanel.plantRows.map((row) => {
           let plantId = null;
@@ -1430,7 +1423,7 @@ export default function VehicleNegotiationPanel() {
             plantName = row.plantName || '';
             plantCode = row.plantCodeValue || '';
           }
-          
+
           return {
             _id: uid(),
             orderNo: fullPanel.orderPanelNo,
@@ -1470,7 +1463,7 @@ export default function VehicleNegotiationPanel() {
             subCompanyCode: fullPanel.subCompanyCode || ''
           };
         });
-        
+
         setOrders(prev => {
           const existingOrdersFromPanel = prev.filter(o => o.orderPanelId === fullPanel._id);
           if (existingOrdersFromPanel.length > 0) {
@@ -1483,7 +1476,7 @@ export default function VehicleNegotiationPanel() {
 
       setHeader(prev => {
         const newHeader = { ...prev };
-        
+
         if (selectedOrderPanels.length === 0) {
           newHeader.branch = fullPanel.branch || null;
           newHeader.branchName = fullPanel.branchName || "";
@@ -1514,7 +1507,7 @@ export default function VehicleNegotiationPanel() {
             newHeader.subCompanyCode = fullPanel.subCompanyCode || "";
           }
         }
-        
+
         return newHeader;
       });
 
@@ -1539,7 +1532,7 @@ export default function VehicleNegotiationPanel() {
     const urlParams = new URLSearchParams(window.location.search);
     const orderIds = urlParams.get('orderIds');
     const orderPanelNos = urlParams.get('orderPanelNos');
-    
+
     if (!orderIds) {
       console.log('ℹ️ No order IDs found in URL');
       return;
@@ -1547,32 +1540,32 @@ export default function VehicleNegotiationPanel() {
 
     const ids = orderIds.split(',').filter(id => id.trim() !== '');
     const panelNos = orderPanelNos ? orderPanelNos.split(',').filter(no => no.trim() !== '') : [];
-    
+
     console.log(` Loading ${ids.length} order(s) from URL params`);
-    
+
     hasLoadedOrders.current = true;
 
     const fetchAndSelectOrders = async () => {
       try {
         const token = localStorage.getItem('token');
         const loadedPanels = [];
-        
+
         for (let i = 0; i < ids.length; i++) {
           const id = ids[i];
           const panelNo = panelNos[i] || '';
-          
+
           if (!id) continue;
-          
+
           console.log(` Fetching order ${i + 1}/${ids.length}: ${id}`);
-          
+
           const res = await fetch(`/api/order-panel?id=${id}`, {
             headers: { Authorization: `Bearer ${token}` },
           });
           const data = await res.json();
-          
+
           if (data.success && data.data) {
             const panel = data.data;
-            
+
             const formattedPanel = {
               _id: panel._id,
               orderPanelNo: panel.orderPanelNo || panelNo,
@@ -1598,32 +1591,32 @@ export default function VehicleNegotiationPanel() {
               plantRows: panel.plantRows || [],
               packData: panel.packData || {}
             };
-            
+
             loadedPanels.push(formattedPanel);
             console.log(`✅ Loaded order: ${formattedPanel.orderPanelNo}`);
           } else {
             console.warn(`⚠️ Failed to load order ${id}:`, data.message);
           }
         }
-        
+
         console.log(` Adding ${loadedPanels.length} panel(s) to the form`);
         for (const panel of loadedPanels) {
           await new Promise(resolve => setTimeout(resolve, 100));
           await handleOrderPanelSelect(panel);
         }
-        
+
         console.log(`✅ Successfully loaded ${loadedPanels.length} order panel(s)`);
-        
+
         if (loadedPanels.length === 0) {
           alert('No valid orders could be loaded. Please try selecting orders again.');
         }
-        
+
       } catch (error) {
         console.error('Error loading selected orders:', error);
         alert('Error loading selected orders. Please try again.');
       }
     };
-    
+
     fetchAndSelectOrders();
   }, [handleOrderPanelSelect]);
 
@@ -1712,7 +1705,7 @@ export default function VehicleNegotiationPanel() {
     fetchSubCompanies();
     supplierSearch.searchSuppliers();
     fetchPurchaseTypes();
-    fetchPaymentTerms();   
+    fetchPaymentTerms();
   }, []);
 
   const fetchBranches = async () => {
@@ -1771,7 +1764,7 @@ export default function VehicleNegotiationPanel() {
 
   const handleCustomerSearch = (query) => {
     setCustomerSearchQuery(query);
-    
+
     if (query.trim() === "") {
       setFilteredCustomers(customerSearch.customers);
     } else {
@@ -1782,7 +1775,7 @@ export default function VehicleNegotiationPanel() {
       );
       setFilteredCustomers(filtered);
     }
-    
+
     if (selectedCustomer && query !== selectedCustomer.customerName) {
       setSelectedCustomer(null);
     }
@@ -1792,14 +1785,14 @@ export default function VehicleNegotiationPanel() {
     setSelectedCustomer(customer);
     setCustomerSearchQuery(customer.customerName);
     setShowCustomerDropdown(false);
-    
+
     setHeader(prev => ({
       ...prev,
       partyName: customer.customerName,
       customerId: customer._id
     }));
-    
-    setOrders(prevOrders => 
+
+    setOrders(prevOrders =>
       prevOrders.map(order => ({
         ...order,
         partyName: customer.customerName,
@@ -1832,29 +1825,29 @@ export default function VehicleNegotiationPanel() {
     }
   }, [customerSearch.customers]);
 
-const handleSupplierSelect = (supplier) => {
-  if (!supplier) {
-    setSelectedSupplier(null);
+  const handleSupplierSelect = (supplier) => {
+    if (!supplier) {
+      setSelectedSupplier(null);
 
+      setApproval(prev => ({
+        ...prev,
+        vendorName: "",
+        vendorId: null,
+        vendorCode: "",
+        vendorStatus: "Active"
+      }));
+      return;
+    }
+
+    setSelectedSupplier(supplier);
     setApproval(prev => ({
       ...prev,
-      vendorName: "",
-      vendorId: null,
-      vendorCode: "",
-      vendorStatus: "Active"
+      vendorName: supplier.supplierName,
+      vendorId: supplier._id,
+      vendorCode: supplier.supplierCode,
+      vendorStatus: supplier.supplierStatus || "Active"
     }));
-    return;
-  }
-  
-  setSelectedSupplier(supplier);
-  setApproval(prev => ({
-    ...prev,
-    vendorName: supplier.supplierName,
-    vendorId: supplier._id,
-    vendorCode: supplier.supplierCode,
-    vendorStatus: supplier.supplierStatus || "Active"
-  }));
-};
+  };
 
   const updateOrder = (id, key, value) => {
     setOrders((prev) => prev.map((r) => (r._id === id ? { ...r, [key]: value } : r)));
@@ -1864,17 +1857,17 @@ const handleSupplierSelect = (supplier) => {
     if (orders.length > 1) {
       const orderToRemove = orders.find(o => o._id === id);
       if (orderToRemove && orderToRemove.orderPanelId) {
-        const otherOrdersFromSamePanel = orders.filter(o => 
+        const otherOrdersFromSamePanel = orders.filter(o =>
           o.orderPanelId === orderToRemove.orderPanelId && o._id !== id
         );
-        
+
         if (otherOrdersFromSamePanel.length === 0) {
-          setSelectedOrderPanels(prev => 
+          setSelectedOrderPanels(prev =>
             prev.filter(p => p._id !== orderToRemove.orderPanelId)
           );
         }
       }
-      
+
       setOrders((prev) => prev.filter((x) => x._id !== id));
     } else {
       alert("At least one order row is required");
@@ -1972,7 +1965,7 @@ const handleSupplierSelect = (supplier) => {
 
     const formData = new FormData();
     formData.append('file', file);
-    
+
     try {
       const token = localStorage.getItem('token');
       const res = await fetch('/api/upload', {
@@ -1982,9 +1975,9 @@ const handleSupplierSelect = (supplier) => {
         },
         body: formData,
       });
-      
+
       const data = await res.json();
-      
+
       if (data.success) {
         let audioUrl;
         if (process.env.NODE_ENV === 'development' && data.filePath) {
@@ -1992,9 +1985,9 @@ const handleSupplierSelect = (supplier) => {
         } else {
           audioUrl = URL.createObjectURL(file);
         }
-        
+
         setVoiceUrl(audioUrl);
-        
+
         setVoiceFileInfo({
           filePath: data.filePath,
           fullPath: data.fullPath,
@@ -2003,7 +1996,7 @@ const handleSupplierSelect = (supplier) => {
           size: file.size,
           mimeType: file.type
         });
-        
+
         alert("✅ Voice note uploaded successfully!");
       } else {
         throw new Error(data.error || "Upload failed");
@@ -2023,12 +2016,12 @@ const handleSupplierSelect = (supplier) => {
       alert("Please select a branch");
       return;
     }
-    
+
     if (orders.length === 0) {
       alert("Please add at least one order");
       return;
     }
-    
+
     const hasInvalidOrders = orders.some(order => !order.plantCode);
     if (hasInvalidOrders) {
       const invalidCount = orders.filter(order => !order.plantCode).length;
@@ -2160,11 +2153,11 @@ const handleSupplierSelect = (supplier) => {
 
       setSaveSuccess(true);
       setVnnNumber(data.data?.vnnNo || "Generated");
-      
+
       alert(`✅ Vehicle negotiation saved successfully!\nVNN Number: ${data.data?.vnnNo}`);
-      
+
       resetForm();
-      
+
     } catch (error) {
       console.error('Error saving vehicle negotiation:', error);
       setSaveError(error.message || 'Failed to save vehicle negotiation');
@@ -2175,13 +2168,13 @@ const handleSupplierSelect = (supplier) => {
   };
 
   const resetForm = () => {
-    const hasData = 
-      header.branch || 
-      selectedCustomer || 
-      customerSearchQuery.trim() || 
-      header.collectionCharges || 
-      header.cancellationCharges || 
-      header.loadingCharges || 
+    const hasData =
+      header.branch ||
+      selectedCustomer ||
+      customerSearchQuery.trim() ||
+      header.collectionCharges ||
+      header.cancellationCharges ||
+      header.loadingCharges ||
       header.otherCharges ||
       orders.length > 1 ||
       vendors.some(vendor => vendor.vendorName || vendor.marketRate) ||
@@ -2194,7 +2187,7 @@ const handleSupplierSelect = (supplier) => {
       const confirmReset = window.confirm(
         "Are you sure you want to reset the form? All unsaved data will be lost."
       );
-      
+
       if (!confirmReset) {
         return;
       }
@@ -2219,9 +2212,9 @@ const handleSupplierSelect = (supplier) => {
       partyName: "",
       customerId: null
     });
-    
+
     setOrders([defaultOrderRow()]);
-    
+
     setNegotiation({
       maxRate: "",
       targetRate: "",
@@ -2229,9 +2222,9 @@ const handleSupplierSelect = (supplier) => {
       oldRatePercent: "",
       remarks1: "",
     });
-    
+
     setVendors([defaultVendorRow()]);
-    
+
     setApproval({
       vendorName: "",
       vendorId: null,
@@ -2249,7 +2242,7 @@ const handleSupplierSelect = (supplier) => {
       approvalStatus: "",
       remarks: "",
     });
-    
+
     setSelectedCustomer(null);
     setCustomerSearchQuery("");
     setFilteredCustomers([]);
@@ -2258,14 +2251,14 @@ const handleSupplierSelect = (supplier) => {
     setSelectedVehicle(null);
     setVoiceUrl("");
     setVoiceFileInfo(null);
-    
+
     setStateData({});
     setDistrictData({});
-    
+
     setSaveSuccess(false);
     setSaveError(null);
     setVnnNumber("");
-    
+
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -2352,7 +2345,7 @@ const handleSupplierSelect = (supplier) => {
             {rows.length > 0 ? (
               rows.map((row) => {
                 const isReadOnly = isReadOnlyMode || (row.orderPanelId && selectedOrderPanels.length > 0);
-                
+
                 return (
                   <tr key={row._id} className="hover:bg-yellow-50 even:bg-slate-50">
                     <td className="border border-yellow-300 px-2 py-2">
@@ -2459,11 +2452,10 @@ const handleSupplierSelect = (supplier) => {
                     </td>
                     <td className="border border-yellow-300 px-2 py-2 text-center">
                       {row.fromState && row.stateName ? (
-                        <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${
-                          row.fromState.trim().toUpperCase() === row.stateName.trim().toUpperCase()
+                        <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${row.fromState.trim().toUpperCase() === row.stateName.trim().toUpperCase()
                             ? 'bg-green-100 text-green-800 border border-green-300'
                             : 'bg-red-100 text-red-800 border border-red-300'
-                        }`}>
+                          }`}>
                           {row.fromState.trim().toUpperCase() === row.stateName.trim().toUpperCase() ? '✅ Local' : '❌ Not Local'}
                         </span>
                       ) : (
@@ -2507,7 +2499,7 @@ const handleSupplierSelect = (supplier) => {
                         type="number"
                         value={row.collectionCharges || ""}
                         onChange={(e) => onChange(row._id, 'collectionCharges', e.target.value)}
-                        readOnly={isReadOnly}
+                        readOnly={false}
                         className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
                         placeholder="Collection Charges"
                       />
@@ -2516,7 +2508,7 @@ const handleSupplierSelect = (supplier) => {
                       <input
                         value={row.cancellationCharges || ""}
                         onChange={(e) => onChange(row._id, 'cancellationCharges', e.target.value)}
-                        readOnly={isReadOnly}
+                        readOnly={false}
                         className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
                         placeholder="Cancellation Charges"
                       />
@@ -2525,7 +2517,7 @@ const handleSupplierSelect = (supplier) => {
                       <input
                         value={row.loadingCharges || ""}
                         onChange={(e) => onChange(row._id, 'loadingCharges', e.target.value)}
-                        readOnly={isReadOnly}
+                        readOnly={false}
                         className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
                         placeholder="Loading Charges"
                       />
@@ -2535,7 +2527,7 @@ const handleSupplierSelect = (supplier) => {
                         type="number"
                         value={row.otherCharges || ""}
                         onChange={(e) => onChange(row._id, 'otherCharges', e.target.value)}
-                        readOnly={isReadOnly}
+                        readOnly={false}
                         className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
                         placeholder="Other Charges"
                       />
@@ -2578,7 +2570,7 @@ const handleSupplierSelect = (supplier) => {
 
   const VendorsTable = ({ rows, onChange, onRemove, onAdd }) => {
     const [selectedSupplierNames, setSelectedSupplierNames] = useState({});
-    
+
     useEffect(() => {
       const names = {};
       rows.forEach(row => {
@@ -2700,314 +2692,314 @@ const handleSupplierSelect = (supplier) => {
 
   return (
     <TransactionFormKeyboardNavigation>
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white">
-      <div className="sticky top-0 z-40 border-b bg-white/80 backdrop-blur">
-        <div className="mx-auto max-w-full px-4 py-3 flex items-center justify-between">
-          <div>
-            <div className="text-lg font-extrabold text-slate-900">Vehicle Negotiation Panel</div>
-            {saveSuccess && (
-              <div className="text-sm text-green-600 font-medium">
-                ✅ Vehicle negotiation saved successfully! VNN Number: {vnnNumber}
-              </div>
-            )}
-            {saveError && (
-              <div className="text-sm text-red-600 font-medium">❌ {saveError}</div>
-            )}
-          </div>
-          <div className="flex items-center gap-3">
-          <button onClick={() => handleSaveAll(false)} disabled={saving} className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${saving ? 'bg-gray-400 cursor-not-allowed' : 'bg-yellow-600 hover:bg-yellow-700'}`}>
-            {saving ? (
-              <span className="flex items-center gap-2">
-                <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Saving...
-              </span>
-            ) : 'Save Draft'}
-          </button>
-          <button onClick={() => handleSaveAll(true)} disabled={saving} className="rounded-xl bg-indigo-600 px-5 py-2 text-sm font-bold text-white hover:bg-indigo-700 disabled:bg-slate-400">Submit & Lock Part 1</button>
-          </div>
-        </div>
-      </div>
-
-      <div className="mx-auto max-w-full p-4 space-y-4">
-        {/* PART 1: VEHICLE NEGOTIATION - PART 1 */}
-        <Card title="Vehicle Negotiation - Panel - Part -1">
-          <div className="grid grid-cols-12 gap-3 mb-4">
-            <div className="col-span-12 md:col-span-3">
-              <label className="text-xs font-bold text-slate-600">Vehicle Negotiation No</label>
-              <div className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">
-                {vnnNumber || "Auto-generated on save"}
-              </div>
-            </div>
-            
-            <div className="col-span-12 md:col-span-6">
-              <label className="text-xs font-bold text-slate-600">Select Order Panels (Multi-Select)</label>
-              <MultiSelectOrderPanelDropdown
-                selectedPanels={selectedOrderPanels}
-                onSelect={handleOrderPanelSelect}
-                placeholder="Search and select order panels..."
-              />
-              {selectedOrderPanels.length > 0 && (
-                <div className="text-xs text-slate-500 mt-1">
-                  {selectedOrderPanels.length} order panel(s) selected • {orders.length} total order row(s)
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white">
+        <div className="sticky top-0 z-40 border-b bg-white/80 backdrop-blur">
+          <div className="mx-auto max-w-full px-4 py-3 flex items-center justify-between">
+            <div>
+              <div className="text-lg font-extrabold text-slate-900">Vehicle Negotiation Panel</div>
+              {saveSuccess && (
+                <div className="text-sm text-green-600 font-medium">
+                  ✅ Vehicle negotiation saved successfully! VNN Number: {vnnNumber}
                 </div>
               )}
+              {saveError && (
+                <div className="text-sm text-red-600 font-medium">❌ {saveError}</div>
+              )}
             </div>
-            
-            <div className="col-span-12 md:col-span-3">
-              <label className="text-xs font-bold text-slate-600">Branch *</label>
-              <SearchableDropdown
-                items={branches}
-                selectedId={header.branch}
-                onSelect={(branch) => setHeader(p => ({ ...p, branch: branch?._id || null, branchName: branch?.name || '', branchCode: branch?.code || '' }))}
-                placeholder="Search branch... *"
-                required={true}
-                displayField="name"
-                codeField="code"
-                disabled={selectedOrderPanels.length > 0}
-              />
+            <div className="flex items-center gap-3">
+              <button onClick={() => handleSaveAll(false)} disabled={saving} className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${saving ? 'bg-gray-400 cursor-not-allowed' : 'bg-yellow-600 hover:bg-yellow-700'}`}>
+                {saving ? (
+                  <span className="flex items-center gap-2">
+                    <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Saving...
+                  </span>
+                ) : 'Save Draft'}
+              </button>
+              <button onClick={() => handleSaveAll(true)} disabled={saving} className="rounded-xl bg-indigo-600 px-5 py-2 text-sm font-bold text-white hover:bg-indigo-700 disabled:bg-slate-400">Submit & Lock Part 1</button>
             </div>
+          </div>
+        </div>
 
-            {/* Sub-Company Dropdown */}
-            <div className="col-span-12 md:col-span-3">
-              <label className="text-xs font-bold text-slate-600">Sub-Company</label>
-              {selectedOrderPanels.length > 0 && selectedOrderPanels[0].subCompanyName ? (
-                <div className="mt-1 w-full rounded-xl border border-slate-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700">
-                  {selectedOrderPanels[0].subCompanyName} ({selectedOrderPanels[0].subCompanyCode})
-                  <span className="ml-2 text-xs text-gray-500">(Locked - {selectedOrderPanels.length} order(s))</span>
+        <div className="mx-auto max-w-full p-4 space-y-4">
+          {/* PART 1: VEHICLE NEGOTIATION - PART 1 */}
+          <Card title="Vehicle Negotiation - Panel - Part -1">
+            <div className="grid grid-cols-12 gap-3 mb-4">
+              <div className="col-span-12 md:col-span-3">
+                <label className="text-xs font-bold text-slate-600">Vehicle Negotiation No</label>
+                <div className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">
+                  {vnnNumber || "Auto-generated on save"}
                 </div>
-              ) : (
-                <select
-                  value={header.subCompanyId || ''}
-                  onChange={(e) => {
-                    const subCompanyId = e.target.value;
-                    const selected = subCompanies.find(sc => sc._id === subCompanyId);
-                    setHeader(prev => ({
-                      ...prev,
-                      subCompanyId: subCompanyId,
-                      subCompanyName: selected?.name || '',
-                      subCompanyCode: selected?.code || ''
-                    }));
-                    setOrders(prevOrders => 
-                      prevOrders.map(order => ({
-                        ...order,
+              </div>
+
+              <div className="col-span-12 md:col-span-6">
+                <label className="text-xs font-bold text-slate-600">Select Order Panels (Multi-Select)</label>
+                <MultiSelectOrderPanelDropdown
+                  selectedPanels={selectedOrderPanels}
+                  onSelect={handleOrderPanelSelect}
+                  placeholder="Search and select order panels..."
+                />
+                {selectedOrderPanels.length > 0 && (
+                  <div className="text-xs text-slate-500 mt-1">
+                    {selectedOrderPanels.length} order panel(s) selected • {orders.length} total order row(s)
+                  </div>
+                )}
+              </div>
+
+              <div className="col-span-12 md:col-span-3">
+                <label className="text-xs font-bold text-slate-600">Branch *</label>
+                <SearchableDropdown
+                  items={branches}
+                  selectedId={header.branch}
+                  onSelect={(branch) => setHeader(p => ({ ...p, branch: branch?._id || null, branchName: branch?.name || '', branchCode: branch?.code || '' }))}
+                  placeholder="Search branch... *"
+                  required={true}
+                  displayField="name"
+                  codeField="code"
+                  disabled={selectedOrderPanels.length > 0}
+                />
+              </div>
+
+              {/* Sub-Company Dropdown */}
+              <div className="col-span-12 md:col-span-3">
+                <label className="text-xs font-bold text-slate-600">Sub-Company</label>
+                {selectedOrderPanels.length > 0 && selectedOrderPanels[0].subCompanyName ? (
+                  <div className="mt-1 w-full rounded-xl border border-slate-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700">
+                    {selectedOrderPanels[0].subCompanyName} ({selectedOrderPanels[0].subCompanyCode})
+                    <span className="ml-2 text-xs text-gray-500">(Locked - {selectedOrderPanels.length} order(s))</span>
+                  </div>
+                ) : (
+                  <select
+                    value={header.subCompanyId || ''}
+                    onChange={(e) => {
+                      const subCompanyId = e.target.value;
+                      const selected = subCompanies.find(sc => sc._id === subCompanyId);
+                      setHeader(prev => ({
+                        ...prev,
                         subCompanyId: subCompanyId,
                         subCompanyName: selected?.name || '',
                         subCompanyCode: selected?.code || ''
-                      }))
-                    );
-                  }}
-                  disabled={selectedOrderPanels.length > 0}
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 disabled:bg-slate-50 disabled:cursor-not-allowed"
-                >
-                  <option value="">Select Sub-Company</option>
-                  {subCompanies.map((sc) => (
-                    <option key={sc._id} value={sc._id}>
-                      {sc.name} ({sc.code})
-                    </option>
-                  ))}
-                </select>
-              )}
-              {selectedOrderPanels.length > 0 && selectedOrderPanels[0].subCompanyName && (
-                <div className="text-xs text-green-600 mt-1">
-                  ✅ All orders from same sub-company: {selectedOrderPanels[0].subCompanyName}
-                </div>
-              )}
-            </div>
+                      }));
+                      setOrders(prevOrders =>
+                        prevOrders.map(order => ({
+                          ...order,
+                          subCompanyId: subCompanyId,
+                          subCompanyName: selected?.name || '',
+                          subCompanyCode: selected?.code || ''
+                        }))
+                      );
+                    }}
+                    disabled={selectedOrderPanels.length > 0}
+                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 disabled:bg-slate-50 disabled:cursor-not-allowed"
+                  >
+                    <option value="">Select Sub-Company</option>
+                    {subCompanies.map((sc) => (
+                      <option key={sc._id} value={sc._id}>
+                        {sc.name} ({sc.code})
+                      </option>
+                    ))}
+                  </select>
+                )}
+                {selectedOrderPanels.length > 0 && selectedOrderPanels[0].subCompanyName && (
+                  <div className="text-xs text-green-600 mt-1">
+                    ✅ All orders from same sub-company: {selectedOrderPanels[0].subCompanyName}
+                  </div>
+                )}
+              </div>
 
-            <Select col="col-span-12 md:col-span-3" label="Delivery" value={header.delivery} onChange={(v) => setHeader((p) => ({ ...p, delivery: v }))} options={["Urgent", "Normal", "Express", "Scheduled"]} readOnly={selectedOrderPanels.length > 0} />
-            <Input type="date" col="col-span-12 md:col-span-3" label="Date" value={header.date} onChange={(v) => setHeader((p) => ({ ...p, date: v }))} readOnly={selectedOrderPanels.length > 0} />
-            
-            <div className="col-span-12 md:col-span-3 relative" data-keyboard-dropdown>
-              <label className="text-xs font-bold text-slate-600">Party Name</label>
-              <input
-                type="text"
-                value={selectedCustomer ? selectedCustomer.customerName : header.partyName}
-                onChange={(e) => handleCustomerSearch(e.target.value)}
-                onFocus={handleCustomerInputFocus}
-                onBlur={handleCustomerInputBlur}
-                readOnly={selectedOrderPanels.length > 0}
-                className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${selectedOrderPanels.length > 0 ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'}`}
-                placeholder="Search customer by name..."
-                autoComplete="off"
-                role="combobox"
-                aria-expanded={showCustomerDropdown}
-                aria-haspopup="listbox"
-              />
-              {showCustomerDropdown && selectedOrderPanels.length === 0 && (
-                <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto" role="listbox">
-                  {customerSearch.loading ? (
-                    <div className="p-3 text-center text-sm text-slate-500">
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-sky-500 mx-auto"></div>
-                      <p className="mt-1">Loading customers...</p>
-                    </div>
-                  ) : filteredCustomers.length > 0 ? (
-                    filteredCustomers.map((customer) => (
-                      <div key={customer._id} data-keyboard-option role="option" onMouseDown={() => handleSelectCustomer(customer)} className="p-3 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0">
-                        <div className="font-medium text-slate-800">{customer.customerName}</div>
-                        <div className="text-xs text-slate-500 mt-1">Code: {customer.customerCode}</div>
+              <Select col="col-span-12 md:col-span-3" label="Delivery" value={header.delivery} onChange={(v) => setHeader((p) => ({ ...p, delivery: v }))} options={["Urgent", "Normal", "Express", "Scheduled"]} readOnly={selectedOrderPanels.length > 0} />
+              <Input type="date" col="col-span-12 md:col-span-3" label="Date" value={header.date} onChange={(v) => setHeader((p) => ({ ...p, date: v }))} readOnly={selectedOrderPanels.length > 0} />
+
+              <div className="col-span-12 md:col-span-3 relative" data-keyboard-dropdown>
+                <label className="text-xs font-bold text-slate-600">Party Name</label>
+                <input
+                  type="text"
+                  value={selectedCustomer ? selectedCustomer.customerName : header.partyName}
+                  onChange={(e) => handleCustomerSearch(e.target.value)}
+                  onFocus={handleCustomerInputFocus}
+                  onBlur={handleCustomerInputBlur}
+                  readOnly={selectedOrderPanels.length > 0}
+                  className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${selectedOrderPanels.length > 0 ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'}`}
+                  placeholder="Search customer by name..."
+                  autoComplete="off"
+                  role="combobox"
+                  aria-expanded={showCustomerDropdown}
+                  aria-haspopup="listbox"
+                />
+                {showCustomerDropdown && selectedOrderPanels.length === 0 && (
+                  <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto" role="listbox">
+                    {customerSearch.loading ? (
+                      <div className="p-3 text-center text-sm text-slate-500">
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-sky-500 mx-auto"></div>
+                        <p className="mt-1">Loading customers...</p>
                       </div>
-                    ))
-                  ) : (
-                    <div className="p-3 text-center text-sm text-slate-500">No customers found</div>
-                  )}
+                    ) : filteredCustomers.length > 0 ? (
+                      filteredCustomers.map((customer) => (
+                        <div key={customer._id} data-keyboard-option role="option" onMouseDown={() => handleSelectCustomer(customer)} className="p-3 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0">
+                          <div className="font-medium text-slate-800">{customer.customerName}</div>
+                          <div className="text-xs text-slate-500 mt-1">Code: {customer.customerCode}</div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-3 text-center text-sm text-slate-500">No customers found</div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+            </div>
+
+            <div className="mb-4">
+              <div className="text-sm font-bold text-slate-700 mb-2">Billing Type / Charges</div>
+              <BillingTypeTable header={header} setHeader={setHeader} billingColumns={billingColumns} selectedOrderPanels={selectedOrderPanels} orders={orders} />
+            </div>
+
+            {/* Orders Table */}
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <div className="text-sm font-bold text-slate-700">
+                  Orders (Part-1) - {selectedOrderPanels.length > 0 ? "Multi - Order" : "Single Order"} - {orders.length} row{orders.length !== 1 ? 's' : ''}
                 </div>
-              )}
+              </div>
+              <OrdersTable rows={orders} onChange={updateOrder} onRemove={removeOrder} />
             </div>
 
-          </div>
-
-          <div className="mb-4">
-            <div className="text-sm font-bold text-slate-700 mb-2">Billing Type / Charges</div>
-            <BillingTypeTable header={header} setHeader={setHeader} billingColumns={billingColumns} selectedOrderPanels={selectedOrderPanels} orders={orders} />
-          </div>
-
-          {/* Orders Table */}
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <div className="text-sm font-bold text-slate-700">
-                Orders (Part-1) - {selectedOrderPanels.length > 0 ? "Multi - Order" : "Single Order"} - {orders.length} row{orders.length !== 1 ? 's' : ''}
+            <div className="flex justify-end mt-4">
+              <div className="flex items-center gap-3 border border-yellow-300 px-6 py-3 bg-yellow-50 rounded-xl">
+                <div className="text-sm font-extrabold text-slate-900">Total Weight:</div>
+                <div className="text-xl font-extrabold text-emerald-700">{totalWeight}</div>
               </div>
             </div>
-            <OrdersTable rows={orders} onChange={updateOrder} onRemove={removeOrder} />
-          </div>
 
-          <div className="flex justify-end mt-4">
-            <div className="flex items-center gap-3 border border-yellow-300 px-6 py-3 bg-yellow-50 rounded-xl">
-              <div className="text-sm font-extrabold text-slate-900">Total Weight:</div>
-              <div className="text-xl font-extrabold text-emerald-700">{totalWeight}</div>
+            {/* Suppliers / Market Rates Section */}
+            <div className="mt-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="text-sm font-bold text-slate-700">Suppliers / Market Rates</div>
+                <button
+                  onClick={addVendor}
+                  className="rounded-xl bg-yellow-600 px-4 py-2 text-sm font-bold text-white hover:bg-yellow-700"
+                >
+                  + Add Supplier
+                </button>
+              </div>
+              <VendorsTable rows={vendors} onChange={updateVendor} onRemove={removeVendor} onAdd={addVendor} />
             </div>
-          </div>
+          </Card>
 
-          {/* Suppliers / Market Rates Section */}
-          <div className="mt-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="text-sm font-bold text-slate-700">Suppliers / Market Rates</div>
-              <button
-                onClick={addVendor}
-                className="rounded-xl bg-yellow-600 px-4 py-2 text-sm font-bold text-white hover:bg-yellow-700"
-              >
-                + Add Supplier
-              </button>
+          {/* PART 3: VEHICLE APPROVAL - FULL SECTION READONLY */}
+          <Card title="Vehicle-Placement_Rate">
+            <div className="grid grid-cols-12 gap-3 mb-4">
+              <div className="col-span-12 md:col-span-4">
+                <label className="text-xs font-bold text-slate-600">Supplier Name</label>
+                <SupplierSearchDropdown
+                  value={selectedSupplier ? selectedSupplier.supplierName : approval.vendorName}
+                  onSelect={handleSupplierSelect}
+                  placeholder="Search supplier..."
+                  readOnly={true}
+                  suppliers={supplierSearch.suppliers}
+                  loading={supplierSearch.loading}
+                />
+              </div>
+              <Select col="col-span-12 md:col-span-4" label="Supplier (Status)" value={approval.vendorStatus} onChange={(v) => setApproval((p) => ({ ...p, vendorStatus: v }))} options={VENDOR_STATUS} readOnly={true} />
+              <Select
+                col="col-span-12 md:col-span-4"
+                label="Rate - Type"
+                value={approval.rateType}
+                onChange={(v) => {
+                  setApproval((p) => ({ ...p, rateType: v }));
+                  if (v === "Per MT") {
+                    setApproval((p) => ({ ...p, finalFix: "" }));
+                  } else if (v === "Fixed") {
+                    setApproval((p) => ({ ...p, finalPerMT: "" }));
+                  }
+                }}
+                options={RATE_TYPES}
+                readOnly={true}
+              />
             </div>
-            <VendorsTable rows={vendors} onChange={updateVendor} onRemove={removeVendor} onAdd={addVendor} />
-          </div>
-        </Card>
 
-        {/* PART 3: VEHICLE APPROVAL - FULL SECTION READONLY */}
-        <Card title="Vehicle-Placement_Rate">
-          <div className="grid grid-cols-12 gap-3 mb-4">
-            <div className="col-span-12 md:col-span-4">
-              <label className="text-xs font-bold text-slate-600">Supplier Name</label>
-<SupplierSearchDropdown 
-  value={selectedSupplier ? selectedSupplier.supplierName : approval.vendorName}
-  onSelect={handleSupplierSelect}
-  placeholder="Search supplier..."
-  readOnly={true}
-  suppliers={supplierSearch.suppliers}
-  loading={supplierSearch.loading}
-/>
-            </div>
-            <Select col="col-span-12 md:col-span-4" label="Supplier (Status)" value={approval.vendorStatus} onChange={(v) => setApproval((p) => ({ ...p, vendorStatus: v }))} options={VENDOR_STATUS} readOnly={true} />
-            <Select 
-              col="col-span-12 md:col-span-4" 
-              label="Rate - Type" 
-              value={approval.rateType} 
-              onChange={(v) => {
-                setApproval((p) => ({ ...p, rateType: v }));
-                if (v === "Per MT") {
-                  setApproval((p) => ({ ...p, finalFix: "" }));
-                } else if (v === "Fixed") {
-                  setApproval((p) => ({ ...p, finalPerMT: "" }));
-                }
-              }} 
-              options={RATE_TYPES} 
-              readOnly={true} 
-            />
-          </div>
-
-          <div className="grid grid-cols-12 gap-3 mb-4">
-            <Input 
-              col="col-span-12 md:col-span-4" 
-              label="Final - Per MT (A)" 
-              value={approval.finalPerMT} 
-              onChange={(v) => setApproval((p) => ({ ...p, finalPerMT: v }))} 
-              readOnly={true} 
-            />
-            <div className="col-span-12 md:col-span-4 mt-2">
-              <div className="flex flex-col">
-                <label className="text-xs font-bold text-slate-600">Weight (B)</label>
-                <div className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-extrabold text-slate-900">{totalWeight}</div>
+            <div className="grid grid-cols-12 gap-3 mb-4">
+              <Input
+                col="col-span-12 md:col-span-4"
+                label="Final - Per MT (A)"
+                value={approval.finalPerMT}
+                onChange={(v) => setApproval((p) => ({ ...p, finalPerMT: v }))}
+                readOnly={true}
+              />
+              <div className="col-span-12 md:col-span-4 mt-2">
+                <div className="flex flex-col">
+                  <label className="text-xs font-bold text-slate-600">Weight (B)</label>
+                  <div className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-extrabold text-slate-900">{totalWeight}</div>
+                </div>
+              </div>
+              <div className="col-span-12 md:col-span-4 mt-2">
+                <div className="flex flex-col">
+                  <label className="text-xs font-bold text-slate-600">Purchase Amount (A x B)</label>
+                  <div className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-extrabold text-emerald-700">{purchaseAmount}</div>
+                </div>
               </div>
             </div>
-            <div className="col-span-12 md:col-span-4 mt-2">
-              <div className="flex flex-col">
-                <label className="text-xs font-bold text-slate-600">Purchase Amount (A x B)</label>
-                <div className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-extrabold text-emerald-700">{purchaseAmount}</div>
+
+            <div className="grid grid-cols-12 gap-3 mb-4">
+              <Input
+                col="col-span-12 md:col-span-4"
+                label="Final - Fix"
+                value={approval.finalFix}
+                onChange={(v) => setApproval((p) => ({ ...p, finalFix: v }))}
+                readOnly={true}
+              />
+              <Select
+                col="col-span-12 md:col-span-4"
+                label="Approval Status"
+                value={approval.approvalStatus}
+                options={APPROVALS}
+                readOnly={true}
+              />
+            </div>
+
+            <div className="mb-4">
+              <label className="text-xs font-bold text-slate-600">Approval Remarks</label>
+              <textarea
+                value={approval.remarks}
+                className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm outline-none cursor-not-allowed"
+                rows={2}
+                placeholder="Approval remarks"
+                readOnly
+              />
+            </div>
+
+            <div className="grid grid-cols-12 gap-3 mb-4">
+              <div className="col-span-12 md:col-span-4">
+                <label className="text-xs font-bold text-slate-600">Vehicle Number</label>
+                <input type="text" value={approval.vehicleNo || ""} onChange={(e) => setApproval((p) => ({ ...p, vehicleNo: e.target.value }))} className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none cursor-not-allowed" placeholder="Enter vehicle number..." readOnly={true} />
               </div>
+              <Input col="col-span-12 md:col-span-4" label="Mobile" value={approval.mobile} onChange={(v) => setApproval((p) => ({ ...p, mobile: v }))} readOnly={true} />
             </div>
-          </div>
 
-          <div className="grid grid-cols-12 gap-3 mb-4">
-            <Input 
-              col="col-span-12 md:col-span-4" 
-              label="Final - Fix" 
-              value={approval.finalFix} 
-              onChange={(v) => setApproval((p) => ({ ...p, finalFix: v }))} 
-              readOnly={true} 
-            />
-            <Select
-              col="col-span-12 md:col-span-4"
-              label="Approval Status"
-              value={approval.approvalStatus}
-              options={APPROVALS}
-              readOnly={true}
-            />
-          </div>
-
-          <div className="mb-4">
-            <label className="text-xs font-bold text-slate-600">Approval Remarks</label>
-            <textarea
-              value={approval.remarks}
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm outline-none cursor-not-allowed"
-              rows={2}
-              placeholder="Approval remarks"
-              readOnly
-            />
-          </div>
-
-          <div className="grid grid-cols-12 gap-3 mb-4">
-            <div className="col-span-12 md:col-span-4">
-              <label className="text-xs font-bold text-slate-600">Vehicle Number</label>
-              <input type="text" value={approval.vehicleNo || ""} onChange={(e) => setApproval((p) => ({ ...p, vehicleNo: e.target.value }))} className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none cursor-not-allowed" placeholder="Enter vehicle number..." readOnly={true} />
+            <div className="grid grid-cols-12 gap-3 mb-4">
+              <Select
+                col="col-span-12 md:col-span-4"
+                label="Purchase - Type"
+                value={approval.purchaseType}
+                onChange={(v) => setApproval((p) => ({ ...p, purchaseType: v }))}
+                options={purchaseTypes.length > 0 ? purchaseTypes : PURCHASE_TYPES}
+                readOnly={true}
+              />
+              <Select
+                col="col-span-12 md:col-span-4"
+                label="Payment - Terms"
+                value={approval.paymentTerms}
+                onChange={(v) => setApproval((p) => ({ ...p, paymentTerms: v }))}
+                options={paymentTerms.length > 0 ? paymentTerms : PAYMENT_TERMS}
+                readOnly={true}
+              />
             </div>
-            <Input col="col-span-12 md:col-span-4" label="Mobile" value={approval.mobile} onChange={(v) => setApproval((p) => ({ ...p, mobile: v }))} readOnly={true} />
-          </div>
+          </Card>
 
-          <div className="grid grid-cols-12 gap-3 mb-4">
-            <Select 
-              col="col-span-12 md:col-span-4" 
-              label="Purchase - Type" 
-              value={approval.purchaseType} 
-              onChange={(v) => setApproval((p) => ({ ...p, purchaseType: v }))} 
-              options={purchaseTypes.length > 0 ? purchaseTypes : PURCHASE_TYPES}
-              readOnly={true} 
-            />
-            <Select 
-              col="col-span-12 md:col-span-4" 
-              label="Payment - Terms" 
-              value={approval.paymentTerms} 
-              onChange={(v) => setApproval((p) => ({ ...p, paymentTerms: v }))} 
-              options={paymentTerms.length > 0 ? paymentTerms : PAYMENT_TERMS}
-              readOnly={true} 
-            />
-          </div>
-        </Card>
-
+        </div>
       </div>
-    </div>
     </TransactionFormKeyboardNavigation>
   );
 }
