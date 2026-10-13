@@ -25,8 +25,8 @@ function isAuthorized(user) {
   ];
 
   // Handle both single role and roles array
-  const userRoles = Array.isArray(user.roles) 
-    ? user.roles 
+  const userRoles = Array.isArray(user.roles)
+    ? user.roles
     : (user.role ? [user.role] : []);
 
   const hasAllowedRole = userRoles.some(role =>
@@ -36,8 +36,8 @@ function isAuthorized(user) {
   if (hasAllowedRole) return true;
 
   // ✅ Check for specific permission (if your system uses permissions)
-  if (Array.isArray(user.permissions) && 
-      user.permissions.includes("vehicle_negotiation")) {
+  if (Array.isArray(user.permissions) &&
+    user.permissions.includes("vehicle_negotiation")) {
     return true;
   }
 
@@ -75,7 +75,7 @@ export async function GET(req) {
 
     // Build query
     let query = { companyId: user.companyId };
-    
+
     if (isActive !== null) {
       query.isActive = isActive === "true";
     }
@@ -107,25 +107,20 @@ export async function POST(req) {
   if (error) return NextResponse.json({ success: false, message: error }, { status });
 
   try {
-    const { 
-      vehicleNumber, 
-      rcNumber, 
-      pucNumber, 
-      fitnessNumber, 
-      ownerName, 
-      chasisNumber, 
-      insuranceNumber,
-      vehicleType,
-      vehicleWeight,
-      vehiclePhoto,
-      isActive 
+    const {
+      vehicleNumber, rcNumber, pucNumber, fitnessNumber, ownerName,
+      chasisNumber, insuranceNumber,
+      weightSlipNumber,                       // NEW
+      vehicleType, vehicleWeight, vehiclePhoto, isActive,
+      ownerId, rcDocuments, pucDocuments, fitnessDocuments,   // NEW
+      weightSlipDocuments, insuranceDocuments, chasisDocuments, vehiclePhotos, // NEW
     } = await req.json();
 
     // Validation
     if (!vehicleNumber || !rcNumber || !ownerName) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Vehicle number, RC number, and owner name are required" 
+      return NextResponse.json({
+        success: false,
+        message: "Vehicle number, RC number, and owner name are required"
       }, { status: 400 });
     }
 
@@ -134,11 +129,11 @@ export async function POST(req) {
       vehicleNumber: vehicleNumber.toUpperCase(),
       companyId: user.companyId,
     });
-    
+
     if (existingVehicle) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Vehicle number already exists for this company" 
+      return NextResponse.json({
+        success: false,
+        message: "Vehicle number already exists for this company"
       }, { status: 400 });
     }
 
@@ -151,6 +146,15 @@ export async function POST(req) {
       ownerName,
       chasisNumber: chasisNumber?.toUpperCase(),
       insuranceNumber: insuranceNumber?.toUpperCase(),
+      weightSlipNumber: weightSlipNumber?.toUpperCase() || '',   // NEW
+      ownerId: ownerId || null,                                  // NEW
+      rcDocuments: rcDocuments || [],                            // NEW
+      pucDocuments: pucDocuments || [],                          // NEW
+      fitnessDocuments: fitnessDocuments || [],                  // NEW
+      weightSlipDocuments: weightSlipDocuments || [],            // NEW
+      insuranceDocuments: insuranceDocuments || [],              // NEW
+      chasisDocuments: chasisDocuments || [],                    // NEW
+      vehiclePhotos: vehiclePhotos || [],                        // NEW
       vehicleType: vehicleType || '',
       vehicleWeight: vehicleWeight || 0,
       vehiclePhoto: vehiclePhoto || '',
@@ -223,14 +227,14 @@ export async function PUT(req) {
         companyId: user.companyId,
         _id: { $ne: vehicleId }
       });
-      
+
       if (existingVehicle) {
-        return NextResponse.json({ 
-          success: false, 
-          message: "Vehicle number already exists for this company" 
+        return NextResponse.json({
+          success: false,
+          message: "Vehicle number already exists for this company"
         }, { status: 400 });
       }
-      
+
       updates.vehicleNumber = updates.vehicleNumber.toUpperCase();
     }
 
@@ -240,6 +244,8 @@ export async function PUT(req) {
     if (updates.fitnessNumber) updates.fitnessNumber = updates.fitnessNumber.toUpperCase();
     if (updates.chasisNumber) updates.chasisNumber = updates.chasisNumber.toUpperCase();
     if (updates.insuranceNumber) updates.insuranceNumber = updates.insuranceNumber.toUpperCase();
+    if (typeof updates.weightSlipNumber === 'string')
+      updates.weightSlipNumber = updates.weightSlipNumber.trim().toUpperCase();
 
     // Handle vehicle weight as number
     if (updates.vehicleWeight) updates.vehicleWeight = parseFloat(updates.vehicleWeight) || 0;

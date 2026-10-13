@@ -2,8 +2,8 @@
 import nodemailer from "nodemailer";
 
 const host = process.env.SMTP_HOST || "smtp.gmail.com";
-const user = process.env.SMTP_USER;
-const pass = process.env.SMTP_PASS;
+const user = process.env.SMTP_USER || process.env.EMAIL_USER;
+const pass = process.env.SMTP_PASS || process.env.EMAIL_PASS;
 
 const port = Number(
   process.env.SMTP_PORT || (process.env.SMTP_SECURE === "false" ? 587 : 465)
@@ -27,14 +27,16 @@ function getTransporter() {
 }
 
 export async function sendMail({ to, subject, html }) {
-  const transporter = getTransporter();
+  // Test mode: send to the test address instead of the real supplier
+  if (process.env.MAIL_REDIRECT_TO) {
+    subject = `[TEST - meant for ${to}] ${subject}`;
+    html = `<div style="background:#fff3cd;padding:8px;font-family:Arial;font-size:12px">
+      TEST MODE: this email was meant for <b>${to}</b></div>${html}`;
+    to = process.env.MAIL_REDIRECT_TO;
+  }
 
-  return transporter.sendMail({
-    from: user,
-    to,
-    subject,
-    html,
-  });
+  const transporter = getTransporter();
+  return transporter.sendMail({ from: user, to, subject, html });
 }
 
 
@@ -50,8 +52,7 @@ export async function sendSalesQuotationEmail(toEmails, salesQuotation) {
         <td style="border:1px solid #ccc;padding:8px;">${item.quantity || 0}</td>
         <td style="border:1px solid #ccc;padding:8px;">₹${item.unitPrice.toFixed(2)}</td>
         <td style="border:1px solid #ccc;padding:8px;">₹${item.discount.toFixed(2)}</td>
-        <td style="border:1px solid #ccc;padding:8px;">${
-          item.warehouseCode ? `${item.warehouseCode} - ${item.warehouseName}` : "-"
+        <td style="border:1px solid #ccc;padding:8px;">${item.warehouseCode ? `${item.warehouseCode} - ${item.warehouseName}` : "-"
         }</td>
         <td style="border:1px solid #ccc;padding:8px;">₹${item.totalAmount.toFixed(2)}</td>
       </tr>
@@ -61,7 +62,7 @@ export async function sendSalesQuotationEmail(toEmails, salesQuotation) {
 
   const mailOptions = {
     from: `"ERP System" <${process.env.SMTP_USER}>`,
-     to: toEmails.join(","),
+    to: toEmails.join(","),
     subject: `Sales Quotation: ${salesQuotation.quotationNumber}`,
     html: `
       <div style="font-family:Arial,sans-serif;line-height:1.6;color:#333;">
@@ -125,9 +126,8 @@ export async function sendSalesOrderEmail(toEmails, salesOrder) {
           <td style="border:1px solid #ccc;padding:8px;">${item.quantity || 0}</td>
           <td style="border:1px solid #ccc;padding:8px;">₹${item.unitPrice?.toFixed(2) || "0.00"}</td>
           <td style="border:1px solid #ccc;padding:8px;">₹${item.discount?.toFixed(2) || "0.00"}</td>
-          <td style="border:1px solid #ccc;padding:8px;">${
-            item.warehouseCode ? `${item.warehouseCode} - ${item.warehouseName}` : "-"
-          }</td>
+          <td style="border:1px solid #ccc;padding:8px;">${item.warehouseCode ? `${item.warehouseCode} - ${item.warehouseName}` : "-"
+        }</td>
           <td style="border:1px solid #ccc;padding:8px;">₹${item.totalAmount?.toFixed(2) || "0.00"}</td>
         </tr>
       `
@@ -198,9 +198,8 @@ export async function sendDeliveryEmail(toEmails, delivery) {
           <td style="border:1px solid #ccc;padding:8px;">${item.itemDescription || "-"}</td>
           <td style="border:1px solid #ccc;padding:8px;">${item.quantity || 0}</td>
           <td style="border:1px solid #ccc;padding:8px;">${item.uom || "-"}</td>
-          <td style="border:1px solid #ccc;padding:8px;">${
-            item.warehouseCode ? `${item.warehouseCode} - ${item.warehouseName}` : "-"
-          }</td>
+          <td style="border:1px solid #ccc;padding:8px;">${item.warehouseCode ? `${item.warehouseCode} - ${item.warehouseName}` : "-"
+        }</td>
         </tr>
       `
     )
@@ -238,13 +237,12 @@ export async function sendDeliveryEmail(toEmails, delivery) {
           <tbody>${itemsHTML}</tbody>
         </table>
 
-        ${
-          delivery.carrier || delivery.trackingNumber
-            ? `<h3>Logistics</h3>
+        ${delivery.carrier || delivery.trackingNumber
+        ? `<h3>Logistics</h3>
                <p><strong>Carrier:</strong> ${delivery.carrier || "-"}</p>
                <p><strong>Tracking Number:</strong> ${delivery.trackingNumber || "-"}</p>`
-            : ""
-        }
+        : ""
+      }
 
         <p style="margin-top: 20px;">Thank you for your business!</p>
       </div>
@@ -332,8 +330,7 @@ export async function sendPurchaseQuotationEmail(toEmails, purchaseQuotation) {
         <td style="border:1px solid #ccc;padding:8px;">${item.quantity || 0}</td>
         <td style="border:1px solid #ccc;padding:8px;">₹${(item.unitPrice || 0).toFixed(2)}</td>
         <td style="border:1px solid #ccc;padding:8px;">₹${(item.discount || 0).toFixed(2)}</td>
-        <td style="border:1px solid #ccc;padding:8px;">${
-          item.warehouseCode ? `${item.warehouseCode} - ${item.warehouseName}` : "-"
+        <td style="border:1px solid #ccc;padding:8px;">${item.warehouseCode ? `${item.warehouseCode} - ${item.warehouseName}` : "-"
         }</td>
         <td style="border:1px solid #ccc;padding:8px;">₹${(item.totalAmount || 0).toFixed(2)}</td>
       </tr>
@@ -354,15 +351,12 @@ export async function sendPurchaseQuotationEmail(toEmails, purchaseQuotation) {
         <p><strong>Contact Person:</strong> ${purchaseQuotation.contactPerson || "-"}</p>
         <p><strong>Reference Number:</strong> ${purchaseQuotation.referenceNumber || "-"}</p>
         <p><strong>Status:</strong> ${purchaseQuotation.status}</p>
-        <p><strong>Posting Date:</strong> ${
-          purchaseQuotation.postingDate ? new Date(purchaseQuotation.postingDate).toLocaleDateString() : "-"
-        }</p>
-        <p><strong>Valid Until:</strong> ${
-          purchaseQuotation.validUntil ? new Date(purchaseQuotation.validUntil).toLocaleDateString() : "-"
-        }</p>
-        <p><strong>Document Date:</strong> ${
-          purchaseQuotation.documentDate ? new Date(purchaseQuotation.documentDate).toLocaleDateString() : "-"
-        }</p>
+        <p><strong>Posting Date:</strong> ${purchaseQuotation.postingDate ? new Date(purchaseQuotation.postingDate).toLocaleDateString() : "-"
+      }</p>
+        <p><strong>Valid Until:</strong> ${purchaseQuotation.validUntil ? new Date(purchaseQuotation.validUntil).toLocaleDateString() : "-"
+      }</p>
+        <p><strong>Document Date:</strong> ${purchaseQuotation.documentDate ? new Date(purchaseQuotation.documentDate).toLocaleDateString() : "-"
+      }</p>
         ${purchaseQuotation.remarks ? `<p><strong>Remarks:</strong> ${purchaseQuotation.remarks}</p>` : ""}
         
         <h3>Items</h3>
@@ -412,8 +406,7 @@ export async function sendPurchaseOrderEmail(toEmails, purchaseOrder) {
         <td style="border:1px solid #ccc;padding:8px;">${item.quantity || 0}</td>
         <td style="border:1px solid #ccc;padding:8px;">₹${(item.unitPrice || 0).toFixed(2)}</td>
         <td style="border:1px solid #ccc;padding:8px;">₹${(item.discount || 0).toFixed(2)}</td>
-        <td style="border:1px solid #ccc;padding:8px;">${
-          item.warehouseCode ? `${item.warehouseCode} - ${item.warehouseName}` : "-"
+        <td style="border:1px solid #ccc;padding:8px;">${item.warehouseCode ? `${item.warehouseCode} - ${item.warehouseName}` : "-"
         }</td>
         <td style="border:1px solid #ccc;padding:8px;">₹${(item.totalAmount || 0).toFixed(2)}</td>
       </tr>
@@ -465,7 +458,7 @@ export async function sendPurchaseOrderEmail(toEmails, purchaseOrder) {
         <h2 style="color:#2d3748;">Grand Total: ₹${(purchaseOrder.grandTotal || 0).toFixed(2)}</h2>
       </div>
     `,
-  };  
+  };
   // ✅ Send Email
   await transporter.sendMail(mailOptions);
   console.log(`Purchase Order email sent to: ${toEmails.join(", ")}`);
@@ -483,9 +476,8 @@ export async function sendGRNEmail(toEmails, grn) {
           <td style="border:1px solid #ccc;padding:8px;">${item.itemDescription || "-"}</td>
           <td style="border:1px solid #ccc;padding:8px;">${item.quantity || 0}</td>
           <td style="border:1px solid #ccc;padding:8px;">${item.uom || "-"}</td>
-          <td style="border:1px solid #ccc;padding:8px;">${
-            item.warehouseCode ? `${item.warehouseCode} - ${item.warehouseName}` : "-"
-          }</td>
+          <td style="border:1px solid #ccc;padding:8px;">${item.warehouseCode ? `${item.warehouseCode} - ${item.warehouseName}` : "-"
+        }</td>
         </tr>
       `
     )

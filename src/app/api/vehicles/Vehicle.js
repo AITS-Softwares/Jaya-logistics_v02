@@ -1,14 +1,14 @@
 import mongoose from 'mongoose';
 
 const vehicleSchema = new mongoose.Schema({
-  companyId: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: "Company", 
-    required: true 
+  companyId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Company",
+    required: true
   },
-  createdBy: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: "CompanyUser" 
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "CompanyUser"
   },
   vehicleNumber: {
     type: String,
@@ -38,11 +38,11 @@ const vehicleSchema = new mongoose.Schema({
     trim: true,
   },
   // Add to your vehicleSchema:
-ownerId: {
-  type: mongoose.Schema.Types.ObjectId,
-  ref: 'Owner',
-  default: null
-},
+  ownerId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Owner',
+    default: null
+  },
   chasisNumber: {
     type: String,
     uppercase: true,
@@ -52,6 +52,12 @@ ownerId: {
     type: String,
     uppercase: true,
     trim: true,
+  },
+  weightSlipNumber: {
+    type: String,
+    uppercase: true,
+    trim: true,
+    default: '',
   },
   vehicleType: {
     type: String,

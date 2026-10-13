@@ -1750,7 +1750,18 @@ export async function PUT(req) {
       pricingPanel.billingType = body.billing.billingType || pricingPanel.billingType;
       pricingPanel.loadingPoints = parseInt(body.billing.loadingPoints) || pricingPanel.loadingPoints;
       pricingPanel.dropPoints = parseInt(body.billing.dropPoints) || pricingPanel.dropPoints;
-      pricingPanel.collectionCharges = parseFloat(body.billing.collectionCharges) || pricingPanel.collectionCharges;
+      // pricingPanel.collectionCharges = parseFloat(body.billing.collectionCharges) || pricingPanel.collectionCharges;
+      if (body.billing.collectionCharges !== undefined && body.billing.collectionCharges !== '') {
+        const cc = Number(body.billing.collectionCharges);
+        if (!Number.isFinite(cc) || cc < 0) {
+          return NextResponse.json(
+            { success: false, message: "Collection charges must be a non-negative number" },
+            { status: 400 }
+          );
+        }
+        pricingPanel.collectionCharges = cc;
+      }
+
 
       if (body.billing.cancellationCharges !== undefined) {
         pricingPanel.cancellationCharges = typeof body.billing.cancellationCharges === 'number'

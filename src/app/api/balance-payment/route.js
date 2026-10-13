@@ -55,7 +55,7 @@
 // //     // Table format for list view
 // //     if (format === 'table') {
 // //       let query = { companyId: user.companyId };
-      
+
 // //       if (search) {
 // //         query.$or = [
 // //           { balancePaymentNo: { $regex: search, $options: 'i' } },
@@ -65,17 +65,17 @@
 // //           { podNo: { $regex: search, $options: 'i' } }
 // //         ];
 // //       }
-      
+
 // //       if (paymentStatus) query.paymentStatus = paymentStatus;
-      
+
 // //       if (fromDate || toDate) {
 // //         query.createdAt = {};
 // //         if (fromDate) query.createdAt.$gte = new Date(fromDate);
 // //         if (toDate) query.createdAt.$lte = new Date(toDate + 'T23:59:59');
 // //       }
-      
+
 // //       const payments = await BalancePayment.find(query).sort({ createdAt: -1 }).lean();
-      
+
 // //       const tableData = payments.map(p => ({
 // //         _id: p._id,
 // //         balancePaymentNo: p.balancePaymentNo,
@@ -99,7 +99,7 @@
 // //         paymentStatus: p.paymentStatus,
 // //         podNo: p.podNo
 // //       }));
-      
+
 // //       return NextResponse.json({ success: true, data: tableData, count: tableData.length });
 // //     }
 
@@ -108,7 +108,7 @@
 // //       .select('balancePaymentNo purchaseNo paymentStatus')
 // //       .sort({ createdAt: -1 })
 // //       .lean();
-    
+
 // //     return NextResponse.json({ success: true, data: payments });
 
 // //   } catch (error) {
@@ -125,12 +125,12 @@
 // //     if (error) return NextResponse.json({ success: false, message: error }, { status });
 
 // //     const body = await req.json();
-    
+
 // //     console.log("📝 Creating Balance Payment with body:", body);
-    
+
 // //     // Generate payment number
 // //     const balancePaymentNo = await getNextBalancePaymentNumber(user.companyId);
-    
+
 // //     // Calculate values
 // //     const amount = num(body.amount);
 // //     const advance = num(body.advance);
@@ -141,7 +141,7 @@
 // //     const podDeduction = num(body.podDeduction) || 0;
 // //     const balance = amount - advance + totalAddition - totalDeduction;
 // //     const finalBalance = amount - advance - poDeduction - podDeduction + poAddition;
-    
+
 // //     const payment = new BalancePayment({
 // //       balancePaymentNo,
 // //       branch: body.branch || '',
@@ -195,17 +195,17 @@
 // //       companyId: user.companyId,
 // //       createdBy: user.id
 // //     });
-    
+
 // //     await payment.save();
-    
+
 // //     console.log("✅ Balance Payment saved:", payment.balancePaymentNo);
-    
+
 // //     return NextResponse.json({ 
 // //       success: true, 
 // //       message: "Balance Payment created successfully",
 // //       data: { _id: payment._id, balancePaymentNo: payment.balancePaymentNo, purchaseNo: payment.purchaseNo }
 // //     }, { status: 201 });
-    
+
 // //   } catch (error) {
 // //     console.error("POST Error:", error);
 // //     if (error.code === 11000) {
@@ -224,21 +224,21 @@
 
 // //     const body = await req.json();
 // //     const { id } = body;
-    
+
 // //     if (!id || !mongoose.Types.ObjectId.isValid(id)) {
 // //       return NextResponse.json({ success: false, message: "Invalid ID" }, { status: 400 });
 // //     }
-    
+
 // //     const payment = await BalancePayment.findOne({ _id: id, companyId: user.companyId });
 // //     if (!payment) return NextResponse.json({ success: false, message: "Not found" }, { status: 404 });
-    
+
 // //     // Update all fields
 // //     payment.branch = body.branch || payment.branch;
 // //     payment.date = body.date || payment.date;
 // //     payment.vendorName = body.vendorName || payment.vendorName;
 // //     payment.podNo = body.podNo || payment.podNo;
 // //     payment.purchaseNo = body.purchaseNo || payment.purchaseNo;
-    
+
 // //     if (body.orderRows) {
 // //       payment.orderRows = body.orderRows.map(row => ({
 // //         _id: row._id,
@@ -258,7 +258,7 @@
 // //         totalAmount: row.totalAmount || '0'
 // //       }));
 // //     }
-    
+
 // //     payment.vendorStatus = body.vendorStatus || payment.vendorStatus;
 // //     payment.vendorCode = body.vendorCode || payment.vendorCode;
 // //     payment.vendorNamePayment = body.vendorNamePayment || payment.vendorNamePayment;
@@ -284,17 +284,17 @@
 // //     payment.transactionId = body.transactionId || payment.transactionId;
 // //     payment.bankVendorCode = body.bankVendorCode || payment.bankVendorCode;
 // //     payment.paymentStatus = body.paymentStatus || payment.paymentStatus;
-    
+
 // //     if (body.paymentDate) payment.paymentDate = new Date(body.paymentDate);
-    
+
 // //     await payment.save();
-    
+
 // //     return NextResponse.json({ 
 // //       success: true, 
 // //       message: "Balance Payment updated successfully",
 // //       data: { _id: payment._id, balancePaymentNo: payment.balancePaymentNo }
 // //     });
-    
+
 // //   } catch (error) {
 // //     console.error("PUT Error:", error);
 // //     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
@@ -310,18 +310,18 @@
 
 // //     const url = new URL(req.url);
 // //     const id = url.searchParams.get("id");
-    
+
 // //     if (!id || !mongoose.Types.ObjectId.isValid(id)) {
 // //       return NextResponse.json({ success: false, message: "Invalid ID" }, { status: 400 });
 // //     }
-    
+
 // //     const payment = await BalancePayment.findOne({ _id: id, companyId: user.companyId });
 // //     if (!payment) return NextResponse.json({ success: false, message: "Not found" }, { status: 404 });
-    
+
 // //     await BalancePayment.deleteOne({ _id: id, companyId: user.companyId });
-    
+
 // //     return NextResponse.json({ success: true, message: "Balance Payment deleted successfully" });
-    
+
 // //   } catch (error) {
 // //     console.error("DELETE Error:", error);
 // //     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
@@ -339,19 +339,19 @@
 
 // function isAuthorized(user) {
 //   if (!user) return false;
-  
+
 //   // Company admins have full access
 //   if (user.type === "company") return true;
-  
+
 //   // Admin role has full access
 //   if (user.roles && user.roles.includes("Admin")) return true;
-  
+
 //   // Check module-based permissions for "Balance-Payment"
 //   const modules = user.modules || {};
 //   const moduleData = modules["Balance-Payment"];
-  
+
 //   if (!moduleData || !moduleData.selected) return false;
-  
+
 //   return true;
 // }
 
@@ -359,12 +359,12 @@
 //   if (!user) return false;
 //   if (user.type === "company") return true;
 //   if (user.roles && user.roles.includes("Admin")) return true;
-  
+
 //   const modules = user.modules || {};
 //   const moduleData = modules["Balance-Payment"];
-  
+
 //   if (!moduleData || !moduleData.selected) return false;
-  
+
 //   const permissions = moduleData.permissions || {};
 //   return permissions[action] === true;
 // }
@@ -376,21 +376,21 @@
 //   try {
 //     const user = verifyJWT(token);
 //     if (!user) return { error: "Invalid or expired token. Please login again.", status: 401 };
-    
+
 //     if (!isAuthorized(user)) {
 //       return { 
 //         error: "Access denied. You don't have permission to access Balance Payment.", 
 //         status: 403 
 //       };
 //     }
-    
+
 //     if (requiredAction && !hasPermission(user, requiredAction)) {
 //       return { 
 //         error: `Permission denied: ${requiredAction} action not allowed for Balance Payment.`, 
 //         status: 403 
 //       };
 //     }
-    
+
 //     return { user, error: null, status: 200 };
 //   } catch (err) {
 //     console.error("JWT Verification Failed:", err?.message || err);
@@ -445,7 +445,7 @@
 //     // Table format for list view
 //     if (format === 'table') {
 //       let query = { companyId: user.companyId };
-      
+
 //       if (search) {
 //         query.$or = [
 //           { balancePaymentNo: { $regex: search, $options: 'i' } },
@@ -455,17 +455,17 @@
 //           { podNo: { $regex: search, $options: 'i' } }
 //         ];
 //       }
-      
+
 //       if (paymentStatus) query.paymentStatus = paymentStatus;
-      
+
 //       if (fromDate || toDate) {
 //         query.createdAt = {};
 //         if (fromDate) query.createdAt.$gte = new Date(fromDate);
 //         if (toDate) query.createdAt.$lte = new Date(toDate + 'T23:59:59');
 //       }
-      
+
 //       const payments = await BalancePayment.find(query).sort({ createdAt: -1 }).lean();
-      
+
 //       const tableData = payments.map(p => ({
 //         _id: p._id,
 //         balancePaymentNo: p.balancePaymentNo,
@@ -489,7 +489,7 @@
 //         paymentStatus: p.paymentStatus,
 //         podNo: p.podNo
 //       }));
-      
+
 //       return NextResponse.json({ success: true, data: tableData, count: tableData.length });
 //     }
 
@@ -498,7 +498,7 @@
 //       .select('balancePaymentNo purchaseNo paymentStatus')
 //       .sort({ createdAt: -1 })
 //       .lean();
-    
+
 //     return NextResponse.json({ success: true, data: payments });
 
 //   } catch (error) {
@@ -523,12 +523,12 @@
 //     }
 
 //     const body = await req.json();
-    
+
 //     console.log("📝 Creating Balance Payment with body:", body);
-    
+
 //     // Generate payment number
 //     const balancePaymentNo = await getNextBalancePaymentNumber(user.companyId);
-    
+
 //     // Calculate values
 //     const amount = num(body.amount);
 //     const advance = num(body.advance);
@@ -539,7 +539,7 @@
 //     const podDeduction = num(body.podDeduction) || 0;
 //     const balance = amount - advance + totalAddition - totalDeduction;
 //     const finalBalance = amount - advance - poDeduction - podDeduction + poAddition;
-    
+
 //     const payment = new BalancePayment({
 //       balancePaymentNo,
 //       branch: body.branch || '',
@@ -593,17 +593,17 @@
 //       companyId: user.companyId,
 //       createdBy: user.id
 //     });
-    
+
 //     await payment.save();
-    
+
 //     console.log("✅ Balance Payment saved:", payment.balancePaymentNo);
-    
+
 //     return NextResponse.json({ 
 //       success: true, 
 //       message: "Balance Payment created successfully",
 //       data: { _id: payment._id, balancePaymentNo: payment.balancePaymentNo, purchaseNo: payment.purchaseNo }
 //     }, { status: 201 });
-    
+
 //   } catch (error) {
 //     console.error("POST Error:", error);
 //     if (error.code === 11000) {
@@ -630,21 +630,21 @@
 
 //     const body = await req.json();
 //     const { id } = body;
-    
+
 //     if (!id || !isValidObjectId(id)) {
 //       return NextResponse.json({ success: false, message: "Invalid ID" }, { status: 400 });
 //     }
-    
+
 //     const payment = await BalancePayment.findOne({ _id: id, companyId: user.companyId });
 //     if (!payment) return NextResponse.json({ success: false, message: "Not found" }, { status: 404 });
-    
+
 //     // Update all fields
 //     payment.branch = body.branch || payment.branch;
 //     payment.date = body.date || payment.date;
 //     payment.vendorName = body.vendorName || payment.vendorName;
 //     payment.podNo = body.podNo || payment.podNo;
 //     payment.purchaseNo = body.purchaseNo || payment.purchaseNo;
-    
+
 //     if (body.orderRows) {
 //       payment.orderRows = body.orderRows.map(row => ({
 //         _id: row._id,
@@ -664,7 +664,7 @@
 //         totalAmount: row.totalAmount || '0'
 //       }));
 //     }
-    
+
 //     payment.vendorStatus = body.vendorStatus || payment.vendorStatus;
 //     payment.vendorCode = body.vendorCode || payment.vendorCode;
 //     payment.vendorNamePayment = body.vendorNamePayment || payment.vendorNamePayment;
@@ -690,17 +690,17 @@
 //     payment.transactionId = body.transactionId || payment.transactionId;
 //     payment.bankVendorCode = body.bankVendorCode || payment.bankVendorCode;
 //     payment.paymentStatus = body.paymentStatus || payment.paymentStatus;
-    
+
 //     if (body.paymentDate) payment.paymentDate = new Date(body.paymentDate);
-    
+
 //     await payment.save();
-    
+
 //     return NextResponse.json({ 
 //       success: true, 
 //       message: "Balance Payment updated successfully",
 //       data: { _id: payment._id, balancePaymentNo: payment.balancePaymentNo }
 //     });
-    
+
 //   } catch (error) {
 //     console.error("PUT Error:", error);
 //     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
@@ -724,18 +724,18 @@
 
 //     const url = new URL(req.url);
 //     const id = url.searchParams.get("id");
-    
+
 //     if (!id || !isValidObjectId(id)) {
 //       return NextResponse.json({ success: false, message: "Invalid ID" }, { status: 400 });
 //     }
-    
+
 //     const payment = await BalancePayment.findOne({ _id: id, companyId: user.companyId });
 //     if (!payment) return NextResponse.json({ success: false, message: "Not found" }, { status: 404 });
-    
+
 //     await BalancePayment.deleteOne({ _id: id, companyId: user.companyId });
-    
+
 //     return NextResponse.json({ success: true, message: "Balance Payment deleted successfully" });
-    
+
 //   } catch (error) {
 //     console.error("DELETE Error:", error);
 //     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
@@ -761,11 +761,11 @@
 //     const url = new URL(req.url);
 //     const id = url.searchParams.get("id");
 //     const action = url.searchParams.get("action");
-    
+
 //     if (!id || !isValidObjectId(id)) {
 //       return NextResponse.json({ success: false, message: "Invalid ID" }, { status: 400 });
 //     }
-    
+
 //     const payment = await BalancePayment.findOne({ _id: id, companyId: user.companyId });
 //     if (!payment) return NextResponse.json({ success: false, message: "Not found" }, { status: 404 });
 
@@ -775,14 +775,14 @@
 //     // Handle different actions with remarks support
 //     if (action === 'approve') {
 //       payment.paymentStatus = body.paymentStatus || 'Approved';
-      
+
 //       // Update remarks if provided
 //       if (body.remarks !== undefined) {
 //         payment.remarks = body.remarks;
 //       }
-      
+
 //       await payment.save();
-      
+
 //       return NextResponse.json({ 
 //         success: true, 
 //         message: "Balance Payment approved successfully",
@@ -797,13 +797,13 @@
 
 //     if (action === 'reject') {
 //       payment.paymentStatus = body.paymentStatus || 'Rejected';
-      
+
 //       if (body.remarks !== undefined) {
 //         payment.remarks = body.remarks;
 //       }
-      
+
 //       await payment.save();
-      
+
 //       return NextResponse.json({ 
 //         success: true, 
 //         message: "Balance Payment rejected successfully",
@@ -818,13 +818,13 @@
 
 //     if (action === 'complete') {
 //       payment.paymentStatus = body.paymentStatus || 'Completed';
-      
+
 //       if (body.remarks !== undefined) {
 //         payment.remarks = body.remarks;
 //       }
-      
+
 //       await payment.save();
-      
+
 //       return NextResponse.json({ 
 //         success: true, 
 //         message: "Balance Payment completed successfully",
@@ -839,13 +839,13 @@
 
 //     if (action === 'queue') {
 //       payment.paymentStatus = body.paymentStatus || 'Queued';
-      
+
 //       if (body.remarks !== undefined) {
 //         payment.remarks = body.remarks;
 //       }
-      
+
 //       await payment.save();
-      
+
 //       return NextResponse.json({ 
 //         success: true, 
 //         message: "Balance Payment queued successfully",
@@ -863,13 +863,13 @@
 //       if (body.paymentStatus) {
 //         payment.paymentStatus = body.paymentStatus;
 //       }
-      
+
 //       if (body.remarks !== undefined) {
 //         payment.remarks = body.remarks;
 //       }
-      
+
 //       await payment.save();
-      
+
 //       return NextResponse.json({ 
 //         success: true, 
 //         message: `Balance Payment status updated to ${payment.paymentStatus}`,
@@ -900,24 +900,26 @@ import { getNextBalancePaymentNumber } from "./BalancePaymentCounter";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import mongoose from 'mongoose';
 import { activeOperatingCompanyId, companyScopeFilter } from "@/lib/companyScope";
+import { deriveBalanceForPod } from "@/lib/advanceSettlement";
+import { assertValidAmounts, BALANCE_STATUSES, SETTLED_BALANCE_STATUSES } from "@/lib/paymentRules";
 
 // ── PERMISSION FUNCTIONS ──
 
 function isAuthorized(user) {
   if (!user) return false;
-  
+
   // Company admins have full access
   if (user.type === "company") return true;
-  
+
   // Admin role has full access
   if (user.roles && user.roles.includes("Admin")) return true;
-  
+
   // Check module-based permissions for "Balance-Payment"
   const modules = user.modules || {};
   const moduleData = modules["Balance-Payment"];
-  
+
   if (!moduleData || !moduleData.selected) return false;
-  
+
   return true;
 }
 
@@ -925,12 +927,12 @@ function hasPermission(user, action) {
   if (!user) return false;
   if (user.type === "company") return true;
   if (user.roles && user.roles.includes("Admin")) return true;
-  
+
   const modules = user.modules || {};
   const moduleData = modules["Balance-Payment"];
-  
+
   if (!moduleData || !moduleData.selected) return false;
-  
+
   const permissions = moduleData.permissions || {};
   return permissions[action] === true;
 }
@@ -943,21 +945,23 @@ async function validateUser(req, requiredAction = null) {
     const user = verifyJWT(token);
     if (!user) return { error: "Invalid or expired token. Please login again.", status: 401 };
     try { activeOperatingCompanyId(user); } catch (error) { return { error: error.message, status: 401 }; }
-    
+
     if (!isAuthorized(user)) {
-      return { 
-        error: "Access denied. You don't have permission to access Balance Payment.", 
-        status: 403 
+      return {
+        error: "Access denied. You don't have permission to access Balance Payment.",
+        status: 403
       };
     }
-    
-    if (requiredAction && !hasPermission(user, requiredAction)) {
-      return { 
-        error: `Permission denied: ${requiredAction} action not allowed for Balance Payment.`, 
-        status: 403 
+
+    // requiredAction can be one action or a list (any one of them is enough)
+    const actions = Array.isArray(requiredAction) ? requiredAction : requiredAction ? [requiredAction] : [];
+    if (actions.length && !actions.some((a) => hasPermission(user, a))) {
+      return {
+        error: `Permission denied: ${actions.join(" or ")} action not allowed for Balance Payment.`,
+        status: 403
       };
     }
-    
+
     return { user, error: null, status: 200 };
   } catch (err) {
     console.error("JWT Verification Failed:", err?.message || err);
@@ -982,10 +986,12 @@ function isValidObjectId(id) {
 export async function GET(req) {
   try {
     await connectDb();
-    const { user, error, status } = await validateUser(req, 'view');
+    // Opening one payment (edit / approve pages) needs view OR edit OR approve; the list still needs view
+    const idParam = new URL(req.url).searchParams.get("id");
+    const { user, error, status } = await validateUser(req, idParam ? ['view', 'edit', 'approve'] : 'view');
     if (error) {
-      return NextResponse.json({ 
-        success: false, 
+      return NextResponse.json({
+        success: false,
         message: error,
         code: status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN'
       }, { status });
@@ -1006,13 +1012,23 @@ export async function GET(req) {
       }
       const payment = await BalancePayment.findOne(companyScopeFilter(user, { _id: id })).lean();
       if (!payment) return NextResponse.json({ success: false, message: "Not found" }, { status: 404 });
-      return NextResponse.json({ success: true, data: payment });
+      // Breakdown snapshot saved with the payment; older records have none, so rebuild it from the POD while unsettled
+      let breakdown = payment.breakdown || null;
+      if (!breakdown && payment.podNo && !SETTLED_BALANCE_STATUSES.includes(payment.paymentStatus)) {
+        try {
+          const d = await deriveBalanceForPod(user, payment.podNo);
+          if (!d.error) breakdown = d.fields.breakdown || null;
+        } catch (e) {
+          console.error("Breakdown lookup failed:", e?.message || e);
+        }
+      }
+      return NextResponse.json({ success: true, data: { ...payment, breakdown } });
     }
 
     // Table format for list view
     if (format === 'table') {
       let query = {};
-      
+
       if (search) {
         query.$or = [
           { balancePaymentNo: { $regex: search, $options: 'i' } },
@@ -1024,17 +1040,17 @@ export async function GET(req) {
           { subCompanyName: { $regex: search, $options: 'i' } }
         ];
       }
-      
+
       if (paymentStatus) query.paymentStatus = paymentStatus;
-      
+
       if (fromDate || toDate) {
         query.createdAt = {};
         if (fromDate) query.createdAt.$gte = new Date(fromDate);
         if (toDate) query.createdAt.$lte = new Date(toDate + 'T23:59:59');
       }
-      
+
       const payments = await BalancePayment.find(companyScopeFilter(user, query)).sort({ createdAt: -1 }).lean();
-      
+
       const tableData = payments.map(p => ({
         _id: p._id,
         balancePaymentNo: p.balancePaymentNo,
@@ -1060,7 +1076,7 @@ export async function GET(req) {
         paymentStatus: p.paymentStatus,
         podNo: p.podNo
       }));
-      
+
       return NextResponse.json({ success: true, data: tableData, count: tableData.length });
     }
 
@@ -1069,7 +1085,7 @@ export async function GET(req) {
       .select('balancePaymentNo purchaseNo paymentStatus companyName subCompanyName')
       .sort({ createdAt: -1 })
       .lean();
-    
+
     return NextResponse.json({ success: true, data: payments });
 
   } catch (error) {
@@ -1086,41 +1102,52 @@ export async function POST(req) {
     await connectDb();
     const { user, error, status } = await validateUser(req, 'create');
     if (error) {
-      return NextResponse.json({ 
-        success: false, 
+      return NextResponse.json({
+        success: false,
         message: error,
         code: status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN'
       }, { status });
     }
 
     const body = await req.json();
-    
+
     console.log("📝 Creating Balance Payment with body:", body);
-    
+
     // Generate payment number
     const balancePaymentNo = await getNextBalancePaymentNumber(user.companyId, user.activeOperatingCompanyId, user.activeOperatingCompanyCode);
-    
+
     // ✅ Extract company information from body
     const companyName = body.companyName || body.header?.companyName || '';
     const companyCode = body.companyCode || body.header?.companyCode || '';
     const subCompanyId = user.activeOperatingCompanyId;
     const subCompanyName = user.activeOperatingCompanyName || '';
     const subCompanyCode = user.activeOperatingCompanyCode || '';
-    
-    // Calculate values
-    const amount = num(body.amount);
-    const advance = num(body.advance);
-    const totalAddition = num(body.totalAddition);
-    const totalDeduction = num(body.totalDeduction);
-    const poAddition = num(body.poAddition) || totalAddition;
-    const poDeduction = num(body.poDeduction) || totalDeduction;
-    const podDeduction = num(body.podDeduction) || 0;
+
+    // Money is derived on the server from the POD + PAID advances. Amounts typed in the browser are ignored.
+    // (Uses only this user's company scope, so no POD / Advance Payment permission is required.)
+    const derived = await deriveBalanceForPod(user, body.podNo);
+    if (derived.error) return NextResponse.json({ success: false, message: derived.error }, { status: derived.status });
+    const f = derived.fields;
+    if (f.finalBalance < 0) {
+      return NextResponse.json({ success: false, message: "POD final balance is negative - nothing is payable." }, { status: 400 });
+    }
+    const { amount, advance, totalAddition, totalDeduction, poAddition, poDeduction, podDeduction, finalBalance } = f;
     const balance = amount - advance + totalAddition - totalDeduction;
-    const finalBalance = amount - advance - poDeduction - podDeduction + poAddition;
-    
+
+    // Partial payments are allowed: finalAmount may be any value from 0 up to the POD final balance.
+    let finalAmount = finalBalance;
+    if (body.finalAmount !== undefined && body.finalAmount !== "") {
+      const amtErr = assertValidAmounts({ finalAmount: body.finalAmount });
+      if (amtErr) return NextResponse.json({ success: false, message: amtErr }, { status: 400 });
+      if (num(body.finalAmount) > finalBalance + 0.005) {
+        return NextResponse.json({ success: false, message: `Final amount cannot exceed the POD final balance (${finalBalance}).` }, { status: 400 });
+      }
+      finalAmount = num(body.finalAmount);
+    }
+
     const payment = new BalancePayment({
       balancePaymentNo,
-      
+
       // ✅ COMPANY INFORMATION
       companyId: user.companyId,
       companyName: companyName,
@@ -1128,14 +1155,14 @@ export async function POST(req) {
       subCompanyId: subCompanyId,
       subCompanyName: subCompanyName,
       subCompanyCode: subCompanyCode,
-      
+
       branch: body.branch || '',
       branchCode: body.branchCode || '',
       date: body.date || new Date().toISOString().split('T')[0],
       vendorName: body.vendorName || '',
-      podNo: body.podNo || '',
-      purchaseNo: body.purchaseNo || '',
-      
+      podNo: derived.pod.podNo,
+      purchaseNo: f.purchaseNo,
+
       orderRows: (body.orderRows || []).map(row => ({
         _id: row._id,
         orderNo: row.orderNo || '',
@@ -1159,7 +1186,7 @@ export async function POST(req) {
         localStatus: row.localStatus || 'unknown',
         localStatusLabel: row.localStatusLabel || 'Unknown'
       })),
-      
+
       vendorStatus: body.vendorStatus || 'Active',
       vendorCode: body.vendorCode || '',
       vendorNamePayment: body.vendorNamePayment || '',
@@ -1180,31 +1207,33 @@ export async function POST(req) {
       dueDate: body.dueDate || '',
       vendorNameDebit: body.vendorNameDebit || '',
       accountNoCredit: body.accountNoCredit || '',
-      finalAmount: num(body.finalAmount),
+      finalAmount: finalAmount,
       remarks: body.remarks || 'Balance Payment',
       transactionId: body.transactionId || '',
       bankVendorCode: body.bankVendorCode || '',
-      paymentStatus: body.paymentStatus || 'Pending',
+      breakdown: f.breakdown || null,
+      // A new payment starts as Pending unless the creator also holds the approve permission
+      paymentStatus: (hasPermission(user, 'approve') && BALANCE_STATUSES.includes(body.paymentStatus)) ? body.paymentStatus : 'Pending',
       paymentDate: body.paymentDate ? new Date(body.paymentDate) : new Date(),
       createdBy: user.id
     });
-    
+
     await payment.save();
-    
+
     console.log("✅ Balance Payment saved:", payment.balancePaymentNo);
-    
-    return NextResponse.json({ 
-      success: true, 
+
+    return NextResponse.json({
+      success: true,
       message: "Balance Payment created successfully",
-      data: { 
-        _id: payment._id, 
-        balancePaymentNo: payment.balancePaymentNo, 
+      data: {
+        _id: payment._id,
+        balancePaymentNo: payment.balancePaymentNo,
         purchaseNo: payment.purchaseNo,
         companyName: payment.companyName,
         subCompanyName: payment.subCompanyName
       }
     }, { status: 201 });
-    
+
   } catch (error) {
     console.error("POST Error:", error);
     if (error.code === 11000) {
@@ -1222,8 +1251,8 @@ export async function PUT(req) {
     await connectDb();
     const { user, error, status } = await validateUser(req, 'edit');
     if (error) {
-      return NextResponse.json({ 
-        success: false, 
+      return NextResponse.json({
+        success: false,
         message: error,
         code: status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN'
       }, { status });
@@ -1231,21 +1260,21 @@ export async function PUT(req) {
 
     const body = await req.json();
     const { id } = body;
-    
+
     if (!id || !isValidObjectId(id)) {
       return NextResponse.json({ success: false, message: "Invalid ID" }, { status: 400 });
     }
-    
+
     const payment = await BalancePayment.findOne(companyScopeFilter(user, { _id: id }));
     if (!payment) return NextResponse.json({ success: false, message: "Not found" }, { status: 404 });
-    
+
     // ✅ Update company information
     if (body.companyName !== undefined) payment.companyName = body.companyName;
     if (body.companyCode !== undefined) payment.companyCode = body.companyCode;
     payment.subCompanyId = user.activeOperatingCompanyId;
     payment.subCompanyName = user.activeOperatingCompanyName || '';
     payment.subCompanyCode = user.activeOperatingCompanyCode || '';
-    
+
     // Update all fields
     payment.branch = body.branch || payment.branch;
     payment.branchCode = body.branchCode || payment.branchCode;
@@ -1253,7 +1282,7 @@ export async function PUT(req) {
     payment.vendorName = body.vendorName || payment.vendorName;
     payment.podNo = body.podNo || payment.podNo;
     payment.purchaseNo = body.purchaseNo || payment.purchaseNo;
-    
+
     if (body.orderRows) {
       payment.orderRows = body.orderRows.map(row => ({
         _id: row._id,
@@ -1279,7 +1308,7 @@ export async function PUT(req) {
         localStatusLabel: row.localStatusLabel || 'Unknown'
       }));
     }
-    
+
     payment.vendorStatus = body.vendorStatus || payment.vendorStatus;
     payment.vendorCode = body.vendorCode || payment.vendorCode;
     payment.vendorNamePayment = body.vendorNamePayment || payment.vendorNamePayment;
@@ -1288,39 +1317,63 @@ export async function PUT(req) {
     payment.rateType = body.rateType || payment.rateType;
     payment.rate = num(body.rate);
     payment.weight = num(body.weight);
-    payment.amount = num(body.amount);
-    payment.advance = num(body.advance);
-    payment.totalAddition = num(body.totalAddition);
-    payment.totalDeduction = num(body.totalDeduction);
-    payment.poAddition = num(body.poAddition) || payment.poAddition;
-    payment.poDeduction = num(body.poDeduction) || payment.poDeduction;
-    payment.podDeduction = num(body.podDeduction) || payment.podDeduction;
-    payment.finalBalance = num(body.finalBalance) || payment.finalBalance;
+
+    // Money is re-derived from the POD + PAID advances on every edit of an unsettled payment.
+    // Paid/Completed payments keep their stored figures. Amounts from the browser are ignored.
+    let payableLimit = null;
+    const podRef = body.podNo || payment.podNo;
+    if (podRef && !SETTLED_BALANCE_STATUSES.includes(payment.paymentStatus)) {
+      const derived = await deriveBalanceForPod(user, podRef);
+      if (derived.error) return NextResponse.json({ success: false, message: derived.error }, { status: derived.status });
+      if (derived.fields.finalBalance < 0) {
+        return NextResponse.json({ success: false, message: "POD final balance is negative - nothing is payable." }, { status: 400 });
+      }
+      Object.assign(payment, derived.fields);
+      payment.balance = num(payment.amount) - num(payment.advance) + num(payment.totalAddition) - num(payment.totalDeduction);
+      payableLimit = derived.fields.finalBalance;
+    }
     payment.dueDate = body.dueDate || payment.dueDate;
-    payment.balance = payment.amount - payment.advance + payment.totalAddition - payment.totalDeduction;
     payment.vendorNameDebit = body.vendorNameDebit || payment.vendorNameDebit;
     payment.accountNoCredit = body.accountNoCredit || payment.accountNoCredit;
-    payment.finalAmount = num(body.finalAmount);
+    if (body.finalAmount !== undefined && body.finalAmount !== "") {
+      const amtErr = assertValidAmounts({ finalAmount: body.finalAmount });
+      if (amtErr) return NextResponse.json({ success: false, message: amtErr }, { status: 400 });
+      if (payableLimit !== null && num(body.finalAmount) > payableLimit + 0.005) {
+        return NextResponse.json({ success: false, message: `Final amount cannot exceed the POD final balance (${payableLimit}).` }, { status: 400 });
+      }
+      payment.finalAmount = num(body.finalAmount);
+    } else if (payableLimit !== null && payment.finalAmount > payableLimit) {
+      payment.finalAmount = payableLimit; // never leave a stale amount above what is now payable
+    }
     payment.remarks = body.remarks || payment.remarks;
     payment.transactionId = body.transactionId || payment.transactionId;
     payment.bankVendorCode = body.bankVendorCode || payment.bankVendorCode;
-    payment.paymentStatus = body.paymentStatus || payment.paymentStatus;
-    
+    // Status can only be changed by an approver - an edit-only user cannot approve/reject through this route
+    if (body.paymentStatus && body.paymentStatus !== payment.paymentStatus) {
+      if (!hasPermission(user, 'approve')) {
+        return NextResponse.json({ success: false, message: "Permission denied: changing the payment status requires the approve permission." }, { status: 403 });
+      }
+      if (!BALANCE_STATUSES.includes(body.paymentStatus)) {
+        return NextResponse.json({ success: false, message: `Invalid status. Allowed: ${BALANCE_STATUSES.join(", ")}` }, { status: 400 });
+      }
+      payment.paymentStatus = body.paymentStatus;
+    }
+
     if (body.paymentDate) payment.paymentDate = new Date(body.paymentDate);
-    
+
     await payment.save();
-    
-    return NextResponse.json({ 
-      success: true, 
+
+    return NextResponse.json({
+      success: true,
       message: "Balance Payment updated successfully",
-      data: { 
-        _id: payment._id, 
+      data: {
+        _id: payment._id,
         balancePaymentNo: payment.balancePaymentNo,
         companyName: payment.companyName,
         subCompanyName: payment.subCompanyName
       }
     });
-    
+
   } catch (error) {
     console.error("PUT Error:", error);
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
@@ -1335,8 +1388,8 @@ export async function DELETE(req) {
     await connectDb();
     const { user, error, status } = await validateUser(req, 'delete');
     if (error) {
-      return NextResponse.json({ 
-        success: false, 
+      return NextResponse.json({
+        success: false,
         message: error,
         code: status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN'
       }, { status });
@@ -1344,18 +1397,18 @@ export async function DELETE(req) {
 
     const url = new URL(req.url);
     const id = url.searchParams.get("id");
-    
+
     if (!id || !isValidObjectId(id)) {
       return NextResponse.json({ success: false, message: "Invalid ID" }, { status: 400 });
     }
-    
+
     const payment = await BalancePayment.findOne(companyScopeFilter(user, { _id: id }));
     if (!payment) return NextResponse.json({ success: false, message: "Not found" }, { status: 404 });
-    
+
     await BalancePayment.deleteOne(companyScopeFilter(user, { _id: id }));
-    
+
     return NextResponse.json({ success: true, message: "Balance Payment deleted successfully" });
-    
+
   } catch (error) {
     console.error("DELETE Error:", error);
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
@@ -1371,8 +1424,8 @@ export async function PATCH(req) {
     await connectDb();
     const { user, error, status } = await validateUser(req, 'approve');
     if (error) {
-      return NextResponse.json({ 
-        success: false, 
+      return NextResponse.json({
+        success: false,
         message: error,
         code: status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN'
       }, { status });
@@ -1381,33 +1434,37 @@ export async function PATCH(req) {
     const url = new URL(req.url);
     const id = url.searchParams.get("id");
     const action = url.searchParams.get("action");
-    
+
     if (!id || !isValidObjectId(id)) {
       return NextResponse.json({ success: false, message: "Invalid ID" }, { status: 400 });
     }
-    
+
     const payment = await BalancePayment.findOne(companyScopeFilter(user, { _id: id }));
     if (!payment) return NextResponse.json({ success: false, message: "Not found" }, { status: 404 });
 
     // Get body for additional data
     const body = await req.json();
 
+    if (body.paymentStatus && !BALANCE_STATUSES.includes(body.paymentStatus)) {
+      return NextResponse.json({ success: false, message: `Invalid status. Allowed: ${BALANCE_STATUSES.join(", ")}` }, { status: 400 });
+    }
+
     // Handle different actions with remarks support
     if (action === 'approve') {
       payment.paymentStatus = body.paymentStatus || 'Approved';
-      
+
       if (body.remarks !== undefined) {
         payment.remarks = body.remarks;
       }
-      
+
       await payment.save();
-      
-      return NextResponse.json({ 
-        success: true, 
+
+      return NextResponse.json({
+        success: true,
         message: "Balance Payment approved successfully",
-        data: { 
-          _id: payment._id, 
-          balancePaymentNo: payment.balancePaymentNo, 
+        data: {
+          _id: payment._id,
+          balancePaymentNo: payment.balancePaymentNo,
           paymentStatus: payment.paymentStatus,
           remarks: payment.remarks
         }
@@ -1416,19 +1473,19 @@ export async function PATCH(req) {
 
     if (action === 'reject') {
       payment.paymentStatus = body.paymentStatus || 'Rejected';
-      
+
       if (body.remarks !== undefined) {
         payment.remarks = body.remarks;
       }
-      
+
       await payment.save();
-      
-      return NextResponse.json({ 
-        success: true, 
+
+      return NextResponse.json({
+        success: true,
         message: "Balance Payment rejected successfully",
-        data: { 
-          _id: payment._id, 
-          balancePaymentNo: payment.balancePaymentNo, 
+        data: {
+          _id: payment._id,
+          balancePaymentNo: payment.balancePaymentNo,
           paymentStatus: payment.paymentStatus,
           remarks: payment.remarks
         }
@@ -1437,19 +1494,19 @@ export async function PATCH(req) {
 
     if (action === 'complete') {
       payment.paymentStatus = body.paymentStatus || 'Completed';
-      
+
       if (body.remarks !== undefined) {
         payment.remarks = body.remarks;
       }
-      
+
       await payment.save();
-      
-      return NextResponse.json({ 
-        success: true, 
+
+      return NextResponse.json({
+        success: true,
         message: "Balance Payment completed successfully",
-        data: { 
-          _id: payment._id, 
-          balancePaymentNo: payment.balancePaymentNo, 
+        data: {
+          _id: payment._id,
+          balancePaymentNo: payment.balancePaymentNo,
           paymentStatus: payment.paymentStatus,
           remarks: payment.remarks
         }
@@ -1458,19 +1515,19 @@ export async function PATCH(req) {
 
     if (action === 'queue') {
       payment.paymentStatus = body.paymentStatus || 'Queued';
-      
+
       if (body.remarks !== undefined) {
         payment.remarks = body.remarks;
       }
-      
+
       await payment.save();
-      
-      return NextResponse.json({ 
-        success: true, 
+
+      return NextResponse.json({
+        success: true,
         message: "Balance Payment queued successfully",
-        data: { 
-          _id: payment._id, 
-          balancePaymentNo: payment.balancePaymentNo, 
+        data: {
+          _id: payment._id,
+          balancePaymentNo: payment.balancePaymentNo,
           paymentStatus: payment.paymentStatus,
           remarks: payment.remarks
         }
@@ -1482,28 +1539,28 @@ export async function PATCH(req) {
       if (body.paymentStatus) {
         payment.paymentStatus = body.paymentStatus;
       }
-      
+
       if (body.remarks !== undefined) {
         payment.remarks = body.remarks;
       }
-      
+
       await payment.save();
-      
-      return NextResponse.json({ 
-        success: true, 
+
+      return NextResponse.json({
+        success: true,
         message: `Balance Payment status updated to ${payment.paymentStatus}`,
-        data: { 
-          _id: payment._id, 
-          balancePaymentNo: payment.balancePaymentNo, 
+        data: {
+          _id: payment._id,
+          balancePaymentNo: payment.balancePaymentNo,
           paymentStatus: payment.paymentStatus,
           remarks: payment.remarks
         }
       }, { status: 200 });
     }
 
-    return NextResponse.json({ 
-      success: false, 
-      message: "Invalid action. Allowed: approve, reject, complete, queue, update-status" 
+    return NextResponse.json({
+      success: false,
+      message: "Invalid action. Allowed: approve, reject, complete, queue, update-status"
     }, { status: 400 });
 
   } catch (error) {

@@ -11,6 +11,8 @@ import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import { getNextPurchaseNumber } from "./PurchaseCounter";
 import mongoose from 'mongoose';
 import { activeOperatingCompanyId, companyScopeFilter } from "@/lib/companyScope";
+import AdvancePayment from "../Advance-Payment/AdvancePayment";
+import POD from "../pod-panel/POD";
 
 // ── PERMISSION FUNCTIONS ──
 
@@ -410,10 +412,49 @@ export async function GET(req) {
         };
       }));
 
+      // Advance Payment page only: hide purchases that already have an advance payment
+      // Hide purchases that already have a payment/POD, for the page that is asking
+      let tableResult = purchasesWithLR;
+      const purchaseNos = purchasesWithLR.map((p) => p.purchaseNo);
+
+      if (forKey === "advance-payment") {
+        const existing = await AdvancePayment.find(
+          companyScopeFilter(user, { purchaseNo: { $in: purchaseNos } })
+        ).select("purchaseNo").lean();
+        const used = new Set(existing.map((a) => a.purchaseNo));
+        tableResult = purchasesWithLR.filter((p) => !used.has(p.purchaseNo));
+      } else if (forKey === "pod") {
+        // Only purchases whose Advance Payment exists AND has its payment queue generated can get a POD.
+        // (A Rejected advance payment does not count.)
+        const queued = await AdvancePayment.find(
+          companyScopeFilter(user, {
+            purchaseNo: { $in: purchaseNos },
+            queueGenerated: true,
+            status: { $ne: "Rejected" },
+            "paymentDetails.paymentStatus": { $ne: "Rejected" },
+          })
+        ).select("purchaseNo").lean();
+        const queuedSet = new Set(queued.map((a) => a.purchaseNo));
+        // The POD edit page passes the purchase of the POD being edited so it stays selectable.
+        const keepNo = (url.searchParams.get("includePurchaseNo") || "").trim();
+
+        // Same rule as POST /api/pod-panel: a Rejected POD does not block a new one
+        const existing = await POD.find(
+          companyScopeFilter(user, {
+            purchaseNo: { $in: purchaseNos },
+            podStatus: { $ne: "Rejected" },
+          })
+        ).select("purchaseNo").lean();
+        const used = new Set(existing.map((p) => p.purchaseNo));
+        tableResult = purchasesWithLR.filter((p) =>
+          p.purchaseNo === keepNo || (queuedSet.has(p.purchaseNo) && !used.has(p.purchaseNo))
+        );
+      }
+
       return NextResponse.json({
         success: true,
-        data: purchasesWithLR,
-        count: purchasesWithLR.length
+        data: tableResult,
+        count: tableResult.length
       }, { status: 200 });
     }
 

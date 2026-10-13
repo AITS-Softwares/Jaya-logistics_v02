@@ -2919,7 +2919,7 @@ export default function EditAdvancePayment() {
                 <label className="text-xs font-bold text-slate-600">Final Amount</label>
                 <input
                   type="number"
-                  value={calculateBalance()}
+                  value={num(paymentDetails.finalAmount).toFixed(2)}
                   readOnly
                   className="mt-1 w-full rounded-xl border border-slate-200 bg-blue-50 px-3 py-2 text-sm font-bold text-blue-700 outline-none cursor-not-allowed"
                 />

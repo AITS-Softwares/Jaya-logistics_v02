@@ -24,19 +24,19 @@
 // //     setLoading(true);
 // //     try {
 // //       const token = localStorage.getItem('token');
-      
+
 // //       const params = new URLSearchParams({ format: 'table' });
 // //       if (filters.search) params.append('search', filters.search);
 // //       if (filters.fromDate) params.append('fromDate', filters.fromDate);
 // //       if (filters.toDate) params.append('toDate', filters.toDate);
 // //       if (filters.status) params.append('status', filters.status);
-      
+
 // //       const res = await fetch(`/api/balance-payment?${params.toString()}`, {
 // //         headers: { Authorization: `Bearer ${token}` },
 // //       });
-      
+
 // //       const data = await res.json();
-      
+
 // //       if (data.success) {
 // //         setPayments(data.data || []);
 // //         console.log("Balance Payments:", data.data);
@@ -262,7 +262,7 @@
 // //                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
 // //                             </svg>
 // //                           </button>
-                          
+
 // //                           {/* Approve Button - Green (same as Pricing Panel) */}
 // //                           <button 
 // //                             onClick={() => handleApprove(item._id)} 
@@ -273,7 +273,7 @@
 // //                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
 // //                             </svg>
 // //                           </button>
-                          
+
 // //                           {/* Delete Button - Red (same as Pricing Panel) */}
 // //                           <button 
 // //                             onClick={() => handleDelete(item._id, item.balancePaymentNo)} 
@@ -294,7 +294,7 @@
 // //                   ))
 // //                 ) : (
 // //                   <tr>
-// //                     <td colSpan="22" className="px-4 py-12 text-center text-slate-500">
+// //                     <td colSpan="23" className="px-4 py-12 text-center text-slate-500">
 // //                       <div className="flex flex-col items-center">
 // //                         <svg className="w-16 h-16 text-slate-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 // //                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -355,19 +355,19 @@
 //     setError(null);
 //     try {
 //       const token = localStorage.getItem('token');
-      
+
 //       const params = new URLSearchParams({ format: 'table' });
 //       if (filters.search) params.append('search', filters.search);
 //       if (filters.fromDate) params.append('fromDate', filters.fromDate);
 //       if (filters.toDate) params.append('toDate', filters.toDate);
 //       if (filters.status) params.append('status', filters.status);
-      
+
 //       const res = await fetch(`/api/balance-payment?${params.toString()}`, {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       const data = await res.json();
-      
+
 //       if (data.success) {
 //         setPayments(data.data || []);
 //         console.log("Balance Payments:", data.data);
@@ -567,7 +567,7 @@
 //             <h1 className="text-2xl font-extrabold text-slate-900">Balance Payment Management</h1>
 //             <p className="text-sm text-slate-600 mt-1">Manage all balance payments in one place</p>
 //           </div>
-          
+
 //           {canCreate(MODULE_NAME) && (
 //             <button onClick={handleCreateNew} className="rounded-xl bg-yellow-600 px-6 py-2.5 text-sm font-bold text-white hover:bg-yellow-700 transition flex items-center gap-2">
 //               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -651,7 +651,7 @@
 //               <tbody className="divide-y divide-yellow-200">
 //                 {loading ? (
 //                   <tr>
-//                     <td colSpan="22" className="px-4 py-12 text-center">
+//                     <td colSpan="23" className="px-4 py-12 text-center">
 //                       <div className="flex items-center justify-center">
 //                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500"></div>
 //                       </div>
@@ -699,7 +699,7 @@
 //                               </svg>
 //                             </button>
 //                           )}
-                          
+
 //                           {/* ✅ Quick Approve Button - Green (with checkmark) */}
 //                           {canApprove(MODULE_NAME) && item.paymentStatus !== 'Approved' && item.paymentStatus !== 'Rejected' && item.paymentStatus !== 'Completed' && item.paymentStatus !== 'Paid' && (
 //                             <button
@@ -717,7 +717,7 @@
 //                               )}
 //                             </button>
 //                           )}
-                          
+
 //                           {/* ✅ Full Approve Button - Blue (with details) */}
 //                           {canApprove(MODULE_NAME) && item.paymentStatus !== 'Approved' && item.paymentStatus !== 'Rejected' && item.paymentStatus !== 'Completed' && item.paymentStatus !== 'Paid' && (
 //                             <button 
@@ -730,7 +730,7 @@
 //                               </svg>
 //                             </button>
 //                           )}
-                          
+
 //                           {/* Delete Button - Only shown if user has delete permission */}
 //                           {canDelete(MODULE_NAME) && item.paymentStatus !== 'Completed' && item.paymentStatus !== 'Paid' && (
 //                             <button 
@@ -753,7 +753,7 @@
 //                   ))
 //                 ) : (
 //                   <tr>
-//                     <td colSpan="22" className="px-4 py-12 text-center text-slate-500">
+//                     <td colSpan="23" className="px-4 py-12 text-center text-slate-500">
 //                       <div className="flex flex-col items-center">
 //                         <svg className="w-16 h-16 text-slate-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 //                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -816,19 +816,19 @@ export default function BalancePaymentList() {
     setError(null);
     try {
       const token = localStorage.getItem('token');
-      
+
       const params = new URLSearchParams({ format: 'table' });
       if (filters.search) params.append('search', filters.search);
       if (filters.fromDate) params.append('fromDate', filters.fromDate);
       if (filters.toDate) params.append('toDate', filters.toDate);
       if (filters.status) params.append('status', filters.status);
-      
+
       const res = await fetch(`/api/balance-payment?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       const data = await res.json();
-      
+
       if (data.success) {
         setPayments(data.data || []);
         console.log("Balance Payments:", data.data);
@@ -1005,7 +1005,7 @@ export default function BalancePaymentList() {
         <div className="text-center max-w-md p-8 bg-white rounded-xl shadow-lg">
           <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg className="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                 d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
           </div>
@@ -1034,7 +1034,7 @@ export default function BalancePaymentList() {
             <h1 className="text-2xl font-extrabold text-slate-900">Balance Payment Management</h1>
             <p className="text-sm text-slate-600 mt-1">Manage all balance payments in one place</p>
           </div>
-          
+
           {canCreate(MODULE_NAME) && (
             <button onClick={handleCreateNew} className="rounded-xl bg-yellow-600 px-6 py-2.5 text-sm font-bold text-white hover:bg-yellow-700 transition flex items-center gap-2">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1097,6 +1097,7 @@ export default function BalancePaymentList() {
                   <th className="px-3 py-3 text-left text-xs font-extrabold text-slate-900">Branch</th>
                   <th className="px-3 py-3 text-left text-xs font-extrabold text-slate-900">POD No</th>
                   <th className="px-3 py-3 text-left text-xs font-extrabold text-slate-900">Purchase No</th>
+                  <th className="px-3 py-3 text-left text-xs font-extrabold text-slate-900">Order No</th>
                   <th className="px-3 py-3 text-left text-xs font-extrabold text-slate-900">Vendor Name</th>
                   <th className="px-3 py-3 text-left text-xs font-extrabold text-slate-900">Vendor Code</th>
                   <th className="px-3 py-3 text-left text-xs font-extrabold text-slate-900">From</th>
@@ -1118,7 +1119,7 @@ export default function BalancePaymentList() {
               <tbody className="divide-y divide-yellow-200">
                 {loading ? (
                   <tr>
-                    <td colSpan="22" className="px-4 py-12 text-center">
+                    <td colSpan="23" className="px-4 py-12 text-center">
                       <div className="flex items-center justify-center">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500"></div>
                       </div>
@@ -1133,6 +1134,7 @@ export default function BalancePaymentList() {
                       <td className="px-3 py-3 text-slate-600">{item.branch || '-'}</td>
                       <td className="px-3 py-3 text-slate-600">{item.podNo || '-'}</td>
                       <td className="px-3 py-3 font-medium text-slate-900">{item.purchaseNo || '-'}</td>
+                      <td className="px-3 py-3 text-slate-600">{[...new Set((item.orderRows || []).map(r => r.orderNo).filter(Boolean))].join(', ') || '-'}</td>
                       <td className="px-3 py-3 text-slate-800">{item.vendorName || '-'}</td>
                       <td className="px-3 py-3 text-slate-600">{item.vendorCode || '-'}</td>
                       <td className="px-3 py-3 text-slate-600">{item.from || '-'}</td>
@@ -1156,9 +1158,9 @@ export default function BalancePaymentList() {
                         <div className="flex items-center justify-center gap-2 flex-wrap">
                           {/* Edit Button - Only shown if user has edit permission */}
                           {canEdit(MODULE_NAME) && (
-                            <button 
-                              onClick={() => handleEdit(item._id)} 
-                              className="p-2 bg-sky-100 text-sky-700 rounded-lg hover:bg-sky-200 transition" 
+                            <button
+                              onClick={() => handleEdit(item._id)}
+                              className="p-2 bg-sky-100 text-sky-700 rounded-lg hover:bg-sky-200 transition"
                               title="Edit Payment"
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1166,7 +1168,7 @@ export default function BalancePaymentList() {
                               </svg>
                             </button>
                           )}
-                          
+
                           {/* ✅ Quick Approve Button - Green (with checkmark) */}
                           {canApprove(MODULE_NAME) && !isFinalStatus(item.paymentStatus) && (
                             <button
@@ -1184,12 +1186,12 @@ export default function BalancePaymentList() {
                               )}
                             </button>
                           )}
-                          
+
                           {/* ✅ Full Approve Button - Blue (with details) */}
                           {canApprove(MODULE_NAME) && !isFinalStatus(item.paymentStatus) && (
-                            <button 
-                              onClick={() => handleApprove(item._id)} 
-                              className="p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition" 
+                            <button
+                              onClick={() => handleApprove(item._id)}
+                              className="p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition"
                               title="Approve with Details"
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1197,17 +1199,17 @@ export default function BalancePaymentList() {
                               </svg>
                             </button>
                           )}
-                          
+
                           {/* Delete Button - Only shown if user has delete permission */}
                           {canDelete(MODULE_NAME) && !isFinalStatus(item.paymentStatus) && (
-                            <button 
-                              onClick={() => handleDelete(item._id, item.balancePaymentNo)} 
-                              disabled={deleteLoading === item._id} 
-                              className="p-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition disabled:opacity-50" 
+                            <button
+                              onClick={() => handleDelete(item._id, item.balancePaymentNo)}
+                              disabled={deleteLoading === item._id}
+                              className="p-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition disabled:opacity-50"
                               title="Delete Payment"
                             >
-                              {deleteLoading === item._id ? 
-                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-700"></div> : 
+                              {deleteLoading === item._id ?
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-700"></div> :
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                 </svg>
@@ -1220,7 +1222,7 @@ export default function BalancePaymentList() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="22" className="px-4 py-12 text-center text-slate-500">
+                    <td colSpan="23" className="px-4 py-12 text-center text-slate-500">
                       <div className="w-full text-center" style={{ width: "100%" }}>
                         <svg className="mx-auto mb-4 h-16 w-16 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />

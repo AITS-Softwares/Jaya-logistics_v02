@@ -343,6 +343,12 @@ const podSchema = new mongoose.Schema({
     dueDate: { type: String, default: '' },
     paymentDate: { type: String, default: '' },
     acknowledgementMail: { type: Boolean, default: false },
+    note: { type: String, default: '' },
+    acknowledgementMail: { type: Boolean, default: false },
+    ackMailSentAt: { type: Date, default: null },
+    ackMailSentBy: { type: String, default: '' },
+    ackMailTo: { type: String, default: '' },
+    ackMailCount: { type: Number, default: 0 },
     note: { type: String, default: '' }
   },
 

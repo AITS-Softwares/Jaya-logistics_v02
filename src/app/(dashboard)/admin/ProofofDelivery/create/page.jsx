@@ -1475,7 +1475,8 @@ function num(v) {
 function addDays(dateString, days) {
   if (!dateString || !days) return "";
   const date = new Date(dateString);
-  date.setDate(date.getDate() + parseInt(days));
+  if (isNaN(date.getTime())) return "";
+  date.setUTCDate(date.getUTCDate() + parseInt(days, 10));
   return date.toISOString().split('T')[0];
 }
 
@@ -1852,19 +1853,40 @@ export default function CreatePOD() {
     return addDays(dueDate, 3);
   };
 
+  // const updateLastPodDateAndRecalculate = (newLastPodDate) => {
+  //   setPodStatusSection(prev => ({ ...prev, lastPodDate: newLastPodDate }));
+
+  //   if (newLastPodDate && vendorFinancial.dueDays) {
+  //     const newDueDate = calculateDueDate(newLastPodDate, vendorFinancial.dueDays);
+  //     setPodStatusSection(prev => ({ ...prev, dueDate: newDueDate }));
+
+  //     if (newDueDate) {
+  //       const newPaymentDate = calculatePaymentDate(newDueDate);
+  //       setPodStatusSection(prev => ({ ...prev, paymentDate: newPaymentDate }));
+  //     }
+  //   }
+  // };
   const updateLastPodDateAndRecalculate = (newLastPodDate) => {
     setPodStatusSection(prev => ({ ...prev, lastPodDate: newLastPodDate }));
-
-    if (newLastPodDate && vendorFinancial.dueDays) {
-      const newDueDate = calculateDueDate(newLastPodDate, vendorFinancial.dueDays);
-      setPodStatusSection(prev => ({ ...prev, dueDate: newDueDate }));
-
-      if (newDueDate) {
-        const newPaymentDate = calculatePaymentDate(newDueDate);
-        setPodStatusSection(prev => ({ ...prev, paymentDate: newPaymentDate }));
-      }
-    }
   };
+
+  // Suppliers may finish loading after the purchase was picked -> refresh Due Days
+  useEffect(() => {
+    if (!vendorFinancial.vendorCode || suppliers.length === 0) return;
+    const days = getDueDaysFromSupplier(vendorFinancial.vendorCode);
+    setVendorFinancial(prev => (prev.dueDays === days ? prev : { ...prev, dueDays: days }));
+  }, [suppliers, vendorFinancial.vendorCode]);
+
+  // Due Date = Last POD Date + Due Days ; Payment Date = Due Date + 3 days
+  useEffect(() => {
+    const dueDate = calculateDueDate(podStatusSection.lastPodDate, vendorFinancial.dueDays);
+    const paymentDate = calculatePaymentDate(dueDate);
+    setPodStatusSection(prev =>
+      prev.dueDate === dueDate && prev.paymentDate === paymentDate
+        ? prev
+        : { ...prev, dueDate, paymentDate }
+    );
+  }, [podStatusSection.lastPodDate, vendorFinancial.dueDays]);
 
   const autoUpdateLastPodDate = (lrEntriesList) => {
     const latestPodDate = getLatestPodDate(lrEntriesList);
@@ -3003,13 +3025,19 @@ ${companyMsg}${subCompanyMsg}${vehicleMsg}${routeMsg}${lrMsg}
                 readOnly
                 className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm cursor-not-allowed"
               />
-              <p className="text-xs text-blue-600 mt-1">
-                Last POD Date + Due Days
-              </p>
+              {vendorFinancial.vendorCode && !Number(vendorFinancial.dueDays) ? (
+                <p className="text-xs text-red-600 mt-1">
+                  Due Days not set for this vendor - set it in Supplier master
+                </p>
+              ) : (
+                <p className="text-xs text-blue-600 mt-1">
+                  Last POD Date + Due Days
+                </p>
+              )}
             </div>
 
             <div className="col-span-12 md:col-span-3">
-              <label className="text-xs font-bold text-slate-600">Payment Date</label>
+              <label className="text-xs font-bold text-slate-600">Payment Date (last date)</label>
               <input
                 type="date"
                 value={podStatusSection.paymentDate}
@@ -3017,7 +3045,7 @@ ${companyMsg}${subCompanyMsg}${vehicleMsg}${routeMsg}${lrMsg}
                 className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm cursor-not-allowed"
               />
               <p className="text-xs text-green-600 mt-1">
-                Due Date + 3 days
+                Payable from Due Date up to this date (Due Date + 3 days)
               </p>
             </div>
 

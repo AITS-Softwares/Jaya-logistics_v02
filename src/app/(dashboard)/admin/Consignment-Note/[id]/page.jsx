@@ -2601,6 +2601,7 @@
 import { useMemo, useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import LRInvoiceUpload from "@/components/LRInvoiceUpload";
+import LRPreviewModal, { makePreviewNote } from "@/components/LRPreviewModal";
 
 /** =========================
  * CONSTANTS
@@ -2734,6 +2735,7 @@ export default function EditConsignmentNote() {
   const [fetchLoading, setFetchLoading] = useState(true);
   const [fetchingData, setFetchingData] = useState(false);
   const [isReadOnly, setIsReadOnly] = useState(false);
+  const [previewNote, setPreviewNote] = useState(null);
 
   /** =========================
    * ORDER SEARCH STATE
@@ -3896,6 +3898,17 @@ export default function EditConsignmentNote() {
           </div>
 
           <div className="flex items-center gap-3">
+
+            <button
+              type="button"
+              onClick={() => setPreviewNote(makePreviewNote({
+                header, consignor, consignee, invoice, ewaybill,
+                palletizationRows, uniformRows, looseCargoRows, nonUniformRows,
+              }))}
+              className="rounded-xl border border-blue-300 bg-white px-5 py-2 text-sm font-bold text-blue-700 hover:bg-blue-50"
+            >
+              👁 Preview LR
+            </button>
             <button
               onClick={handleUpdate}
               disabled={saving || fetchingData}
@@ -5393,6 +5406,7 @@ export default function EditConsignmentNote() {
           </Card>
         </div>
       </div>
+      <LRPreviewModal open={!!previewNote} note={previewNote} onClose={() => setPreviewNote(null)} />
     </div>
   );
 }

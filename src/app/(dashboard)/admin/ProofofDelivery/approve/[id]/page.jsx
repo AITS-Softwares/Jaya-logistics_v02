@@ -1018,6 +1018,9 @@ export default function ApprovePOD() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [sendingEmail, setSendingEmail] = useState(false);
+  const [showAckPreview, setShowAckPreview] = useState(false);
+  const [loadingPreview, setLoadingPreview] = useState(false);
+  const [ackPreview, setAckPreview] = useState(null);
   const [podData, setPodData] = useState(null);
   const [supplierEmail, setSupplierEmail] = useState("");
   const [supplierName, setSupplierName] = useState("");
@@ -1206,7 +1209,8 @@ export default function ApprovePOD() {
             console.log("Suppliers API response:", vendorsData);
 
             if (vendorsData.success && vendorsData.data && vendorsData.data.length > 0) {
-              const supplier = vendorsData.data[0];
+              const supplier = vendorsData.data.find(s => s.supplierCode === vendorCode) || null;
+              if (!supplier) throw new Error(`Supplier ${vendorCode} not found`);
               const email = supplier.emailId || supplier.email || supplier.contactEmail || "";
               console.log("Found supplier email:", email);
               setSupplierEmail(email);
@@ -1252,197 +1256,37 @@ export default function ApprovePOD() {
   };
 
   // Send Email Function
-  const sendEmailToSupplier = async () => {
-    if (!supplierEmail) {
-      alert("❌ No supplier email found. Please add email in supplier master first.\n\nGo to Supplier Management → Edit Supplier → Add Email ID");
-      return;
-    }
+  const ackHeaders = () => ({ Authorization: `Bearer ${localStorage.getItem('token')}` });
 
-    setSendingEmail(true);
-
+  const openAckPreview = async () => {
+    setLoadingPreview(true);
     try {
-      const totalPodDeduction = num(vendorFinancial.podDeduction);
-      const finalBalance = num(vendorFinancial.total) - num(vendorFinancial.advance) - totalPodDeduction;
-      const totalQuantity = products.reduce((sum, p) => sum + num(p.totalPkgs), 0);
-      const totalActualWt = products.reduce((sum, p) => sum + num(p.actualWt), 0);
-
-      const emailContent = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="UTF-8">
-          <title>Proof of Delivery (POD) - ${header.podNo}</title>
-          <style>
-            body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5; }
-            .container { max-width: 900px; margin: 0 auto; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-            .header { background: linear-gradient(135deg, #f0b90b, #e6a800); padding: 20px; text-align: center; color: #1a1a1a; }
-            .header h1 { margin: 0; font-size: 24px; }
-            .header p { margin: 5px 0 0; opacity: 0.9; }
-            .content { padding: 20px; }
-            h2 { color: #333; font-size: 18px; margin-top: 20px; margin-bottom: 10px; border-left: 4px solid #f0b90b; padding-left: 10px; }
-            table { border-collapse: collapse; width: 100%; margin-bottom: 15px; font-size: 13px; }
-            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-            th { background-color: #f2f2f2; font-weight: bold; }
-            .amount { font-weight: bold; color: #8B5CF6; }
-            .footer { background-color: #f9f9f9; padding: 15px; text-align: center; font-size: 11px; color: #666; border-top: 1px solid #eee; }
-            .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }
-            .badge-success { background: #d4edda; color: #155724; }
-            .badge-warning { background: #fff3cd; color: #856404; }
-            .badge-danger { background: #f8d7da; color: #721c24; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h1>📋 Proof of Delivery (POD)</h1>
-              <p>${header.podNo}</p>
-            </div>
-            <div class="content">
-              
-              <h2>📄 POD Information</h2>
-              <table>
-                <tr><th style="width:40%">POD No</th><td><strong>${header.podNo}</strong></td></tr>
-                <tr><th>Purchase No</th><td>${header.purchaseNo}</td></tr>
-                <tr><th>Branch</th><td>${header.branch}</td></tr>
-                <tr><th>Date</th><td>${header.date}</td></tr>
-                <tr><th>Delivery</th><td>${header.delivery}</td></tr>
-              </table>
-
-              <h2>🏢 Company Information</h2>
-              <table>
-              
-                <tr><th>Sub-Company Name</th><td>${companyInfo.subCompanyName || '-'}</td></tr>
-                <tr><th>Sub-Company Code</th><td>${companyInfo.subCompanyCode || '-'}</td></tr>
-              </table>
-
-              <h2>📦 Orders</h2>
-              <table>
-                <thead>
-                  <tr><th>Order No</th><th>Party Name</th><th>Order Type</th><th>From</th><th>To</th><th>Weight</th></tr>
-                </thead>
-                <tbody>
-                  ${purchaseOrders.map(order => `
-                    <tr>
-                      <td>${order.orderNo || '-'}</td>
-                      <td>${order.partyName || '-'}</td>
-                      <td>${order.orderType || '-'}</td>
-                      <td>${order.from || '-'}</td>
-                      <td>${order.to || '-'}</td>
-                      <td>${order.weight || 0}</td>
-                    </tr>
-                  `).join('')}
-                </tbody>
-              </table>
-
-              <h2>🚛 LR Details</h2>
-              <table>
-                <thead>
-                  <tr><th>LR No</th><th>LR Date</th><th>Order No</th><th>Party Name</th><th>In Person / Parsal</th><th>POD Date</th><th>POD Received</th></tr>
-                </thead>
-                <tbody>
-                  ${lrEntries.map(lr => `
-                    <tr>
-                      <td>${lr.lrNo || '-'}</td>
-                      <td>${lr.lrDate || '-'}</td>
-                      <td>${lr.orderNo || '-'}</td>
-                      <td>${purchaseOrders.find(o => o.orderNo === lr.orderNo)?.partyName || '-'}</td>
-                      <td><span class="badge badge-success">${lr.inPersonParsal || '-'}</span></td>
-                      <td>${lr.podDate || '-'}</td>
-                      <td><span class="badge ${lr.podReceived === 'Received' ? 'badge-success' : 'badge-warning'}">${lr.podReceived || 'Pending'}</span></td>
-                    </tr>
-                  `).join('')}
-                </tbody>
-              </table>
-
-              <h2>📊 Products Summary</h2>
-              <table>
-                <thead>
-                  <tr><th>Product Name</th><th>PKGS</th><th>Type</th><th>UOM</th><th>Actual WT</th><th>Delivery Status</th><th>Deduction</th><th>Value</th></tr>
-                </thead>
-                <tbody>
-                  ${products.map(product => `
-                    <tr>
-                      <td>${product.productName || '-'}</td>
-                      <td>${product.totalPkgs || '-'}</td>
-                      <td>${product.pkgsType || '-'}</td>
-                      <td>${product.uom || '-'}</td>
-                      <td>${product.actualWt || '-'}</td>
-                      <td>${product.deliveryStatus || '-'}</td>
-                      <td>${product.deduction || '-'}</td>
-                      <td>₹${num(product.value).toLocaleString()}</td>
-                    </tr>
-                  `).join('')}
-                </tbody>
-                <tfoot>
-                  <tr style="background:#f0f0f0; font-weight:bold;">
-                    <td colspan="4">Totals:</td>
-                    <td>${totalActualWt} MT</td>
-                    <td colspan="2"></td>
-                    <td>₹${totalPodDeduction.toLocaleString()}</td>
-                  </tr>
-                </tfoot>
-              </table>
-
-              <h2>💰 Financial Summary</h2>
-              <table>
-                <tr><th style="width:40%">Vendor Name</th><td>${supplierName || vendorFinancial.vendorName}</td></tr>
-                <tr><th>Vendor Code</th><td>${vendorFinancial.vendorCode || '-'}</td></tr>
-                <tr><th>Total Amount</th><td class="amount">₹${vendorFinancial.total?.toLocaleString() || 0}</td></tr>
-                <tr><th>Advance Paid</th><td>₹${vendorFinancial.advance?.toLocaleString() || 0}</td></tr>
-                // <tr><th>PO Deduction</th><td>₹${vendorFinancial.poDeduction?.toLocaleString() || 0}</td></tr>
-                <tr><th>POD Deduction</th><td class="amount">₹${totalPodDeduction.toLocaleString()}</td></tr>
-                <tr><th>Total Actual WT</th><td>${totalActualWt} MT</td></tr>
-                <tr><th>Final Balance</th><td class="amount">₹${finalBalance.toLocaleString()}</td></tr>
-              </table>
-
-              <h2>📅 POD Status</h2>
-              <table>
-                <tr><th style="width:40%">Last POD Date</th><td>${podStatusSection.lastPodDate || '-'}</td></tr>
-                <tr><th>POD Status</th><td><span class="badge ${podStatusSection.podStatus === 'Clear & Ok' ? 'badge-success' : 'badge-warning'}">${podStatusSection.podStatus || 'Pending'}</span></td></tr>
-                <tr><th>Due Date</th><td>${podStatusSection.dueDate || '-'}</td></tr>
-                <tr><th>Payment Date</th><td>${podStatusSection.paymentDate || '-'}</td></tr>
-                   <tr><th>Remarks</th><td>${remarks || '-'}</td></tr>
-    <tr><th>Vehicle Unloaded</th><td>${vehicleUnloadedDate || '-'}</td></tr>
-   <tr><th>Unload Remarks</th><td>${unloadRemarks || '-'}</td></tr>
-              </table>
-            </div>
-            <div class="footer">
-              <p>This is an auto-generated email from the ERP System. Please contact your account manager for any queries.</p>
-              <p>Generated on: ${new Date().toLocaleString()}</p>
-            </div>
-          </div>
-        </body>
-        </html>
-      `;
-
-      const payload = {
-        to: supplierEmail,
-        subject: `Proof of Delivery (POD) - ${header.podNo}`,
-        html: emailContent,
-        podId: podId,
-        podNo: header.podNo
-      };
-
-      const token = localStorage.getItem('token');
-      const res = await fetch('/api/send-email', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      });
-
+      const res = await fetch(`/api/pod-panel/${podId}/acknowledgement`, { headers: ackHeaders() });
       const data = await res.json();
+      if (!data.success) { alert(data.message || 'Failed to load email preview'); return; }
+      setAckPreview(data.data);
+      setShowAckPreview(true);
+    } catch (error) {
+      alert(`❌ Error loading email preview: ${error.message}`);
+    } finally {
+      setLoadingPreview(false);
+    }
+  };
 
+  const sendEmailToSupplier = async () => {
+    setSendingEmail(true);
+    try {
+      const res = await fetch(`/api/pod-panel/${podId}/acknowledgement`, { method: 'POST', headers: ackHeaders() });
+      const data = await res.json();
       if (data.success) {
-        alert(`✅ Email sent successfully to ${supplierEmail}`);
+        alert(`✅ ${data.message}`);
         setPodStatusSection(prev => ({ ...prev, acknowledgementMail: true }));
+        setAckPreview(prev => prev ? { ...prev, alreadySent: true, sentAt: data.data.sentAt, sentBy: data.data.sentBy, sentTo: data.data.to } : prev);
+        setShowAckPreview(false);
       } else {
         alert(data.message || 'Failed to send email');
       }
     } catch (error) {
-      console.error('Error sending email:', error);
       alert(`❌ Error sending email: ${error.message}`);
     } finally {
       setSendingEmail(false);
@@ -1460,6 +1304,14 @@ export default function ApprovePOD() {
       return;
     }
 
+    if (
+      podStatusSection.podStatus !== "Pending" &&
+      lrEntries.some((l) => (l.podReceived || "Pending") === "Pending")
+    ) {
+      alert("Please set POD Received for every LR before approving.");
+      return;
+    }
+
     setSaving(true);
     try {
       const token = localStorage.getItem('token');
@@ -1471,6 +1323,7 @@ export default function ApprovePOD() {
           podStatus: podStatusSection.podStatus
         },
         remarks: remarks,
+        lrReceived: lrEntries.map((l) => ({ _id: l._id, podReceived: l.podReceived || "Pending" })),
         // approvedBy / approvedAt are now written by the server from the logged-in user
         approvalStatus: "Approved"
       };
@@ -1826,7 +1679,22 @@ export default function ApprovePOD() {
                   </div>
                   <div className="col-span-12 md:col-span-2">
                     <label className="text-xs font-bold text-slate-600">POD Received</label>
-                    <input type="text" value={lr.podReceived} readOnly className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm" />
+                    <select
+                      value={lr.podReceived || "Pending"}
+                      onChange={(e) =>
+                        setLrEntries((prev) =>
+                          prev.map((l) => (l._id === lr._id ? { ...l, podReceived: e.target.value } : l))
+                        )
+                      }
+                      className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200"
+                    >
+                      <option value="Pending">Pending</option>
+                      <option value="Received">Received</option>
+                      <option value="Rejected">Rejected</option>
+                      {!["Pending", "Received", "Rejected"].includes(lr.podReceived) && lr.podReceived && (
+                        <option value={lr.podReceived}>{lr.podReceived}</option>
+                      )}
+                    </select>
                   </div>
                 </div>
 
@@ -1936,57 +1804,32 @@ export default function ApprovePOD() {
 
             <div className="col-span-12 md:col-span-5">
               <label className="text-xs font-bold text-slate-600 flex items-center gap-2 mb-1">
-                <input
-                  type="checkbox"
-                  checked={podStatusSection.acknowledgementMail}
-                  onChange={(e) => setPodStatusSection({ ...podStatusSection, acknowledgementMail: e.target.checked })}
-                  className="rounded border-slate-300 w-4 h-4"
-                />
+                <input type="checkbox" checked={!!podStatusSection.acknowledgementMail} readOnly disabled
+                  className="rounded border-slate-300 w-4 h-4" />
                 Acknowledgement Mail Sent
               </label>
               <div className="flex gap-2 items-center">
-                <p className="text-xs text-slate-500 flex-1">Shot a Mail on the Registered Vendor mail ID</p>
+                <p className="text-xs text-slate-500 flex-1">Preview and send to the registered vendor mail ID</p>
                 <button
-                  onClick={sendEmailToSupplier}
-                  disabled={sendingEmail || !supplierEmail}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${sendingEmail || !supplierEmail
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-blue-600 text-white hover:bg-blue-700'
-                    }`}
+                  onClick={openAckPreview}
+                  disabled={loadingPreview || !canApprove}
+                  title={!canApprove ? "You need Approve permission" : undefined}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${loadingPreview || !canApprove
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
                 >
-                  {sendingEmail ? (
-                    <>
-                      <svg className="animate-spin h-3 w-3 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Sending...
-                    </>
-                  ) : (
-                    <>
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                      </svg>
-                      Send Email
-                    </>
-                  )}
+                  {loadingPreview ? 'Loading...' : (podStatusSection.acknowledgementMail ? 'Preview / Resend' : 'Preview & Send')}
                 </button>
               </div>
+              {podStatusSection.acknowledgementMail && (
+                <p className="text-xs text-green-600 mt-1">✅ Acknowledgement already sent{ackPreview?.sentAt ? ` on ${new Date(ackPreview.sentAt).toLocaleString()}` : ''}{ackPreview?.sentTo ? ` to ${ackPreview.sentTo}` : ''}</p>
+              )}
               {!supplierEmail && (
                 <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <p className="text-xs text-yellow-700">
-                    ⚠️ No email found for supplier. Please go to Supplier Management and add email ID.
-                  </p>
-                  <button
-                    onClick={() => window.open('/admin/supplier', '_blank')}
-                    className="mt-1 text-xs text-blue-600 hover:underline"
-                  >
+                  <p className="text-xs text-yellow-700">⚠️ No email found for supplier. Please go to Supplier Management and add email ID.</p>
+                  <button onClick={() => window.open('/admin/supplier', '_blank')} className="mt-1 text-xs text-blue-600 hover:underline">
                     Go to Supplier Management →
                   </button>
                 </div>
-              )}
-              {supplierEmail && (
-                <p className="text-xs text-green-600 mt-1">📧 Email will be sent to: {supplierEmail}</p>
               )}
             </div>
 
@@ -2054,6 +1897,41 @@ export default function ApprovePOD() {
         </div>
 
       </div>
+      {showAckPreview && ackPreview && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="flex max-h-[92vh] w-full max-w-4xl flex-col rounded-2xl bg-white shadow-2xl">
+            <div className="flex items-start justify-between border-b border-slate-200 px-5 py-3">
+              <div>
+                <h3 className="text-base font-bold text-slate-800">Email Preview - Supplier Acknowledgement</h3>
+                <p className="text-xs text-slate-600"><b>To:</b> {ackPreview.to || '— no email —'} {ackPreview.supplierName ? `(${ackPreview.supplierName})` : ''}</p>
+                <p className="text-xs text-slate-600"><b>Subject:</b> {ackPreview.subject}</p>
+              </div>
+              <button onClick={() => setShowAckPreview(false)} className="text-xl leading-none text-slate-500 hover:text-slate-800">×</button>
+            </div>
+            <div className="flex-1 overflow-auto bg-slate-100 p-3">
+              <iframe title="Email preview" sandbox="" srcDoc={ackPreview.html} className="h-[60vh] w-full rounded-lg border border-slate-200 bg-white" />
+            </div>
+            <div className="border-t border-slate-200 px-5 py-3">
+              {ackPreview.blockedReason && (
+                <p className="mb-2 rounded-lg border border-yellow-200 bg-yellow-50 p-2 text-xs text-yellow-800">⚠️ {ackPreview.blockedReason}</p>
+              )}
+              {ackPreview.alreadySent && (
+                <p className="mb-2 text-xs text-green-700">Already sent{ackPreview.sentAt ? ` on ${new Date(ackPreview.sentAt).toLocaleString()}` : ''}{ackPreview.sentBy ? ` by ${ackPreview.sentBy}` : ''}. Sending again will email the supplier a second time.</p>
+              )}
+              <div className="flex justify-end gap-2">
+                <button onClick={() => setShowAckPreview(false)} className="rounded-lg border border-slate-300 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">Close</button>
+                <button
+                  onClick={sendEmailToSupplier}
+                  disabled={sendingEmail || !ackPreview.canSend}
+                  className={`rounded-lg px-4 py-2 text-xs font-semibold text-white ${sendingEmail || !ackPreview.canSend ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
+                >
+                  {sendingEmail ? 'Sending...' : (ackPreview.alreadySent ? 'Resend Email' : 'Send Email')}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

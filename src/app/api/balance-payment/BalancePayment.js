@@ -36,17 +36,17 @@
 //     required: true,
 //     index: true
 //   },
-  
+
 //   // Basic Info
 //   branch: { type: String, default: '' },
 //   date: { type: String, default: '' },
 //   vendorName: { type: String, default: '' },
 //   podNo: { type: String, default: '' },
 //   purchaseNo: { type: String, default: '' },
-  
+
 //   // Order Rows
 //   orderRows: [orderRowSchema],
-  
+
 //   // Balance Payment Panel Fields
 //   vendorStatus: { type: String, default: 'Active' },
 //   vendorCode: { type: String, default: '' },
@@ -61,14 +61,14 @@
 //   totalAddition: { type: Number, default: 0 },
 //   totalDeduction: { type: Number, default: 0 },
 //   balance: { type: Number, default: 0 },
-  
+
 //   // NEW FIELDS for PO Addition, PO Deduction, POD Deductions
 //   poAddition: { type: Number, default: 0 },
 //   poDeduction: { type: Number, default: 0 },
 //   podDeduction: { type: Number, default: 0 },
 //   finalBalance: { type: Number, default: 0 },
 //   dueDate: { type: String, default: '' },
-  
+
 //   // Payment Transaction Details
 //   vendorNameDebit: { type: String, default: '' },
 //   accountNoCredit: { type: String, default: '' },
@@ -76,7 +76,7 @@
 //   remarks: { type: String, default: 'Balance Payment' },
 //   transactionId: { type: String, default: '' },
 //   bankVendorCode: { type: String, default: '' },
-  
+
 //   // Payment Status - UPDATED enum to include Approved and Rejected
 //   paymentStatus: { 
 //   type: String, 
@@ -84,13 +84,13 @@
 //   default: 'Pending' 
 // },
 //   paymentDate: { type: Date, default: Date.now },
-  
+
 //   // Delivery and Pricing
 //   delivery: { type: String, default: 'Normal' },
 //   pricingSerialNo: { type: String, default: '' },
 //   from: { type: String, default: '' },
 //   to: { type: String, default: '' },
-  
+
 //   // Company & User Tracking
 //   companyId: {
 //     type: mongoose.Schema.Types.ObjectId,
@@ -155,7 +155,7 @@ const balancePaymentSchema = new mongoose.Schema({
     required: true,
     index: true
   },
-  
+
   // ✅ COMPANY INFORMATION - ADDED
   companyId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -184,7 +184,7 @@ const balancePaymentSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
-  
+
   // Basic Info
   branch: { type: String, default: '' },
   branchCode: { type: String, default: '' },
@@ -192,10 +192,10 @@ const balancePaymentSchema = new mongoose.Schema({
   vendorName: { type: String, default: '' },
   podNo: { type: String, default: '' },
   purchaseNo: { type: String, default: '' },
-  
+
   // Order Rows
   orderRows: [orderRowSchema],
-  
+
   // Balance Payment Panel Fields
   vendorStatus: { type: String, default: 'Active' },
   vendorCode: { type: String, default: '' },
@@ -210,14 +210,15 @@ const balancePaymentSchema = new mongoose.Schema({
   totalAddition: { type: Number, default: 0 },
   totalDeduction: { type: Number, default: 0 },
   balance: { type: Number, default: 0 },
-  
+
   // NEW FIELDS for PO Addition, PO Deduction, POD Deductions
   poAddition: { type: Number, default: 0 },
   poDeduction: { type: Number, default: 0 },
   podDeduction: { type: Number, default: 0 },
   finalBalance: { type: Number, default: 0 },
+  breakdown: { type: mongoose.Schema.Types.Mixed, default: null },
   dueDate: { type: String, default: '' },
-  
+
   // Payment Transaction Details
   vendorNameDebit: { type: String, default: '' },
   accountNoCredit: { type: String, default: '' },
@@ -225,21 +226,21 @@ const balancePaymentSchema = new mongoose.Schema({
   remarks: { type: String, default: 'Balance Payment' },
   transactionId: { type: String, default: '' },
   bankVendorCode: { type: String, default: '' },
-  
+
   // Payment Status
-  paymentStatus: { 
-    type: String, 
-    enum: ['Pending', 'Queued', 'Approved', 'Rejected', 'Completed', 'Paid'], 
-    default: 'Pending' 
+  paymentStatus: {
+    type: String,
+    enum: ['Pending', 'Queued', 'Approved', 'Rejected', 'Completed', 'Paid'],
+    default: 'Pending'
   },
   paymentDate: { type: Date, default: Date.now },
-  
+
   // Delivery and Pricing
   delivery: { type: String, default: 'Normal' },
   pricingSerialNo: { type: String, default: '' },
   from: { type: String, default: '' },
   to: { type: String, default: '' },
-  
+
   // User Tracking
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
@@ -249,7 +250,7 @@ const balancePaymentSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Pre-save middleware
-balancePaymentSchema.pre('save', function(next) {
+balancePaymentSchema.pre('save', function (next) {
   // Calculate balance: Amount - Advance + Addition - Deduction
   this.balance = (this.amount || 0) - (this.advance || 0) + (this.totalAddition || 0) - (this.totalDeduction || 0);
   // Calculate final balance
@@ -257,7 +258,7 @@ balancePaymentSchema.pre('save', function(next) {
   next();
 });
 
-const BalancePayment = mongoose.models.BalancePayment || 
+const BalancePayment = mongoose.models.BalancePayment ||
   mongoose.model('BalancePayment', balancePaymentSchema);
 
 export default BalancePayment;

@@ -1625,6 +1625,8 @@ import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import { getNextAdvancePaymentNumber } from "./AdvancePaymentCounter";
 import mongoose from 'mongoose';
 import { activeOperatingCompanyId, companyScopeFilter } from "@/lib/companyScope";
+import { syncPodAdvanceForPurchase } from "@/lib/advanceSettlement";
+import { ADVANCE_STATUSES, assertValidAmounts } from "@/lib/paymentRules";
 
 // ── PERMISSION FUNCTIONS ──
 
@@ -2010,13 +2012,15 @@ export async function POST(req) {
       return sum + totalAmount + collectionCharges + cancellationCharges + loadingCharges + otherCharges;
     }, 0);
 
+    const amountError = assertValidAmounts({ advance: body.vendorDetails?.advance, amount: body.vendorDetails?.amount, purchaseAmountFromVNN: body.purchaseAmountFromVNN });
+    if (amountError) return NextResponse.json({ success: false, message: amountError }, { status: 400 });
     const purchaseAmountFromVNN = num(body.purchaseAmountFromVNN) || num(body.vendorDetails?.amount) || totalOrderAmount;
     const advance = num(body.vendorDetails?.advance);
     const totalAdditions = processedAdditionItems.reduce((sum, item) => sum + (item.amount || 0), 0);
     const totalDeductions = processedDeductionItems.reduce((sum, item) => sum + (item.amount || 0), 0);
     // Balance is independent of adjustments.  The payment to queue is the
     // Purchase Panel's Net Effect, which includes its approved adjustments.
-    const balance = purchaseAmountFromVNN - advance;
+    // const balance = purchaseAmountFromVNN - advance;
     const finalAdvanceAmount = await liveOfficeNetEffect(user, sourcePurchase);
 
     let branchId = null;
@@ -2110,7 +2114,7 @@ export async function POST(req) {
 
       memoFile: sourcePurchase.memoFile || null,
 
-      balance,
+      // balance,
       totalOrderAmount,
 
       status: 'Draft',
@@ -2388,6 +2392,7 @@ export async function PUT(req) {
     }
 
     await payment.save();
+    await syncPodAdvanceForPurchase(user, payment.purchaseNo);
 
     return NextResponse.json({
       success: true,
@@ -2513,6 +2518,10 @@ export async function PATCH(req) {
       }, { status: 404 });
     }
 
+    if (body.paymentStatus !== undefined && body.paymentStatus !== "" && !ADVANCE_STATUSES.includes(body.paymentStatus)) {
+      return NextResponse.json({ success: false, message: `Invalid status. Allowed: ${ADVANCE_STATUSES.join(", ")}` }, { status: 400 });
+    }
+
     // Handle different actions
     if (action === 'generate-queue') {
       if (payment.queueGenerated) {
@@ -2562,6 +2571,7 @@ export async function PATCH(req) {
       }
 
       await payment.save();
+      await syncPodAdvanceForPurchase(user, payment.purchaseNo);
 
       return NextResponse.json({
         success: true,
