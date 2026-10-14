@@ -1074,7 +1074,8 @@ export async function GET(req) {
         transactionId: p.transactionId,
         paymentDate: p.paymentDate ? new Date(p.paymentDate).toISOString().split('T')[0] : '',
         paymentStatus: p.paymentStatus,
-        podNo: p.podNo
+        podNo: p.podNo,
+        orderRows: (p.orderRows || []).map((row) => ({ orderNo: row.orderNo || "" }))
       }));
 
       return NextResponse.json({ success: true, data: tableData, count: tableData.length });

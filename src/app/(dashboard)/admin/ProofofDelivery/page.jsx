@@ -842,6 +842,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { usePermission } from "../hooks/usePermission";
 import Link from "next/link";
+import PendingToCreateChip from "@/components/PendingToCreateChip";
 
 export default function PODPanelList() {
   const router = useRouter();
@@ -1093,6 +1094,14 @@ export default function PODPanelList() {
             </p>
           </div>
 
+          <PendingToCreateChip
+            endpoint="/api/purchase-panel?for=pod&format=table&count=1"
+            singular="POD"
+            plural="PODs"
+            href={canCreate(MODULE_NAME) ? "/admin/ProofofDelivery/create" : undefined}
+            hint="Purchases waiting for a POD"
+          />
+
           {canCreate(MODULE_NAME) && (
             <button
               onClick={handleCreateNew}
@@ -1260,7 +1269,7 @@ export default function PODPanelList() {
                           )}
 
                           {/* ✅ Quick Approve Button - Green (with checkmark) - Based ONLY on permission */}
-                          {canApprove(MODULE_NAME) && !['Received', 'Clear & Ok', 'Deductions', 'Completed'].includes(item.podReceived) && (
+                          {canApprove(MODULE_NAME) && (
                             <button
                               onClick={() => handleQuickApprove(item._id, item.podNo)}
                               disabled={approveLoading === item._id}
@@ -1278,7 +1287,7 @@ export default function PODPanelList() {
                           )}
 
                           {/* ✅ Full Approve Button - Blue (with details) - Based ONLY on permission */}
-                          {canApprove(MODULE_NAME) && !['Received', 'Clear & Ok', 'Deductions', 'Completed'].includes(item.podReceived) && (
+                          {canApprove(MODULE_NAME) && (
                             <button
                               onClick={() => handleApprove(item._id)}
                               className="p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition"

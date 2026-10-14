@@ -55,6 +55,41 @@ function loadingInfoReference(panel) {
 }
 
 /**
+ * Loading Infos the Purchase create dropdown offers: Approved/Completed and not yet used by a
+ * Purchase or an LR. The "yet to be created" count on the Purchase list uses this same rule.
+ */
+async function getAvailableLoadingInfos(user) {
+  const [loadingInfos, purchases, consignmentNotes] = await Promise.all([
+    LoadingPanel.find(
+      companyScopeFilter(user, { panelStatus: { $in: selectableStatuses } }),
+    ).sort({ createdAt: -1 }).lean(),
+    PurchasePanel.find(companyScopeFilter(user), { loadingInfoNo: 1 }).lean(),
+    ConsignmentNote.find(companyScopeFilter(user), {
+      loadingInfoNo: 1,
+      vehicleNegotiationRef: 1,
+      "header.status": 1,
+    }).lean(),
+  ]);
+
+  const usedLoadingInfoNumbers = new Set(
+    [...purchases, ...consignmentNotes].map((record) => record.loadingInfoNo).filter(Boolean),
+  );
+  // LRs created from an order row may have no loadingInfoNo, but they still
+  // point to the Vehicle Negotiation their Loading Info was built from.
+  const usedNegotiationRefs = new Set(
+    consignmentNotes
+      .filter((note) => note.header?.status !== "Rejected")
+      .map((note) => String(note.vehicleNegotiationRef || ""))
+      .filter(Boolean),
+  );
+  return loadingInfos
+    .filter((panel) =>
+      panel.vehicleNegotiationNo &&
+      !usedLoadingInfoNumbers.has(panel.vehicleArrivalNo) &&
+      !usedNegotiationRefs.has(String(panel.selectedVehicleNegotiation?.id || "")));
+}
+
+/**
  * Read-only downstream data for Purchase Panel users. This deliberately reads
  * scoped source records directly instead of requiring permissions for each
  * source module or its master-data endpoint.
@@ -73,6 +108,11 @@ export const GET = withAuth(async (req, context, user) => {
         { name: 1, code: 1 },
       ).sort({ name: 1 }).lean();
       return NextResponse.json({ success: true, data: { subCompanies } });
+    }
+
+    if (lookup === "pendingCount") {
+      const pending = await getAvailableLoadingInfos(user);
+      return NextResponse.json({ success: true, data: { count: pending.length } });
     }
 
     if (vehicleArrivalNo || vnnNo) {
@@ -103,35 +143,7 @@ export const GET = withAuth(async (req, context, user) => {
       });
     }
 
-    const [loadingInfos, purchases, consignmentNotes] = await Promise.all([
-      LoadingPanel.find(
-        companyScopeFilter(user, { panelStatus: { $in: selectableStatuses } }),
-      ).sort({ createdAt: -1 }).lean(),
-      PurchasePanel.find(companyScopeFilter(user), { loadingInfoNo: 1 }).lean(),
-      ConsignmentNote.find(companyScopeFilter(user), {
-        loadingInfoNo: 1,
-        vehicleNegotiationRef: 1,
-        "header.status": 1,
-      }).lean(),
-    ]);
-
-    const usedLoadingInfoNumbers = new Set(
-      [...purchases, ...consignmentNotes].map((record) => record.loadingInfoNo).filter(Boolean),
-    );
-    // LRs created from an order row may have no loadingInfoNo, but they still
-    // point to the Vehicle Negotiation their Loading Info was built from.
-    const usedNegotiationRefs = new Set(
-      consignmentNotes
-        .filter((note) => note.header?.status !== "Rejected")
-        .map((note) => String(note.vehicleNegotiationRef || ""))
-        .filter(Boolean),
-    );
-    const availableLoadingInfos = loadingInfos
-      .filter((panel) =>
-        panel.vehicleNegotiationNo &&
-        !usedLoadingInfoNumbers.has(panel.vehicleArrivalNo) &&
-        !usedNegotiationRefs.has(String(panel.selectedVehicleNegotiation?.id || "")))
-      .map(loadingInfoReference);
+    const availableLoadingInfos = (await getAvailableLoadingInfos(user)).map(loadingInfoReference);
 
     return NextResponse.json({ success: true, data: { loadingInfos: availableLoadingInfos } });
   } catch (error) {

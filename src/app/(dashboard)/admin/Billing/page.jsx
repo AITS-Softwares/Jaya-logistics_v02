@@ -2094,8 +2094,7 @@ function OrderTypeSelector({ value, onChange, label = "Order Type" }) {
   );
 }
 
-function ProductCategorySelector({ value, onChange, label = "Product Categories" }) {
-  const categories = ["Biological", "Premium Product", "Standard", "Economy", "Specialty"];
+function ProductCategorySelector({ value, onChange, label = "Product Categories", categories = [], loading = false }) {
 
   return (
     <div>
@@ -2105,7 +2104,7 @@ function ProductCategorySelector({ value, onChange, label = "Product Categories"
         onChange={(e) => onChange(e.target.value)}
         className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
       >
-        <option value="">Select Category</option>
+        <option value="">{loading ? "Loading subgroups…" : "Select Category"}</option>
         {categories.map((category) => (
           <option key={category} value={category}>
             {category}
@@ -2140,20 +2139,21 @@ function PlantCodeSelector({ value, onChange, label = "Plant Code", plants = [],
 // Billing Type Dropdown Component
 function BillingTypeSelector({ value, onChange, label = "Select Billing Type" }) {
   const billingTypes = [
-    { value: "product-wise", label: "Yara - Product-Wise Billing" },
-    { value: "general", label: "General - Billing" },
-    { value: "detention", label: "Detention - Billing" },
-    { value: "cancellation", label: "Cancellation - Billing" },
-    { value: "other", label: "Other - Billing" },
+    { value: "product-wise", label: "Yara · Product-wise" },
+    { value: "general", label: "General" },
+    { value: "detention", label: "Detention" },
+    { value: "cancellation", label: "Cancellation" },
+    { value: "other", label: "Other charges" },
   ];
 
   return (
-    <div className="mb-6">
-      <label className="block text-sm font-bold text-slate-700 mb-2">{label}</label>
+    <div className="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <label className="block text-sm font-bold text-slate-800 mb-1">{label}</label>
+      <p className="mb-3 text-sm text-slate-500">Choose the charge type, then review eligible consignment records before generating a report.</p>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full md:w-96 rounded-xl border border-slate-200 bg-white px-4 py-3 text-base outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 font-medium"
+        className="w-full md:w-[28rem] rounded-xl border border-slate-300 bg-white px-4 py-3 text-base font-medium text-slate-800 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
       >
         <option value="">-- Select Billing Type --</option>
         {billingTypes.map((type) => (
@@ -2185,6 +2185,8 @@ function safeFormatDate(dateStr) {
 async function generateAndSaveReport(reportData, type, filters, onSuccess) {
   try {
     const token = localStorage.getItem("token");
+    const requestedBillNumber = reportData.billNumber || (type === "product-wise" ? "" : `BILL/${Date.now()}/${Math.floor(Math.random() * 1000)}`);
+    const savedReportData = { ...reportData, billNumber: requestedBillNumber };
 
     const saveResponse = await fetch("/api/saved-reports", {
       method: "POST",
@@ -2192,7 +2194,7 @@ async function generateAndSaveReport(reportData, type, filters, onSuccess) {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify(reportData),
+      body: JSON.stringify(savedReportData),
     });
     const saveData = await saveResponse.json();
 
@@ -2201,18 +2203,24 @@ async function generateAndSaveReport(reportData, type, filters, onSuccess) {
       return false;
     }
 
-    const currentDate = new Date().toLocaleString();
-    const billNumber = `BILL/${Date.now()}/${Math.floor(Math.random() * 1000)}`;
-    const html = generatePDFHTML(reportData, currentDate, type, filters, billNumber);
+    const saved = saveData.data || savedReportData;
+    const billNumber = saved.billNumber || requestedBillNumber;
+    const currentDate = saved.generatedAt || new Date().toISOString();
+    const html = generatePDFHTML(saved, currentDate, type, saved.filters || filters, billNumber);
 
     const printWindow = window.open("", "_blank");
-    printWindow.document.write(html);
-    printWindow.document.close();
-    printWindow.print();
+    if (printWindow) {
+      printWindow.document.write(html);
+      printWindow.document.close();
+      printWindow.focus();
+      printWindow.print();
+    } else {
+      alert("Bill saved successfully. Allow pop-ups to open the print view.");
+    }
 
-    alert(`✅ Bill generated successfully!\nBill No: ${billNumber}\nSaved ${reportData.selectedRecords} records`);
-
+    window.dispatchEvent(new Event("billing-report-saved"));
     if (onSuccess) onSuccess();
+    if (printWindow) alert(`✅ Bill generated successfully!\nBill No: ${billNumber}\nSaved ${reportData.selectedRecords} records`);
     return true;
   } catch (error) {
     console.error("Error:", error);
@@ -2221,7 +2229,137 @@ async function generateAndSaveReport(reportData, type, filters, onSuccess) {
   }
 }
 
+function generateYaraProductWisePDFHTML(reportData, currentDate, billNumber) {
+  const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  }[char]));
+  const issuer = reportData.issuer || {};
+  const client = reportData.clientSnapshot || {};
+  const filters = reportData.filters || {};
+  const data = Array.isArray(reportData.data) ? reportData.data : [];
+  const formatMoney = (value) => (Number(value) || 0).toFixed(3);
+  const formatQty = (value) => (Number(value) || 0).toFixed(2);
+  const formatDate = (value) => {
+    if (!value) return "—";
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? escapeHtml(value) : date.toLocaleDateString("en-GB", { timeZone: "Asia/Kolkata" });
+  };
+  const billDate = formatDate(reportData.generatedAt || currentDate);
+  const months = [...new Set(data.map((item) => {
+    const date = new Date(item.lrCreatedAt || item.date);
+    return Number.isNaN(date.getTime()) ? "" : date.toLocaleDateString("en-US", { month: "long", year: "numeric", timeZone: "Asia/Kolkata" });
+  }).filter(Boolean))];
+  const monthLabel = months.length === 1 ? months[0] : months.length ? "Multiple months" : "—";
+  const issuerGST = issuer.gstNumber || "";
+  const issuerStateCode = issuerGST.slice(0, 2);
+  const issuerAddress = [issuer.address, issuer.state, issuer.pinCode].filter(Boolean).join(", ");
+  const clientAddress = [client.address, client.city, client.state, client.pinCode, client.country].filter(Boolean).join(", ");
+  const selectedOrderType = String(filters.orderType || "").trim();
+  const rowOrderTypes = [...new Set(data.map((item) => String(item.orderType || "").trim()).filter(Boolean))];
+  const orderTypeLabel = !selectedOrderType || ["NA", "All Types", "All Order Types"].includes(selectedOrderType)
+    ? (rowOrderTypes.length === 1 ? rowOrderTypes[0] : rowOrderTypes.length > 1 ? "Multiple Order Types" : "All Order Types")
+    : selectedOrderType;
+  const title = `${issuer.name || issuer.subCompanyName || "Operating Company"} ( ${orderTypeLabel.toUpperCase()} )`;
+  const grouped = new Map();
+  data.forEach((item) => {
+    const district = String(item.district || "Unspecified").trim() || "Unspecified";
+    const key = district.toLocaleLowerCase();
+    if (!grouped.has(key)) grouped.set(key, { district, rows: [], quantity: 0, billQuantity: 0, amount: 0 });
+    const group = grouped.get(key);
+    group.rows.push(item);
+    group.quantity += Number(item.quantity ?? item.weight) || 0;
+    group.billQuantity += Number(item.billQuantity ?? item.weight) || 0;
+    group.amount += Number(item.amount) || 0;
+  });
+  const districtGroups = [...grouped.values()].sort((a, b) => a.district.localeCompare(b.district));
+  let serial = 0;
+  const bodyRows = districtGroups.map((group) => {
+    const rows = group.rows.map((item) => {
+      serial += 1;
+      return `<tr>
+        <td>${serial}</td><td>${escapeHtml(item.invoiceNo || item.lrNo || "—")}</td><td>${formatDate(item.date)}</td>
+        <td>${escapeHtml(item.consigneeName || "—")}</td><td>${escapeHtml(item.to || item.city || "—")}</td>
+        <td>${escapeHtml(item.district || "—")}</td><td>${escapeHtml(item.state || "—")}</td>
+        <td class="number">${formatQty(item.quantity ?? item.weight)}</td><td class="number">${formatQty(item.billQuantity ?? item.weight)}</td>
+        <td>${escapeHtml(item.unit || "MT")}</td><td class="number">${formatMoney(item.rate)}</td><td class="number">${formatMoney(item.amount)}</td>
+      </tr>`;
+    }).join("");
+    return `${rows}<tr class="subtotal">
+      <td colspan="5"></td><td>Sub Total</td><td></td>
+      <td class="number">${formatQty(group.quantity)}</td><td class="number">${formatQty(group.billQuantity)}</td>
+      <td></td><td></td><td class="number">${formatMoney(group.amount)}</td>
+    </tr>`;
+  }).join("");
+  const totals = data.reduce((sum, item) => ({
+    quantity: sum.quantity + (Number(item.quantity ?? item.weight) || 0),
+    billQuantity: sum.billQuantity + (Number(item.billQuantity ?? item.weight) || 0),
+    amount: sum.amount + (Number(item.amount) || 0),
+  }), { quantity: 0, billQuantity: 0, amount: 0 });
+  const serviceCode = data.find((item) => item.serviceCode)?.serviceCode || filters.serviceCode || "";
+  const taxDescription = "GST Declaration as per Notification no.5/2017 - Central Tax Dated 19th June 2017. G.S.R. (E) In exercise of the powers conferred by sub-section(2) of section 23 of the Central Goods and Services Tax Act, 2017 (12 of 2017), the Central Government hereby specifies the persons who are only engaged in making supplies of taxable goods or services or both, the total tax on which is liable to be paid on reverse charge basis by the recipient of such goods or services or both under sub-section(3) of section 9 of the said Act as the category of persons exempted from obtaining registration under the aforesaid Act.";
+  const header = `<thead><tr><th colspan="12" class="table-title">${escapeHtml(title)}</th></tr><tr>
+    <th>S.No</th><th>Invoice No.</th><th>Date</th><th>BHA Name</th><th>Location</th><th>District</th><th>State</th>
+    <th>Qty</th><th>Bill Qty</th><th>Unit</th><th>Rate</th><th>Amount</th>
+  </tr></thead>`;
+
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${escapeHtml(billNumber)}</title><style>
+    *{box-sizing:border-box}body{font-family:Arial,sans-serif;margin:0;color:#111;font-size:11px}
+    @page{size:A4 landscape;margin:9mm}@page invoice{size:A4 portrait;margin:12mm}@page details{size:A4 landscape;margin:9mm}
+    .page{width:100%;break-after:page}.invoice-page{page:invoice}.details-page{page:details;break-after:auto}
+    .invoice-frame{border:1px solid #222}.title{font-size:20px;text-align:center;font-weight:700;padding:7px;border-bottom:1px solid #222}
+    .parties{display:grid;grid-template-columns:1fr 1fr}.party{padding:8px;border-right:1px solid #222;min-height:125px;line-height:1.45}.party:last-child{border-right:0}
+    .party-title{font-weight:700;margin-bottom:5px}.party-name{font-size:14px;font-weight:700;margin-bottom:4px}.metadata{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid #222}
+    .meta{display:grid;grid-template-columns:120px 12px 1fr;padding:8px;border-right:1px solid #222;border-bottom:1px solid #222}.meta:nth-child(2n){border-right:0}
+    .invoice-charges{width:100%;border-collapse:collapse;table-layout:fixed}.invoice-charges th,.invoice-charges td{border:1px solid #222;padding:5px 4px;font-size:9px}.invoice-charges th{text-align:left}.invoice-charges td.num{text-align:right;white-space:nowrap}.invoice-charges .charge-main{height:110px;vertical-align:middle}.invoice-charges .tax-row{height:18px;font-weight:700}.invoice-charges .charge-total{font-weight:700}
+    .tax-notice{display:grid;grid-template-columns:70% 30%;border:1px solid #222;border-top:0;min-height:120px}.tax-copy{padding:6px;line-height:1.35;border-right:1px solid #222}.tax-signature{padding:6px}.eoe{font-weight:700;margin-top:22px}
+    .details-table{width:100%;border-collapse:collapse;table-layout:fixed}.details-table th,.details-table td{border:1px solid #111;padding:4px 3px;font-size:8px;overflow-wrap:anywhere}
+    .details-table th{text-align:center;font-weight:700}.details-table .table-title{font-size:17px;padding:8px}.details-table td{text-align:center}.details-table td.number{text-align:right;white-space:nowrap}
+    .subtotal,.grand-total{font-weight:700}.details-heading{font-size:16px;text-align:center;font-weight:700;margin:0 0 6px;display:none}
+    @media print{.page{break-after:page}.details-page{break-after:auto}.details-table thead{display:table-header-group}.details-table tr{break-inside:avoid}}
+  </style></head><body>
+    <section class="page invoice-page"><div class="invoice-frame">
+      <div class="title">${escapeHtml(title)}</div>
+      <div class="parties">
+        <div class="party"><div class="party-title">Bill From:</div><div class="party-name">${escapeHtml(issuer.name || issuer.subCompanyName || "Operating Company")}</div>
+          ${escapeHtml(issuerAddress || "Address not configured")}<br>${issuer.phone ? `Tel: ${escapeHtml(issuer.phone)}<br>` : ""}
+          ${issuer.email ? `Email: ${escapeHtml(issuer.email)}<br>` : ""}${issuerGST ? `GSTIN/UIN: ${escapeHtml(issuerGST)}<br>` : ""}
+          ${issuer.state ? `State Name: ${escapeHtml(issuer.state)}, Code: ${escapeHtml(issuerStateCode)}<br>` : ""}${issuer.pan ? `PAN No: ${escapeHtml(issuer.pan)}` : ""}
+        </div>
+        <div class="party"><div class="party-title">Bill To:</div><div class="party-name">${escapeHtml(client.name || filters.clientName || "Client")}</div>
+          ${escapeHtml(clientAddress || "Address not available")}<br>${client.gstNumber ? `GST No: ${escapeHtml(client.gstNumber)}<br>` : ""}
+          ${client.pan ? `PAN No: ${escapeHtml(client.pan)}` : ""}
+        </div>
+      </div>
+      <div class="metadata">
+        <div class="meta"><span>Bill No</span><span>:</span><strong>${escapeHtml(billNumber)}</strong></div>
+        <div class="meta"><span>Month</span><span>:</span><strong>${escapeHtml(monthLabel)}</strong></div>
+        <div class="meta"><span>Bill Date</span><span>:</span><strong>${escapeHtml(billDate)}</strong></div>
+        <div class="meta"><span>Product</span><span>:</span><strong>${escapeHtml(filters.productCategories || filters.productCode || "—")}</strong></div>
+        <div class="meta"><span>Plant Code</span><span>:</span><strong>${escapeHtml(filters.plantCode || "—")}</strong></div>
+        <div class="meta"><span>Location</span><span>:</span><strong>${escapeHtml(filters.branchName || "—")}</strong></div>
+      </div>
+      <table class="invoice-charges"><colgroup><col style="width:12%"><col style="width:50%"><col style="width:14%"><col style="width:10%"><col style="width:14%"></colgroup>
+        <thead><tr><th>Sr.No.</th><th>Description</th><th>Service Code</th><th class="num">Qty</th><th class="num">Amount</th></tr></thead>
+        <tbody>
+          <tr class="charge-main"><td>1</td><td>Transportation Charges</td><td>${escapeHtml(serviceCode)}</td><td class="num">${formatQty(totals.billQuantity)}</td><td class="num">${formatMoney(totals.amount)}</td></tr>
+          <tr class="tax-row"><td></td><td>CGST @ 9%</td><td></td><td></td><td></td></tr>
+          <tr class="tax-row"><td></td><td>SGST @ 9%</td><td></td><td></td><td></td></tr>
+          <tr class="charge-total"><td>1</td><td colspan="2">TOTAL</td><td class="num">${formatQty(totals.billQuantity)}</td><td class="num">${formatMoney(totals.amount)}</td></tr>
+        </tbody>
+      </table>
+      <div class="tax-notice"><div class="tax-copy">GST Should be paid by Consignor / Consignee to Government Directly.<br>${escapeHtml(taxDescription)}<div class="eoe">E &amp; O.E.</div></div><div class="tax-signature"></div></div>
+    </div></section>
+    <section class="page details-page"><h2 class="details-heading">${escapeHtml(title)}</h2>
+      <table class="details-table">${header}<tbody>${bodyRows}
+        <tr class="grand-total"><td colspan="5"></td><td>Total</td><td></td><td class="number">${formatQty(totals.quantity)}</td>
+        <td class="number">${formatQty(totals.billQuantity)}</td><td></td><td></td><td class="number">${formatMoney(totals.amount)}</td></tr>
+      </tbody></table>
+    </section>
+  </body></html>`;
+}
+
 function generatePDFHTML(reportData, currentDate, type, filters, billNumber) {
+  if (type === "product-wise") return generateYaraProductWisePDFHTML(reportData, currentDate, billNumber);
   let title = "";
   let headers = [];
   let rows = [];
@@ -2429,7 +2567,7 @@ function generatePDFHTML(reportData, currentDate, type, filters, billNumber) {
 async function getGeneratedLRNumbers() {
   try {
     const token = localStorage.getItem("token");
-    const response = await fetch("/api/saved-reports", {
+    const response = await fetch("/api/saved-reports?type=product-wise", {
       headers: { Authorization: `Bearer ${token}` },
     });
     const data = await response.json();
@@ -2462,7 +2600,10 @@ function ProductWiseBillingComponent({ branches, clients, plants, loadingBranche
   const [selectAll, setSelectAll] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [generatedLRs, setGeneratedLRs] = useState([]);
-
+  const [productSubgroups, setProductSubgroups] = useState([]);
+  const [loadingSubgroups, setLoadingSubgroups] = useState(false);
+  const [branchPlants, setBranchPlants] = useState([]);
+  const [loadingBranchPlants, setLoadingBranchPlants] = useState(false);
   const [filters, setFilters] = useState({
     branchId: "",
     clientId: "",
@@ -2480,6 +2621,56 @@ function ProductWiseBillingComponent({ branches, clients, plants, loadingBranche
   });
 
   useEffect(() => {
+    let active = true;
+    const loadSubgroups = async () => {
+      setLoadingSubgroups(true);
+      try {
+        const token = localStorage.getItem("token");
+        const response = await fetch("/api/itemGroups", { headers: { Authorization: `Bearer ${token}` } });
+        const result = await response.json();
+        if (active && result.success) {
+          const names = [...new Set((result.data || []).flatMap(group => group.subgroups || []).map(name => name.trim()).filter(Boolean))];
+          setProductSubgroups(names.sort((a, b) => a.localeCompare(b)));
+        }
+      } catch (error) {
+        console.error("Failed to load item subgroups for billing:", error);
+      } finally {
+        if (active) setLoadingSubgroups(false);
+      }
+    };
+    loadSubgroups();
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    const loadBranchPlants = async () => {
+      if (!filters.branchId) {
+        setBranchPlants([]);
+        setLoadingBranchPlants(false);
+        return;
+      }
+      setLoadingBranchPlants(true);
+      try {
+        const token = localStorage.getItem("token");
+        const response = await fetch(`/api/plants?branchId=${encodeURIComponent(filters.branchId)}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const result = await response.json();
+        if (active && result.success) setBranchPlants(result.data || []);
+        else if (active) setBranchPlants([]);
+      } catch (error) {
+        console.error("Failed to load plants for selected branch:", error);
+        if (active) setBranchPlants([]);
+      } finally {
+        if (active) setLoadingBranchPlants(false);
+      }
+    };
+    loadBranchPlants();
+    return () => { active = false; };
+  }, [filters.branchId]);
+
+  useEffect(() => {
     const today = new Date();
     const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
     const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
@@ -2493,10 +2684,24 @@ function ProductWiseBillingComponent({ branches, clients, plants, loadingBranche
   }, []);
 
   useEffect(() => {
-    if (filters.clientId && filters.startDate && filters.endDate) {
+    const filtersReady = Boolean(
+      filters.clientId && filters.branchId && filters.productCategories && filters.plantId &&
+      filters.orderType && filters.startDate && filters.endDate && filters.startDate <= filters.endDate
+    );
+    if (filtersReady) {
       fetchData();
+    } else {
+      setBillData([]);
+      setSummary({ totalWeight: 0, totalAmount: 0, totalRecords: 0 });
+      setSelectedRows({});
+      setSelectAll(false);
     }
   }, [filters.clientId, filters.branchId, filters.productCategories, filters.plantId, filters.orderType, filters.startDate, filters.endDate]);
+
+  const filtersReady = Boolean(
+    filters.clientId && filters.branchId && filters.productCategories && filters.plantId &&
+    filters.orderType && filters.startDate && filters.endDate && filters.startDate <= filters.endDate
+  );
 
   const loadGeneratedLRs = async () => {
     const lrs = await getGeneratedLRNumbers();
@@ -2589,6 +2794,7 @@ function ProductWiseBillingComponent({ branches, clients, plants, loadingBranche
       reportId: `RPT_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       type: "product-wise",
       filters: {
+        clientId: filters.clientId,
         clientName: filters.clientName,
         clientGST: filters.clientGST,
         clientState: filters.clientState,
@@ -2596,6 +2802,10 @@ function ProductWiseBillingComponent({ branches, clients, plants, loadingBranche
         clientAddress: filters.clientAddress,
         clientCity: filters.clientCity,
         branchName: branches.find((b) => b._id === filters.branchId)?.name || "N/A",
+        branchId: filters.branchId,
+        branchCode: branches.find((b) => b._id === filters.branchId)?.code || "",
+        plantId: filters.plantId,
+        plantCode: plants.find((p) => p._id === filters.plantId)?.code || "",
         startDate: filters.startDate,
         endDate: filters.endDate,
         orderType: filters.orderType === "NA" ? "All Types" : filters.orderType,
@@ -2608,7 +2818,8 @@ function ProductWiseBillingComponent({ branches, clients, plants, loadingBranche
     };
     await generateAndSaveReport(reportData, "product-wise", filters, async () => {
       await loadGeneratedLRs();
-      await fetchData();
+      setSelectedRows({});
+      setSelectAll(false);
     });
     setGenerating(false);
   };
@@ -2636,13 +2847,13 @@ function ProductWiseBillingComponent({ branches, clients, plants, loadingBranche
           <ClientSelector value={filters.clientId} onChange={handleClientChange} clients={clients} loading={loadingClients} />
         </div>
         <div className="col-span-12 md:col-span-3">
-          <BranchSelector value={filters.branchId} onChange={(val) => setFilters((prev) => ({ ...prev, branchId: val }))} branches={branches} loading={loadingBranches} />
+          <BranchSelector value={filters.branchId} onChange={(val) => setFilters((prev) => ({ ...prev, branchId: val, plantId: "" }))} branches={branches} loading={loadingBranches} />
         </div>
         <div className="col-span-12 md:col-span-2">
-          <ProductCategorySelector value={filters.productCategories} onChange={(val) => setFilters((prev) => ({ ...prev, productCategories: val }))} />
+          <ProductCategorySelector value={filters.productCategories} onChange={(val) => setFilters((prev) => ({ ...prev, productCategories: val }))} categories={productSubgroups} loading={loadingSubgroups} />
         </div>
         <div className="col-span-12 md:col-span-2">
-          <PlantCodeSelector value={filters.plantId} onChange={(val) => setFilters((prev) => ({ ...prev, plantId: val }))} plants={plants} loading={loadingPlants} />
+          <PlantCodeSelector value={filters.plantId} onChange={(val) => setFilters((prev) => ({ ...prev, plantId: val }))} plants={branchPlants} loading={loadingBranchPlants || loadingPlants} />
         </div>
         <div className="col-span-12 md:col-span-2">
           <OrderTypeSelector value={filters.orderType} onChange={(val) => setFilters((prev) => ({ ...prev, orderType: val }))} />
@@ -2674,6 +2885,12 @@ function ProductWiseBillingComponent({ branches, clients, plants, loadingBranche
         </div>
       )}
 
+      {!filtersReady && (
+        <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+          Select a client, branch, product category, plant code, order type, and valid date range to view pending records.
+        </div>
+      )}
+
       {billData.length > 0 && canGenerate && (
         <div className="mt-4">
           <button
@@ -2695,7 +2912,7 @@ function ProductWiseBillingComponent({ branches, clients, plants, loadingBranche
         </div>
       )}
 
-      {!loading && billData.length > 0 && (
+      {!loading && filtersReady && (
         <div className="mt-6 overflow-x-auto">
           <div className="mb-2 flex justify-between">
             <span>✅ {summary.totalRecords} records</span>
@@ -2722,7 +2939,12 @@ function ProductWiseBillingComponent({ branches, clients, plants, loadingBranche
               </tr>
             </thead>
             <tbody>
-              {billData.map((item, idx) => (
+              {billData.length === 0 ? (
+                <tr><td colSpan={canGenerate ? 11 : 10} className="px-3 py-8 border text-center text-slate-600">
+                  <p>No pending records found</p>
+                  {generatedLRs.length > 0 && <p className="text-sm text-slate-500 mt-2">All LR numbers have been billed already</p>}
+                </td></tr>
+              ) : billData.map((item, idx) => (
                 <tr key={idx} className={selectedRows[idx] && canGenerate ? "bg-blue-50" : ""}>
                   {canGenerate && (
                     <td className="px-3 py-2 border text-center">
@@ -2742,25 +2964,19 @@ function ProductWiseBillingComponent({ branches, clients, plants, loadingBranche
                 </tr>
               ))}
             </tbody>
-            <tfoot className="bg-emerald-100 font-bold">
+            {billData.length > 0 && <tfoot className="bg-emerald-100 font-bold">
               <tr>
                 <td colSpan={canGenerate ? 8 : 7} className="px-3 py-2 border text-right">TOTAL</td>
                 <td className="px-3 py-2 border text-right">{summary.totalWeight.toFixed(2)}</td>
                 <td className="px-3 py-2 border text-right"></td>
                 <td className="px-3 py-2 border text-right">₹ {summary.totalAmount.toFixed(2)}</td>
               </tr>
-            </tfoot>
+            </tfoot>}
           </table>
         </div>
       )}
 
       {!loading && !filters.clientId && <div className="text-center py-8">Select a client to view data</div>}
-      {!loading && filters.clientId && billData.length === 0 && (
-        <div className="text-center py-8">
-          <p>No pending records found</p>
-          {generatedLRs.length > 0 && <p className="text-sm text-gray-500 mt-2">All LR numbers have been billed already</p>}
-        </div>
-      )}
     </Card>
   );
 }
@@ -2913,7 +3129,8 @@ function GeneralBillingComponent({ branches, clients, loadingBranches, loadingCl
     };
     await generateAndSaveReport(reportData, "general", filters, async () => {
       await loadGeneratedLRs();
-      await fetchData();
+      setSelectedRows({});
+      setSelectAll(false);
     });
     setGenerating(false);
   };
@@ -3194,7 +3411,8 @@ function DetentionBillingComponent({ branches, clients, loadingBranches, loading
     };
     await generateAndSaveReport(reportData, "detention", filters, async () => {
       await loadGeneratedLRs();
-      await fetchData();
+      setSelectedRows({});
+      setSelectAll(false);
     });
     setGenerating(false);
   };
@@ -3469,7 +3687,8 @@ function CancellationBillingComponent({ branches, clients, loadingBranches, load
     };
     await generateAndSaveReport(reportData, "cancellation", filters, async () => {
       await loadGeneratedLRs();
-      await fetchData();
+      setSelectedRows({});
+      setSelectAll(false);
     });
     setGenerating(false);
   };
@@ -3744,7 +3963,8 @@ function OtherBillingComponent({ branches, clients, loadingBranches, loadingClie
     };
     await generateAndSaveReport(reportData, "other", filters, async () => {
       await loadGeneratedLRs();
-      await fetchData();
+      setSelectedRows({});
+      setSelectAll(false);
     });
     setGenerating(false);
   };
@@ -3878,6 +4098,108 @@ function OtherBillingComponent({ branches, clients, loadingBranches, loadingClie
 }
 
 // ==================== MAIN BILLING PAGE ====================
+function PreviousBills() {
+  const [reports, setReports] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let live = true;
+    const loadReports = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await fetch("/api/saved-reports", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const result = await response.json();
+        if (live && response.ok && result.success) setReports(result.data || []);
+      } catch (error) {
+        console.error("Failed to load previous bills:", error);
+      } finally {
+        if (live) setLoading(false);
+      }
+    };
+
+    loadReports();
+    window.addEventListener("billing-report-saved", loadReports);
+    return () => {
+      live = false;
+      window.removeEventListener("billing-report-saved", loadReports);
+    };
+  }, []);
+
+  const printReport = (report) => {
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      alert("Please allow pop-ups to print a previous bill.");
+      return;
+    }
+    const billNumber = report.billNumber || report.reportId;
+    const generatedAt = report.generatedAt ? new Date(report.generatedAt).toLocaleString() : "";
+    printWindow.document.write(generatePDFHTML(report, generatedAt, report.type, report.filters || {}, billNumber));
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  };
+
+  const typeLabels = {
+    "product-wise": "Yara Product-Wise",
+    general: "General",
+    detention: "Detention",
+    cancellation: "Cancellation",
+    other: "Other",
+  };
+
+  return (
+    <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-bold text-slate-900">Previous Bills</h2>
+          <p className="text-sm text-slate-500">Open a previously generated bill in print view.</p>
+        </div>
+        <span className="text-sm text-slate-500">{reports.length} saved</span>
+      </div>
+      {loading ? (
+        <p className="py-5 text-center text-sm text-slate-500">Loading previous bills…</p>
+      ) : reports.length === 0 ? (
+        <p className="py-5 text-center text-sm text-slate-500">No bills have been generated yet.</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[720px] text-left text-sm">
+            <thead className="bg-slate-50 text-xs uppercase text-slate-500">
+              <tr>
+                <th className="px-3 py-2">Bill No.</th>
+                <th className="px-3 py-2">Date</th>
+                <th className="px-3 py-2">Type</th>
+                <th className="px-3 py-2">Client</th>
+                <th className="px-3 py-2 text-right">LRs</th>
+                <th className="px-3 py-2 text-right">Amount</th>
+                <th className="px-3 py-2 text-right">Print</th>
+              </tr>
+            </thead>
+            <tbody>
+              {reports.map((report) => (
+                <tr key={report.reportId} className="border-t border-slate-100">
+                  <td className="px-3 py-2 font-semibold text-slate-800">{report.billNumber || report.reportId}</td>
+                  <td className="px-3 py-2 text-slate-600">{report.generatedAt ? new Date(report.generatedAt).toLocaleDateString() : "—"}</td>
+                  <td className="px-3 py-2 text-slate-600">{typeLabels[report.type] || report.type}</td>
+                  <td className="px-3 py-2 text-slate-600">{report.filters?.clientName || "—"}</td>
+                  <td className="px-3 py-2 text-right text-slate-600">{report.selectedRecords ?? report.data?.length ?? 0}</td>
+                  <td className="px-3 py-2 text-right text-slate-600">₹ {Number(report.summary?.totalAmount || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                  <td className="px-3 py-2 text-right">
+                    <button type="button" onClick={() => printReport(report)} className="rounded-lg border border-emerald-300 px-3 py-1.5 font-semibold text-emerald-700 hover:bg-emerald-50">
+                      Print View
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+}
+
 export default function BillingPage() {
   const router = useRouter();
   const { canView, canCreate, loading: permissionLoading } = usePermission();
@@ -4078,14 +4400,18 @@ const fetchPlants = async () => {
               </svg>
               Back to Dashboard
             </button>
-            <div className="text-xl font-extrabold text-slate-900">Billing Reports</div>
+            <div>
+              <h1 className="text-xl font-extrabold text-slate-900">Billing</h1>
+              <p className="mt-0.5 text-sm text-slate-500">Review transport charges and generate billing reports.</p>
+            </div>
           </div>
         </div>
       </div>
-      <div className="mx-auto max-w-7xl p-6">
+      <main className="mx-auto max-w-7xl p-6">
         <BillingTypeSelector value={selectedBillingType} onChange={setSelectedBillingType} />
         {renderSelectedBillingCard()}
-      </div>
+        <PreviousBills />
+      </main>
     </div>
   );
 }

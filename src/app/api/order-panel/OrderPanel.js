@@ -987,6 +987,8 @@ const orderPanelSchema = new mongoose.Schema({
       ref: 'Branch'
     },
     toName: String,
+    city: String,
+    cityName: String,
     taluka: String,
     talukaName: String,
     district: String,

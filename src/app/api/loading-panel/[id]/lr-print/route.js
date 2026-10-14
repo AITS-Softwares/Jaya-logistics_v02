@@ -11,7 +11,7 @@ import { withAuth } from "@/lib/auth";
 import { companyScopeFilter } from "@/lib/companyScope";
 import LoadingPanel from "@/app/api/loading-panel/LoadingPanel";
 import ConsignmentNote from "@/app/api/consignment-note/ConsignmentNote";
-import { getLRCompletion, getLoadingApprovals, LOADING_APPROVAL_SELECT } from "../../findLRs";
+import { getLRCompletion, getLoadingGate, LOADING_APPROVAL_SELECT } from "../../findLRs";
 import { recordOutAfterAllPrinted } from "../../lrOut";
 
 export const runtime = "nodejs";
@@ -30,7 +30,7 @@ export const POST = withAuth(async (req, context, user) => {
             .lean();
         if (!panel) return fail("Loading Info not found.", 404);
 
-        const approvals = getLoadingApprovals(panel);
+        const approvals = await getLoadingGate(user, panel);
         if (!approvals.allApproved) return fail(approvals.message, 403);
 
         const before = await getLRCompletion(user, panel);

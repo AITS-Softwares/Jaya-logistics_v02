@@ -111,6 +111,7 @@ export async function POST(req) {
         companyId,
         createdBy,
         customerName: row.customerName,
+        customerCodeValue: row.customerCodeValue || "",
         customerGroup: row.customerGroup,
         customerType: row.customerType,
         emailId: row.emailId,

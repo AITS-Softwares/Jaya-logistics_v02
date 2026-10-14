@@ -78,6 +78,7 @@ import connectDb from "@/lib/db";
 import POD from "@/app/api/pod-panel/POD";
 import Plant from "@/app/api/plants/schema";
 import PurchasePanel from "@/app/api/purchase-panel/PurchasePanel";
+import BalancePayment from "@/app/api/balance-payment/BalancePayment";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import { activeOperatingCompanyId, companyScopeFilter } from "@/lib/companyScope";
 import { getAdvanceSummaryMap, deriveBalanceForPod, getAdvanceBankDetails } from "@/lib/advanceSettlement";
@@ -176,8 +177,24 @@ export async function GET(req) {
         const pods = await POD.find(companyScopeFilter(user, APPROVED_POD_FILTER))
             .select("podNo purchaseNo companyName subCompanyName vendorFinancial products podStatus createdAt purchaseOrders.orderNo")
             .sort({ createdAt: -1 }).limit(5000).lean();
-        const advMap = await getAdvanceSummaryMap(user, pods.map((p) => p.purchaseNo));
-        const data = pods.map((p) => {
+        const existingPayments = await BalancePayment.find(companyScopeFilter(user))
+            .select("podNo purchaseNo orderRows.orderNo")
+            .lean();
+        const paidPodNos = new Set(existingPayments.map((payment) => String(payment.podNo || "").trim()).filter(Boolean));
+        const paidPurchaseNos = new Set(existingPayments.map((payment) => String(payment.purchaseNo || "").trim()).filter(Boolean));
+        const paidOrderNos = new Set(existingPayments.flatMap((payment) => (payment.orderRows || [])
+            .map((row) => String(row.orderNo || "").trim()).filter(Boolean)));
+        const availablePods = pods.filter((pod) => {
+            const podNoKey = String(pod.podNo || "").trim();
+            const purchaseNoKey = String(pod.purchaseNo || "").trim();
+            const orderNos = (pod.purchaseOrders || []).map((order) => String(order.orderNo || "").trim()).filter(Boolean);
+            return !paidPodNos.has(podNoKey) && !paidPurchaseNos.has(purchaseNoKey) && !orderNos.some((orderNo) => paidOrderNos.has(orderNo));
+        });
+        if (new URL(req.url).searchParams.get("lookup") === "pendingCount") {
+            return NextResponse.json({ success: true, data: { count: availablePods.length } });
+        }
+        const advMap = await getAdvanceSummaryMap(user, availablePods.map((p) => p.purchaseNo));
+        const data = availablePods.map((p) => {
             const f = derivePodFigures(p, advMap.get(String(p.purchaseNo || "").trim())?.advance || 0);
             return {
                 _id: p._id, podNo: p.podNo, purchaseNo: p.purchaseNo,

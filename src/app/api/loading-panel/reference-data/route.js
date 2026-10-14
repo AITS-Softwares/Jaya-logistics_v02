@@ -155,6 +155,55 @@ function searchFilter(search, fields) {
 }
 
 /**
+ * Vehicle Negotiations the Loading Info create dropdown offers: ready for the next step and not yet
+ * used by a Loading Info. The "yet to be created" count on the Loading Info list uses this same rule.
+ */
+async function getAvailableVnnsForLoading(user) {
+  const [vehicleNegotiations, loadingPanels] = await Promise.all([
+    VehicleNegotiation.find(
+      companyScopeFilter(user),
+      {
+        vnnNo: 1,
+        customerName: 1,
+        branch: 1,
+        branchName: 1,
+        branchCode: 1,
+        subCompanyId: 1,
+        subCompanyName: 1,
+        subCompanyCode: 1,
+        delivery: 1,
+        billingType: 1,
+        loadingPoints: 1,
+        dropPoints: 1,
+        collectionCharges: 1,
+        cancellationCharges: 1,
+        loadingCharges: 1,
+        otherCharges: 1,
+        orders: 1,
+        "approval.part3Status": 1,
+        "approval.vehicleNo": 1,
+        "approval.mobile": 1,
+        "approval.purchaseType": 1,
+        "approval.paymentTerms": 1,
+        "workflow.placementCompletedAt": 1,
+      },
+    ).sort({ createdAt: -1 }).lean(),
+    LoadingPanel.find(
+      companyScopeFilter(user),
+      { vehicleNegotiationNo: 1 },
+    ).lean(),
+  ]);
+
+  const usedVnnNumbers = new Set(
+    loadingPanels
+      .map((panel) => panel.vehicleNegotiationNo)
+      .filter((vnnNo) => vnnNo && vnnNo !== "N/A" && vnnNo !== "-"),
+  );
+
+  return vehicleNegotiations.filter((vnn) => isVnnReadyForDownstream(vnn) && !usedVnnNumbers.has(vnn.vnnNo));
+}
+
+/**
  * Data required by the Loading Info create form.
  *
  * This deliberately does not proxy the broader VNN, Order Panel, Branch, or
@@ -172,6 +221,11 @@ export const GET = withAuth(async (req, context, user) => {
     // Do not make Loading Info users depend on the master-data routes. These
     // routes enforce Master Data permission and were the source of the 403s
     // and blank auto-filled fields for Loading Info-only users.
+    if (lookup === "pendingCount") {
+      const pending = await getAvailableVnnsForLoading(user);
+      return NextResponse.json({ success: true, data: { count: pending.length } });
+    }
+
     if (lookup === "vehicles") {
       const vehicles = await Vehicle.find(
         {
@@ -223,39 +277,7 @@ export const GET = withAuth(async (req, context, user) => {
       return NextResponse.json({ success: true, data: { packData: await packDataForVnn(vnn, user) } });
     }
 
-    const [vehicleNegotiations, loadingPanels, branches, plants, subCompanies] = await Promise.all([
-      VehicleNegotiation.find(
-        companyScopeFilter(user),
-        {
-          vnnNo: 1,
-          customerName: 1,
-          branch: 1,
-          branchName: 1,
-          branchCode: 1,
-          subCompanyId: 1,
-          subCompanyName: 1,
-          subCompanyCode: 1,
-          delivery: 1,
-          billingType: 1,
-          loadingPoints: 1,
-          dropPoints: 1,
-          collectionCharges: 1,
-          cancellationCharges: 1,
-          loadingCharges: 1,
-          otherCharges: 1,
-          orders: 1,
-          "approval.part3Status": 1,
-          "approval.vehicleNo": 1,
-          "approval.mobile": 1,
-          "approval.purchaseType": 1,
-          "approval.paymentTerms": 1,
-          "workflow.placementCompletedAt": 1,
-        },
-      ).sort({ createdAt: -1 }).lean(),
-      LoadingPanel.find(
-        companyScopeFilter(user),
-        { vehicleNegotiationNo: 1 },
-      ).lean(),
+    const [branches, plants, subCompanies] = await Promise.all([
       Branch.find({ companyId: user.companyId, isActive: { $ne: false } }, { name: 1, code: 1 })
         .sort({ name: 1 })
         .lean(),
@@ -268,15 +290,7 @@ export const GET = withAuth(async (req, context, user) => {
       ).sort({ name: 1 }).lean(),
     ]);
 
-    const usedVnnNumbers = new Set(
-      loadingPanels
-        .map((panel) => panel.vehicleNegotiationNo)
-        .filter((vnnNo) => vnnNo && vnnNo !== "N/A" && vnnNo !== "-"),
-    );
-
-    const negotiations = vehicleNegotiations
-      .filter((vnn) => isVnnReadyForDownstream(vnn) && !usedVnnNumbers.has(vnn.vnnNo))
-      .map(loadingVnnReference);
+    const negotiations = (await getAvailableVnnsForLoading(user)).map(loadingVnnReference);
 
     return NextResponse.json({
       success: true,

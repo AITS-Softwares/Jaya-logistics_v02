@@ -4,10 +4,13 @@ const legalProfileSchema = new mongoose.Schema(
   {
     legalName: { type: String, trim: true, default: "" },
     gstNumber: { type: String, uppercase: true, trim: true, default: "" },
+    pan: { type: String, uppercase: true, trim: true, default: "" },
     address: { type: String, trim: true, default: "" },
     country: { type: String, trim: true, default: "" },
     state: { type: String, trim: true, default: "" },
     pinCode: { type: String, trim: true, default: "" },
+    phone: { type: String, trim: true, default: "" },
+    email: { type: String, lowercase: true, trim: true, default: "" },
     bankName: { type: String, trim: true, default: "" },
     bankAccountName: { type: String, trim: true, default: "" },
     bankAccountNumber: { type: String, trim: true, default: "" },

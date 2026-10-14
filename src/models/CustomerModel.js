@@ -169,6 +169,7 @@ const customerSchema = new mongoose.Schema({
   assignedAgents: [{ type: mongoose.Schema.Types.ObjectId, ref: 'CompanyUser' }],
   lastAssignedAgentIndex: { type: Number, default: -1 },
   customerCode: { type: String, trim: true, uppercase: true },
+  customerCodeValue: { type: String, trim: true, uppercase: true, default: "" },
   customerName: { type: String, required: true, trim: true },
   customerGroup: { type: String, required: true, trim: true },
   customerType: { type: String, required: true, enum: ['Individual', 'Business', 'Government', 'E-commerce'], default: 'Individual' },

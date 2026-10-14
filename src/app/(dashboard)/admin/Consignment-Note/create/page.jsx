@@ -4177,6 +4177,14 @@ export default function CreateConsignmentNote() {
       const data = await res.json();
       console.log('Orders API response:', data);
 
+      const loadingInfoRes = await fetch('/api/consignment-note/reference-data?lookup=loadingInfoOrders', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!loadingInfoRes.ok) throw new Error(`Loading Info lookup returned ${loadingInfoRes.status}`);
+      const loadingInfoData = await loadingInfoRes.json();
+      if (!loadingInfoData.success) throw new Error(loadingInfoData.message || 'Failed to load Loading Info orders');
+      const loadingInfoOrderNos = new Set((loadingInfoData.data?.orderNumbers || []).map(normText));
+
       // Collect order numbers that already have an approved/completed LR
       const approvedRowIds = new Set();
       const legacyKeys = new Set();
@@ -4228,6 +4236,7 @@ export default function CreateConsignmentNote() {
         const availableOrders = data.data
           .filter((o) => {
             const no = normText(o.orderNo || o.orderPanelNo);
+            if (!loadingInfoOrderNos.has(no)) return false;
             const covered = (o.originalRowId && approvedRowIds.has(String(o.originalRowId)))
               || legacyKeys.has(`${no}|${normText(o.to)}`);
             if (covered || seen.has(no)) return false;

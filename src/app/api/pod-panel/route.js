@@ -195,8 +195,9 @@ async function validateUser(req, requiredAction = null) {
   if (!isAuthorized(user)) {
     return { error: "Access denied. You don't have permission to access Proof of Delivery.", status: 403 };
   }
-  if (requiredAction && !hasPermission(user, requiredAction)) {
-    return { error: `Permission denied: ${requiredAction} action not allowed for Proof of Delivery.`, status: 403 };
+  const actions = Array.isArray(requiredAction) ? requiredAction : requiredAction ? [requiredAction] : [];
+  if (actions.length && !actions.some((a) => hasPermission(user, a))) {
+    return { error: `Permission denied: ${actions.join(" or ")} action not allowed for Proof of Delivery.`, status: 403 };
   }
   return { user, error: null, status: 200 };
 }
@@ -335,7 +336,9 @@ function unique(values) {
 export async function GET(req) {
   try {
     await connectDb();
-    const { user, error, status } = await validateUser(req, "view");
+    // Opening one POD (edit / approve pages) needs view OR edit OR approve; the list still needs view
+    const openId = new URL(req.url).searchParams.get("id");
+    const { user, error, status } = await validateUser(req, openId ? ["view", "edit", "approve"] : "view");
     if (error) return authFail(error, status);
 
     const url = new URL(req.url);
@@ -697,7 +700,7 @@ export async function PUT(req) {
     if (!canEdit) {
       const APPROVE_ONLY_KEYS = [
         "id", "podStatus", "paymentStatus", "podStatusSection",
-        "remarks", "approvalStatus", "approvedBy", "approvedAt",
+        "remarks", "approvalStatus", "approvedBy", "approvedAt", "lrReceived",
       ];
       const extra = Object.keys(body).filter((k) => !APPROVE_ONLY_KEYS.includes(k));
       if (extra.length) {

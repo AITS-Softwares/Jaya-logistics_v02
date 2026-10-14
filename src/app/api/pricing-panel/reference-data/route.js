@@ -58,6 +58,56 @@ function pricingVnnReference(vnn) {
 }
 
 /**
+ * Vehicle Negotiations the Pricing create dropdown offers: ready for the next step and not yet in a
+ * Pricing Panel. The "yet to be created" count on the Pricing list uses this same rule.
+ */
+async function getAvailableVnnsForPricing(user) {
+  const [vehicleNegotiations, pricingPanels] = await Promise.all([
+    VehicleNegotiation.find(
+      companyScopeFilter(user),
+      {
+        vnnNo: 1,
+        date: 1,
+        customerId: 1,
+        customerName: 1,
+        customerCode: 1,
+        contactPerson: 1,
+        branch: 1,
+        branchName: 1,
+        branchCode: 1,
+        subCompanyId: 1,
+        subCompanyName: 1,
+        subCompanyCode: 1,
+        delivery: 1,
+        billingType: 1,
+        loadingPoints: 1,
+        dropPoints: 1,
+        collectionCharges: 1,
+        cancellationCharges: 1,
+        loadingCharges: 1,
+        otherCharges: 1,
+        orders: 1,
+        "approval.part3Status": 1,
+        "approval.vehicleNo": 1,
+        "approval.mobile": 1,
+        "approval.purchaseType": 1,
+        "approval.paymentTerms": 1,
+        "workflow.placementCompletedAt": 1,
+      },
+    ).sort({ createdAt: -1 }).lean(),
+    PricingPanel.find(companyScopeFilter(user), { "orders.vehicleNegotiationId": 1 }).lean(),
+  ]);
+
+  const usedVnnIds = new Set(
+    pricingPanels.flatMap((panel) => (panel.orders || []).map((order) => order.vehicleNegotiationId))
+      .filter(Boolean)
+      .map(String),
+  );
+
+  return vehicleNegotiations.filter((vnn) => isVnnReadyForDownstream(vnn) && !usedVnnIds.has(String(vnn._id)));
+}
+
+/**
  * Restricted Pricing Panel create-form data. This avoids granting broad read
  * permissions to the Vehicle Negotiation, Order Panel, Branch, Plant, and
  * Sub-company modules merely to create a pricing record.
@@ -85,40 +135,12 @@ export const GET = withAuth(async (req, context, user) => {
       return NextResponse.json({ success: true, data: { districts } });
     }
 
-    const [vehicleNegotiations, pricingPanels, branches, plants, subCompanies, locations, countries, states, rawRateMasters] = await Promise.all([
-      VehicleNegotiation.find(
-        companyScopeFilter(user),
-        {
-          vnnNo: 1,
-          date: 1,
-          customerId: 1,
-          customerName: 1,
-          customerCode: 1,
-          contactPerson: 1,
-          branch: 1,
-          branchName: 1,
-          branchCode: 1,
-          subCompanyId: 1,
-          subCompanyName: 1,
-          subCompanyCode: 1,
-          delivery: 1,
-          billingType: 1,
-          loadingPoints: 1,
-          dropPoints: 1,
-          collectionCharges: 1,
-          cancellationCharges: 1,
-          loadingCharges: 1,
-          otherCharges: 1,
-          orders: 1,
-          "approval.part3Status": 1,
-          "approval.vehicleNo": 1,
-          "approval.mobile": 1,
-          "approval.purchaseType": 1,
-          "approval.paymentTerms": 1,
-          "workflow.placementCompletedAt": 1,
-        },
-      ).sort({ createdAt: -1 }).lean(),
-      PricingPanel.find(companyScopeFilter(user), { "orders.vehicleNegotiationId": 1 }).lean(),
+    if (url.searchParams.get("lookup") === "pendingCount") {
+      const pending = await getAvailableVnnsForPricing(user);
+      return NextResponse.json({ success: true, data: { count: pending.length } });
+    }
+
+    const [branches, plants, subCompanies, locations, countries, states, rawRateMasters] = await Promise.all([
       Branch.find({ companyId: user.companyId, isActive: { $ne: false } }, { name: 1, code: 1 })
         .sort({ name: 1 })
         .lean(),
@@ -141,15 +163,7 @@ export const GET = withAuth(async (req, context, user) => {
       ).sort({ createdAt: -1 }).lean(),
     ]);
 
-    const usedVnnIds = new Set(
-      pricingPanels.flatMap((panel) => (panel.orders || []).map((order) => order.vehicleNegotiationId))
-        .filter(Boolean)
-        .map(String),
-    );
-
-    const vehicleNegotiationsForPricing = vehicleNegotiations
-      .filter((vnn) => isVnnReadyForDownstream(vnn) && !usedVnnIds.has(String(vnn._id)))
-      .map(pricingVnnReference);
+    const vehicleNegotiationsForPricing = (await getAvailableVnnsForPricing(user)).map(pricingVnnReference);
 
     const customerIds = [...new Set(
       rawRateMasters

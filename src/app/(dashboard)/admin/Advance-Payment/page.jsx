@@ -924,6 +924,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { usePermission } from "../hooks/usePermission";
 import Link from "next/link";
+import PendingToCreateChip from "@/components/PendingToCreateChip";
 
 export default function AdvancePaymentList() {
   const router = useRouter();
@@ -1225,6 +1226,14 @@ export default function AdvancePaymentList() {
               Manage all advance payments in one place
             </p>
           </div>
+
+          <PendingToCreateChip
+            endpoint="/api/purchase-panel?for=advance-payment&format=table&count=1"
+            singular="Advance"
+            plural="Advances"
+            href={canCreate(MODULE_NAME) ? "/admin/Advance-Payment/create" : undefined}
+            hint="Purchases waiting for an Advance Payment"
+          />
 
           {canCreate(MODULE_NAME) && (
             <button

@@ -34,18 +34,18 @@
 // //     setLoading(true);
 // //     try {
 // //       const token = localStorage.getItem('token');
-      
+
 // //       const params = new URLSearchParams({ format: 'table' });
 // //       if (filters.search) params.append('search', filters.search);
 // //       if (filters.fromDate) params.append('fromDate', filters.fromDate);
 // //       if (filters.toDate) params.append('toDate', filters.toDate);
-      
+
 // //       const res = await fetch(`/api/loading-panel?${params.toString()}`, {
 // //         headers: { Authorization: `Bearer ${token}` },
 // //       });
-      
+
 // //       const data = await res.json();
-      
+
 // //       if (data.success) {
 // //         setPanels(data.data || []);
 // //         if (data.stats) {
@@ -295,7 +295,7 @@
 // //                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
 // //                             </svg>
 // //                           </button>
-                          
+
 // //                           {/* Approve Button */}
 // //                           <button
 // //                             onClick={() => handleApprove(item._id)}
@@ -306,7 +306,7 @@
 // //                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
 // //                             </svg>
 // //                           </button>
-                          
+
 // //                           {/* Delete Button */}
 // //                           <button
 // //                             onClick={() => handleDelete(item._id, item.vehicleArrivalNo)}
@@ -399,18 +399,18 @@
 //     setError(null);
 //     try {
 //       const token = localStorage.getItem('token');
-      
+
 //       const params = new URLSearchParams({ format: 'table' });
 //       if (filters.search) params.append('search', filters.search);
 //       if (filters.fromDate) params.append('fromDate', filters.fromDate);
 //       if (filters.toDate) params.append('toDate', filters.toDate);
-      
+
 //       const res = await fetch(`/api/loading-panel?${params.toString()}`, {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       const data = await res.json();
-      
+
 //       if (data.success) {
 //         setPanels(data.data || []);
 //         if (data.stats) {
@@ -726,7 +726,7 @@
 //                               </svg>
 //                             </button>
 //                           )}
-                          
+
 //                           {/* Approve Button - Only shown if user has approve permission */}
 //                           {canApprove(MODULE_NAME) && (
 //                             <button
@@ -739,7 +739,7 @@
 //                               </svg>
 //                             </button>
 //                           )}
-                          
+
 //                           {/* Delete Button - Only shown if user has delete permission */}
 //                           {canDelete(MODULE_NAME) && (
 //                             <button
@@ -804,6 +804,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { usePermission } from "../hooks/usePermission";
 import Link from "next/link";
+import PendingToCreateChip from "@/components/PendingToCreateChip";
 
 export default function LoadingPanelList() {
   const router = useRouter();
@@ -837,18 +838,18 @@ export default function LoadingPanelList() {
     setError(null);
     try {
       const token = localStorage.getItem('token');
-      
+
       const params = new URLSearchParams({ format: 'table' });
       if (filters.search) params.append('search', filters.search);
       if (filters.fromDate) params.append('fromDate', filters.fromDate);
       if (filters.toDate) params.append('toDate', filters.toDate);
-      
+
       const res = await fetch(`/api/loading-panel?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       const data = await res.json();
-      
+
       if (data.success) {
         setPanels(data.data || []);
         if (data.stats) {
@@ -992,7 +993,7 @@ export default function LoadingPanelList() {
   };
 
   const getStatusColor = (status) => {
-    switch(status) {
+    switch (status) {
       case 'Approved': return 'bg-green-100 text-green-800';
       case 'Rejected': return 'bg-red-100 text-red-800';
       case 'Completed': return 'bg-blue-100 text-blue-800';
@@ -1019,7 +1020,7 @@ export default function LoadingPanelList() {
         <div className="text-center max-w-md p-8 bg-white rounded-xl shadow-lg">
           <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg className="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                 d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
           </div>
@@ -1052,6 +1053,14 @@ export default function LoadingPanelList() {
               Manage all vehicle loading entries in one place
             </p>
           </div>
+
+          <PendingToCreateChip
+            endpoint="/api/loading-panel/reference-data?lookup=pendingCount"
+            singular="Loading Info"
+            plural="Loading Info records"
+            href={canCreate(MODULE_NAME) ? "/admin/Loading-Info/create" : undefined}
+            hint="Approved Vehicle Negotiations waiting for a Loading Info"
+          />
 
           {canCreate(MODULE_NAME) && (
             <button
@@ -1160,16 +1169,16 @@ export default function LoadingPanelList() {
                     <tr key={item._id} className="hover:bg-yellow-50 transition">
                       <td className="px-4 py-3 text-slate-600">{index + 1}</td>
                       <td className="px-4 py-3 text-slate-600">{item.date}</td>
-                       <td className="px-4 py-3 font-medium text-slate-900"><button onClick={() => router.push(`/admin/Loading-Info/${item._id}/view`)} className="hover:text-indigo-600 hover:underline">{item.vehicleArrivalNo}</button></td>
+                      <td className="px-4 py-3 font-medium text-slate-900"><button onClick={() => router.push(`/admin/Loading-Info/${item._id}/view`)} className="hover:text-indigo-600 hover:underline">{item.vehicleArrivalNo}</button></td>
                       <td className="px-4 py-3">
-                         {item.vnnNo ? (
-                           <span className="rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800">{item.vnnNo}</span>
+                        {item.vnnNo ? (
+                          <span className="rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800">{item.vnnNo}</span>
                         ) : (
                           <span className="text-slate-400">-</span>
                         )}
-                       </td>
-                       <td className="px-4 py-3"><div className="flex max-w-48 flex-wrap gap-1">{(item.orderNumbers || []).map((orderNo) => <span key={orderNo} className="rounded-full bg-purple-100 px-2 py-1 text-xs font-medium text-purple-800">{orderNo}</span>)}</div></td>
-                       <td className="px-4 py-3">
+                      </td>
+                      <td className="px-4 py-3"><div className="flex max-w-48 flex-wrap gap-1">{(item.orderNumbers || []).map((orderNo) => <span key={orderNo} className="rounded-full bg-purple-100 px-2 py-1 text-xs font-medium text-purple-800">{orderNo}</span>)}</div></td>
+                      <td className="px-4 py-3">
                         <div className="font-medium text-slate-800">{item.branch}</div>
                       </td>
                       <td className="px-4 py-3 font-medium">{item.vehicleNo}</td>
@@ -1214,7 +1223,7 @@ export default function LoadingPanelList() {
                               </svg>
                             </button>
                           )}
-                          
+
                           {/* ✅ Quick Approve Button - Green (with checkmark) - Based ONLY on permission */}
                           {canApprove(MODULE_NAME) && (
                             <button
@@ -1232,7 +1241,7 @@ export default function LoadingPanelList() {
                               )}
                             </button>
                           )}
-                          
+
                           {/* ✅ Full Approve Button - Blue (with details) - Based ONLY on permission */}
                           {canApprove(MODULE_NAME) && (
                             <button
@@ -1245,7 +1254,7 @@ export default function LoadingPanelList() {
                               </svg>
                             </button>
                           )}
-                          
+
                           {/* Delete Button - Only shown if user has delete permission */}
                           {canDelete(MODULE_NAME) && (
                             <button

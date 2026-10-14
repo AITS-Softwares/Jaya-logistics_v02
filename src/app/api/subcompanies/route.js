@@ -190,6 +190,39 @@ export async function POST(req) {
   }
 }
 
+// Update company-specific legal details used by invoice and bill print views.
+export async function PUT(req) {
+  try {
+    await connectDb();
+    const { user, error, status } = await validateUser(req, 'edit');
+    if (error) return NextResponse.json({ success: false, message: error }, { status });
+
+    const { id, legalProfile = {} } = await req.json();
+    if (!id) return NextResponse.json({ success: false, message: "Sub-company ID is required" }, { status: 400 });
+    const editableProfile = {
+      legalName: String(legalProfile.legalName || "").trim(),
+      gstNumber: String(legalProfile.gstNumber || "").trim().toUpperCase(),
+      pan: String(legalProfile.pan || "").trim().toUpperCase(),
+      address: String(legalProfile.address || "").trim(),
+      state: String(legalProfile.state || "").trim(),
+      pinCode: String(legalProfile.pinCode || "").trim(),
+      phone: String(legalProfile.phone || "").trim(),
+      email: String(legalProfile.email || "").trim().toLowerCase(),
+    };
+    const profileSet = Object.fromEntries(Object.entries(editableProfile).map(([key, value]) => [`legalProfile.${key}`, value]));
+    const subCompany = await SubCompany.findOneAndUpdate(
+      { _id: id, companyId: user.companyId },
+      { $set: profileSet },
+      { new: true, runValidators: true }
+    );
+    if (!subCompany) return NextResponse.json({ success: false, message: "Sub-company not found" }, { status: 404 });
+    return NextResponse.json({ success: true, data: subCompany, message: "Billing details updated" });
+  } catch (error) {
+    console.error("PUT /subcompanies error:", error);
+    return NextResponse.json({ success: false, message: "Failed to update billing details" }, { status: 500 });
+  }
+}
+
 // ========================================
 // DELETE /api/subcompanies
 // ========================================

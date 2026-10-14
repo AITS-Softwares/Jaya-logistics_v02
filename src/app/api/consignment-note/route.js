@@ -1410,6 +1410,7 @@ import connectDb from "@/lib/db";
 import ConsignmentNote from "./ConsignmentNote";
 import LoadingPanel from "../loading-panel/LoadingPanel";
 import PurchasePanel from "../purchase-panel/PurchasePanel";
+import OrderPanel from "../order-panel/OrderPanel";
 import DetentionRule from "../detention-rules/DetentionRule";
 import { calculateDetention, selectDetentionRule } from "@/lib/detentionCalculation";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
@@ -1633,6 +1634,36 @@ export async function GET(req) {
     const toDate = url.searchParams.get("toDate");
     const statusFilter = url.searchParams.get("status");
     const loadingInfoNo = url.searchParams.get("loadingInfoNo");
+    if (url.searchParams.get("lookup") === "pendingCount") {
+      const normalize = (value) => String(value || "").trim().toLowerCase();
+      const [orders, notes, loadingInfos] = await Promise.all([
+        OrderPanel.find(companyScopeFilter(user)).select("orderPanelNo plantRows").lean(),
+        ConsignmentNote.find(companyScopeFilter(user)).select("orderRowId header.orderNo header.to header.status").lean(),
+        LoadingPanel.find(companyScopeFilter(user)).select("orderRows.orderNo").lean(),
+      ]);
+      const loadingInfoOrderNos = new Set(loadingInfos.flatMap((loadingInfo) =>
+        (loadingInfo.orderRows || []).map((row) => normalize(row.orderNo)).filter(Boolean),
+      ));
+      const approvedRows = new Set(notes.filter((note) => note.header?.status === "Approved" && note.orderRowId).map((note) => String(note.orderRowId)));
+      const legacyKeys = new Set(notes.filter((note) => note.header?.status === "Approved" && !note.orderRowId).map((note) => `${normalize(note.header?.orderNo)}|${normalize(note.header?.to)}`));
+      const sourceRows = orders.flatMap((order) => (
+        order.plantRows?.length
+          ? order.plantRows.map((row) => ({ originalRowId: row._id, orderNo: order.orderPanelNo, to: row.toName || row.to || "" }))
+          : [{ orderNo: order.orderPanelNo, to: "N/A" }]
+      ));
+      const seen = new Set();
+      let count = 0;
+      sourceRows.forEach((row) => {
+        const no = normalize(row.orderNo);
+        if (!no || !loadingInfoOrderNos.has(no)) return;
+        const covered = (row.originalRowId && approvedRows.has(String(row.originalRowId)))
+          || legacyKeys.has(`${no}|${normalize(row.to)}`);
+        if (covered || seen.has(no)) return;
+        seen.add(no);
+        count += 1;
+      });
+      return NextResponse.json({ success: true, data: { count } });
+    }
 
     // ============ CASE 1: GET SINGLE BY ID ============
     if (id) {

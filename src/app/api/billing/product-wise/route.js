@@ -125,6 +125,9 @@
 import { NextResponse } from "next/server";
 import connectDb from "@/lib/db";
 import ConsignmentNote from "../../consignment-note/ConsignmentNote";
+import Item from "@/models/ItemModels";
+import OrderPanel from "../../order-panel/OrderPanel";
+import { companyScopeFilter } from "@/lib/companyScope";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 
 // ── PERMISSION FUNCTIONS ──
@@ -184,7 +187,8 @@ function extractProductsFromNote(note) {
           products.push({
             productName: row.productName || 'Palletized Cargo',
             actualWt: parseFloat(row.actualWt) || 0,
-            billedWt: parseFloat(row.chargedWt) || parseFloat(row.actualWt) || 0
+            billedWt: parseFloat(row.chargedWt) || parseFloat(row.actualWt) || 0,
+            unit: row.wtUom || row.uom || note.header?.unit || 'MT'
           });
         }
       });
@@ -197,7 +201,8 @@ function extractProductsFromNote(note) {
           products.push({
             productName: row.productName || 'Uniform Cargo',
             actualWt: parseFloat(row.actualWt) || 0,
-            billedWt: parseFloat(row.chargedWt) || parseFloat(row.actualWt) || 0
+            billedWt: parseFloat(row.chargedWt) || parseFloat(row.actualWt) || 0,
+            unit: row.wtUom || row.uom || note.header?.unit || 'MT'
           });
         }
       });
@@ -210,7 +215,8 @@ function extractProductsFromNote(note) {
           products.push({
             productName: row.productName || 'Loose Cargo',
             actualWt: parseFloat(row.actualWt) || 0,
-            billedWt: parseFloat(row.chargedWt) || parseFloat(row.actualWt) || 0
+            billedWt: parseFloat(row.chargedWt) || parseFloat(row.actualWt) || 0,
+            unit: row.wtUom || row.uom || note.header?.unit || 'MT'
           });
         }
       });
@@ -223,7 +229,8 @@ function extractProductsFromNote(note) {
           products.push({
             productName: row.productName || 'General Cargo',
             actualWt: parseFloat(row.actualWt) || 0,
-            billedWt: parseFloat(row.chargedWt) || parseFloat(row.actualWt) || 0
+            billedWt: parseFloat(row.chargedWt) || parseFloat(row.actualWt) || 0,
+            unit: row.wtUom || row.uom || note.header?.unit || 'MT'
           });
         }
       });
@@ -234,7 +241,8 @@ function extractProductsFromNote(note) {
     products.push({
       productName: 'General Cargo',
       actualWt: note.totalWeight || 0,
-      billedWt: note.totalWeight || 0
+      billedWt: note.totalWeight || 0,
+      unit: note.header?.unit || 'MT'
     });
   }
   
@@ -289,9 +297,31 @@ export async function POST(req) {
     }
 
     // Fetch consignment notes
-    const consignmentNotes = await ConsignmentNote.find(query)
+    const consignmentNotes = await ConsignmentNote.find(companyScopeFilter(user, query))
       .sort({ createdAt: -1 })
       .lean();
+
+    const subgroupItems = productCategories
+      ? await Item.find({ companyId: user.companyId, subgroup: productCategories, status: "active" }).select("itemName").lean()
+      : [];
+    const subgroupItemNames = new Set(subgroupItems.map(item => item.itemName?.trim().toLowerCase()).filter(Boolean));
+
+    const orderNumbers = [...new Set(consignmentNotes.map(note => note.header?.orderNo).filter(Boolean))];
+    const orderRowIds = consignmentNotes.map(note => note.orderRowId).filter(Boolean);
+    const orderPanels = orderNumbers.length || orderRowIds.length
+      ? await OrderPanel.find(companyScopeFilter(user, {
+          $or: [
+            ...(orderNumbers.length ? [{ orderPanelNo: { $in: orderNumbers } }] : []),
+            ...(orderRowIds.length ? [{ "plantRows._id": { $in: orderRowIds } }] : []),
+          ],
+        })).select("orderPanelNo plantRows").lean()
+      : [];
+    const orderRowsById = new Map();
+    const orderRowsByOrderAndTo = new Map();
+    orderPanels.forEach(panel => (panel.plantRows || []).forEach(row => {
+      orderRowsById.set(String(row._id), row);
+      orderRowsByOrderAndTo.set(`${panel.orderPanelNo}|${String(row.toName || row.to || "").trim().toLowerCase()}`, row);
+    }));
 
     console.log(`📦 Found ${consignmentNotes.length} consignment notes`);
 
@@ -299,7 +329,6 @@ export async function POST(req) {
     const billData = [];
     let totalWeight = 0;
     let totalAmount = 0;
-    const rate = 3050; // Default rate
 
     consignmentNotes.forEach(note => {
       // Skip if LR already billed
@@ -307,18 +336,33 @@ export async function POST(req) {
 
       const products = extractProductsFromNote(note);
       products.forEach((product, idx) => {
-        const amount = (product.billedWt || 0) * rate;
+        if (productCategories && !subgroupItemNames.has(product.productName?.trim().toLowerCase())) return;
+        const orderRow = orderRowsById.get(String(note.orderRowId))
+          || orderRowsByOrderAndTo.get(`${note.header?.orderNo}|${String(note.header?.to || "").trim().toLowerCase()}`);
+        const rowRate = Number(orderRow?.rate ?? orderRow?.locationRate ?? 0);
+        const amount = (product.billedWt || 0) * rowRate;
         billData.push({
           _id: `${note._id}_${idx}`,
-          date: note.createdAt ? new Date(note.createdAt).toISOString().split('T')[0] : '',
+          date: note.invoice?.boeInvoiceDate || note.header?.lrDate || (note.createdAt ? new Date(note.createdAt).toISOString().split('T')[0] : ''),
+          lrCreatedAt: note.createdAt || null,
+          invoiceNo: note.invoice?.boeInvoiceNo || note.lrNo || 'N/A',
+          consigneeName: note.consignee?.name || 'N/A',
           lrNo: note.lrNo || 'N/A',
           vehicleNo: note.header?.vehicleNo || 'N/A',
           from: note.header?.from || 'N/A',
           to: note.header?.to || 'N/A',
+          city: orderRow?.cityName || orderRow?.city || '',
+          district: orderRow?.districtName || orderRow?.district || note.header?.district || '',
+          state: orderRow?.stateName || orderRow?.state || note.header?.state || '',
           partyName: note.header?.partyName || note.consignor?.name || 'N/A',
           productName: product.productName || 'General Cargo',
           weight: product.billedWt || 0,
-          rate: rate,
+          quantity: product.actualWt || 0,
+          billQuantity: product.billedWt || 0,
+          unit: product.unit || note.header?.unit || 'MT',
+          plantCode: note.header?.plantCode || orderRow?.plantCodeValue || '',
+          branchName: orderRow?.fromName || '',
+          rate: rowRate,
           amount: amount,
           status: note.header?.status || 'Pending',
           orderType: note.header?.orderType || 'N/A'
