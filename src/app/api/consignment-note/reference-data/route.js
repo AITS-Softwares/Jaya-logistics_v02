@@ -3,6 +3,7 @@ import { withAuth } from "@/lib/auth";
 import connectDb from "@/lib/db";
 import { companyScopeFilter } from "@/lib/companyScope";
 import VehicleNegotiation from "@/app/api/vehicle-negotiation/VehicleNegotiation";
+import LoadingPanel from "@/app/api/loading-panel/LoadingPanel";
 
 /**
  * Downstream VNN lookup for Consignment Note.  Consignment users need the
@@ -12,7 +13,18 @@ import VehicleNegotiation from "@/app/api/vehicle-negotiation/VehicleNegotiation
 export const GET = withAuth(async (req, context, user) => {
   try {
     await connectDb();
-    const orderNo = new URL(req.url).searchParams.get("orderNo")?.trim();
+    const url = new URL(req.url);
+    if (url.searchParams.get("lookup") === "loadingInfoOrders") {
+      const loadingInfos = await LoadingPanel.find(companyScopeFilter(user))
+        .select("orderRows.orderNo")
+        .lean();
+      const orderNumbers = [...new Set(loadingInfos.flatMap((loadingInfo) =>
+        (loadingInfo.orderRows || []).map((row) => row.orderNo?.trim()).filter(Boolean),
+      ))];
+      return NextResponse.json({ success: true, data: { orderNumbers } });
+    }
+
+    const orderNo = url.searchParams.get("orderNo")?.trim();
 
     if (!orderNo) {
       return NextResponse.json(

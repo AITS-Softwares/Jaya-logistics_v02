@@ -451,6 +451,11 @@ export async function GET(req) {
         );
       }
 
+      // "yet to be created" chip on the Advance / POD list pages: same list the create dropdown shows
+      if (url.searchParams.get("count") === "1") {
+        return NextResponse.json({ success: true, data: { count: tableResult.length } }, { status: 200 });
+      }
+
       return NextResponse.json({
         success: true,
         data: tableResult,

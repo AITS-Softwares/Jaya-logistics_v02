@@ -24,19 +24,19 @@
 // //     setLoading(true);
 // //     try {
 // //       const token = localStorage.getItem('token');
-      
+
 // //       const params = new URLSearchParams({ format: 'table' });
 // //       if (filters.search) params.append('search', filters.search);
 // //       if (filters.fromDate) params.append('fromDate', filters.fromDate);
 // //       if (filters.toDate) params.append('toDate', filters.toDate);
 // //       if (filters.status) params.append('status', filters.status);
-      
+
 // //       const res = await fetch(`/api/purchase-panel?${params.toString()}`, {
 // //         headers: { Authorization: `Bearer ${token}` },
 // //       });
-      
+
 // //       const data = await res.json();
-      
+
 // //       if (data.success) {
 // //         setPurchases(data.data || []);
 // //       } else {
@@ -118,11 +118,11 @@
 // //       default: return 'bg-slate-100 text-slate-800';
 // //     }
 // //   };
-  
+
 // //   const handleApprove = (purchaseId) => {
 // //     router.push(`/admin/Purchase-Panel/approve/${purchaseId}`);
 // //   };
-  
+
 // //   if (loading) {
 // //     return (
 // //       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white p-6">
@@ -284,7 +284,7 @@
 // //                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
 // //                             </svg>
 // //                           </button>
-                          
+
 // //                           <button
 // //                             onClick={() => handleApprove(item._id)}
 // //                             className="p-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition"
@@ -294,7 +294,7 @@
 // //                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
 // //                             </svg>
 // //                           </button>
-                          
+
 // //                           <button
 // //                             onClick={() => handleDelete(item._id, item.purchaseNo)}
 // //                             disabled={deleteLoading === item._id}
@@ -378,19 +378,19 @@
 //     setError(null);
 //     try {
 //       const token = localStorage.getItem('token');
-      
+
 //       const params = new URLSearchParams({ format: 'table' });
 //       if (filters.search) params.append('search', filters.search);
 //       if (filters.fromDate) params.append('fromDate', filters.fromDate);
 //       if (filters.toDate) params.append('toDate', filters.toDate);
 //       if (filters.status) params.append('status', filters.status);
-      
+
 //       const res = await fetch(`/api/purchase-panel?${params.toString()}`, {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       const data = await res.json();
-      
+
 //       if (data.success) {
 //         setPurchases(data.data || []);
 //       } else {
@@ -748,7 +748,7 @@
 //                               </svg>
 //                             </button>
 //                           )}
-                          
+
 //                           {/* ✅ Quick Approve Button - Green (with checkmark) */}
 //                           {canApprove(MODULE_NAME) && item.status !== 'Approved' && item.status !== 'Rejected' && item.status !== 'Completed' && (
 //                             <button
@@ -766,7 +766,7 @@
 //                               )}
 //                             </button>
 //                           )}
-                          
+
 //                           {/* ✅ Full Approve Button - Blue (with details) */}
 //                           {canApprove(MODULE_NAME) && item.status !== 'Approved' && item.status !== 'Rejected' && item.status !== 'Completed' && (
 //                             <button
@@ -779,7 +779,7 @@
 //                               </svg>
 //                             </button>
 //                           )}
-                          
+
 //                           {/* Delete Button - Only shown if user has delete permission */}
 //                           {canDelete(MODULE_NAME) && (
 //                             <button
@@ -844,6 +844,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { usePermission } from "../hooks/usePermission";
 import Link from "next/link";
+import PendingToCreateChip from "@/components/PendingToCreateChip";
 
 export default function PurchasePanelList() {
   const router = useRouter();
@@ -868,19 +869,19 @@ export default function PurchasePanelList() {
     setError(null);
     try {
       const token = localStorage.getItem('token');
-      
+
       const params = new URLSearchParams({ format: 'table' });
       if (filters.search) params.append('search', filters.search);
       if (filters.fromDate) params.append('fromDate', filters.fromDate);
       if (filters.toDate) params.append('toDate', filters.toDate);
       if (filters.status) params.append('status', filters.status);
-      
+
       const res = await fetch(`/api/purchase-panel?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       const data = await res.json();
-      
+
       if (data.success) {
         setPurchases(data.data || []);
       } else {
@@ -997,8 +998,8 @@ export default function PurchasePanelList() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ 
-          id: purchaseId, 
+        body: JSON.stringify({
+          id: purchaseId,
           action: 'approve'
         })
       });
@@ -1029,7 +1030,7 @@ export default function PurchasePanelList() {
   };
 
   const getStatusColor = (status) => {
-    switch(status) {
+    switch (status) {
       case 'Approved': return 'bg-green-100 text-green-800';
       case 'Rejected': return 'bg-red-100 text-red-800';
       case 'Completed': return 'bg-blue-100 text-blue-800';
@@ -1059,7 +1060,7 @@ export default function PurchasePanelList() {
         <div className="text-center max-w-md p-8 bg-white rounded-xl shadow-lg">
           <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg className="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                 d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
           </div>
@@ -1092,6 +1093,14 @@ export default function PurchasePanelList() {
               Manage all purchase entries in one place
             </p>
           </div>
+
+          <PendingToCreateChip
+            endpoint="/api/purchase-panel/reference-data?lookup=pendingCount"
+            singular="Purchase"
+            plural="Purchases"
+            href={canCreate(MODULE_NAME) ? "/admin/Purchase-Panel/create" : undefined}
+            hint="Approved Loading Infos waiting for a Purchase"
+          />
 
           {canCreate(MODULE_NAME) && (
             <button
@@ -1246,7 +1255,7 @@ export default function PurchasePanelList() {
                               </svg>
                             </button>
                           )}
-                          
+
                           {/* ✅ Quick Approve Button - Green (with checkmark) - Based ONLY on permission */}
                           {canApprove(MODULE_NAME) && (
                             <button
@@ -1264,7 +1273,7 @@ export default function PurchasePanelList() {
                               )}
                             </button>
                           )}
-                          
+
                           {/* ✅ Full Approve Button - Blue (with details) - Based ONLY on permission */}
                           {canApprove(MODULE_NAME) && (
                             <button
@@ -1277,7 +1286,7 @@ export default function PurchasePanelList() {
                               </svg>
                             </button>
                           )}
-                          
+
                           {/* Delete Button - Only shown if user has delete permission */}
                           {canDelete(MODULE_NAME) && (
                             <button

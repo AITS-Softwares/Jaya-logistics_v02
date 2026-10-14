@@ -25,20 +25,20 @@
 // //     setLoading(true);
 // //     try {
 // //       const token = localStorage.getItem('token');
-      
+
 // //       const params = new URLSearchParams({ format: 'table' });
 // //       if (filters.search) params.append('search', filters.search);
 // //       if (filters.pricingStatus) params.append('pricingStatus', filters.pricingStatus);
 // //       if (filters.approvalStatus) params.append('approvalStatus', filters.approvalStatus);
 // //       if (filters.fromDate) params.append('fromDate', filters.fromDate);
 // //       if (filters.toDate) params.append('toDate', filters.toDate);
-      
+
 // //       const res = await fetch(`/api/pricing-panel?${params.toString()}`, {
 // //         headers: { Authorization: `Bearer ${token}` },
 // //       });
-      
+
 // //       const data = await res.json();
-      
+
 // //       if (data.success) {
 // //         // Group by Pricing Serial Number to show each panel once
 // //         const grouped = {};
@@ -341,7 +341,7 @@
 // //                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
 // //                             </svg>
 // //                           </button>
-                          
+
 // //                           {/* Approve Button */}
 // //                           <button
 // //                             onClick={() => handleApprove(item.panelId)}
@@ -352,7 +352,7 @@
 // //                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
 // //                             </svg>
 // //                           </button>
-                          
+
 // //                           {/* Delete Button */}
 // //                           <button
 // //                             onClick={() => handleDelete(item.panelId, item.pricingSerialNo)}
@@ -437,20 +437,20 @@
 //     setError(null);
 //     try {
 //       const token = localStorage.getItem('token');
-      
+
 //       const params = new URLSearchParams({ format: 'table' });
 //       if (filters.search) params.append('search', filters.search);
 //       if (filters.pricingStatus) params.append('pricingStatus', filters.pricingStatus);
 //       if (filters.approvalStatus) params.append('approvalStatus', filters.approvalStatus);
 //       if (filters.fromDate) params.append('fromDate', filters.fromDate);
 //       if (filters.toDate) params.append('toDate', filters.toDate);
-      
+
 //       const res = await fetch(`/api/pricing-panel?${params.toString()}`, {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       const data = await res.json();
-      
+
 //       if (data.success) {
 //         // Group by Pricing Serial Number to show each panel once
 //         const grouped = {};
@@ -862,7 +862,7 @@
 //                               </svg>
 //                             </button>
 //                           )}
-                          
+
 //                           {/* ✅ Quick Approve Button - Green (with checkmark) */}
 //                           {canApprove(MODULE_NAME) && item.approval !== 'Approved' && item.approval !== 'Rejected' && item.approval !== 'Completed' && (
 //                             <button
@@ -880,7 +880,7 @@
 //                               )}
 //                             </button>
 //                           )}
-                          
+
 //                           {/* ✅ Full Approve Button - Blue (with details) */}
 //                           {canApprove(MODULE_NAME) && item.approval !== 'Approved' && item.approval !== 'Rejected' && item.approval !== 'Completed' && (
 //                             <button
@@ -893,7 +893,7 @@
 //                               </svg>
 //                             </button>
 //                           )}
-                          
+
 //                           {/* Delete Button - Only shown if user has delete permission */}
 //                           {canDelete(MODULE_NAME) && (
 //                             <button
@@ -957,6 +957,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { usePermission } from "../hooks/usePermission";
 import Link from "next/link";
+import PendingToCreateChip from "@/components/PendingToCreateChip";
 
 export default function PricingPanelList() {
   const router = useRouter();
@@ -985,20 +986,20 @@ export default function PricingPanelList() {
     setError(null);
     try {
       const token = localStorage.getItem('token');
-      
+
       const params = new URLSearchParams({ format: 'table' });
       if (filters.search) params.append('search', filters.search);
       if (filters.pricingStatus) params.append('pricingStatus', filters.pricingStatus);
       if (filters.approvalStatus) params.append('approvalStatus', filters.approvalStatus);
       if (filters.fromDate) params.append('fromDate', filters.fromDate);
       if (filters.toDate) params.append('toDate', filters.toDate);
-      
+
       const res = await fetch(`/api/pricing-panel?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       const data = await res.json();
-      
+
       if (data.success) {
         // Group by Pricing Serial Number to show each panel once
         const grouped = {};
@@ -1150,7 +1151,7 @@ export default function PricingPanelList() {
         <div className="text-center max-w-md p-8 bg-white rounded-xl shadow-lg">
           <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg className="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                 d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
           </div>
@@ -1183,6 +1184,14 @@ export default function PricingPanelList() {
               Manage all pricing panels in one place
             </p>
           </div>
+
+          <PendingToCreateChip
+  endpoint="/api/pricing-panel/reference-data?lookup=pendingCount"
+  singular="Pricing Panel"
+  plural="Pricing Panels"
+  href={canCreate(MODULE_NAME) ? "/admin/pricing-panel/create" : undefined}
+  hint="Approved Vehicle Negotiations waiting for a Pricing"
+/>
 
           {canCreate(MODULE_NAME) && (
             <button
@@ -1317,10 +1326,10 @@ export default function PricingPanelList() {
                     <tr key={item.panelId} className="hover:bg-yellow-50 transition">
                       <td className="px-4 py-3 text-slate-600">{index + 1}</td>
                       <td className="px-4 py-3 text-slate-600">{item.date}</td>
-                       <td className="px-4 py-3 font-medium text-slate-900"><button onClick={() => router.push(`/admin/pricing-panel/${item.panelId}/view`)} className="hover:text-indigo-600 hover:underline">{item.pricingSerialNo}</button></td>
+                      <td className="px-4 py-3 font-medium text-slate-900"><button onClick={() => router.push(`/admin/pricing-panel/${item.panelId}/view`)} className="hover:text-indigo-600 hover:underline">{item.pricingSerialNo}</button></td>
                       <td className="px-4 py-3">
                         {item.vnnNumbers?.length ? (
-                           <div className="flex max-w-48 flex-wrap gap-1">{item.vnnNumbers.map((vnn) => <span key={vnn} className="rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800">{vnn}</span>)}</div>
+                          <div className="flex max-w-48 flex-wrap gap-1">{item.vnnNumbers.map((vnn) => <span key={vnn} className="rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800">{vnn}</span>)}</div>
                         ) : (
                           <span className="text-slate-400">-</span>
                         )}
@@ -1337,28 +1346,26 @@ export default function PricingPanelList() {
                       </td>
                       <td className="px-4 py-3 font-medium">{item.weight} MT</td>
                       <td className="px-4 py-3">
-                         <div className="flex max-w-48 flex-wrap gap-1">{item.orderNumbers.map((orderNo) => <span key={orderNo} className="rounded-full bg-purple-100 px-2 py-1 text-xs font-medium text-purple-800">{orderNo}</span>)}</div>
+                        <div className="flex max-w-48 flex-wrap gap-1">{item.orderNumbers.map((orderNo) => <span key={orderNo} className="rounded-full bg-purple-100 px-2 py-1 text-xs font-medium text-purple-800">{orderNo}</span>)}</div>
                       </td>
                       <td className="px-4 py-3">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          item.pricing === 'Approved' ? 'bg-green-100 text-green-800' :
-                          item.pricing === 'Rejected' ? 'bg-red-100 text-red-800' :
-                          item.pricing === 'Completed' ? 'bg-blue-100 text-blue-800' :
-                          item.pricing === 'Pending Approval' ? 'bg-orange-100 text-orange-800' :
-                          'bg-slate-100 text-slate-700'
-                        }`}>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${item.pricing === 'Approved' ? 'bg-green-100 text-green-800' :
+                            item.pricing === 'Rejected' ? 'bg-red-100 text-red-800' :
+                              item.pricing === 'Completed' ? 'bg-blue-100 text-blue-800' :
+                                item.pricing === 'Pending Approval' ? 'bg-orange-100 text-orange-800' :
+                                  'bg-slate-100 text-slate-700'
+                          }`}>
                           {item.pricing}
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          item.approval === 'Approved' ? 'bg-green-100 text-green-800' :
-                          item.approval === 'Rejected' ? 'bg-red-100 text-red-800' :
-                          item.approval === 'Completed' ? 'bg-blue-100 text-blue-800' :
-                          item.approval === 'Pending from Team' ? 'bg-orange-100 text-orange-800' :
-                          item.approval === 'Pending from Client' ? 'bg-purple-100 text-purple-800' :
-                          'bg-yellow-100 text-yellow-800'
-                        }`}>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${item.approval === 'Approved' ? 'bg-green-100 text-green-800' :
+                            item.approval === 'Rejected' ? 'bg-red-100 text-red-800' :
+                              item.approval === 'Completed' ? 'bg-blue-100 text-blue-800' :
+                                item.approval === 'Pending from Team' ? 'bg-orange-100 text-orange-800' :
+                                  item.approval === 'Pending from Client' ? 'bg-purple-100 text-purple-800' :
+                                    'bg-yellow-100 text-yellow-800'
+                          }`}>
                           {item.approval}
                         </span>
                       </td>
@@ -1376,7 +1383,7 @@ export default function PricingPanelList() {
                               </svg>
                             </button>
                           )}
-                          
+
                           {canApprovePart2 && (
                             <button
                               onClick={() => handleApprove(item.panelId)}
@@ -1388,8 +1395,8 @@ export default function PricingPanelList() {
                               </svg>
                             </button>
                           )}
-                          
-                          
+
+
                           {/* Delete Button - Only shown if user has delete permission */}
                           {canDelete(MODULE_NAME) && (
                             <button

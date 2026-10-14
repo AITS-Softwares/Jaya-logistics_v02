@@ -1,5 +1,6 @@
 import ConsignmentNote from "@/app/api/consignment-note/ConsignmentNote";
 import { companyScopeFilter } from "@/lib/companyScope";
+import PurchasePanel from "@/app/api/purchase-panel/PurchasePanel";
 
 const norm = (v) => String(v || "").replace(/[\s-]/g, "").toUpperCase();
 
@@ -226,5 +227,61 @@ export function getLoadingApprovals(panel) {
         message: allApproved ? "" :
             `Not Approved: ${pending.map((i) => i.key).join(", ")} ${pending.length === 1 ? "is" : "are"} not approved yet. ` +
             "LR and Invoice can be viewed and printed only when VBP, VFT, VOT and VL are all Approved.",
+    };
+}
+
+/* ========================================================================
+   Purchase Panel gate
+   ------------------------------------------------------------------------
+   LRs and invoices stay locked until the Purchase Panel of EVERY order in the
+   Loading Info is Approved AND has its memo file uploaded.
+   A purchase that carries another Loading Info No does not count for this one.
+   ======================================================================== */
+const hasMemo = (p) => Boolean(p?.memoFile?.filePath || p?.memoFile?.filename);
+
+export async function getPurchaseMemoStatus(user, panel) {
+    const rows = panel?.orderRows || [];
+    const orderNos = [...new Set(rows.map((r) => String(r.orderNo || "").trim()).filter(Boolean))];
+    if (!orderNos.length) return { ok: true, orders: [], pending: [], message: "" };
+
+    const loadingNo = norm(panel?.vehicleArrivalNo);
+    const found = await PurchasePanel.find(companyScopeFilter(user, { "orderRows.orderNo": { $in: orderNos } }))
+        .select("purchaseNo loadingInfoNo orderRows.orderNo approval.status memoFile.filePath memoFile.filename")
+        .lean();
+    const purchases = found.filter((p) => !p.loadingInfoNo || !loadingNo || norm(p.loadingInfoNo) === loadingNo);
+
+    const orders = orderNos.map((orderNo) => {
+        const mine = purchases.filter((p) => (p.orderRows || []).some((r) => norm(r.orderNo) === norm(orderNo)));
+        const good = mine.find((p) => p.approval?.status === "Approved" && hasMemo(p));
+        if (good) return { orderNo, ready: true, purchaseNo: good.purchaseNo || "", reason: "" };
+        const approvedNoMemo = mine.find((p) => p.approval?.status === "Approved");
+        const best = approvedNoMemo || mine[0];
+        const reason = !best ? "Purchase not created"
+            : approvedNoMemo ? "Memo not uploaded"
+                : `Purchase ${best.approval?.status || "Pending"}`;
+        return { orderNo, ready: false, purchaseNo: best?.purchaseNo || "", reason };
+    });
+
+    const pending = orders.filter((o) => !o.ready);
+    return {
+        ok: pending.length === 0,
+        orders,
+        pending: pending.map((o) => o.orderNo),
+        message: pending.length === 0 ? "" :
+            `Purchase Panel not approved with memo for order${pending.length === 1 ? "" : "s"}: ${pending.map((o) => `${o.orderNo} (${o.reason})`).join(", ")}. ` +
+            "LR and Invoice open only when every order's Purchase Panel is Approved with the memo uploaded.",
+    };
+}
+
+/** Full gate: the 4 Loading Info approvals AND the Purchase Panel memo approval of every order. */
+export async function getLoadingGate(user, panel) {
+    const base = getLoadingApprovals(panel);
+    const purchase = await getPurchaseMemoStatus(user, panel);
+    return {
+        ...base,
+        loadingApproved: base.allApproved,
+        purchase,
+        allApproved: base.allApproved && purchase.ok,
+        message: [base.message, purchase.message].filter(Boolean).join(" "),
     };
 }

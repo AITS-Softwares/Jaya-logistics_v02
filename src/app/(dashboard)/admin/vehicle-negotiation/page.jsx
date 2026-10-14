@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { usePermission } from "../hooks/usePermission";
 import Link from "next/link";
+import PendingToCreateChip from "@/components/PendingToCreateChip";
 
 export default function VehicleNegotiationList() {
   const router = useRouter();
@@ -231,6 +232,14 @@ export default function VehicleNegotiationList() {
               Manage all vehicle negotiations in one place
             </p>
           </div>
+
+          <PendingToCreateChip
+            endpoint="/api/vehicle-negotiation?lookup=pendingCount"
+            singular="Order Panel"
+            plural="Order Panels"
+            href={canCreate(MODULE_NAME) ? "/admin/vehicle-negotiation/create" : undefined}
+            hint="Approved Order Panels waiting for a Vehicle Negotiation"
+          />
 
           {canCreate(MODULE_NAME) && (
             <button

@@ -7,7 +7,7 @@ import { withAuth } from "@/lib/auth";
 import { companyScopeFilter } from "@/lib/companyScope";
 import LoadingPanel from "@/app/api/loading-panel/LoadingPanel";
 import ConsignmentNote from "@/app/api/consignment-note/ConsignmentNote";
-import { getLRCompletion, LR_COMPLETION_SELECT, getLoadingApprovals, LOADING_APPROVAL_SELECT } from "../../findLRs";
+import { getLRCompletion, LR_COMPLETION_SELECT, getLoadingGate, LOADING_APPROVAL_SELECT } from "../../findLRs";
 
 export const runtime = "nodejs";
 
@@ -36,7 +36,7 @@ export const GET = withAuth(async (req, context, user) => {
     if (!panel) return fail("Loading Info not found.", 404);
 
     // Block unless VBP, VFT, VOT and VL are all Approved.
-    const approvals = getLoadingApprovals(panel);
+    const approvals = await getLoadingGate(user, panel);
     if (!approvals.allApproved) return fail(approvals.message, 403);
 
     // Invoices are released only when every LR of this Loading Info is approved with its invoice.

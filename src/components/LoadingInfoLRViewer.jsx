@@ -83,7 +83,7 @@ function SummaryBar({ data, onRefresh, showPrint }) {
             )}
             {data.approvals && !data.approvals.allApproved && (
                 <div className="mt-2 rounded-md border border-red-200 bg-red-50 px-2 py-1.5 text-[11px] font-semibold text-red-700">
-                    ⛔ Not Approved — LR and Invoice cannot be viewed or printed until all 4 statuses are Approved.
+                    ⛔ {data.approvals.message || "LR and Invoice cannot be viewed or printed until all approvals are done."}
                     <div className="mt-1 flex flex-wrap gap-1">
                         {data.approvals.items.map((i) => (
                             <span key={i.key} className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${i.approved ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
@@ -91,6 +91,15 @@ function SummaryBar({ data, onRefresh, showPrint }) {
                             </span>
                         ))}
                     </div>
+                    {data.approvals.purchase?.orders?.length > 0 && (
+                        <div className="mt-1 flex flex-wrap gap-1">
+                            {data.approvals.purchase.orders.map((o) => (
+                                <span key={o.orderNo} title={o.purchaseNo ? `Purchase ${o.purchaseNo}` : ""} className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${o.ready ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                                    Purchase {o.orderNo}: {o.ready ? "Approved + Memo" : o.reason}
+                                </span>
+                            ))}
+                        </div>
+                    )}
                 </div>
             )}
             {!data.complete && (
@@ -158,7 +167,7 @@ function DisabledBtn({ children, reason }) {
     );
 }
 
-const LOCK_REASON = "Not Approved: available once VBP, VFT, VOT and VL are Approved and all LRs are created, approved and have their invoice uploaded";
+const LOCK_REASON = "Not Approved: available once VBP, VFT, VOT and VL are Approved, every order's Purchase Panel is Approved with memo, and all LRs are created, approved and have their invoice uploaded";
 
 const STATUS_HINT = {
     unsaved: "Save this Loading Info first. The LR is created by the Consignment Note team and will appear here.",
@@ -620,7 +629,7 @@ export function LoadingInfoInvoiceViewer({ panelId }) {
 //             </div>
 //             {data.approvals && !data.approvals.allApproved && (
 //                 <div className="mt-2 rounded-md border border-red-200 bg-red-50 px-2 py-1.5 text-[11px] font-semibold text-red-700">
-//                     ⛔ Not Approved — LR and Invoice cannot be viewed or printed until all 4 statuses are Approved.
+//                     ⛔ {data.approvals.message || "LR and Invoice cannot be viewed or printed until all approvals are done."}
 //                     <div className="mt-1 flex flex-wrap gap-1">
 //                         {data.approvals.items.map((i) => (
 //                             <span key={i.key} className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${i.approved ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>

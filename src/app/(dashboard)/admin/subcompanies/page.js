@@ -11,6 +11,8 @@ export default function SubCompanyPage() {
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [editingProfileId, setEditingProfileId] = useState('');
+  const [legalProfile, setLegalProfile] = useState({ legalName: '', gstNumber: '', pan: '', address: '', state: '', pinCode: '', phone: '', email: '' });
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
@@ -129,6 +131,43 @@ export default function SubCompanyPage() {
     }
   };
 
+  const editBillingDetails = (subCompany) => {
+    setEditingProfileId(subCompany._id);
+    setLegalProfile({
+      legalName: subCompany.legalProfile?.legalName || subCompany.name || '',
+      gstNumber: subCompany.legalProfile?.gstNumber || '',
+      pan: subCompany.legalProfile?.pan || '',
+      address: subCompany.legalProfile?.address || '',
+      state: subCompany.legalProfile?.state || '',
+      pinCode: subCompany.legalProfile?.pinCode || '',
+      phone: subCompany.legalProfile?.phone || '',
+      email: subCompany.legalProfile?.email || '',
+    });
+  };
+
+  const saveBillingDetails = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/subcompanies', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ id: editingProfileId, legalProfile }),
+      });
+      const result = await res.json();
+      if (!res.ok || !result.success) throw new Error(result.message || 'Failed to save billing details');
+      setEditingProfileId('');
+      setSuccessMessage('Billing details updated');
+      fetchSubCompanies(pagination.page, searchTerm);
+    } catch (saveError) {
+      setError(saveError.message || 'Failed to save billing details');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // ✅ Search Handler
   const handleSearch = (e) => {
     e.preventDefault();
@@ -222,25 +261,36 @@ export default function SubCompanyPage() {
             <ul className="divide-y divide-gray-200">
               {subCompanies.length > 0 ? (
                 subCompanies.map((subCompany) => (
-                  <li key={subCompany._id} className="px-6 py-4 flex justify-between items-center hover:bg-gray-50">
-                    <div>
-                      <div className="font-medium text-gray-900">
-                        {subCompany.name}
+                  <li key={subCompany._id} className="px-6 py-4 hover:bg-gray-50">
+                    <div className="flex justify-between items-center gap-4">
+                      <div>
+                        <div className="font-medium text-gray-900">{subCompany.name}</div>
+                        <div className="text-sm">Code: <span className="font-mono font-bold text-blue-600">{subCompany.code}</span></div>
+                        <div className="text-xs text-gray-400">Created: {new Date(subCompany.createdAt).toLocaleString()}</div>
                       </div>
-                      <div className="text-sm">
-                        Code: <span className="font-mono font-bold text-blue-600">{subCompany.code}</span>
-                      </div>
-                      <div className="text-xs text-gray-400">
-                        Created: {new Date(subCompany.createdAt).toLocaleString()}
+                      <div className="flex gap-2">
+                        <button type="button" onClick={() => editBillingDetails(subCompany)} className="rounded bg-indigo-600 px-3 py-1 text-sm text-white hover:bg-indigo-700">Billing details</button>
+                        <button onClick={() => deleteSubCompany(subCompany._id)} className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 disabled:opacity-50 text-sm" disabled={deletingId === subCompany._id}>
+                          {deletingId === subCompany._id ? 'Deleting...' : 'Delete'}
+                        </button>
                       </div>
                     </div>
-                    <button
-                      onClick={() => deleteSubCompany(subCompany._id)}
-                      className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 disabled:opacity-50 text-sm"
-                      disabled={deletingId === subCompany._id}
-                    >
-                      {deletingId === subCompany._id ? 'Deleting...' : 'Delete'}
-                    </button>
+                    {editingProfileId === subCompany._id && (
+                      <form onSubmit={saveBillingDetails} className="mt-4 grid grid-cols-1 gap-3 rounded-lg border bg-white p-4 sm:grid-cols-2">
+                        <label className="text-xs font-semibold">Legal name<input className="mt-1 w-full rounded border px-3 py-2 text-sm" value={legalProfile.legalName} onChange={(e) => setLegalProfile(p => ({ ...p, legalName: e.target.value }))} /></label>
+                        <label className="text-xs font-semibold">GSTIN<input className="mt-1 w-full rounded border px-3 py-2 text-sm" value={legalProfile.gstNumber} onChange={(e) => setLegalProfile(p => ({ ...p, gstNumber: e.target.value }))} /></label>
+                        <label className="text-xs font-semibold">PAN<input className="mt-1 w-full rounded border px-3 py-2 text-sm" value={legalProfile.pan} onChange={(e) => setLegalProfile(p => ({ ...p, pan: e.target.value }))} /></label>
+                        <label className="text-xs font-semibold">State<input className="mt-1 w-full rounded border px-3 py-2 text-sm" value={legalProfile.state} onChange={(e) => setLegalProfile(p => ({ ...p, state: e.target.value }))} /></label>
+                        <label className="text-xs font-semibold">PIN code<input className="mt-1 w-full rounded border px-3 py-2 text-sm" value={legalProfile.pinCode} onChange={(e) => setLegalProfile(p => ({ ...p, pinCode: e.target.value }))} /></label>
+                        <label className="text-xs font-semibold">Phone<input className="mt-1 w-full rounded border px-3 py-2 text-sm" value={legalProfile.phone} onChange={(e) => setLegalProfile(p => ({ ...p, phone: e.target.value }))} /></label>
+                        <label className="text-xs font-semibold sm:col-span-2">Address<textarea rows={2} className="mt-1 w-full rounded border px-3 py-2 text-sm" value={legalProfile.address} onChange={(e) => setLegalProfile(p => ({ ...p, address: e.target.value }))} /></label>
+                        <label className="text-xs font-semibold sm:col-span-2">Email<input type="email" className="mt-1 w-full rounded border px-3 py-2 text-sm" value={legalProfile.email} onChange={(e) => setLegalProfile(p => ({ ...p, email: e.target.value }))} /></label>
+                        <div className="flex gap-2 sm:col-span-2">
+                          <button disabled={loading} className="rounded bg-emerald-600 px-4 py-2 text-sm text-white disabled:opacity-50">{loading ? 'Saving…' : 'Save billing details'}</button>
+                          <button type="button" onClick={() => setEditingProfileId('')} className="rounded border px-4 py-2 text-sm">Cancel</button>
+                        </div>
+                      </form>
+                    )}
                   </li>
                 ))
               ) : (

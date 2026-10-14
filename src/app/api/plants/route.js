@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import connectDb from "@/lib/db";
 import Plant from "./schema";
+import OrderPanel from "@/app/api/order-panel/OrderPanel";
+import { companyScopeFilter } from "@/lib/companyScope";
+import mongoose from "mongoose";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import { validateMasterDataRequest } from '@/lib/masterDataPermission';
 
@@ -58,10 +61,36 @@ export async function GET(req) {
   if (error) return NextResponse.json({ success: false, message: error }, { status });
 
   try {
-    // Fetch plants for this company
-    const plants = await Plant.find({
-      companyId: user.companyId,
-    }).sort({ name: 1 });
+    const url = new URL(req.url);
+    const branchId = url.searchParams.get("branchId");
+    let plantQuery = { companyId: user.companyId };
+
+    if (branchId) {
+      if (!mongoose.Types.ObjectId.isValid(branchId)) {
+        return NextResponse.json({ success: false, message: "Invalid branch ID" }, { status: 400 });
+      }
+      const orderPanels = await OrderPanel.find(companyScopeFilter(user, { branch: branchId }))
+        .select("plantRows.plantCode plantRows.plantCodeValue")
+        .lean();
+      const plantIds = new Set();
+      const plantCodes = new Set();
+      orderPanels.forEach((panel) => (panel.plantRows || []).forEach((row) => {
+        if (row.plantCode && mongoose.Types.ObjectId.isValid(String(row.plantCode))) plantIds.add(String(row.plantCode));
+        if (row.plantCodeValue) plantCodes.add(String(row.plantCodeValue).trim());
+      }));
+      plantQuery = {
+        companyId: user.companyId,
+        $or: [
+          ...(plantIds.size ? [{ _id: { $in: [...plantIds] } }] : []),
+          ...(plantCodes.size ? [{ code: { $in: [...plantCodes] } }] : []),
+        ],
+      };
+      if (!plantIds.size && !plantCodes.size) {
+        return NextResponse.json({ success: true, data: [] }, { status: 200 });
+      }
+    }
+
+    const plants = await Plant.find(plantQuery).sort({ name: 1 });
 
     return NextResponse.json({ success: true, data: plants }, { status: 200 });
   } catch (err) {

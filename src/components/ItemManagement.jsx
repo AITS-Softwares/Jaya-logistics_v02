@@ -1252,6 +1252,7 @@ export default function ItemManagement() {
               <ItemGroupSearch 
                 onSelectItemGroup={g => { 
                   setId(p => ({ ...p, category: g.name, subgroup: "" })); 
+                  setAvailableSubgroups(Array.isArray(g.subgroups) ? g.subgroups : []);
                   clearErr("category"); 
                 }}
                 onSelectSubGroup={s => {

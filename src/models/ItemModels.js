@@ -29,6 +29,7 @@ const ItemSchema = new mongoose.Schema(
     description: { type: String },
 
     category: { type: String, required: true },
+    subgroup: { type: String, trim: true, default: "" },
     unitPrice: { type: Number, required: true },
 
     quantity: { type: Number },

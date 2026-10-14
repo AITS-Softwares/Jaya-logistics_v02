@@ -1092,7 +1092,7 @@ export default function ApprovePOD() {
     { key: "actualWt", label: "ACTUAL - WT", minWidth: "100px" },
     { key: "deliveryStatus", label: "Delivery Status", minWidth: "130px" },
     { key: "deduction", label: "Deduction", minWidth: "100px" },
-    { key: "value", label: "Value", minWidth: "100px" }
+    { key: "value", label: "Value per Bags", minWidth: "100px" }
   ];
 
   // Order Columns - UPDATED with fromState and Local/Not Local

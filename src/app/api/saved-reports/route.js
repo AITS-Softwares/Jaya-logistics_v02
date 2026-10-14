@@ -1,12 +1,22 @@
 import { NextResponse } from "next/server";
 import connectDb from "@/lib/db";
 import mongoose from "mongoose";
+import Counter from "@/models/Counter";
+import Company from "@/models/Company";
+import SubCompany from "@/models/SubCompany";
+import Customer from "@/models/CustomerModel";
+import Branch from "@/app/api/branches/schema";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 
 // Saved Report Schema
 const savedReportSchema = new mongoose.Schema({
   reportId: { type: String, required: true, unique: true },
   type: { type: String, required: true }, // product-wise, general, detention, cancellation, other
+  billNumber: { type: String, default: "" },
+  subCompanyId: { type: mongoose.Schema.Types.ObjectId, ref: "SubCompany", default: null },
+  subCompanyCode: { type: String, default: "" },
+  issuer: { type: Object, default: {} },
+  clientSnapshot: { type: Object, default: {} },
   filters: { type: Object, required: true },
   data: { type: Array, required: true },
   summary: { type: Object, required: true },
@@ -39,6 +49,12 @@ export async function GET(req) {
     const type = url.searchParams.get("type");
     
     let query = { companyId: user.companyId };
+    if (user.activeOperatingCompanyId) {
+      const companyFilter = user.activeOperatingCompanyCode === "JGL"
+        ? [{ subCompanyId: user.activeOperatingCompanyId }, { subCompanyId: null }, { subCompanyId: { $exists: false } }]
+        : [{ subCompanyId: user.activeOperatingCompanyId }];
+      query.$or = companyFilter;
+    }
     if (type) query.type = type;
     
     const reports = await SavedReport.find(query).sort({ generatedAt: -1 }).lean();
@@ -67,12 +83,117 @@ export async function POST(req) {
     }
     
     const body = await req.json();
-    const { reportId, type, filters, data, summary, totalRecords, selectedRecords } = body;
+    const { reportId, type, billNumber, filters, data, summary, totalRecords, selectedRecords } = body;
+
+    const subCompanyId = user.activeOperatingCompanyId;
+    if (!subCompanyId) {
+      return NextResponse.json({ success: false, message: "Select an operating company before generating a bill." }, { status: 400 });
+    }
+    const [subCompany, company, customer, branch] = await Promise.all([
+      SubCompany.findOne({ _id: subCompanyId, companyId: user.companyId, isActive: true }).lean(),
+      Company.findById(user.companyId).select("companyName email phone address country pinCode gstNumber").lean(),
+      filters?.clientId ? Customer.findOne({ _id: filters.clientId, companyId: user.companyId }).lean() : null,
+      filters?.branchId ? Branch.findOne({ _id: filters.branchId, companyId: user.companyId }).lean() : null,
+    ]);
+    if (!subCompany) {
+      return NextResponse.json({ success: false, message: "The selected operating company could not be found." }, { status: 404 });
+    }
+
+    const now = new Date();
+    const indiaParts = new Intl.DateTimeFormat("en-US", { timeZone: "Asia/Kolkata", year: "numeric", month: "numeric" }).formatToParts(now);
+    const part = (key) => Number(indiaParts.find((entry) => entry.type === key)?.value || 0);
+    const year = part("year");
+    const fyStart = part("month") >= 4 ? year : year - 1;
+    const financialYear = `${String(fyStart).slice(-2)}${String(fyStart + 1).slice(-2)}`;
+    let generatedBillNumber = billNumber || `BILL/${Date.now()}`;
+    if (type === "product-wise") {
+      const counterId = `Billing-${subCompanyId}-${financialYear}`;
+      let counter;
+      try {
+        counter = await Counter.findOneAndUpdate(
+          { companyId: user.companyId, id: counterId },
+          { $inc: { seq: 1 } },
+          { new: true, upsert: true, setDefaultsOnInsert: true }
+        );
+      } catch (error) {
+        if (error.code !== 11000) throw error;
+        counter = await Counter.findOneAndUpdate(
+          { companyId: user.companyId, id: counterId },
+          { $inc: { seq: 1 } },
+          { new: true }
+        );
+      }
+      const branchCode = branch?.code || filters?.branchCode || "BRANCH";
+      const partyCode = customer?.customerCodeValue || customer?.customerCode || "PARTY";
+      generatedBillNumber = `${branchCode}/${partyCode}/${financialYear}/${String(counter.seq).padStart(3, "0")}`;
+    }
+
+    const knownProfiles = {
+      JGL: {
+        name: "Jaya Global Logistics",
+        address: "Office - 404, A - Wing 4th Floor, Shelton Sapphire, Sector - 15, Belapur Navi Mumbai - 400614",
+        gstNumber: "27HEVPS8463H1ZC",
+        state: "Maharashtra",
+        pan: "HEVPS8463H",
+        email: "jayagloballogistics@gmail.com",
+      },
+      JL: {
+        name: "Jaya Logistics",
+        address: "Office - 404, A - Wing 4th Floor, Shelton Sapphire, Sector - 15, Belapur Navi Mumbai - 400614",
+        gstNumber: "27CDHPS2205M12A",
+        state: "Maharashtra",
+        pan: "CDHPS2205M",
+        phone: "022 27578844",
+      },
+      NK: { name: "Neelkanth Express" },
+    };
+    const profileDefaults = knownProfiles[subCompany.code] || {};
+    const issuerGST = subCompany.legalProfile?.gstNumber || profileDefaults.gstNumber || (profileDefaults.name ? "" : company?.gstNumber) || "";
+    const issuer = {
+      ...profileDefaults,
+      name: subCompany.legalProfile?.legalName || profileDefaults.name || subCompany.name,
+      address: subCompany.legalProfile?.address || profileDefaults.address || company?.address || "",
+      state: subCompany.legalProfile?.state || profileDefaults.state || "",
+      pinCode: subCompany.legalProfile?.pinCode || company?.pinCode || "",
+      gstNumber: issuerGST,
+      pan: subCompany.legalProfile?.pan || profileDefaults.pan || (issuerGST.length >= 12 ? issuerGST.slice(2, 12) : ""),
+      email: subCompany.legalProfile?.email || profileDefaults.email || company?.email || "",
+      phone: subCompany.legalProfile?.phone || profileDefaults.phone || company?.phone || "",
+      companyName: company?.companyName || "",
+      subCompanyName: subCompany.name,
+      subCompanyCode: subCompany.code,
+    };
+    const billAddress = customer?.billingAddresses?.[0] || {};
+    const clientGST = billAddress.gstNumber || customer?.gstNumber || "";
+    const clientSnapshot = customer ? {
+      name: customer.customerName,
+      customerCodeValue: customer.customerCodeValue || "",
+      gstNumber: clientGST,
+      pan: customer.pan || "",
+      address: [billAddress.address1, billAddress.address2].filter(Boolean).join(", "),
+      city: billAddress.city || "",
+      state: billAddress.state || "",
+      pinCode: billAddress.pin || "",
+      country: billAddress.country || "",
+    } : {};
+    const branchCode = branch?.code || filters?.branchCode || "BRANCH";
+    const savedFilters = {
+      ...filters,
+      branchName: branch?.name || filters?.branchName || "",
+      branchCode,
+      productCode: filters?.productCategories || "",
+      plantCode: filters?.plantCode || "",
+    };
     
     const savedReport = new SavedReport({
       reportId: reportId || `RPT_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       type,
-      filters,
+      billNumber: generatedBillNumber,
+      subCompanyId,
+      subCompanyCode: subCompany.code,
+      issuer,
+      clientSnapshot,
+      filters: savedFilters,
       data,
       summary,
       totalRecords,
@@ -83,11 +204,22 @@ export async function POST(req) {
     });
     
     await savedReport.save();
+    // Keep metadata fields available if this development process had compiled
+    // the SavedReport model before the billing schema was extended.
+    await SavedReport.collection.updateOne({ _id: savedReport._id }, { $set: {
+      billNumber: savedReport.billNumber,
+      subCompanyId,
+      subCompanyCode: subCompany.code,
+      issuer,
+      clientSnapshot,
+      filters: savedFilters,
+    } });
+    const persistedReport = await SavedReport.findById(savedReport._id).lean();
     
     return NextResponse.json({ 
       success: true, 
       message: "Report saved successfully",
-      data: savedReport 
+      data: persistedReport || savedReport
     }, { status: 201 });
     
   } catch (error) {
@@ -118,7 +250,9 @@ export async function DELETE(req) {
       return NextResponse.json({ success: false, message: "Report ID required" }, { status: 400 });
     }
     
-    await SavedReport.deleteOne({ reportId, companyId: user.companyId });
+    const query = { reportId, companyId: user.companyId };
+    if (user.activeOperatingCompanyId) query.subCompanyId = user.activeOperatingCompanyId;
+    await SavedReport.deleteOne(query);
     
     return NextResponse.json({ success: true, message: "Report deleted successfully" }, { status: 200 });
     

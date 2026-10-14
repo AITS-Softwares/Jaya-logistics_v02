@@ -1802,7 +1802,7 @@ export default function EditPOD() {
     { key: "actualWt", label: "ACTUAL - WT", minWidth: "100px" },
     { key: "deliveryStatus", label: "Delivery Status", minWidth: "130px" },
     { key: "deduction", label: "Deduction", minWidth: "100px" },
-    { key: "value", label: "Value", minWidth: "100px" }
+    { key: "value", label: "Value per Bags", minWidth: "100px" }
   ];
 
   // Fetch Purchases

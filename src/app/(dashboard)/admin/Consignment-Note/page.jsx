@@ -872,6 +872,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { usePermission } from "../hooks/usePermission";
 import Link from "next/link";
+import PendingToCreateChip from "@/components/PendingToCreateChip";
 
 export default function ConsignmentNoteList() {
   const router = useRouter();
@@ -1157,6 +1158,14 @@ export default function ConsignmentNoteList() {
               Manage all consignment notes in one place
             </p>
           </div>
+
+          <PendingToCreateChip
+            endpoint="/api/consignment-note?lookup=pendingCount"
+            singular="Consignment Note"
+            plural="Consignment Notes"
+            href={canCreate(MODULE_NAME) ? "/admin/Consignment-Note/create" : undefined}
+            hint="Orders waiting for a Consignment Note"
+          />
 
           {canCreate(MODULE_NAME) && (
             <button

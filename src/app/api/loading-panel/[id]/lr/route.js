@@ -12,7 +12,7 @@ import { withAuth } from "@/lib/auth";
 import { companyScopeFilter } from "@/lib/companyScope";
 import LoadingPanel from "@/app/api/loading-panel/LoadingPanel";
 import ConsignmentNote from "@/app/api/consignment-note/ConsignmentNote";
-import { getLRCompletion, getLoadingApprovals, LOADING_APPROVAL_SELECT } from "../../findLRs";
+import { getLRCompletion, getLoadingGate, LOADING_APPROVAL_SELECT } from "../../findLRs";
 
 export const runtime = "nodejs";
 
@@ -37,7 +37,7 @@ export const GET = withAuth(async (req, context, user) => {
         // Rows still waiting are returned as a light summary (no LR content).
         const c = await getLRCompletion(user, panel);
         // LRs / invoices open only when VBP, VFT, VOT and VL are all Approved.
-        const approvals = getLoadingApprovals(panel);
+        const approvals = await getLoadingGate(user, panel);
 
         return NextResponse.json({
             success: true,

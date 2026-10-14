@@ -3374,6 +3374,7 @@ import connectDb from "@/lib/db";
 import VehicleNegotiation from "./VehicleNegotiation";
 import PricingPanel from "@/app/api/pricing-panel/PricingPanel";
 import LoadingPanel from "@/app/api/loading-panel/LoadingPanel";
+import OrderPanel from "@/app/api/order-panel/OrderPanel";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import { getNextVehicleNegotiationNumber } from "./VehicleNegotiationCounter";
 import { activeOperatingCompanyId, companyScopeFilter } from "@/lib/companyScope";
@@ -3487,6 +3488,15 @@ export async function GET(req) {
     const approvalStatus = url.searchParams.get("approvalStatus");
     const memoStatus = url.searchParams.get("memoStatus");
     const eligibleFor = url.searchParams.get('eligibleFor');
+    if (url.searchParams.get("lookup") === "pendingCount") {
+      const [orderPanels, negotiations] = await Promise.all([
+        OrderPanel.find(companyScopeFilter(user, { panelStatus: "Approved" }), { orderPanelNo: 1 }).lean(),
+        VehicleNegotiation.find(companyScopeFilter(user), { orders: 1 }).lean(),
+      ]);
+      const usedOrders = new Set(negotiations.flatMap((item) => (item.orders || []).map((order) => String(order.orderNo || ""))));
+      const count = orderPanels.filter((panel) => panel.orderPanelNo && !usedOrders.has(String(panel.orderPanelNo))).length;
+      return NextResponse.json({ success: true, data: { count } });
+    }
     const fromDate = url.searchParams.get("fromDate");
     const toDate = url.searchParams.get("toDate");
 
