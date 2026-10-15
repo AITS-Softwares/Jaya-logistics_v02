@@ -1322,7 +1322,13 @@ export default function VehicleNegotiationPanel() {
 
   const [selectedSupplier, setSelectedSupplier] = useState(null);
   const [selectedOrderPanels, setSelectedOrderPanels] = useState([]);
+  const [planningWatchlist, setPlanningWatchlist] = useState([]);
   const orderPanelSearch = useOrderPanelSearch();
+
+  useEffect(() => {
+    const selectedIds = new Set(selectedOrderPanels.map((panel) => String(panel._id)));
+    setPlanningWatchlist((current) => current.filter((panel) => !selectedIds.has(String(panel._id))));
+  }, [selectedOrderPanels]);
 
   const handleOrderPanelSelect = useCallback(async (fullPanel, removePanelId = null) => {
     if (removePanelId) {
@@ -2740,6 +2746,11 @@ export default function VehicleNegotiationPanel() {
                   selectedPanels={selectedOrderPanels}
                   onSelect={handleOrderPanelSelect}
                   placeholder="Search and select order panels..."
+                />
+                <OrderPlanningWatchlist
+                  selectedOrderPanels={selectedOrderPanels}
+                  watchlist={planningWatchlist}
+                  setWatchlist={setPlanningWatchlist}
                 />
                 {selectedOrderPanels.length > 0 && (
                   <div className="text-xs text-slate-500 mt-1">

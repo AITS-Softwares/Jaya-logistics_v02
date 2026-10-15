@@ -1505,14 +1505,14 @@ export default function ApproveOrderPanel() {
         </Card>
 
         {/* Charges */}
-        <Card title="Charges (Read Only)">
+        {/* <Card title="Charges (Read Only)">
           <div className="grid grid-cols-12 gap-3">
             <Input col="col-span-12 md:col-span-3" label="Collection Charges" value={`₹${num(header.collectionCharges).toLocaleString()}`} readOnly={true} />
             <Input col="col-span-12 md:col-span-3" label="Cancellation Charges" value={header.cancellationCharges} readOnly={true} />
             <Input col="col-span-12 md:col-span-3" label="Loading Charges" value={header.loadingCharges} readOnly={true} />
             <Input col="col-span-12 md:col-span-3" label="Other Charges" value={`₹${num(header.otherCharges).toLocaleString()}`} readOnly={true} />
           </div>
-        </Card>
+        </Card> */}
 
         {/* Orders Table - with fromState and Local/Not Local */}
         <Card title="Order Details (Read Only)">
@@ -1520,7 +1520,7 @@ export default function ApproveOrderPanel() {
           <div className="flex justify-end gap-4 mt-4">
             <div className="flex items-center gap-3 border border-yellow-300 px-6 py-3 bg-yellow-50 rounded-xl">
               <div className="text-sm font-extrabold text-slate-900">Total Weight:</div>
-              <div className="text-xl font-extrabold text-emerald-700">{totalWeight} kg</div>
+              <div className="text-xl font-extrabold text-emerald-700">{totalWeight} MT</div>
             </div>
             <div className="flex items-center gap-3 border border-yellow-300 px-6 py-3 bg-yellow-50 rounded-xl">
               <div className="text-sm font-extrabold text-slate-900">Total Amount:</div>
@@ -1717,7 +1717,7 @@ export default function ApproveOrderPanel() {
               <div className="bg-gradient-to-br from-amber-50 to-yellow-50 p-4 rounded-xl border border-amber-200">
                 <h3 className="text-sm font-bold text-slate-800 mb-3">Weight Summary</h3>
                 <div className="space-y-2">
-                  <InfoRow label="Total Weight" value={`${totalWeight} kg`} />
+                  <InfoRow label="Total Weight" value={`${totalWeight} MT`} />
                   <InfoRow label="Total Amount" value={`₹${totalAmount.toLocaleString()}`} />
                 </div>
               </div>

@@ -8219,7 +8219,8 @@ export default function EditOrderPanel() {
    * STATE FOR API DATA
    ========================= */
   const [branches, setBranches] = useState([]);
-  const [subCompanies, setSubCompanies] = useState([]);
+  const [activeOperatingCompanyLoading, setActiveOperatingCompanyLoading] = useState(true);
+  const [activeOperatingCompanyError, setActiveOperatingCompanyError] = useState("");
   const [locations, setLocations] = useState([]);
   const [countries, setCountries] = useState([]);
   const [states, setStates] = useState([]);
@@ -8308,18 +8309,28 @@ export default function EditOrderPanel() {
     }
   };
 
-  const fetchSubCompanies = async () => {
+  const fetchActiveOperatingCompany = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/subcompanies', {
+      const res = await fetch('/api/auth/me', {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-      if (data.success && Array.isArray(data.data)) {
-        setSubCompanies(data.data);
-      }
+      const company = data.user?.activeOperatingCompany;
+      const companyId = company?._id || data.user?.activeOperatingCompanyId;
+      if (!res.ok || !data.success || !companyId) throw new Error(data.msg || "No active operating company is selected. Please sign in again.");
+      setTop((prev) => ({
+        ...prev,
+        subCompanyId: String(companyId),
+        subCompanyName: company?.name || "",
+        subCompanyCode: company?.code || "",
+      }));
+      setActiveOperatingCompanyError("");
     } catch (error) {
-      console.error('Error fetching sub-companies:', error.message);
+      console.error('Error fetching active operating company:', error.message);
+      setActiveOperatingCompanyError(error.message || "Unable to load the active operating company.");
+    } finally {
+      setActiveOperatingCompanyLoading(false);
     }
   };
 
@@ -8456,7 +8467,7 @@ export default function EditOrderPanel() {
         const actualWt = (wtLtr / 1000) * 2;
         updatedRow.actualWt = actualWt.toFixed(3);
       } else {
-        const actualWt = totalPkgs * packWeight;
+        const actualWt = (totalPkgs * packWeight) / 1000;
         updatedRow.actualWt = actualWt.toFixed(3);
         updatedRow.wtLtr = "";
       }
@@ -8484,7 +8495,7 @@ export default function EditOrderPanel() {
         const actualWt = (wtLtr / 1000) * 2;
         updatedRow.actualWt = actualWt.toFixed(3);
       } else {
-        const actualWt = totalPkgs * packWeight;
+        const actualWt = (totalPkgs * packWeight) / 1000;
         updatedRow.actualWt = actualWt.toFixed(3);
         updatedRow.wtLtr = "";
       }
@@ -8503,7 +8514,7 @@ export default function EditOrderPanel() {
     if (orderId) {
       fetchOrderData();
       fetchBranches();
-      fetchSubCompanies();
+      fetchActiveOperatingCompany();
       fetchCountries();
       fetchPlants();
       fetchLocations();
@@ -8534,14 +8545,17 @@ export default function EditOrderPanel() {
       setOrderNumber(order.orderPanelNo || order.orderNo || "");
       setPanelStatus(order.panelStatus || "");
 
-      setTop({
+      setTop((prev) => ({
+        ...prev,
         orderNo: order.orderPanelNo || order.orderNo || "",
         branch: order.branch || null,
         branchName: order.branchName || "",
         branchCode: order.branchCode || "",
-        subCompanyId: order.subCompanyId || "",
-        subCompanyName: order.subCompanyName || "",
-        subCompanyCode: order.subCompanyCode || "",
+        // Keep the active company from the authenticated session. It is
+        // loaded independently and must not be replaced by legacy order data.
+        subCompanyId: prev.subCompanyId,
+        subCompanyName: prev.subCompanyName,
+        subCompanyCode: prev.subCompanyCode,
         delivery: order.delivery || "Normal",
         date: order.date ? new Date(order.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
         partyName: order.partyName || order.customerName || "",
@@ -8549,7 +8563,7 @@ export default function EditOrderPanel() {
         customerCode: order.customerCode || "",
         customerName: order.customerName || "",
         contactPerson: order.contactPerson || "",
-      });
+      }));
 
       if (order.customerName) {
         setSelectedCustomer({
@@ -8660,7 +8674,14 @@ export default function EditOrderPanel() {
         }
 
         if (allRows.length > 0) {
-          setPackRows(allRows);
+          // Match create-page calculations when loading legacy rows too. This
+          // corrects saved kilogram totals that were previously shown as MT.
+          const recalculatedRows = allRows.map((row) => {
+            if (row.packType === "PALLETIZATION") return recalculatePalletizationWeights(row);
+            if (row.packType === "UNIFORM - BAGS/BOXES") return recalculateUniformWeights(row);
+            return row;
+          });
+          setPackRows(recalculatedRows);
         } else {
           setPackRows([{ ...defaultRow("PALLETIZATION"), packType: "PALLETIZATION" }]);
         }
@@ -8930,6 +8951,20 @@ export default function EditOrderPanel() {
    ========================= */
   // saveMode: 'update' (normal edit), 'draft' (Save as Draft, in place) or 'submit' (Submit for Approval)
   const handleUpdate = async (saveMode = 'update') => {
+    if (activeOperatingCompanyLoading || !top.subCompanyId) {
+      alert(activeOperatingCompanyError || "The active operating company has not loaded yet. Please wait and try again.");
+      return;
+    }
+
+    const negativePackValues = packRows.some((row) =>
+      ["noOfPallets", "unitPerPallets", "totalPkgs", "packWeight", "wtLtr", "actualWt", "chargedWt", "nos", "length", "width", "height"]
+        .some((key) => row[key] !== "" && row[key] !== null && row[key] !== undefined && Number.isFinite(Number(row[key])) && Number(row[key]) < 0)
+    );
+    if (negativePackValues) {
+      alert("Pack quantities and weights cannot be negative. Please correct the negative values in the Pack Type table before updating the order.");
+      return;
+    }
+
     // A draft can be saved with whatever is filled in so far; update / submit need the required fields
     if (saveMode !== 'draft') {
       if (!top.branch) {
@@ -9206,30 +9241,17 @@ export default function EditOrderPanel() {
               </div>
             </div>
 
-            {/* Sub-Company Dropdown */}
+            {/* Operating company is fixed by the logged-in session. */}
             <div className="col-span-12 md:col-span-4">
               <label className="text-xs font-bold text-slate-600">Sub-Company</label>
-              <select
-                value={top.subCompanyId || ''}
-                onChange={(e) => {
-                  const subCompanyId = e.target.value;
-                  const selected = subCompanies.find(sc => sc._id === subCompanyId);
-                  setTop(prev => ({
-                    ...prev,
-                    subCompanyId: subCompanyId,
-                    subCompanyName: selected?.name || '',
-                    subCompanyCode: selected?.code || ''
-                  }));
-                }}
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-              >
-                <option value="">Select Sub-Company</option>
-                {subCompanies.map((sc) => (
-                  <option key={sc._id} value={sc._id}>
-                    {sc.name} ({sc.code})
-                  </option>
-                ))}
-              </select>
+              <input
+                type="text"
+                value={activeOperatingCompanyLoading ? "Loading active company…" : `${top.subCompanyName}${top.subCompanyCode ? ` (${top.subCompanyCode})` : ''}`}
+                readOnly
+                className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-sm text-slate-600 outline-none"
+              />
+              {/* <p className="mt-1 text-xs text-slate-500">Fixed to your logged-in operating company.</p> */}
+              {activeOperatingCompanyError && <p className="mt-1 text-xs text-red-600">{activeOperatingCompanyError}</p>}
             </div>
 
             <Select
@@ -10318,7 +10340,8 @@ function PackTypeTable({
   const [itemHighlightedIndex, setItemHighlightedIndex] = useState({});
   const [itemSearchQuery, setItemSearchQuery] = useState({});
   const [filteredItems, setFilteredItems] = useState({});
-  const [itemDropdownPosition, setItemDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
+  const [itemDropdownPosition, setItemDropdownPosition] = useState({ top: 0, bottom: 0, left: 0, width: 0, maxHeight: 300, direction: "down" });
+  const [, setActiveItemRowId] = useState(null);
   const itemInputRefs = useRef({});
   const itemDropdownRef = useRef({});
 
@@ -10383,57 +10406,76 @@ function PackTypeTable({
   const handleItemSearch = (rowId, query) => {
     setItemSearchQuery(prev => ({ ...prev, [rowId]: query }));
     setItemHighlightedIndex(prev => ({ ...prev, [rowId]: -1 }));
+    // Match create-page behavior: typing is only a search, and must clear the
+    // old Item Master link until the user chooses a result.
+    onChange(rowId, 'productId', '');
+    onChange(rowId, 'productName', '');
 
     if (!query.trim()) {
       setFilteredItems(prev => ({ ...prev, [rowId]: items }));
     } else {
       const filtered = items.filter(item =>
-        item.itemName.toLowerCase().includes(query.toLowerCase()) ||
-        (item.itemCode && item.itemCode.toLowerCase().includes(query.toLowerCase()))
+        item.itemName?.toLowerCase().includes(query.toLowerCase()) ||
+        item.itemCode?.toLowerCase().includes(query.toLowerCase())
       );
       setFilteredItems(prev => ({ ...prev, [rowId]: filtered }));
     }
   };
 
   const handleSelectItem = (rowId, item) => {
+    onChange(rowId, 'productId', item._id);
     onChange(rowId, 'productName', item.itemName);
     setItemSearchQuery(prev => ({ ...prev, [rowId]: item.itemName }));
-    setShowItemDropdown(prev => ({ ...prev, [rowId]: false }));
+    setShowItemDropdown({});
+    setActiveItemRowId(null);
   };
 
   const handleItemInputFocus = (rowId, event) => {
-    if (!showItemDropdown[rowId]) {
-      setFilteredItems(prev => ({ ...prev, [rowId]: items }));
-
-      const rect = event.target.getBoundingClientRect();
-      setItemDropdownPosition({
-        top: rect.bottom + window.scrollY,
-        left: rect.left + window.scrollX,
-        width: rect.width
-      });
-
-      setShowItemDropdown(prev => ({ ...prev, [rowId]: true }));
-    }
+    setFilteredItems(prev => ({ ...prev, [rowId]: items }));
+    itemInputRefs.current[rowId] = event.target;
+    positionItemDropdown(rowId);
+    setActiveItemRowId(rowId);
+    // Only one menu can be open at a time; all menus share one floating
+    // position, so leaving older row menus open makes them detach from inputs.
+    setShowItemDropdown({ [rowId]: true });
   };
 
   const handleItemInputBlur = (rowId) => {
     setTimeout(() => {
       if (itemDropdownRef.current[rowId] && !itemDropdownRef.current[rowId].contains(document.activeElement)) {
-        setShowItemDropdown(prev => ({ ...prev, [rowId]: false }));
+        setShowItemDropdown({});
+        setActiveItemRowId(null);
       }
     }, 200);
+  };
+
+  const positionItemDropdown = (rowId) => {
+    const input = itemInputRefs.current[rowId];
+    if (!input) return;
+    const rect = input.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const shouldOpenUp = spaceBelow < 180 && rect.top > spaceBelow;
+    const availableHeight = Math.max(0, Math.min(300, shouldOpenUp ? rect.top : spaceBelow));
+    const width = Math.min(Math.max(rect.width, 320), Math.max(180, window.innerWidth - 16));
+    const left = Math.min(Math.max(8, rect.left), Math.max(8, window.innerWidth - width - 8));
+    setItemDropdownPosition({
+      top: rect.bottom,
+      // Anchor the menu's lower edge to the input when it opens upward. Using
+      // a top offset based on maxHeight leaves a gap when search returns only
+      // a few results and the menu itself becomes shorter.
+      bottom: window.innerHeight - rect.top,
+      left,
+      width,
+      maxHeight: availableHeight,
+      direction: shouldOpenUp ? "up" : "down"
+    });
   };
 
   useEffect(() => {
     const handleScroll = () => {
       Object.keys(showItemDropdown).forEach(rowId => {
         if (showItemDropdown[rowId] && itemInputRefs.current[rowId]) {
-          const rect = itemInputRefs.current[rowId].getBoundingClientRect();
-          setItemDropdownPosition({
-            top: rect.bottom + window.scrollY,
-            left: rect.left + window.scrollX,
-            width: rect.width
-          });
+          positionItemDropdown(rowId);
         }
       });
     };
@@ -10605,12 +10647,13 @@ function PackTypeTable({
                                 {showItemDropdown[r._id] && (
                                   <div
                                     ref={el => itemDropdownRef.current[r._id] = el}
-                                    className="fixed z-[10000] bg-white border border-slate-200 rounded-lg shadow-xl overflow-y-auto"
+                                    className="fixed z-[10000] overflow-x-hidden overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-xl"
                                     style={{
-                                      top: `${itemDropdownPosition.top}px`,
+                                      top: itemDropdownPosition.direction === "down" ? `${itemDropdownPosition.top}px` : undefined,
+                                      bottom: itemDropdownPosition.direction === "up" ? `${itemDropdownPosition.bottom}px` : undefined,
                                       left: `${itemDropdownPosition.left}px`,
                                       width: `${itemDropdownPosition.width}px`,
-                                      maxHeight: '300px'
+                                      maxHeight: `${itemDropdownPosition.maxHeight}px`
                                     }}
                                   >
                                     <div className="sticky top-0 bg-gray-50 px-3 py-2 text-xs font-semibold text-slate-600 border-b">
@@ -10626,7 +10669,7 @@ function PackTypeTable({
                                           }}
                                           className={`px-3 py-2 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors ${itemHighlightedIndex[r._id] === (filteredItems[r._id] || items).indexOf(item) ? 'bg-sky-100' : ''}`}
                                         >
-                                          <div className="font-medium text-slate-800 text-sm">
+                                          <div className="break-words text-sm font-medium leading-5 text-slate-800">
                                             {item.itemName}
                                           </div>
                                           <div className="text-xs text-slate-500 mt-0.5">
@@ -10668,6 +10711,7 @@ function PackTypeTable({
                               : 'bg-white'
                               }`}
                             placeholder={c.readOnly ? "Auto-calculated" : `Enter ${c.label}`}
+                            min={c.type === "number" ? "0" : undefined}
                             step={c.type === "number" ? "0.001" : undefined}
                           />
                         )}
