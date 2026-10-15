@@ -269,7 +269,7 @@ export async function POST(req) {
       productCategories,
       plantId,
       plantCode,
-      orderType, 
+      orderType,
       startDate, 
       endDate,
       excludeLRs = []
@@ -285,10 +285,6 @@ export async function POST(req) {
       };
     }
 
-    if (orderType && orderType !== "") {
-      query['header.orderType'] = orderType;
-    }
-
     if (plantCode) {
       query['header.plantCode'] = plantCode;
     }
@@ -298,10 +294,26 @@ export async function POST(req) {
       .sort({ createdAt: -1 })
       .lean();
 
+    const normalizeProductValue = (value) => String(value || '').trim().replace(/\s+/g, ' ').toLowerCase();
+    const selectedCategory = normalizeProductValue(productCategories);
+    const subgroupPattern = selectedCategory
+      .split(' ')
+      .map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+      .join('\\s+');
     const subgroupItems = productCategories
-      ? await Item.find({ companyId: user.companyId, subgroup: productCategories, status: "active" }).select("itemName").lean()
+      ? await Item.find({
+          companyId: user.companyId,
+          subgroup: { $regex: `^${subgroupPattern}$`, $options: 'i' },
+        }).select("itemName subgroup").lean()
       : [];
-    const subgroupItemNames = new Set(subgroupItems.map(item => item.itemName?.trim().toLowerCase()).filter(Boolean));
+    const subgroupItemNames = new Set(subgroupItems
+      .filter(item => normalizeProductValue(item.subgroup) === selectedCategory)
+      .map(item => normalizeProductValue(item.itemName))
+      .filter(Boolean));
+    const requestedOrderType = String(orderType || '').trim();
+    const normalizedOrderType = normalizeProductValue;
+    const shouldFilterOrderType = requestedOrderType &&
+      !['na', 'all types', 'all order types'].includes(normalizedOrderType(requestedOrderType));
 
     const orderNumbers = [...new Set(consignmentNotes.map(note => note.header?.orderNo).filter(Boolean))];
     const orderRowIds = consignmentNotes.map(note => note.orderRowId).filter(Boolean);
@@ -359,9 +371,14 @@ export async function POST(req) {
         || orderRowsByOrderAndTo.get(`${note.header?.orderNo}|${String(note.header?.to || "").trim().toLowerCase()}`);
       if (branchId && !orderRow) return;
 
+      // The linked order row is authoritative; older LRs may not have copied
+      // the order type into their header when they were created.
+      const effectiveOrderType = orderRow?.orderType || note.header?.orderType || '';
+      if (shouldFilterOrderType && normalizedOrderType(effectiveOrderType) !== normalizedOrderType(requestedOrderType)) return;
+
       const products = extractProductsFromNote(note);
       products.forEach((product, idx) => {
-        if (productCategories && !subgroupItemNames.has(product.productName?.trim().toLowerCase())) return;
+        if (productCategories && !subgroupItemNames.has(normalizeProductValue(product.productName))) return;
         const pricingPanelRate = pricingRatesByOrderNo.get(String(note.header?.orderNo || "").trim());
         const rowRate = Number(pricingPanelRate ?? orderRow?.rate ?? orderRow?.locationRate ?? 0);
         const amount = (product.billedWt || 0) * rowRate;
@@ -389,7 +406,7 @@ export async function POST(req) {
           rate: rowRate,
           amount: amount,
           status: note.header?.status || 'Pending',
-          orderType: note.header?.orderType || 'N/A'
+          orderType: effectiveOrderType || 'N/A'
         });
         totalWeight += product.billedWt || 0;
         totalAmount += amount;

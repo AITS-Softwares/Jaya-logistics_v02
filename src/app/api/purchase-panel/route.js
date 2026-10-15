@@ -123,6 +123,13 @@ function num(value) {
   return Number.isFinite(n) ? n : 0;
 }
 
+function advanceFromPaymentTerms(paymentTerms, purchaseAmount, fallbackAdvance = 0) {
+  const amount = num(purchaseAmount);
+  if (paymentTerms === 'Rs.10,000/- Balance Only') return Math.max(0, amount - 10000);
+  if (paymentTerms === 'Rs. 5000/- Balance Only') return Math.max(0, amount - 5000);
+  return num(fallbackAdvance);
+}
+
 function isValidObjectId(id) {
   return id && mongoose.Types.ObjectId.isValid(id);
 }
@@ -404,7 +411,7 @@ export async function GET(req) {
           lrCode: lrCode,
           amount: purchase.purchaseAmountFromVNN || purchase.purchaseDetails?.amount || 0,
           balance: purchase.balance || 0,
-          memoStatus: purchase.memoFile?.filePath || purchase.memoFile?.filename ? 'Uploaded' : 'Pending',
+          memoStatus: purchase.memoFile?.filePath || purchase.memoFile?.fullPath || purchase.memoFile?.filename ? 'Uploaded' : 'Pending',
           status: purchase.approval?.status || 'Draft',
           orderRows: purchase.orderRows || [],
           subCompanyName: purchase.subCompanyName || '',
@@ -424,17 +431,10 @@ export async function GET(req) {
         const used = new Set(existing.map((a) => a.purchaseNo));
         tableResult = purchasesWithLR.filter((p) => !used.has(p.purchaseNo));
       } else if (forKey === "pod") {
-        // Only purchases whose Advance Payment exists AND has its payment queue generated can get a POD.
-        // (A Rejected advance payment does not count.)
-        const queued = await AdvancePayment.find(
-          companyScopeFilter(user, {
-            purchaseNo: { $in: purchaseNos },
-            queueGenerated: true,
-            status: { $ne: "Rejected" },
-            "paymentDetails.paymentStatus": { $ne: "Rejected" },
-          })
-        ).select("purchaseNo").lean();
-        const queuedSet = new Set(queued.map((a) => a.purchaseNo));
+        // POD requires an approved purchase with its memo uploaded.
+        const eligibleSet = new Set(purchasesWithLR
+          .filter((p) => p.status === "Approved" && p.memoStatus === "Uploaded")
+          .map((p) => p.purchaseNo));
         // The POD edit page passes the purchase of the POD being edited so it stays selectable.
         const keepNo = (url.searchParams.get("includePurchaseNo") || "").trim();
 
@@ -447,7 +447,7 @@ export async function GET(req) {
         ).select("purchaseNo").lean();
         const used = new Set(existing.map((p) => p.purchaseNo));
         tableResult = purchasesWithLR.filter((p) =>
-          p.purchaseNo === keepNo || (queuedSet.has(p.purchaseNo) && !used.has(p.purchaseNo))
+          p.purchaseNo === keepNo || (eligibleSet.has(p.purchaseNo) && !used.has(p.purchaseNo))
         );
       }
 
@@ -622,7 +622,11 @@ export async function POST(req) {
     const totalDeductions = processedDeductions.reduce((sum, row) => sum + (row.amount || 0), 0);
 
     const purchaseAmountFromVNN = num(body.purchaseAmountFromVNN) || num(body.purchaseDetails?.amount) || totalOrderAmount;
-    const advance = num(body.purchaseDetails?.advance);
+    const advance = advanceFromPaymentTerms(
+      body.purchaseDetails?.paymentTerms,
+      purchaseAmountFromVNN,
+      body.purchaseDetails?.advance,
+    );
 
     const totalLoadingExpenses = (
       num(body.loadingExpenses?.loadingCharges) +
@@ -1061,6 +1065,11 @@ export async function PUT(req) {
     // Update totals
     purchase.totalOrderAmount = purchase.orderRows.reduce((sum, row) => sum + (row.totalAmount || 0), 0);
     const purchaseAmount = purchase.purchaseAmountFromVNN || purchase.purchaseDetails?.amount || 0;
+    purchase.purchaseDetails.advance = advanceFromPaymentTerms(
+      purchase.purchaseDetails.paymentTerms,
+      purchaseAmount,
+      purchase.purchaseDetails.advance,
+    );
     purchase.balance = purchaseAmount - (purchase.purchaseDetails?.advance || 0);
     purchase.netEffect = (purchase.purchaseDetails?.advance || 0) + purchase.totalAdditions - purchase.totalDeductions - purchase.totalLoadingExpenses - purchase.totalWarehouseExpenses;
 
