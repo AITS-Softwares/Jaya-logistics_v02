@@ -38,7 +38,8 @@ async function load(user, id) {
     });
 
     let blockedReason = "";
-    if (!supplier) blockedReason = "Supplier not found for this vendor code.";
+    if (pod.approvalStatus !== "Approved") blockedReason = "Approve this POD before sending its acknowledgement email.";
+    else if (!supplier) blockedReason = "Supplier not found for this vendor code.";
     else if (!EMAIL_RE.test(email)) blockedReason = "Supplier has no valid email ID. Add it in Supplier Management.";
     else if (!ACK_ALLOWED_STATUSES.includes(status)) {
         blockedReason = `POD status is "${status}". Set the POD status (Received / Clear & Ok / Deductions) before sending.`;

@@ -225,6 +225,8 @@ const balancePaymentSchema = new mongoose.Schema({
   finalAmount: { type: Number, default: 0 },
   remarks: { type: String, default: 'Balance Payment' },
   transactionId: { type: String, default: '' },
+  queueGenerated: { type: Boolean, default: false },
+  queueDate: { type: Date, default: null },
   bankVendorCode: { type: String, default: '' },
 
   // Payment Status
@@ -233,7 +235,7 @@ const balancePaymentSchema = new mongoose.Schema({
     enum: ['Pending', 'Queued', 'Approved', 'Rejected', 'Completed', 'Paid'],
     default: 'Pending'
   },
-  paymentDate: { type: Date, default: Date.now },
+  paymentDate: { type: Date, default: null },
 
   // Delivery and Pricing
   delivery: { type: String, default: 'Normal' },

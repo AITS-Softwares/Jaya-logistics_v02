@@ -802,6 +802,7 @@ export default function BalancePaymentList() {
   const [error, setError] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(null);
   const [approveLoading, setApproveLoading] = useState(null);
+  const [queueLoading, setQueueLoading] = useState(null);
   const [filters, setFilters] = useState({
     search: "",
     fromDate: "",
@@ -947,6 +948,37 @@ export default function BalancePaymentList() {
     }
   };
 
+  const handleGenerateQueue = async (paymentId, paymentNo) => {
+    if (!canApprove(MODULE_NAME)) {
+      alert('You don\'t have permission to generate the payment queue');
+      return;
+    }
+    if (!confirm(`Generate payment queue for ${paymentNo}?`)) return;
+
+    setQueueLoading(paymentId);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/balance-payment?id=${paymentId}&action=generate-queue`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({}),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        alert(data.message || 'Failed to generate payment queue');
+        return;
+      }
+      setPayments((previous) => previous.map((item) => item._id === paymentId
+        ? { ...item, queueGenerated: true, paymentStatus: 'Queued' }
+        : item));
+      alert('✅ Balance payment queue generated successfully!');
+    } catch (err) {
+      alert(`❌ Error: ${err.message}`);
+    } finally {
+      setQueueLoading(null);
+    }
+  };
+
   // ✅ Full Approve with Details - navigates to approve page
   const handleApprove = (paymentId) => {
     if (!canApprove(MODULE_NAME)) {
@@ -979,6 +1011,20 @@ export default function BalancePaymentList() {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
     }).format(value || 0);
+  };
+
+  const formatDate = (value) => {
+    if (!value) return '-';
+    const raw = String(value);
+    const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (iso) return `${iso[3]}-${iso[2]}-${iso[1]}`;
+    const dotted = raw.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+    if (dotted) return `${dotted[1]}-${dotted[2]}-${dotted[3]}`;
+    const slashed = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (slashed) return `${slashed[1]}-${slashed[2]}-${slashed[3]}`;
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? raw : [parsed.getDate(), parsed.getMonth() + 1, parsed.getFullYear()]
+      .map((part, index) => String(part).padStart(index < 2 ? 2 : 4, '0')).join('-');
   };
 
   // Check if status is final (cannot be approved further)
@@ -1139,7 +1185,7 @@ export default function BalancePaymentList() {
                     <tr key={item._id} className="hover:bg-yellow-50 transition">
                       <td className="px-3 py-3 text-slate-600">{index + 1}</td>
                       <td className="px-3 py-3 font-medium text-slate-900">{item.balancePaymentNo || '-'}</td>
-                      <td className="px-3 py-3 text-slate-600">{item.date || '-'}</td>
+                      <td className="px-3 py-3 text-slate-600">{formatDate(item.date)}</td>
                       <td className="px-3 py-3 text-slate-600">{item.branch || '-'}</td>
                       <td className="px-3 py-3 text-slate-600">{item.podNo || '-'}</td>
                       <td className="px-3 py-3 font-medium text-slate-900">{item.purchaseNo || '-'}</td>
@@ -1155,9 +1201,9 @@ export default function BalancePaymentList() {
                       <td className="px-3 py-3 text-right text-orange-600">{formatCurrency(item.poDeduction || item.totalDeduction || 0)}</td>
                       <td className="px-3 py-3 text-right text-red-600">{formatCurrency(item.podDeduction || 0)}</td>
                       <td className="px-3 py-3 text-right font-extrabold text-purple-700">{formatCurrency(item.finalBalance || item.balance || 0)}</td>
-                      <td className="px-3 py-3 text-slate-600">{item.dueDate || '-'}</td>
+                      <td className="px-3 py-3 text-slate-600">{formatDate(item.dueDate)}</td>
                       <td className="px-3 py-3 font-mono text-xs text-slate-600">{item.transactionId || '-'}</td>
-                      <td className="px-3 py-3 text-slate-600">{item.paymentDate || '-'}</td>
+                      <td className="px-3 py-3 text-slate-600">{formatDate(item.paymentDate)}</td>
                       <td className="px-3 py-3 text-center">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(item.paymentStatus)}`}>
                           {item.paymentStatus || 'Pending'}
@@ -1165,6 +1211,18 @@ export default function BalancePaymentList() {
                       </td>
                       <td className="px-3 py-3 text-center">
                         <div className="flex items-center justify-center gap-2 flex-wrap">
+                          {item.queueGenerated ? (
+                            <span className="rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-800" title={item.queueDate ? `Generated ${formatDate(item.queueDate)}` : undefined}>✓ Queue Generated</span>
+                          ) : canApprove(MODULE_NAME) && !['Rejected', 'Completed', 'Paid'].includes(item.paymentStatus) ? (
+                            <button
+                              onClick={() => handleGenerateQueue(item._id, item.balancePaymentNo)}
+                              disabled={queueLoading === item._id}
+                              className="rounded-lg bg-orange-100 px-2 py-1.5 text-xs font-semibold text-orange-800 hover:bg-orange-200 disabled:opacity-50"
+                              title="Generate Payment Queue"
+                            >
+                              {queueLoading === item._id ? 'Generating…' : 'Generate Queue'}
+                            </button>
+                          ) : null}
                           {/* Edit Button - Only shown if user has edit permission */}
                           {canEdit(MODULE_NAME) && (
                             <button

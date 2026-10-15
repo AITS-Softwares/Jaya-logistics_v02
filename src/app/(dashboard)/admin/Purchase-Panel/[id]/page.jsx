@@ -3227,11 +3227,20 @@ function num(v) {
   return Number.isFinite(n) ? n : 0;
 }
 
+function dateInputValue(value, fallback = "") {
+  if (!value) return fallback;
+  const text = String(value);
+  const isoDate = text.match(/^\d{4}-\d{2}-\d{2}/)?.[0];
+  if (isoDate) return isoDate;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? fallback : parsed.toISOString().slice(0, 10);
+}
+
 function advanceForPaymentTerm(paymentTerms, purchaseAmount) {
   const amount = num(purchaseAmount);
   if (paymentTerms === "90 % Advance") return amount * 0.9;
-  if (paymentTerms === "Rs.10,000/- Balance Only") return 10000;
-  if (paymentTerms === "Rs. 5000/- Balance Only") return 5000;
+  if (paymentTerms === "Rs.10,000/- Balance Only") return Math.max(0, amount - 10000);
+  if (paymentTerms === "Rs. 5000/- Balance Only") return Math.max(0, amount - 5000);
   if (paymentTerms === "Full Payment after Delivery") return 0;
   return amount * 0.8;
 }
@@ -3895,7 +3904,7 @@ export default function EditPurchasePanel() {
             new Date().toISOString().split('T')[0],
           inTime: purchase.arrivalDetails.inTime || "",
           outDate: purchase.arrivalDetails.outDate ?
-            new Date(purchase.arrivalDetails.outDate).toISOString().split('T')[0] :
+            dateInputValue(purchase.arrivalDetails.outDate) :
             new Date().toISOString().split('T')[0],
           outTime: purchase.arrivalDetails.outTime || "",
           remarks: purchase.arrivalDetails.remarks || "",
@@ -4354,7 +4363,7 @@ export default function EditPurchasePanel() {
         setArrivalDetails({
           inDate: vnnData.arrivalDetails.inDate ? new Date(vnnData.arrivalDetails.inDate).toISOString().split('T')[0] : arrivalDetails.inDate,
           inTime: vnnData.arrivalDetails.inTime || "",
-          outDate: vnnData.arrivalDetails.outDate ? new Date(vnnData.arrivalDetails.outDate).toISOString().split('T')[0] : arrivalDetails.outDate,
+          outDate: dateInputValue(vnnData.arrivalDetails.outDate, arrivalDetails.outDate),
           outTime: vnnData.arrivalDetails.outTime || "",
           remarks: vnnData.arrivalDetails.remarks || "",
           detentionDays: vnnData.arrivalDetails.detentionDays?.toString() || "",

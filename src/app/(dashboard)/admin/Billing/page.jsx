@@ -383,7 +383,7 @@
 //             <div class="bill-no"><strong>Period:</strong> ${periodText}</div>
 //           </div>
 //         </div>
-        
+
 //         <div class="party-section">
 //           <div class="bill-to">
 //             <div class="section-title">Bill To:</div>
@@ -400,7 +400,7 @@
 //             <div class="party-address">Same as Bill To</div>
 //           </div>
 //         </div>
-        
+
 //         <div class="terms-section">
 //           <div class="terms-title">Terms of Payment:</div>
 //           <div>Within 30 Days of receiving Invoice</div>
@@ -408,7 +408,7 @@
 //           <div>1) Please pay by A/c Payee Cheque / DD favouring 'JAYA LOGISTICS' Only.</div>
 //           <div>2) 18% interest will be charged, if the bill is not settled within 30 Days.</div>
 //         </div>
-        
+
 //         <table>
 //           <thead>
 //             <tr>
@@ -431,7 +431,7 @@
 //             </tr>
 //           </tfoot>
 //         </table>
-        
+
 //         <div class="amount-in-words">
 //           <strong>Amount in Words:</strong> Rupees ${Math.floor(totalAmount).toLocaleString()} Only
 //         </div>
@@ -1895,7 +1895,7 @@
 //   const [branches, setBranches] = useState([]);
 //   const [clients, setClients] = useState([]);
 //   const [plants, setPlants] = useState([]);
-  
+
 //   const fetchBranches = async () => {
 //     setLoadingBranches(true);
 //     try {
@@ -1905,7 +1905,7 @@
 //       if (data.success && Array.isArray(data.data)) setBranches(data.data);
 //     } catch (error) { console.error(error); } finally { setLoadingBranches(false); }
 //   };
-  
+
 //   const fetchClients = async () => {
 //     setLoadingClients(true);
 //     try {
@@ -1915,7 +1915,7 @@
 //       if (data.success && Array.isArray(data.data)) setClients(data.data);
 //     } catch (error) { console.error(error); } finally { setLoadingClients(false); }
 //   };
-  
+
 //   const fetchPlants = async () => {
 //     setLoadingPlants(true);
 //     try {
@@ -1925,9 +1925,9 @@
 //       if (data.success && Array.isArray(data.data)) setPlants(data.data);
 //     } catch (error) { console.error(error); } finally { setLoadingPlants(false); }
 //   };
-  
+
 //   useEffect(() => { fetchBranches(); fetchClients(); fetchPlants(); }, []);
-  
+
 //   const renderSelectedBillingCard = () => {
 //     switch(selectedBillingType) {
 //       case "product-wise": 
@@ -1952,7 +1952,7 @@
 //         );
 //     }
 //   };
-  
+
 //   return (
 //     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white">
 //       <div className="sticky top-0 z-40 border-b bg-white/80 backdrop-blur">
@@ -2534,12 +2534,12 @@ function generatePDFHTML(reportData, currentDate, type, filters, billNumber) {
           </thead>
           <tbody>
             ${rows.map(
-              (row) => `
+    (row) => `
               <tr>
                 ${row.map((cell) => `<td>${cell}</td>`).join("")}
               </tr>
             `
-            ).join("")}
+  ).join("")}
           </tbody>
           <tfoot>
             <tr class="total-row">
@@ -3055,9 +3055,8 @@ function ProductWiseBillingComponent({ branches, clients, plants, loadingBranche
             <button
               onClick={handleGenerateReport}
               disabled={generating || selectedCount === 0}
-              className={`bg-emerald-600 text-white px-6 py-2 rounded-xl text-sm font-bold hover:bg-emerald-700 transition ${
-              generating || selectedCount === 0 ? "opacity-50 cursor-not-allowed" : ""
-              }`}
+              className={`bg-emerald-600 text-white px-6 py-2 rounded-xl text-sm font-bold hover:bg-emerald-700 transition ${generating || selectedCount === 0 ? "opacity-50 cursor-not-allowed" : ""
+                }`}
             >
               {generating ? "Generating..." : `📄 Generate Bill (${selectedCount} Selected)`}
             </button>
@@ -3355,9 +3354,8 @@ function GeneralBillingComponent({ branches, clients, loadingBranches, loadingCl
           <button
             onClick={handleGenerateReport}
             disabled={generating || selectedCount === 0}
-            className={`bg-emerald-600 text-white px-6 py-2 rounded-xl text-sm font-bold hover:bg-emerald-700 transition ${
-            generating || selectedCount === 0 ? "opacity-50 cursor-not-allowed" : ""
-            }`}
+            className={`bg-emerald-600 text-white px-6 py-2 rounded-xl text-sm font-bold hover:bg-emerald-700 transition ${generating || selectedCount === 0 ? "opacity-50 cursor-not-allowed" : ""
+              }`}
           >
             {generating ? "Generating..." : `📄 Generate Bill (${selectedCount} Selected)`}
           </button>
@@ -3650,9 +3648,8 @@ function DetentionBillingComponent({ branches, clients, loadingBranches, loading
           <button
             onClick={handleGenerateReport}
             disabled={generating || selectedCount === 0}
-            className={`bg-emerald-600 text-white px-6 py-2 rounded-xl text-sm font-bold hover:bg-emerald-700 transition ${
-            generating || selectedCount === 0 ? "opacity-50 cursor-not-allowed" : ""
-            }`}
+            className={`bg-emerald-600 text-white px-6 py-2 rounded-xl text-sm font-bold hover:bg-emerald-700 transition ${generating || selectedCount === 0 ? "opacity-50 cursor-not-allowed" : ""
+              }`}
           >
             {generating ? "Generating..." : `📄 Generate Bill (${selectedCount} Selected)`}
           </button>
@@ -3938,9 +3935,8 @@ function CancellationBillingComponent({ branches, clients, loadingBranches, load
           <button
             onClick={handleGenerateReport}
             disabled={generating || selectedCount === 0}
-            className={`bg-emerald-600 text-white px-6 py-2 rounded-xl text-sm font-bold hover:bg-emerald-700 transition ${
-            generating || selectedCount === 0 ? "opacity-50 cursor-not-allowed" : ""
-            }`}
+            className={`bg-emerald-600 text-white px-6 py-2 rounded-xl text-sm font-bold hover:bg-emerald-700 transition ${generating || selectedCount === 0 ? "opacity-50 cursor-not-allowed" : ""
+              }`}
           >
             {generating ? "Generating..." : `📄 Generate Bill (${selectedCount} Selected)`}
           </button>
@@ -4229,9 +4225,8 @@ function OtherBillingComponent({ branches, clients, loadingBranches, loadingClie
           <button
             onClick={handleGenerateReport}
             disabled={generating || selectedCount === 0}
-            className={`bg-emerald-600 text-white px-6 py-2 rounded-xl text-sm font-bold hover:bg-emerald-700 transition ${
-            generating || selectedCount === 0 ? "opacity-50 cursor-not-allowed" : ""
-            }`}
+            className={`bg-emerald-600 text-white px-6 py-2 rounded-xl text-sm font-bold hover:bg-emerald-700 transition ${generating || selectedCount === 0 ? "opacity-50 cursor-not-allowed" : ""
+              }`}
           >
             {generating ? "Generating..." : `📄 Generate Bill (${selectedCount} Selected)`}
           </button>
@@ -4425,116 +4420,116 @@ export default function BillingPage() {
 
   const MODULE_NAME = 'Billing';
 
- // Find the fetchClients function and update it
-const fetchClients = async () => {
-  setLoadingClients(true);
-  try {
-    const token = localStorage.getItem('token');
-    console.log('🔍 Fetching clients...');
-    const res = await fetch('/api/customers', { 
-      headers: { 
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      } 
-    });
-    const data = await res.json();
-    console.log('📊 Clients response:', JSON.stringify(data, null, 2));
-    
-    if (data.success && Array.isArray(data.data)) {
-      console.log('✅ Number of clients found:', data.data.length);
-      if (data.data.length > 0) {
-        console.log('📋 First client:', data.data[0]);
-        console.log('📋 Client field names:', Object.keys(data.data[0]));
+  // Find the fetchClients function and update it
+  const fetchClients = async () => {
+    setLoadingClients(true);
+    try {
+      const token = localStorage.getItem('token');
+      console.log('🔍 Fetching clients...');
+      const res = await fetch('/api/customers', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      const data = await res.json();
+      console.log('📊 Clients response:', JSON.stringify(data, null, 2));
+
+      if (data.success && Array.isArray(data.data)) {
+        console.log('✅ Number of clients found:', data.data.length);
+        if (data.data.length > 0) {
+          console.log('📋 First client:', data.data[0]);
+          console.log('📋 Client field names:', Object.keys(data.data[0]));
+        }
+        setClients(data.data);
+      } else if (Array.isArray(data)) {
+        console.log('✅ Number of clients found (array):', data.length);
+        if (data.length > 0) {
+          console.log('📋 First client:', data[0]);
+        }
+        setClients(data);
+      } else {
+        console.warn('⚠️ No clients found');
+        setClients([]);
       }
-      setClients(data.data);
-    } else if (Array.isArray(data)) {
-      console.log('✅ Number of clients found (array):', data.length);
-      if (data.length > 0) {
-        console.log('📋 First client:', data[0]);
-      }
-      setClients(data);
-    } else {
-      console.warn('⚠️ No clients found');
+    } catch (error) {
+      console.error('❌ Error fetching clients:', error);
       setClients([]);
+    } finally {
+      setLoadingClients(false);
     }
-  } catch (error) { 
-    console.error('❌ Error fetching clients:', error); 
-    setClients([]);
-  } finally { 
-    setLoadingClients(false); 
-  }
-};
+  };
 
-// Also update fetchBranches
-const fetchBranches = async () => {
-  setLoadingBranches(true);
-  try {
-    const token = localStorage.getItem('token');
-    console.log('🔍 Fetching branches...');
-    const res = await fetch('/api/branches', { 
-      headers: { 
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      } 
-    });
-    const data = await res.json();
-    console.log('📊 Branches response:', data);
-    
-    if (data.success && Array.isArray(data.data)) {
-      console.log('✅ Number of branches found:', data.data.length);
-      if (data.data.length > 0) {
-        console.log('📋 First branch:', data.data[0]);
+  // Also update fetchBranches
+  const fetchBranches = async () => {
+    setLoadingBranches(true);
+    try {
+      const token = localStorage.getItem('token');
+      console.log('🔍 Fetching branches...');
+      const res = await fetch('/api/branches', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      const data = await res.json();
+      console.log('📊 Branches response:', data);
+
+      if (data.success && Array.isArray(data.data)) {
+        console.log('✅ Number of branches found:', data.data.length);
+        if (data.data.length > 0) {
+          console.log('📋 First branch:', data.data[0]);
+        }
+        setBranches(data.data);
+      } else {
+        console.warn('⚠️ No branches found');
+        setBranches([]);
       }
-      setBranches(data.data);
-    } else {
-      console.warn('⚠️ No branches found');
+    } catch (error) {
+      console.error('❌ Error fetching branches:', error);
       setBranches([]);
+    } finally {
+      setLoadingBranches(false);
     }
-  } catch (error) { 
-    console.error('❌ Error fetching branches:', error); 
-    setBranches([]);
-  } finally { 
-    setLoadingBranches(false); 
-  }
-};
+  };
 
-// Also update fetchPlants
-const fetchPlants = async () => {
-  setLoadingPlants(true);
-  try {
-    const token = localStorage.getItem('token');
-    console.log('🔍 Fetching plants...');
-    const res = await fetch('/api/plants', { 
-      headers: { 
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      } 
-    });
-    const data = await res.json();
-    console.log('📊 Plants response:', data);
-    
-    if (data.success && Array.isArray(data.data)) {
-      console.log('✅ Number of plants found:', data.data.length);
-      if (data.data.length > 0) {
-        console.log('📋 First plant:', data.data[0]);
+  // Also update fetchPlants
+  const fetchPlants = async () => {
+    setLoadingPlants(true);
+    try {
+      const token = localStorage.getItem('token');
+      console.log('🔍 Fetching plants...');
+      const res = await fetch('/api/plants', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      const data = await res.json();
+      console.log('📊 Plants response:', data);
+
+      if (data.success && Array.isArray(data.data)) {
+        console.log('✅ Number of plants found:', data.data.length);
+        if (data.data.length > 0) {
+          console.log('📋 First plant:', data.data[0]);
+        }
+        setPlants(data.data);
+      } else {
+        console.warn('⚠️ No plants found');
+        setPlants([]);
       }
-      setPlants(data.data);
-    } else {
-      console.warn('⚠️ No plants found');
+    } catch (error) {
+      console.error('❌ Error fetching plants:', error);
       setPlants([]);
+    } finally {
+      setLoadingPlants(false);
     }
-  } catch (error) { 
-    console.error('❌ Error fetching plants:', error); 
-    setPlants([]);
-  } finally { 
-    setLoadingPlants(false); 
-  }
-};
+  };
 
-  useEffect(() => { 
-    fetchBranches(); 
-    fetchClients(); 
-    fetchPlants(); 
+  useEffect(() => {
+    fetchBranches();
+    fetchClients();
+    fetchPlants();
   }, []);
 
   const canGenerate = canCreate && canView;
@@ -4556,7 +4551,7 @@ const fetchPlants = async () => {
         <div className="text-center max-w-md p-8 bg-white rounded-xl shadow-lg">
           <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg className="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                 d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
           </div>
@@ -4577,18 +4572,18 @@ const fetchPlants = async () => {
   }
 
   const renderSelectedBillingCard = () => {
-    switch(selectedBillingType) {
-      case "product-wise": 
+    switch (selectedBillingType) {
+      case "product-wise":
         return <ProductWiseBillingComponent branches={branches} clients={clients} plants={plants} loadingBranches={loadingBranches} loadingClients={loadingClients} loadingPlants={loadingPlants} canGenerate={canGenerate} />;
-      case "general": 
+      case "general":
         return <GeneralBillingComponent branches={branches} clients={clients} loadingBranches={loadingBranches} loadingClients={loadingClients} canGenerate={canGenerate} />;
-      case "detention": 
+      case "detention":
         return <DetentionBillingComponent branches={branches} clients={clients} loadingBranches={loadingBranches} loadingClients={loadingClients} canGenerate={canGenerate} />;
-      case "cancellation": 
+      case "cancellation":
         return <CancellationBillingComponent branches={branches} clients={clients} loadingBranches={loadingBranches} loadingClients={loadingClients} canGenerate={canGenerate} />;
-      case "other": 
+      case "other":
         return <OtherBillingComponent branches={branches} clients={clients} loadingBranches={loadingBranches} loadingClients={loadingClients} canGenerate={canGenerate} />;
-      default: 
+      default:
         return (
           <div className="text-center py-12 bg-white rounded-2xl border border-slate-200">
             <svg className="w-16 h-16 mx-auto text-slate-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -4606,7 +4601,7 @@ const fetchPlants = async () => {
       <div className="sticky top-0 z-40 border-b bg-white/80 backdrop-blur">
         <div className="mx-auto max-w-full px-6 py-4">
           <div className="flex items-center gap-3">
-            <button onClick={() => router.push('/admin/dashboard')} className="text-emerald-600 hover:text-emerald-800 font-medium text-sm flex items-center gap-1">
+            <button onClick={() => router.push('/admin')} className="text-emerald-600 hover:text-emerald-800 font-medium text-sm flex items-center gap-1">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>

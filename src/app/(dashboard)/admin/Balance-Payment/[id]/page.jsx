@@ -911,7 +911,18 @@ export default function EditBalancePayment() {
           </div>
 
           <div className="grid grid-cols-12 gap-4">
-            <Field label="Transaction ID" value={transactionId} span="md:col-span-4" />
+            <div className="col-span-12 md:col-span-4">
+              <label className="text-xs font-bold text-slate-600">Transaction ID</label>
+              <input
+                type="text"
+                value={transactionId}
+                onChange={(event) => setTransactionId(event.target.value)}
+                readOnly={isSettled}
+                className={`mt-1 w-full rounded-xl border px-3 py-2 text-sm ${isSettled ? "border-slate-200 bg-gray-100 cursor-not-allowed" : "border-slate-200 bg-white focus:border-emerald-500"}`}
+                placeholder="Enter bank transaction ID after payment"
+              />
+              <p className="mt-1 text-xs text-slate-400">Payment Date is recorded when this ID is entered or changed.</p>
+            </div>
             <Field label="Bank Vendor Code" value={bankVendorCode} span="md:col-span-4" />
             <div className="col-span-12 md:col-span-4">
               <label className="text-xs font-bold text-slate-600">Payment Status</label>

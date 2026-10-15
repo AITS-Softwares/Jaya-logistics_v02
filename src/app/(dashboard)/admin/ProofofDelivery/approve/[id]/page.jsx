@@ -1340,7 +1340,23 @@ export default function ApprovePOD() {
       const data = await res.json();
 
       if (data.success) {
+        let acknowledgementMessage = "";
+        if (!podStatusSection.acknowledgementMail && podStatusSection.podStatus !== 'Pending') {
+          try {
+            const ackRes = await fetch(`/api/pod-panel/${podId}/acknowledgement`, {
+              method: 'POST',
+              headers: ackHeaders(),
+            });
+            const ackData = await ackRes.json();
+            if (!ackRes.ok || !ackData.success) {
+              acknowledgementMessage = `\nPOD approval was saved, but acknowledgement email was not sent: ${ackData.message || 'email delivery failed'}. You can resend it from the POD approval page.`;
+            }
+          } catch (ackError) {
+            acknowledgementMessage = `\nPOD approval was saved, but acknowledgement email failed: ${ackError.message}. You can resend it from the POD approval page.`;
+          }
+        }
         alert(`✅ POD ${podStatusSection.podStatus === 'Received' ? 'Approved' : 'Updated'} successfully!`);
+        if (acknowledgementMessage) alert(acknowledgementMessage.trim());
         router.push('/admin/ProofofDelivery');
       } else {
         alert(data.message || 'Failed to update approval');

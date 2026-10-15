@@ -2903,11 +2903,20 @@ function num(v) {
   return Number.isFinite(n) ? n : 0;
 }
 
+function dateInputValue(value, fallback = "") {
+  if (!value) return fallback;
+  const text = String(value);
+  const isoDate = text.match(/^\d{4}-\d{2}-\d{2}/)?.[0];
+  if (isoDate) return isoDate;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? fallback : parsed.toISOString().slice(0, 10);
+}
+
 function advanceForPaymentTerm(paymentTerms, purchaseAmount) {
   const amount = num(purchaseAmount);
   if (paymentTerms === "90 % Advance") return amount * 0.9;
-  if (paymentTerms === "Rs.10,000/- Balance Only") return 10000;
-  if (paymentTerms === "Rs. 5000/- Balance Only") return 5000;
+  if (paymentTerms === "Rs.10,000/- Balance Only") return Math.max(0, amount - 10000);
+  if (paymentTerms === "Rs. 5000/- Balance Only") return Math.max(0, amount - 5000);
   if (paymentTerms === "Full Payment after Delivery") return 0;
   return amount * 0.8;
 }
@@ -3689,9 +3698,9 @@ export default function CreatePurchasePanel() {
       // Loading Info is the authoritative source for arrival and LR departure timestamps.
       if (loadingPanelData?.arrivalDetails) {
         setArrivalDetails({
-          inDate: loadingPanelData.arrivalDetails.date || arrivalDetails.inDate,
+          inDate: dateInputValue(loadingPanelData.arrivalDetails.date, arrivalDetails.inDate),
           inTime: loadingPanelData.arrivalDetails.time || "",
-          outDate: loadingPanelData.arrivalDetails.outDate || arrivalDetails.outDate,
+          outDate: dateInputValue(loadingPanelData.arrivalDetails.outDate, ""),
           outTime: loadingPanelData.arrivalDetails.outTime || "",
           remarks: "",
           detentionDays: "",

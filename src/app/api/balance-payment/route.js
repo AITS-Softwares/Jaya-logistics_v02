@@ -1073,6 +1073,8 @@ export async function GET(req) {
         dueDate: p.dueDate || '',
         transactionId: p.transactionId,
         paymentDate: p.paymentDate ? new Date(p.paymentDate).toISOString().split('T')[0] : '',
+        queueGenerated: !!p.queueGenerated,
+        queueDate: p.queueDate || null,
         paymentStatus: p.paymentStatus,
         podNo: p.podNo,
         orderRows: (p.orderRows || []).map((row) => ({ orderNo: row.orderNo || "" }))
@@ -1215,7 +1217,7 @@ export async function POST(req) {
       breakdown: f.breakdown || null,
       // A new payment starts as Pending unless the creator also holds the approve permission
       paymentStatus: (hasPermission(user, 'approve') && BALANCE_STATUSES.includes(body.paymentStatus)) ? body.paymentStatus : 'Pending',
-      paymentDate: body.paymentDate ? new Date(body.paymentDate) : new Date(),
+      paymentDate: String(body.transactionId || '').trim() ? new Date() : null,
       createdBy: user.id
     });
 
@@ -1347,7 +1349,11 @@ export async function PUT(req) {
       payment.finalAmount = payableLimit; // never leave a stale amount above what is now payable
     }
     payment.remarks = body.remarks || payment.remarks;
-    payment.transactionId = body.transactionId || payment.transactionId;
+    const nextTransactionId = body.transactionId !== undefined ? String(body.transactionId || '').trim() : payment.transactionId;
+    if (nextTransactionId !== String(payment.transactionId || '').trim() || (nextTransactionId && !payment.paymentDate)) {
+      payment.transactionId = nextTransactionId;
+      payment.paymentDate = nextTransactionId ? new Date() : null;
+    }
     payment.bankVendorCode = body.bankVendorCode || payment.bankVendorCode;
     // Status can only be changed by an approver - an edit-only user cannot approve/reject through this route
     if (body.paymentStatus && body.paymentStatus !== payment.paymentStatus) {
@@ -1359,8 +1365,6 @@ export async function PUT(req) {
       }
       payment.paymentStatus = body.paymentStatus;
     }
-
-    if (body.paymentDate) payment.paymentDate = new Date(body.paymentDate);
 
     await payment.save();
 
@@ -1535,6 +1539,32 @@ export async function PATCH(req) {
       }, { status: 200 });
     }
 
+    if (action === 'generate-queue') {
+      if (payment.queueGenerated) {
+        return NextResponse.json({ success: false, message: "Payment queue has already been generated." }, { status: 409 });
+      }
+      if (payment.paymentStatus === 'Rejected' || payment.paymentStatus === 'Completed' || payment.paymentStatus === 'Paid') {
+        return NextResponse.json({ success: false, message: `Cannot generate a queue for a ${payment.paymentStatus} payment.` }, { status: 400 });
+      }
+
+      payment.queueGenerated = true;
+      payment.queueDate = new Date();
+      payment.paymentStatus = 'Queued';
+      await payment.save();
+
+      return NextResponse.json({
+        success: true,
+        message: "Balance Payment queue generated successfully",
+        data: {
+          _id: payment._id,
+          balancePaymentNo: payment.balancePaymentNo,
+          queueGenerated: true,
+          queueDate: payment.queueDate,
+          paymentStatus: payment.paymentStatus,
+        }
+      }, { status: 200 });
+    }
+
     // Update status only (for general updates)
     if (action === 'update-status') {
       if (body.paymentStatus) {
@@ -1561,7 +1591,7 @@ export async function PATCH(req) {
 
     return NextResponse.json({
       success: false,
-      message: "Invalid action. Allowed: approve, reject, complete, queue, update-status"
+      message: "Invalid action. Allowed: approve, reject, complete, queue, generate-queue, update-status"
     }, { status: 400 });
 
   } catch (error) {

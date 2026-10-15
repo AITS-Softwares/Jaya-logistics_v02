@@ -10,7 +10,7 @@ import { activeOperatingCompanyId, companyScopeFilter } from "@/lib/companyScope
 import Plant from "@/app/api/plants/schema";
 import Company from "@/models/Company";
 import { getPaidAdvanceForPurchase } from "@/lib/advanceSettlement";
-import AdvancePayment from "../Advance-Payment/AdvancePayment";
+import PurchasePanel from "../purchase-panel/PurchasePanel";
 import { assertValidAmounts } from "@/lib/paymentRules";
 
 export const runtime = "nodejs";
@@ -520,17 +520,11 @@ export async function GET(req) {
 /* ========================================
    POST /api/pod-panel - Requires 'create' permission
 ======================================== */
-// A POD can only be created for a purchase whose Advance Payment has its queue generated.
-async function hasQueuedAdvance(user, purchaseNo) {
-  const found = await AdvancePayment.findOne(
-    companyScopeFilter(user, {
-      purchaseNo,
-      queueGenerated: true,
-      status: { $ne: "Rejected" },
-      "paymentDetails.paymentStatus": { $ne: "Rejected" },
-    })
-  ).select("_id").lean();
-  return !!found;
+// A POD can only be created for an approved purchase with its memo uploaded.
+async function getPODEligiblePurchase(user, purchaseNo) {
+  return PurchasePanel.findOne(
+    companyScopeFilter(user, { purchaseNo })
+  ).select("purchaseNo approval.status memoFile.filePath memoFile.fullPath memoFile.filename").lean();
 }
 
 export async function POST(req) {
@@ -545,8 +539,15 @@ export async function POST(req) {
     const purchaseNo = str(body.purchaseNo || body.header?.purchaseNo).trim();
     if (!purchaseNo) return fail("Purchase No is required", 400);
 
-    if (!(await hasQueuedAdvance(user, purchaseNo))) {
-      return fail(`Purchase ${purchaseNo} has no Advance Payment with a generated queue. Generate the advance payment queue first.`, 400);
+    const purchase = await getPODEligiblePurchase(user, purchaseNo);
+    if (!purchase) {
+      return fail(`Purchase ${purchaseNo} was not found in the active company.`, 404);
+    }
+    if (purchase.approval?.status !== "Approved") {
+      return fail(`Purchase ${purchaseNo} must be Approved before a POD can be created.`, 400);
+    }
+    if (!(purchase.memoFile?.filePath || purchase.memoFile?.fullPath || purchase.memoFile?.filename)) {
+      return fail(`Upload the memo for purchase ${purchaseNo} before creating a POD.`, 400);
     }
 
     if (!ALLOW_MULTIPLE_PODS_PER_PURCHASE) {
@@ -746,8 +747,15 @@ export async function PUT(req) {
     // Purchase reference (kept in sync between root and header)
     const newPurchaseNo = str(body.purchaseNo || body.header?.purchaseNo).trim();
     if (newPurchaseNo && newPurchaseNo !== pod.purchaseNo) {
-      if (!(await hasQueuedAdvance(user, newPurchaseNo))) {
-        return fail(`Purchase ${newPurchaseNo} has no Advance Payment with a generated queue.`, 400);
+      const purchase = await getPODEligiblePurchase(user, newPurchaseNo);
+      if (!purchase) {
+        return fail(`Purchase ${newPurchaseNo} was not found in the active company.`, 404);
+      }
+      if (purchase.approval?.status !== "Approved") {
+        return fail(`Purchase ${newPurchaseNo} must be Approved before it can be linked to a POD.`, 400);
+      }
+      if (!(purchase.memoFile?.filePath || purchase.memoFile?.fullPath || purchase.memoFile?.filename)) {
+        return fail(`Upload the memo for purchase ${newPurchaseNo} before linking it to a POD.`, 400);
       }
       if (!ALLOW_MULTIPLE_PODS_PER_PURCHASE) {
         const duplicate = await POD.findOne(
