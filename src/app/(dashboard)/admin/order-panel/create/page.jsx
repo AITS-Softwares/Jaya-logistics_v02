@@ -9653,7 +9653,8 @@ export default function CreateOrderPanel() {
    * STATE FOR API DATA
    ========================= */
   const [branches, setBranches] = useState([]);
-  const [subCompanies, setSubCompanies] = useState([]);
+  const [activeOperatingCompanyLoading, setActiveOperatingCompanyLoading] = useState(true);
+  const [activeOperatingCompanyError, setActiveOperatingCompanyError] = useState("");
   const [countries, setCountries] = useState([]);
   const [states, setStates] = useState([]);
   const [districts, setDistricts] = useState([]);
@@ -9825,7 +9826,7 @@ export default function CreateOrderPanel() {
    ========================= */
   useEffect(() => {
     fetchBranches();
-    fetchSubCompanies();
+    fetchActiveOperatingCompany();
     fetchCountries();
     fetchPlants();
     fetchLocations();
@@ -9845,7 +9846,6 @@ export default function CreateOrderPanel() {
       branches: fetchBranches,
       plants: fetchPlants,
       countries: fetchCountries,
-      subcompanies: fetchSubCompanies,
     };
 
     return subscribeToMasterDataChanges(Object.keys(refreshers), (master) => {
@@ -9871,21 +9871,28 @@ export default function CreateOrderPanel() {
     }
   };
 
-  const fetchSubCompanies = async () => {
+  const fetchActiveOperatingCompany = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/subcompanies', {
+      const res = await fetch('/api/auth/me', {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-      if (data.success && Array.isArray(data.data)) {
-        setSubCompanies(data.data);
-      } else {
-        setSubCompanies([]);
-      }
+      const company = data.user?.activeOperatingCompany;
+      const companyId = company?._id || data.user?.activeOperatingCompanyId;
+      if (!res.ok || !data.success || !companyId) throw new Error(data.msg || "No active operating company is selected. Please sign in again.");
+      setTop((prev) => ({
+        ...prev,
+        subCompanyId: String(companyId),
+        subCompanyName: company?.name || "",
+        subCompanyCode: company?.code || "",
+      }));
+      setActiveOperatingCompanyError("");
     } catch (error) {
-      console.error('Error fetching sub-companies:', error.message);
-      setSubCompanies([]);
+      console.error('Error fetching active operating company:', error.message);
+      setActiveOperatingCompanyError(error.message || "Unable to load the active operating company.");
+    } finally {
+      setActiveOperatingCompanyLoading(false);
     }
   };
 
@@ -10455,6 +10462,11 @@ export default function CreateOrderPanel() {
   const handleSave = async (saveMode = 'submit') => {
     const isDraftSave = saveMode === 'draft';
 
+    if (activeOperatingCompanyLoading || !top.subCompanyId) {
+      alert(activeOperatingCompanyError || "The active operating company has not loaded yet. Please wait and try again.");
+      return;
+    }
+
     // A draft can be saved with whatever is filled in so far; only a real submit needs the required fields
     if (!isDraftSave) {
       if (!top.branch) {
@@ -10650,9 +10662,10 @@ export default function CreateOrderPanel() {
       branch: "",
       branchName: "",
       branchCode: "",
-      subCompanyId: "",
-      subCompanyName: "",
-      subCompanyCode: "",
+      // Keep the session's fixed operating company when starting another order.
+      subCompanyId: top.subCompanyId,
+      subCompanyName: top.subCompanyName,
+      subCompanyCode: top.subCompanyCode,
       delivery: "Normal",
       date: new Date().toISOString().split('T')[0],
       partyName: "",
@@ -10829,23 +10842,14 @@ export default function CreateOrderPanel() {
               </div>
             </div>
 
-            {/* Sub-Company Dropdown */}
+            {/* Operating company is fixed by the logged-in session. */}
             <div className="col-span-12 md:col-span-4">
               <label className="text-xs font-bold text-slate-600">Sub-Company</label>
-              <select
+              <input
+                type="text"
                 ref={subCompanyRef}
-                value={top.subCompanyId || ''}
-                onFocus={fetchSubCompanies}
-                onChange={(e) => {
-                  const subCompanyId = e.target.value;
-                  const selected = subCompanies.find(sc => sc._id === subCompanyId);
-                  setTop(prev => ({
-                    ...prev,
-                    subCompanyId: subCompanyId,
-                    subCompanyName: selected?.name || '',
-                    subCompanyCode: selected?.code || ''
-                  }));
-                }}
+                value={activeOperatingCompanyLoading ? "Loading active company…" : `${top.subCompanyName}${top.subCompanyCode ? ` (${top.subCompanyCode})` : ''}`}
+                readOnly
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     e.preventDefault();
@@ -10855,15 +10859,10 @@ export default function CreateOrderPanel() {
                     if (branchRef.current) branchRef.current.focus();
                   }
                 }}
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-              >
-                <option value="">Select Sub-Company</option>
-                {subCompanies.map((sc) => (
-                  <option key={sc._id} value={sc._id}>
-                    {sc.name} ({sc.code})
-                  </option>
-                ))}
-              </select>
+                className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-sm text-slate-600 outline-none"
+              />
+              {/* <p className="mt-1 text-xs text-slate-500">Fixed to your logged-in operating company.</p> */}
+              {activeOperatingCompanyError && <p className="mt-1 text-xs text-red-600">{activeOperatingCompanyError}</p>}
             </div>
 
             <div className="col-span-12 md:col-span-4">

@@ -127,6 +127,7 @@ import connectDb from "@/lib/db";
 import ConsignmentNote from "../../consignment-note/ConsignmentNote";
 import Item from "@/models/ItemModels";
 import OrderPanel from "../../order-panel/OrderPanel";
+import PricingPanel from "../../pricing-panel/PricingPanel";
 import { companyScopeFilter } from "@/lib/companyScope";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 
@@ -284,10 +285,6 @@ export async function POST(req) {
       };
     }
 
-    if (clientName) {
-      query['header.partyName'] = { $regex: clientName, $options: 'i' };
-    }
-
     if (orderType && orderType !== "") {
       query['header.orderType'] = orderType;
     }
@@ -308,13 +305,37 @@ export async function POST(req) {
 
     const orderNumbers = [...new Set(consignmentNotes.map(note => note.header?.orderNo).filter(Boolean))];
     const orderRowIds = consignmentNotes.map(note => note.orderRowId).filter(Boolean);
-    const orderPanels = orderNumbers.length || orderRowIds.length
-      ? await OrderPanel.find(companyScopeFilter(user, {
+    const pricingPanels = orderNumbers.length
+      ? await PricingPanel.find(companyScopeFilter(user, {
+          "orders.orderNo": { $in: orderNumbers },
           $or: [
-            ...(orderNumbers.length ? [{ orderPanelNo: { $in: orderNumbers } }] : []),
-            ...(orderRowIds.length ? [{ "plantRows._id": { $in: orderRowIds } }] : []),
+            { panelStatus: { $in: ["Approved", "Completed"] } },
+            { "rateApproval.approvalStatus": { $in: ["Approved", "Completed"] } },
+            { "rateApproval.workflowPhase": { $in: ["approved", "locked"] } },
           ],
-        })).select("orderPanelNo plantRows").lean()
+        }))
+          .select("orders.orderNo orders.rate orders.totalAmount createdAt")
+          .sort({ createdAt: -1 })
+          .lean()
+      : [];
+    const pricingRatesByOrderNo = new Map();
+    pricingPanels.forEach(panel => (panel.orders || []).forEach(order => {
+      const orderNo = String(order.orderNo || "").trim();
+      const rate = Number(order.rate);
+      if (orderNo && Number.isFinite(rate) && rate > 0 && !pricingRatesByOrderNo.has(orderNo)) {
+        pricingRatesByOrderNo.set(orderNo, rate);
+      }
+    }));
+
+    const orderPanelQuery = {
+      $or: [
+        ...(orderNumbers.length ? [{ orderPanelNo: { $in: orderNumbers } }] : []),
+        ...(orderRowIds.length ? [{ "plantRows._id": { $in: orderRowIds } }] : []),
+      ],
+    };
+    if (branchId) orderPanelQuery.branch = branchId;
+    const orderPanels = orderNumbers.length || orderRowIds.length
+      ? await OrderPanel.find(companyScopeFilter(user, orderPanelQuery)).select("orderPanelNo plantRows").lean()
       : [];
     const orderRowsById = new Map();
     const orderRowsByOrderAndTo = new Map();
@@ -334,12 +355,15 @@ export async function POST(req) {
       // Skip if LR already billed
       if (excludeLRs.includes(note.lrNo)) return;
 
+      const orderRow = orderRowsById.get(String(note.orderRowId))
+        || orderRowsByOrderAndTo.get(`${note.header?.orderNo}|${String(note.header?.to || "").trim().toLowerCase()}`);
+      if (branchId && !orderRow) return;
+
       const products = extractProductsFromNote(note);
       products.forEach((product, idx) => {
         if (productCategories && !subgroupItemNames.has(product.productName?.trim().toLowerCase())) return;
-        const orderRow = orderRowsById.get(String(note.orderRowId))
-          || orderRowsByOrderAndTo.get(`${note.header?.orderNo}|${String(note.header?.to || "").trim().toLowerCase()}`);
-        const rowRate = Number(orderRow?.rate ?? orderRow?.locationRate ?? 0);
+        const pricingPanelRate = pricingRatesByOrderNo.get(String(note.header?.orderNo || "").trim());
+        const rowRate = Number(pricingPanelRate ?? orderRow?.rate ?? orderRow?.locationRate ?? 0);
         const amount = (product.billedWt || 0) * rowRate;
         billData.push({
           _id: `${note._id}_${idx}`,

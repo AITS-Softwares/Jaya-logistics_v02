@@ -2256,17 +2256,19 @@ async function resolvePricingRate(user, order, panelTotalWeight) {
 
   let rateMaster = null;
   if (isValidObjectId(order.priceListId)) {
-    rateMaster = await RateMaster.findOne(companyScopeFilter(user, {
+    rateMaster = await RateMaster.findOne({
       _id: order.priceListId,
+      companyId: user.companyId,
       isActive: { $ne: false },
-    })).lean();
+    }).lean();
   }
   // Backward-compatible fallback for records saved before priceListId existed.
   if (!rateMaster && order.priceList) {
-    rateMaster = await RateMaster.findOne(companyScopeFilter(user, {
+    rateMaster = await RateMaster.findOne({
       title: order.priceList,
+      companyId: user.companyId,
       isActive: { $ne: false },
-    })).lean();
+    }).lean();
   }
   if (!rateMaster) {
     throw new Error(`Select an active Price List for order ${order.orderNo || 'row'}.`);

@@ -163,7 +163,7 @@ export async function PUT(req, { params }) {
     const { user, error, status } = await validateUser(req);
     if (error) return NextResponse.json({ success: false, message: error }, { status });
 
-    const { id } = params;
+    const { id } = await params;
     const body = await req.json();
     const { name, code, category, subgroups } = body;
 
@@ -202,7 +202,7 @@ export async function DELETE(req, { params }) {
     const { user, error, status } = await validateUser(req);
     if (error) return NextResponse.json({ success: false, message: error }, { status });
 
-    const { id } = params;
+    const { id } = await params;
 
     const deleted = await ItemGroup.findOneAndDelete({ 
       _id: id, 

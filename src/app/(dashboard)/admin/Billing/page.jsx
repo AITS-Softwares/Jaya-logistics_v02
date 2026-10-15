@@ -2592,6 +2592,83 @@ async function getGeneratedLRNumbers() {
 }
 
 // ==================== PRODUCT WISE BILLING COMPONENT ====================
+async function createTemporaryBillingPreview({ type, data, summary, filters, branches, clients, clientId }) {
+  const selectedClient = clients.find((client) => String(client._id) === String(clientId));
+  const billingAddress = selectedClient?.billingAddresses?.[0] || {};
+  let issuer = {};
+  try {
+    const token = localStorage.getItem("token");
+    const localUser = JSON.parse(localStorage.getItem("user") || "{}");
+    const response = await fetch("/api/subcompanies?operatingOnly=true&limit=100", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const result = await response.json();
+    const activeCompany = (result.data || []).find((company) => String(company._id) === String(localUser.activeOperatingCompanyId));
+    issuer = activeCompany
+      ? { ...(activeCompany.legalProfile || {}), name: activeCompany.legalProfile?.legalName || activeCompany.name, subCompanyName: activeCompany.name, subCompanyCode: activeCompany.code }
+      : { name: localUser.activeOperatingCompanyName || "Operating Company" };
+  } catch (error) {
+    console.error("Failed to load operating company details for preview:", error);
+  }
+
+  const branch = branches.find((item) => String(item._id) === String(filters.branchId));
+  const reportFilters = {
+    ...filters,
+    clientName: selectedClient?.customerName || filters.clientName || "",
+    clientGST: selectedClient?.gstNumber || filters.clientGST || "",
+    clientState: selectedClient?.state || filters.clientState || "",
+    clientStateCode: selectedClient?.stateCode || filters.clientStateCode || "",
+    clientAddress: selectedClient?.address || filters.clientAddress || "",
+    clientCity: selectedClient?.city || filters.clientCity || "",
+    branchName: branch?.name || "N/A",
+  };
+  const report = {
+    generatedAt: new Date().toISOString(),
+    issuer,
+    clientSnapshot: selectedClient ? {
+      name: selectedClient.customerName || reportFilters.clientName,
+      gstNumber: billingAddress.gstNumber || selectedClient.gstNumber || "",
+      pan: selectedClient.pan || "",
+      address: [billingAddress.address1, billingAddress.address2].filter(Boolean).join(", ") || selectedClient.address || "",
+      city: billingAddress.city || selectedClient.city || "",
+      state: billingAddress.state || selectedClient.state || "",
+      pinCode: billingAddress.pin || "",
+      country: billingAddress.country || "",
+    } : {},
+    filters: reportFilters,
+    data,
+    summary,
+  };
+  return generatePDFHTML(report, report.generatedAt, type, reportFilters, "PREVIEW - NOT SAVED");
+}
+
+function BillingPreviewModal({ html, onClose }) {
+  useEffect(() => {
+    if (!html) return undefined;
+    const blockPrint = (event) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "p") event.preventDefault();
+    };
+    window.addEventListener("keydown", blockPrint);
+    return () => window.removeEventListener("keydown", blockPrint);
+  }, [html]);
+
+  if (!html) return null;
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/70 p-3 sm:p-6" role="dialog" aria-modal="true" aria-label="Bill preview">
+      <div className="flex h-[94vh] w-full max-w-7xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl">
+        <div className="flex items-center justify-between gap-4 border-b px-4 py-3">
+          <div>
+            <h2 className="font-bold text-slate-900">Bill Preview</h2>
+            <p className="text-xs text-slate-500">Temporary preview only. It is not saved, and printing is disabled.</p>
+          </div>
+          <button type="button" onClick={onClose} className="rounded-lg border px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Close</button>
+        </div>
+        <iframe title="Non-printable billing preview" srcDoc={html} sandbox="" className="min-h-0 w-full flex-1 bg-slate-100" />
+      </div>
+    </div>
+  );
+}
+
 function ProductWiseBillingComponent({ branches, clients, plants, loadingBranches, loadingClients, loadingPlants, canGenerate }) {
   const [loading, setLoading] = useState(false);
   const [billData, setBillData] = useState([]);
@@ -2599,6 +2676,7 @@ function ProductWiseBillingComponent({ branches, clients, plants, loadingBranche
   const [selectedRows, setSelectedRows] = useState({});
   const [selectAll, setSelectAll] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [previewHtml, setPreviewHtml] = useState("");
   const [generatedLRs, setGeneratedLRs] = useState([]);
   const [productSubgroups, setProductSubgroups] = useState([]);
   const [loadingSubgroups, setLoadingSubgroups] = useState(false);
@@ -2840,6 +2918,78 @@ function ProductWiseBillingComponent({ branches, clients, plants, loadingBranche
 
   const selectedCount = Object.keys(selectedRows).filter((key) => selectedRows[key]).length;
 
+  const handlePreviewBill = async () => {
+    const selected = canGenerate ? getSelectedData() : billData;
+    if (!selected.length) {
+      alert("Select at least one billing row to preview.");
+      return;
+    }
+
+    const selectedClient = clients.find((client) => client._id === filters.clientId);
+    const billingAddress = selectedClient?.billingAddresses?.[0] || {};
+    let issuer = {};
+    try {
+      const token = localStorage.getItem("token");
+      const localUser = JSON.parse(localStorage.getItem("user") || "{}");
+      const response = await fetch("/api/subcompanies?operatingOnly=true&limit=100", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const result = await response.json();
+      const activeCompany = (result.data || []).find((company) => String(company._id) === String(localUser.activeOperatingCompanyId));
+      if (activeCompany) {
+        issuer = {
+          ...(activeCompany.legalProfile || {}),
+          name: activeCompany.legalProfile?.legalName || activeCompany.name,
+          subCompanyName: activeCompany.name,
+          subCompanyCode: activeCompany.code,
+        };
+      } else {
+        issuer = { name: localUser.activeOperatingCompanyName || "Operating Company" };
+      }
+    } catch (error) {
+      console.error("Failed to load operating company details for preview:", error);
+    }
+
+    const branch = branches.find((item) => item._id === filters.branchId);
+    const plant = branchPlants.find((item) => item._id === filters.plantId);
+    const previewReport = {
+      generatedAt: new Date().toISOString(),
+      issuer,
+      clientSnapshot: selectedClient ? {
+        name: selectedClient.customerName || filters.clientName,
+        gstNumber: billingAddress.gstNumber || selectedClient.gstNumber || "",
+        pan: selectedClient.pan || "",
+        address: [billingAddress.address1, billingAddress.address2].filter(Boolean).join(", "),
+        city: billingAddress.city || "",
+        state: billingAddress.state || "",
+        pinCode: billingAddress.pin || "",
+        country: billingAddress.country || "",
+      } : {},
+      filters: {
+        ...filters,
+        branchName: branch?.name || "",
+        branchCode: branch?.code || "",
+        plantCode: plant?.code || "",
+        orderType: filters.orderType === "NA" ? "All Types" : filters.orderType,
+      },
+      data: selected,
+      summary: getSelectedSummary(),
+    };
+    setPreviewHtml(generatePDFHTML(previewReport, previewReport.generatedAt, "product-wise", previewReport.filters, "PREVIEW - NOT SAVED"));
+  };
+
+  useEffect(() => {
+    if (!previewHtml) return;
+    const preventPrintShortcut = (event) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "p") {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    };
+    window.addEventListener("keydown", preventPrintShortcut, true);
+    return () => window.removeEventListener("keydown", preventPrintShortcut, true);
+  }, [previewHtml]);
+
   return (
     <Card title="Yara - Product-Wise Billing">
       <div className="grid grid-cols-12 gap-5">
@@ -2893,15 +3043,25 @@ function ProductWiseBillingComponent({ branches, clients, plants, loadingBranche
 
       {billData.length > 0 && canGenerate && (
         <div className="mt-4">
-          <button
-            onClick={handleGenerateReport}
-            disabled={generating || selectedCount === 0}
-            className={`bg-emerald-600 text-white px-6 py-2 rounded-xl text-sm font-bold hover:bg-emerald-700 transition ${
-            generating || selectedCount === 0 ? "opacity-50 cursor-not-allowed" : ""
-            }`}
-          >
-            {generating ? "Generating..." : `📄 Generate Bill (${selectedCount} Selected)`}
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={handlePreviewBill}
+              disabled={selectedCount === 0}
+              className={`rounded-xl border border-emerald-600 px-5 py-2 text-sm font-bold text-emerald-700 hover:bg-emerald-50 ${selectedCount === 0 ? "cursor-not-allowed opacity-50" : ""}`}
+            >
+              Preview Selected Bill (No Print)
+            </button>
+            <button
+              onClick={handleGenerateReport}
+              disabled={generating || selectedCount === 0}
+              className={`bg-emerald-600 text-white px-6 py-2 rounded-xl text-sm font-bold hover:bg-emerald-700 transition ${
+              generating || selectedCount === 0 ? "opacity-50 cursor-not-allowed" : ""
+              }`}
+            >
+              {generating ? "Generating..." : `📄 Generate Bill (${selectedCount} Selected)`}
+            </button>
+          </div>
         </div>
       )}
 
@@ -2977,6 +3137,8 @@ function ProductWiseBillingComponent({ branches, clients, plants, loadingBranche
       )}
 
       {!loading && !filters.clientId && <div className="text-center py-8">Select a client to view data</div>}
+
+      <BillingPreviewModal html={previewHtml} onClose={() => setPreviewHtml("")} />
     </Card>
   );
 }
@@ -2989,6 +3151,7 @@ function GeneralBillingComponent({ branches, clients, loadingBranches, loadingCl
   const [selectedRows, setSelectedRows] = useState({});
   const [selectAll, setSelectAll] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [previewHtml, setPreviewHtml] = useState("");
   const [generatedLRs, setGeneratedLRs] = useState([]);
 
   const [filters, setFilters] = useState({
@@ -3135,6 +3298,14 @@ function GeneralBillingComponent({ branches, clients, loadingBranches, loadingCl
     setGenerating(false);
   };
 
+  const handlePreviewBill = async () => {
+    const selected = getSelectedData();
+    if (!selected.length) return alert("Select at least one billing row to preview.");
+    const branch = branches.find((item) => item._id === filters.branchId);
+    const previewFilters = { ...filters, branchName: branch?.name || "N/A", orderType: filters.orderType === "NA" ? "All Types" : filters.orderType };
+    setPreviewHtml(await createTemporaryBillingPreview({ type: "general", data: selected, summary: getSelectedSummary(), filters: previewFilters, branches, clients, clientId: filters.clientId }));
+  };
+
   const selectedCount = Object.keys(selectedRows).filter((k) => selectedRows[k]).length;
 
   return (
@@ -3178,6 +3349,9 @@ function GeneralBillingComponent({ branches, clients, loadingBranches, loadingCl
 
       {billData.length > 0 && canGenerate && (
         <div className="mt-4">
+          <button type="button" onClick={handlePreviewBill} disabled={selectedCount === 0} className={`mr-2 rounded-xl border border-emerald-600 px-5 py-2 text-sm font-bold text-emerald-700 hover:bg-emerald-50 ${selectedCount === 0 ? "cursor-not-allowed opacity-50" : ""}`}>
+            Preview Selected Bill (No Print)
+          </button>
           <button
             onClick={handleGenerateReport}
             disabled={generating || selectedCount === 0}
@@ -3262,6 +3436,8 @@ function GeneralBillingComponent({ branches, clients, loadingBranches, loadingCl
           {generatedLRs.length > 0 && <p className="text-sm text-gray-500 mt-2">All LR numbers have been billed already</p>}
         </div>
       )}
+
+      <BillingPreviewModal html={previewHtml} onClose={() => setPreviewHtml("")} />
     </Card>
   );
 }
@@ -3274,6 +3450,7 @@ function DetentionBillingComponent({ branches, clients, loadingBranches, loading
   const [selectedRows, setSelectedRows] = useState({});
   const [selectAll, setSelectAll] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [previewHtml, setPreviewHtml] = useState("");
   const [generatedLRs, setGeneratedLRs] = useState([]);
 
   const [filters, setFilters] = useState({
@@ -3417,6 +3594,13 @@ function DetentionBillingComponent({ branches, clients, loadingBranches, loading
     setGenerating(false);
   };
 
+  const handlePreviewBill = async () => {
+    const selected = getSelectedData();
+    if (!selected.length) return alert("Select at least one billing row to preview.");
+    const branch = branches.find((item) => item._id === filters.branchId);
+    setPreviewHtml(await createTemporaryBillingPreview({ type: "detention", data: selected, summary: getSelectedSummary(), filters: { ...filters, branchName: branch?.name || "N/A" }, branches, clients, clientId: filters.clientId }));
+  };
+
   const selectedCount = Object.keys(selectedRows).filter((k) => selectedRows[k]).length;
 
   return (
@@ -3460,6 +3644,9 @@ function DetentionBillingComponent({ branches, clients, loadingBranches, loading
 
       {billData.length > 0 && canGenerate && (
         <div className="mt-4">
+          <button type="button" onClick={handlePreviewBill} disabled={selectedCount === 0} className={`mr-2 rounded-xl border border-emerald-600 px-5 py-2 text-sm font-bold text-emerald-700 hover:bg-emerald-50 ${selectedCount === 0 ? "cursor-not-allowed opacity-50" : ""}`}>
+            Preview Selected Bill (No Print)
+          </button>
           <button
             onClick={handleGenerateReport}
             disabled={generating || selectedCount === 0}
@@ -3538,6 +3725,7 @@ function DetentionBillingComponent({ branches, clients, loadingBranches, loading
           {generatedLRs.length > 0 && <p className="text-sm text-gray-500 mt-2">All LR numbers have been billed already</p>}
         </div>
       )}
+      <BillingPreviewModal html={previewHtml} onClose={() => setPreviewHtml("")} />
     </Card>
   );
 }
@@ -3550,6 +3738,7 @@ function CancellationBillingComponent({ branches, clients, loadingBranches, load
   const [selectedRows, setSelectedRows] = useState({});
   const [selectAll, setSelectAll] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [previewHtml, setPreviewHtml] = useState("");
   const [generatedLRs, setGeneratedLRs] = useState([]);
 
   const [filters, setFilters] = useState({
@@ -3693,6 +3882,13 @@ function CancellationBillingComponent({ branches, clients, loadingBranches, load
     setGenerating(false);
   };
 
+  const handlePreviewBill = async () => {
+    const selected = getSelectedData();
+    if (!selected.length) return alert("Select at least one billing row to preview.");
+    const branch = branches.find((item) => item._id === filters.branchId);
+    setPreviewHtml(await createTemporaryBillingPreview({ type: "cancellation", data: selected, summary: getSelectedSummary(), filters: { ...filters, branchName: branch?.name || "N/A" }, branches, clients, clientId: filters.clientId }));
+  };
+
   const selectedCount = Object.keys(selectedRows).filter((k) => selectedRows[k]).length;
 
   return (
@@ -3736,6 +3932,9 @@ function CancellationBillingComponent({ branches, clients, loadingBranches, load
 
       {billData.length > 0 && canGenerate && (
         <div className="mt-4">
+          <button type="button" onClick={handlePreviewBill} disabled={selectedCount === 0} className={`mr-2 rounded-xl border border-emerald-600 px-5 py-2 text-sm font-bold text-emerald-700 hover:bg-emerald-50 ${selectedCount === 0 ? "cursor-not-allowed opacity-50" : ""}`}>
+            Preview Selected Bill (No Print)
+          </button>
           <button
             onClick={handleGenerateReport}
             disabled={generating || selectedCount === 0}
@@ -3814,6 +4013,7 @@ function CancellationBillingComponent({ branches, clients, loadingBranches, load
           {generatedLRs.length > 0 && <p className="text-sm text-gray-500 mt-2">All LR numbers have been billed already</p>}
         </div>
       )}
+      <BillingPreviewModal html={previewHtml} onClose={() => setPreviewHtml("")} />
     </Card>
   );
 }
@@ -3826,6 +4026,7 @@ function OtherBillingComponent({ branches, clients, loadingBranches, loadingClie
   const [selectedRows, setSelectedRows] = useState({});
   const [selectAll, setSelectAll] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [previewHtml, setPreviewHtml] = useState("");
   const [generatedLRs, setGeneratedLRs] = useState([]);
 
   const [filters, setFilters] = useState({
@@ -3969,6 +4170,13 @@ function OtherBillingComponent({ branches, clients, loadingBranches, loadingClie
     setGenerating(false);
   };
 
+  const handlePreviewBill = async () => {
+    const selected = getSelectedData();
+    if (!selected.length) return alert("Select at least one billing row to preview.");
+    const branch = branches.find((item) => item._id === filters.branchId);
+    setPreviewHtml(await createTemporaryBillingPreview({ type: "other", data: selected, summary: getSelectedSummary(), filters: { ...filters, branchName: branch?.name || "N/A", billingType: filters.type }, branches, clients, clientId: filters.clientId }));
+  };
+
   const selectedCount = Object.keys(selectedRows).filter((k) => selectedRows[k]).length;
 
   return (
@@ -4015,6 +4223,9 @@ function OtherBillingComponent({ branches, clients, loadingBranches, loadingClie
 
       {billData.length > 0 && canGenerate && (
         <div className="mt-4">
+          <button type="button" onClick={handlePreviewBill} disabled={selectedCount === 0} className={`mr-2 rounded-xl border border-emerald-600 px-5 py-2 text-sm font-bold text-emerald-700 hover:bg-emerald-50 ${selectedCount === 0 ? "cursor-not-allowed opacity-50" : ""}`}>
+            Preview Selected Bill (No Print)
+          </button>
           <button
             onClick={handleGenerateReport}
             disabled={generating || selectedCount === 0}
@@ -4093,6 +4304,7 @@ function OtherBillingComponent({ branches, clients, loadingBranches, loadingClie
           {generatedLRs.length > 0 && <p className="text-sm text-gray-500 mt-2">All LR numbers have been billed already</p>}
         </div>
       )}
+      <BillingPreviewModal html={previewHtml} onClose={() => setPreviewHtml("")} />
     </Card>
   );
 }

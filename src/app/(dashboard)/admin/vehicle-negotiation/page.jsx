@@ -345,6 +345,7 @@ export default function VehicleNegotiationList() {
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Orders</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Party Name</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Supplier</th>
+                  <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Vehicle No</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">From → To</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Total Weight</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Approval</th>
@@ -380,6 +381,7 @@ export default function VehicleNegotiationList() {
                       <td className="px-4 py-3">
                         <div className="text-sm text-slate-600">{item.vendorName || '-'}</div>
                       </td>
+                      <td className="px-4 py-3 text-slate-700">{item.vehicleNo || '-'}</td>
                       <td className="px-4 py-3">
                         <div className="text-sm">
                           <span>{item.from || '-'}</span>
