@@ -3,6 +3,7 @@ import dbConnect from "@/lib/db";
 import Item from "@/models/ItemModels";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import { validateMasterDataRequest } from '@/lib/masterDataPermission';
+import { syncItem } from '@/lib/frappe-item.mjs';
 
 // ✅ Role-based access for item management
 function isAuthorized(user) {
@@ -103,7 +104,8 @@ export async function POST(req) {
     const data = await req.json();
 
     // ✅ Validate required fields
-    const requiredFields = ["itemCode", "itemName", "category", ];
+    // Match the required fields in the connected Frappe Item form.
+    const requiredFields = ["itemCode", "category", "gstCode", "uom"];
     for (let field of requiredFields) {
       if (!data[field]) {
         return NextResponse.json({ success: false, message: `${field} is required` }, { status: 400 });
@@ -127,7 +129,12 @@ export async function POST(req) {
     });
 
     await item.save();
-    return NextResponse.json({ success: true, data: item }, { status: 201 });
+    const frappeSync = await syncItem(item);
+    await Item.updateOne(
+      { _id: item._id, companyId: user.companyId },
+      { $set: { frappeSync: { ...frappeSync, attemptedAt: new Date() } } }
+    );
+    return NextResponse.json({ success: true, data: item, frappeSync }, { status: 201 });
   } catch (err) {
     console.error("POST /item error:", err);
     return NextResponse.json({ success: false, message: "Failed to create item" }, { status: 500 });

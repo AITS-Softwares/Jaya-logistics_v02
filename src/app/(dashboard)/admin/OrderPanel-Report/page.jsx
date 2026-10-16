@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import PanelReportOverview from '../reports/PanelReportOverview';
+import reportStyles from '../reports/panel-reports.module.css';
 import { useRouter } from "next/navigation";
 
 export default function OrderPanelTable() {
@@ -125,7 +127,8 @@ export default function OrderPanelTable() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white">
+    <div className={reportStyles.workspace}>
+      <PanelReportOverview title="Order panel" subtitle="Keep every order moving." rows={filteredOrders} loading={loading} error={error} onRefresh={fetchOrders} weightKey="weight" statusKey="status" />
       {/* ===== Sticky Top Bar with Yellow Theme ===== */}
       <div className="sticky top-0 z-40 border-b bg-white/80 backdrop-blur">
         <div className="mx-auto max-w-full px-4 py-3 flex items-center justify-between">

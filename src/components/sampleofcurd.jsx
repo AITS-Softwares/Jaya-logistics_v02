@@ -41,7 +41,7 @@ const EMPTY_ADDR = {
 // ✅ Customer Document Types
 const CUSTOMER_DOC_TYPES = [
   { key: "gstCertificate", label: "GST Certificate", icon: HiOutlineDocumentText, accept: "image/*,.pdf", required: false },
-  { key: "panCard", label: "PAN Card", icon: FaIdCard, accept: "image/*,.pdf", required: true },
+  { key: "panCard", label: "PAN Card", icon: FaIdCard, accept: "image/*,.pdf", required: false },
   { key: "iecCertificate", label: "IEC Certificate", icon: HiOutlineDocumentText, accept: "image/*,.pdf", required: false },
 ];
 
@@ -64,7 +64,6 @@ const VALIDATORS = {
   1: (d) => {
     const e = {};
     if (!d.customerName?.trim())  e.customerName  = "Customer Name is required";
-    if (!d.customerGroup?.trim()) e.customerGroup = "Customer Group is required";
     if (!d.customerType)          e.customerType  = "Customer Type is required";
     return e;
   },
@@ -96,8 +95,8 @@ const VALIDATORS = {
   },
   4: (d) => {
     const e = {};
-    if (!d.pan?.trim()) e.pan = "PAN is required";
-    else if (!/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(d.pan)) e.pan = "Invalid PAN";
+    if (!d.gstCategory?.trim()) e.gstCategory = "GST Category is required";
+    if (d.pan && !/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(d.pan)) e.pan = "Invalid PAN";
     if (d.gstNumber && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(d.gstNumber)) 
       e.gstNumber = "Invalid GST format";
     return e;
@@ -332,7 +331,7 @@ const CustomerDocumentSection = ({ documents, onDocumentChange }) => {
         <FaExclamationCircle className="text-blue-500 mt-0.5 shrink-0" />
         <p className="text-xs text-blue-700 font-medium">
           Upload customer documents (Max 5MB per file). Supported: Images and PDF.
-          <span className="text-red-500 ml-1">* PAN Card is mandatory.</span>
+          <span className="text-gray-500 ml-1">Documents are optional.</span>
           <span className="text-gray-500 ml-1">Uploaded: {uploadedCount} documents</span>
         </p>
       </div>
@@ -478,6 +477,7 @@ export default function CustomerManagement() {
   const [cd, setCd] = useState({ ...EMPTY });
   const [errs, setErrs] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const [syncingFrappe, setSyncingFrappe] = useState(false);
   const [canCreate, setCanCreate] = useState(false);
   const [canEdit, setCanEdit] = useState(false);
   const [canDelete, setCanDelete] = useState(false);
@@ -652,7 +652,12 @@ export default function CustomerManagement() {
         await axios.put(`/api/customers/${cd._id}`, payload, { headers: { Authorization: `Bearer ${token}` } });
         toast.success("Customer updated!");
       } else {
-        await axios.post("/api/customers", payload, { headers: { Authorization: `Bearer ${token}` } });
+        const created = await axios.post("/api/customers", payload, { headers: { Authorization: `Bearer ${token}` } });
+        if (created.data.frappeSync?.status !== 'synced') {
+          toast.error(created.data.frappeSync?.status === 'not_configured'
+            ? 'Customer saved locally. Frappe connection needs configuration.'
+            : 'Customer saved locally. Frappe sync failed; contact your administrator.');
+        }
         toast.success("Customer created!");
       }
       reset();
@@ -734,6 +739,31 @@ export default function CustomerManagement() {
     }
   };
 
+  const syncAllToFrappe = async () => {
+    if (!canCreate || syncingFrappe) return;
+    if (!confirm(`Sync ${customers.length} customer(s) to Frappe? Existing Frappe customers will not be duplicated.`)) return;
+
+    setSyncingFrappe(true);
+    try {
+      const token = localStorage.getItem("token");
+      const { data } = await axios.post("/api/customers/sync", {}, { headers: { Authorization: `Bearer ${token}` } });
+      const { summary, failures } = data;
+      if (summary.notConfigured) {
+        toast.error("Frappe connection is not configured on this server.");
+      } else if (summary.failed) {
+        toast.error(`${summary.synced} synced, ${summary.failed} failed. Check the affected customers and try again.`);
+        console.error("Frappe customer sync failures:", failures);
+      } else {
+        toast.success(`${summary.synced} customer(s) synced to Frappe.`);
+      }
+      fetchCustomers();
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to sync customers to Frappe");
+    } finally {
+      setSyncingFrappe(false);
+    }
+  };
+
   const filtered = customers.filter(c => {
     const q = searchTerm.toLowerCase();
     const matchQ = [c.customerCode, c.customerCodeValue, c.customerName, c.emailId, c.customerGroup, c.customerType].some(v => v?.toLowerCase().includes(q));
@@ -789,7 +819,7 @@ export default function CustomerManagement() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                {label("Customer Group", true)}
+                {label("Customer Group")}
                 <GroupSearch value={cd.customerGroup} onSelectGroup={name => { setCd(p => ({ ...p, customerGroup: name })); clearErr("customerGroup"); }} />
                 <Err k="customerGroup" />
               </div>
@@ -867,14 +897,15 @@ export default function CustomerManagement() {
                 <Err k="gstNumber" />
               </div>
               <div>
-                {label("GST Category")}
-                <select className={fi("")} name="gstCategory" value={cd.gstCategory || ""} onChange={handleChange}>
+                {label("GST Category", true)}
+                <select className={fi("gstCategory")} name="gstCategory" value={cd.gstCategory || ""} onChange={handleChange}>
                   <option value="">Select GST Category…</option>
                   {["Registered Regular", "Registered Composition", "Unregistered", "SEZ", "Overseas", "Deemed Export", "UIN Holders", "Tax Deductor", "Tax Collector", "Input Service Distributor"].map(o => <option key={o}>{o}</option>)}
                 </select>
+                <Err k="gstCategory" />
               </div>
               <div>
-                {label("PAN Number", true)}
+                {label("PAN Number")}
                 <input className={fi("pan")} name="pan" maxLength={10} value={cd.pan || ""} onChange={e => handleChange({ target: { name: "pan", value: e.target.value.toUpperCase() } })} />
                 <Err k="pan" />
               </div>
@@ -971,6 +1002,11 @@ export default function CustomerManagement() {
               {uploading ? "Uploading…" : <><FaFileUpload /> Bulk</>}
               <input type="file" hidden accept=".csv" onChange={handleBulk} />
             </label>
+            {canCreate && (
+              <button onClick={syncAllToFrappe} disabled={syncingFrappe || customers.length === 0} className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-emerald-600 text-white text-sm disabled:opacity-50">
+                <FaCloudUploadAlt /> {syncingFrappe ? "Syncing…" : "Sync all to Frappe"}
+              </button>
+            )}
             {canCreate && (
               <button onClick={() => setView("form")} className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-indigo-600 text-white text-sm">
                 <FaPlus /> Add Customer

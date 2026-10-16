@@ -55,10 +55,10 @@ export async function POST(req) {
 
       // Validate required fields
       if (!row.customerName) errors.push("customerName missing");
-      if (!row.customerGroup) errors.push("customerGroup missing");
+
       if (!row.customerType) errors.push("customerType missing");
-      if (!row.mobileNumber) errors.push("mobileNumber missing");
-      if (!row.pan) errors.push("pan missing");
+
+
       if (!row.gstCategory) errors.push("gstCategory missing");
 
       if (errors.length > 0) {

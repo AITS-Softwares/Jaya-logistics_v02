@@ -8,6 +8,7 @@ import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 // If you don't have BankHead model, comment out the population
 // import BankHead from "@/models/BankHead";
 
+import { syncCustomer } from "@/lib/frappe-customer.mjs";
 export const runtime = "nodejs";
 
 /* -------------------------------
@@ -111,6 +112,11 @@ export async function POST(req) {
     }
 
     const body = await req.json();
+    for (const [field, label] of [['customerName', 'Customer Name'], ['customerType', 'Customer Type'], ['gstCategory', 'GST Category']]) {
+      if (typeof body[field] !== 'string' || !body[field].trim()) {
+        return NextResponse.json({ success: false, message: label + ' is required' }, { status: 400 });
+      }
+    }
 
     // Auto-generate customer code
     const lastCustomer = await Customer.findOne({ 
@@ -137,13 +143,17 @@ export async function POST(req) {
     });
 
     await customer.save();
+    const frappeSync = await syncCustomer(customer);
+    await Customer.updateOne({ _id: customer._id, companyId: user.companyId }, {
+      $set: { frappeSync: { ...frappeSync, attemptedAt: new Date() } }
+    });
 
     // ✅ Remove population or fix it
     const populated = await Customer.findById(customer._id)
       .populate("assignedAgents", "name email");
       // .populate("glAccount"); // ❌ Comment out if BankHead missing
 
-    return NextResponse.json({ success: true, data: populated }, { status: 201 });
+    return NextResponse.json({ success: true, data: populated, frappeSync }, { status: 201 });
 
   } catch (error) {
     console.error("POST /customers error:", error);
@@ -186,6 +196,7 @@ export async function POST(req) {
 //     console.log("Received customer data:", body);
 //     const customer = new Customer(body);
 //     await customer.save();
+
 //     const populated = await Customer.findById(customer._id).populate("glAccount");
 //     return NextResponse.json(populated, { status: 201 });
 //   } catch (error) {
