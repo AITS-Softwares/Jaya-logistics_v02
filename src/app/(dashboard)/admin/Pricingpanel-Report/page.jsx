@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import PanelReportOverview from '../reports/PanelReportOverview';
+import reportStyles from '../reports/panel-reports.module.css';
 import { useRouter } from "next/navigation";
 
 export default function PricingPanelReport() {
@@ -176,7 +178,8 @@ export default function PricingPanelReport() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white">
+    <div className={reportStyles.workspace}>
+      <PanelReportOverview title="Pricing panel" subtitle="Keep every rate in view." rows={data} loading={loading} error={error} onRefresh={fetchData} weightKey="weight" statusKey="approval" />
       {/* Header - matching vehicle page style */}
       <div className="sticky top-0 z-40 border-b bg-white/80 backdrop-blur">
         <div className="mx-auto max-w-full px-4 py-3 flex items-center justify-between">

@@ -25,19 +25,25 @@ const ItemSchema = new mongoose.Schema(
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "CompanyUser" },
 
     itemCode: { type: String, required: true },
-    itemName: { type: String, required: true },
+    itemName: { type: String },
+    frappeSync: {
+      status: { type: String, enum: ['not_configured', 'synced', 'failed'] },
+      name: String,
+      message: String,
+      attemptedAt: Date,
+    },
     description: { type: String },
 
     category: { type: String, required: true },
     subgroup: { type: String, trim: true, default: "" },
-    unitPrice: { type: Number, required: true },
+    unitPrice: { type: Number },
 
     quantity: { type: Number },
     reorderLevel: { type: Number },
     leadTime: { type: Number },
 
     itemType: { type: String },
-    uom: { type: String },
+    uom: { type: String, required: true },
 
     managedBy: { type: String },
     managedValue: { type: String },

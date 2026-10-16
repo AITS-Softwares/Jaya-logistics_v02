@@ -500,7 +500,7 @@
 // // 				    <Item href="/admin/ProofofDelivery" icon={<HiCash />} label="Proof Of Delivery" onClick={closeSidebar} isActive={isActive("/admin/ProofofDelivery")} />
 // // 					 <Item href="/admin/Balance-Payment" icon={<HiCash />} label="Balance-Payment" onClick={closeSidebar} isActive={isActive("/admin/Balance-Payment")} />
 // // 					 <Item href="/admin/Billing" icon={<HiCash />} label="Billing" onClick={closeSidebar} isActive={isActive("/admin/Billing")} />
-// //            			 <Item href="/admin/reports/order-full-report" icon={<HiCash />} label="order-full-report" onClick={closeSidebar} isActive={isActive("/admin/reports/order-full-report")} />
+// //            			 <Item href="/admin/reports/order-full-report" icon={<HiCash />
 // //                 </Submenu>
 
 // //                 <Submenu isOpen={!!openSubmenus["tvPurchase"]} onToggle={() => toggleSubmenu("tvPurchase")} icon={<GiStockpiles />} label="Purchase">
@@ -2514,13 +2514,6 @@ export default function Layout({ children }) {
                     onClick={closeSidebar}
                     isActive={isActive("/admin/Billing")}
                   />
-                  <Item
-                    href="/admin/reports/order-full-report"
-                    icon={<HiCash />}
-                    label="order-full-report"
-                    onClick={closeSidebar}
-                    isActive={isActive("/admin/reports/order-full-report")}
-                  />
                 </Submenu>
 
                 <Submenu
@@ -2711,6 +2704,13 @@ export default function Layout({ children }) {
                 isOpen={openMenu === "finance"}
                 onToggle={() => toggleMenu("finance")}
               >
+                <Item
+                  href="https://aits-jayalogistic.m.frappe.cloud/app/accounting"
+                  icon={<HiOutlineCreditCard />}
+                  label="Accounting"
+                  onClick={closeSidebar}
+                  isActive={false}
+                />
                 <Submenu
                   isOpen={!!openSubmenus["journalEntry"]}
                   onToggle={() => toggleSubmenu("journalEntry")}
@@ -3125,41 +3125,7 @@ export default function Layout({ children }) {
                 />
               </Section>
 
-              <Section
-                title="Reports"
-                icon={<HiDocumentReport />}
-                isOpen={openMenu === "reports"}
-                onToggle={() => toggleMenu("reports")}
-              >
-                <Item
-                  href="/admin/OrderPanel-Report"
-                  icon={<HiDocumentReport />}
-                  label="Order Panel Report"
-                  onClick={closeSidebar}
-                  isActive={isActive("/admin/OrderPanel-Report")}
-                />
-                <Item
-                  href="/admin/vehiclenegotiation-Report"
-                  icon={<HiDocumentReport />}
-                  label="Vehicle Negotiation Report"
-                  onClick={closeSidebar}
-                  isActive={isActive("/admin/vehiclenegotiation-Report")}
-                />
-                <Item
-                  href="/admin/Pricingpanel-Report"
-                  icon={<HiDocumentReport />}
-                  label="Pricing Panel Report"
-                  onClick={closeSidebar}
-                  isActive={isActive("/admin/Pricingpanel-Report")}
-                />
-                <Item
-                  href="/admin/LoadingPanel-Report"
-                  icon={<HiDocumentReport />}
-                  label="Loading Panel Report"
-                  onClick={closeSidebar}
-                  isActive={isActive("/admin/LoadingPanel-Report")}
-                />
-              </Section>
+              
             </>
           )}
 
@@ -3291,6 +3257,20 @@ export default function Layout({ children }) {
             </Section>
           )}
 
+          <Section
+            title="Reports"
+            icon={<HiDocumentReport />}
+            isOpen={openMenu === 'reportDirectory'}
+            onToggle={() => toggleMenu('reportDirectory')}
+          >
+            <Item
+              href="/admin/reports"
+              icon={<HiChartSquareBar />}
+              label="Reports & Dashboards"
+              onClick={closeSidebar}
+              isActive={isActive('/admin/reports')}
+            />
+          </Section>
           <div className="p-4 mt-4 border-t border-gray-700">
             <LogoutButton />
           </div>

@@ -1,0 +1,10 @@
+'use client';
+import Link from 'next/link';
+import {ArrowLeft,RefreshCw,Truck} from 'lucide-react';
+import styles from './panel-reports.module.css';
+export default function PanelReportOverview({title,subtitle,rows=[],loading,error,onRefresh,weightKey='weight',statusKey='approval'}) {
+ const weight=rows.reduce((sum,row)=>sum+(Number(row[weightKey])||0),0);
+ const statuses=rows.reduce((counts,row)=>{const status=String(row[statusKey]||row.panelStatus||row.status||'Not recorded');counts[status]=(counts[status]||0)+1;return counts;},{});
+ const groups=Object.entries(statuses).sort((a,b)=>b[1]-a[1]);
+ return <><nav className={styles.breadcrumb}><Link href="/admin/reports"><ArrowLeft size={14}/> Reports</Link><span>›</span><span>{title}</span></nav><header className={styles.hero}><div><div className={styles.kicker}><Truck size={15}/> OPERATIONS INTELLIGENCE</div><h1>{title}<br/><em>{subtitle}</em></h1><p>Track progress, review records and keep your operations moving.</p></div><div className={styles.heroMeta}><span>Company workspace</span><button disabled={loading} onClick={onRefresh}><RefreshCw size={14}/>{loading?'Refreshing…':'Refresh data'}</button></div></header><section className={styles.metrics} aria-label="Report summary">{[['RECORDS',rows.length,'Current report filters apply'],['TOTAL WEIGHT',`${weight.toLocaleString('en-IN',{maximumFractionDigits:2})} MT`,'Weight in displayed records'],['WORKFLOW GROUPS',groups.length,'Distinct recorded statuses'],['LEADING STATUS',groups[0]?.[0]||'—',groups.length?`${groups[0][1]} records`:'No records available']].map(([label,value,note])=><div className={styles.metric} key={label}><span>{label}</span><strong>{loading||error?'—':value}</strong><small>{note}</small></div>)}</section>{!loading&&!error&&groups.length>0&&<section className={styles.pipeline}><div><span className={styles.kicker}>WORKFLOW SNAPSHOT</span><h2>Progress at a glance</h2></div><div className={styles.stages}>{groups.map(([label,count])=><div key={label}><span>{label}</span><strong>{count}</strong><progress value={count} max={rows.length} aria-label={`${label}: ${count} of ${rows.length}`}/></div>)}</div></section>}</>;
+}

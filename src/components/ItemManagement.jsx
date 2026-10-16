@@ -900,7 +900,7 @@ import {
   FaChevronLeft, FaChevronRight, FaCheck, FaFileUpload,
   FaDownload, FaExclamationCircle, FaBoxOpen, FaTag,
   FaShieldAlt, FaCashRegister, FaRuler, FaClipboardCheck,
-  FaListUl, FaFolder
+  FaListUl, FaFolder, FaCloudUploadAlt
 } from "react-icons/fa";
 import { HiOutlineDocumentText } from "react-icons/hi";
 import ItemGroupSearch from "./ItemGroupSearch";
@@ -940,10 +940,10 @@ const INITIAL = {
 const VALIDATORS = {
   1: (d) => {
     const e = {};
-    if (!d.itemName?.trim()) e.itemName  = "Item Name is required";
-    if (!d.category?.trim()) e.category  = "Category is required";
+    if (!d.itemCode?.trim()) e.itemCode  = "Item Code is required";
+    if (!d.category?.trim()) e.category  = "Item Group is required";
+    if (!d.gstCode?.trim()) e.gstCode = "HSN/SAC is required";
     if (!d.uom)     e.uom     = "Unit of Measure is required";
-    if (!d.itemType) e.itemType = "Item Type is required";
     return e;
   },
   2: () => ({}),
@@ -961,6 +961,8 @@ export default function ItemManagement() {
   const [loading,   setLoading]   = useState(false);
   const [uploading, setUploading] = useState(false);
   const [submitting,setSubmitting]= useState(false);
+  const [syncingFrappe, setSyncingFrappe] = useState(false);
+  const [frappeSyncProgress, setFrappeSyncProgress] = useState(null);
   const [step,      setStep]      = useState(1);
   const [id,        setId]        = useState({ ...INITIAL });
   const [errs,      setErrs]      = useState({});
@@ -1102,7 +1104,12 @@ export default function ItemManagement() {
         else toast.error(res.data.message || "Update failed");
       } else {
         const res = await axios.post("/api/items", payload, { headers: { Authorization: `Bearer ${token}` } });
-        if (res.data.success) { setItems(p => [...p, res.data.data]); publishMasterDataChanged("items"); toast.success("Item created!"); }
+        if (res.data.success) {
+          setItems(p => [...p, res.data.data]);
+          publishMasterDataChanged("items");
+          if (res.data.frappeSync?.status !== 'synced') toast.warn("Item saved locally. Frappe sync needs attention.");
+          toast.success("Item created!");
+        }
         else toast.error(res.data.message || "Create failed");
       }
       reset();
@@ -1177,6 +1184,42 @@ export default function ItemManagement() {
     finally { setUploading(false); e.target.value = ""; }
   };
 
+  const syncAllItemsToFrappe = async () => {
+    if (syncingFrappe || !items.length) return;
+    if (!confirm(`Sync ${items.length} item(s) to Frappe in batches of 10? Existing Frappe items will not be duplicated.`)) return;
+
+    setSyncingFrappe(true);
+    setFrappeSyncProgress({ completed: 0, total: items.length, synced: 0, failed: 0 });
+    try {
+      const token = localStorage.getItem("token");
+      let offset = 0;
+      let synced = 0;
+      let failed = 0;
+      let notConfigured = 0;
+      let firstFailure;
+      do {
+        const { data } = await axios.post('/api/items/sync', { offset, batchSize: 10 }, { headers: { Authorization: `Bearer ${token}` } });
+        synced += data.summary.synced;
+        failed += data.summary.failed;
+        notConfigured += data.summary.notConfigured;
+        if (!firstFailure && data.failures?.[0]) firstFailure = data.failures[0];
+        const completed = Math.min(offset + data.summary.processed, data.total ?? items.length);
+        setFrappeSyncProgress({ completed, total: data.total ?? items.length, synced, failed });
+        offset = data.nextOffset;
+      } while (offset !== null);
+
+      if (notConfigured) toast.error('Frappe connection is not configured on this server.');
+      else if (failed) toast.error(`${synced} items synced; ${failed} failed.${firstFailure ? ` First: ${firstFailure.itemCode} — ${firstFailure.message}` : ''}`);
+      else toast.success(`${synced} item(s) synced to Frappe.`);
+      fetchItems();
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Failed to sync items to Frappe');
+    } finally {
+      setSyncingFrappe(false);
+      setTimeout(() => setFrappeSyncProgress(null), 1200);
+    }
+  };
+
   // ── Derived ──
   const filtered = items.filter(it => {
     const q  = searchTerm.toLowerCase();
@@ -1235,12 +1278,12 @@ export default function ItemManagement() {
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <Lbl text="Item Code" />
+              <Lbl text="Item Code" req />
               <input className={`${fi("")} bg-gray-100 cursor-not-allowed text-gray-400`} value={id.itemCode || ""} readOnly />
               <p className="text-[11px] text-gray-400 mt-1">Auto-generated</p>
             </div>
             <div>
-              <Lbl text="Item Name" req />
+              <Lbl text="Item Name" />
               <input className={fi("itemName")} name="itemName" value={id.itemName || ""} onChange={handleChange} placeholder="e.g. Steel Rod 10mm" />
               <Err k="itemName" />
             </div>
@@ -1248,7 +1291,7 @@ export default function ItemManagement() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <Lbl text="Category" req />
+              <Lbl text="Item Group" req />
               <ItemGroupSearch 
                 onSelectItemGroup={g => { 
                   setId(p => ({ ...p, category: g.name, subgroup: "" })); 
@@ -1298,9 +1341,20 @@ export default function ItemManagement() {
             </div>
           </div>
 
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <Lbl text="HSN/SAC" req />
+              <input className={fi("gstCode")} name="gstCode" value={id.gstCode || ""} onChange={handleChange} placeholder="Select the Frappe GST HSN Code" />
+              <Err k="gstCode" />
+            </div>
+            <div className="flex items-end pb-1 text-xs text-gray-400">
+              Use the exact HSN/SAC code that already exists in Frappe.
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <Lbl text="Item Type" req />
+              <Lbl text="Item Type" />
               <select className={fi("itemType")} name="itemType" value={id.itemType || ""} onChange={handleChange}>
                 <option value="">Select type…</option>
                 <option>Product</option>
@@ -1310,12 +1364,12 @@ export default function ItemManagement() {
               <Err k="itemType" />
             </div>
             <div>
-              <Lbl text="Unit Price (₹)" req />
+              <Lbl text="Unit Price (₹)" />
               <input className={fi("unitPrice")} name="unitPrice" type="number" min="0" step="0.01" placeholder="0.00" value={id.unitPrice || ""} onChange={handleChange} />
               <Err k="unitPrice" />
             </div>
             <div>
-              <Lbl text="Min. Stock" req />
+              <Lbl text="Min. Stock" />
               <input className={fi("quantity")} name="quantity" type="number" min="0" placeholder="0" value={id.quantity || ""} onChange={handleChange} />
               <Err k="quantity" />
             </div>
@@ -1661,12 +1715,41 @@ export default function ItemManagement() {
               {uploading ? "Uploading…" : <><FaFileUpload className="text-xs" /> Bulk Upload</>}
               <input type="file" hidden accept=".csv" onChange={handleBulk} />
             </label>
+            <button onClick={syncAllItemsToFrappe} disabled={syncingFrappe || items.length === 0}
+              className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 disabled:opacity-50 transition-all">
+              {syncingFrappe
+                ? <><span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" /> Syncing…</>
+                : <><FaCloudUploadAlt className="text-xs" /> Sync items to Frappe</>}
+            </button>
             <button onClick={() => { generateCode(); setView("form"); }}
               className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition-all shadow-sm shadow-indigo-200">
               <FaPlus className="text-xs" /> Create Item
             </button>
           </div>
         </div>
+
+        {frappeSyncProgress && (
+          <div className="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 shadow-sm" role="status" aria-live="polite">
+            <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+              <div className="flex items-center gap-2 font-semibold text-emerald-800">
+                {syncingFrappe && <span className="w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />}
+                <span>Syncing items to Frappe</span>
+              </div>
+              <span className="font-mono text-xs font-bold text-emerald-700">
+                {frappeSyncProgress.completed} / {frappeSyncProgress.total} processed
+              </span>
+            </div>
+            <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-emerald-100">
+              <div
+                className="h-full rounded-full bg-emerald-600 transition-all duration-300"
+                style={{ width: `${frappeSyncProgress.total ? Math.round((frappeSyncProgress.completed / frappeSyncProgress.total) * 100) : 0}%` }}
+              />
+            </div>
+            <p className="mt-2 text-xs text-emerald-700">
+              {frappeSyncProgress.synced} synced · {frappeSyncProgress.failed} failed
+            </p>
+          </div>
+        )}
 
         {/* Stat cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
