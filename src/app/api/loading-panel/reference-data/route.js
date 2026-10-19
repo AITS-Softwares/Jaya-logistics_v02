@@ -11,9 +11,10 @@ import Plant from "@/app/api/plants/schema";
 import SubCompany from "@/models/SubCompany";
 import Vehicle from "@/app/api/vehicles/Vehicle";
 import Owner from "@/app/api/owners/Owner";
+import { filterOpenOrderRows } from '@/lib/orderRowStatus';
 
 const orderFields = [
-  "orderNo", "partyName", "plantCode", "plantCodeValue", "plantName", "orderType",
+  "orderNo", "orderRowId", "partyName", "plantCode", "plantCodeValue", "plantName", "orderType",
   "pinCode", "from", "fromName", "fromState", "to", "toName", "taluka", "talukaName",
   "district", "districtName", "state", "stateName", "weight", "collectionCharges",
   "cancellationCharges", "loadingCharges", "otherCharges", "localStatus", "localStatusLabel",
@@ -164,6 +165,7 @@ async function getAvailableVnnsForLoading(user) {
       companyScopeFilter(user),
       {
         vnnNo: 1,
+        panelStatus: 1,
         customerName: 1,
         branch: 1,
         branchName: 1,
@@ -200,7 +202,9 @@ async function getAvailableVnnsForLoading(user) {
       .filter((vnnNo) => vnnNo && vnnNo !== "N/A" && vnnNo !== "-"),
   );
 
-  return vehicleNegotiations.filter((vnn) => isVnnReadyForDownstream(vnn) && !usedVnnNumbers.has(vnn.vnnNo));
+  const eligible = vehicleNegotiations.filter((vnn) => vnn.panelStatus !== 'Cancelled' && isVnnReadyForDownstream(vnn) && !usedVnnNumbers.has(vnn.vnnNo));
+  const openRows = await Promise.all(eligible.map((vnn) => filterOpenOrderRows(user, vnn.orders || [])));
+  return eligible.map((vnn, index) => ({ ...vnn, orders: openRows[index] })).filter((vnn) => vnn.orders.length);
 }
 
 /**

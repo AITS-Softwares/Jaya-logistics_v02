@@ -7,7 +7,7 @@ const ROLE_ROUTES = {
   "Sales Manager": ["/", "/agent-dashboard", "/admin"],
   "Purchase Manager": ["/", "/supplier-dashboard", "/admin"],
   "Inventory Manager": ["/", "/inventory-dashboard", "/admin"],
-  "Accounts Manager": ["/", "/accounts-dashboard", "/admin"],
+  "Accounts Manager": ["/", "/accounts-dashboard", "/admin"]  ,
   "HR Manager": ["/", "/hr-dashboard", "/admin"],
   "Support Executive": ["/", "/support-dashboard", "/admin"],
   "Production Head": ["/", "/production-dashboard", "/admin"],

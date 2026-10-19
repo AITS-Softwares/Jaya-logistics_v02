@@ -1920,6 +1920,7 @@ export default function ApprovePOD() {
               <div>
                 <h3 className="text-base font-bold text-slate-800">Email Preview - Supplier Acknowledgement</h3>
                 <p className="text-xs text-slate-600"><b>To:</b> {ackPreview.to || '— no email —'} {ackPreview.supplierName ? `(${ackPreview.supplierName})` : ''}</p>
+                <p className="text-xs text-slate-600"><b>From:</b> {ackPreview.from || '— no active Email Master —'}</p>
                 <p className="text-xs text-slate-600"><b>Subject:</b> {ackPreview.subject}</p>
               </div>
               <button onClick={() => setShowAckPreview(false)} className="text-xl leading-none text-slate-500 hover:text-slate-800">×</button>

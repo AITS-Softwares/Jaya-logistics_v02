@@ -537,6 +537,7 @@ export async function POST(req) {
     if (body === null) return fail("Request body must be valid JSON", 400);
 
     const purchaseNo = str(body.purchaseNo || body.header?.purchaseNo).trim();
+    const isDraftSave = body.saveMode === 'draft';
     if (!purchaseNo) return fail("Purchase No is required", 400);
 
     const purchase = await getPODEligiblePurchase(user, purchaseNo);
@@ -546,13 +547,13 @@ export async function POST(req) {
     if (purchase.approval?.status !== "Approved") {
       return fail(`Purchase ${purchaseNo} must be Approved before a POD can be created.`, 400);
     }
-    if (!(purchase.memoFile?.filePath || purchase.memoFile?.fullPath || purchase.memoFile?.filename)) {
+    if (!isDraftSave && !(purchase.memoFile?.filePath || purchase.memoFile?.fullPath || purchase.memoFile?.filename)) {
       return fail(`Upload the memo for purchase ${purchaseNo} before creating a POD.`, 400);
     }
 
     if (!ALLOW_MULTIPLE_PODS_PER_PURCHASE) {
       const duplicate = await POD.findOne(
-        companyScopeFilter(user, { purchaseNo, podStatus: { $ne: "Rejected" } })
+        companyScopeFilter(user, { purchaseNo, podStatus: { $nin: ["Rejected", "Draft"] } })
       )
         .select("podNo")
         .lean();
@@ -595,7 +596,7 @@ export async function POST(req) {
     const vendorFinancial = buildVendorFinancial(body.vendorFinancial, {}, { advance: advanceInfo.advance });
 
     // Creators without approve permission cannot create an already-approved POD
-    const requestedPodStatus = canApprove && POD_STATUSES.includes(body.podStatus) ? body.podStatus : "Pending";
+    const requestedPodStatus = isDraftSave ? "Draft" : (canApprove && POD_STATUSES.includes(body.podStatus) ? body.podStatus : "Pending");
     const requestedPaymentStatus =
       canApprove && ["Pending", "Approved", "Rejected", "Partially Paid", "Paid"].includes(body.paymentStatus)
         ? body.paymentStatus
@@ -650,11 +651,12 @@ export async function POST(req) {
 
       podStatus: requestedPodStatus,
       paymentStatus: requestedPaymentStatus,
+      isDraft: isDraftSave,
 
       createdBy: user.id,
     });
 
-    await pod.save(); // totals + final balance are computed in the pre-save hook
+    await pod.save({ validateBeforeSave: !isDraftSave }); // totals + final balance are computed in the pre-save hook
 
     return json(
       {
@@ -872,6 +874,11 @@ export async function PUT(req) {
     // Delete files that are no longer referenced (removed / replaced uploads)
     const keptFiles = new Set((pod.lrEntries || []).map((l) => normPath(l?.podFile?.filePath)).filter(Boolean));
 
+    if (pod.isDraft && canEdit) {
+      pod.isDraft = false;
+      pod.podStatus = 'Pending';
+      pod.paymentStatus = 'Pending';
+    }
     await pod.save(); // totals + final balance are computed in the pre-save hook
 
     for (const f of prevFiles) {
@@ -961,6 +968,7 @@ export async function PATCH(req) {
 
     const pod = await POD.findOne(companyScopeFilter(user, { _id: id }));
     if (!pod) return fail("POD not found", 404);
+    if (pod.isDraft) return fail("Open and save this draft before changing its approval or payment status.", 400);
 
     // State rules
     if (pod.paymentStatus === "Paid") {

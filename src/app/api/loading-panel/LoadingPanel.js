@@ -487,6 +487,8 @@ const loadingPanelSchema = new mongoose.Schema({
       default: () => new mongoose.Types.ObjectId()
     },
     orderNo: String,
+    orderPanelId: { type: String, default: '' },
+    orderRowId: { type: String, default: '' },
     partyName: String,
     plantCode: String,
     plantCodeValue: String,
@@ -830,7 +832,8 @@ const loadingPanelSchema = new mongoose.Schema({
     type: String,
     enum: ['Draft', 'Submitted', 'Approved', 'Completed', 'Cancelled'],
     default: 'Draft'
-  }
+  },
+  isDraft: { type: Boolean, default: false }
 }, {
   timestamps: true
 });

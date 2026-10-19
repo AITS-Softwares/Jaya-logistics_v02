@@ -366,8 +366,9 @@ const podSchema = new mongoose.Schema({
   finalBalance: { type: Number, default: 0 },
 
   // Status
-  podStatus: { type: String, enum: ['Pending', 'Received', 'Partial', 'Rejected', 'Completed'], default: 'Pending' },
+  podStatus: { type: String, enum: ['Draft', 'Pending', 'Received', 'Partial', 'Rejected', 'Completed'], default: 'Pending' },
   paymentStatus: { type: String, enum: ['Pending', 'Approved', 'Rejected', 'Partially Paid', 'Paid'], default: 'Pending' },
+  isDraft: { type: Boolean, default: false },
 
   // Approval audit trail (set by the server only)
   approvalStatus: { type: String, default: '' },

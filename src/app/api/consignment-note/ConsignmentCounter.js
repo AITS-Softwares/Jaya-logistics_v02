@@ -1,6 +1,6 @@
 
 import mongoose from 'mongoose';
-import { nextCompanyDocumentNumber } from '@/lib/documentSequence';
+import { nextPeriodDocumentNumber } from '@/lib/documentSequence';
 
 const consignmentCounterSchema = new mongoose.Schema({
   _id: {
@@ -27,7 +27,7 @@ const ConsignmentCounter = mongoose.models.ConsignmentCounter ||
   mongoose.model('ConsignmentCounter', consignmentCounterSchema);
 
 export async function getNextLRNumber(companyId, subCompanyId, subCompanyCode) {
-  return nextCompanyDocumentNumber({ companyId, subCompanyId, subCompanyCode, documentType: 'LR', width: 5 });
+  return nextPeriodDocumentNumber({ companyId, subCompanyId, subCompanyCode, documentType: 'LR', width: 4 });
 }
 
 export default ConsignmentCounter;

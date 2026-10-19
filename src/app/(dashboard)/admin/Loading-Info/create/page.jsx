@@ -7325,19 +7325,20 @@ export default function CreateLoadingInfoPanel() {
     return uploadedPaths;
   };
 
-  const handleSave = async () => {
-    if (!header.branch) {
+  const handleSave = async (saveMode = 'submit') => {
+    const isDraftSave = saveMode === 'draft';
+    if (!isDraftSave && !header.branch) {
       alert("Please select a branch");
       return;
     }
 
-    if (!vehicleInfo.vehicleNo) {
+    if (!isDraftSave && !vehicleInfo.vehicleNo) {
       alert("Please enter vehicle number");
       return;
     }
 
     const totalVlPhotos = getTotalVlPhotosCount();
-    if (totalVlPhotos < 5) {
+    if (!isDraftSave && totalVlPhotos < 5) {
       alert(`Please upload at least 5 Vehicle Loading (VL) photos. Currently uploaded: ${totalVlPhotos}/5`);
       return;
     }
@@ -7402,6 +7403,7 @@ export default function CreateLoadingInfoPanel() {
       };
 
       const payload = {
+        saveMode,
         detentionDays: detentionDays,
         detentionNumber: detentionNumber,
         vehiclePhotos: uploadedPaths.vehiclePhotos || [],
@@ -7432,6 +7434,8 @@ export default function CreateLoadingInfoPanel() {
         },
         orderRows: orderRows.map(order => ({
           orderNo: order.orderNo,
+          orderPanelId: order.orderPanelId || '',
+          orderRowId: order.orderRowId || order.originalRowId || '',
           partyName: order.partyName,
           plantCode: order.plantCode,
           plantCodeValue: order.plantCodeValue || '',
@@ -7546,9 +7550,13 @@ export default function CreateLoadingInfoPanel() {
 
       const data = await res.json();
 
-      alert(`✅ Loading Info saved successfully!\nVehicle Arrival No: ${data.data?.vehicleArrivalNo || 'Generated'}`);
-
-      resetForm();
+      if (isDraftSave) {
+        alert(`✅ Loading Info saved as a draft.\nVehicle Arrival No: ${data.data?.vehicleArrivalNo || 'Generated'}\nOpen it from the list to continue.`);
+        router.push('/admin/Loading-Info');
+      } else {
+        alert(`✅ Loading Info saved successfully!\nVehicle Arrival No: ${data.data?.vehicleArrivalNo || 'Generated'}`);
+        resetForm();
+      }
 
     } catch (error) {
       console.error('Error saving loading info:', error);
@@ -7750,6 +7758,11 @@ export default function CreateLoadingInfoPanel() {
           </div>
 
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => handleSave('draft')}
+              disabled={saving || uploading}
+              className="rounded-xl border border-amber-300 bg-amber-50 px-5 py-2 text-sm font-bold text-amber-800 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+            >Save as Draft</button>
             <button
               onClick={handleSave}
               disabled={saving || uploading}

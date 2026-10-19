@@ -69,22 +69,35 @@ export default function VehicleNegotiationList() {
       if (!vnnMap.has(item.vnn)) {
         vnnMap.set(item.vnn, {
           ...item,
-          orderCount: 1,
-          totalWeight: item.weight || 0,
-          orders: [item],
-          orderNumbers: item.order ? [item.order] : []
+          orderCount: 0,
+          totalWeight: Number(item.weight) || 0,
+          orders: [],
+          orderNumbers: []
         });
       } else {
         const existing = vnnMap.get(item.vnn);
-        existing.orderCount += 1;
-        existing.totalWeight += (item.weight || 0);
-        existing.orders.push(item);
-        if (item.order && !existing.orderNumbers.includes(item.order)) existing.orderNumbers.push(item.order);
+        existing.totalWeight += Number(item.weight) || 0;
 
         if (!existing.order && item.order) existing.order = item.order;
         if (!existing.from && item.from) existing.from = item.from;
         if (!existing.to && item.to) existing.to = item.to;
       }
+
+      // The API returns one row per plant row; collapse those rows to one
+      // order chip while retaining the full row-level weight calculation.
+      const existing = vnnMap.get(item.vnn);
+      const orderKey = String(item.order || item.orderPanelId || '').trim().toLowerCase();
+      const order = existing.orders.find((entry) => entry._orderKey === orderKey);
+      if (order) {
+        order.weight += Number(item.weight) || 0;
+        if (item.sourceOrderStatus === 'Cancelled' || (item.sourceOrderStatus === 'Hold' && order.sourceOrderStatus !== 'Cancelled')) {
+          order.sourceOrderStatus = item.sourceOrderStatus;
+        }
+      } else if (orderKey) {
+        existing.orders.push({ ...item, weight: Number(item.weight) || 0, _orderKey: orderKey });
+        existing.orderNumbers.push(item.order);
+      }
+      existing.orderCount = existing.orders.length;
     });
 
     return Array.from(vnnMap.values());
@@ -371,8 +384,8 @@ export default function VehicleNegotiationList() {
                         <button onClick={() => router.push(`/admin/vehicle-negotiation/${item.vnId}/view`)} className="hover:text-indigo-600 hover:underline">{item.vnn}</button>
                       </td>
                       <td className="px-4 py-3">
-                        <div className="flex max-w-48 flex-wrap gap-1">
-                          {item.orderNumbers.map((orderNo) => <span key={orderNo} className="rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800">{orderNo}</span>)}
+                        <div className="flex max-w-64 flex-wrap gap-1.5">
+                          {item.orders.map((order, orderIndex) => <span key={`${order.order || orderIndex}`} className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-800 ring-1 ring-inset ring-blue-100"><span>{order.order || 'Order'}</span><span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${order.sourceOrderStatus === 'Hold' ? 'bg-amber-100 text-amber-800' : order.sourceOrderStatus === 'Cancelled' ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'}`}>{order.sourceOrderStatus || 'Unknown'}</span></span>)}
                         </div>
                       </td>
                       <td className="px-4 py-3">

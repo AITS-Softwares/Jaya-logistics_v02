@@ -74,12 +74,12 @@ import PurchasePanel from "@/app/api/purchase-panel/PurchasePanel";
 import LoadingPanel from "@/app/api/loading-panel/LoadingPanel";
 import { summarizeAdvances, deriveBalanceFields, buildAdjustments } from "@/lib/paymentRules";
 
-const ADV_SELECT = "paymentNo purchaseNo status queueGenerated paymentDetails.paymentStatus paymentDetails.finalAmount vendorDetails.advance";
+const ADV_SELECT = "paymentNo purchaseNo status queueGenerated isDraft paymentDetails.paymentStatus paymentDetails.finalAmount vendorDetails.advance";
 
 export async function getPaidAdvanceForPurchase(user, purchaseNo) {
     const no = String(purchaseNo ?? "").trim();
     if (!no) return summarizeAdvances([]);
-    const payments = await AdvancePayment.find(companyScopeFilter(user, { purchaseNo: no })).select(ADV_SELECT).lean();
+    const payments = await AdvancePayment.find(companyScopeFilter(user, { purchaseNo: no, isDraft: { $ne: true } })).select(ADV_SELECT).lean();
     return summarizeAdvances(payments);
 }
 
@@ -87,7 +87,7 @@ export async function getAdvanceSummaryMap(user, purchaseNos) {
     const nos = [...new Set((purchaseNos || []).map((v) => String(v ?? "").trim()).filter(Boolean))];
     const map = new Map();
     if (!nos.length) return map;
-    const payments = await AdvancePayment.find(companyScopeFilter(user, { purchaseNo: { $in: nos } })).select(ADV_SELECT).lean();
+    const payments = await AdvancePayment.find(companyScopeFilter(user, { purchaseNo: { $in: nos }, isDraft: { $ne: true } })).select(ADV_SELECT).lean();
     const grouped = new Map();
     for (const p of payments) {
         if (!grouped.has(p.purchaseNo)) grouped.set(p.purchaseNo, []);
@@ -103,7 +103,7 @@ export async function syncPodAdvanceForPurchase(user, purchaseNo) {
         const no = String(purchaseNo ?? "").trim();
         if (!no) return 0;
         const { advance } = await getPaidAdvanceForPurchase(user, no);
-        const pods = await POD.find(companyScopeFilter(user, { purchaseNo: no }));
+        const pods = await POD.find(companyScopeFilter(user, { purchaseNo: no, isDraft: { $ne: true } }));
         let changed = 0;
         for (const pod of pods) {
             if (!pod.vendorFinancial || Number(pod.vendorFinancial.advance) === advance) continue;
@@ -128,7 +128,7 @@ export async function getPurchaseAdjustments(user, purchaseNo) {
 export async function deriveBalanceForPod(user, podNo) {
     const no = String(podNo ?? "").trim();
     if (!no) return { error: "POD number is required", status: 400 };
-    const pod = await POD.findOne(companyScopeFilter(user, { podNo: no })).lean();
+    const pod = await POD.findOne(companyScopeFilter(user, { podNo: no, isDraft: { $ne: true } })).lean();
     if (!pod) return { error: "POD not found", status: 404 };
     const adv = await getPaidAdvanceForPurchase(user, pod.purchaseNo);
     const adj = await getPurchaseAdjustments(user, pod.purchaseNo);

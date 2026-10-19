@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { nextCompanyDocumentNumber } from '@/lib/documentSequence';
+import { nextPeriodDocumentNumber } from '@/lib/documentSequence';
 
 const balancePaymentCounterSchema = new mongoose.Schema({
   _id: { type: String, required: true },
@@ -11,8 +11,8 @@ const balancePaymentCounterSchema = new mongoose.Schema({
 const BalancePaymentCounter = mongoose.models.BalancePaymentCounter || 
   mongoose.model('BalancePaymentCounter', balancePaymentCounterSchema);
 
-export async function getNextBalancePaymentNumber(companyId, subCompanyId, subCompanyCode) {
-  return nextCompanyDocumentNumber({ companyId, subCompanyId, subCompanyCode, documentType: 'BLP', width: 5 });
+export async function getNextBalancePaymentNumber(companyId, subCompanyId, subCompanyCode, session = null) {
+  return nextPeriodDocumentNumber({ companyId, subCompanyId, subCompanyCode, documentType: 'BLP', width: 4, session });
 }
 
 export default BalancePaymentCounter;

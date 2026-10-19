@@ -40,7 +40,7 @@
 //   // Add or Update Location
 //   const handleSubmit = async (e) => {
 //     e.preventDefault();
-    
+
 //     if (!name.trim()) {
 //       setError('Please enter location name');
 //       return;
@@ -50,7 +50,7 @@
 //       const token = localStorage.getItem('token');
 //       const url = editingId ? `/api/locations?id=${editingId}` : '/api/locations';
 //       const method = editingId ? 'PUT' : 'POST';
-      
+
 //       const res = await fetch(url, {
 //         method,
 //         headers: {
@@ -59,13 +59,13 @@
 //         },
 //         body: JSON.stringify({ name: name.trim() }),
 //       });
-      
+
 //       const data = await res.json();
 //       if (!res.ok) {
 //         setError(data.message || `Failed to ${editingId ? 'update' : 'add'} location`);
 //         return;
 //       }
-      
+
 //       setName('');
 //       setEditingId(null);
 //       setError(null);
@@ -117,7 +117,7 @@
 //       });
 
 //       const result = await res.json();
-      
+
 //       if (!res.ok) {
 //         setError(result.message || 'Failed to upload locations');
 //       } else {
@@ -145,7 +145,7 @@
 //   // Delete Location
 //   const deleteLocation = async (id) => {
 //     if (!confirm('Are you sure you want to delete this location?')) return;
-    
+
 //     try {
 //       const token = localStorage.getItem('token');
 //       const res = await fetch(`/api/locations?id=${id}`, {
@@ -184,7 +184,7 @@
 //       ['Store Location 2'],
 //       ['Distribution Center']
 //     ];
-    
+
 //     const ws = XLSX.utils.aoa_to_sheet(sampleData);
 //     const wb = XLSX.utils.book_new();
 //     XLSX.utils.book_append_sheet(wb, ws, 'Locations');
@@ -344,40 +344,40 @@ export default function LocationPage() {
   // Add or Update Location
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!name.trim()) {
       setError('Please enter location name');
       return;
     }
 
-    if (!state.trim()) {
-      setError('Please enter state');
-      return;
-    }
+    // if (!state.trim()) {
+    //   setError('Please enter state');
+    //   return;
+    // }
 
     try {
       const token = localStorage.getItem('token');
       const url = editingId ? `/api/locations?id=${editingId}` : '/api/locations';
       const method = editingId ? 'PUT' : 'POST';
-      
+
       const res = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           name: name.trim(),
           state: state.trim()
         }),
       });
-      
+
       const data = await res.json();
       if (!res.ok) {
         setError(data.message || `Failed to ${editingId ? 'update' : 'add'} location`);
         return;
       }
-      
+
       setName('');
       setState('');
       setEditingId(null);
@@ -411,7 +411,7 @@ export default function LocationPage() {
         .slice(1) // Skip header row if exists
         .map(row => ({
           name: row[0] ? row[0].toString().trim() : '',
-          state: row[1] ? row[1].toString().trim() : 'Unknown'
+          state: row[1] ? row[1].toString().trim() : ''
         }))
         .filter(item => item.name);
 
@@ -432,7 +432,7 @@ export default function LocationPage() {
       });
 
       const result = await res.json();
-      
+
       if (!res.ok) {
         setError(result.message || 'Failed to upload locations');
       } else {
@@ -461,7 +461,7 @@ export default function LocationPage() {
   // Delete Location
   const deleteLocation = async (id) => {
     if (!confirm('Are you sure you want to delete this location?')) return;
-    
+
     try {
       const token = localStorage.getItem('token');
       const res = await fetch(`/api/locations?id=${id}`, {
@@ -501,7 +501,7 @@ export default function LocationPage() {
       ['Store Location 2', 'Florida'],
       ['Distribution Center', 'Illinois']
     ];
-    
+
     const ws = XLSX.utils.aoa_to_sheet(sampleData);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Locations');
@@ -537,10 +537,10 @@ export default function LocationPage() {
             value={state}
             onChange={(e) => setState(e.target.value)}
             className="flex-1 border px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-            required
+          // required
           />
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600"
           >
             {editingId ? 'Update Location' : 'Add Location'}
@@ -596,11 +596,10 @@ export default function LocationPage() {
                   <span className="text-gray-500 w-8">{index + 1}.</span>
                   <div>
                     <span className="font-medium">{location.name}</span>
-                    <span className="ml-3 text-sm text-gray-500">({location.state || 'Unknown'})</span>
+                    <span className="ml-3 text-sm text-gray-500">({location.state || 'UNKNOWN'})</span>
                   </div>
-                  <span className={`text-xs px-2 py-1 rounded ${
-                    location.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                  }`}>
+                  <span className={`text-xs px-2 py-1 rounded ${location.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                    }`}>
                     {location.isActive ? 'Active' : 'Inactive'}
                   </span>
                 </div>

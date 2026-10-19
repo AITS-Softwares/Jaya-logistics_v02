@@ -91,11 +91,12 @@ const OBJECT_ID_RE = /^[a-f\d]{24}$/i;
 // approvalStatus is written by the server on approval; paymentStatus covers older approved PODs.
 const APPROVED_PAYMENT_STATUSES = ["Approved", "Partially Paid", "Paid"];
 const APPROVED_POD_FILTER = {
+    isDraft: { $ne: true },
     podStatus: { $ne: "Rejected" },
     $or: [{ approvalStatus: "Approved" }, { paymentStatus: { $in: APPROVED_PAYMENT_STATUSES } }],
 };
 const isPodApproved = (p) =>
-    !!p && p.podStatus !== "Rejected" && (p.approvalStatus === "Approved" || APPROVED_PAYMENT_STATUSES.includes(p.paymentStatus));
+    !!p && !p.isDraft && p.podStatus !== "Rejected" && (p.approvalStatus === "Approved" || APPROVED_PAYMENT_STATUSES.includes(p.paymentStatus));
 
 // Balance-Payment permission ONLY: users need no Proof Of Delivery / Advance Payment access.
 function authorize(req) {
@@ -177,7 +178,7 @@ export async function GET(req) {
         const pods = await POD.find(companyScopeFilter(user, APPROVED_POD_FILTER))
             .select("podNo purchaseNo companyName subCompanyName vendorFinancial products podStatus createdAt purchaseOrders.orderNo")
             .sort({ createdAt: -1 }).limit(5000).lean();
-        const existingPayments = await BalancePayment.find(companyScopeFilter(user))
+        const existingPayments = await BalancePayment.find(companyScopeFilter(user, { isDraft: { $ne: true } }))
             .select("podNo purchaseNo orderRows.orderNo")
             .lean();
         const paidPodNos = new Set(existingPayments.map((payment) => String(payment.podNo || "").trim()).filter(Boolean));

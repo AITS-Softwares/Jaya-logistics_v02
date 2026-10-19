@@ -219,7 +219,6 @@ const ACTION_BY_STATUS = {
   Approved: "approve",
   Rejected: "reject",
   Completed: "complete",
-  Queued: "queue",
 };
 
 const STATUS_BADGE = {
@@ -254,6 +253,9 @@ export default function ApproveBalancePayment() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [queueLoading, setQueueLoading] = useState(false);
+  const [queueGenerated, setQueueGenerated] = useState(false);
+  const [queueDate, setQueueDate] = useState(null);
   const [notFound, setNotFound] = useState("");
 
   const [balancePaymentNo, setBalancePaymentNo] = useState("");
@@ -365,6 +367,8 @@ export default function ApproveBalancePayment() {
 
       setCurrentStatus(p.paymentStatus || "Pending");
       setPaymentStatus(p.paymentStatus || "Pending");
+      setQueueGenerated(!!p.queueGenerated);
+      setQueueDate(p.queueDate || null);
     } catch (err) {
       console.error("Error fetching balance payment:", err);
       setNotFound("Failed to load payment details");
@@ -378,11 +382,44 @@ export default function ApproveBalancePayment() {
   const unpaid = Math.max(finalBalance - payNow, 0);
   const isPartial = !!podNo && unpaid > 0.005;
 
+  const handleGenerateQueue = async () => {
+    if (!canApproveHere) return alert("You don't have permission to generate the payment queue");
+    if (queueGenerated) return alert("Queue already generated for this payment.");
+    if (["Rejected", "Completed", "Paid"].includes(currentStatus)) {
+      return alert(`Cannot generate a queue for a ${currentStatus} payment.`);
+    }
+    if (!window.confirm(`Generate the payment queue for ${balancePaymentNo}?`)) return;
+
+    setQueueLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`/api/balance-payment?id=${paymentId}&action=generate-queue`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({}),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.message || "Failed to generate payment queue");
+
+      const generatedAt = data.data?.queueDate || new Date().toISOString();
+      setQueueGenerated(true);
+      setQueueDate(generatedAt);
+      setCurrentStatus(data.data?.paymentStatus || "Queued");
+      setPaymentStatus(data.data?.paymentStatus || "Queued");
+      alert(`✅ Payment queue generated for ${balancePaymentNo}\nAmount: ₹${payNow.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
+    } catch (error) {
+      alert(`❌ ${error.message}`);
+    } finally {
+      setQueueLoading(false);
+    }
+  };
+
   // Approve / reject / queue / complete - uses PATCH (needs the *approve* permission, NOT edit).
   // Nothing but the status is sent, so an approver can never change amounts or details.
   const handleApprove = async () => {
     if (!canApproveHere) return alert("You don't have permission to approve balance payments");
     if (!paymentStatus) return alert("Please select a payment status");
+    if (paymentStatus === "Queued") return handleGenerateQueue();
 
     setSaving(true);
     try {
@@ -474,10 +511,23 @@ export default function ApproveBalancePayment() {
             <div className="text-xs text-slate-500 mt-0.5">Review all details before approving/rejecting</div>
           </div>
           <div className="flex items-center gap-3">
+            {queueGenerated ? (
+              <span className="rounded-full bg-emerald-100 px-3 py-2 text-xs font-bold text-emerald-800">
+                ✓ Queue Generated{queueDate ? ` · ${new Date(queueDate).toLocaleDateString("en-IN")}` : ""}
+              </span>
+            ) : (
+              <button
+                onClick={handleGenerateQueue}
+                disabled={queueLoading || saving || ["Rejected", "Completed", "Paid"].includes(currentStatus)}
+                className="rounded-xl bg-blue-600 px-5 py-2 text-sm font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-400"
+              >
+                {queueLoading ? "Generating..." : "Generate Queue"}
+              </button>
+            )}
             <button
               onClick={handleApprove}
-              disabled={saving}
-              className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${saving ? "bg-gray-400 cursor-not-allowed" : "bg-emerald-600 hover:bg-emerald-700"}`}
+              disabled={saving || queueLoading}
+              className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${saving || queueLoading ? "bg-gray-400 cursor-not-allowed" : "bg-emerald-600 hover:bg-emerald-700"}`}
             >
               {saving ? "Processing..." : "Update Status"}
             </button>
@@ -508,6 +558,11 @@ export default function ApproveBalancePayment() {
                   <option value="Paid">Paid</option>
                 </select>
                 <p className="text-xs text-blue-500 mt-1">Only this field is editable for approval</p>
+                {queueGenerated && (
+                  <p className="mt-2 text-xs font-semibold text-emerald-700">
+                    Queue generated{queueDate ? ` on ${new Date(queueDate).toLocaleString("en-IN")}` : ""}. The queue cannot be generated again.
+                  </p>
+                )}
               </div>
               <div className="col-span-12 md:col-span-8">
                 <label className="text-xs font-bold text-slate-600">Current Status</label>

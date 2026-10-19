@@ -7508,12 +7508,22 @@ export default function EditVehicleNegotiation() {
         alert("This order panel is already selected");
         return;
       }
+      const normalizedOrderNo = String(fullPanel.orderPanelNo || '').trim().toLowerCase();
+      if (normalizedOrderNo && selectedOrderPanels.some((panel) => String(panel.orderPanelNo || '').trim().toLowerCase() === normalizedOrderNo)) {
+        alert(`Order ${fullPanel.orderPanelNo} is already included in this VNN.`);
+        return;
+      }
 
+      const availableRows = (fullPanel.plantRows || []).filter((row) => (row.status || 'Open') === 'Open');
+      if (!availableRows.length) {
+        alert('This order panel has no open rows available to add to the VNN.');
+        return;
+      }
       const newSelectedPanels = [...selectedOrderPanels, fullPanel];
       setSelectedOrderPanels(newSelectedPanels);
 
-      if (fullPanel.plantRows && fullPanel.plantRows.length > 0) {
-        const newOrders = fullPanel.plantRows.map((row) => {
+      if (availableRows.length > 0) {
+        const newOrders = availableRows.map((row) => {
           let plantId = null;
           let plantName = '';
           let plantCode = '';
@@ -7567,6 +7577,7 @@ export default function EditVehicleNegotiation() {
             countryName: row.countryName || "",
             weight: row.weight || "",
             status: row.status || "Open",
+            sourceOrderStatus: row.status || 'Open',
             collectionCharges: fullPanel.collectionCharges?.toString() || "",
             cancellationCharges: fullPanel.cancellationCharges?.toString() || "",
             loadingCharges: fullPanel.loadingCharges?.toString() || "",
@@ -7823,6 +7834,7 @@ export default function EditVehicleNegotiation() {
           _id: order._id,
           orderNo: order.orderNo,
           orderPanelId: order.orderPanelId,
+          orderRowId: order.orderRowId || '',
           partyName: order.partyName,
           customerId: order.customerId || null,
           customerCode: order.customerCode,
@@ -7979,6 +7991,7 @@ export default function EditVehicleNegotiation() {
     { key: "country", label: "Country" },
     { key: "weight", label: "Weight" },
     { key: "status", label: "Status" },
+    { key: "sourceOrderStatus", label: "Order Panel Status" },
     { key: "collectionCharges", label: "Collection Charges" },
     { key: "cancellationCharges", label: "Cancellation Charges" },
     { key: "loadingCharges", label: "Loading Charges" },
@@ -8173,6 +8186,11 @@ export default function EditVehicleNegotiation() {
                           <option key={opt} value={opt}>{opt}</option>
                         ))}
                       </select>
+                    </td>
+                    <td className="border border-yellow-300 px-2 py-2 text-center">
+                      <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${row.sourceOrderStatus === 'Cancelled' ? 'bg-rose-100 text-rose-800' : row.sourceOrderStatus === 'Hold' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}`}>
+                        {row.sourceOrderStatus || 'Open'}
+                      </span>
                     </td>
                     <td className="border border-yellow-300 px-2 py-2">
                       <input
@@ -8608,6 +8626,15 @@ export default function EditVehicleNegotiation() {
 
               {/* Orders Table */}
               <div>
+                {orders.some((order) => ['Hold', 'Cancelled'].includes(order.sourceOrderStatus)) && (
+                  <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4" role="status">
+                    <div>
+                      <div className="font-bold text-amber-900">A linked order row is on hold or cancelled</div>
+                      <p className="mt-1 text-sm text-amber-800">The shared VNN remains active. Add an open replacement order panel, then submit Part 1 so the normal rate and approval flow runs again.</p>
+                    </div>
+                    {isPart1Locked && canEditVnn && <button onClick={() => handleWorkflowAction('amend-part1')} disabled={saving} className="rounded-lg bg-amber-700 px-3 py-2 text-sm font-bold text-white hover:bg-amber-800 disabled:opacity-50">Open Part 1 amendment</button>}
+                  </div>
+                )}
                 <div className="flex items-center justify-between mb-4">
                   <div className="text-sm font-bold text-slate-700">
                     Orders (Part-1) - {selectedOrderPanels.length > 0 ? "Multi - Order" : "Single Order"} - {orders.length} row{orders.length !== 1 ? 's' : ''}

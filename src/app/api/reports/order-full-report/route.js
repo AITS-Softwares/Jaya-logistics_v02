@@ -605,7 +605,8 @@ export async function GET(req) {
         Submitted: reportData.filter(i => i.orderStatus === 'Submitted').length,
         Approved: reportData.filter(i => i.orderStatus === 'Approved').length,
         Completed: reportData.filter(i => i.orderStatus === 'Completed').length,
-        Cancelled: reportData.filter(i => i.orderStatus === 'Cancelled').length
+        Cancelled: reportData.filter(i => i.orderStatus === 'Cancelled').length,
+        Hold: reportData.filter(i => i.orderStatus === 'Partially on hold' || i.rowStatus === 'Hold').length
       },
       podStatusSummary: {
         Pending: reportData.filter(i => i.podStatus === 'Pending').length,

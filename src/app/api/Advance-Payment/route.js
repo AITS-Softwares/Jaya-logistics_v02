@@ -1627,6 +1627,7 @@ import mongoose from 'mongoose';
 import { activeOperatingCompanyId, companyScopeFilter } from "@/lib/companyScope";
 import { syncPodAdvanceForPurchase } from "@/lib/advanceSettlement";
 import { ADVANCE_STATUSES, assertValidAmounts } from "@/lib/paymentRules";
+import { validateOpenOrderRows } from '@/lib/orderRowStatus';
 
 // ── PERMISSION FUNCTIONS ──
 
@@ -1878,7 +1879,8 @@ export async function GET(req) {
         balance: (payment.purchaseAmountFromVNN || 0) - (payment.vendorDetails?.advance || 0),
         finalAmount: payment.paymentDetails?.finalAmount || 0,
         transactionId: payment.paymentDetails?.transactionId || payment.vendorDetails?.transactionId || '',
-        status: payment.paymentDetails?.paymentStatus || 'Draft',
+        status: payment.isDraft ? 'Draft' : (payment.paymentDetails?.paymentStatus || 'Pending'),
+        isDraft: !!payment.isDraft,
         queueGenerated: payment.queueGenerated || false
       }));
 
@@ -1925,6 +1927,7 @@ export async function POST(req) {
     }
 
     const body = await req.json();
+    const isDraftSave = body.saveMode === 'draft';
 
     console.log("📝 Creating new advance payment");
 
@@ -1935,7 +1938,7 @@ export async function POST(req) {
     let paymentNo = await getNextAdvancePaymentNumber(user.companyId, user.activeOperatingCompanyId, user.activeOperatingCompanyCode);
 
     if (body.purchaseNo) {
-      const existing = await AdvancePayment.findOne(companyScopeFilter(user, { purchaseNo: body.purchaseNo }));
+      const existing = await AdvancePayment.findOne(companyScopeFilter(user, { purchaseNo: body.purchaseNo, isDraft: { $ne: true } }));
 
       if (existing) {
         return NextResponse.json({
@@ -1953,6 +1956,8 @@ export async function POST(req) {
     if (!sourcePurchase) {
       return NextResponse.json({ success: false, message: "A valid Purchase Panel is required." }, { status: 400 });
     }
+    const heldPurchaseRow = await validateOpenOrderRows(user, sourcePurchase.orderRows || []);
+    if (heldPurchaseRow) return NextResponse.json({ success: false, message: heldPurchaseRow }, { status: 409 });
 
     // ✅ Get sub-company from body
     const subCompanyId = user.activeOperatingCompanyId;
@@ -2118,13 +2123,14 @@ export async function POST(req) {
       totalOrderAmount,
 
       status: 'Draft',
+      isDraft: isDraftSave,
       queueGenerated: false,
 
       companyId: user.companyId,
       createdBy: user.id
     });
 
-    await advancePayment.save();
+    await advancePayment.save({ validateBeforeSave: !isDraftSave });
 
     return NextResponse.json({
       success: true,
@@ -2226,6 +2232,15 @@ export async function PUT(req) {
         message: "Advance payment not found"
       }, { status: 404 });
     }
+
+    if (payment.isDraft) {
+      payment.isDraft = false;
+      payment.paymentDetails.paymentStatus = 'Pending';
+    }
+
+    const sourcePurchase = await PurchasePanel.findOne(companyScopeFilter(user, { purchaseNo: payment.purchaseNo })).select('orderRows').lean();
+    const heldPurchaseRow = await validateOpenOrderRows(user, sourcePurchase?.orderRows || []);
+    if (heldPurchaseRow) return NextResponse.json({ success: false, message: heldPurchaseRow }, { status: 409 });
 
     if (payment.paymentDetails?.paymentStatus === 'Paid' || payment.paymentDetails?.paymentStatus === 'Completed') {
       return NextResponse.json({
@@ -2518,12 +2533,17 @@ export async function PATCH(req) {
       }, { status: 404 });
     }
 
+    if (payment.isDraft) {
+      return NextResponse.json({ success: false, message: "Open and save this draft before changing its approval status or generating a queue." }, { status: 400 });
+    }
+
     if (body.paymentStatus !== undefined && body.paymentStatus !== "" && !ADVANCE_STATUSES.includes(body.paymentStatus)) {
       return NextResponse.json({ success: false, message: `Invalid status. Allowed: ${ADVANCE_STATUSES.join(", ")}` }, { status: 400 });
     }
 
     // Handle different actions
     if (action === 'generate-queue') {
+      if (payment.isDraft) return NextResponse.json({ success: false, message: "Submit this draft before generating its queue." }, { status: 400 });
       if (payment.queueGenerated) {
         return NextResponse.json({ success: false, message: "Payment queue has already been generated." }, { status: 409 });
       }

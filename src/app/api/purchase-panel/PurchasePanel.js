@@ -358,6 +358,7 @@ const purchasePanelSchema = new mongoose.Schema({
   // Order Rows with sub-company
   orderRows: [{
     _id: { type: mongoose.Schema.Types.ObjectId, default: () => new mongoose.Types.ObjectId() },
+    orderRowId: { type: String, default: '' },
     orderNo: { type: String },
     partyName: { type: String },
     plantCode: { type: String },
@@ -525,7 +526,8 @@ const purchasePanelSchema = new mongoose.Schema({
     type: String,
     enum: ['Draft', 'Submitted', 'Approved', 'Completed', 'Cancelled'],
     default: 'Draft'
-  }
+  },
+  isDraft: { type: Boolean, default: false }
 
 }, {
   timestamps: true,

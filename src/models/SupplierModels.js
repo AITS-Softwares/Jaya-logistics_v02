@@ -283,7 +283,6 @@ dueDays: {
 
   pan: {
     type: String,
-    required: [true, "PAN is required"],
     trim: true,
     uppercase: true,
   },

@@ -394,7 +394,7 @@ const consignmentNoteSchema = new mongoose.Schema({
     lrNo: { type: String, default: '' },
     lrDate: { type: String, default: '' },
     unit: { type: String, enum: ['MT', 'KG', 'LTR', 'TON', 'M3', 'PCS'], default: 'MT' },
-    status: { type: String, enum: ['Pending', 'Approved', 'Rejected', 'Completed', 'Draft'], default: 'Pending' },
+    status: { type: String, enum: ['Pending', 'Approved', 'Rejected', 'Completed', 'Draft', 'Cancelled'], default: 'Pending' },
     approvedAt: { type: Date, default: null },
     printedAt: { type: Date, default: null }, 
     lcStatus: { type: String, enum: ['LC', 'Not LC'], default: 'Not LC' },
@@ -448,6 +448,8 @@ const consignmentNoteSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'CompanyUser'
   },
+
+  isDraft: { type: Boolean, default: false },
 
   createdAt: {
     type: Date,

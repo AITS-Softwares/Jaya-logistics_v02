@@ -1162,7 +1162,9 @@ import mongoose from 'mongoose';
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import { activeOperatingCompanyId, companyScopeFilter } from "@/lib/companyScope";
 import VehicleNegotiation from '@/app/api/vehicle-negotiation/VehicleNegotiation';
+import OrderPanel from '@/app/api/order-panel/OrderPanel';
 import { findLRsForPanel, getLRCompletion, LR_COMPLETION_SELECT } from "./findLRs";
+import { validateOpenOrderRows } from '@/lib/orderRowStatus';
 
 // ── PERMISSION FUNCTIONS ──
 
@@ -1397,6 +1399,48 @@ export async function GET(req) {
       .sort({ createdAt: -1 })
       .lean();
 
+    const linkedOrderNos = [...new Set(loadingPanels.flatMap((panel) => (panel.orderRows || []).map((row) => row.orderNo).filter(Boolean)))];
+    const linkedOrderPanelIds = [...new Set(loadingPanels.flatMap((panel) => (panel.orderRows || []).map((row) => row.orderPanelId).filter((value) => mongoose.Types.ObjectId.isValid(value))))];
+    const linkedOrderPanels = linkedOrderNos.length || linkedOrderPanelIds.length
+      ? await OrderPanel.find(companyScopeFilter(user, { $or: [
+        ...(linkedOrderNos.length ? [{ orderPanelNo: { $in: linkedOrderNos } }] : []),
+        ...(linkedOrderPanelIds.length ? [{ _id: { $in: linkedOrderPanelIds } }] : [])
+      ] }), { orderPanelNo: 1, plantRows: 1, panelStatus: 1 }).lean()
+      : [];
+    const linkedPanelsById = new Map(linkedOrderPanels.map((panel) => [String(panel._id), panel]));
+    const linkedPanelsByNo = new Map(linkedOrderPanels.map((panel) => [String(panel.orderPanelNo), panel]));
+    const withLinkedOrderRows = (panel) => {
+      const uniqueRows = new Map();
+      (panel.orderRows || []).forEach((loadingRow) => {
+        const sourcePanel = linkedPanelsById.get(String(loadingRow.orderPanelId || '')) || linkedPanelsByNo.get(String(loadingRow.orderNo || ''));
+        const byId = sourcePanel?.plantRows?.find((row) => String(row._id) === String(loadingRow.orderRowId || ''));
+        const norm = (value) => String(value || '').trim().toLowerCase();
+        const candidates = (sourcePanel?.plantRows || []).filter((row) =>
+          (!loadingRow.plantName && !loadingRow.plantCodeValue || [row.plantName, row.plantCodeValue, row.plantCode].some((value) => norm(value) === norm(loadingRow.plantName || loadingRow.plantCodeValue))) &&
+          (!loadingRow.toName && !loadingRow.to || norm(row.toName || row.to) === norm(loadingRow.toName || loadingRow.to))
+        );
+        const sourceRow = byId || (candidates.length === 1 ? candidates[0] : null);
+        const orderNo = loadingRow.orderNo || sourcePanel?.orderPanelNo || '';
+        if (!orderNo) return;
+        const linkedRow = {
+          orderNo,
+          plantName: loadingRow.plantName || loadingRow.plantCodeValue || sourceRow?.plantName || '',
+          orderPanelId: sourcePanel?._id ? String(sourcePanel._id) : loadingRow.orderPanelId || '',
+          orderRowId: sourceRow?._id ? String(sourceRow._id) : loadingRow.orderRowId || '',
+          status: sourceRow?.status || (sourcePanel ? 'Open' : 'Unknown'),
+          statusReason: sourceRow?.statusReason || '',
+          statusRequest: sourceRow?.statusRequest || null,
+          panelStatus: sourcePanel?.panelStatus || ''
+        };
+        const key = `${linkedRow.orderPanelId || norm(orderNo)}:${norm(orderNo)}`;
+        const current = uniqueRows.get(key);
+        if (!current) uniqueRows.set(key, linkedRow);
+        else if (current.status !== linkedRow.status) current.status = 'Mixed';
+        if (current && !current.statusRequest && linkedRow.statusRequest) current.statusRequest = linkedRow.statusRequest;
+      });
+      return [...uniqueRows.values()];
+    };
+
     // Check if this is for the table report format
     if (format === 'table') {
       const formattedPanels = loadingPanels.map(panel => {
@@ -1420,6 +1464,7 @@ export async function GET(req) {
           vnnNo,
           vnnCount: vnnNo ? 1 : 0,
           orderNumbers: [...new Set((panel.orderRows || []).map((row) => row.orderNo).filter(Boolean))],
+          linkedOrderRows: withLinkedOrderRows(panel),
           branch: panel.branchName || panel.branchCode || 'N/A',
           subCompanyName: panel.subCompanyName || '',
           subCompanyCode: panel.subCompanyCode || '',
@@ -1459,7 +1504,8 @@ export async function GET(req) {
           invoice: panel.invoice || '',
           ewaybill: panel.ewaybill || '',
 
-          panelStatus: panel.panelStatus || 'Draft'
+          panelStatus: panel.panelStatus || 'Draft',
+          isDraft: !!panel.isDraft
         };
       });
 
@@ -1568,10 +1614,13 @@ export async function POST(req) {
 
   try {
     const body = await req.json();
+    const isDraftSave = body.saveMode === 'draft';
+    const blockedRow = isDraftSave ? null : await validateOpenOrderRows(user, body.orderRows || []);
+    if (blockedRow) return NextResponse.json({ success: false, message: blockedRow }, { status: 409 });
 
     const selectedVnnId = body.selectedVehicleNegotiation?.id || body.selectedVehicleNegotiation?._id;
     const selectedVnnNo = body.selectedVehicleNegotiation?.vnnNo || body.vehicleNegotiationNo || body.header?.vehicleNegotiationNo;
-    if (selectedVnnId || selectedVnnNo) {
+    if (!isDraftSave && (selectedVnnId || selectedVnnNo)) {
       const vnnQuery = selectedVnnId && mongoose.Types.ObjectId.isValid(selectedVnnId) ? { _id: selectedVnnId } : { vnnNo: selectedVnnNo };
       const approvedVnn = await VehicleNegotiation.findOne(companyScopeFilter(user, {
         ...vnnQuery,
@@ -1580,10 +1629,12 @@ export async function POST(req) {
         'approval.mobile': { $exists: true, $ne: '' },
         'approval.purchaseType': { $exists: true, $ne: '' },
         'approval.paymentTerms': { $exists: true, $ne: '' },
-      })).select('_id').lean();
+      })).select('_id orders').lean();
       if (!approvedVnn) {
         return NextResponse.json({ success: false, message: 'Only Part 3 approved Vehicle Negotiations with completed vehicle placement can be used for Loading.' }, { status: 409 });
       }
+      const heldNegotiationRow = await validateOpenOrderRows(user, approvedVnn.orders || []);
+      if (heldNegotiationRow) return NextResponse.json({ success: false, message: heldNegotiationRow }, { status: 409 });
     }
 
     console.log("📝 Creating new loading panel");
@@ -1606,7 +1657,9 @@ export async function POST(req) {
     const processedOrderRows = (body.orderRows || []).map(row => ({
       _id: new mongoose.Types.ObjectId(),
       orderNo: row.orderNo || '',
+      orderPanelId: row.orderPanelId || '',
       partyName: row.partyName || '',
+      orderRowId: row.orderRowId || row.originalRowId || row._id || '',
       plantCode: row.plantCode || '',
       plantCodeValue: row.plantCodeValue || '',
       plantName: row.plantName || '',
@@ -1989,12 +2042,13 @@ export async function POST(req) {
       // Company & User
       companyId: new mongoose.Types.ObjectId(user.companyId),
       createdBy: new mongoose.Types.ObjectId(user.id),
-      panelStatus: 'Draft'
+      panelStatus: 'Draft',
+      isDraft: isDraftSave
     };
 
     // Create and save
     const newLoadingPanel = new LoadingPanel(loadingPanelData);
-    const savedPanel = await newLoadingPanel.save();
+    const savedPanel = await newLoadingPanel.save({ validateBeforeSave: !isDraftSave });
 
     console.log("✅ Loading panel saved successfully, ID:", savedPanel._id);
 
@@ -2067,6 +2121,11 @@ export async function PUT(req) {
       }, { status: 404 });
     }
 
+    if (existingPanel.isDraft) {
+      updateData.isDraft = false;
+      updateData.panelStatus = 'Submitted';
+    }
+
     // Merge vehicleInfo instead of replacing it, and never let a save blank the vehicle number.
     if (updateData.vehicleInfo) {
       const prev = existingPanel.vehicleInfo?.toObject
@@ -2111,6 +2170,7 @@ export async function PUT(req) {
           ? new mongoose.Types.ObjectId(row._id)
           : new mongoose.Types.ObjectId(),
         orderNo: row.orderNo || '',
+        orderPanelId: row.orderPanelId || '',
         partyName: row.partyName || '',
         plantCode: row.plantCode || '',
         plantCodeValue: row.plantCodeValue || '',
@@ -2393,6 +2453,10 @@ export async function PATCH(req) {
         success: false,
         message: "Loading panel not found"
       }, { status: 404 });
+    }
+
+    if (loadingPanel.isDraft) {
+      return NextResponse.json({ success: false, message: "Open and save this draft before changing its approval status." }, { status: 400 });
     }
 
     // Handle different actions

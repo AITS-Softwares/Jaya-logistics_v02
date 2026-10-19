@@ -1418,6 +1418,7 @@ import { getNextLRNumber } from "./ConsignmentCounter";
 import { getLRCompletion, LR_COMPLETION_SELECT } from "../loading-panel/findLRs";
 import mongoose from 'mongoose';
 import { activeOperatingCompanyId, companyScopeFilter } from "@/lib/companyScope";
+import { validateOpenOrderRows } from '@/lib/orderRowStatus';
 
 // ── PERMISSION FUNCTIONS ──
 
@@ -1890,17 +1891,24 @@ export async function POST(req) {
     }
 
     const body = await req.json();
+    const isDraftSave = body.saveMode === 'draft';
+    const blockedRow = isDraftSave ? null : await validateOpenOrderRows(user, [{
+      orderNo: body.header?.orderNo,
+      orderRowId: body.orderRowId,
+      plantCode: body.header?.plantCode,
+      plantName: body.header?.plantName,
+      from: body.header?.from,
+      to: body.header?.to,
+    }]);
+    if (blockedRow) return NextResponse.json({ success: false, message: blockedRow }, { status: 409 });
 
     console.log("📝 Creating new consignment note");
 
-    // Generate LR number if not provided
-    let lrNo = body.header?.lrNo || await getNextLRNumber(user.companyId, user.activeOperatingCompanyId, user.activeOperatingCompanyCode);
-    const lrCode = String(user.activeOperatingCompanyCode || "").trim().toUpperCase();
-    if (lrCode && !lrNo.startsWith(`${lrCode}-`)) lrNo = `${lrCode}-${lrNo}`;
+    let lrNo;
 
     const orderRowId = String(body.orderRowId || '').trim();
-    if (orderRowId) {
-      const rowTaken = await ConsignmentNote.findOne(companyScopeFilter(user, { orderRowId })).select('lrNo').lean();
+    if (orderRowId && !isDraftSave) {
+      const rowTaken = await ConsignmentNote.findOne(companyScopeFilter(user, { orderRowId, isDraft: { $ne: true } })).select('lrNo').lean();
       if (rowTaken) {
         return NextResponse.json({
           success: false,
@@ -1918,7 +1926,7 @@ export async function POST(req) {
     // Check if loadingInfoNo is already used (if provided)
     let linkedLoadingInfo = null;
     if (body.loadingInfoNo) {
-      const existing = (orderRowId || autoLinked) ? null : await ConsignmentNote.findOne(companyScopeFilter(user, { loadingInfoNo: body.loadingInfoNo }));
+      const existing = (orderRowId || autoLinked || isDraftSave) ? null : await ConsignmentNote.findOne(companyScopeFilter(user, { loadingInfoNo: body.loadingInfoNo, isDraft: { $ne: true } }));
       if (existing) {
         return NextResponse.json({
           success: false,
@@ -2025,6 +2033,7 @@ export async function POST(req) {
       .filter((row) => row.orderNo || row.from || row.to || row.weight);
 
     // Create consignment note with sub-company
+    lrNo = await getNextLRNumber(user.companyId, user.activeOperatingCompanyId, user.activeOperatingCompanyCode);
     const consignmentNote = new ConsignmentNote({
       lrNo,
       vnnNo: body.vnnNo || '',
@@ -2065,7 +2074,7 @@ export async function POST(req) {
         lrNo,
         lrDate: body.header?.lrDate || '',
         unit: body.header?.unit || 'MT',
-        status: body.header?.status || 'Pending',
+        status: isDraftSave ? 'Draft' : (body.header?.status || 'Pending'),
         lcStatus: body.lcStatus || body.header?.lcStatus || 'Not LC',
         lrType: body.lrType || body.header?.lrType || 'Normal',
         vehicleReach: body.vehicleReach || body.header?.vehicleReach || 'Not Reach',
@@ -2103,11 +2112,12 @@ export async function POST(req) {
       },
       packData: packData,
       consignmentBreakdown,
+      isDraft: isDraftSave,
       companyId: user.companyId,
       createdBy: user.id
     });
 
-    await consignmentNote.save();
+    await consignmentNote.save({ validateBeforeSave: !isDraftSave });
 
     // Bypass a stale Mongoose model cache in a running development server so
     // the new field is persisted immediately without requiring a restart.
@@ -2120,7 +2130,7 @@ export async function POST(req) {
 
     // Out Date/Time is NOT set on LR creation. It is stamped when the LR is
     // approved (see PATCH below).
-    if (linkedLoadingInfo && !linkedLoadingInfo.consignmentNote) {
+    if (!isDraftSave && linkedLoadingInfo && !linkedLoadingInfo.consignmentNote) {
       linkedLoadingInfo.consignmentNote = consignmentNote.lrNo;
       await linkedLoadingInfo.save();
     }
@@ -2201,6 +2211,14 @@ export async function PUT(req) {
         success: false,
         message: "Consignment note not found"
       }, { status: 404 });
+    }
+
+    const wasDraft = !!note.isDraft;
+    if (wasDraft && body.orderRowId) {
+      const rowTaken = await ConsignmentNote.findOne(companyScopeFilter(user, {
+        orderRowId: String(body.orderRowId), isDraft: { $ne: true }, _id: { $ne: id },
+      })).select('lrNo').lean();
+      if (rowTaken) return NextResponse.json({ success: false, message: `This order row already has consignment note ${rowTaken.lrNo}` }, { status: 409 });
     }
 
     // Status transitions are approval actions. An editor may save LR details,
@@ -2346,7 +2364,18 @@ export async function PUT(req) {
     }
 
     note.updatedAt = Date.now();
+    if (wasDraft) {
+      note.isDraft = false;
+      note.header.status = 'Pending';
+    }
     await note.save();
+    if (wasDraft && note.loadingInfoNo) {
+      const loadingInfo = await LoadingPanel.findOne(companyScopeFilter(user, { vehicleArrivalNo: note.loadingInfoNo }));
+      if (loadingInfo && !loadingInfo.consignmentNote) {
+        loadingInfo.consignmentNote = note.lrNo;
+        await loadingInfo.save();
+      }
+    }
 
     // An invoice uploaded on an already-approved LR can be the last missing piece.
     // if (note.loadingInfoNo && ['Approved', 'Completed'].includes(note.header?.status)) {
@@ -2491,6 +2520,10 @@ export async function PATCH(req) {
         success: false,
         message: "Consignment note not found"
       }, { status: 404 });
+    }
+
+    if (note.isDraft) {
+      return NextResponse.json({ success: false, message: "Open and save this draft before changing its approval status." }, { status: 400 });
     }
 
     const allowedActions = ['approve', 'reject', 'complete'];

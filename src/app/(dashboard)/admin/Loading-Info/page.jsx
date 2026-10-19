@@ -805,6 +805,7 @@ import { useRouter } from "next/navigation";
 import { usePermission } from "../hooks/usePermission";
 import Link from "next/link";
 import PendingToCreateChip from "@/components/PendingToCreateChip";
+import OrderRowStatusActions from "@/components/OrderRowStatusActions";
 
 export default function LoadingPanelList() {
   const router = useRouter();
@@ -831,6 +832,7 @@ export default function LoadingPanelList() {
   });
 
   const MODULE_NAME = 'Loading Info';
+  const canManageOrderRows = canCreate('Order Panel') || canEdit('Order Panel') || canApprove('Order Panel');
 
   // Fetch panels - wrapped in useCallback to prevent infinite re-renders
   const fetchPanels = useCallback(async () => {
@@ -1169,7 +1171,7 @@ export default function LoadingPanelList() {
                     <tr key={item._id} className="hover:bg-yellow-50 transition">
                       <td className="px-4 py-3 text-slate-600">{index + 1}</td>
                       <td className="px-4 py-3 text-slate-600">{item.date}</td>
-                      <td className="px-4 py-3 font-medium text-slate-900"><button onClick={() => router.push(`/admin/Loading-Info/${item._id}/view`)} className="hover:text-indigo-600 hover:underline">{item.vehicleArrivalNo}</button></td>
+                      <td className="px-4 py-3 font-medium text-slate-900"><button onClick={() => router.push(`/admin/Loading-Info/${item._id}/view`)} className="hover:text-indigo-600 hover:underline">{item.vehicleArrivalNo}</button>{item.isDraft && <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">Draft</span>}</td>
                       <td className="px-4 py-3">
                         {item.vnnNo ? (
                           <span className="rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800">{item.vnnNo}</span>
@@ -1177,7 +1179,7 @@ export default function LoadingPanelList() {
                           <span className="text-slate-400">-</span>
                         )}
                       </td>
-                      <td className="px-4 py-3"><div className="flex max-w-48 flex-wrap gap-1">{(item.orderNumbers || []).map((orderNo) => <span key={orderNo} className="rounded-full bg-purple-100 px-2 py-1 text-xs font-medium text-purple-800">{orderNo}</span>)}</div></td>
+                      <td className="px-4 py-3"><div className="flex max-w-72 flex-wrap gap-2">{(item.linkedOrderRows?.length ? item.linkedOrderRows : (item.orderNumbers || []).map((orderNo) => ({ orderNo, status: 'Unknown' }))).map((linkedRow, rowIndex) => <div key={`${linkedRow.orderPanelId || linkedRow.orderNo}-${linkedRow.orderRowId || rowIndex}`} className="inline-flex flex-wrap items-center gap-1 rounded-xl bg-purple-50 px-2 py-1 ring-1 ring-inset ring-purple-100"><span className="text-xs font-semibold text-purple-800">{linkedRow.orderNo}</span>{canManageOrderRows && linkedRow.orderPanelId && linkedRow.orderRowId && linkedRow.status !== 'Cancelled' && !linkedRow.statusRequest?.action ? <OrderRowStatusActions orderId={linkedRow.orderPanelId} rowId={linkedRow.orderRowId} orderNo={linkedRow.orderNo} status={linkedRow.status || 'Open'} onUpdated={(updated) => setPanels((current) => current.map((panel) => panel._id !== item._id ? panel : { ...panel, linkedOrderRows: panel.linkedOrderRows.map((entry) => { const updatedRow = updated.plantRows?.find((candidate) => String(candidate._id) === String(entry.orderRowId)); return updatedRow ? { ...entry, status: updatedRow.status, statusReason: updatedRow.statusReason, statusRequest: updatedRow.statusRequest } : entry; }) }))} /> : <><span title={linkedRow.statusReason || linkedRow.status} className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${linkedRow.status === 'Hold' ? 'bg-amber-100 text-amber-800' : linkedRow.status === 'Cancelled' ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'}`}>{linkedRow.status || 'Open'}</span>{linkedRow.statusRequest?.action && <span title={linkedRow.statusRequest.reason} className="rounded-full bg-orange-100 px-1.5 py-0.5 text-[9px] font-bold text-orange-800">Approval pending</span>}</>}</div>)}</div></td>
                       <td className="px-4 py-3">
                         <div className="font-medium text-slate-800">{item.branch}</div>
                       </td>

@@ -1075,7 +1075,8 @@ export async function GET(req) {
         paymentDate: p.paymentDate ? new Date(p.paymentDate).toISOString().split('T')[0] : '',
         queueGenerated: !!p.queueGenerated,
         queueDate: p.queueDate || null,
-        paymentStatus: p.paymentStatus,
+        paymentStatus: p.isDraft ? 'Draft' : p.paymentStatus,
+        isDraft: !!p.isDraft,
         podNo: p.podNo,
         orderRows: (p.orderRows || []).map((row) => ({ orderNo: row.orderNo || "" }))
       }));
@@ -1113,11 +1114,9 @@ export async function POST(req) {
     }
 
     const body = await req.json();
+    const isDraftSave = body.saveMode === 'draft';
 
     console.log("📝 Creating Balance Payment with body:", body);
-
-    // Generate payment number
-    const balancePaymentNo = await getNextBalancePaymentNumber(user.companyId, user.activeOperatingCompanyId, user.activeOperatingCompanyCode);
 
     // ✅ Extract company information from body
     const companyName = body.companyName || body.header?.companyName || '';
@@ -1149,7 +1148,7 @@ export async function POST(req) {
     }
 
     const payment = new BalancePayment({
-      balancePaymentNo,
+      balancePaymentNo: 'pending-number',
 
       // ✅ COMPANY INFORMATION
       companyId: user.companyId,
@@ -1216,12 +1215,28 @@ export async function POST(req) {
       bankVendorCode: body.bankVendorCode || '',
       breakdown: f.breakdown || null,
       // A new payment starts as Pending unless the creator also holds the approve permission
-      paymentStatus: (hasPermission(user, 'approve') && BALANCE_STATUSES.includes(body.paymentStatus)) ? body.paymentStatus : 'Pending',
+      paymentStatus: isDraftSave ? 'Draft' : ((hasPermission(user, 'approve') && BALANCE_STATUSES.includes(body.paymentStatus)) ? body.paymentStatus : 'Pending'),
+      isDraft: isDraftSave,
       paymentDate: String(body.transactionId || '').trim() ? new Date() : null,
       createdBy: user.id
     });
 
-    await payment.save();
+    // Allocate and save in one transaction. If validation or persistence fails,
+    // the counter increment rolls back with the payment insert.
+    const session = await mongoose.startSession();
+    try {
+      await session.withTransaction(async () => {
+        payment.balancePaymentNo = await getNextBalancePaymentNumber(
+          user.companyId,
+          user.activeOperatingCompanyId,
+          user.activeOperatingCompanyCode,
+          session
+        );
+        await payment.save({ session, validateBeforeSave: !isDraftSave });
+      });
+    } finally {
+      await session.endSession();
+    }
 
     console.log("✅ Balance Payment saved:", payment.balancePaymentNo);
 
@@ -1270,6 +1285,13 @@ export async function PUT(req) {
 
     const payment = await BalancePayment.findOne(companyScopeFilter(user, { _id: id }));
     if (!payment) return NextResponse.json({ success: false, message: "Not found" }, { status: 404 });
+    if (payment.queueGenerated) {
+      return NextResponse.json({ success: false, message: "Cannot update payment after queue generation." }, { status: 409 });
+    }
+    if (payment.isDraft) {
+      payment.isDraft = false;
+      payment.paymentStatus = 'Pending';
+    }
 
     // ✅ Update company information
     if (body.companyName !== undefined) payment.companyName = body.companyName;
@@ -1446,6 +1468,10 @@ export async function PATCH(req) {
 
     const payment = await BalancePayment.findOne(companyScopeFilter(user, { _id: id }));
     if (!payment) return NextResponse.json({ success: false, message: "Not found" }, { status: 404 });
+
+    if (payment.isDraft) {
+      return NextResponse.json({ success: false, message: "Open and save this draft before changing its approval status." }, { status: 400 });
+    }
 
     // Get body for additional data
     const body = await req.json();

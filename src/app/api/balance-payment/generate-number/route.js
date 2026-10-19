@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import connectDb from "@/lib/db";
-import { getNextBalancePaymentNumber } from "../BalancePaymentCounter";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import { activeOperatingCompanyId } from "@/lib/companyScope";
 
@@ -19,9 +18,9 @@ export async function GET(req) {
     }
     
     activeOperatingCompanyId(user);
-    const paymentNo = await getNextBalancePaymentNumber(user.companyId, user.activeOperatingCompanyId, user.activeOperatingCompanyCode);
-    
-    return NextResponse.json({ success: true, paymentNo });
+    // Kept for older clients, but generating a preview must never consume a
+    // sequence value. The number is assigned atomically when the payment saves.
+    return NextResponse.json({ success: true, paymentNo: null, assignedOnSave: true });
     
   } catch (error) {
     console.error("Error generating payment number:", error);

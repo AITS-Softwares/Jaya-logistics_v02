@@ -1168,13 +1168,14 @@ export default function BalancePaymentList() {
                   <th className="px-3 py-3 text-left text-xs font-extrabold text-slate-900">Transaction ID</th>
                   <th className="px-3 py-3 text-left text-xs font-extrabold text-slate-900">Payment - Date</th>
                   <th className="px-3 py-3 text-center text-xs font-extrabold text-slate-900">Payment</th>
+                  <th className="px-3 py-3 text-center text-xs font-extrabold text-slate-900">Queue</th>
                   <th className="px-3 py-3 text-center text-xs font-extrabold text-slate-900">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-yellow-200">
                 {loading ? (
                   <tr>
-                    <td colSpan="23" className="px-4 py-12 text-center">
+                    <td colSpan="24" className="px-4 py-12 text-center">
                       <div className="flex items-center justify-center">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500"></div>
                       </div>
@@ -1210,19 +1211,31 @@ export default function BalancePaymentList() {
                         </span>
                       </td>
                       <td className="px-3 py-3 text-center">
+                        {item.queueGenerated ? (
+                          <span className="rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-800" title={item.queueDate ? `Generated ${formatDate(item.queueDate)}` : undefined}>✓ Generated</span>
+                        ) : (
+                          <span className="rounded-full bg-yellow-100 px-2 py-1 text-xs font-medium text-yellow-800">Pending</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-3 text-center">
                         <div className="flex items-center justify-center gap-2 flex-wrap">
-                          {item.queueGenerated ? (
-                            <span className="rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-800" title={item.queueDate ? `Generated ${formatDate(item.queueDate)}` : undefined}>✓ Queue Generated</span>
-                          ) : canApprove(MODULE_NAME) && !['Rejected', 'Completed', 'Paid'].includes(item.paymentStatus) ? (
+                          {!item.isDraft && !item.queueGenerated && canApprove(MODULE_NAME) && !['Rejected', 'Completed', 'Paid'].includes(item.paymentStatus) && (
                             <button
                               onClick={() => handleGenerateQueue(item._id, item.balancePaymentNo)}
                               disabled={queueLoading === item._id}
-                              className="rounded-lg bg-orange-100 px-2 py-1.5 text-xs font-semibold text-orange-800 hover:bg-orange-200 disabled:opacity-50"
+                              className="rounded-lg bg-orange-100 p-2 text-orange-800 hover:bg-orange-200 disabled:opacity-50"
                               title="Generate Payment Queue"
+                              aria-label={`Generate payment queue for ${item.balancePaymentNo}`}
                             >
-                              {queueLoading === item._id ? 'Generating…' : 'Generate Queue'}
+                              {queueLoading === item._id ? (
+                                <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-orange-700" />
+                              ) : (
+                                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 14l2 2 4-4" />
+                                </svg>
+                              )}
                             </button>
-                          ) : null}
+                          )}
                           {/* Edit Button - Only shown if user has edit permission */}
                           {canEdit(MODULE_NAME) && (
                             <button
