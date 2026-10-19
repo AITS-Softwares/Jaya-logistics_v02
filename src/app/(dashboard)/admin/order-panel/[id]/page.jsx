@@ -7959,6 +7959,8 @@
 
 import { useMemo, useState, useEffect, useRef, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
+import OrderRowStatusActions from "@/components/OrderRowStatusActions";
+import { usePermission } from "../../hooks/usePermission";
 
 /** =========================
  * CONSTANTS
@@ -7975,7 +7977,7 @@ const STATUSES = ["Open", "Hold", "Cancelled"];
 const DELIVERY_OPTIONS = ["Urgent", "Normal", "Express", "Scheduled"];
 
 function uid() {
-  return Math.random().toString(36).slice(2, 10);
+  return Array.from({ length: 24 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
 }
 
 function num(v) {
@@ -7991,6 +7993,7 @@ function defaultRow(packType) {
     return {
       _id: uid(),
       packType: "PALLETIZATION",
+      plantRowId: null,
       noOfPallets: "",
       unitPerPallets: "",
       totalPkgs: "",
@@ -8011,6 +8014,7 @@ function defaultRow(packType) {
     return {
       _id: uid(),
       packType: "UNIFORM - BAGS/BOXES",
+      plantRowId: null,
       totalPkgs: "",
       pkgsType: "",
       uom: "MT",
@@ -8028,6 +8032,7 @@ function defaultRow(packType) {
     return {
       _id: uid(),
       packType: "LOOSE - CARGO",
+      plantRowId: null,
       uom: "MT",
       productName: "",
       actualWt: "",
@@ -8039,6 +8044,7 @@ function defaultRow(packType) {
   return {
     _id: uid(),
     packType: "NON-UNIFORM - GENERAL CARGO",
+    plantRowId: null,
     nos: "",
     productName: "",
     uom: "MT",
@@ -8214,6 +8220,8 @@ export default function EditOrderPanel() {
   const router = useRouter();
   const params = useParams();
   const orderId = params.id;
+  const { canCreate, canEdit, canApprove } = usePermission();
+  const canManageOrderRows = canCreate('Order Panel') || canEdit('Order Panel') || canApprove('Order Panel');
 
   /** =========================
    * STATE FOR API DATA
@@ -8284,6 +8292,7 @@ export default function EditOrderPanel() {
    * PLANT GRID TABLE DATA
    ========================= */
   const [plantRows, setPlantRows] = useState([defaultPlantRow()]);
+  const [allocationEnabled, setAllocationEnabled] = useState(false);
 
   /** =========================
    * PACK DATA - Single array for all pack types (like create page)
@@ -8544,6 +8553,7 @@ export default function EditOrderPanel() {
 
       setOrderNumber(order.orderPanelNo || order.orderNo || "");
       setPanelStatus(order.panelStatus || "");
+      setAllocationEnabled(!!order.allocationEnabled);
 
       setTop((prev) => ({
         ...prev,
@@ -8895,6 +8905,7 @@ export default function EditOrderPanel() {
   const removePlantRow = (rowId) => {
     if (plantRows.length > 1) {
       setPlantRows((prev) => prev.filter((r) => r._id !== rowId));
+      setPackRows((prev) => prev.map((packRow) => String(packRow.plantRowId) === String(rowId) ? { ...packRow, plantRowId: null } : packRow));
     } else {
       alert("At least one plant row is required");
     }
@@ -9037,9 +9048,12 @@ export default function EditOrderPanel() {
           localStatus: row.localStatus || "unknown",
           localStatusLabel: row.localStatusLabel || "Unknown"
         })),
+        allocationEnabled,
         packData: {
           PALLETIZATION: packRows.filter(row => row.packType === "PALLETIZATION").map(row => ({
             _id: row._id,
+            plantRowId: row.plantRowId || null,
+            productId: row.productId || null,
             noOfPallets: num(row.noOfPallets),
             unitPerPallets: num(row.unitPerPallets),
             totalPkgs: num(row.totalPkgs),
@@ -9056,6 +9070,8 @@ export default function EditOrderPanel() {
           })),
           "UNIFORM - BAGS/BOXES": packRows.filter(row => row.packType === "UNIFORM - BAGS/BOXES").map(row => ({
             _id: row._id,
+            plantRowId: row.plantRowId || null,
+            productId: row.productId || null,
             totalPkgs: num(row.totalPkgs),
             pkgsType: row.pkgsType || "",
             uom: row.uom || "MT",
@@ -9069,6 +9085,8 @@ export default function EditOrderPanel() {
           })),
           "LOOSE - CARGO": packRows.filter(row => row.packType === "LOOSE - CARGO").map(row => ({
             _id: row._id,
+            plantRowId: row.plantRowId || null,
+            productId: row.productId || null,
             uom: row.uom || "MT",
             productName: row.productName || "",
             actualWt: num(row.actualWt),
@@ -9076,6 +9094,8 @@ export default function EditOrderPanel() {
           })),
           "NON-UNIFORM - GENERAL CARGO": packRows.filter(row => row.packType === "NON-UNIFORM - GENERAL CARGO").map(row => ({
             _id: row._id,
+            plantRowId: row.plantRowId || null,
+            productId: row.productId || null,
             nos: num(row.nos),
             productName: row.productName || "",
             uom: row.uom || "MT",
@@ -9171,6 +9191,11 @@ export default function EditOrderPanel() {
           </div>
 
           <div className="flex items-center gap-3">
+            {canManageOrderRows && !['Draft', 'Cancelled', 'Completed', 'Rejected'].includes(panelStatus) && <OrderRowStatusActions orderId={orderId} orderNo={top.orderNo} status={plantRows.some((row) => row.status === 'Hold') ? 'Hold' : 'Open'} onUpdated={(updated) => {
+              const changedRows = new Map((updated.plantRows || []).map((row) => [String(row._id), row]));
+              setPlantRows((current) => current.map((row) => changedRows.has(String(row._id)) ? { ...row, status: changedRows.get(String(row._id)).status, statusRequest: changedRows.get(String(row._id)).statusRequest } : row));
+              setPanelStatus(updated.panelStatus || panelStatus);
+            }} />}
             {panelStatus === 'Draft' && (
               <button
                 onClick={() => handleUpdate('draft')}
@@ -9397,6 +9422,7 @@ export default function EditOrderPanel() {
               {/* Single Table showing ALL rows with Pack Type column */}
               <PackTypeTable
                 rows={packRows}
+                plantRows={plantRows}
                 onChange={updatePackRow}
                 onRemove={removeRow}
                 onDuplicate={duplicateRow}
@@ -10002,18 +10028,7 @@ function PlantGridTable({
                   />
                 </td>
                 <td className="border border-yellow-300 px-2 py-2">
-                  <select
-                    value={r.status || ""}
-                    onChange={(e) => onChange(r._id, 'status', e.target.value)}
-                    className="w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-                  >
-                    <option value="">Select Status</option>
-                    {STATUSES.map((opt) => (
-                      <option key={opt} value={opt}>
-                        {opt}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="flex items-center gap-2"><span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">{r.status || 'Open'}</span>{r.statusRequest?.action && <span title={r.statusRequest.reason} className="rounded-full bg-amber-100 px-2 py-1 text-[10px] font-bold text-amber-800">{r.statusRequest.action} approval pending</span>}</div>
                 </td>
                 {showCharges && (
                   <>
@@ -10323,6 +10338,7 @@ function TableSearchableDropdown({
 
 function PackTypeTable({
   rows,
+  plantRows = [],
   onChange,
   onRemove,
   onDuplicate,
@@ -10508,7 +10524,7 @@ function PackTypeTable({
             <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 text-center bg-yellow-400">
               Pack Type
             </th>
-            {rows.length > 0 && getColumnsForRow(rows[0].packType).map((c) => (
+            {rows.length > 0 && [...getColumnsForRow(rows[0].packType), { key: 'plantRowId', label: 'DROP LOCATION', isRoute: true }].map((c) => (
               <th
                 key={c.key}
                 className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 text-center"
@@ -10526,7 +10542,7 @@ function PackTypeTable({
         <tbody>
           {rows.length > 0 ? (
             rows.map((r) => {
-              const cols = getColumnsForRow(r.packType);
+              const cols = [...getColumnsForRow(r.packType), { key: 'plantRowId', label: 'DROP LOCATION', isRoute: true }];
 
               return (
                 <tr key={r._id} className="hover:bg-yellow-50 even:bg-slate-50">
@@ -10538,6 +10554,9 @@ function PackTypeTable({
                   </td>
 
                   {cols.map((c) => {
+                    if (c.isRoute) {
+                      return <td key={c.key} className="border border-yellow-300 px-2 py-2"><select value={r.plantRowId || ''} onChange={(e) => handleChange(r._id, c.key, e.target.value || null)} className="w-full min-w-40 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm"><option value="">Select drop</option>{plantRows.map((route, index) => <option key={route._id} value={route._id}>Drop {index + 1} · {route.toName || route.cityName || route.city || route.districtName || route.district || 'Destination'}</option>)}</select></td>;
+                    }
                     if (c.key === "wtUom") {
                       return (
                         <td key={c.key} className="border border-yellow-300 px-2 py-2">

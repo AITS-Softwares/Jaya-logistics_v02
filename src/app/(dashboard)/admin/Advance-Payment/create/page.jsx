@@ -2482,12 +2482,13 @@ export default function CreateAdvancePayment() {
     alert(`✅ Payment queue ready to generate for ${paymentDetails.vendorNameDebit}\nAmount: ₹${finalAmount.toLocaleString()}`);
   };
 
-  const handleSave = async () => {
-    if (!header.branch) {
+  const handleSave = async (saveMode = 'submit') => {
+    const isDraftSave = saveMode === 'draft';
+    if (!isDraftSave && !header.branch) {
       alert("Please select a branch");
       return;
     }
-    if (!vendorDetails.vendorName) {
+    if (!isDraftSave && !vendorDetails.vendorName) {
       alert("Please select a vendor");
       return;
     }
@@ -2496,6 +2497,7 @@ export default function CreateAdvancePayment() {
     try {
       const token = localStorage.getItem('token');
       const payload = {
+        saveMode,
         purchaseNo: header.purchaseNo,
         pricingSerialNo: header.pricingSerialNo,
         header: {
@@ -2556,7 +2558,9 @@ export default function CreateAdvancePayment() {
       }
 
       const data = await res.json();
-      alert(`✅ Advance Payment saved successfully!\nPayment No: ${data.data?.paymentNo || 'Generated'}`);
+      alert(isDraftSave
+        ? `✅ Advance Payment saved as a draft.\nPayment No: ${data.data?.paymentNo || 'Generated'}\nOpen it from the list to continue.`
+        : `✅ Advance Payment saved successfully!\nPayment No: ${data.data?.paymentNo || 'Generated'}`);
       router.push('/admin/Advance-Payment');
     } catch (error) {
       console.error('Error saving advance payment:', error);
@@ -2663,6 +2667,7 @@ export default function CreateAdvancePayment() {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            <button onClick={() => handleSave('draft')} disabled={saving || fetchingData} className="rounded-xl border border-amber-300 bg-amber-50 px-5 py-2 text-sm font-bold text-amber-800 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60">Save as Draft</button>
             <button onClick={resetForm} className="rounded-xl border border-slate-300 bg-white px-5 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50 transition">Reset</button>
             <button onClick={handleSave} disabled={saving || fetchingData} className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${saving || fetchingData ? 'bg-gray-400 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700'}`}>
               {saving ? (

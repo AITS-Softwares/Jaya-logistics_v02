@@ -2148,6 +2148,22 @@ function num(value) {
   return Number.isFinite(n) ? n : 0;
 }
 
+function objectIdOrNull(value) {
+  return value && mongoose.Types.ObjectId.isValid(value) ? new mongoose.Types.ObjectId(value) : null;
+}
+
+function validatePackDropLocations(packData = {}, plantRows = [], required = false) {
+  const routeIds = new Set(plantRows.map((row) => String(row._id)));
+  const errors = [];
+  for (const [packType, rows] of Object.entries(packData || {})) {
+    (rows || []).forEach((row, index) => {
+      if (!row.plantRowId && required) errors.push(`${packType} row ${index + 1} needs a drop location.`);
+      else if (row.plantRowId && !routeIds.has(String(row.plantRowId))) errors.push(`${packType} row ${index + 1} refers to a route that is not on this order.`);
+    });
+  }
+  return { ok: errors.length === 0, errors };
+}
+
 function calculatePendingDays(orderDate, status) {
   if (!orderDate || status === 'Completed' || status === 'Cancelled' || status === 'Draft') return '0 Days';
 
@@ -2167,6 +2183,7 @@ export const GET = withAuth(async (req, context, user) => {
     const url = new URL(req.url);
     const id = url.searchParams.get("id");
     const isTable = url.searchParams.get("table") === "true";
+    const openOnly = url.searchParams.get('openOnly') === 'true';
 
     // CASE 1: Get single order with full details
     if (id) {
@@ -2200,10 +2217,11 @@ export const GET = withAuth(async (req, context, user) => {
         partyName: orderPanel.partyName || orderPanel.customerName || 'N/A',
         totalWeight: orderPanel.totalWeight || 0,
         panelStatus: orderPanel.panelStatus || 'Draft',
+        canManageStatus: ['create', 'edit', 'approve'].some((action) => hasPermission(user, 'Order Panel', action)),
         isDraft: !!orderPanel.isDraft,
         approvalRemarks: orderPanel.approvalRemarks || '',
         delivery: orderPanel.delivery || 'Normal',
-        plantRows: (orderPanel.plantRows || []).map(row => ({
+        plantRows: (openOnly ? (orderPanel.plantRows || []).filter((row) => (row.status || 'Open') === 'Open' && !row.statusRequest?.action) : (orderPanel.plantRows || [])).map(row => ({
           ...row,
           plantCode: row.plantCode?._id || row.plantCode || null,
           plantName: row.plantName || row.plantCode?.name || '',
@@ -2217,7 +2235,8 @@ export const GET = withAuth(async (req, context, user) => {
         customerCode: orderPanel.customerCode || '',
         contactPerson: orderPanel.contactPerson || '',
         branch: orderPanel.branch,
-        packData: orderPanel.packData || {}
+        packData: orderPanel.packData || {},
+        allocationEnabled: !!orderPanel.allocationEnabled
       };
 
       return NextResponse.json({
@@ -2230,10 +2249,11 @@ export const GET = withAuth(async (req, context, user) => {
     if (isTable) {
       let query = companyScopeFilter(user);
 
-      const orderPanels = await OrderPanel.find(query)
+      let orderPanels = await OrderPanel.find(query)
         .sort({ createdAt: -1 })
         .select('orderPanelNo date branchName branchCode subCompanyName subCompanyCode customerName partyName totalWeight panelStatus isDraft createdAt plantRows delivery collectionCharges cancellationCharges loadingCharges otherCharges')
         .lean();
+      if (openOnly) orderPanels = orderPanels.map((order) => ({ ...order, plantRows: (order.plantRows || []).filter((row) => (row.status || 'Open') === 'Open' && !row.statusRequest?.action) }));
 
       const flattenedRows = [];
 
@@ -2265,6 +2285,7 @@ export const GET = withAuth(async (req, context, user) => {
               country: row.countryName || row.country || '',
               weight: row.weight || 0,
               status: row.status || 'Open',
+              statusRequest: row.statusRequest?.action ? { action: row.statusRequest.action, reason: row.statusRequest.reason || '', by: row.statusRequest.by || null, at: row.statusRequest.at || null } : null,
               delivery: order.delivery || 'Normal',
               panelStatus: order.panelStatus || 'Draft',
               isDraft: !!order.isDraft,
@@ -2322,10 +2343,11 @@ export const GET = withAuth(async (req, context, user) => {
     // CASE 3: Get list of orders (summary only)
     let query = companyScopeFilter(user);
 
-    const orderPanels = await OrderPanel.find(query)
+    let orderPanels = await OrderPanel.find(query)
       .sort({ createdAt: -1 })
       .select('orderPanelNo date branchName branchCode subCompanyName subCompanyCode customerName partyName totalWeight panelStatus isDraft createdAt plantRows delivery')
       .lean();
+    if (openOnly) orderPanels = orderPanels.filter((order) => (order.plantRows || []).some((row) => (row.status || 'Open') === 'Open' && !row.statusRequest?.action));
 
     const formattedOrders = orderPanels.map(order => ({
       _id: order._id,
@@ -2356,7 +2378,7 @@ export const GET = withAuth(async (req, context, user) => {
       error: error.message
     }, { status: 500 });
   }
-}, { module: 'Order Panel', action: 'view' });
+}, { module: 'Order Panel', actions: ['view', 'create', 'edit', 'approve'] });
 
 // ── POST: Requires 'create' permission ──
 export const POST = withAuth(async (req, context, user) => {
@@ -2369,13 +2391,7 @@ export const POST = withAuth(async (req, context, user) => {
     const isDraftSave = body.saveMode === 'draft';
     const isSubmitSave = body.saveMode === 'submit';
 
-    let orderPanelNo = await getNextOrderPanelNumber(user.companyId, user.activeOperatingCompanyId, user.activeOperatingCompanyCode);
-
-    const existingOrderPanel = await OrderPanel.findOne(companyScopeFilter(user, { orderPanelNo }));
-
-    if (existingOrderPanel) {
-      orderPanelNo = `OP-${Date.now().toString().slice(-6)}`;
-    }
+    const orderPanelNo = await getNextOrderPanelNumber(user.companyId, user.activeOperatingCompanyId, user.activeOperatingCompanyCode);
 
     let branchName = '';
     let branchCode = '';
@@ -2405,7 +2421,7 @@ export const POST = withAuth(async (req, context, user) => {
       }
 
       return {
-        _id: new mongoose.Types.ObjectId(),
+        _id: row._id && mongoose.Types.ObjectId.isValid(row._id) ? new mongoose.Types.ObjectId(row._id) : new mongoose.Types.ObjectId(),
         plantCode: row.plantCode || '',
         plantName: row.plantName || '',
         plantCodeValue: row.plantCodeValue || '',
@@ -2428,12 +2444,13 @@ export const POST = withAuth(async (req, context, user) => {
         country: row.country || "",
         countryName: row.countryName || row.country || '',
         weight,
-        status: row.status || "Open",
+        status: "Open",
         rate: rate,
         locationRate: num(row.locationRate),
         totalAmount: weight * rate,
         collectionCharges: num(row.collectionCharges) || 0,
-        cancellationCharges: row.cancellationCharges || 'Nil',
+        cancellationCharges: num(row.cancellationCharges),
+        cancellationChargeMode: ['flat', 'per MT'].includes(row.cancellationChargeMode) ? row.cancellationChargeMode : 'flat',
         loadingCharges: row.loadingCharges || 'Nil',
         otherCharges: num(row.otherCharges) || 0
       };
@@ -2464,7 +2481,7 @@ export const POST = withAuth(async (req, context, user) => {
 
       if (packData.PALLETIZATION && Array.isArray(packData.PALLETIZATION)) {
         result.PALLETIZATION = packData.PALLETIZATION.map(item => ({
-          _id: new mongoose.Types.ObjectId(),
+          _id: item._id && mongoose.Types.ObjectId.isValid(item._id) ? new mongoose.Types.ObjectId(item._id) : new mongoose.Types.ObjectId(),
           noOfPallets: num(item.noOfPallets),
           unitPerPallets: num(item.unitPerPallets),
           totalPkgs: num(item.totalPkgs),
@@ -2473,6 +2490,7 @@ export const POST = withAuth(async (req, context, user) => {
           skuSize: item.skuSize || '',
           packWeight: num(item.packWeight),
           productId: mongoose.Types.ObjectId.isValid(item.productId) ? item.productId : null,
+          plantRowId: objectIdOrNull(item.plantRowId),
           productName: item.productName || '',
           wtLtr: num(item.wtLtr),
           actualWt: num(item.actualWt),
@@ -2483,13 +2501,14 @@ export const POST = withAuth(async (req, context, user) => {
 
       if (packData['UNIFORM - BAGS/BOXES'] && Array.isArray(packData['UNIFORM - BAGS/BOXES'])) {
         result['UNIFORM - BAGS/BOXES'] = packData['UNIFORM - BAGS/BOXES'].map(item => ({
-          _id: new mongoose.Types.ObjectId(),
+          _id: item._id && mongoose.Types.ObjectId.isValid(item._id) ? new mongoose.Types.ObjectId(item._id) : new mongoose.Types.ObjectId(),
           totalPkgs: num(item.totalPkgs),
           pkgsType: item.pkgsType || '',
           uom: item.uom || '',
           skuSize: item.skuSize || '',
           packWeight: num(item.packWeight),
           productId: mongoose.Types.ObjectId.isValid(item.productId) ? item.productId : null,
+          plantRowId: objectIdOrNull(item.plantRowId),
           productName: item.productName || '',
           wtLtr: num(item.wtLtr),
           actualWt: num(item.actualWt),
@@ -2500,9 +2519,10 @@ export const POST = withAuth(async (req, context, user) => {
 
       if (packData['LOOSE - CARGO'] && Array.isArray(packData['LOOSE - CARGO'])) {
         result['LOOSE - CARGO'] = packData['LOOSE - CARGO'].map(item => ({
-          _id: new mongoose.Types.ObjectId(),
+          _id: item._id && mongoose.Types.ObjectId.isValid(item._id) ? new mongoose.Types.ObjectId(item._id) : new mongoose.Types.ObjectId(),
           uom: item.uom || '',
           productId: mongoose.Types.ObjectId.isValid(item.productId) ? item.productId : null,
+          plantRowId: objectIdOrNull(item.plantRowId),
           productName: item.productName || '',
           actualWt: num(item.actualWt),
           chargedWt: num(item.chargedWt)
@@ -2511,9 +2531,10 @@ export const POST = withAuth(async (req, context, user) => {
 
       if (packData['NON-UNIFORM - GENERAL CARGO'] && Array.isArray(packData['NON-UNIFORM - GENERAL CARGO'])) {
         result['NON-UNIFORM - GENERAL CARGO'] = packData['NON-UNIFORM - GENERAL CARGO'].map(item => ({
-          _id: new mongoose.Types.ObjectId(),
+          _id: item._id && mongoose.Types.ObjectId.isValid(item._id) ? new mongoose.Types.ObjectId(item._id) : new mongoose.Types.ObjectId(),
           nos: num(item.nos),
           productId: mongoose.Types.ObjectId.isValid(item.productId) ? item.productId : null,
+          plantRowId: objectIdOrNull(item.plantRowId),
           productName: item.productName || '',
           uom: item.uom || 'MT',
           length: num(item.length),
@@ -2526,6 +2547,11 @@ export const POST = withAuth(async (req, context, user) => {
 
       return result;
     };
+
+    const processedPackData = processPackData(body.packData);
+    const allocationEnabled = body.allocationEnabled !== false;
+    const dropCheck = validatePackDropLocations(processedPackData, processedPlantRows, allocationEnabled && !isDraftSave);
+    if (!dropCheck.ok) return NextResponse.json({ success: false, message: dropCheck.errors.join(' ') }, { status: 400 });
 
     const orderPanelData = {
       orderPanelNo,
@@ -2543,11 +2569,13 @@ export const POST = withAuth(async (req, context, user) => {
       contactPerson: body.contactPerson || '',
       partyName: body.partyName || '',
       collectionCharges: num(body.collectionCharges),
-      cancellationCharges: body.cancellationCharges || 'Nil',
+      cancellationCharges: num(body.cancellationCharges),
+      cancellationChargeMode: ['flat', 'per MT'].includes(body.cancellationChargeMode) ? body.cancellationChargeMode : 'flat',
       loadingCharges: body.loadingCharges || 'Nil',
       otherCharges: num(body.otherCharges),
       plantRows: processedPlantRows,
-      packData: processPackData(body.packData),
+      packData: processedPackData,
+      allocationEnabled,
       totalWeight,
       totalAmount,
       companyId: new mongoose.Types.ObjectId(user.companyId),
@@ -2654,13 +2682,16 @@ export const PUT = withAuth(async (req, context, user) => {
           message: "This order is still a draft. Submit it for approval first."
         }, { status: 400 });
       }
-      orderPanel.panelStatus = body.panelStatus;
+      if (body.panelStatus !== 'Submitted' || orderPanel.panelStatus !== 'Draft' || saveMode !== 'submit') {
+        return NextResponse.json({ success: false, message: 'Order status changes must use the submit, approve, reject, or complete action.' }, { status: 400 });
+      }
     }
 
     if (body.plantRows && Array.isArray(body.plantRows)) {
       const processedPlantRows = body.plantRows.map((row) => {
         const weight = num(row.weight);
         const rate = num(row.rate);
+        const savedRow = orderPanel.plantRows.id(row._id);
 
         let fromField = null;
         if (row.from && mongoose.Types.ObjectId.isValid(row.from)) {
@@ -2696,12 +2727,19 @@ export const PUT = withAuth(async (req, context, user) => {
           country: row.country || "",
           countryName: row.countryName || row.country || '',
           weight,
-          status: row.status || "Open",
+          status: savedRow?.status || 'Open',
+          statusReason: savedRow?.statusReason || '',
+          statusChangedBy: savedRow?.statusChangedBy || null,
+          statusChangedAt: savedRow?.statusChangedAt || null,
+          holdUntil: savedRow?.holdUntil || null,
+          statusRequest: savedRow?.statusRequest || {},
+          statusHistory: savedRow?.statusHistory || [],
           rate: rate,
           locationRate: num(row.locationRate),
           totalAmount: weight * rate,
           collectionCharges: num(row.collectionCharges) || 0,
-          cancellationCharges: row.cancellationCharges || 'Nil',
+          cancellationCharges: num(row.cancellationCharges),
+          cancellationChargeMode: ['flat', 'per MT'].includes(row.cancellationChargeMode) ? row.cancellationChargeMode : 'flat',
           loadingCharges: row.loadingCharges || 'Nil',
           otherCharges: num(row.otherCharges) || 0
         };
@@ -2724,6 +2762,8 @@ export const PUT = withAuth(async (req, context, user) => {
           uom: item.uom || '',
           skuSize: item.skuSize || '',
           packWeight: num(item.packWeight),
+          productId: mongoose.Types.ObjectId.isValid(item.productId) ? item.productId : null,
+          plantRowId: objectIdOrNull(item.plantRowId),
           productName: item.productName || '',
           wtLtr: num(item.wtLtr),
           actualWt: num(item.actualWt),
@@ -2737,6 +2777,8 @@ export const PUT = withAuth(async (req, context, user) => {
           uom: item.uom || '',
           skuSize: item.skuSize || '',
           packWeight: num(item.packWeight),
+          productId: mongoose.Types.ObjectId.isValid(item.productId) ? item.productId : null,
+          plantRowId: objectIdOrNull(item.plantRowId),
           productName: item.productName || '',
           wtLtr: num(item.wtLtr),
           actualWt: num(item.actualWt),
@@ -2746,6 +2788,8 @@ export const PUT = withAuth(async (req, context, user) => {
         'LOOSE - CARGO': (body.packData['LOOSE - CARGO'] || []).map(item => ({
           _id: item._id && mongoose.Types.ObjectId.isValid(item._id) ? new mongoose.Types.ObjectId(item._id) : new mongoose.Types.ObjectId(),
           uom: item.uom || '',
+          productId: mongoose.Types.ObjectId.isValid(item.productId) ? item.productId : null,
+          plantRowId: objectIdOrNull(item.plantRowId),
           productName: item.productName || '',
           actualWt: num(item.actualWt),
           chargedWt: num(item.chargedWt)
@@ -2753,6 +2797,8 @@ export const PUT = withAuth(async (req, context, user) => {
         'NON-UNIFORM - GENERAL CARGO': (body.packData['NON-UNIFORM - GENERAL CARGO'] || []).map(item => ({
           _id: item._id && mongoose.Types.ObjectId.isValid(item._id) ? new mongoose.Types.ObjectId(item._id) : new mongoose.Types.ObjectId(),
           nos: num(item.nos),
+          productId: mongoose.Types.ObjectId.isValid(item.productId) ? item.productId : null,
+          plantRowId: objectIdOrNull(item.plantRowId),
           productName: item.productName || '',
           uom: item.uom || 'MT',
           length: num(item.length),
@@ -2763,6 +2809,10 @@ export const PUT = withAuth(async (req, context, user) => {
         }))
       };
     }
+
+    if (body.allocationEnabled !== undefined) orderPanel.allocationEnabled = body.allocationEnabled !== false;
+    const dropCheck = validatePackDropLocations(orderPanel.packData, orderPanel.plantRows, !!orderPanel.allocationEnabled && saveMode !== 'draft');
+    if (!dropCheck.ok) return NextResponse.json({ success: false, message: dropCheck.errors.join(' ') }, { status: 400 });
 
     if (saveMode === 'draft') {
       orderPanel.isDraft = true;
@@ -2866,16 +2916,23 @@ export const PATCH = withAuth(async (req, context, user) => {
     const remarks = (body.remarks || '').trim();
 
     if (action === 'approve') {
+      if (orderPanel.panelStatus !== 'Submitted') return NextResponse.json({ success: false, message: 'Only a submitted order can be approved.' }, { status: 400 });
+      if (orderPanel.allocationEnabled) {
+        const dropCheck = validatePackDropLocations(orderPanel.packData, orderPanel.plantRows, true);
+        if (!dropCheck.ok) return NextResponse.json({ success: false, message: dropCheck.errors.join(' ') }, { status: 400 });
+      }
       orderPanel.panelStatus = 'Approved';
       orderPanel.approvedBy = user.id;
       orderPanel.approvedAt = new Date();
       orderPanel.approvalRemarks = remarks || 'Approved via quick action';
     } else if (action === 'reject') {
+      if (orderPanel.panelStatus !== 'Submitted') return NextResponse.json({ success: false, message: 'Only a submitted order can be rejected.' }, { status: 400 });
       orderPanel.panelStatus = 'Rejected';
       orderPanel.approvedBy = user.id;
       orderPanel.approvedAt = new Date();
       orderPanel.approvalRemarks = remarks || 'Rejected via quick action';
     } else if (action === 'complete') {
+      if (orderPanel.panelStatus !== 'Approved') return NextResponse.json({ success: false, message: 'Only an approved order can be completed.' }, { status: 400 });
       orderPanel.panelStatus = 'Completed';
       if (remarks) orderPanel.approvalRemarks = remarks;
     } else {

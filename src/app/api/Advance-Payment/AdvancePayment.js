@@ -453,6 +453,7 @@ const advancePaymentSchema = new mongoose.Schema({
     enum: ['Draft', 'Pending', 'Approved', 'Rejected', 'Paid', 'Completed'],
     default: 'Draft'
   },
+  isDraft: { type: Boolean, default: false },
 
   // Queue Generation
   queueGenerated: {

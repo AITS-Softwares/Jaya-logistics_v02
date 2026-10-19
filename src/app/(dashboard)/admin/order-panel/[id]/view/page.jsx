@@ -71,13 +71,12 @@ export default function OrderPanelViewPage() {
                   <h1 className="text-xl font-extrabold text-slate-900">
                     Order: {order.orderPanelNo}
                   </h1>
-                  <p className="mt-1 text-sm text-slate-500">Read-only order details</p>
+                <p className="mt-1 text-sm text-slate-500">Order and plant row status history</p>
                 </div>
                 <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
                   {order.panelStatus}
                 </span>
               </div>
-
               <dl className="mt-5 grid grid-cols-2 gap-4 md:grid-cols-4">
                 <Value
                   label="Date"
@@ -109,6 +108,7 @@ export default function OrderPanelViewPage() {
                       <th className="px-4 py-3">Location remark</th>
                       <th className="px-4 py-3">Weight</th>
                       <th className="px-4 py-3">Status</th>
+                      <th className="px-4 py-3">Reason / History</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -123,12 +123,16 @@ export default function OrderPanelViewPage() {
                         <td className="px-4 py-3">{row.toName || row.to || '—'}</td>
                         <td className="px-4 py-3">{row.locationRemark || '—'}</td>
                         <td className="px-4 py-3">{row.weight || 0} kg</td>
-                        <td className="px-4 py-3">{row.status || '—'}</td>
+                        <td className="px-4 py-3"><span>{row.status || 'Open'}</span>{row.statusRequest?.action && <span title={row.statusRequest.reason} className="ml-2 rounded-full bg-amber-100 px-2 py-1 text-[10px] font-bold text-amber-800">{row.statusRequest.action} pending approval</span>}</td>
+                        <td className="px-4 py-3">
+                          <div>{row.statusReason || '—'}</div>
+                          {(row.statusHistory || []).map((entry, index) => <div key={`${entry.at}-${index}`} className="mt-1 text-xs text-slate-500">{entry.action}: {entry.reason} · {entry.at ? new Date(entry.at).toLocaleString() : ''}</div>)}
+                        </td>
                       </tr>
                     ))}
                     {!(order.plantRows || []).length && (
                       <tr>
-                        <td colSpan="7" className="px-4 py-8 text-center text-slate-500">
+                        <td colSpan="8" className="px-4 py-8 text-center text-slate-500">
                           No plant / route rows found.
                         </td>
                       </tr>

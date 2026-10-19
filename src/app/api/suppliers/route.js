@@ -76,11 +76,16 @@ export async function POST(req) {
   try {
     const body = await req.json();
 
-    const requiredFields = ["supplierCode", "supplierName", "supplierType", "pan"];
+    const requiredFields = ["supplierCode", "supplierName", "supplierType"];
     for (const field of requiredFields) {
       if (!body[field]) {
         return NextResponse.json({ success: false, message: `${field} is required` }, { status: 400 });
       }
+    }
+
+    const pan = String(body.pan || "").trim();
+    if (pan && !/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(pan.toUpperCase())) {
+      return NextResponse.json({ success: false, message: "Invalid PAN format. Example: ABCDE1234F" }, { status: 400 });
     }
 
     //// Validate PAN Card document is uploaded

@@ -71,6 +71,7 @@
 import { NextResponse } from "next/server";
 import connectDb from "@/lib/db";
 import ConsignmentNote from "../../consignment-note/ConsignmentNote";
+import OrderPanel from "../../order-panel/OrderPanel";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 
 // ── PERMISSION FUNCTIONS ──
@@ -166,6 +167,30 @@ export async function POST(req) {
       });
       totalAmount += 500;
     });
+
+    const orders = await OrderPanel.find({ companyId: user.companyId })
+      .select('orderPanelNo partyName customerName branchName date plantRows')
+      .lean();
+    orders.forEach((order) => (order.plantRows || []).forEach((row) => {
+      const amount = Math.max(0, Number(row.cancellationCharges) || 0) * (row.cancellationChargeMode === 'per MT' ? (Number(row.weight) || 0) / 1000 : 1);
+      if (!amount || row.status !== 'Cancelled') return;
+      if (clientName && !String(order.partyName || order.customerName || '').toLowerCase().includes(String(clientName).toLowerCase())) return;
+      const date = row.statusChangedAt || order.date || order.createdAt;
+      if (startDate && new Date(date) < new Date(startDate)) return;
+      if (endDate && new Date(date) > new Date(`${endDate}T23:59:59`)) return;
+      billingData.push({
+        id: `order-${order.orderPanelNo}-${row._id}`,
+        date,
+        lrNo: order.orderPanelNo,
+        vehicleNo: 'N/A',
+        from: row.fromName || 'N/A',
+        to: row.toName || 'N/A',
+        partyName: order.partyName || order.customerName || 'N/A',
+        cancellationType: cancellation || 'Order Cancellation',
+        amount,
+      });
+      totalAmount += amount;
+    }));
     
     return NextResponse.json({
       success: true,

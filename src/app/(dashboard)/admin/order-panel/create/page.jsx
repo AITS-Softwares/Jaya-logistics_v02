@@ -9375,7 +9375,7 @@ const STATUSES = ["Open", "Hold", "Cancelled"];
 const DELIVERY_OPTIONS = ["Urgent", "Normal", "Express", "Scheduled"];
 
 function uid() {
-  return Math.random().toString(36).slice(2, 10);
+  return Array.from({ length: 24 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
 }
 
 function num(v) {
@@ -9395,6 +9395,7 @@ function defaultRow(packType) {
     return {
       _id: uid(),
       packType: "PALLETIZATION",
+      plantRowId: null,
       noOfPallets: "",
       unitPerPallets: "",
       totalPkgs: "",
@@ -9416,6 +9417,7 @@ function defaultRow(packType) {
     return {
       _id: uid(),
       packType: "UNIFORM - BAGS/BOXES",
+      plantRowId: null,
       totalPkgs: "",
       pkgsType: "",
       uom: "",
@@ -9434,6 +9436,7 @@ function defaultRow(packType) {
     return {
       _id: uid(),
       packType: "LOOSE - CARGO",
+      plantRowId: null,
       uom: "MT",
       productId: "",
       productName: "",
@@ -9446,6 +9449,7 @@ function defaultRow(packType) {
   return {
     _id: uid(),
     packType: "NON-UNIFORM - GENERAL CARGO",
+    plantRowId: null,
     nos: "",
     productId: "",
     productName: "",
@@ -10128,6 +10132,7 @@ export default function CreateOrderPanel() {
   const removePlantRow = (rowId) => {
     if (plantRows.length > 1) {
       setPlantRows((prev) => prev.filter((r) => r._id !== rowId));
+      setPackRows((prev) => prev.map((packRow) => String(packRow.plantRowId) === String(rowId) ? { ...packRow, plantRowId: null } : packRow));
     } else {
       alert("At least one plant row is required");
     }
@@ -10501,6 +10506,8 @@ export default function CreateOrderPanel() {
       packRows.forEach(row => {
         if (row.packType === "PALLETIZATION") {
           packDataGrouped.PALLETIZATION.push({
+            _id: row._id,
+            plantRowId: row.plantRowId || null,
             noOfPallets: num(row.noOfPallets),
             unitPerPallets: num(row.unitPerPallets),
             totalPkgs: num(row.totalPkgs),
@@ -10518,6 +10525,8 @@ export default function CreateOrderPanel() {
           });
         } else if (row.packType === "UNIFORM - BAGS/BOXES") {
           packDataGrouped['UNIFORM - BAGS/BOXES'].push({
+            _id: row._id,
+            plantRowId: row.plantRowId || null,
             totalPkgs: num(row.totalPkgs),
             pkgsType: row.pkgsType || "",
             uom: row.uom || "MT",
@@ -10532,6 +10541,8 @@ export default function CreateOrderPanel() {
           });
         } else if (row.packType === "LOOSE - CARGO") {
           packDataGrouped['LOOSE - CARGO'].push({
+            _id: row._id,
+            plantRowId: row.plantRowId || null,
             uom: row.uom || "MT",
             productId: row.productId || null,
             productName: row.productName || "",
@@ -10540,6 +10551,8 @@ export default function CreateOrderPanel() {
           });
         } else if (row.packType === "NON-UNIFORM - GENERAL CARGO") {
           packDataGrouped['NON-UNIFORM - GENERAL CARGO'].push({
+            _id: row._id,
+            plantRowId: row.plantRowId || null,
             nos: num(row.nos),
             productId: row.productId || null,
             productName: row.productName || "",
@@ -10576,6 +10589,7 @@ export default function CreateOrderPanel() {
         partyName: selectedCustomer?.customerName || top.partyName || '',
 
         plantRows: plantRows.map(row => ({
+          _id: row._id,
           plantCode: row.plantCode || '',
           plantName: row.plantName || '',
           plantCodeValue: row.plantCodeValue || '',
@@ -10608,6 +10622,7 @@ export default function CreateOrderPanel() {
         })),
 
         packData: packDataGrouped,
+        allocationEnabled: true,
         branches: branches,
         plants: plants,
         countries: countries,
@@ -11064,6 +11079,7 @@ export default function CreateOrderPanel() {
               {/* Single Table showing ALL rows with Pack Type column */}
               <PackTypeTable
                 rows={packRows}
+                plantRows={plantRows}
                 onChange={updatePackRow}
                 onRemove={removeRow}
                 onDuplicate={duplicateRow}
@@ -11889,9 +11905,9 @@ function PlantGridTable({
                   <td className="border border-yellow-300 px-2 py-2">
                     <select
                       ref={(el) => statusRefs.current[r._id] = el}
-                      value={r.status || ""}
-                      onChange={(e) => onChange(r._id, 'status', e.target.value)}
-                      className="w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+                      value="Open"
+                      disabled
+                      className="w-full rounded-lg border border-slate-200 bg-slate-50 px-2 py-2 text-sm text-slate-600"
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
                           e.preventDefault();
@@ -11902,12 +11918,7 @@ function PlantGridTable({
                         }
                       }}
                     >
-                      <option value="">Select Status</option>
-                      {STATUSES.map((opt) => (
-                        <option key={opt} value={opt}>
-                          {opt}
-                        </option>
-                      ))}
+                      <option value="Open">Open</option>
                     </select>
                   </td>
 
@@ -12297,6 +12308,7 @@ function TableSearchableDropdown({
 /** ===== Pack Type Table Component - Single Table with all rows ===== */
 function PackTypeTable({
   rows,
+  plantRows = [],
   onChange,
   onRemove,
   onDuplicate,
@@ -12535,7 +12547,7 @@ function PackTypeTable({
         <tbody>
           {rows.length > 0 ? (
             rows.map((r) => {
-              const cols = getColumnsForRow(r.packType);
+              const cols = [...getColumnsForRow(r.packType), { key: 'plantRowId', label: 'DROP LOCATION', isRoute: true }];
 
               // Initialize refs for this row if not exists
               if (!packInputRefs.current[r._id]) {
@@ -12567,6 +12579,9 @@ function PackTypeTable({
                     </td>
 
                     {cols.map((c) => {
+                    if (c.isRoute) {
+                      return <td key={c.key} className="border border-yellow-300 px-2 py-2"><select value={r.plantRowId || ''} onChange={(e) => handleChange(r._id, c.key, e.target.value || null)} className="w-full min-w-40 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm"><option value="">Select drop</option>{plantRows.map((route, index) => <option key={route._id} value={route._id}>Drop {index + 1} · {route.toName || route.cityName || route.city || route.districtName || route.district || 'Destination'}</option>)}</select></td>;
+                    }
                       // Handle WT UOM field - always show MT as readonly
                       if (c.key === "wtUom") {
                         return (

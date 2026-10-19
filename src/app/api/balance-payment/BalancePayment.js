@@ -232,9 +232,10 @@ const balancePaymentSchema = new mongoose.Schema({
   // Payment Status
   paymentStatus: {
     type: String,
-    enum: ['Pending', 'Queued', 'Approved', 'Rejected', 'Completed', 'Paid'],
+    enum: ['Draft', 'Pending', 'Queued', 'Approved', 'Rejected', 'Completed', 'Paid'],
     default: 'Pending'
   },
+  isDraft: { type: Boolean, default: false },
   paymentDate: { type: Date, default: null },
 
   // Delivery and Pricing

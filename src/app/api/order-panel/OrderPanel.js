@@ -945,8 +945,13 @@ const orderPanelSchema = new mongoose.Schema({
     default: 0
   },
   cancellationCharges: {
+    type: Number,
+    default: 0
+  },
+  cancellationChargeMode: {
     type: String,
-    default: 'Nil'
+    enum: ['flat', 'per MT'],
+    default: 'flat'
   },
   loadingCharges: {
     type: String,
@@ -1006,6 +1011,28 @@ const orderPanelSchema = new mongoose.Schema({
       enum: ['Open', 'Hold', 'Cancelled'],
       default: 'Open'
     },
+    statusReason: { type: String, default: '' },
+    statusChangedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'CompanyUser', default: null },
+    statusChangedAt: { type: Date, default: null },
+    holdUntil: { type: Date, default: null },
+    statusRequest: {
+      action: { type: String, enum: ['Hold', 'Cancel'] },
+      reason: { type: String, default: '' },
+      by: { type: mongoose.Schema.Types.ObjectId, ref: 'CompanyUser', default: null },
+      at: { type: Date, default: null },
+      cancellationCharge: {
+        amount: { type: Number, default: 0 },
+        mode: { type: String, enum: ['flat', 'per MT'], default: 'flat' }
+      }
+    },
+    statusHistory: [{
+      action: { type: String, enum: ['Hold', 'Resume', 'Cancel', 'Hold Requested', 'Cancel Requested', 'Hold Request Rejected', 'Cancel Request Rejected'], required: true },
+      from: { type: String, enum: ['Open', 'Hold', 'Cancelled'], required: true },
+      to: { type: String, enum: ['Open', 'Hold', 'Cancelled'], required: true },
+      reason: { type: String, required: true },
+      by: { type: mongoose.Schema.Types.ObjectId, ref: 'CompanyUser', required: true },
+      at: { type: Date, required: true }
+    }],
     locationRate: {
       type: Number,
       default: 0
@@ -1023,8 +1050,13 @@ const orderPanelSchema = new mongoose.Schema({
       default: 0
     },
     cancellationCharges: {
+      type: Number,
+      default: 0
+    },
+    cancellationChargeMode: {
       type: String,
-      default: 'Nil'
+      enum: ['flat', 'per MT'],
+      default: 'flat'
     },
     loadingCharges: {
       type: String,
@@ -1062,6 +1094,7 @@ const orderPanelSchema = new mongoose.Schema({
       skuSize: String,
       packWeight: Number,
       productId: { type: mongoose.Schema.Types.ObjectId, ref: "Item", default: null },
+      plantRowId: { type: mongoose.Schema.Types.ObjectId, default: null },
       productName: String,
       wtLtr: Number,
       actualWt: Number,
@@ -1079,6 +1112,7 @@ const orderPanelSchema = new mongoose.Schema({
       skuSize: String,
       packWeight: Number,
       productId: { type: mongoose.Schema.Types.ObjectId, ref: "Item", default: null },
+      plantRowId: { type: mongoose.Schema.Types.ObjectId, default: null },
       productName: String,
       wtLtr: Number,
       actualWt: Number,
@@ -1092,6 +1126,7 @@ const orderPanelSchema = new mongoose.Schema({
       },
       uom: String,
       productId: { type: mongoose.Schema.Types.ObjectId, ref: "Item", default: null },
+      plantRowId: { type: mongoose.Schema.Types.ObjectId, default: null },
       productName: String,
       actualWt: Number,
       chargedWt: Number
@@ -1106,6 +1141,7 @@ const orderPanelSchema = new mongoose.Schema({
         default: 0
       },
       productId: { type: mongoose.Schema.Types.ObjectId, ref: "Item", default: null },
+      plantRowId: { type: mongoose.Schema.Types.ObjectId, default: null },
       productName: {
         type: String,
         default: ''
@@ -1137,6 +1173,9 @@ const orderPanelSchema = new mongoose.Schema({
     }]
   },
 
+  // New orders require a drop location on every pack row; legacy records remain optional.
+  allocationEnabled: { type: Boolean, default: false },
+
   // Calculated fields
   totalWeight: {
     type: Number,
@@ -1161,7 +1200,7 @@ const orderPanelSchema = new mongoose.Schema({
   // Status
   panelStatus: {
     type: String,
-    enum: ['Draft', 'Submitted', 'Approved', 'Completed', 'Cancelled', 'Rejected'],
+    enum: ['Draft', 'Submitted', 'Approved', 'Completed', 'Cancelled', 'Rejected', 'Partially on hold'],
     default: 'Draft'
   },
 
@@ -1195,10 +1234,9 @@ orderPanelSchema.pre('save', function (next) {
   this.totalAmount = this.plantRows.reduce((sum, row) => {
     return sum + ((row.weight || 0) * (row.rate || 0));
   }, 0);
-  this.plantRows = this.plantRows.map(row => ({
-    ...row,
-    totalAmount: (row.weight || 0) * (row.rate || 0)
-  }));
+  this.plantRows.forEach((row) => {
+    row.totalAmount = (row.weight || 0) * (row.rate || 0);
+  });
   this.updatedAt = Date.now();
   next();
 });

@@ -1434,7 +1434,7 @@ export default function AdvancePaymentList() {
                           )}
 
                           {/* Queue Generate Button - Only shown if user has approve permission */}
-                          {canApprove(MODULE_NAME) && !item.queueGenerated && item.status !== 'Rejected' && item.status !== 'Completed' && (
+                          {canApprove(MODULE_NAME) && !item.isDraft && !item.queueGenerated && item.status !== 'Rejected' && item.status !== 'Completed' && (
                             <button
                               onClick={() => handleGenerateQueue(item._id, item.paymentNo)}
                               disabled={queueLoading === item._id}

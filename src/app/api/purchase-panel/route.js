@@ -13,6 +13,7 @@ import mongoose from 'mongoose';
 import { activeOperatingCompanyId, companyScopeFilter } from "@/lib/companyScope";
 import AdvancePayment from "../Advance-Payment/AdvancePayment";
 import POD from "../pod-panel/POD";
+import { filterOpenOrderRows, validateOpenOrderRows } from '@/lib/orderRowStatus';
 
 // ── PERMISSION FUNCTIONS ──
 
@@ -316,6 +317,7 @@ export async function GET(req) {
       }
 
       const enhancedPurchase = await enhancePurchase(purchase);
+      if (forKey === 'advance-payment') enhancedPurchase.orderRows = await filterOpenOrderRows(user, enhancedPurchase.orderRows || []);
 
       return NextResponse.json({
         success: true,
@@ -335,6 +337,7 @@ export async function GET(req) {
       }
 
       const enhancedPurchase = await enhancePurchase(purchase);
+      if (forKey === 'advance-payment') enhancedPurchase.orderRows = await filterOpenOrderRows(user, enhancedPurchase.orderRows || []);
 
       return NextResponse.json({
         success: true,
@@ -359,7 +362,8 @@ export async function GET(req) {
       }
 
       if (statusFilter) {
-        query['approval.status'] = statusFilter;
+        if (statusFilter === 'Draft') query.isDraft = true;
+        else query['approval.status'] = statusFilter;
       }
 
       if (fromDate || toDate) {
@@ -412,8 +416,11 @@ export async function GET(req) {
           amount: purchase.purchaseAmountFromVNN || purchase.purchaseDetails?.amount || 0,
           balance: purchase.balance || 0,
           memoStatus: purchase.memoFile?.filePath || purchase.memoFile?.fullPath || purchase.memoFile?.filename ? 'Uploaded' : 'Pending',
-          status: purchase.approval?.status || 'Draft',
-          orderRows: purchase.orderRows || [],
+          status: purchase.isDraft ? 'Draft' : (purchase.approval?.status || 'Pending'),
+          isDraft: !!purchase.isDraft,
+          orderRows: forKey === 'advance-payment'
+            ? await filterOpenOrderRows(user, purchase.orderRows || [])
+            : (purchase.orderRows || []),
           subCompanyName: purchase.subCompanyName || '',
           subCompanyCode: purchase.subCompanyCode || ''
         };
@@ -426,7 +433,7 @@ export async function GET(req) {
 
       if (forKey === "advance-payment") {
         const existing = await AdvancePayment.find(
-          companyScopeFilter(user, { purchaseNo: { $in: purchaseNos } })
+          companyScopeFilter(user, { purchaseNo: { $in: purchaseNos }, isDraft: { $ne: true } })
         ).select("purchaseNo").lean();
         const used = new Set(existing.map((a) => a.purchaseNo));
         tableResult = purchasesWithLR.filter((p) => !used.has(p.purchaseNo));
@@ -443,6 +450,7 @@ export async function GET(req) {
           companyScopeFilter(user, {
             purchaseNo: { $in: purchaseNos },
             podStatus: { $ne: "Rejected" },
+            isDraft: { $ne: true },
           })
         ).select("purchaseNo").lean();
         const used = new Set(existing.map((p) => p.purchaseNo));
@@ -465,7 +473,7 @@ export async function GET(req) {
 
     // CASE 4: LIST FOR DROPDOWNS
     const purchases = await PurchasePanel.find(companyScopeFilter(user))
-      .select('purchaseNo vnnNo pricingSerialNo subCompanyName subCompanyCode purchaseDetails.vendorName purchaseAmountFromVNN approval.status orderRows purchaseDetails.vehicleNo')
+      .select('purchaseNo vnnNo pricingSerialNo subCompanyName subCompanyCode purchaseDetails.vendorName purchaseAmountFromVNN approval.status orderRows purchaseDetails.vehicleNo isDraft')
       .sort({ createdAt: -1 })
       .lean();
 
@@ -525,6 +533,9 @@ export async function POST(req) {
     }
 
     const body = await req.json();
+    const isDraftSave = body.saveMode === 'draft';
+    const blockedRow = isDraftSave ? null : await validateOpenOrderRows(user, body.orderRows || body.orders || []);
+    if (blockedRow) return NextResponse.json({ success: false, message: blockedRow }, { status: 409 });
 
     console.log("📝 Creating new purchase");
 
@@ -542,6 +553,8 @@ export async function POST(req) {
     if (!eligibleLoadingInfo) {
       return NextResponse.json({ success: false, message: "Select an approved or completed Loading Info." }, { status: 400 });
     }
+    const heldLoadingRow = await validateOpenOrderRows(user, eligibleLoadingInfo.orderRows || []);
+    if (heldLoadingRow) return NextResponse.json({ success: false, message: heldLoadingRow }, { status: 409 });
 
     const [existingPurchase, existingConsignment] = await Promise.all([
       PurchasePanel.findOne(companyScopeFilter(user, { loadingInfoNo: body.loadingInfoNo })).lean(),
@@ -574,6 +587,7 @@ export async function POST(req) {
     const processedOrderRows = (body.orders || body.orderRows || []).map(row => ({
       _id: new mongoose.Types.ObjectId(),
       orderNo: row.orderNo || '',
+      orderRowId: row.orderRowId || row.originalRowId || row._id || '',
       partyName: row.partyName || '',
       plantCode: row.plantCode || '',
       plantName: row.plantName || '',
@@ -767,7 +781,8 @@ export async function POST(req) {
 
       companyId: user.companyId,
       createdBy: user.id,
-      panelStatus: 'Draft'
+      panelStatus: 'Draft',
+      isDraft: isDraftSave
     });
 
     // Covers the rare case where a Purchase is created after its LR already exists.
@@ -779,7 +794,7 @@ export async function POST(req) {
       if (result) Object.assign(purchase.arrivalDetails, result);
     }
 
-    await purchase.save();
+    await purchase.save({ validateBeforeSave: !isDraftSave });
 
     return NextResponse.json({
       success: true,
@@ -881,6 +896,12 @@ export async function PUT(req) {
       }, { status: 404 });
     }
 
+    if (purchase.isDraft && canEdit) {
+      purchase.isDraft = false;
+      purchase.panelStatus = 'Submitted';
+      purchase.approval = { ...purchase.approval?.toObject?.(), status: 'Pending' };
+    }
+
     // Only users with approve permission may change the approval status.
     if (body.approval && !canApprove) {
       const current = purchase.approval?.status || 'Pending';
@@ -952,6 +973,7 @@ export async function PUT(req) {
           : new mongoose.Types.ObjectId(),
         orderNo: row.orderNo || '',
         partyName: row.partyName || '',
+        orderRowId: row.orderRowId || row.originalRowId || row._id || '',
         plantCode: row.plantCode || '',
         plantName: row.plantName || '',
         orderType: row.orderType || 'Sales',
@@ -1216,6 +1238,10 @@ export async function PATCH(req) {
         success: false,
         message: "Purchase not found"
       }, { status: 404 });
+    }
+
+    if (purchase.isDraft) {
+      return NextResponse.json({ success: false, message: "Open and save this draft before changing its approval status." }, { status: 400 });
     }
 
     const allowedActions = ['approve', 'reject', 'complete'];

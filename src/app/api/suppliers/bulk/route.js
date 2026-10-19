@@ -60,7 +60,10 @@ export async function POST(req) {
       if (!row.supplierGroup) errors.push("supplierGroup missing");
       if (!row.supplierType) errors.push("supplierType missing");
       if (!row.mobileNumber) errors.push("mobileNumber missing");
-      if (!row.pan) errors.push("pan missing");
+      const pan = String(row.pan || "").trim();
+      if (pan && !/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(pan.toUpperCase())) {
+        errors.push("PAN format invalid (expected ABCDE1234F)");
+      }
       if (!row.gstCategory) errors.push("gstCategory missing");
 
       if (errors.length > 0) {

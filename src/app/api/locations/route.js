@@ -6,7 +6,7 @@
 // // Helper function to capitalize first letter of each word
 // function capitalizeName(str) {
 //   if (!str || typeof str !== 'string') return '';
-  
+
 //   // Trim and convert to lowercase first, then capitalize first letter of each word
 //   return str
 //     .trim()
@@ -86,7 +86,7 @@
 //       name: name,
 //       companyId: user.companyId,
 //     });
-    
+
 //     if (existingLocation) {
 //       return NextResponse.json({ success: false, message: "Location name already exists" }, { status: 400 });
 //     }
@@ -136,7 +136,7 @@
 //       name: name,
 //       companyId: user.companyId,
 //     });
-    
+
 //     if (existingLocation) {
 //       return NextResponse.json({ success: false, message: "Location name already exists" }, { status: 400 });
 //     }
@@ -200,7 +200,7 @@ import { validateMasterDataRequest } from '@/lib/masterDataPermission';
 // Helper function to capitalize first letter of each word
 function capitalizeName(str) {
   if (!str || typeof str !== 'string') return '';
-  
+
   // Trim and convert to lowercase first, then capitalize first letter of each word
   return str
     .trim()
@@ -212,7 +212,7 @@ function capitalizeName(str) {
 
 // Helper function to capitalize state
 function capitalizeState(str) {
-  if (!str || typeof str !== 'string') return 'Unknown';
+  if (!str || typeof str !== 'string') return '';   // was 'Unknown'
   return str.trim().toUpperCase();
 }
 
@@ -238,8 +238,8 @@ function isAuthorized(user) {
   ];
 
   // Handle both single role and roles array
-  const userRoles = Array.isArray(user.roles) 
-    ? user.roles 
+  const userRoles = Array.isArray(user.roles)
+    ? user.roles
     : (user.role ? [user.role] : []);
 
   const hasAllowedRole = userRoles.some(role =>
@@ -249,8 +249,8 @@ function isAuthorized(user) {
   if (hasAllowedRole) return true;
 
   // ✅ Check for specific permission (if your system uses permissions)
-  if (Array.isArray(user.permissions) && 
-      user.permissions.includes("vehicle_negotiation")) {
+  if (Array.isArray(user.permissions) &&
+    user.permissions.includes("vehicle_negotiation")) {
     return true;
   }
 
@@ -293,18 +293,18 @@ export async function POST(req) {
     let { name, state } = await req.json();
 
     if (!name || !name.trim()) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Location name is required" 
+      return NextResponse.json({
+        success: false,
+        message: "Location name is required"
       }, { status: 400 });
     }
 
-    if (!state || !state.trim()) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "State is required" 
-      }, { status: 400 });
-    }
+    // if (!state || !state.trim()) {
+    //   return NextResponse.json({
+    //     success: false,
+    //     message: "State is required"
+    //   }, { status: 400 });
+    // }
 
     // ✅ Capitalize name and state
     name = capitalizeName(name);
@@ -315,7 +315,7 @@ export async function POST(req) {
       name: name,
       companyId: user.companyId,
     });
-    
+
     if (existingLocation) {
       return NextResponse.json({ success: false, message: "Location name already exists" }, { status: 400 });
     }
@@ -357,9 +357,9 @@ export async function PUT(req) {
       return NextResponse.json({ success: false, message: "Location name is required" }, { status: 400 });
     }
 
-    if (!state || !state.trim()) {
-      return NextResponse.json({ success: false, message: "State is required" }, { status: 400 });
-    }
+    // if (!state || !state.trim()) {
+    //   return NextResponse.json({ success: false, message: "State is required" }, { status: 400 });
+    // }
 
     // ✅ Capitalize name and state
     name = capitalizeName(name);
@@ -371,7 +371,7 @@ export async function PUT(req) {
       name: name,
       companyId: user.companyId,
     });
-    
+
     if (existingLocation) {
       return NextResponse.json({ success: false, message: "Location name already exists" }, { status: 400 });
     }

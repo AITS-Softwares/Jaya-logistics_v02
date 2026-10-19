@@ -3378,6 +3378,7 @@ import OrderPanel from "@/app/api/order-panel/OrderPanel";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import { getNextVehicleNegotiationNumber } from "./VehicleNegotiationCounter";
 import { activeOperatingCompanyId, companyScopeFilter } from "@/lib/companyScope";
+import { validateOpenOrderRows } from '@/lib/orderRowStatus';
 import mongoose from 'mongoose';
 import { getFinalVnnStatus, withVnnDisplayData } from '@/lib/vehicleNegotiationWorkflow';
 
@@ -3472,6 +3473,44 @@ async function validateUser(req, requiredAction = null) {
 /* ========================================
    GET /api/vehicle-negotiation - Requires 'view' permission
 ======================================== */
+async function withLinkedOrderStatuses(negotiation, user) {
+  const orders = negotiation.orders || [];
+  const panelIds = [...new Set(orders.map((row) => row.orderPanelId).filter((value) => mongoose.Types.ObjectId.isValid(value)))];
+  const orderNos = [...new Set(orders.map((row) => row.orderNo).filter(Boolean))];
+  if (!panelIds.length && !orderNos.length) return negotiation;
+  const panels = await OrderPanel.find(companyScopeFilter(user, { $or: [
+    ...(panelIds.length ? [{ _id: { $in: panelIds } }] : []),
+    ...(orderNos.length ? [{ orderPanelNo: { $in: orderNos } }] : [])
+  ] }), { orderPanelNo: 1, plantRows: 1 }).lean();
+  const byId = new Map(panels.map((panel) => [String(panel._id), panel]));
+  const byNo = new Map(panels.map((panel) => [String(panel.orderPanelNo), panel]));
+  return {
+    ...negotiation,
+    orders: orders.map((row) => {
+      const panel = byId.get(String(row.orderPanelId || '')) || byNo.get(String(row.orderNo || ''));
+      const plantRowById = panel?.plantRows?.find((candidate) => String(candidate._id) === String(row.orderRowId || ''));
+      const norm = (value) => String(value || '').trim().toLowerCase();
+      const matchingRows = (panel?.plantRows || []).filter((candidate) =>
+        (!row.plantName && !row.plantCodeValue || [candidate.plantName, candidate.plantCodeValue, candidate.plantCode].some((value) => norm(value) === norm(row.plantName || row.plantCodeValue))) &&
+        (!row.toName && !row.to || norm(candidate.toName || candidate.to) === norm(row.toName || row.to))
+      );
+      const plantRow = plantRowById || (matchingRows.length === 1 ? matchingRows[0] : null);
+      return { ...row, orderPanelId: panel?._id ? String(panel._id) : row.orderPanelId, orderRowId: plantRow?._id ? String(plantRow._id) : row.orderRowId, sourceOrderStatus: plantRow?.status || (panel ? 'Open' : 'Unknown'), sourceStatusReason: plantRow?.statusReason || '' };
+    })
+  };
+}
+
+function findDuplicateVnnOrder(selectedOrderPanels = []) {
+  const seen = new Set();
+  for (const panel of selectedOrderPanels) {
+    const orderNo = String(panel?.orderPanelNo || '').trim().toLocaleLowerCase();
+    if (!orderNo) continue;
+    if (seen.has(orderNo)) return panel.orderPanelNo;
+    seen.add(orderNo);
+  }
+  return null;
+}
+
 export async function GET(req) {
   try {
     await connectDb();
@@ -3490,11 +3529,11 @@ export async function GET(req) {
     const eligibleFor = url.searchParams.get('eligibleFor');
     if (url.searchParams.get("lookup") === "pendingCount") {
       const [orderPanels, negotiations] = await Promise.all([
-        OrderPanel.find(companyScopeFilter(user, { panelStatus: "Approved" }), { orderPanelNo: 1 }).lean(),
+        OrderPanel.find(companyScopeFilter(user, { panelStatus: { $in: ['Approved', 'Partially on hold'] } }), { orderPanelNo: 1, plantRows: 1 }).lean(),
         VehicleNegotiation.find(companyScopeFilter(user), { orders: 1 }).lean(),
       ]);
       const usedOrders = new Set(negotiations.flatMap((item) => (item.orders || []).map((order) => String(order.orderNo || ""))));
-      const count = orderPanels.filter((panel) => panel.orderPanelNo && !usedOrders.has(String(panel.orderPanelNo))).length;
+      const count = orderPanels.filter((panel) => panel.orderPanelNo && (panel.plantRows || []).some((row) => (row.status || 'Open') === 'Open' && !row.statusRequest?.action) && !usedOrders.has(String(panel.orderPanelNo))).length;
       return NextResponse.json({ success: true, data: { count } });
     }
     const fromDate = url.searchParams.get("fromDate");
@@ -3515,9 +3554,11 @@ export async function GET(req) {
         }, { status: 404 });
       }
 
+      const enrichedNegotiation = await withLinkedOrderStatuses(vehicleNegotiation, user);
+
       return NextResponse.json({
         success: true,
-        data: vehicleNegotiation
+        data: enrichedNegotiation
       }, { status: 200 });
     }
 
@@ -3543,9 +3584,11 @@ export async function GET(req) {
         }, { status: 404 });
       }
 
+      const enrichedNegotiation = await withLinkedOrderStatuses(vehicleNegotiation, user);
+
       return NextResponse.json({
         success: true,
-        data: vehicleNegotiation
+        data: enrichedNegotiation
       }, { status: 200 });
     }
 
@@ -3586,6 +3629,7 @@ export async function GET(req) {
       let vehicleNegotiations = await VehicleNegotiation.find(companyScopeFilter(user, query))
         .sort({ date: -1, createdAt: -1 })
         .lean();
+      vehicleNegotiations = await Promise.all(vehicleNegotiations.map((negotiation) => withLinkedOrderStatuses(negotiation, user)));
 
       // The list represents the final VNN decision, not a retired single
       // approvalStatus field. Filtering here also keeps the result correct for
@@ -3622,6 +3666,7 @@ export async function GET(req) {
               country: order.countryName || '',
               weight: order.weight || 0,
               orderStatus: order.status || '',
+              sourceOrderStatus: order.sourceOrderStatus || 'Unknown',
               approval: displayApproval,
               memo: vn.approval?.memoStatus || 'Pending',
               vnId: vn._id.toString(),
@@ -3711,22 +3756,22 @@ export async function POST(req) {
     }
 
     const body = await req.json();
+    const duplicateOrderNo = findDuplicateVnnOrder(body.selectedOrderPanels || []);
+    if (duplicateOrderNo) {
+      return NextResponse.json({ success: false, message: `Order ${duplicateOrderNo} is already included in this VNN.` }, { status: 409 });
+    }
+    const blockedRow = await validateOpenOrderRows(user, body.orders || body.orderRows || []);
+    if (blockedRow) return NextResponse.json({ success: false, message: blockedRow }, { status: 409 });
 
     console.log("📝 Creating new vehicle negotiation");
 
-    // Generate vehicle negotiation number
-    let vnnNo = await getNextVehicleNegotiationNumber(user.companyId, user.activeOperatingCompanyId, user.activeOperatingCompanyCode);
-
-    // Check if VNN number already exists
-    const existing = await VehicleNegotiation.findOne(companyScopeFilter(user, { vnnNo }));
-    if (existing) {
-      vnnNo = await getNextVehicleNegotiationNumber(user.companyId, user.activeOperatingCompanyId, user.activeOperatingCompanyCode);
-    }
+    const vnnNo = await getNextVehicleNegotiationNumber(user.companyId, user.activeOperatingCompanyId, user.activeOperatingCompanyCode);
 
     // Process orders with proper null handling for ObjectId fields and sub-company
     const processedOrders = (body.orders || []).map(order => ({
       orderNo: order.orderNo || '',
       orderPanelId: order.orderPanelId || '',
+      orderRowId: order.orderRowId || order.originalRowId || order._id || '',
       partyName: order.partyName || '',
       customerId: order.customerId && isValidObjectId(order.customerId) ? order.customerId : null,
       customerCode: order.customerCode || '',
@@ -4011,6 +4056,11 @@ export async function PUT(req) {
       }, { status: 404 });
     }
 
+    const duplicateOrderNo = findDuplicateVnnOrder(body.selectedOrderPanels || []);
+    if (duplicateOrderNo) {
+      return NextResponse.json({ success: false, message: `Order ${duplicateOrderNo} is already included in this VNN.` }, { status: 409 });
+    }
+
     if (vehicleNegotiation.workflow?.part1Locked && (body.header || body.selectedOrderPanels || body.orders || body.vendors || body.negotiation || body.voiceUrl !== undefined || body.voiceFileInfo)) {
       return NextResponse.json({
         success: false,
@@ -4066,12 +4116,19 @@ export async function PUT(req) {
 
     // ─── UPDATE ORDERS (requires 'edit' permission) ───
     if (body.orders && hasEditPermission) {
+      const existingOrderLinks = new Set((vehicleNegotiation.orders || []).map((order) => `${order.orderPanelId || ''}:${order.orderRowId || ''}`));
+      const addedOrderRows = body.orders.filter((order) => !existingOrderLinks.has(`${order.orderPanelId || ''}:${order.orderRowId || ''}`));
+      const blockedRow = await validateOpenOrderRows(user, addedOrderRows);
+      if (blockedRow) {
+        return NextResponse.json({ success: false, message: blockedRow.message || 'Only open order rows can be added to a Vehicle Negotiation.' }, { status: 409 });
+      }
       const processedOrders = body.orders.map(order => ({
         _id: order._id && isValidObjectId(order._id)
           ? new mongoose.Types.ObjectId(order._id)
           : new mongoose.Types.ObjectId(),
         orderNo: order.orderNo || '',
         orderPanelId: order.orderPanelId || '',
+        orderRowId: order.orderRowId || '',
         partyName: order.partyName || '',
         customerId: order.customerId && isValidObjectId(order.customerId) ? order.customerId : null,
         customerCode: order.customerCode || '',

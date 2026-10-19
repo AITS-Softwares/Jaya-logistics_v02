@@ -332,15 +332,20 @@ export default function EditBalancePayment() {
 
   const { hasPermission, loading: permissionLoading } = usePermission();
   const canEditHere = hasPermission(MODULE_NAME, "edit");
+  const canGenerateQueue = hasPermission(MODULE_NAME, "approve");
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [queueLoading, setQueueLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(false);
   const [loadedMsg, setLoadedMsg] = useState("");
   const [loadError, setLoadError] = useState("");
   const [notFound, setNotFound] = useState("");
 
   const [balancePaymentNo, setBalancePaymentNo] = useState("");
+  const [queueGenerated, setQueueGenerated] = useState(false);
+  const [queueDate, setQueueDate] = useState(null);
+  const [isDraft, setIsDraft] = useState(false);
 
   // Basic Info
   const [branch, setBranch] = useState("");
@@ -480,6 +485,9 @@ export default function EditBalancePayment() {
       setTransactionId(p.transactionId || "");
       setBankVendorCode(p.bankVendorCode || "");
       setPaymentStatus(p.paymentStatus || "Pending");
+      setQueueGenerated(!!p.queueGenerated);
+      setQueueDate(p.queueDate || null);
+      setIsDraft(!!p.isDraft);
 
       // Unsettled payments are re-calculated by the server on save, so show the current POD figures
       // (exactly what will be saved). Paid / Completed payments keep their saved figures.
@@ -608,8 +616,40 @@ export default function EditBalancePayment() {
   const overLimit = !isSettled && payNow > finalBalance + 0.005;
   const isPartial = !!podNo && unpaid > 0.005;
 
+  const handleGenerateQueue = async () => {
+    if (isDraft) return alert("Save this draft before generating its queue.");
+    if (!canGenerateQueue) return alert("You need approval permission to generate the payment queue.");
+    if (queueGenerated) return alert("Queue already generated for this payment.");
+    if (["Rejected", "Completed", "Paid"].includes(paymentStatus)) {
+      return alert(`Cannot generate a queue for a ${paymentStatus} payment.`);
+    }
+    if (!window.confirm(`Generate the payment queue for ${balancePaymentNo}?`)) return;
+
+    setQueueLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`/api/balance-payment?id=${paymentId}&action=generate-queue`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({}),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.message || "Failed to generate payment queue");
+
+      setQueueGenerated(true);
+      setQueueDate(data.data?.queueDate || new Date().toISOString());
+      setPaymentStatus(data.data?.paymentStatus || "Queued");
+      alert(`✅ Payment queue generated for ${balancePaymentNo}\nAmount: ${inr(payNow)}`);
+    } catch (error) {
+      alert(`❌ ${error.message}`);
+    } finally {
+      setQueueLoading(false);
+    }
+  };
+
   const handleUpdate = async () => {
     if (!canEditHere) return alert("You don't have permission to edit balance payments");
+    if (queueGenerated) return alert("Cannot update payment after queue generation.");
     if (!podNo) return alert("Please select a POD No");
     if (overLimit) return alert(`Final amount cannot exceed the final balance (${inr(finalBalance)}).`);
     if (isPartial && !isSettled && (!remarks.trim() || remarks.trim() === "Balance Payment")) {
@@ -667,6 +707,7 @@ export default function EditBalancePayment() {
       });
       const data = await res.json();
       if (data.success) {
+        setIsDraft(false);
         alert(`✅ Balance Payment updated successfully!\nPayment No: ${data.data?.balancePaymentNo || balancePaymentNo}\nSub-Company: ${data.data?.subCompanyName || "N/A"}`);
         router.push("/admin/Balance-Payment");
       } else {
@@ -748,10 +789,10 @@ export default function EditBalancePayment() {
             <button onClick={() => router.push("/admin/Balance-Payment")} className="rounded-xl border border-slate-300 bg-white px-5 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50 transition">Cancel</button>
             <button
               onClick={handleUpdate}
-              disabled={saving}
-              className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${saving ? "bg-gray-400 cursor-not-allowed" : "bg-emerald-600 hover:bg-emerald-700"}`}
+              disabled={saving || queueGenerated}
+              className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${saving || queueGenerated ? "bg-gray-400 cursor-not-allowed" : "bg-emerald-600 hover:bg-emerald-700"}`}
             >
-              {saving ? "Updating..." : "Update Payment"}
+              {queueGenerated ? "Queue Generated" : saving ? "Updating..." : "Update Payment"}
             </button>
           </div>
         </div>
@@ -778,6 +819,11 @@ export default function EditBalancePayment() {
           {isSettled && (
             <div className="mt-3 p-3 bg-amber-50 rounded-lg text-amber-700 text-sm">
               This payment is {paymentStatus}. Its figures are not recalculated when you save.
+            </div>
+          )}
+          {queueGenerated && (
+            <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+              Payment queue generated{queueDate ? ` on ${new Date(queueDate).toLocaleString("en-IN")}` : ""}. This payment is locked from further edits.
             </div>
           )}
           {loadingData && <div className="mt-3 p-3 bg-emerald-50 rounded-lg text-emerald-600 text-sm">Loading details...</div>}
@@ -927,6 +973,7 @@ export default function EditBalancePayment() {
             <div className="col-span-12 md:col-span-4">
               <label className="text-xs font-bold text-slate-600">Payment Status</label>
               <select value={paymentStatus} disabled className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm cursor-not-allowed">
+                <option value="Draft">Draft</option>
                 <option value="Pending">Pending</option>
                 <option value="Queued">Queued</option>
                 <option value="Approved">Approved</option>
@@ -936,6 +983,21 @@ export default function EditBalancePayment() {
               </select>
               <p className="text-xs text-slate-400 mt-1">Status is changed from the Approve page</p>
             </div>
+          </div>
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
+            <div className="text-sm text-slate-600">
+              {queueGenerated ? `Queue generated${queueDate ? ` on ${new Date(queueDate).toLocaleString("en-IN")}` : ""}` : "Generate the payment queue after the payment details are ready."}
+            </div>
+            {canGenerateQueue && !queueGenerated && (
+              <button
+                onClick={handleGenerateQueue}
+                disabled={queueLoading || isDraft || ["Rejected", "Completed", "Paid"].includes(paymentStatus)}
+                className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+              >
+                {queueLoading ? "Generating..." : isDraft ? "Save Draft First" : "Generate Queue"}
+              </button>
+            )}
+            {queueGenerated && <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800">✓ Queue Generated</span>}
           </div>
         </Card>
       </div>

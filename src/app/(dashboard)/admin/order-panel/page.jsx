@@ -2362,6 +2362,8 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { usePermission } from "../hooks/usePermission";
 import Link from "next/link";
+import OrderRowStatusActions from "@/components/OrderRowStatusActions";
+import OrderStatusRequestReview from "@/components/OrderStatusRequestReview";
 
 export default function OrderPanelList() {
   const router = useRouter();
@@ -2376,6 +2378,7 @@ export default function OrderPanelList() {
   const [searchTerm, setSearchTerm] = useState('');
 
   const MODULE_NAME = 'Order Panel';
+  const canAccessOrderPanel = canView(MODULE_NAME) || canCreate(MODULE_NAME) || canEdit(MODULE_NAME) || canApprove(MODULE_NAME);
 
   // Fetch orders
   const fetchOrders = useCallback(async () => {
@@ -2405,13 +2408,13 @@ export default function OrderPanelList() {
 
   useEffect(() => {
     if (!permissionLoading) {
-      if (canView(MODULE_NAME)) {
+      if (canAccessOrderPanel) {
         fetchOrders();
       } else {
         setLoading(false);
       }
     }
-  }, [permissionLoading, canView, fetchOrders]);
+  }, [permissionLoading, canAccessOrderPanel, fetchOrders]);
 
   // Handle Delete
   const handleDelete = async (orderId, orderNo) => {
@@ -2480,7 +2483,7 @@ export default function OrderPanelList() {
     // Get the selected order details
     const selectedOrderData = orders.filter(order =>
       selectedOrders.includes(order.originalOrderId) &&
-      order.panelStatus === 'Approved' &&
+      ['Approved', 'Partially on hold'].includes(order.panelStatus) && order.status === 'Open' && !order.statusRequest?.action &&
       !order.usedInVehicleNegotiation
     );
 
@@ -2504,7 +2507,7 @@ export default function OrderPanelList() {
       return;
     }
 
-    if (order.panelStatus !== 'Approved') {
+    if (!['Approved', 'Partially on hold'].includes(order.panelStatus) || order.status !== 'Open' || order.statusRequest?.action) {
       alert('Order must be approved before creating Vehicle Negotiation.');
       return;
     }
@@ -2614,7 +2617,7 @@ export default function OrderPanelList() {
   // Handle Select All (only for approved orders not used in VN)
   const handleSelectAll = () => {
     const selectableOrders = filteredOrders.filter(o =>
-      o.panelStatus === 'Approved' && !o.usedInVehicleNegotiation
+      ['Approved', 'Partially on hold'].includes(o.panelStatus) && o.status === 'Open' && !o.statusRequest?.action && !o.usedInVehicleNegotiation
     );
 
     if (selectedOrders.length === selectableOrders.length && selectableOrders.length > 0) {
@@ -2714,7 +2717,7 @@ export default function OrderPanelList() {
   }
 
   // If user doesn't have view permission, show access denied
-  if (!canView(MODULE_NAME)) {
+  if (!canAccessOrderPanel) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center max-w-md p-8 bg-white rounded-xl shadow-lg">
@@ -2779,7 +2782,7 @@ export default function OrderPanelList() {
                 </svg>
                 Create Vehicle Negotiation ({selectedOrders.filter(id => {
                   const order = orders.find(o => o.originalOrderId === id);
-                  return order && order.panelStatus === 'Approved' && !order.usedInVehicleNegotiation;
+                  return order && ['Approved', 'Partially on hold'].includes(order.panelStatus) && order.status === 'Open' && !order.statusRequest?.action && !order.usedInVehicleNegotiation;
                 }).length})
               </button>
             )}
@@ -2910,8 +2913,11 @@ export default function OrderPanelList() {
                 ) : filteredOrders.length > 0 ? (
                   filteredOrders.map((order, index) => {
                     const isUsedInVN = order.usedInVehicleNegotiation || false;
-                    const isApproved = order.panelStatus === 'Approved';
-                    const isSelectable = isApproved && !isUsedInVN;
+                    const isApproved = ['Approved', 'Partially on hold'].includes(order.panelStatus);
+                    const isSelectable = isApproved && order.status === 'Open' && !order.statusRequest?.action && !isUsedInVN;
+                    const isFirstOrderRow = filteredOrders.findIndex((item) => item.originalOrderId === order.originalOrderId) === index;
+                    const orderRows = filteredOrders.filter((item) => item.originalOrderId === order.originalOrderId);
+                    const orderStatusRequest = orderRows.find((item) => item.statusRequest?.action)?.statusRequest;
 
                     return (
                       <tr key={order._id} className={`hover:bg-yellow-50 transition ${isSelectable ? 'bg-green-50' : ''}`}>
@@ -2965,7 +2971,7 @@ export default function OrderPanelList() {
                         </td>
                         <td className="px-4 py-3 font-medium">{order.weight} MT</td>
                         <td className="px-4 py-3">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${order.status === 'Open' ? 'bg-green-100 text-green-800' :
+                          {(canCreate(MODULE_NAME) || canEdit(MODULE_NAME) || canApprove(MODULE_NAME)) && order.status !== 'Cancelled' && !orderStatusRequest ? <OrderRowStatusActions orderId={order.originalOrderId} orderNo={order.orderNo} status={order.status} onUpdated={fetchOrders} /> : <span className={`px-2 py-1 rounded-full text-xs font-medium ${order.status === 'Open' ? 'bg-green-100 text-green-800' :
                               order.status === 'Hold' ? 'bg-yellow-100 text-yellow-800' :
                                 order.status === 'Approved' ? 'bg-blue-100 text-blue-800' :
                                   order.status === 'Completed' ? 'bg-purple-100 text-purple-800' :
@@ -2974,7 +2980,8 @@ export default function OrderPanelList() {
                                         'bg-slate-100 text-slate-800'
                             }`}>
                             {order.status}
-                          </span>
+                          </span>}
+                          {order.statusRequest?.action && <span title={order.statusRequest.reason} className="ml-1 inline-flex rounded-full bg-amber-100 px-2 py-1 text-[10px] font-bold text-amber-800">{order.statusRequest.action} approval pending</span>}
                         </td>
                         <td className="px-4 py-3">
                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${getApproverStatusColor(order.approverStatus || order.panelStatus || 'Pending')}`}>
@@ -3009,6 +3016,8 @@ export default function OrderPanelList() {
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center justify-center gap-1 flex-wrap">
+                            {isFirstOrderRow && canApprove(MODULE_NAME) && orderStatusRequest && <OrderStatusRequestReview orderId={order.originalOrderId} orderNo={order.orderNo} request={orderStatusRequest} onUpdated={fetchOrders} />}
+
                             {/* ✅ Create VN Button - For SINGLE order (quick action) */}
                             {canCreate('Vehicle Negotiation') && isSelectable && (
                               <button
@@ -3140,7 +3149,7 @@ export default function OrderPanelList() {
               <span>
                 Selected: {selectedOrders.length} {selectedOrders.length > 0 && `(${selectedOrders.filter(id => {
                   const order = orders.find(o => o.originalOrderId === id);
-                  return order && order.panelStatus === 'Approved' && !order.usedInVehicleNegotiation;
+                  return order && ['Approved', 'Partially on hold'].includes(order.panelStatus) && order.status === 'Open' && !order.statusRequest?.action && !order.usedInVehicleNegotiation;
                 }).length} available for VN)`}
               </span>
             </div>

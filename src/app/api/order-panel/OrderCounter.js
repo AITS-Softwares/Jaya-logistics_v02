@@ -1,6 +1,5 @@
 import mongoose from 'mongoose';
-import { nextCompanyDocumentNumber } from '@/lib/documentSequence';
-import { nextSimpleDocumentNumber } from '@/lib/documentSequence';
+import { nextPeriodDocumentNumber } from '@/lib/documentSequence';
 
 const orderPanelCounterSchema = new mongoose.Schema({
   _id: {
@@ -21,7 +20,7 @@ const OrderPanelCounter = mongoose.models.OrderPanelCounter || mongoose.model('O
 // }
 
 export async function getNextOrderPanelNumber(companyId, subCompanyId, subCompanyCode) {
-  return nextSimpleDocumentNumber({ companyId, subCompanyId, subCompanyCode, documentType: 'OP', width: 4 });
+  return nextPeriodDocumentNumber({ companyId, subCompanyId, subCompanyCode, documentType: 'OP', width: 4 });
 }
 
 export default OrderPanelCounter;

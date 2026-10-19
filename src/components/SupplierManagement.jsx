@@ -81,8 +81,7 @@ const VALIDATORS = {
   4: (d) => {
     const e = {};
     if (!d.gstCategory) e.gstCategory = "GST Category is required";
-    if (!d.pan?.trim()) e.pan = "PAN is required";
-    else if (!/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(d.pan)) e.pan = "Invalid PAN (e.g. ABCDE1234F)";
+    if (d.pan?.trim() && !/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(d.pan.trim())) e.pan = "Invalid PAN (e.g. ABCDE1234F)";
     if (d.gstNumber && !/^\d{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(d.gstNumber))
       e.gstNumber = "Invalid GST (e.g. 22ABCDE1234F1Z5)";
     if (!d.glAccount?._id) e.glAccount = "GL Account is required";
@@ -911,11 +910,11 @@ export default function SupplierManagement() {
               <Err k="gstCategory" />
             </div>
             <div>
-              <Lbl text="PAN Number" req />
+              <Lbl text="PAN Number" />
               <input className={fi("pan")} name="pan" maxLength={10} placeholder="e.g. ABCDE1234F" value={sd.pan || ""}
                 onChange={e => { const v = e.target.value.toUpperCase(); if (/^[A-Z0-9]{0,10}$/.test(v)) handleChange({ target: { name: "pan", value: v } }); }} />
               <Err k="pan" />
-              <p className="text-[11px] text-gray-400 mt-1">Format: AAAAA9999A</p>
+              <p className="text-[11px] text-gray-400 mt-1">Optional. If provided, use format AAAAA9999A.</p>
             </div>
             <div>
               <Lbl text="Payment Terms (Days)" />

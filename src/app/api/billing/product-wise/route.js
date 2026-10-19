@@ -6,23 +6,23 @@
 // export async function POST(req) {
 //   try {
 //     await connectDb();
-    
+
 //     const token = getTokenFromHeader(req);
 //     if (!token) {
 //       return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
 //     }
-    
+
 //     const user = await verifyJWT(token);
 //     if (!user) {
 //       return NextResponse.json({ success: false, message: "Invalid token" }, { status: 401 });
 //     }
-    
+
 //     const body = await req.json();
 //     const { clientId, clientName, productCategories, plantId, plantCode, orderType, startDate, endDate, branchId, branchName } = body;
-    
+
 //     // Build query
 //     let query = { companyId: user.companyId };
-    
+
 //     // Date filter
 //     if (startDate && endDate) {
 //       query.createdAt = {
@@ -30,26 +30,26 @@
 //         $lte: new Date(endDate + 'T23:59:59')
 //       };
 //     }
-    
+
 //     // Client filter by party name
 //     if (clientName) {
 //       query['header.partyName'] = { $regex: clientName, $options: 'i' };
 //     }
-    
+
 //     // Order type filter
 //     if (orderType && orderType !== "All Order Types") {
 //       query['header.orderType'] = orderType;
 //     }
-    
+
 //     const consignmentNotes = await ConsignmentNote.find(query).lean();
-    
+
 //     // Process data to extract product-wise billing
 //     const billingData = [];
-    
+
 //     for (const note of consignmentNotes) {
 //       const rate = 3050; // Default rate, can be customized
 //       let products = [];
-      
+
 //       // Extract products from packData
 //       if (note.packData) {
 //         if (note.packData.PALLETIZATION) {
@@ -65,7 +65,7 @@
 //           products.push(...note.packData['NON-UNIFORM - GENERAL CARGO']);
 //         }
 //       }
-      
+
 //       // Apply product category filter if needed
 //       let filteredProducts = products;
 //       if (productCategories) {
@@ -74,7 +74,7 @@
 //           p.productName?.toLowerCase().includes(productCategories.toLowerCase())
 //         );
 //       }
-      
+
 //       for (const product of filteredProducts) {
 //         const weight = parseFloat(product.actualWt || product.weight || 0);
 //         billingData.push({
@@ -100,10 +100,10 @@
 //         });
 //       }
 //     }
-    
+
 //     const totalWeight = billingData.reduce((sum, item) => sum + item.weight, 0);
 //     const totalAmount = billingData.reduce((sum, item) => sum + item.amount, 0);
-    
+
 //     return NextResponse.json({
 //       success: true,
 //       data: billingData,
@@ -113,7 +113,7 @@
 //         totalRecords: billingData.length
 //       }
 //     }, { status: 200 });
-    
+
 //   } catch (error) {
 //     console.error('Product-wise billing error:', error);
 //     return NextResponse.json({ 
@@ -129,14 +129,16 @@ import Item from "@/models/ItemModels";
 import OrderPanel from "../../order-panel/OrderPanel";
 import PricingPanel from "../../pricing-panel/PricingPanel";
 import { companyScopeFilter } from "@/lib/companyScope";
+import Customer from "@/models/CustomerModel";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
+import { getBilledLrNumbers } from "@/lib/billedLrs";
 
 // ── PERMISSION FUNCTIONS ──
 function isAuthorized(user) {
   if (!user) return false;
   if (user.type === "company") return true;
   if (user.roles && user.roles.includes("Admin")) return true;
-  
+
   const modules = user.modules || {};
   const moduleData = modules["Billing"];
   if (!moduleData || !moduleData.selected) return false;
@@ -147,11 +149,11 @@ function hasPermission(user, action) {
   if (!user) return false;
   if (user.type === "company") return true;
   if (user.roles && user.roles.includes("Admin")) return true;
-  
+
   const modules = user.modules || {};
   const moduleData = modules["Billing"];
   if (!moduleData || !moduleData.selected) return false;
-  
+
   const permissions = moduleData.permissions || {};
   return permissions[action] === true;
 }
@@ -179,7 +181,7 @@ async function validateUser(req, requiredAction = null) {
 // Helper to extract products from consignment note
 function extractProductsFromNote(note) {
   const products = [];
-  
+
   if (note.packData) {
     // Palletization
     if (note.packData.PALLETIZATION && note.packData.PALLETIZATION.length > 0) {
@@ -194,7 +196,7 @@ function extractProductsFromNote(note) {
         }
       });
     }
-    
+
     // Uniform
     if (note.packData['UNIFORM - BAGS/BOXES'] && note.packData['UNIFORM - BAGS/BOXES'].length > 0) {
       note.packData['UNIFORM - BAGS/BOXES'].forEach(row => {
@@ -208,7 +210,7 @@ function extractProductsFromNote(note) {
         }
       });
     }
-    
+
     // Loose Cargo
     if (note.packData['LOOSE - CARGO'] && note.packData['LOOSE - CARGO'].length > 0) {
       note.packData['LOOSE - CARGO'].forEach(row => {
@@ -222,7 +224,7 @@ function extractProductsFromNote(note) {
         }
       });
     }
-    
+
     // Non-Uniform
     if (note.packData['NON-UNIFORM - GENERAL CARGO'] && note.packData['NON-UNIFORM - GENERAL CARGO'].length > 0) {
       note.packData['NON-UNIFORM - GENERAL CARGO'].forEach(row => {
@@ -237,7 +239,7 @@ function extractProductsFromNote(note) {
       });
     }
   }
-  
+
   if (products.length === 0 && note.totalWeight) {
     products.push({
       productName: 'General Cargo',
@@ -246,14 +248,18 @@ function extractProductsFromNote(note) {
       unit: note.header?.unit || 'MT'
     });
   }
-  
+
   return products;
 }
+
+const normName = (v) => String(v || '').trim().replace(/\s+/g, ' ').toLowerCase();
+// LR created date as YYYY-MM-DD in India time
+const istDate = (d) => (d ? new Date(d).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }) : '');
 
 export async function POST(req) {
   try {
     await connectDb();
-    
+
     const { user, error, status } = await validateUser(req, 'view');
     if (error) {
       return NextResponse.json({ success: false, message: error }, { status });
@@ -261,16 +267,16 @@ export async function POST(req) {
 
     const body = await req.json();
     console.log("📊 Product Wise Bill Request Body:", body);
-    
-    const { 
-      branchId, 
-      clientId, 
+
+    const {
+      branchId,
+      clientId,
       clientName,
       productCategories,
       plantId,
       plantCode,
       orderType,
-      startDate, 
+      startDate,
       endDate,
       excludeLRs = []
     } = body;
@@ -280,8 +286,8 @@ export async function POST(req) {
 
     if (startDate && endDate) {
       query.createdAt = {
-        $gte: new Date(startDate),
-        $lte: new Date(endDate + 'T23:59:59')
+        $gte: new Date(`${startDate}T00:00:00.000+05:30`),
+        $lte: new Date(`${endDate}T23:59:59.999+05:30`)
       };
     }
 
@@ -294,6 +300,23 @@ export async function POST(req) {
       .sort({ createdAt: -1 })
       .lean();
 
+    // ── Client filter: only this customer's LRs ──
+    let clientNotes = consignmentNotes;
+    if (clientId || clientName) {
+      const customer = clientId
+        ? await Customer.findOne({ _id: clientId, companyId: user.companyId }).select("customerName").lean()
+        : null;
+      const wantedName = normName(customer?.customerName || clientName);
+      clientNotes = consignmentNotes.filter(note =>
+        (clientId && String(note.customerId || '') === String(clientId)) ||
+        (wantedName && (normName(note.header?.partyName) === wantedName || normName(note.consignor?.name) === wantedName))
+      );
+    }
+
+    // ── Already-billed LRs (server-side) ──
+    const billedLrs = await getBilledLrNumbers(user.companyId);
+    excludeLRs.forEach(lr => billedLrs.add(lr));
+
     const normalizeProductValue = (value) => String(value || '').trim().replace(/\s+/g, ' ').toLowerCase();
     const selectedCategory = normalizeProductValue(productCategories);
     const subgroupPattern = selectedCategory
@@ -302,9 +325,9 @@ export async function POST(req) {
       .join('\\s+');
     const subgroupItems = productCategories
       ? await Item.find({
-          companyId: user.companyId,
-          subgroup: { $regex: `^${subgroupPattern}$`, $options: 'i' },
-        }).select("itemName subgroup").lean()
+        companyId: user.companyId,
+        subgroup: { $regex: `^${subgroupPattern}$`, $options: 'i' },
+      }).select("itemName subgroup").lean()
       : [];
     const subgroupItemNames = new Set(subgroupItems
       .filter(item => normalizeProductValue(item.subgroup) === selectedCategory)
@@ -315,20 +338,20 @@ export async function POST(req) {
     const shouldFilterOrderType = requestedOrderType &&
       !['na', 'all types', 'all order types'].includes(normalizedOrderType(requestedOrderType));
 
-    const orderNumbers = [...new Set(consignmentNotes.map(note => note.header?.orderNo).filter(Boolean))];
-    const orderRowIds = consignmentNotes.map(note => note.orderRowId).filter(Boolean);
+    const orderNumbers = [...new Set(clientNotes.map(note => note.header?.orderNo).filter(Boolean))];
+    const orderRowIds = clientNotes.map(note => note.orderRowId).filter(Boolean);
     const pricingPanels = orderNumbers.length
       ? await PricingPanel.find(companyScopeFilter(user, {
-          "orders.orderNo": { $in: orderNumbers },
-          $or: [
-            { panelStatus: { $in: ["Approved", "Completed"] } },
-            { "rateApproval.approvalStatus": { $in: ["Approved", "Completed"] } },
-            { "rateApproval.workflowPhase": { $in: ["approved", "locked"] } },
-          ],
-        }))
-          .select("orders.orderNo orders.rate orders.totalAmount createdAt")
-          .sort({ createdAt: -1 })
-          .lean()
+        "orders.orderNo": { $in: orderNumbers },
+        $or: [
+          { panelStatus: { $in: ["Approved", "Completed"] } },
+          { "rateApproval.approvalStatus": { $in: ["Approved", "Completed"] } },
+          { "rateApproval.workflowPhase": { $in: ["approved", "locked"] } },
+        ],
+      }))
+        .select("orders.orderNo orders.rate orders.totalAmount createdAt")
+        .sort({ createdAt: -1 })
+        .lean()
       : [];
     const pricingRatesByOrderNo = new Map();
     pricingPanels.forEach(panel => (panel.orders || []).forEach(order => {
@@ -356,16 +379,17 @@ export async function POST(req) {
       orderRowsByOrderAndTo.set(`${panel.orderPanelNo}|${String(row.toName || row.to || "").trim().toLowerCase()}`, row);
     }));
 
-    console.log(`📦 Found ${consignmentNotes.length} consignment notes`);
+    console.log(`📦 Found ${consignmentNotes.length} consignment notes, ${clientNotes.length} for the selected client`);
 
     // Transform data for bill
     const billData = [];
     let totalWeight = 0;
     let totalAmount = 0;
+    let missingRateCount = 0;
 
-    consignmentNotes.forEach(note => {
+    clientNotes.forEach(note => {
       // Skip if LR already billed
-      if (excludeLRs.includes(note.lrNo)) return;
+      if (billedLrs.has(note.lrNo)) return;
 
       const orderRow = orderRowsById.get(String(note.orderRowId))
         || orderRowsByOrderAndTo.get(`${note.header?.orderNo}|${String(note.header?.to || "").trim().toLowerCase()}`);
@@ -384,7 +408,8 @@ export async function POST(req) {
         const amount = (product.billedWt || 0) * rowRate;
         billData.push({
           _id: `${note._id}_${idx}`,
-          date: note.invoice?.boeInvoiceDate || note.header?.lrDate || (note.createdAt ? new Date(note.createdAt).toISOString().split('T')[0] : ''),
+          date: istDate(note.createdAt),
+          invoiceDate: note.invoice?.boeInvoiceDate || '',
           lrCreatedAt: note.createdAt || null,
           invoiceNo: note.invoice?.boeInvoiceNo || note.lrNo || 'N/A',
           consigneeName: note.consignee?.name || 'N/A',
@@ -404,29 +429,32 @@ export async function POST(req) {
           plantCode: note.header?.plantCode || orderRow?.plantCodeValue || '',
           branchName: orderRow?.fromName || '',
           rate: rowRate,
+          rateMissing: !(rowRate > 0),
           amount: amount,
           status: note.header?.status || 'Pending',
           orderType: effectiveOrderType || 'N/A'
         });
+        if (!(rowRate > 0)) missingRateCount += 1;
         totalWeight += product.billedWt || 0;
         totalAmount += amount;
       });
     });
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       data: billData,
       summary: {
         totalRecords: billData.length,
         totalWeight: totalWeight,
-        totalAmount: totalAmount
+        totalAmount: totalAmount,
+        missingRateCount
       }
     }, { status: 200 });
 
   } catch (error) {
     console.error("❌ POST /api/billing/product-wise error:", error);
-    return NextResponse.json({ 
-      success: false, 
+    return NextResponse.json({
+      success: false,
       message: error.message || "Failed to generate bill"
     }, { status: 500 });
   }

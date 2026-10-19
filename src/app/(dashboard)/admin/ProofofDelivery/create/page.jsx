@@ -2357,7 +2357,8 @@ ${companyMsg}${subCompanyMsg}${vehicleMsg}${routeMsg}${lrMsg}
   };
 
   // ==================== UPDATED: Handle Save with Company Info ====================
-  const handleSave = async () => {
+  const handleSave = async (saveMode = 'submit') => {
+    const isDraftSave = saveMode === 'draft';
     if (!header.purchaseNo) {
       alert("Please select a Purchase No");
       return;
@@ -2369,6 +2370,7 @@ ${companyMsg}${subCompanyMsg}${vehicleMsg}${routeMsg}${lrMsg}
       const token = localStorage.getItem('token');
 
       const payload = {
+        saveMode,
         header: {
           podNo: header.podNo,
           purchaseNo: header.purchaseNo,
@@ -2424,7 +2426,9 @@ ${companyMsg}${subCompanyMsg}${vehicleMsg}${routeMsg}${lrMsg}
       const data = await res.json();
 
       if (data.success) {
-        alert(`✅ POD created successfully!\nPOD No: ${data.data?.podNo}\nCompany: ${data.data?.companyName || 'N/A'}\nSub-Company: ${data.data?.subCompanyName || 'N/A'}`);
+        alert(isDraftSave
+          ? `✅ POD saved as a draft.\nPOD No: ${data.data?.podNo}\nOpen it from the list to continue.`
+          : `✅ POD created successfully!\nPOD No: ${data.data?.podNo}\nCompany: ${data.data?.companyName || 'N/A'}\nSub-Company: ${data.data?.subCompanyName || 'N/A'}`);
         router.push('/admin/ProofofDelivery');
       } else {
         alert(data.message || 'Failed to create POD');
@@ -2471,6 +2475,7 @@ ${companyMsg}${subCompanyMsg}${vehicleMsg}${routeMsg}${lrMsg}
           </div>
 
           <div className="flex items-center gap-3">
+            <button onClick={() => handleSave('draft')} disabled={saving} className="rounded-xl border border-amber-300 bg-amber-50 px-5 py-2 text-sm font-bold text-amber-800 hover:bg-amber-100 disabled:opacity-60">Save as Draft</button>
             <button
               onClick={handleSave}
               disabled={saving}

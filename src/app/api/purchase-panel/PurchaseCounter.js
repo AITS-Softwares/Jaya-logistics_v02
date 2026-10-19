@@ -1,6 +1,6 @@
 // PurchaseCounter.js
 import mongoose from 'mongoose';
-import { nextCompanyDocumentNumber } from '@/lib/documentSequence';
+import { nextPeriodDocumentNumber } from '@/lib/documentSequence';
 
 const purchaseCounterSchema = new mongoose.Schema({
   _id: {
@@ -27,7 +27,7 @@ const PurchaseCounter = mongoose.models.PurchaseCounter ||
   mongoose.model('PurchaseCounter', purchaseCounterSchema);
 
 export async function getNextPurchaseNumber(companyId, subCompanyId, subCompanyCode) {
-  return nextCompanyDocumentNumber({ companyId, subCompanyId, subCompanyCode, documentType: 'PUR', width: 5 });
+  return nextPeriodDocumentNumber({ companyId, subCompanyId, subCompanyCode, documentType: 'PUR', width: 4 });
 }
 
 export default PurchaseCounter;

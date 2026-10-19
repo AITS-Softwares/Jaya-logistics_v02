@@ -910,6 +910,7 @@ const vehicleNegotiationSchema = new mongoose.Schema({
     },
     orderNo: String,
     orderPanelId: String,
+    orderRowId: { type: String, default: '' },
     partyName: String,
     customerId: mongoose.Schema.Types.ObjectId,
     customerCode: String,

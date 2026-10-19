@@ -6,7 +6,7 @@
 // // Helper function to capitalize first letter of each word
 // function capitalizeName(str) {
 //   if (!str || typeof str !== 'string') return '';
-  
+
 //   // Trim and convert to lowercase first, then capitalize first letter of each word
 //   return str
 //     .trim()
@@ -60,9 +60,9 @@
 //     const capitalizedNames = names
 //       .map(name => capitalizeName(name))
 //       .filter(name => name.length > 0);
-    
+
 //     const uniqueNames = [...new Set(capitalizedNames)];
-    
+
 //     if (uniqueNames.length === 0) {
 //       return NextResponse.json({ 
 //         success: false, 
@@ -78,7 +78,7 @@
 
 //     const existingNames = new Set(existingLocations.map(loc => loc.name));
 //     const newNames = uniqueNames.filter(name => !existingNames.has(name));
-    
+
 //     if (newNames.length === 0) {
 //       return NextResponse.json({ 
 //         success: false, 
@@ -95,7 +95,7 @@
 //     }));
 
 //     const result = await Location.insertMany(locationsToInsert, { ordered: false });
-    
+
 //     return NextResponse.json({ 
 //       success: true, 
 //       message: `Successfully added ${result.length} locations`,
@@ -104,17 +104,17 @@
 //       skippedNames: Array.from(existingNames),
 //       data: result
 //     }, { status: 201 });
-    
+
 //   } catch (error) {
 //     console.error("POST /locations/bulk error:", error);
-    
+
 //     if (error.code === 11000) {
 //       return NextResponse.json({ 
 //         success: false, 
 //         message: "Some locations already exist in the system"
 //       }, { status: 400 });
 //     }
-    
+
 //     return NextResponse.json({ 
 //       success: false, 
 //       message: "Failed to add locations" 
@@ -130,7 +130,7 @@ import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 // Helper function to capitalize first letter of each word
 function capitalizeName(str) {
   if (!str || typeof str !== 'string') return '';
-  
+
   // Trim and convert to lowercase first, then capitalize first letter of each word
   return str
     .trim()
@@ -168,8 +168,8 @@ function isAuthorized(user) {
   ];
 
   // Handle both single role and roles array
-  const userRoles = Array.isArray(user.roles) 
-    ? user.roles 
+  const userRoles = Array.isArray(user.roles)
+    ? user.roles
     : (user.role ? [user.role] : []);
 
   const hasAllowedRole = userRoles.some(role =>
@@ -179,8 +179,8 @@ function isAuthorized(user) {
   if (hasAllowedRole) return true;
 
   // ✅ Check for specific permission (if your system uses permissions)
-  if (Array.isArray(user.permissions) && 
-      user.permissions.includes("vehicle_negotiation")) {
+  if (Array.isArray(user.permissions) &&
+    user.permissions.includes("vehicle_negotiation")) {
     return true;
   }
 
@@ -212,9 +212,9 @@ export async function POST(req) {
     const { locations } = await req.json();
 
     if (!locations || !Array.isArray(locations) || locations.length === 0) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Please provide an array of location objects with name and state" 
+      return NextResponse.json({
+        success: false,
+        message: "Please provide an array of location objects with name and state"
       }, { status: 400 });
     }
 
@@ -222,11 +222,11 @@ export async function POST(req) {
     const processedLocations = locations
       .map(item => {
         const name = capitalizeName(item.name);
-        const state = capitalizeState(item.state || 'Unknown');
+        const state = capitalizeState(item.state);
         return { name, state };
       })
       .filter(item => item.name.length > 0);
-    
+
     // Remove duplicates based on name
     const uniqueLocations = [];
     const seenNames = new Set();
@@ -236,11 +236,11 @@ export async function POST(req) {
         uniqueLocations.push(loc);
       }
     }
-    
+
     if (uniqueLocations.length === 0) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "No valid location names provided" 
+      return NextResponse.json({
+        success: false,
+        message: "No valid location names provided"
       }, { status: 400 });
     }
 
@@ -252,11 +252,11 @@ export async function POST(req) {
 
     const existingNames = new Set(existingLocations.map(loc => loc.name));
     const newLocations = uniqueLocations.filter(loc => !existingNames.has(loc.name));
-    
+
     if (newLocations.length === 0) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "All provided location names already exist" 
+      return NextResponse.json({
+        success: false,
+        message: "All provided location names already exist"
       }, { status: 400 });
     }
 
@@ -270,29 +270,29 @@ export async function POST(req) {
     }));
 
     const result = await Location.insertMany(locationsToInsert, { ordered: false });
-    
-    return NextResponse.json({ 
-      success: true, 
+
+    return NextResponse.json({
+      success: true,
       message: `Successfully added ${result.length} locations`,
       addedCount: result.length,
       failedCount: uniqueLocations.length - result.length,
       skippedNames: Array.from(existingNames),
       data: result
     }, { status: 201 });
-    
+
   } catch (error) {
     console.error("POST /locations/bulk error:", error);
-    
+
     if (error.code === 11000) {
-      return NextResponse.json({ 
-        success: false, 
+      return NextResponse.json({
+        success: false,
         message: "Some locations already exist in the system"
       }, { status: 400 });
     }
-    
-    return NextResponse.json({ 
-      success: false, 
-      message: "Failed to add locations" 
+
+    return NextResponse.json({
+      success: false,
+      message: "Failed to add locations"
     }, { status: 500 });
   }
 }

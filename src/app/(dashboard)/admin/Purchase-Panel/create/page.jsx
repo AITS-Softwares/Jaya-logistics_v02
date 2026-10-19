@@ -3390,7 +3390,7 @@ export default function CreatePurchasePanel() {
       const token = localStorage.getItem('token');
       if (!token) return;
 
-      const res = await fetch('/api/order-panel', {
+      const res = await fetch('/api/order-panel?openOnly=true', {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -3999,13 +3999,14 @@ export default function CreatePurchasePanel() {
   /** =========================
    * HANDLE SAVE
    ========================= */
-  const handleSave = async () => {
-    if (!header.branch) {
+  const handleSave = async (saveMode = 'submit') => {
+    const isDraftSave = saveMode === 'draft';
+    if (!isDraftSave && !header.branch) {
       alert("Please select a branch");
       return;
     }
 
-    if (!purchaseDetails.vendorName) {
+    if (!isDraftSave && !purchaseDetails.vendorName) {
       alert("Please select a vendor");
       return;
     }
@@ -4019,6 +4020,7 @@ export default function CreatePurchasePanel() {
       }
 
       const payload = {
+        saveMode,
         header: {
           purchaseNo: header.purchaseNo,
           pricingSerialNo: header.pricingSerialNo,
@@ -4085,7 +4087,9 @@ export default function CreatePurchasePanel() {
       }
 
       const data = await res.json();
-      alert(`✅ Purchase saved successfully!\nPurchase No: ${data.data?.purchaseNo || 'Generated'}`);
+      alert(isDraftSave
+        ? `✅ Purchase saved as a draft.\nPurchase No: ${data.data?.purchaseNo || 'Generated'}\nOpen it from the list to continue.`
+        : `✅ Purchase saved successfully!\nPurchase No: ${data.data?.purchaseNo || 'Generated'}`);
 
       router.push('/admin/Purchase-Panel');
 
@@ -4243,6 +4247,11 @@ export default function CreatePurchasePanel() {
           </div>
 
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => handleSave('draft')}
+              disabled={saving || fetchingData}
+              className="rounded-xl border border-amber-300 bg-amber-50 px-5 py-2 text-sm font-bold text-amber-800 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+            >Save as Draft</button>
             <button
               onClick={handleSave}
               disabled={saving || fetchingData}

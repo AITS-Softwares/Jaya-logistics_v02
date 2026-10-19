@@ -41,9 +41,8 @@ const locationSchema = new mongoose.Schema({
   },
   state: {
     type: String,
-    required: true,
     trim: true,
-    default: 'Unknown'
+    default: ''
   },
   companyId: {
     type: mongoose.Schema.Types.ObjectId,

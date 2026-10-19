@@ -973,6 +973,7 @@ import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import { getNextPricingSerialNumber } from "./PricingCounter";
 import mongoose from 'mongoose';
 import { activeOperatingCompanyId, companyScopeFilter } from "@/lib/companyScope";
+import { validateOpenOrderRows } from '@/lib/orderRowStatus';
 import VehicleNegotiation from '@/app/api/vehicle-negotiation/VehicleNegotiation';
 import RateMaster from '@/app/api/rate-master/schema';
 import Location from '@/app/api/locations/schema';
@@ -1395,6 +1396,8 @@ export async function POST(req) {
 
   try {
     const body = await req.json();
+    const blockedRow = await validateOpenOrderRows(user, body.orders || []);
+    if (blockedRow) return NextResponse.json({ success: false, message: blockedRow }, { status: 409 });
 
     const vnnIds = [...new Set((body.orders || []).map((order) => {
       const value = order?.vehicleNegotiationId;
@@ -1491,6 +1494,7 @@ export async function POST(req) {
 
         orders.push({
           orderNo: order.orderNo,
+          orderRowId: order.orderRowId || order.originalRowId || order._id || '',
           vehicleNegotiationId: vehicleNegotiationId,
           vnnNumber: order.vnnNumber || '',
           partyName: order.partyName || body.header?.partyName || '',
@@ -1792,6 +1796,7 @@ export async function PUT(req) {
             ? new mongoose.Types.ObjectId(order._id)
             : new mongoose.Types.ObjectId(),
           orderNo: order.orderNo || '',
+      orderRowId: order.orderRowId || order.originalRowId || order._id || '',
           vehicleNegotiationId: order.vehicleNegotiationId || null,
           vnnNumber: order.vnnNumber || '',
           partyName: order.partyName || '',

@@ -218,6 +218,7 @@ function useOrderPanelSearch() {
       const usedOrderPanelIds = new Set();
       if (vehicleData.success && Array.isArray(vehicleData.data)) {
         vehicleData.data.forEach(item => {
+          if (item.panelStatus === 'Cancelled') return;
           if (item.order && item.order !== 'N/A') {
             const orderNo = item.order;
             usedOrderPanelIds.add(orderNo);
@@ -226,7 +227,7 @@ function useOrderPanelSearch() {
       }
 
       // Fetch order panels
-      const res = await fetch('/api/order-panel', {
+      const res = await fetch('/api/order-panel?openOnly=true', {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -239,7 +240,7 @@ function useOrderPanelSearch() {
       if (data.success && Array.isArray(data.data)) {
         // Filter: only Approved status and not used in vehicle negotiation
         const availablePanels = data.data.filter(panel =>
-          panel.panelStatus === 'Approved' &&
+          ['Approved', 'Partially on hold'].includes(panel.panelStatus) &&
           !usedOrderPanelIds.has(panel.orderPanelNo)
         );
 
@@ -262,7 +263,7 @@ function useOrderPanelSearch() {
     setError(null);
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`/api/order-panel?id=${id}`, {
+      const res = await fetch(`/api/order-panel?id=${id}&openOnly=true`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -1370,6 +1371,11 @@ export default function VehicleNegotiationPanel() {
         console.log(`⚠️ Order ${fullPanel.orderPanelNo} already selected`);
         return;
       }
+      const normalizedOrderNo = String(fullPanel.orderPanelNo || '').trim().toLowerCase();
+      if (normalizedOrderNo && selectedOrderPanels.some((panel) => String(panel.orderPanelNo || '').trim().toLowerCase() === normalizedOrderNo)) {
+        alert(`Order ${fullPanel.orderPanelNo} is already included in this VNN.`);
+        return;
+      }
 
       if (selectedOrderPanels.length > 0) {
         const currentSubCompanyId = selectedOrderPanels[0].subCompanyId;
@@ -1428,6 +1434,7 @@ export default function VehicleNegotiationPanel() {
             _id: uid(),
             orderNo: fullPanel.orderPanelNo,
             orderPanelId: fullPanel._id,
+            orderRowId: row._id,
             partyName: fullPanel.partyName || fullPanel.customerName || "",
             customerId: fullPanel.customerId || null,
             customerCode: fullPanel.customerCode || "",
@@ -1558,7 +1565,7 @@ export default function VehicleNegotiationPanel() {
 
           console.log(` Fetching order ${i + 1}/${ids.length}: ${id}`);
 
-          const res = await fetch(`/api/order-panel?id=${id}`, {
+          const res = await fetch(`/api/order-panel?id=${id}&openOnly=true`, {
             headers: { Authorization: `Bearer ${token}` },
           });
           const data = await res.json();

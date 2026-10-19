@@ -1522,10 +1522,10 @@ export default function ApproveOrderPanel() {
               <div className="text-sm font-extrabold text-slate-900">Total Weight:</div>
               <div className="text-xl font-extrabold text-emerald-700">{totalWeight} MT</div>
             </div>
-            <div className="flex items-center gap-3 border border-yellow-300 px-6 py-3 bg-yellow-50 rounded-xl">
+            {/* <div className="flex items-center gap-3 border border-yellow-300 px-6 py-3 bg-yellow-50 rounded-xl">
               <div className="text-sm font-extrabold text-slate-900">Total Amount:</div>
               <div className="text-xl font-extrabold text-purple-700">₹{totalAmount.toLocaleString()}</div>
-            </div>
+            </div> */}
           </div>
         </Card>
 
@@ -1718,7 +1718,7 @@ export default function ApproveOrderPanel() {
                 <h3 className="text-sm font-bold text-slate-800 mb-3">Weight Summary</h3>
                 <div className="space-y-2">
                   <InfoRow label="Total Weight" value={`${totalWeight} MT`} />
-                  <InfoRow label="Total Amount" value={`₹${totalAmount.toLocaleString()}`} />
+                  {/* <InfoRow label="Total Amount" value={`₹${totalAmount.toLocaleString()}`} /> */}
                 </div>
               </div>
             </div>

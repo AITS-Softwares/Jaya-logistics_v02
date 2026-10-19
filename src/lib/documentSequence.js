@@ -55,6 +55,44 @@ export async function nextSimpleDocumentNumber({ companyId, subCompanyId, subCom
   return `${code}-${documentType}-${String(counter.sequence).padStart(width, "0")}`;
 }
 
+// Period labels describe when the document was created; they do not scope or
+// reset the sequence. Each company and document type uses one `ALL` counter.
+export async function nextPeriodDocumentNumber({ companyId, subCompanyId, subCompanyCode, documentType, width = 4, date = new Date(), session = null }) {
+  if (!companyId || !subCompanyId || !subCompanyCode || !documentType) {
+    throw new Error("Company-specific document sequence requires company and operating-company details.");
+  }
+
+  const code = String(subCompanyCode).trim().toUpperCase();
+  const month = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"][date.getMonth()];
+  const financialYear = financialYearFor(date);
+  const period = `${month}-${financialYear.slice(2)}`;
+  const key = `${companyId}:${subCompanyId}:${documentType}:ALL`;
+
+  if (!(await DocumentSequence.exists({ _id: key }).session(session))) {
+    const legacyCounters = await DocumentSequence.find({ companyId, subCompanyId, documentType })
+      .select("sequence")
+      .session(session)
+      .lean();
+    const seed = legacyCounters.reduce((total, counter) => total + (Number(counter.sequence) || 0), 0);
+    try {
+      await DocumentSequence.updateOne(
+        { _id: key },
+        { $setOnInsert: { companyId, subCompanyId, documentType, financialYear: "ALL", sequence: seed } },
+        { upsert: true, session }
+      );
+    } catch (error) {
+      if (error?.code !== 11000) throw error;
+    }
+  }
+
+  const counter = await DocumentSequence.findOneAndUpdate(
+    { _id: key },
+    { $inc: { sequence: 1 }, $setOnInsert: { companyId, subCompanyId, documentType, financialYear: "ALL" } },
+    { new: true, upsert: true, setDefaultsOnInsert: true, session }
+  );
+  return `${code}-${documentType}-${period}-${String(counter.sequence).padStart(width, "0")}`;
+}
+
 /**
  * Yearly series: <CODE>-<TYPE>-<calendar year>-<number>, e.g. JGL-LD-2026-0014.
  * The number is padded to `width` digits and grows on its own (9999 -> 10000 -> 100000).

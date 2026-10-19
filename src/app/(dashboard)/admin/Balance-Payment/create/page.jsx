@@ -2264,20 +2264,8 @@ export default function CreateBalancePayment() {
   });
 
   useEffect(() => {
-    fetchAutoPaymentNumber();
     setOrderRows([defaultOrderRow()]);
   }, []);
-
-  const fetchAutoPaymentNumber = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const res = await fetch("/api/balance-payment/generate-number", { headers: { Authorization: `Bearer ${token}` } });
-      const data = await res.json();
-      if (data.success) setBalancePaymentNo(data.paymentNo);
-    } catch (error) {
-      console.error("Error fetching payment number:", error);
-    }
-  };
 
   // Handle POD Selection - Load data from POD directly
   const handlePODSelect = async (pod) => {
@@ -2400,10 +2388,11 @@ export default function CreateBalancePayment() {
   const overLimit = payNow > finalBalance + 0.005;
   const isPartial = !!podNo && unpaid > 0.005;
 
-  const handleSave = async () => {
+  const handleSave = async (saveMode = 'submit') => {
+    const isDraftSave = saveMode === 'draft';
     if (!podNo) return alert("Please select a POD No");
-    if (overLimit) return alert(`Final amount cannot exceed the final balance (${inr(finalBalance)}).`);
-    if (isPartial && (!remarks.trim() || remarks.trim() === "Balance Payment")) {
+    if (!isDraftSave && overLimit) return alert(`Final amount cannot exceed the final balance (${inr(finalBalance)}).`);
+    if (!isDraftSave && isPartial && (!remarks.trim() || remarks.trim() === "Balance Payment")) {
       return alert("You are paying less than the final balance. Please write the reason in Remarks.");
     }
 
@@ -2412,6 +2401,7 @@ export default function CreateBalancePayment() {
       const token = localStorage.getItem("token");
       // The server re-derives every amount from the POD, Purchase Panel and paid advances; only Final Amount is taken from here.
       const payload = {
+        saveMode,
         companyName: companyInfo.companyName || "",
         companyCode: companyInfo.companyCode || "",
         subCompanyId: companyInfo.subCompanyId || null,
@@ -2458,7 +2448,10 @@ export default function CreateBalancePayment() {
       });
       const data = await res.json();
       if (data.success) {
-        alert(`✅ Balance Payment saved successfully!\nPayment No: ${data.data.balancePaymentNo}\nSub-Company: ${data.data.subCompanyName || "N/A"}`);
+        setBalancePaymentNo(data.data?.balancePaymentNo || "");
+        alert(isDraftSave
+          ? `✅ Balance Payment saved as a draft.\nPayment No: ${data.data.balancePaymentNo}\nOpen it from the list to continue.`
+          : `✅ Balance Payment saved successfully!\nPayment No: ${data.data.balancePaymentNo}\nSub-Company: ${data.data.subCompanyName || "N/A"}`);
         router.push("/admin/Balance-Payment");
       } else {
         alert(data.message || "Failed to save balance payment");
@@ -2514,6 +2507,7 @@ export default function CreateBalancePayment() {
             )}
           </div>
           <div className="flex items-center gap-3">
+            <button onClick={() => handleSave('draft')} disabled={saving} className="rounded-xl border border-amber-300 bg-amber-50 px-5 py-2 text-sm font-bold text-amber-800 hover:bg-amber-100 disabled:opacity-60">Save as Draft</button>
             <button onClick={resetForm} className="rounded-xl border border-slate-300 bg-white px-5 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50 transition">Reset</button>
             <button
               onClick={handleSave}
@@ -2532,8 +2526,8 @@ export default function CreateBalancePayment() {
           <div className="grid grid-cols-12 gap-4">
             <div className="col-span-12 md:col-span-3">
               <label className="text-xs font-bold text-slate-600">Balance Payment No</label>
-              <input type="text" value={balancePaymentNo} readOnly className="mt-1 w-full rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-700" />
-              <p className="text-xs text-slate-400 mt-1">Auto-generated</p>
+              <input type="text" value={balancePaymentNo || "Assigned when saved"} readOnly className="mt-1 w-full rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-700" />
+              <p className="text-xs text-slate-400 mt-1">A number is assigned after the payment is created</p>
             </div>
             <div className="col-span-12 md:col-span-9">
               <label className="text-xs font-bold text-slate-600">Select POD No *</label>

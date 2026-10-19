@@ -4166,7 +4166,7 @@ export default function CreateConsignmentNote() {
         return;
       }
 
-      const res = await fetch('/api/order-panel?format=table', {
+      const res = await fetch('/api/order-panel?format=table&openOnly=true', {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -4475,7 +4475,7 @@ export default function CreateConsignmentNote() {
       let fullOrder = order;
 
       if (orderId) {
-        const res = await fetch(`/api/order-panel?id=${orderId}`, {
+        const res = await fetch(`/api/order-panel?id=${orderId}&openOnly=true`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -4711,7 +4711,7 @@ export default function CreateConsignmentNote() {
       const ids = [...new Set([o._id, o.originalOrderId].filter(Boolean))];
       for (const id of ids) {
         try {
-          const res = await fetch(`/api/order-panel?id=${id}`, { headers: { Authorization: `Bearer ${token}` } });
+          const res = await fetch(`/api/order-panel?id=${id}&openOnly=true`, { headers: { Authorization: `Bearer ${token}` } });
           const d = await res.json();
           console.log('[LR dropdown] rows request', key, id, res.status, d);
           if (d.success && Array.isArray(d.data?.plantRows) && d.data.plantRows.length > 0) {
@@ -4937,29 +4937,30 @@ export default function CreateConsignmentNote() {
   /** =========================
    * HANDLE SAVE - INCLUDING SUB-COMPANY
    ========================= */
-  const handleSave = async () => {
-    if (!header.partyName) {
+  const handleSave = async (saveMode = 'submit') => {
+    const isDraftSave = saveMode === 'draft';
+    if (!isDraftSave && !header.partyName) {
       alert("Please enter party name");
       return;
     }
 
-    if (!header.vendorName) {
+    if (!isDraftSave && !header.vendorName) {
       alert("Please enter vendor name");
       return;
     }
 
-    if (orderRows.length) {
+    if (!isDraftSave && orderRows.length) {
       const info = orderRowInfo.find((x) => String(x.row._id) === selectedRowId);
       if (!info) { alert("Please choose which order row this LR is for"); return; }
       if (info.lr) { alert(`This row already has LR ${info.lr.lrNo}`); return; }
     }
 
-    if (!ewaybill.status) { alert("Please select the E-waybill option"); return; }
+    if (!isDraftSave && !ewaybill.status) { alert("Please select the E-waybill option"); return; }
     const ewbDigits = String(ewaybill.ewaybillNo).replace(/\s/g, "");
-    if (ewaybill.status === "Provided by Customer" && !/^\d{12}$/.test(ewbDigits)) {
+    if (!isDraftSave && ewaybill.status === "Provided by Customer" && !/^\d{12}$/.test(ewbDigits)) {
       alert("E-waybill number must be 12 digits"); return;
     }
-    if (ewaybill.status === "To Be Generated" && ewbDigits && !/^\d{12}$/.test(ewbDigits)) {
+    if (!isDraftSave && ewaybill.status === "To Be Generated" && ewbDigits && !/^\d{12}$/.test(ewbDigits)) {
       alert("E-waybill number must be 12 digits"); return;
     }
     setSaving(true);
@@ -4971,6 +4972,7 @@ export default function CreateConsignmentNote() {
       }
 
       const payload = {
+        saveMode,
         loadingInfoNo: new URLSearchParams(window.location.search).get('loadingInfoNo') || '',
         orderRowId: selectedRowId || '',
         consignmentBreakdown: (() => {
@@ -5033,7 +5035,9 @@ export default function CreateConsignmentNote() {
       }
 
       const subCompanyMsg = header.subCompanyName ? `\n🏢 Sub-Company: ${header.subCompanyName}` : '';
-      alert(`✅ Consignment Note saved successfully!\nLR No: ${data.data?.lrNo || header.lrNo}${subCompanyMsg}`);
+      alert(isDraftSave
+        ? `✅ Consignment Note saved as a draft.\nLR No: ${data.data?.lrNo || header.lrNo}${subCompanyMsg}\nOpen it from the list to continue.`
+        : `✅ Consignment Note saved successfully!\nLR No: ${data.data?.lrNo || header.lrNo}${subCompanyMsg}`);
 
       router.push('/admin/Consignment-Note');
 
@@ -5104,6 +5108,7 @@ export default function CreateConsignmentNote() {
           </div>
 
           <div className="flex items-center gap-3">
+            <button onClick={() => handleSave('draft')} disabled={saving} className="rounded-xl border border-amber-300 bg-amber-50 px-5 py-2 text-sm font-bold text-amber-800 hover:bg-amber-100 disabled:opacity-60">Save as Draft</button>
             <button
               type="button"
               onClick={() => setPreviewNote(makePreviewNote({

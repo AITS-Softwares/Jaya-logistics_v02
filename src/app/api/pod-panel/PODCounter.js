@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { nextCompanyDocumentNumber } from '@/lib/documentSequence';
+import { nextPeriodDocumentNumber } from '@/lib/documentSequence';
 
 const podCounterSchema = new mongoose.Schema({
   _id: {
@@ -26,7 +26,7 @@ const PODCounter = mongoose.models.PODCounter ||
   mongoose.model('PODCounter', podCounterSchema);
 
 export async function getNextPODNumber(companyId, subCompanyId, subCompanyCode) {
-  return nextCompanyDocumentNumber({ companyId, subCompanyId, subCompanyCode, documentType: 'POD', width: 5 });
+  return nextPeriodDocumentNumber({ companyId, subCompanyId, subCompanyCode, documentType: 'POD', width: 4 });
 }
 
 export default PODCounter;

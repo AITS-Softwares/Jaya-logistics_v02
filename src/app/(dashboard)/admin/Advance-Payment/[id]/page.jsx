@@ -1457,7 +1457,7 @@ const PAYMENT_TERMS_OPTIONS = [
 ];
 const RATE_TYPE_OPTIONS = ["Per MT", "Fixed"];
 const VENDOR_STATUS_OPTIONS = ["Active", "Blacklisted"];
-const ADVANCE_STATUS_OPTIONS = ["Pending", "Approved", "Rejected", "Paid", "Completed"];
+const ADVANCE_STATUS_OPTIONS = ["Draft", "Pending", "Approved", "Rejected", "Paid", "Completed"];
 
 function uid() {
   return Math.random().toString(36).slice(2, 10);
@@ -1685,6 +1685,7 @@ export default function EditAdvancePayment() {
   });
 
   const [queueGenerated, setQueueGenerated] = useState(false);
+  const [isDraft, setIsDraft] = useState(false);
   const [paymentNo, setPaymentNo] = useState("");
 
   const billingColumns = [
@@ -1741,6 +1742,7 @@ export default function EditAdvancePayment() {
 
       setPaymentNo(payment.paymentNo || "");
       setQueueGenerated(payment.queueGenerated || false);
+      setIsDraft(!!payment.isDraft);
 
       // ✅ Set Sub-Company from payment
       const subCompanyId = payment.subCompanyId || payment.header?.subCompanyId || '';
@@ -1888,7 +1890,7 @@ export default function EditAdvancePayment() {
           transactionId: pd.transactionId || "",
           bankVendorCode: pd.bankVendorCode || "",
           paymentDate: pd.paymentDate ? new Date(pd.paymentDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-          paymentStatus: pd.paymentStatus || "Pending",
+          paymentStatus: payment.isDraft ? "Draft" : (pd.paymentStatus || "Pending"),
         });
       }
 
@@ -2088,6 +2090,7 @@ export default function EditAdvancePayment() {
   };
 
   const handleGenerateQueue = async () => {
+    if (isDraft) return alert("Save this draft from the edit page before generating its queue.");
     if (queueGenerated) {
       alert("Queue already generated for this payment");
       return;
@@ -2988,14 +2991,14 @@ export default function EditAdvancePayment() {
                 <label className="text-xs font-bold text-slate-600">Generate Queue</label>
                 <button
                   onClick={handleGenerateQueue}
-                  disabled={queueGenerated || !memoFileInfo?.filePath}
-                  title={!memoFileInfo?.filePath ? "A Purchase Panel MEMO is required" : "Generate Queue"}
-                  className={`mt-1 w-full rounded-xl px-4 py-2 text-sm font-bold text-white transition ${queueGenerated || !memoFileInfo?.filePath
+                  disabled={queueGenerated || isDraft || !memoFileInfo?.filePath}
+                  title={isDraft ? "Save this draft before generating a queue" : !memoFileInfo?.filePath ? "A Purchase Panel MEMO is required" : "Generate Queue"}
+                  className={`mt-1 w-full rounded-xl px-4 py-2 text-sm font-bold text-white transition ${queueGenerated || isDraft || !memoFileInfo?.filePath
                     ? 'bg-gray-400 cursor-not-allowed'
                     : 'bg-blue-600 hover:bg-blue-700'
                     }`}
                 >
-                  {queueGenerated ? 'Queue Generated' : 'Generate Queue'}
+                  {queueGenerated ? 'Queue Generated' : isDraft ? 'Save Draft First' : 'Generate Queue'}
                 </button>
               </div>
             </div>

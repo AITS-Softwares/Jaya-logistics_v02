@@ -7,6 +7,7 @@ import SubCompany from "@/models/SubCompany";
 import Customer from "@/models/CustomerModel";
 import Branch from "@/app/api/branches/schema";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
+import { getBilledLrNumbers } from "@/lib/billedLrs";
 
 // Saved Report Schema
 const savedReportSchema = new mongoose.Schema({
@@ -34,20 +35,20 @@ const SavedReport = mongoose.models.SavedReport || mongoose.model("SavedReport",
 export async function GET(req) {
   try {
     await connectDb();
-    
+
     const token = getTokenFromHeader(req);
     if (!token) {
       return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
     }
-    
+
     const user = await verifyJWT(token);
     if (!user) {
       return NextResponse.json({ success: false, message: "Invalid token" }, { status: 401 });
     }
-    
+
     const url = new URL(req.url);
     const type = url.searchParams.get("type");
-    
+
     let query = { companyId: user.companyId };
     if (user.activeOperatingCompanyId) {
       const companyFilter = user.activeOperatingCompanyCode === "JGL"
@@ -56,11 +57,11 @@ export async function GET(req) {
       query.$or = companyFilter;
     }
     if (type) query.type = type;
-    
+
     const reports = await SavedReport.find(query).sort({ generatedAt: -1 }).lean();
-    
+
     return NextResponse.json({ success: true, data: reports }, { status: 200 });
-    
+
   } catch (error) {
     console.error("Error fetching saved reports:", error);
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
@@ -71,19 +72,36 @@ export async function GET(req) {
 export async function POST(req) {
   try {
     await connectDb();
-    
+
     const token = getTokenFromHeader(req);
     if (!token) {
       return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
     }
-    
+
     const user = await verifyJWT(token);
     if (!user) {
       return NextResponse.json({ success: false, message: "Invalid token" }, { status: 401 });
     }
-    
+
     const body = await req.json();
     const { reportId, type, billNumber, filters, data, summary, totalRecords, selectedRecords } = body;
+
+    if (type === "product-wise" || type === "general") {
+      const rows = Array.isArray(data) ? data : [];
+      const zeroRate = rows.filter((r) => !(Number(r.rate) > 0)).map((r) => r.lrNo);
+      if (zeroRate.length) {
+        return NextResponse.json({ success: false, message: `Rate is missing for LR: ${[...new Set(zeroRate)].join(", ")}. Set the rate before billing.` }, { status: 400 });
+      }
+      if (type === "general" && filters?.applySac && !filters?.sacCode) {
+        return NextResponse.json({ success: false, message: "Select a SAC code, or turn off 'Apply SAC code'." }, { status: 400 });
+      }
+      // each billing type is checked against its own saved bills only
+      const billed = await getBilledLrNumbers(user.companyId, type);
+      const dup = [...new Set(rows.map((r) => r.lrNo).filter((lr) => lr && billed.has(lr)))];
+      if (dup.length) {
+        return NextResponse.json({ success: false, message: `Already billed: ${dup.join(", ")}. Refresh and select again.` }, { status: 409 });
+      }
+    }
 
     const subCompanyId = user.activeOperatingCompanyId;
     if (!subCompanyId) {
@@ -106,7 +124,7 @@ export async function POST(req) {
     const fyStart = part("month") >= 4 ? year : year - 1;
     const financialYear = `${String(fyStart).slice(-2)}${String(fyStart + 1).slice(-2)}`;
     let generatedBillNumber = billNumber || `BILL/${Date.now()}`;
-    if (type === "product-wise") {
+    if (type === "product-wise" || type === "general") {
       const counterId = `Billing-${subCompanyId}-${financialYear}`;
       let counter;
       try {
@@ -175,6 +193,7 @@ export async function POST(req) {
       state: billAddress.state || "",
       pinCode: billAddress.pin || "",
       country: billAddress.country || "",
+      paymentTerms: customer.paymentTerms || "",
     } : {};
     const branchCode = branch?.code || filters?.branchCode || "BRANCH";
     const savedFilters = {
@@ -184,7 +203,7 @@ export async function POST(req) {
       productCode: filters?.productCategories || "",
       plantCode: filters?.plantCode || "",
     };
-    
+
     const savedReport = new SavedReport({
       reportId: reportId || `RPT_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       type,
@@ -202,26 +221,28 @@ export async function POST(req) {
       companyId: user.companyId,
       createdBy: user.id
     });
-    
+
     await savedReport.save();
     // Keep metadata fields available if this development process had compiled
     // the SavedReport model before the billing schema was extended.
-    await SavedReport.collection.updateOne({ _id: savedReport._id }, { $set: {
-      billNumber: savedReport.billNumber,
-      subCompanyId,
-      subCompanyCode: subCompany.code,
-      issuer,
-      clientSnapshot,
-      filters: savedFilters,
-    } });
+    await SavedReport.collection.updateOne({ _id: savedReport._id }, {
+      $set: {
+        billNumber: savedReport.billNumber,
+        subCompanyId,
+        subCompanyCode: subCompany.code,
+        issuer,
+        clientSnapshot,
+        filters: savedFilters,
+      }
+    });
     const persistedReport = await SavedReport.findById(savedReport._id).lean();
-    
-    return NextResponse.json({ 
-      success: true, 
+
+    return NextResponse.json({
+      success: true,
       message: "Report saved successfully",
       data: persistedReport || savedReport
     }, { status: 201 });
-    
+
   } catch (error) {
     console.error("Error saving report:", error);
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
@@ -232,30 +253,30 @@ export async function POST(req) {
 export async function DELETE(req) {
   try {
     await connectDb();
-    
+
     const token = getTokenFromHeader(req);
     if (!token) {
       return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
     }
-    
+
     const user = await verifyJWT(token);
     if (!user) {
       return NextResponse.json({ success: false, message: "Invalid token" }, { status: 401 });
     }
-    
+
     const url = new URL(req.url);
     const reportId = url.searchParams.get("reportId");
-    
+
     if (!reportId) {
       return NextResponse.json({ success: false, message: "Report ID required" }, { status: 400 });
     }
-    
+
     const query = { reportId, companyId: user.companyId };
     if (user.activeOperatingCompanyId) query.subCompanyId = user.activeOperatingCompanyId;
     await SavedReport.deleteOne(query);
-    
+
     return NextResponse.json({ success: true, message: "Report deleted successfully" }, { status: 200 });
-    
+
   } catch (error) {
     console.error("Error deleting report:", error);
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });

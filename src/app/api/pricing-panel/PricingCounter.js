@@ -1,6 +1,6 @@
 // /utils/PricingCounter.js
 import mongoose from 'mongoose';
-import { nextCompanyDocumentNumber } from '@/lib/documentSequence';
+import { nextPeriodDocumentNumber } from '@/lib/documentSequence';
 
 const pricingCounterSchema = new mongoose.Schema({
   _id: {
@@ -18,7 +18,7 @@ const PricingCounter = mongoose.models.PricingCounter ||
 
 // Function to get next pricing serial number
 export async function getNextPricingSerialNumber(companyId, subCompanyId, subCompanyCode) {
-  return nextCompanyDocumentNumber({ companyId, subCompanyId, subCompanyCode, documentType: 'PRC', width: 5 });
+  return nextPeriodDocumentNumber({ companyId, subCompanyId, subCompanyCode, documentType: 'PRC', width: 4 });
 }
 
 export default PricingCounter;

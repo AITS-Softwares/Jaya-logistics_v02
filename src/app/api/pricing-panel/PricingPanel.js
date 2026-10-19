@@ -384,6 +384,7 @@ const pricingPanelSchema = new mongoose.Schema({
       default: () => new mongoose.Types.ObjectId()
     },
     orderNo: String,
+    orderRowId: { type: String, default: '' },
     vehicleNegotiationId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'VehicleNegotiation'

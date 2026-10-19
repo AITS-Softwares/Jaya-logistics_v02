@@ -4,7 +4,8 @@ import { withAuth } from "@/lib/auth";
 import { companyScopeFilter } from "@/lib/companyScope";
 import POD from "@/app/api/pod-panel/POD";
 import Supplier from "@/models/SupplierModels";
-import { sendMail } from "@/lib/mailer";
+import EmailMaster from "@/models/emailMaster/emailMaster";
+import { getEmailMasterIssue, sendMailFromEmailMaster } from "@/lib/emailMasterMailer";
 import { buildPodAcknowledgementEmail, ACK_ALLOWED_STATUSES } from "@/lib/podAcknowledgementEmail";
 
 export const runtime = "nodejs";
@@ -29,6 +30,8 @@ async function load(user, id) {
         ? await Supplier.findOne({ supplierCode: vendorCode, companyId: user.companyId })
             .select("supplierName emailId").lean()
         : null;
+    const emailMaster = await EmailMaster.findOne({ companyId: user.companyId, status: "Active" })
+        .sort({ updatedAt: -1, _id: -1 }).lean();
 
     const email = String(supplier?.emailId || "").trim();
     const status = pod.podStatusSection?.podStatus || pod.podStatus || "Pending";
@@ -38,14 +41,16 @@ async function load(user, id) {
     });
 
     let blockedReason = "";
-    if (pod.approvalStatus !== "Approved") blockedReason = "Approve this POD before sending its acknowledgement email.";
+    const emailMasterIssue = getEmailMasterIssue(emailMaster);
+    if (emailMasterIssue) blockedReason = emailMasterIssue;
+    else if (pod.approvalStatus !== "Approved") blockedReason = "Approve this POD before sending its acknowledgement email.";
     else if (!supplier) blockedReason = "Supplier not found for this vendor code.";
     else if (!EMAIL_RE.test(email)) blockedReason = "Supplier has no valid email ID. Add it in Supplier Management.";
     else if (!ACK_ALLOWED_STATUSES.includes(status)) {
         blockedReason = `POD status is "${status}". Set the POD status (Received / Clear & Ok / Deductions) before sending.`;
     }
 
-    return { pod, supplier, email, status, subject, html, blockedReason };
+    return { pod, supplier, emailMaster, email, status, subject, html, blockedReason };
 }
 
 // GET -> preview of the exact email that will be sent
@@ -60,6 +65,7 @@ export const GET = withAuth(
                 success: true,
                 data: {
                     to: r.email,
+                    from: r.emailMaster?.email || "",
                     supplierName: r.supplier?.supplierName || r.pod.vendorFinancial?.vendorName || "",
                     subject: r.subject,
                     html: r.html,
@@ -88,7 +94,7 @@ export const POST = withAuth(
             if (r.error) return r.error;
             if (r.blockedReason) return fail(r.blockedReason, 400);
 
-            await sendMail({ to: r.email, subject: r.subject, html: r.html });
+            await sendMailFromEmailMaster({ emailMaster: r.emailMaster, to: r.email, subject: r.subject, html: r.html });
 
             const sentAt = new Date();
             await POD.updateOne(
