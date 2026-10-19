@@ -6023,9 +6023,7 @@ function useOrderPanelSearch() {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-      if (data.success && data.data) {
-        return data.data;
-      }
+      if (data.success && data.data) return data.data;
       return null;
     } catch (err) {
       console.error('Error fetching order panel:', err);
@@ -6101,12 +6099,12 @@ function defaultVendorRow() {
 ========================= */
 function Card({ title, right, children }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm mb-4">
+    <div className="w-full min-w-0 rounded-2xl border border-slate-200 bg-white shadow-sm mb-4">
       <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
         <div className="text-sm font-extrabold text-slate-900">{title}</div>
         {right || null}
       </div>
-      <div className="p-4">{children}</div>
+      <div className="min-w-0 p-4">{children}</div>
     </div>
   );
 }
@@ -6701,7 +6699,17 @@ function MultiSelectOrderPanelDropdown({
   const [allPanels, setAllPanels] = useState([]);
   const dropdownRef = useRef(null);
   const inputRef = useRef(null);
+  const selectionInProgressRef = useRef(false);
   const orderPanelSearch = useOrderPanelSearch();
+  const normalizeOrderNo = (value) => String(value || '').trim().toLocaleLowerCase();
+  const selectedOrderNos = new Set(selectedPanels.map((panel) => normalizeOrderNo(panel.orderPanelNo)).filter(Boolean));
+
+  const panelStatusCounts = (panel) => (panel.plantRows || []).reduce((counts, row) => {
+    const status = String(row.status || 'Open').trim().toLowerCase();
+    if (status === 'cancelled' || status === 'canceled') counts.cancelled += 1;
+    if (status === 'hold' || status === 'on hold' || status === 'partially on hold') counts.hold += 1;
+    return counts;
+  }, { cancelled: 0, hold: 0 });
 
   useEffect(() => {
     if (orderPanelSearch.orderPanels.length > 0) {
@@ -6709,7 +6717,7 @@ function MultiSelectOrderPanelDropdown({
 
       const selectedIds = selectedPanels.map(p => p._id);
       const filtered = orderPanelSearch.orderPanels.filter(
-        panel => !selectedIds.includes(panel._id)
+        panel => !selectedIds.includes(panel._id) && !selectedOrderNos.has(normalizeOrderNo(panel.orderPanelNo))
       );
       setPanels(filtered);
     }
@@ -6721,11 +6729,11 @@ function MultiSelectOrderPanelDropdown({
     const selectedIds = selectedPanels.map(p => p._id);
 
     if (!query.trim()) {
-      const filtered = allPanels.filter(panel => !selectedIds.includes(panel._id));
+      const filtered = allPanels.filter(panel => !selectedIds.includes(panel._id) && !selectedOrderNos.has(normalizeOrderNo(panel.orderPanelNo)));
       setPanels(filtered);
     } else {
       const filtered = allPanels.filter(panel =>
-        !selectedIds.includes(panel._id) && (
+        !selectedIds.includes(panel._id) && !selectedOrderNos.has(normalizeOrderNo(panel.orderPanelNo)) && (
           panel.orderPanelNo?.toLowerCase().includes(query.toLowerCase()) ||
           panel.partyName?.toLowerCase().includes(query.toLowerCase()) ||
           panel.customerName?.toLowerCase().includes(query.toLowerCase())
@@ -6738,11 +6746,19 @@ function MultiSelectOrderPanelDropdown({
   const handleSelectPanel = async (panel) => {
     setSearchQuery("");
 
+    if (selectionInProgressRef.current) return;
+
+    if (selectedOrderNos.has(normalizeOrderNo(panel.orderPanelNo))) {
+      alert(`Order ${panel.orderPanelNo} is already included in this VNN.`);
+      return;
+    }
+
     if (selectedPanels.some(p => p._id === panel._id)) {
       alert("This order panel is already selected");
       return;
     }
 
+    selectionInProgressRef.current = true;
     setLoading(true);
     try {
       const fullPanel = await orderPanelSearch.getOrderPanelById(panel._id);
@@ -6756,6 +6772,7 @@ function MultiSelectOrderPanelDropdown({
     } catch (error) {
       console.error('Error fetching order panel details:', error);
     } finally {
+      selectionInProgressRef.current = false;
       setLoading(false);
     }
   };
@@ -6785,7 +6802,7 @@ function MultiSelectOrderPanelDropdown({
 
     const selectedIds = selectedPanels.map(p => p._id);
     const filtered = orderPanelSearch.orderPanels.filter(
-      panel => !selectedIds.includes(panel._id)
+      panel => !selectedIds.includes(panel._id) && !selectedOrderNos.has(normalizeOrderNo(panel.orderPanelNo))
     );
     setPanels(filtered);
     setShowDropdown(true);
@@ -6824,20 +6841,20 @@ function MultiSelectOrderPanelDropdown({
       {selectedPanels.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-2 p-2 border border-yellow-200 rounded-lg bg-yellow-50">
           {selectedPanels.map((panel) => (
-            <div
-              key={panel._id}
-              className="flex items-center gap-1 bg-yellow-100 px-2 py-1 rounded-md text-sm"
-            >
+            <div key={panel._id} className="flex flex-wrap items-center gap-1.5 bg-yellow-100 px-2 py-1 rounded-md text-sm">
               <span className="font-medium">{panel.orderPanelNo}</span>
-              {panel.subCompanyName && (
-                <span className="text-xs text-gray-500 ml-1">
-                  ({panel.subCompanyName})
+              {panel.subCompanyName && <span className="text-xs text-gray-500">({panel.subCompanyName})</span>}
+              {panelStatusCounts(panel).cancelled > 0 && (
+                <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-800">
+                  Cancelled{panelStatusCounts(panel).cancelled > 1 ? ` · ${panelStatusCounts(panel).cancelled} rows` : ''}
                 </span>
               )}
-              <button
-                onClick={() => handleRemovePanel(panel._id)}
-                className="text-red-500 hover:text-red-700 font-bold ml-1"
-              >
+              {panelStatusCounts(panel).hold > 0 && (
+                <span className="rounded-full bg-amber-200 px-2 py-0.5 text-[10px] font-bold text-amber-900">
+                  On hold{panelStatusCounts(panel).hold > 1 ? ` · ${panelStatusCounts(panel).hold} rows` : ''}
+                </span>
+              )}
+              <button onClick={() => handleRemovePanel(panel._id)} className="text-red-500 hover:text-red-700 font-bold ml-1" aria-label={`Remove ${panel.orderPanelNo} from this VNN`}>
                 ×
               </button>
             </div>
@@ -6925,7 +6942,7 @@ function BillingTypeTable({ header, setHeader, billingColumns, selectedOrderPane
   const autoBillingType = selectedOrderPanels.length > 1 ? "Multi - Order" : "Single Order";
 
   return (
-    <div className="overflow-auto rounded-xl border border-yellow-300">
+    <div className="w-full min-w-0 overflow-x-auto overflow-y-hidden rounded-xl border border-yellow-300">
       <TransactionKeyboardTable className="min-w-full w-full text-sm">
         <thead className="sticky top-0 bg-yellow-400">
           <tr>
@@ -7141,6 +7158,16 @@ export default function EditVehicleNegotiation() {
   const canEditVnn = canEdit('Vehicle Negotiation');
   const canEditPart3 = canEditVnn && isPart1Locked && rateTargetCompleted && !isPart3Finalized;
   const canEditPlacement = canEdit('Vehicle Negotiation Placement') && isPart1Locked && isPart3Finalized;
+  const affectedOrderStatuses = orders.reduce((grouped, order) => {
+    const status = String(order.sourceOrderStatus || '').trim();
+    if (!['Hold', 'On Hold', 'Partially on hold', 'Cancelled', 'Canceled'].includes(status)) return grouped;
+    const orderNo = order.orderNo || 'Unknown order';
+    if (!grouped.has(orderNo)) grouped.set(orderNo, { hold: 0, cancelled: 0 });
+    const counts = grouped.get(orderNo);
+    if (status === 'Cancelled' || status === 'Canceled') counts.cancelled += 1;
+    else counts.hold += 1;
+    return grouped;
+  }, new Map());
 
   // Fetch data from APIs
   useEffect(() => {
@@ -7467,7 +7494,8 @@ export default function EditVehicleNegotiation() {
       const panelToRemove = selectedOrderPanels.find(p => p._id === removePanelId);
 
       setSelectedOrderPanels(prev => prev.filter(p => p._id !== removePanelId));
-      setOrders(prev => prev.filter(order => order.orderPanelId !== removePanelId));
+      const removedPanelIds = new Set((panelToRemove?.sourcePanelIds || [removePanelId]).map(String));
+      setOrders(prev => prev.filter(order => !removedPanelIds.has(String(order.orderPanelId))));
 
       if (panelToRemove) {
         setHeader(prev => ({
@@ -7552,7 +7580,7 @@ export default function EditVehicleNegotiation() {
           return {
             _id: uid(),
             orderNo: fullPanel.orderPanelNo,
-            orderPanelId: fullPanel._id,
+            orderPanelId: row._sourceOrderPanelId || fullPanel._id,
             partyName: fullPanel.partyName || fullPanel.customerName || "",
             customerId: fullPanel.customerId || null,
             customerCode: fullPanel.customerCode || "",
@@ -7591,9 +7619,10 @@ export default function EditVehicleNegotiation() {
         });
 
         setOrders(prev => {
-          const existingOrdersFromPanel = prev.filter(o => o.orderPanelId === fullPanel._id);
+          const sourcePanelIds = new Set((fullPanel.sourcePanelIds || [fullPanel._id]).map(String));
+          const existingOrdersFromPanel = prev.filter(o => sourcePanelIds.has(String(o.orderPanelId)));
           if (existingOrdersFromPanel.length > 0) {
-            const otherOrders = prev.filter(o => o.orderPanelId !== fullPanel._id);
+            const otherOrders = prev.filter(o => !sourcePanelIds.has(String(o.orderPanelId)));
             return [...otherOrders, ...newOrders];
           }
           return [...prev, ...newOrders];
@@ -7990,7 +8019,7 @@ export default function EditVehicleNegotiation() {
     { key: "localStatus", label: "Local/Not Local" },
     { key: "country", label: "Country" },
     { key: "weight", label: "Weight" },
-    { key: "status", label: "Status" },
+    { key: "status", label: "VNN Row Status" },
     { key: "sourceOrderStatus", label: "Order Panel Status" },
     { key: "collectionCharges", label: "Collection Charges" },
     { key: "cancellationCharges", label: "Cancellation Charges" },
@@ -8017,7 +8046,7 @@ export default function EditVehicleNegotiation() {
     const isReadOnly = readOnly;
 
     return (
-      <div className="overflow-auto rounded-xl border border-yellow-300 max-h-[500px]">
+      <div className="w-full min-w-0 overflow-x-auto overflow-y-auto rounded-xl border border-yellow-300 max-h-[500px]">
         <TransactionKeyboardTable className="min-w-max w-full text-sm">
           <thead className="sticky top-0 bg-yellow-400 z-10">
             <tr>
@@ -8042,13 +8071,20 @@ export default function EditVehicleNegotiation() {
                 return (
                   <tr key={row._id} className="hover:bg-yellow-50 even:bg-slate-50">
                     <td className="border border-yellow-300 px-2 py-2">
-                      <input
-                        value={row.orderNo || ""}
-                        onChange={(e) => onChange(row._id, 'orderNo', e.target.value)}
-                        readOnly={isReadOnly}
-                        className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-                        placeholder="Order No"
-                      />
+                      <div className="min-w-[120px] space-y-1">
+                        <input
+                          value={row.orderNo || ""}
+                          onChange={(e) => onChange(row._id, 'orderNo', e.target.value)}
+                          readOnly={isReadOnly}
+                          className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+                          placeholder="Order No"
+                        />
+                        {['Hold', 'On Hold', 'Partially on hold', 'Cancelled', 'Canceled'].includes(row.sourceOrderStatus) && (
+                          <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${row.sourceOrderStatus === 'Cancelled' || row.sourceOrderStatus === 'Canceled' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-900'}`}>
+                            Order {row.sourceOrderStatus === 'Hold' ? 'On Hold' : row.sourceOrderStatus}
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="border border-yellow-300 px-2 py-2">
                       <input
@@ -8281,7 +8317,7 @@ export default function EditVehicleNegotiation() {
     }, [rows]);
 
     return (
-      <div className="overflow-auto rounded-xl border border-yellow-300 max-h-[300px]">
+      <div className="w-full min-w-0 overflow-x-auto overflow-y-auto rounded-xl border border-yellow-300 max-h-[300px]">
         <TransactionKeyboardTable className="min-w-full w-full text-sm">
           <thead className="sticky top-0 bg-yellow-400">
             <tr>
@@ -8400,7 +8436,7 @@ export default function EditVehicleNegotiation() {
 
   return (
     <TransactionFormKeyboardNavigation>
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white">
+      <div className="min-h-screen w-full overflow-x-hidden bg-gradient-to-br from-slate-50 to-white">
         <div className="sticky top-0 z-40 border-b bg-white/80 backdrop-blur">
           <div className="mx-auto max-w-full px-4 py-3 flex items-center justify-between">
             <div>
@@ -8465,10 +8501,10 @@ export default function EditVehicleNegotiation() {
           </div>
         </div>
 
-        <div className="mx-auto max-w-full p-4 space-y-4">
+        <div className="mx-auto w-full min-w-0 max-w-full p-4 space-y-4">
           {/* PART 1: VEHICLE NEGOTIATION - PART 1 */}
           <Card title="Vehicle Negotiation - Panel - Part -1">
-            <fieldset disabled={isPart1Locked || !canEditVnn} className="disabled:opacity-70">
+            <fieldset disabled={isPart1Locked || !canEditVnn} className="w-full min-w-0 disabled:opacity-70">
               <div className="grid grid-cols-12 gap-3 mb-4">
                 <div className="col-span-12 md:col-span-3">
                   <label className="text-xs font-bold text-slate-600">Vehicle Negotiation No</label>
@@ -8626,13 +8662,21 @@ export default function EditVehicleNegotiation() {
 
               {/* Orders Table */}
               <div>
-                {orders.some((order) => ['Hold', 'Cancelled'].includes(order.sourceOrderStatus)) && (
-                  <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4" role="status">
-                    <div>
-                      <div className="font-bold text-amber-900">A linked order row is on hold or cancelled</div>
-                      <p className="mt-1 text-sm text-amber-800">The shared VNN remains active. Add an open replacement order panel, then submit Part 1 so the normal rate and approval flow runs again.</p>
+                {affectedOrderStatuses.size > 0 && (
+                  <div className="mb-4 grid w-full min-w-0 gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4" role="status">
+                    <div className="min-w-0">
+                      <div className="font-bold text-amber-900">Some orders linked to this VNN are on hold or cancelled</div>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {[...affectedOrderStatuses.entries()].map(([orderNo, counts]) => (
+                          <span key={orderNo} className="inline-flex flex-wrap items-center gap-1.5 rounded-lg bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-800 ring-1 ring-amber-200">
+                            <span>{orderNo}</span>
+                            {counts.cancelled > 0 && <span className="rounded-full bg-rose-100 px-2 py-0.5 text-rose-800">Cancelled{counts.cancelled > 1 ? ` · ${counts.cancelled} rows` : ''}</span>}
+                            {counts.hold > 0 && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-amber-900">On hold{counts.hold > 1 ? ` · ${counts.hold} rows` : ''}</span>}
+                          </span>
+                        ))}
+                      </div>
+                      <p className="mt-2 text-sm text-amber-800">{isPart1Locked ? 'Use Amend Part 1 at the top of this page to unlock the order list. Then remove the affected order and add an open replacement before submitting for approval again.' : 'Remove the affected order and add an open replacement order before submitting for approval again.'}</p>
                     </div>
-                    {isPart1Locked && canEditVnn && <button onClick={() => handleWorkflowAction('amend-part1')} disabled={saving} className="rounded-lg bg-amber-700 px-3 py-2 text-sm font-bold text-white hover:bg-amber-800 disabled:opacity-50">Open Part 1 amendment</button>}
                   </div>
                 )}
                 <div className="flex items-center justify-between mb-4">

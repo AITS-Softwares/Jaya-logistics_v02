@@ -9042,7 +9042,7 @@ export default function EditOrderPanel() {
           rate: 0,
           locationRate: 0,
           collectionCharges: num(row.collectionCharges) || 0,
-          cancellationCharges: row.cancellationCharges || 'Nil',
+          cancellationCharges: num(row.cancellationCharges),
           loadingCharges: row.loadingCharges || 'Nil',
           otherCharges: num(row.otherCharges) || 0,
           localStatus: row.localStatus || "unknown",
