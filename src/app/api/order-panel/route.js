@@ -2666,7 +2666,7 @@ export const PUT = withAuth(async (req, context, user) => {
     if (body.customerName) orderPanel.customerName = body.customerName;
     if (body.partyName) orderPanel.partyName = body.partyName;
     if (body.collectionCharges !== undefined) orderPanel.collectionCharges = num(body.collectionCharges);
-    if (body.cancellationCharges !== undefined) orderPanel.cancellationCharges = body.cancellationCharges;
+    if (body.cancellationCharges !== undefined) orderPanel.cancellationCharges = num(body.cancellationCharges);
     if (body.loadingCharges !== undefined) orderPanel.loadingCharges = body.loadingCharges;
     if (body.otherCharges !== undefined) orderPanel.otherCharges = num(body.otherCharges);
     if (body.panelStatus && body.panelStatus !== orderPanel.panelStatus) {
@@ -2820,6 +2820,13 @@ export const PUT = withAuth(async (req, context, user) => {
     } else if (saveMode === 'submit') {
       orderPanel.isDraft = false;
       orderPanel.panelStatus = 'Submitted';
+    }
+
+    // Older order records may contain the display label "Nil" in numeric
+    // charge fields. Normalize the hydrated document before validation/save.
+    orderPanel.cancellationCharges = num(orderPanel.cancellationCharges);
+    for (const row of orderPanel.plantRows || []) {
+      row.cancellationCharges = num(row.cancellationCharges);
     }
 
     await orderPanel.save();

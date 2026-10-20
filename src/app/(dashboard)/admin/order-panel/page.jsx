@@ -2492,9 +2492,19 @@ export default function OrderPanelList() {
       return;
     }
 
-    // Build query parameters with order IDs and details
-    const orderIds = selectedOrderData.map(o => o.originalOrderId).join(',');
-    const orderPanelNos = selectedOrderData.map(o => o.orderNo).join(',');
+    // The Order Panel list displays one row per plant/detail row. Collapse
+    // those rows back to one saved Order Panel before handing it to the VNN.
+    const selectedPanelsById = new Map();
+    selectedOrderData.forEach((order) => {
+      const panelId = String(order.originalOrderId || '');
+      if (panelId && !selectedPanelsById.has(panelId)) {
+        selectedPanelsById.set(panelId, order.orderNo || '');
+      }
+    });
+
+    const selectedPanels = [...selectedPanelsById.entries()];
+    const orderIds = selectedPanels.map(([panelId]) => panelId).join(',');
+    const orderPanelNos = selectedPanels.map(([, orderNo]) => orderNo).join(',');
 
     // Navigate to vehicle negotiation create page with order data
     router.push(`/admin/vehicle-negotiation/create?orderIds=${orderIds}&orderPanelNos=${orderPanelNos}`);

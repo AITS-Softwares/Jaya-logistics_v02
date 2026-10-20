@@ -315,6 +315,7 @@ export default function LocationPage() {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Fetch Locations
   const fetchLocations = async () => {
@@ -512,6 +513,12 @@ export default function LocationPage() {
     fetchLocations();
   }, []);
 
+  const normalizedSearchTerm = searchTerm.trim().toLocaleLowerCase();
+  const filteredLocations = locations.filter((location) =>
+    !normalizedSearchTerm ||
+    `${location.name || ''} ${location.state || ''}`.toLocaleLowerCase().includes(normalizedSearchTerm)
+  );
+
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">Location Master</h1>
@@ -585,12 +592,34 @@ export default function LocationPage() {
       </div>
 
       {/* Locations List */}
+      <div className="mb-3 flex flex-wrap items-center gap-3">
+        <input
+          type="search"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          placeholder="Search locations by name or state..."
+          aria-label="Search locations by name or state"
+          className="min-w-[240px] flex-1 rounded-lg border border-gray-300 bg-white px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+        {searchTerm && (
+          <button
+            type="button"
+            onClick={() => setSearchTerm('')}
+            className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+          >
+            Clear
+          </button>
+        )}
+        <span className="text-sm text-gray-500">
+          {filteredLocations.length} of {locations.length} locations
+        </span>
+      </div>
       {loading ? (
         <div className="mb-4">Loading locations...</div>
       ) : (
         <ul className="divide-y border rounded-lg">
-          {locations.length > 0 ? (
-            locations.map((location, index) => (
+          {filteredLocations.length > 0 ? (
+            filteredLocations.map((location, index) => (
               <li key={location._id} className="flex justify-between items-center p-4 hover:bg-gray-50">
                 <div className="flex items-center gap-4">
                   <span className="text-gray-500 w-8">{index + 1}.</span>
@@ -620,7 +649,9 @@ export default function LocationPage() {
               </li>
             ))
           ) : (
-            <li className="p-4 text-center text-gray-500">No locations found</li>
+            <li className="p-4 text-center text-gray-500">
+              {locations.length > 0 ? 'No locations match your search' : 'No locations found'}
+            </li>
           )}
         </ul>
       )}

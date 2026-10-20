@@ -243,7 +243,6 @@ function useOrderPanelSearch() {
           ['Approved', 'Partially on hold'].includes(panel.panelStatus) &&
           !usedOrderPanelIds.has(panel.orderPanelNo)
         );
-
         setOrderPanels(availablePanels);
       } else {
         setOrderPanels([]);
@@ -275,10 +274,9 @@ function useOrderPanelSearch() {
 
       if (data.success && data.data) {
         return data.data;
-      } else {
-        setError(data.message || 'Order panel not found');
-        return null;
       }
+      setError(data.message || 'Order panel not found');
+      return null;
     } catch (err) {
       console.error('Error fetching order panel:', err);
       setError('Failed to fetch order panel');
@@ -958,7 +956,10 @@ function MultiSelectOrderPanelDropdown({
   const [allPanels, setAllPanels] = useState([]);
   const dropdownRef = useRef(null);
   const inputRef = useRef(null);
+  const selectionInProgressRef = useRef(false);
   const orderPanelSearch = useOrderPanelSearch();
+  const normalizeOrderNo = (value) => String(value || '').trim().toLocaleLowerCase();
+  const selectedOrderNos = new Set(selectedPanels.map((panel) => normalizeOrderNo(panel.orderPanelNo)).filter(Boolean));
 
   useEffect(() => {
     if (orderPanelSearch.orderPanels.length > 0) {
@@ -969,7 +970,7 @@ function MultiSelectOrderPanelDropdown({
       const firstSelectedSubCompanyId = selectedPanels.length > 0 ? selectedPanels[0].subCompanyId : null;
 
       let filtered = orderPanelSearch.orderPanels.filter(
-        panel => !selectedIds.includes(panel._id)
+        panel => !selectedIds.includes(panel._id) && !selectedOrderNos.has(normalizeOrderNo(panel.orderPanelNo))
       );
 
       if (firstSelectedSubCompanyId) {
@@ -989,7 +990,7 @@ function MultiSelectOrderPanelDropdown({
     const firstSelectedSubCompanyId = selectedPanels.length > 0 ? selectedPanels[0].subCompanyId : null;
 
     if (!query.trim()) {
-      let filtered = allPanels.filter(panel => !selectedIds.includes(panel._id));
+      let filtered = allPanels.filter(panel => !selectedIds.includes(panel._id) && !selectedOrderNos.has(normalizeOrderNo(panel.orderPanelNo)));
 
       if (firstSelectedSubCompanyId) {
         filtered = filtered.filter(panel =>
@@ -1000,7 +1001,7 @@ function MultiSelectOrderPanelDropdown({
       setPanels(filtered);
     } else {
       let filtered = allPanels.filter(panel =>
-        !selectedIds.includes(panel._id) && (
+          !selectedIds.includes(panel._id) && !selectedOrderNos.has(normalizeOrderNo(panel.orderPanelNo)) && (
           panel.orderPanelNo?.toLowerCase().includes(query.toLowerCase()) ||
           panel.partyName?.toLowerCase().includes(query.toLowerCase()) ||
           panel.customerName?.toLowerCase().includes(query.toLowerCase()) ||
@@ -1022,15 +1023,24 @@ function MultiSelectOrderPanelDropdown({
   const handleSelectPanel = async (panel) => {
     setSearchQuery("");
 
+    if (selectionInProgressRef.current) return;
+
+    if (selectedOrderNos.has(normalizeOrderNo(panel.orderPanelNo))) {
+      alert(`Order ${panel.orderPanelNo} is already included in this VNN.`);
+      return;
+    }
+
     if (selectedPanels.some(p => p._id === panel._id)) {
       alert("This order panel is already selected");
       return;
     }
 
+    selectionInProgressRef.current = true;
     if (selectedPanels.length > 0) {
       const firstPanelSubCompanyId = selectedPanels[0].subCompanyId;
       if (panel.subCompanyId !== firstPanelSubCompanyId) {
         alert(`⚠️ You can only select orders from the same sub-company.\nCurrent: ${selectedPanels[0].subCompanyName || 'None'}\nSelected: ${panel.subCompanyName || 'None'}`);
+        selectionInProgressRef.current = false;
         return;
       }
     }
@@ -1048,6 +1058,7 @@ function MultiSelectOrderPanelDropdown({
     } catch (error) {
       console.error('Error fetching order panel details:', error);
     } finally {
+      selectionInProgressRef.current = false;
       setLoading(false);
     }
   };
@@ -1079,7 +1090,7 @@ function MultiSelectOrderPanelDropdown({
     const firstSelectedSubCompanyId = selectedPanels.length > 0 ? selectedPanels[0].subCompanyId : null;
 
     let filtered = orderPanelSearch.orderPanels.filter(
-      panel => !selectedIds.includes(panel._id)
+      panel => !selectedIds.includes(panel._id) && !selectedOrderNos.has(normalizeOrderNo(panel.orderPanelNo))
     );
 
     if (firstSelectedSubCompanyId) {
@@ -1330,7 +1341,8 @@ export default function VehicleNegotiationPanel() {
       const panelToRemove = selectedOrderPanels.find(p => p._id === removePanelId);
 
       setSelectedOrderPanels(prev => prev.filter(p => p._id !== removePanelId));
-      setOrders(prev => prev.filter(order => order.orderPanelId !== removePanelId));
+      const removedPanelIds = new Set((panelToRemove?.sourcePanelIds || [removePanelId]).map(String));
+      setOrders(prev => prev.filter(order => !removedPanelIds.has(String(order.orderPanelId))));
 
       if (panelToRemove) {
         setHeader(prev => ({
@@ -1433,7 +1445,7 @@ export default function VehicleNegotiationPanel() {
           return {
             _id: uid(),
             orderNo: fullPanel.orderPanelNo,
-            orderPanelId: fullPanel._id,
+            orderPanelId: row._sourceOrderPanelId || fullPanel._id,
             orderRowId: row._id,
             partyName: fullPanel.partyName || fullPanel.customerName || "",
             customerId: fullPanel.customerId || null,
@@ -1472,9 +1484,10 @@ export default function VehicleNegotiationPanel() {
         });
 
         setOrders(prev => {
-          const existingOrdersFromPanel = prev.filter(o => o.orderPanelId === fullPanel._id);
+          const sourcePanelIds = new Set((fullPanel.sourcePanelIds || [fullPanel._id]).map(String));
+          const existingOrdersFromPanel = prev.filter(o => sourcePanelIds.has(String(o.orderPanelId)));
           if (existingOrdersFromPanel.length > 0) {
-            const otherOrders = prev.filter(o => o.orderPanelId !== fullPanel._id);
+            const otherOrders = prev.filter(o => !sourcePanelIds.has(String(o.orderPanelId)));
             return [...otherOrders, ...newOrders];
           }
           return [...prev, ...newOrders];
@@ -1545,8 +1558,19 @@ export default function VehicleNegotiationPanel() {
       return;
     }
 
-    const ids = orderIds.split(',').filter(id => id.trim() !== '');
-    const panelNos = orderPanelNos ? orderPanelNos.split(',').filter(no => no.trim() !== '') : [];
+    const requestedIds = orderIds.split(',').filter(id => id.trim() !== '');
+    const requestedPanelNos = orderPanelNos ? orderPanelNos.split(',').filter(no => no.trim() !== '') : [];
+    const seenIds = new Set();
+    const uniqueOrderSelections = requestedIds.reduce((unique, id, index) => {
+      const normalizedId = id.trim();
+      if (!seenIds.has(normalizedId)) {
+        seenIds.add(normalizedId);
+        unique.push({ id: normalizedId, panelNo: requestedPanelNos[index] || '' });
+      }
+      return unique;
+    }, []);
+    const ids = uniqueOrderSelections.map((selection) => selection.id);
+    const panelNos = uniqueOrderSelections.map((selection) => selection.panelNo);
 
     console.log(` Loading ${ids.length} order(s) from URL params`);
 

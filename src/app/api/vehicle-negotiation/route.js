@@ -3500,15 +3500,15 @@ async function withLinkedOrderStatuses(negotiation, user) {
   };
 }
 
-function findDuplicateVnnOrder(selectedOrderPanels = []) {
+function uniqueVnnOrderPanels(selectedOrderPanels = []) {
   const seen = new Set();
-  for (const panel of selectedOrderPanels) {
+  return selectedOrderPanels.filter((panel) => {
     const orderNo = String(panel?.orderPanelNo || '').trim().toLocaleLowerCase();
-    if (!orderNo) continue;
-    if (seen.has(orderNo)) return panel.orderPanelNo;
-    seen.add(orderNo);
-  }
-  return null;
+    const key = orderNo || `id:${String(panel?._id || '')}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 export async function GET(req) {
@@ -3756,10 +3756,6 @@ export async function POST(req) {
     }
 
     const body = await req.json();
-    const duplicateOrderNo = findDuplicateVnnOrder(body.selectedOrderPanels || []);
-    if (duplicateOrderNo) {
-      return NextResponse.json({ success: false, message: `Order ${duplicateOrderNo} is already included in this VNN.` }, { status: 409 });
-    }
     const blockedRow = await validateOpenOrderRows(user, body.orders || body.orderRows || []);
     if (blockedRow) return NextResponse.json({ success: false, message: blockedRow }, { status: 409 });
 
@@ -3821,7 +3817,7 @@ export async function POST(req) {
     }
 
     // Process selected order panels with sub-company
-    const selectedOrderPanels = (body.selectedOrderPanels || []).map(panel => ({
+    const selectedOrderPanels = uniqueVnnOrderPanels(body.selectedOrderPanels || []).map(panel => ({
       _id: panel._id || '',
       orderPanelNo: panel.orderPanelNo || '',
       subCompanyId: user.activeOperatingCompanyId,
@@ -4056,11 +4052,6 @@ export async function PUT(req) {
       }, { status: 404 });
     }
 
-    const duplicateOrderNo = findDuplicateVnnOrder(body.selectedOrderPanels || []);
-    if (duplicateOrderNo) {
-      return NextResponse.json({ success: false, message: `Order ${duplicateOrderNo} is already included in this VNN.` }, { status: 409 });
-    }
-
     if (vehicleNegotiation.workflow?.part1Locked && (body.header || body.selectedOrderPanels || body.orders || body.vendors || body.negotiation || body.voiceUrl !== undefined || body.voiceFileInfo)) {
       return NextResponse.json({
         success: false,
@@ -4105,7 +4096,7 @@ export async function PUT(req) {
 
     // ─── UPDATE SELECTED ORDER PANELS (requires 'edit' permission) ───
     if (body.selectedOrderPanels && hasEditPermission) {
-      vehicleNegotiation.selectedOrderPanels = body.selectedOrderPanels.map(panel => ({
+      vehicleNegotiation.selectedOrderPanels = uniqueVnnOrderPanels(body.selectedOrderPanels).map(panel => ({
         _id: panel._id || '',
         orderPanelNo: panel.orderPanelNo || '',
         subCompanyId: user.activeOperatingCompanyId,
