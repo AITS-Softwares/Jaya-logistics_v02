@@ -283,8 +283,10 @@ dueDays: {
 
   pan: {
     type: String,
+    required: [true, "PAN is required"],
     trim: true,
     uppercase: true,
+    match: [/^[A-Z]{5}[0-9]{4}[A-Z]$/, "Invalid PAN format. Example: ABCDE1234F"],
   },
 
   bankName: { type: String, trim: true },

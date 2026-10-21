@@ -3490,7 +3490,10 @@ function SupplierSearchDropdown({ value, onSelect, readOnly = false }) {
               className={`p-3 hover:bg-slate-50 cursor-pointer border-b border-slate-100 ${highlightedIndex === suppliers.indexOf(supplier) ? 'bg-sky-50' : ''}`}
             >
               <div className="font-medium text-slate-800">{supplier.supplierName}</div>
-              <div className="text-xs text-slate-500">Code: {supplier.supplierCode}</div>
+              <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                <span className="rounded bg-indigo-50 px-1.5 py-0.5 font-mono text-[10px] font-bold text-indigo-700">Code: {supplier.supplierCode}</span>
+                <span className="text-[11px] text-slate-500">PAN No: <span className="font-medium text-slate-600">{supplier.pan || 'Not provided'}</span></span>
+              </div>
             </div>
           ))}
         </div>
@@ -4429,7 +4432,7 @@ export default function ApproveVehicleNegotiation() {
             <div className="grid grid-cols-12 gap-3 mb-4">
               <div className="col-span-12 md:col-span-4">
                 <label className="text-xs font-bold text-slate-600">Supplier Name</label>
-                <Input value={selectedSupplier?.supplierName || approval.vendorName} readOnly={true} />
+                <Input value={selectedSupplier ? `${selectedSupplier.supplierName} · PAN: ${selectedSupplier.pan || 'Not provided'}` : approval.vendorName} readOnly={true} />
               </div>
               <Input col="col-span-12 md:col-span-4" label="Supplier Code" value={approval.vendorCode} readOnly={true} />
               <Select col="col-span-12 md:col-span-4" label="Supplier Status" value={approval.vendorStatus} options={VENDOR_STATUS} readOnly={true} />

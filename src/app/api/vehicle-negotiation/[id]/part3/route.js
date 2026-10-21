@@ -28,10 +28,8 @@ export async function PATCH(req, { params }) {
   await dbConnect();
   const record = await VehicleNegotiation.findOne(companyScopeFilter(auth.user, { _id: id }));
   if (!record) return NextResponse.json({ success: false, message: 'Vehicle Negotiation not found.' }, { status: 404 });
-  const rateTargetCompleted = Boolean(record.workflow?.rateTargetCompletedAt) ||
-    (Number(record.negotiation?.maxRate) > 0 && Number(record.negotiation?.targetRate) > 0);
-  if (!record.workflow?.part1Locked || !rateTargetCompleted) {
-    return NextResponse.json({ success: false, message: 'Commercial Part 3 can be entered only after Part 1 is locked and Rate Target is completed.' }, { status: 409 });
+  if (!record.workflow?.part1Locked) {
+    return NextResponse.json({ success: false, message: 'Commercial Part 3 can be entered only after Part 1 is locked.' }, { status: 409 });
   }
   if (record.approval?.part3Status === 'Approved') {
     return NextResponse.json({ success: false, message: 'Commercial Part 3 fields are locked after final VNN approval.' }, { status: 409 });

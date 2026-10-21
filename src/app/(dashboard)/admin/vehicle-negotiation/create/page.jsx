@@ -619,7 +619,8 @@ function TableSearchableDropdown({
                 <div className="font-medium text-slate-800 text-sm">
                   {item[displayField]}
                 </div>
-                {item[codeField] && showCode && (
+                {displayField === 'supplierName' && <div className="mt-1 text-[11px] text-slate-500">Code: {item.supplierCode} <span className="mx-1">·</span> PAN No: <span className="font-medium text-slate-600">{item.pan || 'Not provided'}</span></div>}
+                {displayField !== 'supplierName' && item[codeField] && showCode && (
                   <div className="text-xs text-slate-500 mt-0.5">
                     Code: {item[codeField]}
                   </div>
@@ -673,7 +674,7 @@ function SearchableDropdown({
   const getDisplayValue = (item) => {
     if (!item) return "";
     if (displayField === 'customerName') return item.customerName || "";
-    if (displayField === 'supplierName') return `${item.supplierName || ''} (${item.supplierCode || ''})`;
+    if (displayField === 'supplierName') return `${item.supplierName || ''} (${item.supplierCode || ''}) · PAN: ${item.pan || 'Not provided'}`;
     if (displayField === 'vehicleNumber') return `${item.vehicleNumber} - ${item.ownerName || ''}`;
     const display = item[displayField] || "";
     const code = item[codeField] ? `(${item[codeField]})` : "";
@@ -689,7 +690,8 @@ function SearchableDropdown({
       const filtered = items.filter(item => {
         if (displayField === 'supplierName') {
           return (item.supplierName && item.supplierName.toLowerCase().includes(query.toLowerCase())) ||
-            (item.supplierCode && item.supplierCode.toLowerCase().includes(query.toLowerCase()));
+            (item.supplierCode && item.supplierCode.toLowerCase().includes(query.toLowerCase())) ||
+            (item.pan && item.pan.toLowerCase().includes(query.toLowerCase()));
         }
         if (displayField === 'vehicleNumber') {
           return (item.vehicleNumber && item.vehicleNumber.toLowerCase().includes(query.toLowerCase())) ||
@@ -787,9 +789,11 @@ function SearchableDropdown({
                 </div>
                 <div className="text-xs text-slate-500 mt-1">
                   {displayField === 'supplierName' ? (
-                    <>
-                      Code: {item.supplierCode} | Status: {item.supplierStatus || 'Active'}
-                    </>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="rounded bg-indigo-50 px-1.5 py-0.5 font-mono text-[10px] font-bold text-indigo-700">Code: {item.supplierCode}</span>
+                      <span className="text-[11px] text-slate-500">PAN No: <span className="font-medium text-slate-600">{item.pan || 'Not provided'}</span></span>
+                      <span>Status: {item.supplierStatus || 'Active'}</span>
+                    </div>
                   ) : displayField === 'vehicleNumber' ? (
                     <>
                       Owner: {item.ownerName} | RC: {item.rcNumber}
@@ -841,7 +845,8 @@ function SupplierSearchDropdown({
     if (searchQuery.trim()) {
       const filtered = suppliers.filter(supplier =>
         supplier.supplierName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        supplier.supplierCode?.toLowerCase().includes(searchQuery.toLowerCase())
+        supplier.supplierCode?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        supplier.pan?.toLowerCase().includes(searchQuery.toLowerCase())
       );
       setFilteredSuppliers(filtered);
     } else {
@@ -862,7 +867,8 @@ function SupplierSearchDropdown({
     } else {
       const filtered = suppliers.filter(supplier =>
         supplier.supplierName?.toLowerCase().includes(query.toLowerCase()) ||
-        supplier.supplierCode?.toLowerCase().includes(query.toLowerCase())
+        supplier.supplierCode?.toLowerCase().includes(query.toLowerCase()) ||
+        supplier.pan?.toLowerCase().includes(query.toLowerCase())
       );
       setFilteredSuppliers(filtered);
     }
@@ -928,8 +934,10 @@ function SupplierSearchDropdown({
                 <div className="font-medium text-slate-800">
                   {supplier.supplierName}
                 </div>
-                <div className="text-xs text-slate-500 mt-1">
-                  Code: {supplier.supplierCode} | Status: {supplier.supplierStatus || 'Active'}
+                <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                  <span className="rounded bg-indigo-50 px-1.5 py-0.5 font-mono text-[10px] font-bold text-indigo-700">Code: {supplier.supplierCode}</span>
+                  <span className="text-[11px] text-slate-500">PAN No: <span className="font-medium text-slate-600">{supplier.pan || 'Not provided'}</span></span>
+                  <span className="text-xs text-slate-500">Status: {supplier.supplierStatus || 'Active'}</span>
                 </div>
               </div>
             ))
@@ -1306,6 +1314,128 @@ function BillingTypeTable({ header, setHeader, billingColumns, selectedOrderPane
 /* =======================
   MAIN PAGE
 ========================= */
+function VendorsTable({ rows, onChange, onRemove, onAdd, vendorColumns, suppliers, purchaseTypes }) {
+  const [selectedSupplierNames, setSelectedSupplierNames] = useState({});
+
+  useEffect(() => {
+    const names = {};
+    rows.forEach(row => {
+      if (row.vendorName) {
+        names[row._id] = row.vendorName;
+      }
+    });
+    setSelectedSupplierNames(names);
+  }, [rows]);
+
+  return (
+    <div className="overflow-auto rounded-xl border border-yellow-300 max-h-[300px]">
+      <TransactionKeyboardTable className="min-w-full w-full text-sm">
+        <thead className="sticky top-0 bg-yellow-400">
+          <tr>
+            {vendorColumns.map((col) => (
+              <th
+                key={col.key}
+                className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 text-center"
+              >
+                {col.label}
+              </th>
+            ))}
+            <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 text-center">
+              Actions
+            </th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {rows.map((row, index) => (
+            <tr key={row._id} className="hover:bg-yellow-50 even:bg-slate-50">
+              <td className="border border-yellow-300 px-2 py-2">
+                <TableSearchableDropdown
+                  items={suppliers}
+                  selectedId={selectedSupplierNames[row._id] || row.vendorName}
+                  onSelect={(supplier) => {
+                    if (supplier) {
+                      setSelectedSupplierNames(prev => ({
+                        ...prev,
+                        [row._id]: supplier.supplierName
+                      }));
+                      onChange(row._id, 'vendorName', supplier.supplierName);
+                      onChange(row._id, 'vendorCode', supplier.supplierCode || '');
+                    } else {
+                      setSelectedSupplierNames(prev => {
+                        const next = { ...prev };
+                        delete next[row._id];
+                        return next;
+                      });
+                      onChange(row._id, 'vendorName', '');
+                      onChange(row._id, 'vendorCode', '');
+                    }
+                  }}
+                  placeholder="Select Supplier"
+                  displayField="supplierName"
+                  codeField="supplierCode"
+                  cellId={`supplier-${row._id}`}
+                />
+              </td>
+              <td className="border border-yellow-300 px-2 py-2">
+                <input
+                  type="text"
+                  value={row.vendorCode || ""}
+                  readOnly
+                  className="w-full rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-sm outline-none cursor-not-allowed"
+                  placeholder="Auto-filled"
+                />
+              </td>
+              <td className="border border-yellow-300 px-2 py-2">
+                <select
+                  value={row.purchaseType || ""}
+                  onChange={(e) => onChange(row._id, 'purchaseType', e.target.value)}
+                  className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+                >
+                  <option value="">Select Purchase Type</option>
+                  {purchaseTypes.length > 0 ? (
+                    purchaseTypes.map((opt) => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))
+                  ) : (
+                    <option value="" disabled>No purchase types available</option>
+                  )}
+                </select>
+              </td>
+              <td className="border border-yellow-300 px-2 py-2">
+                <input
+                  type="text"
+                  defaultValue={row.marketRate || ""}
+                  onBlur={(e) => {
+                    const value = e.target.value;
+                    if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                      onChange(row._id, 'marketRate', value);
+                    } else {
+                      e.target.value = row.marketRate || "";
+                    }
+                  }}
+                  className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+                  placeholder="Enter Market Rate"
+                />
+              </td>
+              <td className="border border-yellow-300 px-2 py-2 text-center">
+                {rows.length > 1 && (
+                  <button
+                    onClick={() => onRemove(row._id)}
+                    className="rounded-lg bg-red-500 px-3 py-1.5 text-xs font-bold text-white hover:bg-red-600 transition"
+                  >
+                    Remove
+                  </button>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </TransactionKeyboardTable>
+    </div>
+  );
+}
+
 export default function VehicleNegotiationPanel() {
   const router = useRouter();
 
@@ -1461,6 +1591,7 @@ export default function VehicleNegotiationPanel() {
             fromState: row.fromState || "",
             to: row.to || null,
             toName: row.toName || "",
+            locationRemark: row.locationRemark || "",
             taluka: row.taluka || "",
             talukaName: row.talukaName || "",
             district: row.district || "",
@@ -2103,6 +2234,7 @@ export default function VehicleNegotiationPanel() {
           fromState: order.fromState || '',
           to: order.to || null,
           toName: order.toName,
+          locationRemark: order.locationRemark || "",
           taluka: order.taluka,
           talukaName: order.talukaName,
           district: order.district,
@@ -2302,6 +2434,7 @@ export default function VehicleNegotiationPanel() {
     { key: "pinCode", label: "Pin Code" },
     { key: "from", label: "From" },
     { key: "to", label: "To" },
+    { key: "locationRemark", label: "Location Remark", readOnly: true },
     { key: "taluka", label: "Taluka" },
     { key: "district", label: "District" },
     { key: "state", label: "State" },
@@ -2599,127 +2732,6 @@ export default function VehicleNegotiationPanel() {
     );
   };
 
-  const VendorsTable = ({ rows, onChange, onRemove, onAdd }) => {
-    const [selectedSupplierNames, setSelectedSupplierNames] = useState({});
-
-    useEffect(() => {
-      const names = {};
-      rows.forEach(row => {
-        if (row.vendorName) {
-          names[row._id] = row.vendorName;
-        }
-      });
-      setSelectedSupplierNames(names);
-    }, [rows]);
-
-    return (
-      <div className="overflow-auto rounded-xl border border-yellow-300 max-h-[300px]">
-        <TransactionKeyboardTable className="min-w-full w-full text-sm">
-          <thead className="sticky top-0 bg-yellow-400">
-            <tr>
-              {vendorColumns.map((col) => (
-                <th
-                  key={col.key}
-                  className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 text-center"
-                >
-                  {col.label}
-                </th>
-              ))}
-              <th className="border border-yellow-500 px-3 py-3 text-xs font-extrabold text-slate-900 text-center">
-                Actions
-              </th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {rows.map((row, index) => (
-              <tr key={row._id} className="hover:bg-yellow-50 even:bg-slate-50">
-                <td className="border border-yellow-300 px-2 py-2">
-                  <TableSearchableDropdown
-                    items={supplierSearch?.suppliers || []}
-                    selectedId={selectedSupplierNames[row._id] || row.vendorName}
-                    onSelect={(supplier) => {
-                      if (supplier) {
-                        setSelectedSupplierNames(prev => ({
-                          ...prev,
-                          [row._id]: supplier.supplierName
-                        }));
-                        updateVendor(row._id, 'vendorName', supplier.supplierName);
-                        updateVendor(row._id, 'vendorCode', supplier.supplierCode || '');
-                      } else {
-                        setSelectedSupplierNames(prev => {
-                          const next = { ...prev };
-                          delete next[row._id];
-                          return next;
-                        });
-                        updateVendor(row._id, 'vendorName', '');
-                        updateVendor(row._id, 'vendorCode', '');
-                      }
-                    }}
-                    placeholder="Select Supplier"
-                    displayField="supplierName"
-                    codeField="supplierCode"
-                    cellId={`supplier-${row._id}`}
-                  />
-                </td>
-                <td className="border border-yellow-300 px-2 py-2">
-                  <input
-                    type="text"
-                    value={row.vendorCode || ""}
-                    readOnly
-                    className="w-full rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-sm outline-none cursor-not-allowed"
-                    placeholder="Auto-filled"
-                  />
-                </td>
-                <td className="border border-yellow-300 px-2 py-2">
-                  <select
-                    value={row.purchaseType || ""}
-                    onChange={(e) => updateVendor(row._id, 'purchaseType', e.target.value)}
-                    className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-                  >
-                    <option value="">Select Purchase Type</option>
-                    {purchaseTypes.length > 0 ? (
-                      purchaseTypes.map((opt) => (
-                        <option key={opt} value={opt}>{opt}</option>
-                      ))
-                    ) : (
-                      <option value="" disabled>No purchase types available</option>
-                    )}
-                  </select>
-                </td>
-                <td className="border border-yellow-300 px-2 py-2">
-                  <input
-                    type="text"
-                    defaultValue={row.marketRate || ""}
-                    onBlur={(e) => {
-                      const value = e.target.value;
-                      if (value === '' || /^\d*\.?\d*$/.test(value)) {
-                        updateVendor(row._id, 'marketRate', value);
-                      } else {
-                        e.target.value = row.marketRate || "";
-                      }
-                    }}
-                    className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-                    placeholder="Enter Market Rate"
-                  />
-                </td>
-                <td className="border border-yellow-300 px-2 py-2 text-center">
-                  {rows.length > 1 && (
-                    <button
-                      onClick={() => onRemove(row._id)}
-                      className="rounded-lg bg-red-500 px-3 py-1.5 text-xs font-bold text-white hover:bg-red-600 transition"
-                    >
-                      Remove
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </TransactionKeyboardTable>
-      </div>
-    );
-  };
 
   return (
     <TransactionFormKeyboardNavigation>
@@ -2915,7 +2927,7 @@ export default function VehicleNegotiationPanel() {
                   + Add Supplier
                 </button>
               </div>
-              <VendorsTable rows={vendors} onChange={updateVendor} onRemove={removeVendor} onAdd={addVendor} />
+              <VendorsTable rows={vendors} onChange={updateVendor} onRemove={removeVendor} onAdd={addVendor} vendorColumns={vendorColumns} suppliers={supplierSearch?.suppliers || []} purchaseTypes={purchaseTypes} />
             </div>
           </Card>
 
@@ -2925,7 +2937,7 @@ export default function VehicleNegotiationPanel() {
               <div className="col-span-12 md:col-span-4">
                 <label className="text-xs font-bold text-slate-600">Supplier Name</label>
                 <SupplierSearchDropdown
-                  value={selectedSupplier ? selectedSupplier.supplierName : approval.vendorName}
+                  value={selectedSupplier ? `${selectedSupplier.supplierName} · PAN: ${selectedSupplier.pan || 'Not provided'}` : approval.vendorName}
                   onSelect={handleSupplierSelect}
                   placeholder="Search supplier..."
                   readOnly={true}

@@ -76,29 +76,23 @@ export async function POST(req) {
   try {
     const body = await req.json();
 
-    const requiredFields = ["supplierCode", "supplierName", "supplierType"];
+    const requiredFields = ["supplierCode", "supplierName", "supplierType", "pan"];
     for (const field of requiredFields) {
       if (!body[field]) {
         return NextResponse.json({ success: false, message: `${field} is required` }, { status: 400 });
       }
     }
 
-    const pan = String(body.pan || "").trim();
-    if (pan && !/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(pan.toUpperCase())) {
+    const pan = String(body.pan || "").trim().toUpperCase();
+    if (!/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(pan)) {
       return NextResponse.json({ success: false, message: "Invalid PAN format. Example: ABCDE1234F" }, { status: 400 });
     }
-
-    //// Validate PAN Card document is uploaded
-    //if (!body.documents?.panCard) {
-    //  return NextResponse.json({ success: false, message: "PAN Card document is required" }, { status: 400 });
-    //}
-
     const existing = await Supplier.findOne({ supplierCode: body.supplierCode, companyId: user.companyId });
     if (existing) {
       return NextResponse.json({ success: false, message: "Supplier Code already exists" }, { status: 400 });
     }
 
-    const supplier = new Supplier({ ...body, companyId: user.companyId, createdBy: user.id });
+    const supplier = new Supplier({ ...body, pan, companyId: user.companyId, createdBy: user.id });
     await supplier.save();
 
     const populated = await Supplier.findById(supplier._id).populate("glAccount", "accountName accountCode");
@@ -133,9 +127,13 @@ export async function PUT(req, { params }) {
       return NextResponse.json({ success: false, message: "Supplier not found" }, { status: 404 });
     }
 
+    const pan = String(body.pan ?? existingSupplier.pan ?? "").trim().toUpperCase();
+    if (!/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(pan)) {
+      return NextResponse.json({ success: false, message: "Valid PAN is required. Example: ABCDE1234F" }, { status: 400 });
+    }
     const updatedSupplier = await Supplier.findByIdAndUpdate(
       id,
-      { ...body, companyId: user.companyId, createdBy: user.id },
+      { ...body, pan, companyId: user.companyId, createdBy: user.id },
       { new: true, runValidators: true }
     ).populate("glAccount", "accountName accountCode");
 

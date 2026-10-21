@@ -2205,6 +2205,13 @@ export const GET = withAuth(async (req, context, user) => {
         }, { status: 404 });
       }
 
+      if (openOnly && (orderPanel.isDraft || (orderPanel.panelStatus || 'Draft') === 'Draft')) {
+        return NextResponse.json({
+          success: false,
+          message: "Draft order panels are not available for creating linked panels"
+        }, { status: 404 });
+      }
+
       const formattedOrder = {
         _id: orderPanel._id,
         orderPanelNo: orderPanel.orderPanelNo || 'N/A',
@@ -2253,7 +2260,9 @@ export const GET = withAuth(async (req, context, user) => {
         .sort({ createdAt: -1 })
         .select('orderPanelNo date branchName branchCode subCompanyName subCompanyCode customerName partyName totalWeight panelStatus isDraft createdAt plantRows delivery collectionCharges cancellationCharges loadingCharges otherCharges')
         .lean();
-      if (openOnly) orderPanels = orderPanels.map((order) => ({ ...order, plantRows: (order.plantRows || []).filter((row) => (row.status || 'Open') === 'Open' && !row.statusRequest?.action) }));
+      if (openOnly) orderPanels = orderPanels
+        .filter((order) => !order.isDraft && (order.panelStatus || 'Draft') !== 'Draft')
+        .map((order) => ({ ...order, plantRows: (order.plantRows || []).filter((row) => (row.status || 'Open') === 'Open' && !row.statusRequest?.action) }));
 
       const flattenedRows = [];
 
@@ -2284,7 +2293,7 @@ export const GET = withAuth(async (req, context, user) => {
               state: row.stateName || row.state || '',
               country: row.countryName || row.country || '',
               weight: row.weight || 0,
-              status: row.status || 'Open',
+              status: order.panelStatus === 'Cancelled' ? 'Cancelled' : (row.status || 'Open'),
               statusRequest: row.statusRequest?.action ? { action: row.statusRequest.action, reason: row.statusRequest.reason || '', by: row.statusRequest.by || null, at: row.statusRequest.at || null } : null,
               delivery: order.delivery || 'Normal',
               panelStatus: order.panelStatus || 'Draft',
@@ -2347,7 +2356,9 @@ export const GET = withAuth(async (req, context, user) => {
       .sort({ createdAt: -1 })
       .select('orderPanelNo date branchName branchCode subCompanyName subCompanyCode customerName partyName totalWeight panelStatus isDraft createdAt plantRows delivery')
       .lean();
-    if (openOnly) orderPanels = orderPanels.filter((order) => (order.plantRows || []).some((row) => (row.status || 'Open') === 'Open' && !row.statusRequest?.action));
+    if (openOnly) orderPanels = orderPanels.filter((order) =>
+      !order.isDraft && (order.panelStatus || 'Draft') !== 'Draft'
+      && (order.plantRows || []).some((row) => (row.status || 'Open') === 'Open' && !row.statusRequest?.action));
 
     const formattedOrders = orderPanels.map(order => ({
       _id: order._id,
@@ -2645,6 +2656,13 @@ export const PUT = withAuth(async (req, context, user) => {
       }, { status: 404 });
     }
 
+    if (orderPanel.panelStatus === 'Cancelled') {
+      return NextResponse.json({
+        success: false,
+        message: 'Cancelled orders cannot be edited. Create a new order for replacement rows.'
+      }, { status: 409 });
+    }
+
     orderPanel.subCompanyId = user.activeOperatingCompanyId;
     orderPanel.subCompanyName = user.activeOperatingCompanyName || '';
     orderPanel.subCompanyCode = user.activeOperatingCompanyCode || '';
@@ -2864,6 +2882,10 @@ export const DELETE = withAuth(async (req, context, user) => {
       }, { status: 400 });
     }
 
+    const orderPanel = await OrderPanel.findOne(companyScopeFilter(user, { _id: id }));
+    if (!orderPanel) {
+      return NextResponse.json({ success: false, message: 'Order panel not found' }, { status: 404 });
+    }
     const result = await OrderPanel.deleteOne(companyScopeFilter(user, { _id: id }));
 
     if (result.deletedCount === 0) {
@@ -2909,6 +2931,10 @@ export const PATCH = withAuth(async (req, context, user) => {
         success: false,
         message: "Order panel not found"
       }, { status: 404 });
+    }
+
+    if (orderPanel.panelStatus === 'Cancelled') {
+      return NextResponse.json({ success: false, message: 'Cancelled orders cannot be approved, rejected, or completed.' }, { status: 409 });
     }
 
     // A saved-as-draft order must be submitted before it can be approved / rejected / completed

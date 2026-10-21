@@ -6147,8 +6147,8 @@ export default function EditPurchasePanel() {
                       <input
                         type="date"
                         value={arrivalDetails.inDate}
-                        onChange={(e) => setArrivalDetails({ ...arrivalDetails, inDate: e.target.value })}
-                        className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                        disabled
+                        className="mt-1 w-full cursor-not-allowed rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-sm outline-none"
                       />
                     </div>
                   </div>
@@ -6158,8 +6158,8 @@ export default function EditPurchasePanel() {
                       <input
                         type="time"
                         value={arrivalDetails.inTime}
-                        onChange={(e) => setArrivalDetails({ ...arrivalDetails, inTime: e.target.value })}
-                        className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                        disabled
+                        className="mt-1 w-full cursor-not-allowed rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-sm outline-none"
                         placeholder="HH:MM"
                       />
                     </div>
@@ -6170,8 +6170,8 @@ export default function EditPurchasePanel() {
                       <input
                         type="date"
                         value={arrivalDetails.outDate}
-                        onChange={(e) => setArrivalDetails({ ...arrivalDetails, outDate: e.target.value })}
-                        className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                        disabled
+                        className="mt-1 w-full cursor-not-allowed rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-sm outline-none"
                       />
                     </div>
                   </div>
@@ -6181,8 +6181,8 @@ export default function EditPurchasePanel() {
                       <input
                         type="time"
                         value={arrivalDetails.outTime}
-                        onChange={(e) => setArrivalDetails({ ...arrivalDetails, outTime: e.target.value })}
-                        className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                        disabled
+                        className="mt-1 w-full cursor-not-allowed rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-sm outline-none"
                         placeholder="HH:MM"
                       />
                     </div>

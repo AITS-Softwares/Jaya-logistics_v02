@@ -7985,6 +7985,11 @@ function num(v) {
   return Number.isFinite(n) ? n : 0;
 }
 
+function singleDropRowId(rows = []) {
+  const eligible = rows.filter((row) => row.toName || row.to || row.cityName || row.city);
+  return eligible.length === 1 ? String(eligible[0]._id) : null;
+}
+
 /** =========================
  * DEFAULT EMPTY ROWS
  ========================= */
@@ -8299,6 +8304,12 @@ export default function EditOrderPanel() {
    ========================= */
   const [activePack, setActivePack] = useState("PALLETIZATION");
   const [packRows, setPackRows] = useState([]);
+
+  useEffect(() => {
+    const onlyDropRowId = singleDropRowId(plantRows);
+    if (!onlyDropRowId) return;
+    setPackRows((rows) => rows.map((row) => row.plantRowId ? row : { ...row, plantRowId: onlyDropRowId }));
+  }, [plantRows]);
 
   /** =========================
    * FETCH MASTER DATA
@@ -8936,7 +8947,7 @@ export default function EditOrderPanel() {
   const addRow = () => {
     setPackRows((prev) => [
       ...prev,
-      { ...defaultRow(activePack), packType: activePack }
+      { ...defaultRow(activePack), packType: activePack, plantRowId: singleDropRowId(plantRows) }
     ]);
   };
 

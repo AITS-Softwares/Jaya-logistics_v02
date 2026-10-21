@@ -9383,6 +9383,11 @@ function num(v) {
   return Number.isFinite(n) ? n : 0;
 }
 
+function singleDropRowId(rows = []) {
+  const eligible = rows.filter((row) => row?._id && (row.toName || row.cityName || row.city || row.to));
+  return eligible.length === 1 ? String(eligible[0]._id) : null;
+}
+
 function hasNumericValue(v) {
   return v !== "" && v !== null && v !== undefined && Number.isFinite(Number(v));
 }
@@ -9824,6 +9829,12 @@ export default function CreateOrderPanel() {
     { ...defaultRow("PALLETIZATION"), packType: "PALLETIZATION" }
   ]);
   const [hasReplacedInitialPackRow, setHasReplacedInitialPackRow] = useState(false);
+
+  useEffect(() => {
+    const onlyDropRowId = singleDropRowId(plantRows);
+    if (!onlyDropRowId) return;
+    setPackRows((rows) => rows.map((row) => row.plantRowId ? row : { ...row, plantRowId: onlyDropRowId }));
+  }, [plantRows]);
 
   /** =========================
    * FETCH DATA FROM APIs
@@ -10323,6 +10334,7 @@ export default function CreateOrderPanel() {
 
   const addRow = () => {
     const newRow = { ...defaultRow(activePack), packType: activePack };
+    newRow.plantRowId = singleDropRowId(plantRows);
     setPackRows((prev) => [...prev, newRow]);
     setTimeout(() => {
       const firstKey = getPackColumns(newRow.packType)[0]?.key;
