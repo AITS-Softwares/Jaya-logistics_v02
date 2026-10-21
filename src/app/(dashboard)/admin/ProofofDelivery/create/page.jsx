@@ -2477,7 +2477,7 @@ ${companyMsg}${subCompanyMsg}${vehicleMsg}${routeMsg}${lrMsg}
           <div className="flex items-center gap-3">
             <button onClick={() => handleSave('draft')} disabled={saving} className="rounded-xl border border-amber-300 bg-amber-50 px-5 py-2 text-sm font-bold text-amber-800 hover:bg-amber-100 disabled:opacity-60">Save as Draft</button>
             <button
-              onClick={handleSave}
+              onClick={() => handleSave('submit')}
               disabled={saving}
               className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${saving ? 'bg-gray-400 cursor-not-allowed' : 'bg-yellow-600 hover:bg-yellow-700'
                 }`}

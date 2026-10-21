@@ -443,6 +443,7 @@ const pricingPanelSchema = new mongoose.Schema({
       ref: 'Branch'
     },
     toName: String,
+    locationRemark: { type: String, default: '' },
     locationRate: {
       type: String,
       default: ''

@@ -1772,6 +1772,7 @@
 //       fromState: order.fromState || "", // ✅ ADD THIS
 //       to: order.to,
 //       toName: order.toName || "",
+// locationRemark: order.locationRemark || "",
 //       taluka: order.taluka || "",
 //       talukaName: order.talukaName || order.taluka || "",
 //       talukaId: order.talukaId || "",
@@ -1890,306 +1891,307 @@
 //           fromName: order.fromName,
 //           to: order.to,
 //           toName: order.toName,
-//           taluka: order.taluka,
-//           talukaName: order.talukaName,
-//           talukaId: order.talukaId,
-//           district: order.district,
-//           districtName: order.districtName,
-//           districtId: order.districtId,
-//           state: order.state,
-//           stateName: order.stateName,
-//           stateId: order.stateId,
-//           country: order.country,
-//           countryName: order.countryName,
-//           locationRate: order.locationRate,
-//           priceList: order.priceList,
-//           weight: num(order.weight),
-//           rate: num(order.rate),
-//           totalAmount: num(order.weight) * num(order.rate),
-//           collectionCharges: num(order.collectionCharges) || 0,
-//           cancellationCharges: order.cancellationCharges || "Nil",
-//           loadingCharges: order.loadingCharges || "Nil",
-//           otherCharges: num(order.otherCharges) || 0
-//         })),
-//         totalWeight,
-//         totalAmount,
-//         rateApproval: {
-//           approvalType: rateApproval.approvalType,
-//           approvalStatus: rateApproval.approvalStatus,
-//           uploadFile: rateApproval.uploadFileName
-//         }
-//       };
+// locationRemark: order.locationRemark || "",
+  //           taluka: order.taluka,
+  //           talukaName: order.talukaName,
+  //           talukaId: order.talukaId,
+  //           district: order.district,
+  //           districtName: order.districtName,
+  //           districtId: order.districtId,
+  //           state: order.state,
+  //           stateName: order.stateName,
+  //           stateId: order.stateId,
+  //           country: order.country,
+  //           countryName: order.countryName,
+  //           locationRate: order.locationRate,
+  //           priceList: order.priceList,
+  //           weight: num(order.weight),
+  //           rate: num(order.rate),
+  //           totalAmount: num(order.weight) * num(order.rate),
+  //           collectionCharges: num(order.collectionCharges) || 0,
+  //           cancellationCharges: order.cancellationCharges || "Nil",
+  //           loadingCharges: order.loadingCharges || "Nil",
+  //           otherCharges: num(order.otherCharges) || 0
+  //         })),
+  //         totalWeight,
+  //         totalAmount,
+  //         rateApproval: {
+  //           approvalType: rateApproval.approvalType,
+  //           approvalStatus: rateApproval.approvalStatus,
+  //           uploadFile: rateApproval.uploadFileName
+  //         }
+  //       };
 
-//       const res = await fetch('/api/pricing-panel', {
-//         method: 'PUT',
-//         headers: {
-//           'Content-Type': 'application/json',
-//           Authorization: `Bearer ${token}`,
-//         },
-//         body: JSON.stringify(payload),
-//       });
+  //       const res = await fetch('/api/pricing-panel', {
+  //         method: 'PUT',
+  //         headers: {
+  //           'Content-Type': 'application/json',
+  //           Authorization: `Bearer ${token}`,
+  //         },
+  //         body: JSON.stringify(payload),
+  //       });
 
-//       if (!res.ok) {
-//         const errorData = await res.json();
-//         throw new Error(errorData.message || `Failed to update: ${res.status}`);
-//       }
+  //       if (!res.ok) {
+  //         const errorData = await res.json();
+  //         throw new Error(errorData.message || `Failed to update: ${res.status}`);
+  //       }
 
-//       setSaveSuccess(true);
-//       alert(`✅ Pricing panel updated successfully!\nPricing Serial No: ${header.pricingSerialNo}`);
+  //       setSaveSuccess(true);
+  //       alert(`✅ Pricing panel updated successfully!\nPricing Serial No: ${header.pricingSerialNo}`);
 
-//       setTimeout(() => {
-//         router.push('/admin/pricing-panel');
-//       }, 2000);
+  //       setTimeout(() => {
+  //         router.push('/admin/pricing-panel');
+  //       }, 2000);
 
-//     } catch (error) {
-//       console.error('Error updating pricing panel:', error);
-//       setSaveError(error.message || 'Failed to update pricing panel');
-//       alert(`❌ Error: ${error.message}`);
-//     } finally {
-//       setSaving(false);
-//     }
-//   };
+  //     } catch (error) {
+  //       console.error('Error updating pricing panel:', error);
+  //       setSaveError(error.message || 'Failed to update pricing panel');
+  //       alert(`❌ Error: ${error.message}`);
+  //     } finally {
+  //       setSaving(false);
+  //     }
+  //   };
 
-//   const billingColumns = [
-//     { key: "billingType", label: "Billing Type", options: BILLING_TYPES },
-//     { key: "loadingPoints", label: "No. of Loading Points", type: "number" },
-//     { key: "dropPoints", label: "No. of Droping Point", type: "number" },
-//   ];
+  //   const billingColumns = [
+  //     { key: "billingType", label: "Billing Type", options: BILLING_TYPES },
+  //     { key: "loadingPoints", label: "No. of Loading Points", type: "number" },
+  //     { key: "dropPoints", label: "No. of Droping Point", type: "number" },
+  //   ];
 
-//   if (fetchLoading) {
-//     return (
-//       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white p-6">
-//         <div className="flex items-center justify-center h-64">
-//           <div className="text-center">
-//             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto"></div>
-//             <p className="mt-4 text-slate-600">Loading pricing panel...</p>
-//           </div>
-//         </div>
-//       </div>
-//     );
-//   }
+  //   if (fetchLoading) {
+  //     return (
+  //       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white p-6">
+  //         <div className="flex items-center justify-center h-64">
+  //           <div className="text-center">
+  //             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto"></div>
+  //             <p className="mt-4 text-slate-600">Loading pricing panel...</p>
+  //           </div>
+  //         </div>
+  //       </div>
+  //     );
+  //   }
 
-//   return (
-//     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white">
-//       <div className="sticky top-0 z-40 border-b bg-white/80 backdrop-blur">
-//         <div className="mx-auto max-w-full px-4 py-3 flex items-center justify-between">
-//           <div>
-//             <div className="flex items-center gap-3">
-//               <button
-//                 onClick={() => router.push('/admin/pricing-panel')}
-//                 className="text-yellow-600 hover:text-yellow-800 font-medium text-sm flex items-center gap-1"
-//               >
-//                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-//                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-//                 </svg>
-//                 Back to List
-//               </button>
-//               <div className="text-lg font-extrabold text-slate-900">
-//                 Edit Pricing Panel: {header.pricingSerialNo}
-//               </div>
-//             </div>
-//             {saveSuccess && (
-//               <div className="text-sm text-green-600 font-medium mt-1">
-//                 ✅ Pricing panel updated successfully! Redirecting to list...
-//               </div>
-//             )}
-//             {saveError && (
-//               <div className="text-sm text-red-600 font-medium mt-1">
-//                 ❌ {saveError}
-//               </div>
-//             )}
-//           </div>
+  //   return (
+  //     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white">
+  //       <div className="sticky top-0 z-40 border-b bg-white/80 backdrop-blur">
+  //         <div className="mx-auto max-w-full px-4 py-3 flex items-center justify-between">
+  //           <div>
+  //             <div className="flex items-center gap-3">
+  //               <button
+  //                 onClick={() => router.push('/admin/pricing-panel')}
+  //                 className="text-yellow-600 hover:text-yellow-800 font-medium text-sm flex items-center gap-1"
+  //               >
+  //                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  //                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+  //                 </svg>
+  //                 Back to List
+  //               </button>
+  //               <div className="text-lg font-extrabold text-slate-900">
+  //                 Edit Pricing Panel: {header.pricingSerialNo}
+  //               </div>
+  //             </div>
+  //             {saveSuccess && (
+  //               <div className="text-sm text-green-600 font-medium mt-1">
+  //                 ✅ Pricing panel updated successfully! Redirecting to list...
+  //               </div>
+  //             )}
+  //             {saveError && (
+  //               <div className="text-sm text-red-600 font-medium mt-1">
+  //                 ❌ {saveError}
+  //               </div>
+  //             )}
+  //           </div>
 
-//           <div className="flex items-center gap-3">
-//             <button
-//               onClick={handleUpdate}
-//               disabled={saving}
-//               className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${
-//                 saving ? 'bg-gray-400 cursor-not-allowed' : 'bg-yellow-600 hover:bg-yellow-700'
-//               }`}
-//             >
-//               {saving ? (
-//                 <span className="flex items-center gap-2">
-//                   <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-//                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-//                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-//                   </svg>
-//                   Updating...
-//                 </span>
-//               ) : 'Update Pricing Panel'}
-//             </button>
-//           </div>
-//         </div>
-//       </div>
+  //           <div className="flex items-center gap-3">
+  //             <button
+  //               onClick={handleUpdate}
+  //               disabled={saving}
+  //               className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${
+  //                 saving ? 'bg-gray-400 cursor-not-allowed' : 'bg-yellow-600 hover:bg-yellow-700'
+  //               }`}
+  //             >
+  //               {saving ? (
+  //                 <span className="flex items-center gap-2">
+  //                   <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+  //                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+  //                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+  //                   </svg>
+  //                   Updating...
+  //                 </span>
+  //               ) : 'Update Pricing Panel'}
+  //             </button>
+  //           </div>
+  //         </div>
+  //       </div>
 
-//       <div className="mx-auto max-w-full p-4 space-y-4">
-//         <Card title="Pricing Panel - Part -1">
-//           <div className="grid grid-cols-12 gap-3 mb-4">
-//             <div className="col-span-12 md:col-span-3">
-//               <label className="text-xs font-bold text-slate-600">Pricing Serial No</label>
-//               <div className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">
-//                 {header.pricingSerialNo}
-//               </div>
-//             </div>
+  //       <div className="mx-auto max-w-full p-4 space-y-4">
+  //         <Card title="Pricing Panel - Part -1">
+  //           <div className="grid grid-cols-12 gap-3 mb-4">
+  //             <div className="col-span-12 md:col-span-3">
+  //               <label className="text-xs font-bold text-slate-600">Pricing Serial No</label>
+  //               <div className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">
+  //                 {header.pricingSerialNo}
+  //               </div>
+  //             </div>
 
-//             <div className="col-span-12 md:col-span-3 relative">
-//               <label className="text-xs font-bold text-slate-600">Search Vehicle Negotiation</label>
-//               <VehicleNegotiationHeaderDropdown
-//                 onSelect={handleSelectVehicleNegotiation}
-//                 placeholder="Search by VNN..."
-//                 currentVnn={currentVnn}
-//                 readOnly={false}
-//               />
-//               {selectedVehicleNegotiation && (
-//                 <div className="text-xs text-slate-500 mt-1">
-//                   Selected: {selectedVehicleNegotiation.vnnNo}
-//                 </div>
-//               )}
-//             </div>
+  //             <div className="col-span-12 md:col-span-3 relative">
+  //               <label className="text-xs font-bold text-slate-600">Search Vehicle Negotiation</label>
+  //               <VehicleNegotiationHeaderDropdown
+  //                 onSelect={handleSelectVehicleNegotiation}
+  //                 placeholder="Search by VNN..."
+  //                 currentVnn={currentVnn}
+  //                 readOnly={false}
+  //               />
+  //               {selectedVehicleNegotiation && (
+  //                 <div className="text-xs text-slate-500 mt-1">
+  //                   Selected: {selectedVehicleNegotiation.vnnNo}
+  //                 </div>
+  //               )}
+  //             </div>
 
-//             <div className="col-span-12 md:col-span-3">
-//               <label className="text-xs font-bold text-slate-600">Branch *</label>
-//               <SearchableDropdown
-//                 items={branches}
-//                 selectedId={header.branch}
-//                 onSelect={(branch) => setHeader(p => ({ 
-//                   ...p, 
-//                   branch: branch?._id || '',
-//                   branchName: branch?.name || '',
-//                   branchCode: branch?.code || ''
-//                 }))}
-//                 placeholder="Search branch... *"
-//                 required={true}
-//                 displayField="name"
-//                 codeField="code"
-//                 readOnly={true}
-//               />
-//             </div>
+  //             <div className="col-span-12 md:col-span-3">
+  //               <label className="text-xs font-bold text-slate-600">Branch *</label>
+  //               <SearchableDropdown
+  //                 items={branches}
+  //                 selectedId={header.branch}
+  //                 onSelect={(branch) => setHeader(p => ({ 
+  //                   ...p, 
+  //                   branch: branch?._id || '',
+  //                   branchName: branch?.name || '',
+  //                   branchCode: branch?.code || ''
+  //                 }))}
+  //                 placeholder="Search branch... *"
+  //                 required={true}
+  //                 displayField="name"
+  //                 codeField="code"
+  //                 readOnly={true}
+  //               />
+  //             </div>
 
-//             <Select
-//               col="col-span-12 md:col-span-3"
-//               label="Delivery"
-//               value={header.delivery}
-//               onChange={(v) => setHeader((p) => ({ ...p, delivery: v }))}
-//               options={DELIVERY_TYPES}
-//               readOnly={true}
-//             />
+  //             <Select
+  //               col="col-span-12 md:col-span-3"
+  //               label="Delivery"
+  //               value={header.delivery}
+  //               onChange={(v) => setHeader((p) => ({ ...p, delivery: v }))}
+  //               options={DELIVERY_TYPES}
+  //               readOnly={true}
+  //             />
 
-//             <Input
-//               type="date"
-//               col="col-span-12 md:col-span-3"
-//               label="Date"
-//               value={header.date}
-//               onChange={(v) => setHeader((p) => ({ ...p, date: v }))}
-//               readOnly={true}
-//             />
+  //             <Input
+  //               type="date"
+  //               col="col-span-12 md:col-span-3"
+  //               label="Date"
+  //               value={header.date}
+  //               onChange={(v) => setHeader((p) => ({ ...p, date: v }))}
+  //               readOnly={true}
+  //             />
 
-//             <div className="col-span-12 md:col-span-3 relative">
-//               <label className="text-xs font-bold text-slate-600">Party Name</label>
-//               <input
-//                 type="text"
-//                 value={selectedCustomer ? selectedCustomer.customerName : header.partyName}
-//                 readOnly={true}
-//                 className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none cursor-not-allowed"
-//                 placeholder="Party Name"
-//               />
-//             </div>
-//           </div>
+  //             <div className="col-span-12 md:col-span-3 relative">
+  //               <label className="text-xs font-bold text-slate-600">Party Name</label>
+  //               <input
+  //                 type="text"
+  //                 value={selectedCustomer ? selectedCustomer.customerName : header.partyName}
+  //                 readOnly={true}
+  //                 className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none cursor-not-allowed"
+  //                 placeholder="Party Name"
+  //               />
+  //             </div>
+  //           </div>
 
-//           <div className="mb-4">
-//             <div className="text-sm font-bold text-slate-700 mb-2">Billing Type / Charges (Read Only)</div>
-//             <BillingTypeTable billing={billing} billingColumns={billingColumns} />
-//           </div>
+  //           <div className="mb-4">
+  //             <div className="text-sm font-bold text-slate-700 mb-2">Billing Type / Charges (Read Only)</div>
+  //             <BillingTypeTable billing={billing} billingColumns={billingColumns} />
+  //           </div>
 
-//           <div>
-//             <div className="flex items-center justify-between mb-4">
-//               <div className="text-sm font-bold text-slate-700">
-//                 Orders - {billing.billingType} - {orders.length} row{orders.length !== 1 ? 's' : ''}
-//               </div>
+  //           <div>
+  //             <div className="flex items-center justify-between mb-4">
+  //               <div className="text-sm font-bold text-slate-700">
+  //                 Orders - {billing.billingType} - {orders.length} row{orders.length !== 1 ? 's' : ''}
+  //               </div>
 
-//               {billing.billingType === "Multi - Order" && !selectedVehicleNegotiation && (
-//                 <button
-//                   onClick={addOrder}
-//                   className="rounded-xl bg-yellow-600 px-4 py-2 text-sm font-bold text-white hover:bg-yellow-700"
-//                 >
-//                   + Add Row
-//                 </button>
-//               )}
-//             </div>
+  //               {billing.billingType === "Multi - Order" && !selectedVehicleNegotiation && (
+  //                 <button
+  //                   onClick={addOrder}
+  //                   className="rounded-xl bg-yellow-600 px-4 py-2 text-sm font-bold text-white hover:bg-yellow-700"
+  //                 >
+  //                   + Add Row
+  //                 </button>
+  //               )}
+  //             </div>
 
-//             <OrdersTable
-//               rows={orders}
-//               onChange={updateOrder}
-//               onRemove={removeOrder}
-//               billingType={billing.billingType}
-//               selectedVehicleNegotiation={selectedVehicleNegotiation}
-//               states={locationData.states}
-//               districts={locationData.districts}
-//               talukas={locationData.talukas}
-//               locations={locationData.locations}
-//               rateMasters={rateMasterSearch.rateMasters}
-//               headerBranch={header.branch}
-//               headerCustomerId={header.customerId}
-//               onFetchDistricts={locationData.fetchDistrictsByState}
-//               onFetchTalukas={locationData.fetchTalukasByDistrict}
-//             />
-//           </div>
+  //             <OrdersTable
+  //               rows={orders}
+  //               onChange={updateOrder}
+  //               onRemove={removeOrder}
+  //               billingType={billing.billingType}
+  //               selectedVehicleNegotiation={selectedVehicleNegotiation}
+  //               states={locationData.states}
+  //               districts={locationData.districts}
+  //               talukas={locationData.talukas}
+  //               locations={locationData.locations}
+  //               rateMasters={rateMasterSearch.rateMasters}
+  //               headerBranch={header.branch}
+  //               headerCustomerId={header.customerId}
+  //               onFetchDistricts={locationData.fetchDistrictsByState}
+  //               onFetchTalukas={locationData.fetchTalukasByDistrict}
+  //             />
+  //           </div>
 
-//           <div className="flex justify-end gap-4 mt-4">
-//             <div className="flex items-center gap-3 border border-yellow-300 px-6 py-3 bg-yellow-50 rounded-xl">
-//               <div className="text-sm font-extrabold text-slate-900">Total Weight:</div>
-//               <div className="text-xl font-extrabold text-emerald-700">{totalWeight}</div>
-//             </div>
-//             <div className="flex items-center gap-3 border border-yellow-300 px-6 py-3 bg-yellow-50 rounded-xl">
-//               <div className="text-sm font-extrabold text-slate-900">Total Amount:</div>
-//               <div className="text-xl font-extrabold text-emerald-700">{totalAmount}</div>
-//             </div>
-//           </div>
-//         </Card>
+  //           <div className="flex justify-end gap-4 mt-4">
+  //             <div className="flex items-center gap-3 border border-yellow-300 px-6 py-3 bg-yellow-50 rounded-xl">
+  //               <div className="text-sm font-extrabold text-slate-900">Total Weight:</div>
+  //               <div className="text-xl font-extrabold text-emerald-700">{totalWeight}</div>
+  //             </div>
+  //             <div className="flex items-center gap-3 border border-yellow-300 px-6 py-3 bg-yellow-50 rounded-xl">
+  //               <div className="text-sm font-extrabold text-slate-900">Total Amount:</div>
+  //               <div className="text-xl font-extrabold text-emerald-700">{totalAmount}</div>
+  //             </div>
+  //           </div>
+  //         </Card>
 
-//         <Card title="Rate - Approval - Part - 2 (Read Only)">
-//           <div className="grid grid-cols-12 gap-4">
-//             <Select
-//               col="col-span-12 md:col-span-4"
-//               label="Rate Approval Type"
-//               value={rateApproval.approvalType}
-//               onChange={(v) => setRateApproval((p) => ({ ...p, approvalType: v }))}
-//               options={RATE_APPROVAL_TYPES}
-//               readOnly={true}
-//             />
+  //         <Card title="Rate - Approval - Part - 2 (Read Only)">
+  //           <div className="grid grid-cols-12 gap-4">
+  //             <Select
+  //               col="col-span-12 md:col-span-4"
+  //               label="Rate Approval Type"
+  //               value={rateApproval.approvalType}
+  //               onChange={(v) => setRateApproval((p) => ({ ...p, approvalType: v }))}
+  //               options={RATE_APPROVAL_TYPES}
+  //               readOnly={true}
+  //             />
 
-//             <div className="col-span-12 md:col-span-4">
-//               <label className="text-xs font-bold text-slate-600">Rate Approval Upload</label>
-//               <input
-//                 type="file"
-//                 accept=".pdf,.png,.jpg,.jpeg"
-//                 onChange={() => alert("Rate Approval section is read-only")}
-//                 disabled={true}
-//                 className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none cursor-not-allowed"
-//               />
-//               {rateApproval.uploadFileName && (
-//                 <div className="mt-1 text-xs text-green-600">
-//                   ✅ Current file: {rateApproval.uploadFileName}
-//                 </div>
-//               )}
-//             </div>
+  //             <div className="col-span-12 md:col-span-4">
+  //               <label className="text-xs font-bold text-slate-600">Rate Approval Upload</label>
+  //               <input
+  //                 type="file"
+  //                 accept=".pdf,.png,.jpg,.jpeg"
+  //                 onChange={() => alert("Rate Approval section is read-only")}
+  //                 disabled={true}
+  //                 className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none cursor-not-allowed"
+  //               />
+  //               {rateApproval.uploadFileName && (
+  //                 <div className="mt-1 text-xs text-green-600">
+  //                   ✅ Current file: {rateApproval.uploadFileName}
+  //                 </div>
+  //               )}
+  //             </div>
 
-//             <Select
-//               col="col-span-12 md:col-span-4"
-//               label="Approval Status"
-//               value={rateApproval.approvalStatus}
-//               onChange={(v) => setRateApproval((p) => ({ ...p, approvalStatus: v }))}
-//               options={APPROVAL_STATUS}
-//               readOnly={true}
-//             />
-//           </div>
-//         </Card>
-//       </div>
-//     </div>
-//   );
-// }
+  //             <Select
+  //               col="col-span-12 md:col-span-4"
+  //               label="Approval Status"
+  //               value={rateApproval.approvalStatus}
+  //               onChange={(v) => setRateApproval((p) => ({ ...p, approvalStatus: v }))}
+  //               options={APPROVAL_STATUS}
+  //               readOnly={true}
+  //             />
+  //           </div>
+  //         </Card>
+  //       </div>
+  //     </div>
+  //   );
+  // }
 
-"use client";
+  "use client";
 
 import { useMemo, useState, useEffect, useRef, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
@@ -2206,7 +2208,7 @@ const APPROVAL_STATUS = ["Pending", "Pending from Team", "Pending from Client", 
 const RATE_APPROVAL_TYPES = ["Contract Rates", "Mail Approval Rate"];
 const RATE_CALCULATION_MODES = [
   { value: "order_weight", label: "Auto – Order Weight" },
-  { value: "total_weight", label: "Auto – Total Panel Weight" },
+  // { value: "total_weight", label: "Auto – Total Panel Weight" },
   { value: "manual_rate", label: "Manual Rate" },
 ];
 
@@ -3381,6 +3383,7 @@ function OrdersTable({
     { key: "pinCode", label: "Pin Code", width: "90px" },
     { key: "from", label: "From", width: "100px" },
     { key: "to", label: "To", width: "100px" },
+    { key: "locationRemark", label: "Location Remark", width: "180px", readOnly: true },
     { key: "state", label: "State", width: "100px" },
     { key: "district", label: "District", width: "100px" },
     { key: "taluka", label: "Taluka", width: "100px" },
@@ -3626,6 +3629,10 @@ function OrdersTable({
                     placeholder="To"
                     readOnly={isFromVehicleNegotiation}
                   />
+                </td>
+
+                <td className="border border-yellow-300 px-1 py-1">
+                  <input readOnly value={row.locationRemark || '-'} className="w-full min-w-[140px] rounded border border-slate-200 bg-slate-50 px-1 py-1 text-xs text-slate-700" />
                 </td>
 
                 <td className="border border-yellow-300 px-1 py-1">
@@ -4131,6 +4138,7 @@ export default function EditPricingPanel() {
         fromState: order.fromState || "",
         to: order.to,
         toName: order.toName || "",
+        locationRemark: order.locationRemark || "",
         taluka: order.taluka || "",
         talukaName: order.talukaName || order.taluka || "",
         talukaId: order.talukaId || "",
@@ -4352,6 +4360,7 @@ export default function EditPricingPanel() {
           fromState: order.fromState || '',
           to: order.to,
           toName: order.toName,
+          locationRemark: order.locationRemark || "",
           taluka: order.taluka,
           talukaName: order.talukaName,
           talukaId: order.talukaId,

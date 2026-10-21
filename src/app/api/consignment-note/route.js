@@ -1684,6 +1684,10 @@ export async function GET(req) {
         }, { status: 404 });
       }
 
+      if (forKey === "pod" && note.isDraft) {
+        return NextResponse.json({ success: false, message: "Draft Consignment Notes are not available for Proof of Delivery" }, { status: 404 });
+      }
+
       return NextResponse.json({
         success: true,
         data: note
@@ -1699,6 +1703,10 @@ export async function GET(req) {
           success: false,
           message: "Consignment note not found"
         }, { status: 404 });
+      }
+
+      if (forKey === "pod" && note.isDraft) {
+        return NextResponse.json({ success: false, message: "Draft Consignment Notes are not available for Proof of Delivery" }, { status: 404 });
       }
 
       return NextResponse.json({
@@ -1749,6 +1757,8 @@ export async function GET(req) {
           query.createdAt.$lte = new Date(toDate + 'T23:59:59');
         }
       }
+
+      if (forKey === "pod") query.isDraft = { $ne: true };
 
       const notes = await ConsignmentNote.find(companyScopeFilter(user, query))
         .sort({ createdAt: -1 })

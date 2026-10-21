@@ -81,7 +81,8 @@ const VALIDATORS = {
   4: (d) => {
     const e = {};
     if (!d.gstCategory) e.gstCategory = "GST Category is required";
-    if (d.pan?.trim() && !/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(d.pan.trim())) e.pan = "Invalid PAN (e.g. ABCDE1234F)";
+    if (!d.pan?.trim()) e.pan = "PAN Number is required";
+    else if (!/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(d.pan.trim())) e.pan = "Invalid PAN (e.g. ABCDE1234F)";
     if (d.gstNumber && !/^\d{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(d.gstNumber))
       e.gstNumber = "Invalid GST (e.g. 22ABCDE1234F1Z5)";
     if (!d.glAccount?._id) e.glAccount = "GL Account is required";
@@ -644,7 +645,7 @@ export default function SupplierManagement() {
 
   const handleSubmit = async () => {
     let allE = {};
-    for (let s = 1; s <= 5; s++) { const v = VALIDATORS[s]; if (v) allE = { ...allE, ...v(sd) }; }
+    for (let s = 1; s <= 6; s++) { const v = VALIDATORS[s]; if (v) allE = { ...allE, ...v(sd) }; }
     if (Object.keys(allE).length) { setErrs(allE); toast.error("Please fix errors before submitting"); return; }
     
     setSubmitting(true);
@@ -709,7 +710,7 @@ export default function SupplierManagement() {
 
   const filtered = suppliers.filter(s => {
     const q = searchTerm.toLowerCase();
-    const mQ = [s.supplierCode, s.supplierName, s.emailId, s.supplierType, s.supplierGroup, s.supplierCategory].some(v => v?.toLowerCase().includes(q));
+    const mQ = [s.supplierCode, s.supplierName, s.pan, s.emailId, s.supplierType, s.supplierGroup, s.supplierCategory].some(v => v?.toLowerCase().includes(q));
     const mT = filterType === "All" || s.supplierType === filterType;
     return mQ && mT;
   });
@@ -910,11 +911,11 @@ export default function SupplierManagement() {
               <Err k="gstCategory" />
             </div>
             <div>
-              <Lbl text="PAN Number" />
+              <Lbl text="PAN Number" req />
               <input className={fi("pan")} name="pan" maxLength={10} placeholder="e.g. ABCDE1234F" value={sd.pan || ""}
                 onChange={e => { const v = e.target.value.toUpperCase(); if (/^[A-Z0-9]{0,10}$/.test(v)) handleChange({ target: { name: "pan", value: v } }); }} />
               <Err k="pan" />
-              <p className="text-[11px] text-gray-400 mt-1">Optional. If provided, use format AAAAA9999A.</p>
+              <p className="text-[11px] text-gray-400 mt-1">Required. Enter the 10-character PAN in format AAAAA9999A.</p>
             </div>
             <div>
               <Lbl text="Payment Terms (Days)" />
@@ -1146,6 +1147,7 @@ export default function SupplierManagement() {
                       <td className="px-4 py-3">
                         <p className="font-semibold text-gray-900">{s.supplierName}</p>
                         <p className="text-xs text-gray-400">{s.supplierCategory}</p>
+                        <span className="mt-1 block text-[11px] text-slate-500">PAN No: <span className="font-medium text-slate-600">{s.pan || "Not provided"}</span></span>
                       </td>
                       <td className="px-4 py-3 text-gray-500 text-xs">{s.emailId || <span className="text-gray-200">—</span>}</td>
                       <td className="px-4 py-3">
@@ -1315,6 +1317,7 @@ function SupplierViewModal({ open, onClose, supplier: s, onEdit }) {
               <h2 className="text-base font-extrabold text-gray-900">{s.supplierName}</h2>
               <div className="flex items-center gap-2 mt-0.5">
                 <span className="font-mono text-xs font-bold text-indigo-600 bg-indigo-100 px-1.5 py-0.5 rounded">{s.supplierCode}</span>
+                <span className="font-mono text-[11px] text-slate-500">PAN No: <span className="font-medium text-slate-600">{s.pan || "Not provided"}</span></span>
                 {s.valid === true && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">✓ Udyam Valid</span>}
                 {s.valid === false && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-600">✗ Udyam Invalid</span>}
               </div>

@@ -3,10 +3,14 @@ import React, { useState, useEffect, useRef } from "react";
 import useSearch from "../hooks/useSearch";
 
 // Prop name ko 'onSelectCustomer' rakha hai taaki main page se match kare
-const SupplierSearch = ({ onSelectCustomer, initialSupplier }) => {
+const SupplierSearch = ({ onSelectCustomer, onSelectSupplier, initialSupplier }) => {
+  const notifySelection = (supplier) => (onSelectSupplier || onSelectCustomer)?.(supplier);
+  const supplierLabel = (supplier) => supplier
+    ? `${supplier.supplierName || ""} · PAN: ${supplier.pan || "Not provided"}`
+    : "";
   const wrapperRef = useRef(null);
 
-  const [query, setQuery] = useState(initialSupplier?.supplierName || "");
+  const [query, setQuery] = useState(supplierLabel(initialSupplier));
   const [showDropdown, setShowDropdown] = useState(false);
   const [selected, setSelected] = useState(initialSupplier || null);
 
@@ -14,7 +18,7 @@ const SupplierSearch = ({ onSelectCustomer, initialSupplier }) => {
   useEffect(() => {
     if (initialSupplier) {
       setSelected(initialSupplier);
-      setQuery(initialSupplier.supplierName || "");
+      setQuery(supplierLabel(initialSupplier));
     }
   }, [initialSupplier]);
 
@@ -25,7 +29,7 @@ const SupplierSearch = ({ onSelectCustomer, initialSupplier }) => {
       if (!token) return [];
 
       const res = await fetch(
-        `/api/suppliers?search=${encodeURIComponent(searchQuery || "")}`,
+        `/api/suppliers/search?q=${encodeURIComponent(searchQuery || "")}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -70,20 +74,18 @@ const SupplierSearch = ({ onSelectCustomer, initialSupplier }) => {
   // YE FUNCTION AUTO-FILL KE LIYE ZAROORI HAI
   const handleSelect = (sup) => {
     setSelected(sup);
-    setQuery(sup.supplierName || "");
+    setQuery(supplierLabel(sup));
     setShowDropdown(false);
     
     // Parent component (Order Form) ko pura supplier object bhejein
     // Taaki Name, Code aur Contact Person fill ho sake
-    if (onSelectCustomer) {
-      onSelectCustomer(sup); 
-    }
+    notifySelection(sup);
   };
 
   const handleClear = () => {
     setSelected(null);
     setQuery("");
-    onSelectCustomer?.(null);
+    notifySelection(null);
   };
 
   return (
@@ -91,7 +93,7 @@ const SupplierSearch = ({ onSelectCustomer, initialSupplier }) => {
       <div className="relative">
         <input
           type="text"
-          placeholder="Search Supplier by Name or Code..."
+          placeholder="Search Supplier by Name, Code, or PAN..."
           value={query}
           onChange={handleChange}
           onFocus={handleFocus}
@@ -130,14 +132,15 @@ const SupplierSearch = ({ onSelectCustomer, initialSupplier }) => {
               onClick={() => handleSelect(sup)}
               className="p-3 cursor-pointer hover:bg-indigo-50 border-b border-gray-50 last:border-0 transition-colors"
             >
-              <div className="flex justify-between items-center">
-                <p className="font-bold text-gray-800 text-sm">
-                  {sup.supplierName}
-                </p>
-                <span className="text-[10px] font-mono font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">
-                  {sup.supplierCode}
-                </span>
+              <div className="flex flex-wrap justify-between items-center gap-2">
+                <p className="font-bold text-gray-800 text-sm">{sup.supplierName}</p>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-[10px] font-mono font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">
+                    Code: {sup.supplierCode}
+                  </span>
+                </div>
               </div>
+              <div className="mt-1 text-[11px] text-slate-500">PAN No: <span className="font-medium text-slate-600">{sup.pan || "Not provided"}</span></div>
               {sup.contactPersonName && (
                 <p className="text-[11px] text-gray-400 mt-0.5 flex items-center gap-1">
                    👤 {sup.contactPersonName}

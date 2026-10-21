@@ -29,7 +29,7 @@ export async function GET(req) {
 
     const data = await Supplier.find({
       companyId: decoded.companyId,
-      $or: [{ supplierCode: rx }, { supplierName: rx }, { contactPersonName: rx }],
+      $or: [{ supplierCode: rx }, { supplierName: rx }, { pan: rx }, { contactPersonName: rx }],
     })
       .limit(20)
       .lean();

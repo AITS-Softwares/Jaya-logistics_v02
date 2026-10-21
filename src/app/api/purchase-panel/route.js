@@ -316,6 +316,10 @@ export async function GET(req) {
         }, { status: 404 });
       }
 
+      if ((forKey === 'advance-payment' || forKey === 'pod') && purchase.isDraft) {
+        return NextResponse.json({ success: false, message: "Draft Purchase Panels are not available for this workflow" }, { status: 404 });
+      }
+
       const enhancedPurchase = await enhancePurchase(purchase);
       if (forKey === 'advance-payment') enhancedPurchase.orderRows = await filterOpenOrderRows(user, enhancedPurchase.orderRows || []);
 
@@ -334,6 +338,10 @@ export async function GET(req) {
           success: false,
           message: "Purchase not found"
         }, { status: 404 });
+      }
+
+      if ((forKey === 'advance-payment' || forKey === 'pod') && purchase.isDraft) {
+        return NextResponse.json({ success: false, message: "Draft Purchase Panels are not available for this workflow" }, { status: 404 });
       }
 
       const enhancedPurchase = await enhancePurchase(purchase);
@@ -436,7 +444,7 @@ export async function GET(req) {
           companyScopeFilter(user, { purchaseNo: { $in: purchaseNos }, isDraft: { $ne: true } })
         ).select("purchaseNo").lean();
         const used = new Set(existing.map((a) => a.purchaseNo));
-        tableResult = purchasesWithLR.filter((p) => !used.has(p.purchaseNo));
+        tableResult = purchasesWithLR.filter((p) => !p.isDraft && !used.has(p.purchaseNo));
       } else if (forKey === "pod") {
         // POD requires an approved purchase with its memo uploaded.
         const eligibleSet = new Set(purchasesWithLR
@@ -455,7 +463,7 @@ export async function GET(req) {
         ).select("purchaseNo").lean();
         const used = new Set(existing.map((p) => p.purchaseNo));
         tableResult = purchasesWithLR.filter((p) =>
-          p.purchaseNo === keepNo || (eligibleSet.has(p.purchaseNo) && !used.has(p.purchaseNo))
+          (!p.isDraft && p.purchaseNo === keepNo) || (!p.isDraft && eligibleSet.has(p.purchaseNo) && !used.has(p.purchaseNo))
         );
       }
 

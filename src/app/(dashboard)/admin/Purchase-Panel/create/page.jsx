@@ -4253,7 +4253,7 @@ export default function CreatePurchasePanel() {
               className="rounded-xl border border-amber-300 bg-amber-50 px-5 py-2 text-sm font-bold text-amber-800 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
             >Save as Draft</button>
             <button
-              onClick={handleSave}
+              onClick={() => handleSave('submit')}
               disabled={saving || fetchingData}
               className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${saving || fetchingData
                 ? 'bg-gray-400 cursor-not-allowed'
@@ -5515,8 +5515,8 @@ export default function CreatePurchasePanel() {
                     <input
                       type="date"
                       value={arrivalDetails.inDate}
-                      onChange={(e) => setArrivalDetails({ ...arrivalDetails, inDate: e.target.value })}
-                      className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                      disabled
+                      className="mt-1 w-full cursor-not-allowed rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-sm outline-none"
                     />
                   </div>
                 </div>
@@ -5526,8 +5526,8 @@ export default function CreatePurchasePanel() {
                     <input
                       type="time"
                       value={arrivalDetails.inTime}
-                      onChange={(e) => setArrivalDetails({ ...arrivalDetails, inTime: e.target.value })}
-                      className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                      disabled
+                      className="mt-1 w-full cursor-not-allowed rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-sm outline-none"
                       placeholder="HH:MM"
                     />
                   </div>
@@ -5538,8 +5538,8 @@ export default function CreatePurchasePanel() {
                     <input
                       type="date"
                       value={arrivalDetails.outDate}
-                      onChange={(e) => setArrivalDetails({ ...arrivalDetails, outDate: e.target.value })}
-                      className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                      disabled
+                      className="mt-1 w-full cursor-not-allowed rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-sm outline-none"
                     />
                   </div>
                 </div>
@@ -5549,8 +5549,8 @@ export default function CreatePurchasePanel() {
                     <input
                       type="time"
                       value={arrivalDetails.outTime}
-                      onChange={(e) => setArrivalDetails({ ...arrivalDetails, outTime: e.target.value })}
-                      className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500"
+                      disabled
+                      className="mt-1 w-full cursor-not-allowed rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-sm outline-none"
                       placeholder="HH:MM"
                     />
                   </div>

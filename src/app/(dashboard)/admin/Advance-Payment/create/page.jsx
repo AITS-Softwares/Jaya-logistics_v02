@@ -1651,6 +1651,7 @@ function useVendors() {
           _id: supplier._id,
           supplierName: supplier.supplierName,
           supplierCode: supplier.supplierCode,
+          pan: supplier.pan || '',
           supplierStatus: supplier.supplierStatus || "Active",
           bankName: supplier.bankName || '',
           bankAccountNumber: supplier.bankAccountNumber || '',
@@ -1659,7 +1660,7 @@ function useVendors() {
           accountNo: supplier.bankAccountNumber || '',
           ifsc: supplier.ifscCode || '',
           glAccount: supplier.glAccount,
-          displayName: `${supplier.supplierName} (${supplier.supplierCode})`
+          displayName: `${supplier.supplierName} (${supplier.supplierCode}) · PAN: ${supplier.pan || 'Not provided'}`
         }));
 
         setVendors(mappedVendors);
@@ -1691,6 +1692,7 @@ function useVendors() {
           _id: supplier._id,
           supplierName: supplier.supplierName,
           supplierCode: supplier.supplierCode,
+          pan: supplier.pan || '',
           supplierStatus: supplier.supplierStatus || "Active",
           bankName: supplier.bankName || '',
           bankAccountNumber: supplier.bankAccountNumber || '',
@@ -2669,7 +2671,7 @@ export default function CreateAdvancePayment() {
           <div className="flex items-center gap-3">
             <button onClick={() => handleSave('draft')} disabled={saving || fetchingData} className="rounded-xl border border-amber-300 bg-amber-50 px-5 py-2 text-sm font-bold text-amber-800 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60">Save as Draft</button>
             <button onClick={resetForm} className="rounded-xl border border-slate-300 bg-white px-5 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50 transition">Reset</button>
-            <button onClick={handleSave} disabled={saving || fetchingData} className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${saving || fetchingData ? 'bg-gray-400 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700'}`}>
+            <button onClick={() => handleSave('submit')} disabled={saving || fetchingData} className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${saving || fetchingData ? 'bg-gray-400 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700'}`}>
               {saving ? (
                 <span className="flex items-center gap-2">
                   <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

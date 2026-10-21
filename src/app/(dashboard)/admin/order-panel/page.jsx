@@ -2981,7 +2981,7 @@ export default function OrderPanelList() {
                         </td>
                         <td className="px-4 py-3 font-medium">{order.weight} MT</td>
                         <td className="px-4 py-3">
-                          {(canCreate(MODULE_NAME) || canEdit(MODULE_NAME) || canApprove(MODULE_NAME)) && order.status !== 'Cancelled' && !orderStatusRequest ? <OrderRowStatusActions orderId={order.originalOrderId} orderNo={order.orderNo} status={order.status} onUpdated={fetchOrders} /> : <span className={`px-2 py-1 rounded-full text-xs font-medium ${order.status === 'Open' ? 'bg-green-100 text-green-800' :
+                          {(canCreate(MODULE_NAME) || canEdit(MODULE_NAME) || canApprove(MODULE_NAME)) && order.status !== 'Cancelled' && order.panelStatus !== 'Cancelled' && !orderStatusRequest ? <OrderRowStatusActions orderId={order.originalOrderId} orderNo={order.orderNo} status={order.status} onUpdated={fetchOrders} /> : <span className={`px-2 py-1 rounded-full text-xs font-medium ${order.status === 'Open' ? 'bg-green-100 text-green-800' :
                               order.status === 'Hold' ? 'bg-yellow-100 text-yellow-800' :
                                 order.status === 'Approved' ? 'bg-blue-100 text-blue-800' :
                                   order.status === 'Completed' ? 'bg-purple-100 text-purple-800' :
@@ -3026,7 +3026,7 @@ export default function OrderPanelList() {
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center justify-center gap-1 flex-wrap">
-                            {isFirstOrderRow && canApprove(MODULE_NAME) && orderStatusRequest && <OrderStatusRequestReview orderId={order.originalOrderId} orderNo={order.orderNo} request={orderStatusRequest} onUpdated={fetchOrders} />}
+                            {isFirstOrderRow && canApprove(MODULE_NAME) && order.panelStatus !== 'Cancelled' && orderStatusRequest && <OrderStatusRequestReview orderId={order.originalOrderId} orderNo={order.orderNo} request={orderStatusRequest} onUpdated={fetchOrders} />}
 
                             {/* ✅ Create VN Button - For SINGLE order (quick action) */}
                             {canCreate('Vehicle Negotiation') && isSelectable && (
@@ -3042,7 +3042,7 @@ export default function OrderPanelList() {
                             )}
 
                             {/* Edit Button */}
-                            {canEdit(MODULE_NAME) && !isUsedInVN && (
+                            {canEdit(MODULE_NAME) && !isUsedInVN && order.status !== 'Cancelled' && order.panelStatus !== 'Cancelled' && (
                               <button
                                 onClick={() => handleEdit(order.originalOrderId)}
                                 className="p-2 bg-sky-100 text-sky-700 rounded-lg hover:bg-sky-200 transition"
@@ -3055,7 +3055,7 @@ export default function OrderPanelList() {
                             )}
 
                             {/* Quick Approve Button */}
-                            {canApprove(MODULE_NAME) && !isUsedInVN && !order.isDraft && order.panelStatus !== 'Approved' && order.panelStatus !== 'Completed' && order.panelStatus !== 'Rejected' && (
+                            {canApprove(MODULE_NAME) && !isUsedInVN && !order.isDraft && order.status !== 'Cancelled' && order.panelStatus !== 'Cancelled' && order.panelStatus !== 'Approved' && order.panelStatus !== 'Completed' && order.panelStatus !== 'Rejected' && (
                               <button
                                 onClick={() => handleQuickApprove(order.originalOrderId, order.orderNo)}
                                 disabled={approveLoading === order.originalOrderId}
@@ -3073,7 +3073,7 @@ export default function OrderPanelList() {
                             )}
 
                             {/* Full Approve Button */}
-                            {canApprove(MODULE_NAME) && !isUsedInVN && !order.isDraft && order.panelStatus !== 'Approved' && order.panelStatus !== 'Completed' && order.panelStatus !== 'Rejected' && (
+                            {canApprove(MODULE_NAME) && !isUsedInVN && !order.isDraft && order.status !== 'Cancelled' && order.panelStatus !== 'Cancelled' && order.panelStatus !== 'Approved' && order.panelStatus !== 'Completed' && order.panelStatus !== 'Rejected' && (
                               <button
                                 onClick={() => handleApprove(order.originalOrderId)}
                                 className="p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition"
@@ -3086,7 +3086,7 @@ export default function OrderPanelList() {
                             )}
 
                             {/* Quick Reject Button */}
-                            {canApprove(MODULE_NAME) && !isUsedInVN && !order.isDraft && order.panelStatus !== 'Rejected' && order.panelStatus !== 'Completed' && (
+                            {canApprove(MODULE_NAME) && !isUsedInVN && !order.isDraft && order.status !== 'Cancelled' && order.panelStatus !== 'Cancelled' && order.panelStatus !== 'Rejected' && order.panelStatus !== 'Completed' && (
                               <button
                                 onClick={() => handleQuickReject(order.originalOrderId, order.orderNo)}
                                 disabled={approveLoading === order.originalOrderId}

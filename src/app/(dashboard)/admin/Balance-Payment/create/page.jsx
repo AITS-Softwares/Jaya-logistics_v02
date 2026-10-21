@@ -2510,7 +2510,7 @@ export default function CreateBalancePayment() {
             <button onClick={() => handleSave('draft')} disabled={saving} className="rounded-xl border border-amber-300 bg-amber-50 px-5 py-2 text-sm font-bold text-amber-800 hover:bg-amber-100 disabled:opacity-60">Save as Draft</button>
             <button onClick={resetForm} className="rounded-xl border border-slate-300 bg-white px-5 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50 transition">Reset</button>
             <button
-              onClick={handleSave}
+              onClick={() => handleSave('submit')}
               disabled={saving}
               className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${saving ? "bg-gray-400 cursor-not-allowed" : "bg-emerald-600 hover:bg-emerald-700"}`}
             >

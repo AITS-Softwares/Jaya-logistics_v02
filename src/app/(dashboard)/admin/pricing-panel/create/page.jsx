@@ -70,23 +70,23 @@
 //     setError(null);
 //     try {
 //       const token = localStorage.getItem('token');
-      
+
 //       const vnRes = await fetch('/api/vehicle-negotiation', {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       if (!vnRes.ok) {
 //         throw new Error(`HTTP error! status: ${vnRes.status}`);
 //       }
-      
+
 //       const vnData = await vnRes.json();
-      
+
 //       const pricingRes = await fetch('/api/pricing-panel?format=table', {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       const pricingData = await pricingRes.json();
-      
+
 //       const usedVnns = new Set();
 //       if (pricingData.success && Array.isArray(pricingData.data)) {
 //         pricingData.data.forEach(item => {
@@ -95,7 +95,7 @@
 //           }
 //         });
 //       }
-      
+
 //       if (vnData.success && Array.isArray(vnData.data)) {
 //         const availableVNs = vnData.data.filter(vn => !usedVnns.has(vn.vnnNo));
 //         setVehicleNegotiations(availableVNs);
@@ -120,13 +120,13 @@
 //       const res = await fetch(`/api/vehicle-negotiation?id=${id}`, {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       if (!res.ok) {
 //         throw new Error(`HTTP error! status: ${res.status}`);
 //       }
-      
+
 //       const data = await res.json();
-      
+
 //       if (data.success && data.data) {
 //         return data.data;
 //       } else {
@@ -171,7 +171,7 @@
 //       const res = await fetch('/api/rate-master', {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       const data = await res.json();
 //       if (data.success && Array.isArray(data.data)) {
 //         const processedData = data.data.map(rm => ({
@@ -344,7 +344,7 @@
 //   const handleSearch = (query) => {
 //     if (readOnly) return;
 //     setSearchQuery(query);
-    
+
 //     if (!query.trim()) {
 //       setFilteredItems(items);
 //     } else {
@@ -355,7 +355,7 @@
 //       );
 //       setFilteredItems(filtered);
 //     }
-    
+
 //     if (selectedItem && query !== getDisplayValue(selectedItem)) {
 //       setSelectedItem(null);
 //       onSelect?.(null);
@@ -386,7 +386,7 @@
 //         autoComplete="off"
 //         readOnly={readOnly}
 //       />
-      
+
 //       {showDropdown && !readOnly && (
 //         <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
 //           {filteredItems.length > 0 ? (
@@ -454,11 +454,11 @@
 //       // No Price List selected - show no locations (or show message)
 //       return [];
 //     }
-    
+
 //     if (availableLocationNames.length === 0) {
 //       return [];
 //     }
-    
+
 //     // Only return locations whose name is in the Price List's locationRates
 //     return (locations || []).filter(loc => 
 //       availableLocationNames.includes(loc.name)
@@ -554,7 +554,7 @@
 //           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
 //         </svg>
 //       </div>
-      
+
 //       {showDropdown && !readOnly && selectedRateMaster && filteredLocationsByRateMaster.length > 0 && (
 //         <div 
 //           ref={dropdownRef}
@@ -610,7 +610,7 @@
 
 //   const filteredRateMasters = useMemo(() => {
 //     let filtered = rateMasters || [];
-    
+
 //     if (branchId) {
 //       filtered = filtered.filter(rm => {
 //         const rmBranchId = rm.branchId?._id || rm.branchId;
@@ -619,7 +619,7 @@
 //     } else {
 //       return [];
 //     }
-    
+
 //     if (customerId) {
 //       filtered = filtered.filter(rm => {
 //         const rmCustomerId = rm.customerId?._id || rm.customerId;
@@ -628,14 +628,14 @@
 //     } else {
 //       return [];
 //     }
-    
+
 //     if (locationName) {
 //       filtered = filtered.filter(rm => {
 //         return rm.locationRates && Array.isArray(rm.locationRates) && 
 //                rm.locationRates.some(lr => lr.locationName === locationName);
 //       });
 //     }
-    
+
 //     return filtered;
 //   }, [rateMasters, locationName, branchId, customerId]);
 
@@ -708,7 +708,7 @@
 //           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
 //         </svg>
 //       </div>
-      
+
 //       {showDropdown && !readOnly && filteredRateMasters.length > 0 && (
 //         <div 
 //           className="fixed z-[9999] bg-white border border-slate-200 rounded-lg shadow-xl overflow-y-auto"
@@ -783,13 +783,13 @@
 //   const handleSelectVN = async (vn) => {
 //     setSearchQuery(vn.vnnNo);
 //     setShowDropdown(false);
-    
+
 //     try {
 //       const token = localStorage.getItem('token');
 //       const res = await fetch(`/api/vehicle-negotiation?id=${vn._id}`, {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-      
+
 //       if (res.ok) {
 //         const data = await res.json();
 //         if (data.success && data.data) {
@@ -810,7 +810,7 @@
 //         width: rect.width
 //       });
 //     }
-    
+
 //     setShowDropdown(true);
 //     if (vnList.length === 0 && vehicleNegotiationSearch.vehicleNegotiations.length === 0) {
 //       vehicleNegotiationSearch.searchVehicleNegotiations();
@@ -868,7 +868,7 @@
 //         placeholder={placeholder}
 //         autoComplete="off"
 //       />
-      
+
 //       {showDropdown && (
 //         <div 
 //           ref={dropdownRef}
@@ -968,7 +968,7 @@
 //       const locationRate = rateMaster.locationRates?.find(lr => 
 //         lr.locationName === currentRow.locationRate
 //       );
-      
+
 //       if (locationRate) {
 //         const weightNum = parseFloat(currentRow.weight);
 //         if (weightNum >= locationRate.fromQty && weightNum <= locationRate.toQty) {
@@ -983,13 +983,13 @@
 
 //   const handleWeightChange = (rowId, weight) => {
 //     onChange(rowId, 'weight', weight);
-    
+
 //     const currentRow = rows.find(r => r._id === rowId);
 //     if (currentRow && currentRow.selectedRateMaster && currentRow.locationRate) {
 //       const locationRate = currentRow.selectedRateMaster.locationRates?.find(lr => 
 //         lr.locationName === currentRow.locationRate
 //       );
-      
+
 //       if (locationRate) {
 //         const weightNum = parseFloat(weight);
 //         if (weightNum >= locationRate.fromQty && weightNum <= locationRate.toQty) {
@@ -1029,7 +1029,7 @@
 //             const totalAmount = num(row.weight) * num(row.rate);
 //             const isFromVehicleNegotiation = !!row.vehicleNegotiationId || isReadOnlyMode;
 //             const currentCustomerId = row.customerId || headerCustomerId;
-            
+
 //             return (
 //               <tr key={row._id} className="hover:bg-yellow-50 even:bg-slate-50">
 //                 <td className="border border-yellow-300 px-1 py-1">
@@ -1328,7 +1328,7 @@
 // ========================= */
 // export default function PricingPanelPage() {
 //   const router = useRouter();
-  
+
 //   const [branches, setBranches] = useState([]);
 //   const [locations, setLocations] = useState([]);
 //   const [countries, setCountries] = useState([]);
@@ -1410,7 +1410,7 @@
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
 //       const data = await res.json();
-      
+
 //       if (data.success && Array.isArray(data.data)) {
 //         setLocations(data.data);
 //         console.log("Loaded locations:", data.data.length);
@@ -1463,7 +1463,7 @@
 
 //  const handleSelectVehicleNegotiation = async (fullVN) => {
 //   setSelectedVehicleNegotiation(fullVN);
-  
+
 //   setHeader(prev => ({
 //     ...prev,
 //     branch: fullVN.branch?._id || fullVN.branch || "",
@@ -1505,497 +1505,499 @@
 //       fromState: order.fromState || "", // ✅ ADD THIS
 //       to: order.to,
 //       toName: order.toName || "",
-//       taluka: order.taluka || "",
-//       talukaName: order.talukaName || order.taluka || "",
-//       district: order.district,
-//       districtName: order.districtName || "",
-//       state: order.state,
-//       stateName: order.stateName || "",
-//       country: order.country,
-//       countryName: order.countryName || "",
-//       locationRate: "",
-//       locationRateId: "",
-//       locationRateTitle: "",
-//       priceList: "",
-//       selectedRateMaster: null,
-//       weight: order.weight || "",
-//       rate: "",
-//       totalAmount: 0,
-//       collectionCharges: order.collectionCharges || "",
-//       cancellationCharges: order.cancellationCharges || "",
-//       loadingCharges: order.loadingCharges || "",
-//       otherCharges: order.otherCharges || "",
-//       localStatus: order.localStatus || "unknown", // ✅ ADD THIS
-//       localStatusLabel: order.localStatusLabel || "Unknown" // ✅ ADD THIS
-//     }));
+// locationRemark: order.locationRemark || "",
+  //       taluka: order.taluka || "",
+  //       talukaName: order.talukaName || order.taluka || "",
+  //       district: order.district,
+  //       districtName: order.districtName || "",
+  //       state: order.state,
+  //       stateName: order.stateName || "",
+  //       country: order.country,
+  //       countryName: order.countryName || "",
+  //       locationRate: "",
+  //       locationRateId: "",
+  //       locationRateTitle: "",
+  //       priceList: "",
+  //       selectedRateMaster: null,
+  //       weight: order.weight || "",
+  //       rate: "",
+  //       totalAmount: 0,
+  //       collectionCharges: order.collectionCharges || "",
+  //       cancellationCharges: order.cancellationCharges || "",
+  //       loadingCharges: order.loadingCharges || "",
+  //       otherCharges: order.otherCharges || "",
+  //       localStatus: order.localStatus || "unknown", // ✅ ADD THIS
+  //       localStatusLabel: order.localStatusLabel || "Unknown" // ✅ ADD THIS
+  //     }));
 
-//     if (billing.billingType === "Single - Order") {
-//       setOrders([newOrders[0]]);
-//     } else {
-//       setOrders(newOrders);
-//     }
-//   }
-// };
-//   const updateOrder = (id, key, value) => {
-//     setOrders((prev) => prev.map((r) => (r._id === id ? { ...r, [key]: value } : r)));
-//   };
+  //     if (billing.billingType === "Single - Order") {
+  //       setOrders([newOrders[0]]);
+  //     } else {
+  //       setOrders(newOrders);
+  //     }
+  //   }
+  // };
+  //   const updateOrder = (id, key, value) => {
+  //     setOrders((prev) => prev.map((r) => (r._id === id ? { ...r, [key]: value } : r)));
+  //   };
 
-//   const addOrder = () => {
-//     setOrders((prev) => [...prev, defaultOrderRow()]);
-//   };
+  //   const addOrder = () => {
+  //     setOrders((prev) => [...prev, defaultOrderRow()]);
+  //   };
 
-//   const removeOrder = (id) => {
-//     if (orders.length > 1) {
-//       setOrders((prev) => prev.filter((x) => x._id !== id));
-//     } else {
-//       alert("At least one order row is required");
-//     }
-//   };
+  //   const removeOrder = (id) => {
+  //     if (orders.length > 1) {
+  //       setOrders((prev) => prev.filter((x) => x._id !== id));
+  //     } else {
+  //       alert("At least one order row is required");
+  //     }
+  //   };
 
-//   const handleBillingTypeChange = (value) => {
-//     setBilling((prev) => ({ ...prev, billingType: value }));
-    
-//     if (value === "Single - Order") {
-//       setOrders([orders[0] || defaultOrderRow()]);
-//     } else {
-//       if (orders.length < 2) {
-//         setOrders([...orders, defaultOrderRow()]);
-//       }
-//     }
-//   };
+  //   const handleBillingTypeChange = (value) => {
+  //     setBilling((prev) => ({ ...prev, billingType: value }));
 
-//   const totalWeight = useMemo(() => {
-//     return orders.reduce((acc, r) => acc + num(r.weight), 0);
-//   }, [orders]);
+  //     if (value === "Single - Order") {
+  //       setOrders([orders[0] || defaultOrderRow()]);
+  //     } else {
+  //       if (orders.length < 2) {
+  //         setOrders([...orders, defaultOrderRow()]);
+  //       }
+  //     }
+  //   };
 
-//   const totalAmount = useMemo(() => {
-//     return orders.reduce((acc, r) => {
-//       const weight = num(r.weight);
-//       const rate = num(r.rate);
-//       return acc + (weight * rate);
-//     }, 0);
-//   }, [orders]);
+  //   const totalWeight = useMemo(() => {
+  //     return orders.reduce((acc, r) => acc + num(r.weight), 0);
+  //   }, [orders]);
 
-//   const handleFileSelect = (e) => {
-//     alert("Rate Approval section is read-only");
-//   };
+  //   const totalAmount = useMemo(() => {
+  //     return orders.reduce((acc, r) => {
+  //       const weight = num(r.weight);
+  //       const rate = num(r.rate);
+  //       return acc + (weight * rate);
+  //     }, 0);
+  //   }, [orders]);
 
-//   const handleSaveAll = async () => {
-//     if (!header.branch) {
-//       alert("Please select a branch");
-//       return;
-//     }
-    
-//     const hasInvalidOrders = orders.some(order => !order.orderNo);
-//     if (hasInvalidOrders) {
-//       alert("Please enter Order No for all order rows");
-//       return;
-//     }
+  //   const handleFileSelect = (e) => {
+  //     alert("Rate Approval section is read-only");
+  //   };
 
-//     setSaving(true);
-//     setSaveError(null);
-//     setSaveSuccess(false);
+  //   const handleSaveAll = async () => {
+  //     if (!header.branch) {
+  //       alert("Please select a branch");
+  //       return;
+  //     }
 
-//     try {
-//       const token = localStorage.getItem('token');
-//       if (!token) {
-//         throw new Error("No authentication token found. Please login again.");
-//       }
+  //     const hasInvalidOrders = orders.some(order => !order.orderNo);
+  //     if (hasInvalidOrders) {
+  //       alert("Please enter Order No for all order rows");
+  //       return;
+  //     }
 
-//       const payload = {
-//         header: {
-//           ...header,
-//           partyName: selectedCustomer?.customerName || header.partyName,
-//           customerId: selectedCustomer?._id || header.customerId
-//         },
-//         billing: {
-//           ...billing,
-//           loadingPoints: num(billing.loadingPoints) || 1,
-//           dropPoints: num(billing.dropPoints) || 1,
-//           collectionCharges: num(billing.collectionCharges) || 0,
-//           otherCharges: num(billing.otherCharges) || 0
-//         },
-//       orders: orders.map(order => ({
-//   orderNo: order.orderNo,
-//   vehicleNegotiationId: order.vehicleNegotiationId,
-//   vnnNumber: order.vnnNumber,
-//   partyName: order.partyName,
-//   customerId: order.customerId || null,
-//   customerCode: order.customerCode,
-//   contactPerson: order.contactPerson,
-//   plantCode: order.plantCode,
-//   plantName: order.plantName,
-//   plantCodeValue: order.plantCodeValue,
-//   orderType: order.orderType,
-//   pinCode: order.pinCode,
-//   from: order.from,
-//   fromName: order.fromName,
-//   fromState: order.fromState || '', // ✅ ADD THIS
-//   to: order.to,
-//   toName: order.toName,
-//   taluka: order.taluka,
-//   talukaName: order.talukaName,
-//   district: order.district,
-//   districtName: order.districtName,
-//   state: order.state,
-//   stateName: order.stateName,
-//   country: order.country,
-//   countryName: order.countryName,
-//   locationRate: order.locationRate,
-//   priceList: order.priceList,
-//   weight: num(order.weight),
-//   rate: num(order.rate),
-//   totalAmount: num(order.weight) * num(order.rate),
-//   collectionCharges: num(order.collectionCharges) || 0,
-//   cancellationCharges: order.cancellationCharges || "Nil",
-//   loadingCharges: order.loadingCharges || "Nil",
-//   otherCharges: num(order.otherCharges) || 0,
-//   localStatus: order.localStatus || 'unknown', // ✅ ADD THIS
-//   localStatusLabel: order.localStatusLabel || 'Unknown' // ✅ ADD THIS
-// })),
-//         totalWeight,
-//         totalAmount,
-//         rateApproval: {
-//           approvalType: rateApproval.approvalType,
-//           approvalStatus: rateApproval.approvalStatus,
-//           uploadFileName: rateApproval.uploadFileName
-//         },
-//         branches: branches,
-//         plants: plants,
-//         countries: countries,
-//         locations: locations
-//       };
+  //     setSaving(true);
+  //     setSaveError(null);
+  //     setSaveSuccess(false);
 
-//       const res = await fetch('/api/pricing-panel', {
-//         method: 'POST',
-//         headers: {
-//           'Content-Type': 'application/json',
-//           Authorization: `Bearer ${token}`,
-//         },
-//         body: JSON.stringify(payload),
-//       });
+  //     try {
+  //       const token = localStorage.getItem('token');
+  //       if (!token) {
+  //         throw new Error("No authentication token found. Please login again.");
+  //       }
 
-//       const data = await res.json();
+  //       const payload = {
+  //         header: {
+  //           ...header,
+  //           partyName: selectedCustomer?.customerName || header.partyName,
+  //           customerId: selectedCustomer?._id || header.customerId
+  //         },
+  //         billing: {
+  //           ...billing,
+  //           loadingPoints: num(billing.loadingPoints) || 1,
+  //           dropPoints: num(billing.dropPoints) || 1,
+  //           collectionCharges: num(billing.collectionCharges) || 0,
+  //           otherCharges: num(billing.otherCharges) || 0
+  //         },
+  //       orders: orders.map(order => ({
+  //   orderNo: order.orderNo,
+  //   vehicleNegotiationId: order.vehicleNegotiationId,
+  //   vnnNumber: order.vnnNumber,
+  //   partyName: order.partyName,
+  //   customerId: order.customerId || null,
+  //   customerCode: order.customerCode,
+  //   contactPerson: order.contactPerson,
+  //   plantCode: order.plantCode,
+  //   plantName: order.plantName,
+  //   plantCodeValue: order.plantCodeValue,
+  //   orderType: order.orderType,
+  //   pinCode: order.pinCode,
+  //   from: order.from,
+  //   fromName: order.fromName,
+  //   fromState: order.fromState || '', // ✅ ADD THIS
+  //   to: order.to,
+  //   toName: order.toName,
+  // locationRemark: order.locationRemark || "",
+  //   taluka: order.taluka,
+  //   talukaName: order.talukaName,
+  //   district: order.district,
+  //   districtName: order.districtName,
+  //   state: order.state,
+  //   stateName: order.stateName,
+  //   country: order.country,
+  //   countryName: order.countryName,
+  //   locationRate: order.locationRate,
+  //   priceList: order.priceList,
+  //   weight: num(order.weight),
+  //   rate: num(order.rate),
+  //   totalAmount: num(order.weight) * num(order.rate),
+  //   collectionCharges: num(order.collectionCharges) || 0,
+  //   cancellationCharges: order.cancellationCharges || "Nil",
+  //   loadingCharges: order.loadingCharges || "Nil",
+  //   otherCharges: num(order.otherCharges) || 0,
+  //   localStatus: order.localStatus || 'unknown', // ✅ ADD THIS
+  //   localStatusLabel: order.localStatusLabel || 'Unknown' // ✅ ADD THIS
+  // })),
+  //         totalWeight,
+  //         totalAmount,
+  //         rateApproval: {
+  //           approvalType: rateApproval.approvalType,
+  //           approvalStatus: rateApproval.approvalStatus,
+  //           uploadFileName: rateApproval.uploadFileName
+  //         },
+  //         branches: branches,
+  //         plants: plants,
+  //         countries: countries,
+  //         locations: locations
+  //       };
 
-//       if (!res.ok) {
-//         throw new Error(data.message || `Failed to save pricing panel: ${res.status}`);
-//       }
+  //       const res = await fetch('/api/pricing-panel', {
+  //         method: 'POST',
+  //         headers: {
+  //           'Content-Type': 'application/json',
+  //           Authorization: `Bearer ${token}`,
+  //         },
+  //         body: JSON.stringify(payload),
+  //       });
 
-//       setSaveSuccess(true);
-//       setPricingSerialNo(data.data?.pricingSerialNo || "Generated");
-      
-//       alert(`✅ Pricing panel saved successfully!\nPricing Serial No: ${data.data?.pricingSerialNo}`);
-      
-//       resetForm();
-      
-//     } catch (error) {
-//       console.error('Error saving pricing panel:', error);
-//       setSaveError(error.message || 'Failed to save pricing panel');
-//       alert(`❌ Error: ${error.message}`);
-//     } finally {
-//       setSaving(false);
-//     }
-//   };
+  //       const data = await res.json();
 
-//   const resetForm = () => {
-//     setHeader({
-//       pricingSerialNo: "",
-//       branch: "",
-//       branchName: "",
-//       branchCode: "",
-//       delivery: "Normal",
-//       date: new Date().toISOString().split('T')[0],
-//       partyName: "",
-//       customerId: ""
-//     });
-    
-//     setBilling({
-//       billingType: "Multi - Order",
-//       loadingPoints: "",
-//       dropPoints: "",
-//       collectionCharges: 0,
-//       cancellationCharges: "Nil",
-//       loadingCharges: "Nil",
-//       otherCharges: 0,
-//     });
-    
-//     setOrders([defaultOrderRow(), defaultOrderRow()]);
-    
-//     setRateApproval({
-//       approvalType: "Contract Rates",
-//       uploadFile: null,
-//       uploadFileName: "",
-//       approvalStatus: "Pending",
-//     });
-    
-//     setSelectedCustomer(null);
-//     setSelectedVehicleNegotiation(null);
-    
-//     setSaveSuccess(false);
-//     setSaveError(null);
-//     setPricingSerialNo("");
-    
-//     window.scrollTo({ top: 0, behavior: 'smooth' });
-//   };
+  //       if (!res.ok) {
+  //         throw new Error(data.message || `Failed to save pricing panel: ${res.status}`);
+  //       }
 
-//   const billingColumns = [
-//     { key: "billingType", label: "Billing Type", options: BILLING_TYPES },
-//     { key: "loadingPoints", label: "No. of Loading Points", type: "number" },
-//     { key: "dropPoints", label: "No. of Droping Point", type: "number" },
-//   ];
+  //       setSaveSuccess(true);
+  //       setPricingSerialNo(data.data?.pricingSerialNo || "Generated");
 
-//   const isHeaderReadOnly = !!selectedVehicleNegotiation;
+  //       alert(`✅ Pricing panel saved successfully!\nPricing Serial No: ${data.data?.pricingSerialNo}`);
 
-//   return (
-//     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white">
-//       <div className="sticky top-0 z-40 border-b bg-white/80 backdrop-blur">
-//         <div className="mx-auto max-w-full px-4 py-3 flex items-center justify-between">
-//           <div>
-//             <div className="text-lg font-extrabold text-slate-900">
-//               Pricing Panel
-//             </div>
-//             {saveSuccess && (
-//               <div className="text-sm text-green-600 font-medium">
-//                 ✅ Pricing panel saved successfully! PSN: {pricingSerialNo}
-//               </div>
-//             )}
-//             {saveError && (
-//               <div className="text-sm text-red-600 font-medium">
-//                 ❌ {saveError}
-//               </div>
-//             )}
-//           </div>
+  //       resetForm();
 
-//           <div className="flex items-center gap-3">
-//             <button
-//               onClick={handleSaveAll}
-//               disabled={saving}
-//               className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${
-//                 saving
-//                   ? 'bg-gray-400 cursor-not-allowed' 
-//                   : 'bg-yellow-600 hover:bg-yellow-700'
-//               }`}
-//             >
-//               {saving ? (
-//                 <span className="flex items-center gap-2">
-//                   <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-//                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-//                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-//                   </svg>
-//                   Saving...
-//                 </span>
-//               ) : 'Save All'}
-//             </button>
-//           </div>
-//         </div>
-//       </div>
+  //     } catch (error) {
+  //       console.error('Error saving pricing panel:', error);
+  //       setSaveError(error.message || 'Failed to save pricing panel');
+  //       alert(`❌ Error: ${error.message}`);
+  //     } finally {
+  //       setSaving(false);
+  //     }
+  //   };
 
-//       <div className="mx-auto max-w-full p-4 space-y-4">
-//         <Card title="Pricing Panel - Part -1">
-//           <div className="grid grid-cols-12 gap-3 mb-4">
-//             <div className="col-span-12 md:col-span-3">
-//               <label className="text-xs font-bold text-slate-600">Pricing Serial No</label>
-//               <div className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">
-//                 {pricingSerialNo || "Auto-generated on save"}
-//               </div>
-//             </div>
+  //   const resetForm = () => {
+  //     setHeader({
+  //       pricingSerialNo: "",
+  //       branch: "",
+  //       branchName: "",
+  //       branchCode: "",
+  //       delivery: "Normal",
+  //       date: new Date().toISOString().split('T')[0],
+  //       partyName: "",
+  //       customerId: ""
+  //     });
 
-//             <div className="col-span-12 md:col-span-3 relative">
-//               <label className="text-xs font-bold text-slate-600">Search Vehicle Negotiation</label>
-//               <VehicleNegotiationHeaderDropdown
-//                 onSelect={handleSelectVehicleNegotiation}
-//                 placeholder="Search by VNN..."
-//               />
-//               {selectedVehicleNegotiation && (
-//                 <div className="text-xs text-slate-500 mt-1">
-//                   Selected: {selectedVehicleNegotiation.vnnNo}
-//                 </div>
-//               )}
-//             </div>
-            
-//             <div className="col-span-12 md:col-span-3">
-//               <label className="text-xs font-bold text-slate-600">Branch *</label>
-//               <SearchableDropdown
-//                 items={branches}
-//                 selectedId={header.branch}
-//                 onSelect={(branch) => setHeader(p => ({ 
-//                   ...p, 
-//                   branch: branch?._id || '',
-//                   branchName: branch?.name || '',
-//                   branchCode: branch?.code || ''
-//                 }))}
-//                 placeholder="Search branch... *"
-//                 required={true}
-//                 displayField="name"
-//                 codeField="code"
-//                 readOnly={isHeaderReadOnly}
-//               />
-//             </div>
+  //     setBilling({
+  //       billingType: "Multi - Order",
+  //       loadingPoints: "",
+  //       dropPoints: "",
+  //       collectionCharges: 0,
+  //       cancellationCharges: "Nil",
+  //       loadingCharges: "Nil",
+  //       otherCharges: 0,
+  //     });
 
-//             <Select
-//               col="col-span-12 md:col-span-3"
-//               label="Delivery"
-//               value={header.delivery}
-//               onChange={(v) => setHeader((p) => ({ ...p, delivery: v }))}
-//               options={DELIVERY_TYPES}
-//               readOnly={isHeaderReadOnly}
-//             />
+  //     setOrders([defaultOrderRow(), defaultOrderRow()]);
 
-//             <Input
-//               type="date"
-//               col="col-span-12 md:col-span-3"
-//               label="Date"
-//               value={header.date}
-//               onChange={(v) => setHeader((p) => ({ ...p, date: v }))}
-//               readOnly={isHeaderReadOnly}
-//             />
-//           </div>
+  //     setRateApproval({
+  //       approvalType: "Contract Rates",
+  //       uploadFile: null,
+  //       uploadFileName: "",
+  //       approvalStatus: "Pending",
+  //     });
 
-//           <div className="mb-4">
-//   <div className="text-sm font-bold text-slate-700 mb-2">Billing Type / Charges</div>
-//   <div className="overflow-auto rounded-xl border border-yellow-300">
-//     <table className="min-w-full w-full text-sm">
-//       <thead className="sticky top-0 bg-yellow-400">
-//         <tr>
-//           {billingColumns.map((col) => (
-//             <th
-//               key={col.key}
-//               className="border border-yellow-500 px-4 py-3 text-xs font-extrabold text-slate-900 text-center"
-//             >
-//               {col.label}
-//             </th>
-//           ))}
-//         </tr>
-//       </thead>
-//       <tbody>
-//         <tr className="hover:bg-yellow-50 even:bg-slate-50">
-//           {billingColumns.map((col) => (
-//             <td key={col.key} className="border border-yellow-300 px-2 py-2">
-//               {col.options ? (
-//                 <select
-//                   value={billing[col.key] || ""}
-//                   onChange={(e) => {
-//                     if (col.key === "billingType") {
-//                       handleBillingTypeChange(e.target.value);
-//                     } else {
-//                       setBilling(prev => ({ ...prev, [col.key]: e.target.value }));
-//                     }
-//                   }}
-//                   disabled={col.key !== "billingType" && selectedVehicleNegotiation}
-//                   className={`w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${
-//                     (col.key !== "billingType" && selectedVehicleNegotiation) ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-//                   }`}
-//                 >
-//                   <option value="">Select {col.label}</option>
-//                   {col.options.map((opt) => (
-//                     <option key={opt} value={opt}>
-//                       {opt}
-//                     </option>
-//                   ))}
-//                 </select>
-//               ) : (
-//                 <input
-//                   type={col.type || "text"}
-//                   step={col.type === "number" ? "1" : undefined}
-//                   value={billing[col.key] || ""}
-//                   onChange={(e) => setBilling(prev => ({ ...prev, [col.key]: e.target.value }))}
-//                   readOnly={selectedVehicleNegotiation}
-//                   className={`w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${
-//                     selectedVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-//                   }`}
-//                   placeholder={`Enter ${col.label}`}
-//                 />
-//               )}
-//             </td>
-//           ))}
-//         </tr>
-//       </tbody>
-//     </table>
-//   </div>
-// </div>
-//           <div>
-//             <div className="flex items-center justify-between mb-4">
-//               <div className="text-sm font-bold text-slate-700">
-//                 Orders - {billing.billingType} - {orders.length} row{orders.length !== 1 ? 's' : ''}
-//               </div>
-              
-//               {billing.billingType === "Multi - Order" && !selectedVehicleNegotiation && (
-//                 <button
-//                   onClick={addOrder}
-//                   className="rounded-xl bg-yellow-600 px-4 py-2 text-sm font-bold text-white hover:bg-yellow-700"
-//                 >
-//                   + Add Row
-//                 </button>
-//               )}
-//             </div>
-            
-//             <OrdersTable
-//               rows={orders}
-//               onChange={updateOrder}
-//               onRemove={removeOrder}
-//               billingType={billing.billingType}
-//               selectedVehicleNegotiation={selectedVehicleNegotiation}
-//               locations={locations}
-//               rateMasters={rateMasterSearch.rateMasters}
-//               headerBranch={header.branch}
-//               headerCustomerId={header.customerId}
-//             />
-//           </div>
+  //     setSelectedCustomer(null);
+  //     setSelectedVehicleNegotiation(null);
 
-//           <div className="flex justify-end gap-4 mt-4">
-//             <div className="flex items-center gap-3 border border-yellow-300 px-6 py-3 bg-yellow-50 rounded-xl">
-//               <div className="text-sm font-extrabold text-slate-900">Total Weight:</div>
-//               <div className="text-xl font-extrabold text-emerald-700">{totalWeight}</div>
-//             </div>
-//             <div className="flex items-center gap-3 border border-yellow-300 px-6 py-3 bg-yellow-50 rounded-xl">
-//               <div className="text-sm font-extrabold text-slate-900">Total Amount:</div>
-//               <div className="text-xl font-extrabold text-emerald-700">{totalAmount}</div>
-//             </div>
-//           </div>
-//         </Card>
+  //     setSaveSuccess(false);
+  //     setSaveError(null);
+  //     setPricingSerialNo("");
 
-//         <Card title="Rate - Approval - Part - 2 (Read Only)">
-//           <div className="grid grid-cols-12 gap-4">
-//             <Select
-//               col="col-span-12 md:col-span-4"
-//               label="Rate Approval Type"
-//               value={rateApproval.approvalType}
-//               onChange={(v) => setRateApproval((p) => ({ ...p, approvalType: v }))}
-//               options={RATE_APPROVAL_TYPES}
-//               readOnly={true}
-//             />
+  //     window.scrollTo({ top: 0, behavior: 'smooth' });
+  //   };
 
-//             <div className="col-span-12 md:col-span-4">
-//               <label className="text-xs font-bold text-slate-600">Rate Approval Upload</label>
-//               <input
-//                 type="file"
-//                 accept=".pdf,.png,.jpg,.jpeg"
-//                 onChange={handleFileSelect}
-//                 disabled={true}
-//                 className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none cursor-not-allowed"
-//               />
-//               {rateApproval.uploadFileName && (
-//                 <div className="mt-1 text-xs text-green-600">
-//                   ✅ File: {rateApproval.uploadFileName}
-//                 </div>
-//               )}
-//             </div>
+  //   const billingColumns = [
+  //     { key: "billingType", label: "Billing Type", options: BILLING_TYPES },
+  //     { key: "loadingPoints", label: "No. of Loading Points", type: "number" },
+  //     { key: "dropPoints", label: "No. of Droping Point", type: "number" },
+  //   ];
 
-//             <Select
-//               col="col-span-12 md:col-span-4"
-//               label="Approval Status"
-//               value={rateApproval.approvalStatus}
-//               onChange={(v) => setRateApproval((p) => ({ ...p, approvalStatus: v }))}
-//               options={APPROVAL_STATUS}
-//               readOnly={true}
-//             />
-//           </div>
-//         </Card>
-//       </div>
-//     </div>
-//   );
-// }
-"use client";
+  //   const isHeaderReadOnly = !!selectedVehicleNegotiation;
+
+  //   return (
+  //     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white">
+  //       <div className="sticky top-0 z-40 border-b bg-white/80 backdrop-blur">
+  //         <div className="mx-auto max-w-full px-4 py-3 flex items-center justify-between">
+  //           <div>
+  //             <div className="text-lg font-extrabold text-slate-900">
+  //               Pricing Panel
+  //             </div>
+  //             {saveSuccess && (
+  //               <div className="text-sm text-green-600 font-medium">
+  //                 ✅ Pricing panel saved successfully! PSN: {pricingSerialNo}
+  //               </div>
+  //             )}
+  //             {saveError && (
+  //               <div className="text-sm text-red-600 font-medium">
+  //                 ❌ {saveError}
+  //               </div>
+  //             )}
+  //           </div>
+
+  //           <div className="flex items-center gap-3">
+  //             <button
+  //               onClick={handleSaveAll}
+  //               disabled={saving}
+  //               className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${
+  //                 saving
+  //                   ? 'bg-gray-400 cursor-not-allowed' 
+  //                   : 'bg-yellow-600 hover:bg-yellow-700'
+  //               }`}
+  //             >
+  //               {saving ? (
+  //                 <span className="flex items-center gap-2">
+  //                   <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+  //                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+  //                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+  //                   </svg>
+  //                   Saving...
+  //                 </span>
+  //               ) : 'Save All'}
+  //             </button>
+  //           </div>
+  //         </div>
+  //       </div>
+
+  //       <div className="mx-auto max-w-full p-4 space-y-4">
+  //         <Card title="Pricing Panel - Part -1">
+  //           <div className="grid grid-cols-12 gap-3 mb-4">
+  //             <div className="col-span-12 md:col-span-3">
+  //               <label className="text-xs font-bold text-slate-600">Pricing Serial No</label>
+  //               <div className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">
+  //                 {pricingSerialNo || "Auto-generated on save"}
+  //               </div>
+  //             </div>
+
+  //             <div className="col-span-12 md:col-span-3 relative">
+  //               <label className="text-xs font-bold text-slate-600">Search Vehicle Negotiation</label>
+  //               <VehicleNegotiationHeaderDropdown
+  //                 onSelect={handleSelectVehicleNegotiation}
+  //                 placeholder="Search by VNN..."
+  //               />
+  //               {selectedVehicleNegotiation && (
+  //                 <div className="text-xs text-slate-500 mt-1">
+  //                   Selected: {selectedVehicleNegotiation.vnnNo}
+  //                 </div>
+  //               )}
+  //             </div>
+
+  //             <div className="col-span-12 md:col-span-3">
+  //               <label className="text-xs font-bold text-slate-600">Branch *</label>
+  //               <SearchableDropdown
+  //                 items={branches}
+  //                 selectedId={header.branch}
+  //                 onSelect={(branch) => setHeader(p => ({ 
+  //                   ...p, 
+  //                   branch: branch?._id || '',
+  //                   branchName: branch?.name || '',
+  //                   branchCode: branch?.code || ''
+  //                 }))}
+  //                 placeholder="Search branch... *"
+  //                 required={true}
+  //                 displayField="name"
+  //                 codeField="code"
+  //                 readOnly={isHeaderReadOnly}
+  //               />
+  //             </div>
+
+  //             <Select
+  //               col="col-span-12 md:col-span-3"
+  //               label="Delivery"
+  //               value={header.delivery}
+  //               onChange={(v) => setHeader((p) => ({ ...p, delivery: v }))}
+  //               options={DELIVERY_TYPES}
+  //               readOnly={isHeaderReadOnly}
+  //             />
+
+  //             <Input
+  //               type="date"
+  //               col="col-span-12 md:col-span-3"
+  //               label="Date"
+  //               value={header.date}
+  //               onChange={(v) => setHeader((p) => ({ ...p, date: v }))}
+  //               readOnly={isHeaderReadOnly}
+  //             />
+  //           </div>
+
+  //           <div className="mb-4">
+  //   <div className="text-sm font-bold text-slate-700 mb-2">Billing Type / Charges</div>
+  //   <div className="overflow-auto rounded-xl border border-yellow-300">
+  //     <table className="min-w-full w-full text-sm">
+  //       <thead className="sticky top-0 bg-yellow-400">
+  //         <tr>
+  //           {billingColumns.map((col) => (
+  //             <th
+  //               key={col.key}
+  //               className="border border-yellow-500 px-4 py-3 text-xs font-extrabold text-slate-900 text-center"
+  //             >
+  //               {col.label}
+  //             </th>
+  //           ))}
+  //         </tr>
+  //       </thead>
+  //       <tbody>
+  //         <tr className="hover:bg-yellow-50 even:bg-slate-50">
+  //           {billingColumns.map((col) => (
+  //             <td key={col.key} className="border border-yellow-300 px-2 py-2">
+  //               {col.options ? (
+  //                 <select
+  //                   value={billing[col.key] || ""}
+  //                   onChange={(e) => {
+  //                     if (col.key === "billingType") {
+  //                       handleBillingTypeChange(e.target.value);
+  //                     } else {
+  //                       setBilling(prev => ({ ...prev, [col.key]: e.target.value }));
+  //                     }
+  //                   }}
+  //                   disabled={col.key !== "billingType" && selectedVehicleNegotiation}
+  //                   className={`w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${
+  //                     (col.key !== "billingType" && selectedVehicleNegotiation) ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+  //                   }`}
+  //                 >
+  //                   <option value="">Select {col.label}</option>
+  //                   {col.options.map((opt) => (
+  //                     <option key={opt} value={opt}>
+  //                       {opt}
+  //                     </option>
+  //                   ))}
+  //                 </select>
+  //               ) : (
+  //                 <input
+  //                   type={col.type || "text"}
+  //                   step={col.type === "number" ? "1" : undefined}
+  //                   value={billing[col.key] || ""}
+  //                   onChange={(e) => setBilling(prev => ({ ...prev, [col.key]: e.target.value }))}
+  //                   readOnly={selectedVehicleNegotiation}
+  //                   className={`w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${
+  //                     selectedVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+  //                   }`}
+  //                   placeholder={`Enter ${col.label}`}
+  //                 />
+  //               )}
+  //             </td>
+  //           ))}
+  //         </tr>
+  //       </tbody>
+  //     </table>
+  //   </div>
+  // </div>
+  //           <div>
+  //             <div className="flex items-center justify-between mb-4">
+  //               <div className="text-sm font-bold text-slate-700">
+  //                 Orders - {billing.billingType} - {orders.length} row{orders.length !== 1 ? 's' : ''}
+  //               </div>
+
+  //               {billing.billingType === "Multi - Order" && !selectedVehicleNegotiation && (
+  //                 <button
+  //                   onClick={addOrder}
+  //                   className="rounded-xl bg-yellow-600 px-4 py-2 text-sm font-bold text-white hover:bg-yellow-700"
+  //                 >
+  //                   + Add Row
+  //                 </button>
+  //               )}
+  //             </div>
+
+  //             <OrdersTable
+  //               rows={orders}
+  //               onChange={updateOrder}
+  //               onRemove={removeOrder}
+  //               billingType={billing.billingType}
+  //               selectedVehicleNegotiation={selectedVehicleNegotiation}
+  //               locations={locations}
+  //               rateMasters={rateMasterSearch.rateMasters}
+  //               headerBranch={header.branch}
+  //               headerCustomerId={header.customerId}
+  //             />
+  //           </div>
+
+  //           <div className="flex justify-end gap-4 mt-4">
+  //             <div className="flex items-center gap-3 border border-yellow-300 px-6 py-3 bg-yellow-50 rounded-xl">
+  //               <div className="text-sm font-extrabold text-slate-900">Total Weight:</div>
+  //               <div className="text-xl font-extrabold text-emerald-700">{totalWeight}</div>
+  //             </div>
+  //             <div className="flex items-center gap-3 border border-yellow-300 px-6 py-3 bg-yellow-50 rounded-xl">
+  //               <div className="text-sm font-extrabold text-slate-900">Total Amount:</div>
+  //               <div className="text-xl font-extrabold text-emerald-700">{totalAmount}</div>
+  //             </div>
+  //           </div>
+  //         </Card>
+
+  //         <Card title="Rate - Approval - Part - 2 (Read Only)">
+  //           <div className="grid grid-cols-12 gap-4">
+  //             <Select
+  //               col="col-span-12 md:col-span-4"
+  //               label="Rate Approval Type"
+  //               value={rateApproval.approvalType}
+  //               onChange={(v) => setRateApproval((p) => ({ ...p, approvalType: v }))}
+  //               options={RATE_APPROVAL_TYPES}
+  //               readOnly={true}
+  //             />
+
+  //             <div className="col-span-12 md:col-span-4">
+  //               <label className="text-xs font-bold text-slate-600">Rate Approval Upload</label>
+  //               <input
+  //                 type="file"
+  //                 accept=".pdf,.png,.jpg,.jpeg"
+  //                 onChange={handleFileSelect}
+  //                 disabled={true}
+  //                 className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none cursor-not-allowed"
+  //               />
+  //               {rateApproval.uploadFileName && (
+  //                 <div className="mt-1 text-xs text-green-600">
+  //                   ✅ File: {rateApproval.uploadFileName}
+  //                 </div>
+  //               )}
+  //             </div>
+
+  //             <Select
+  //               col="col-span-12 md:col-span-4"
+  //               label="Approval Status"
+  //               value={rateApproval.approvalStatus}
+  //               onChange={(v) => setRateApproval((p) => ({ ...p, approvalStatus: v }))}
+  //               options={APPROVAL_STATUS}
+  //               readOnly={true}
+  //             />
+  //           </div>
+  //         </Card>
+  //       </div>
+  //     </div>
+  //   );
+  // }
+  "use client";
 
 import { useMemo, useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
@@ -2010,7 +2012,7 @@ const APPROVAL_STATUS = ["Pending", "Pending from Team", "Pending from Client", 
 const RATE_APPROVAL_TYPES = ["Contract Rates", "Mail Approval Rate"];
 const RATE_CALCULATION_MODES = [
   { value: "order_weight", label: "Auto – Order Weight" },
-  { value: "total_weight", label: "Auto – Total Panel Weight" },
+  // { value: "total_weight", label: "Auto – Total Panel Weight" },
   { value: "manual_rate", label: "Manual Rate" },
 ];
 
@@ -2123,16 +2125,16 @@ function useVehicleNegotiationSearch() {
     searchVehicleNegotiations();
   }, []);
 
-  return { 
-    vehicleNegotiations, 
+  return {
+    vehicleNegotiations,
     branches,
     plants,
     subCompanies,
     locations,
     countries,
     rateMasters,
-    loading, 
-    error, 
+    loading,
+    error,
     searchVehicleNegotiations,
   };
 }
@@ -2153,7 +2155,7 @@ function useRateMasterSearch() {
       const res = await fetch('/api/rate-master', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       const data = await res.json();
       if (data.success && Array.isArray(data.data)) {
         const processedData = data.data.map(rm => ({
@@ -2261,9 +2263,8 @@ function Input({ label, value, onChange, col = "", type = "text", readOnly = fal
         value={value || ""}
         onChange={(e) => onChange?.(e.target.value)}
         readOnly={readOnly}
-        className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${
-          readOnly ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-        }`}
+        className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${readOnly ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+          }`}
       />
     </div>
   );
@@ -2277,9 +2278,8 @@ function Select({ label, value, onChange, options = [], col = "", readOnly = fal
         value={value || ""}
         onChange={(e) => onChange?.(e.target.value)}
         disabled={readOnly}
-        className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${
-          readOnly ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-        }`}
+        className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${readOnly ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+          }`}
       >
         <option value="">Select {label}</option>
         {options.map((o) => (
@@ -2295,10 +2295,10 @@ function Select({ label, value, onChange, options = [], col = "", readOnly = fal
 /* =========================
   SEARCHABLE DROPDOWN COMPONENT
 ========================= */
-function SearchableDropdown({ 
-  items, 
-  selectedId, 
-  onSelect, 
+function SearchableDropdown({
+  items,
+  selectedId,
+  onSelect,
   placeholder = "Search...",
   required = false,
   displayField = 'name',
@@ -2335,7 +2335,7 @@ function SearchableDropdown({
   const handleSearch = (query) => {
     if (readOnly) return;
     setSearchQuery(query);
-    
+
     if (!query.trim()) {
       setFilteredItems(items);
     } else {
@@ -2346,7 +2346,7 @@ function SearchableDropdown({
       );
       setFilteredItems(filtered);
     }
-    
+
     if (selectedItem && query !== getDisplayValue(selectedItem)) {
       setSelectedItem(null);
       onSelect?.(null);
@@ -2369,15 +2369,14 @@ function SearchableDropdown({
         onChange={(e) => handleSearch(e.target.value)}
         onFocus={() => !readOnly && setShowDropdown(true)}
         onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
-        className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${
-          readOnly ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-        }`}
+        className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${readOnly ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+          }`}
         placeholder={placeholder}
         required={required}
         autoComplete="off"
         readOnly={readOnly}
       />
-      
+
       {showDropdown && !readOnly && (
         <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
           {filteredItems.length > 0 ? (
@@ -2385,9 +2384,8 @@ function SearchableDropdown({
               <div
                 key={item._id}
                 onMouseDown={() => handleSelectItem(item)}
-                className={`p-3 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors ${
-                  selectedItem?._id === item._id ? 'bg-sky-50' : ''
-                }`}
+                className={`p-3 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors ${selectedItem?._id === item._id ? 'bg-sky-50' : ''
+                  }`}
               >
                 <div className="font-medium text-slate-800">
                   {item[displayField] || item.customerName}
@@ -2401,8 +2399,8 @@ function SearchableDropdown({
             ))
           ) : (
             <div className="p-3 text-center text-sm text-slate-500">
-              {searchQuery.trim() ? 
-                `No items found for "${searchQuery}"` : 
+              {searchQuery.trim() ?
+                `No items found for "${searchQuery}"` :
                 "No items available"
               }
             </div>
@@ -2416,10 +2414,10 @@ function SearchableDropdown({
 /* =========================
   LOCATION RATE DROPDOWN COMPONENT
 ========================= */
-function LocationRateDropdown({ 
+function LocationRateDropdown({
   locations,
   selectedName,
-  onSelect, 
+  onSelect,
   placeholder = "Select Location...",
   readOnly = false,
   selectedRateMaster = null,
@@ -2446,11 +2444,11 @@ function LocationRateDropdown({
     if (!selectedRateMaster) {
       return [];
     }
-    
+
     if (availableLocationNames.length === 0) {
       return [];
     }
-    
+
     return allowAllLocations
       ? (locations || [])
       : (locations || []).filter(loc => availableLocationNames.includes(loc.name));
@@ -2521,7 +2519,7 @@ function LocationRateDropdown({
 
   const searchedLocations = useMemo(() => {
     if (!searchQuery.trim()) return filteredLocationsByRateMaster;
-    return filteredLocationsByRateMaster.filter(loc => 
+    return filteredLocationsByRateMaster.filter(loc =>
       loc.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [filteredLocationsByRateMaster, searchQuery]);
@@ -2547,9 +2545,8 @@ function LocationRateDropdown({
         }}
         onFocus={handleInputFocus}
         onBlur={handleInputBlur}
-        className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${
-          (readOnly || !selectedRateMaster || filteredLocationsByRateMaster.length === 0) ? 'bg-slate-50 cursor-not-allowed' : 'bg-white cursor-pointer'
-        }`}
+        className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${(readOnly || !selectedRateMaster || filteredLocationsByRateMaster.length === 0) ? 'bg-slate-50 cursor-not-allowed' : 'bg-white cursor-pointer'
+          }`}
         placeholder={getPlaceholder()}
         readOnly={readOnly || !!selectedItem || !selectedRateMaster || filteredLocationsByRateMaster.length === 0}
         autoComplete="off"
@@ -2568,9 +2565,9 @@ function LocationRateDropdown({
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </div>
-      
+
       {showDropdown && !readOnly && selectedRateMaster && filteredLocationsByRateMaster.length > 0 && (
-        <div 
+        <div
           ref={dropdownRef}
           className="fixed z-[9999] bg-white border border-slate-200 rounded-lg shadow-xl overflow-y-auto"
           style={{
@@ -2587,9 +2584,8 @@ function LocationRateDropdown({
             <div
               key={location._id}
               onMouseDown={() => handleSelectItem(location)}
-              className={`px-3 py-2 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors ${
-                selectedItem?._id === location._id ? 'bg-sky-50' : ''
-              }`}
+              className={`px-3 py-2 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors ${selectedItem?._id === location._id ? 'bg-sky-50' : ''
+                }`}
             >
               <div className="font-medium text-slate-800 text-sm">
                 {location.name}
@@ -2605,10 +2601,10 @@ function LocationRateDropdown({
 /* =========================
   PRICE LIST DROPDOWN COMPONENT
 ========================= */
-function PriceListDropdown({ 
-  rateMasters, 
-  selectedValue, 
-  onSelect, 
+function PriceListDropdown({
+  rateMasters,
+  selectedValue,
+  onSelect,
   locationName,
   branchId,
   customerId,
@@ -2629,7 +2625,7 @@ function PriceListDropdown({
       return filtered.filter((rm) => rm.usageMode === 'manual_rate_default');
     }
     filtered = filtered.filter((rm) => (rm.usageMode || 'standard') === 'standard');
-    
+
     if (branchId) {
       filtered = filtered.filter(rm => {
         const rmBranchId = rm.branchId?._id || rm.branchId;
@@ -2638,7 +2634,7 @@ function PriceListDropdown({
     } else {
       return [];
     }
-    
+
     if (customerId) {
       filtered = filtered.filter(rm => {
         const rmCustomerId = rm.customerId?._id || rm.customerId;
@@ -2647,14 +2643,14 @@ function PriceListDropdown({
     } else {
       return [];
     }
-    
+
     if (locationName) {
       filtered = filtered.filter(rm => {
-        return rm.locationRates && Array.isArray(rm.locationRates) && 
-               rm.locationRates.some(lr => lr.locationName === locationName);
+        return rm.locationRates && Array.isArray(rm.locationRates) &&
+          rm.locationRates.some(lr => lr.locationName === locationName);
       });
     }
-    
+
     return filtered;
   }, [rateMasters, locationName, branchId, customerId, rateCalculationMode]);
 
@@ -2711,7 +2707,7 @@ function PriceListDropdown({
 
   const searchedItems = useMemo(() => {
     if (!searchQuery.trim()) return filteredRateMasters;
-    return filteredRateMasters.filter(rm => 
+    return filteredRateMasters.filter(rm =>
       rm.title.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [filteredRateMasters, searchQuery]);
@@ -2727,9 +2723,8 @@ function PriceListDropdown({
         }}
         onFocus={handleInputFocus}
         onBlur={handleInputBlur}
-        className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${
-          readOnly ? 'bg-slate-50 cursor-not-allowed' : 'bg-white cursor-pointer'
-        }`}
+        className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${readOnly ? 'bg-slate-50 cursor-not-allowed' : 'bg-white cursor-pointer'
+          }`}
         placeholder={placeholder}
         readOnly={readOnly || !!selectedItem}
         autoComplete="off"
@@ -2748,9 +2743,9 @@ function PriceListDropdown({
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </div>
-      
+
       {showDropdown && !readOnly && filteredRateMasters.length > 0 && (
-        <div 
+        <div
           className="fixed z-[9999] bg-white border border-slate-200 rounded-lg shadow-xl overflow-y-auto"
           style={{
             position: 'fixed',
@@ -2768,9 +2763,8 @@ function PriceListDropdown({
               <div
                 key={rm._id}
                 onMouseDown={() => handleSelectItem(rm)}
-                className={`px-3 py-2 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors ${
-                  selectedItem?._id === rm._id ? 'bg-sky-50' : ''
-                }`}
+                className={`px-3 py-2 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors ${selectedItem?._id === rm._id ? 'bg-sky-50' : ''
+                  }`}
               >
                 <div className="font-medium text-slate-800 text-sm">
                   {rm.title}
@@ -2782,8 +2776,8 @@ function PriceListDropdown({
             ))
           ) : (
             <div className="p-3 text-center text-sm text-slate-500">
-              {searchQuery.trim() ? 
-                `No price lists found for "${searchQuery}"` : 
+              {searchQuery.trim() ?
+                `No price lists found for "${searchQuery}"` :
                 `No price lists available for this branch, customer, and location`
               }
             </div>
@@ -2797,7 +2791,7 @@ function PriceListDropdown({
 /* =========================
   VEHICLE NEGOTIATION DROPDOWN FOR HEADER
 ========================= */
-function VehicleNegotiationHeaderDropdown({ 
+function VehicleNegotiationHeaderDropdown({
   onSelect,
   referenceData,
   placeholder = "Search vehicle negotiation..."
@@ -2836,7 +2830,7 @@ function VehicleNegotiationHeaderDropdown({
         width: rect.width
       });
     }
-    
+
     setShowDropdown(true);
     if (vnList.length === 0 && vehicleNegotiationSearch.vehicleNegotiations.length === 0) {
       vehicleNegotiationSearch.searchVehicleNegotiations();
@@ -2884,9 +2878,9 @@ function VehicleNegotiationHeaderDropdown({
         placeholder={placeholder}
         autoComplete="off"
       />
-      
+
       {showDropdown && (
-        <div 
+        <div
           ref={dropdownRef}
           style={{
             position: 'fixed',
@@ -2928,8 +2922,8 @@ function VehicleNegotiationHeaderDropdown({
             </div>
           ) : (
             <div className="p-4 text-center text-sm text-slate-500">
-              {searchQuery.trim() ? 
-                `No vehicle negotiations found for "${searchQuery}"` : 
+              {searchQuery.trim() ?
+                `No vehicle negotiations found for "${searchQuery}"` :
                 "No vehicle negotiations available"
               }
             </div>
@@ -2943,11 +2937,11 @@ function VehicleNegotiationHeaderDropdown({
 /* =========================
   ORDERS TABLE COMPONENT
 ========================= */
-function OrdersTable({ 
-  rows, 
-  onChange, 
-  onRemove, 
-  billingType, 
+function OrdersTable({
+  rows,
+  onChange,
+  onRemove,
+  billingType,
   selectedVehicleNegotiation,
   locations,
   rateMasters,
@@ -2957,33 +2951,34 @@ function OrdersTable({
   headerSubCompanyName,
   headerSubCompanyCode
 }) {
-const columns = [
-  { key: "orderNo", label: "Order No *", width: "120px" },
-  { key: "partyName", label: "Party Name", width: "150px" },
-  { key: "plantCode", label: "Plant Code", width: "100px" },
-  { key: "plantName", label: "Plant Name *Auto", width: "120px", readOnly: true },
-  { key: "plantCodeValue", label: "Plant Code Value *Auto", width: "120px", readOnly: true },
-  { key: "orderType", label: "Order Type", width: "100px" },
-  { key: "pinCode", label: "Pin Code", width: "100px" },
-  { key: "from", label: "From", width: "120px" },
-  { key: "to", label: "To", width: "120px" },
-  { key: "taluka", label: "Taluka", width: "120px" },
-  { key: "district", label: "District", width: "100px" },
-  { key: "state", label: "State", width: "100px" },
-  { key: "localStatus", label: "Local/Not Local", width: "120px" },
-  { key: "country", label: "Country", width: "100px" },
-  { key: "rateCalculationMode", label: "Rate Calculation", width: "170px" },
-  { key: "priceList", label: "Price List", width: "180px" },
-  { key: "locationRate", label: "Location Rate", width: "150px" },
-  { key: "weight", label: "Weight", type: "number", width: "80px" },
-  { key: "rate", label: "Rate (₹)", type: "number", width: "80px", readOnly: true },
-  { key: "totalAmount", label: "Total Amount", type: "number", width: "100px", readOnly: true },
-  { key: "collectionCharges", label: "Collection Charges", type: "number", width: "120px" },
-  { key: "cancellationCharges", label: "Cancellation Charges", width: "130px" },
-  { key: "loadingCharges", label: "Loading Charges", width: "120px" },
-  { key: "otherCharges", label: "Other Charges", type: "number", width: "100px" },
-  { key: "subCompanyName", label: "Sub-Company", width: "120px" },
-];
+  const columns = [
+    { key: "orderNo", label: "Order No *", width: "120px" },
+    { key: "partyName", label: "Party Name", width: "150px" },
+    { key: "plantCode", label: "Plant Code", width: "100px" },
+    { key: "plantName", label: "Plant Name *Auto", width: "120px", readOnly: true },
+    { key: "plantCodeValue", label: "Plant Code Value *Auto", width: "120px", readOnly: true },
+    { key: "orderType", label: "Order Type", width: "100px" },
+    { key: "pinCode", label: "Pin Code", width: "100px" },
+    { key: "from", label: "From", width: "120px" },
+    { key: "to", label: "To", width: "120px" },
+    { key: "locationRemark", label: "Location Remark", width: "180px", readOnly: true },
+    { key: "taluka", label: "Taluka", width: "120px" },
+    { key: "district", label: "District", width: "100px" },
+    { key: "state", label: "State", width: "100px" },
+    { key: "localStatus", label: "Local/Not Local", width: "120px" },
+    { key: "country", label: "Country", width: "100px" },
+    { key: "rateCalculationMode", label: "Rate Calculation", width: "170px" },
+    { key: "priceList", label: "Price List", width: "180px" },
+    { key: "locationRate", label: "Location Rate", width: "150px" },
+    { key: "weight", label: "Weight", type: "number", width: "80px" },
+    { key: "rate", label: "Rate (₹)", type: "number", width: "80px", readOnly: true },
+    { key: "totalAmount", label: "Total Amount", type: "number", width: "100px", readOnly: true },
+    { key: "collectionCharges", label: "Collection Charges", type: "number", width: "120px" },
+    { key: "cancellationCharges", label: "Cancellation Charges", width: "130px" },
+    { key: "loadingCharges", label: "Loading Charges", width: "120px" },
+    { key: "otherCharges", label: "Other Charges", type: "number", width: "100px" },
+    { key: "subCompanyName", label: "Sub-Company", width: "120px" },
+  ];
 
   const isReadOnlyMode = !!selectedVehicleNegotiation;
 
@@ -3090,16 +3085,15 @@ const columns = [
             const totalAmount = num(row.weight) * num(row.rate);
             const isFromVehicleNegotiation = !!row.vehicleNegotiationId || isReadOnlyMode;
             const currentCustomerId = row.customerId || headerCustomerId;
-            
+
             return (
               <tr key={row._id} className="hover:bg-yellow-50 even:bg-slate-50">
                 <td className="border border-yellow-300 px-1 py-1">
                   <input
                     value={row.orderNo || ""}
                     onChange={(e) => onChange(row._id, 'orderNo', e.target.value)}
-                    className={`w-full min-w-[100px] rounded border border-slate-200 px-1 py-1 text-xs outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-200 ${
-                      isFromVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-                    }`}
+                    className={`w-full min-w-[100px] rounded border border-slate-200 px-1 py-1 text-xs outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-200 ${isFromVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+                      }`}
                     placeholder="Order No"
                     readOnly={isFromVehicleNegotiation}
                   />
@@ -3109,9 +3103,8 @@ const columns = [
                   <input
                     value={row.partyName || ""}
                     onChange={(e) => onChange(row._id, 'partyName', e.target.value)}
-                    className={`w-full min-w-[120px] rounded border border-slate-200 px-1 py-1 text-xs outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-200 ${
-                      isFromVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-                    }`}
+                    className={`w-full min-w-[120px] rounded border border-slate-200 px-1 py-1 text-xs outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-200 ${isFromVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+                      }`}
                     placeholder="Party Name"
                     readOnly={isFromVehicleNegotiation}
                   />
@@ -3121,9 +3114,8 @@ const columns = [
                   <input
                     value={isFromVehicleNegotiation ? (row.plantCodeValue || row.plantCode || "") : (row.plantCode || "")}
                     onChange={(e) => onChange(row._id, isFromVehicleNegotiation ? 'plantCodeValue' : 'plantCode', e.target.value)}
-                    className={`w-full min-w-[80px] rounded border border-slate-200 px-1 py-1 text-xs outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-200 ${
-                      isFromVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-                    }`}
+                    className={`w-full min-w-[80px] rounded border border-slate-200 px-1 py-1 text-xs outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-200 ${isFromVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+                      }`}
                     placeholder="Plant Code"
                     readOnly={isFromVehicleNegotiation}
                   />
@@ -3153,9 +3145,8 @@ const columns = [
                   <select
                     value={row.orderType || ""}
                     onChange={(e) => onChange(row._id, 'orderType', e.target.value)}
-                    className={`w-full min-w-[80px] rounded border border-slate-200 px-1 py-1 text-xs outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-200 ${
-                      isFromVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-                    }`}
+                    className={`w-full min-w-[80px] rounded border border-slate-200 px-1 py-1 text-xs outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-200 ${isFromVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+                      }`}
                     disabled={isFromVehicleNegotiation}
                   >
                     <option value="">Select</option>
@@ -3170,9 +3161,8 @@ const columns = [
                     type="text"
                     value={row.pinCode || ""}
                     onChange={(e) => onChange(row._id, 'pinCode', e.target.value)}
-                    className={`w-full min-w-[80px] rounded border border-slate-200 px-1 py-1 text-xs outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-200 ${
-                      isFromVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-                    }`}
+                    className={`w-full min-w-[80px] rounded border border-slate-200 px-1 py-1 text-xs outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-200 ${isFromVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+                      }`}
                     placeholder="Pin Code"
                     readOnly={isFromVehicleNegotiation}
                   />
@@ -3182,9 +3172,8 @@ const columns = [
                   <input
                     value={row.fromName || ""}
                     onChange={(e) => onChange(row._id, 'fromName', e.target.value)}
-                    className={`w-full min-w-[80px] rounded border border-slate-200 px-1 py-1 text-xs outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-200 ${
-                      isFromVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-                    }`}
+                    className={`w-full min-w-[80px] rounded border border-slate-200 px-1 py-1 text-xs outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-200 ${isFromVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+                      }`}
                     placeholder="From"
                     readOnly={isFromVehicleNegotiation}
                   />
@@ -3194,21 +3183,23 @@ const columns = [
                   <input
                     value={row.toName || ""}
                     onChange={(e) => onChange(row._id, 'toName', e.target.value)}
-                    className={`w-full min-w-[80px] rounded border border-slate-200 px-1 py-1 text-xs outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-200 ${
-                      isFromVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-                    }`}
+                    className={`w-full min-w-[80px] rounded border border-slate-200 px-1 py-1 text-xs outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-200 ${isFromVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+                      }`}
                     placeholder="To"
                     readOnly={isFromVehicleNegotiation}
                   />
                 </td>
 
                 <td className="border border-yellow-300 px-1 py-1">
+                  <input readOnly value={row.locationRemark || '-'} className="w-full min-w-[140px] rounded border border-slate-200 bg-slate-50 px-1 py-1 text-xs text-slate-700" />
+                </td>
+
+                <td className="border border-yellow-300 px-1 py-1">
                   <input
                     value={row.talukaName || row.taluka || ""}
                     onChange={(e) => onChange(row._id, 'talukaName', e.target.value)}
-                    className={`w-full min-w-[80px] rounded border border-slate-200 px-1 py-1 text-xs outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-200 ${
-                      isFromVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-                    }`}
+                    className={`w-full min-w-[80px] rounded border border-slate-200 px-1 py-1 text-xs outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-200 ${isFromVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+                      }`}
                     placeholder="Taluka"
                     readOnly={isFromVehicleNegotiation}
                   />
@@ -3218,9 +3209,8 @@ const columns = [
                   <input
                     value={row.districtName || ""}
                     onChange={(e) => onChange(row._id, 'districtName', e.target.value)}
-                    className={`w-full min-w-[80px] rounded border border-slate-200 px-1 py-1 text-xs outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-200 ${
-                      isFromVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-                    }`}
+                    className={`w-full min-w-[80px] rounded border border-slate-200 px-1 py-1 text-xs outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-200 ${isFromVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+                      }`}
                     placeholder="District"
                     readOnly={isFromVehicleNegotiation}
                   />
@@ -3230,9 +3220,8 @@ const columns = [
                   <input
                     value={row.stateName || ""}
                     onChange={(e) => onChange(row._id, 'stateName', e.target.value)}
-                    className={`w-full min-w-[80px] rounded border border-slate-200 px-1 py-1 text-xs outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-200 ${
-                      isFromVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-                    }`}
+                    className={`w-full min-w-[80px] rounded border border-slate-200 px-1 py-1 text-xs outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-200 ${isFromVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+                      }`}
                     placeholder="State"
                     readOnly={isFromVehicleNegotiation}
                   />
@@ -3241,11 +3230,10 @@ const columns = [
                 {/* Local Status */}
                 <td className="border border-yellow-300 px-1 py-1 text-center">
                   {row.fromState && row.stateName ? (
-                    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${
-                      row.fromState.trim().toUpperCase() === row.stateName.trim().toUpperCase()
-                        ? 'bg-green-100 text-green-800 border border-green-300'
-                        : 'bg-red-100 text-red-800 border border-red-300'
-                    }`}>
+                    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${row.fromState.trim().toUpperCase() === row.stateName.trim().toUpperCase()
+                      ? 'bg-green-100 text-green-800 border border-green-300'
+                      : 'bg-red-100 text-red-800 border border-red-300'
+                      }`}>
                       {row.fromState.trim().toUpperCase() === row.stateName.trim().toUpperCase() ? '✅ Local' : '❌ Not Local'}
                     </span>
                   ) : (
@@ -3257,9 +3245,8 @@ const columns = [
                   <input
                     value={row.countryName || ""}
                     onChange={(e) => onChange(row._id, 'countryName', e.target.value)}
-                    className={`w-full min-w-[80px] rounded border border-slate-200 px-1 py-1 text-xs outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-200 ${
-                      isFromVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-                    }`}
+                    className={`w-full min-w-[80px] rounded border border-slate-200 px-1 py-1 text-xs outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-200 ${isFromVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+                      }`}
                     placeholder="Country"
                     readOnly={isFromVehicleNegotiation}
                   />
@@ -3314,9 +3301,8 @@ const columns = [
                     step="0.01"
                     value={row.weight || ""}
                     onChange={(e) => handleWeightChange(row._id, e.target.value)}
-                    className={`w-full min-w-[70px] rounded border border-slate-200 px-1 py-1 text-xs outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-200 ${
-                      isFromVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-                    }`}
+                    className={`w-full min-w-[70px] rounded border border-slate-200 px-1 py-1 text-xs outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-200 ${isFromVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+                      }`}
                     placeholder="Weight"
                     readOnly={isFromVehicleNegotiation}
                   />
@@ -3438,7 +3424,7 @@ const columns = [
 ========================= */
 export default function PricingPanelPage() {
   const router = useRouter();
-  
+
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -3511,7 +3497,7 @@ export default function PricingPanelPage() {
 
   const handleSelectVehicleNegotiation = async (fullVN) => {
     setSelectedVehicleNegotiation(fullVN);
-    
+
     setHeader(prev => ({
       ...prev,
       branch: fullVN.branch?._id || fullVN.branch || "",
@@ -3556,6 +3542,7 @@ export default function PricingPanelPage() {
         fromState: order.fromState || "",
         to: order.to,
         toName: order.toName || "",
+        locationRemark: order.locationRemark || "",
         taluka: order.taluka || "",
         talukaName: order.talukaName || order.taluka || "",
         talukaId: order.talukaId || "",
@@ -3621,7 +3608,7 @@ export default function PricingPanelPage() {
 
   const handleBillingTypeChange = (value) => {
     setBilling((prev) => ({ ...prev, billingType: value }));
-    
+
     if (value === "Single - Order") {
       setOrders([orders[0] || defaultOrderRow()]);
     } else {
@@ -3686,7 +3673,7 @@ export default function PricingPanelPage() {
       alert("Please select a branch");
       return;
     }
-    
+
     const hasInvalidOrders = orders.some(order => !order.orderNo);
     if (hasInvalidOrders) {
       alert("Please enter Order No for all order rows");
@@ -3742,6 +3729,7 @@ export default function PricingPanelPage() {
           fromState: order.fromState || '',
           to: order.to,
           toName: order.toName,
+          locationRemark: order.locationRemark || "",
           taluka: order.taluka,
           talukaName: order.talukaName,
           talukaId: order.talukaId,
@@ -3834,7 +3822,7 @@ export default function PricingPanelPage() {
 
       setSaveSuccess(true);
       setPricingSerialNo(data.data?.pricingSerialNo || "Generated");
-      
+
       alert(submitAfterSave
         ? `✅ Pricing panel submitted for approval!\nPricing Serial No: ${data.data?.pricingSerialNo}`
         : `✅ Pricing panel saved as a draft!\nPricing Serial No: ${data.data?.pricingSerialNo}`);
@@ -3842,7 +3830,7 @@ export default function PricingPanelPage() {
       // and Submit for Approval actions, rather than making the user refresh
       // the list or reopen the document.
       router.replace(`/admin/pricing-panel/${savedPanelId}`);
-      
+
     } catch (error) {
       console.error('Error saving pricing panel:', error);
       setSaveError(error.message || 'Failed to save pricing panel');
@@ -3866,7 +3854,7 @@ export default function PricingPanelPage() {
       partyName: "",
       customerId: ""
     });
-    
+
     setBilling({
       billingType: "Multi - Order",
       loadingPoints: "",
@@ -3876,9 +3864,9 @@ export default function PricingPanelPage() {
       loadingCharges: "Nil",
       otherCharges: 0,
     });
-    
+
     setOrders([defaultOrderRow(), defaultOrderRow()]);
-    
+
     setRateApproval({
       approvalType: "Contract Rates",
       uploadFile: null,
@@ -3890,14 +3878,14 @@ export default function PricingPanelPage() {
       remarks: "",
       approvalStatus: "Pending",
     });
-    
+
     // setSelectedCustomer(null); Not defined 
     setSelectedVehicleNegotiation(null);
-    
+
     setSaveSuccess(false);
     setSaveError(null);
     setPricingSerialNo("");
-    
+
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -3934,11 +3922,10 @@ export default function PricingPanelPage() {
               type="button"
               onClick={() => handleSaveAll({ submitAfterSave: true })}
               disabled={saving}
-              className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${
-                saving
-                  ? 'bg-gray-400 cursor-not-allowed'
-                  : 'bg-indigo-600 hover:bg-indigo-700'
-              }`}
+              className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${saving
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-indigo-600 hover:bg-indigo-700'
+                }`}
             >
               {saving ? 'Saving...' : 'Submit for Approval'}
             </button>
@@ -3946,11 +3933,10 @@ export default function PricingPanelPage() {
               type="button"
               onClick={() => handleSaveAll()}
               disabled={saving}
-              className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${
-                saving
-                  ? 'bg-gray-400 cursor-not-allowed' 
-                  : 'bg-yellow-600 hover:bg-yellow-700'
-              }`}
+              className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${saving
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-yellow-600 hover:bg-yellow-700'
+                }`}
             >
               {saving ? (
                 <span className="flex items-center gap-2">
@@ -3989,14 +3975,14 @@ export default function PricingPanelPage() {
                 </div>
               )}
             </div>
-            
+
             <div className="col-span-12 md:col-span-3">
               <label className="text-xs font-bold text-slate-600">Branch *</label>
               <SearchableDropdown
                 items={branches}
                 selectedId={header.branch}
-                onSelect={(branch) => setHeader(p => ({ 
-                  ...p, 
+                onSelect={(branch) => setHeader(p => ({
+                  ...p,
                   branch: branch?._id || '',
                   branchName: branch?.name || '',
                   branchCode: branch?.code || ''
@@ -4032,7 +4018,7 @@ export default function PricingPanelPage() {
                       subCompanyCode: selected?.code || ''
                     }));
                     // Update orders with sub-company
-                    setOrders(prevOrders => 
+                    setOrders(prevOrders =>
                       prevOrders.map(order => ({
                         ...order,
                         subCompanyId: subCompanyId,
@@ -4104,9 +4090,8 @@ export default function PricingPanelPage() {
                               }
                             }}
                             disabled={col.key !== "billingType" && selectedVehicleNegotiation}
-                            className={`w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${
-                              (col.key !== "billingType" && selectedVehicleNegotiation) ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-                            }`}
+                            className={`w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${(col.key !== "billingType" && selectedVehicleNegotiation) ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+                              }`}
                           >
                             <option value="">Select {col.label}</option>
                             {col.options.map((opt) => (
@@ -4122,9 +4107,8 @@ export default function PricingPanelPage() {
                             value={billing[col.key] || ""}
                             onChange={(e) => setBilling(prev => ({ ...prev, [col.key]: e.target.value }))}
                             readOnly={selectedVehicleNegotiation}
-                            className={`w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${
-                              selectedVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
-                            }`}
+                            className={`w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${selectedVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+                              }`}
                             placeholder={`Enter ${col.label}`}
                           />
                         )}
@@ -4135,13 +4119,13 @@ export default function PricingPanelPage() {
               </table>
             </div>
           </div>
-          
+
           <div>
             <div className="flex items-center justify-between mb-4">
               <div className="text-sm font-bold text-slate-700">
                 Orders - {billing.billingType} - {orders.length} row{orders.length !== 1 ? 's' : ''}
               </div>
-              
+
               {billing.billingType === "Multi - Order" && !selectedVehicleNegotiation && (
                 <button
                   onClick={addOrder}
@@ -4151,7 +4135,7 @@ export default function PricingPanelPage() {
                 </button>
               )}
             </div>
-            
+
             <OrdersTable
               rows={orders}
               onChange={updateOrder}

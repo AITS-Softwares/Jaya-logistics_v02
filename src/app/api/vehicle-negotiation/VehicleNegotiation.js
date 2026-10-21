@@ -967,6 +967,7 @@ const vehicleNegotiationSchema = new mongoose.Schema({
       ref: 'Taluka',
       default: null
     },
+    locationRemark: { type: String, default: '' },
     localStatus: { type: String, enum: ['local', 'not-local', 'unknown'], default: 'unknown' },
     localStatusLabel: { type: String, enum: ['Local', 'Not Local', 'Unknown'], default: 'Unknown' },
     weight: {

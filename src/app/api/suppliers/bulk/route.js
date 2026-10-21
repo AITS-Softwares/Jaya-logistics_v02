@@ -61,7 +61,8 @@ export async function POST(req) {
       if (!row.supplierType) errors.push("supplierType missing");
       if (!row.mobileNumber) errors.push("mobileNumber missing");
       const pan = String(row.pan || "").trim();
-      if (pan && !/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(pan.toUpperCase())) {
+      if (!pan) errors.push("PAN is required");
+      else if (!/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(pan.toUpperCase())) {
         errors.push("PAN format invalid (expected ABCDE1234F)");
       }
       if (!row.gstCategory) errors.push("gstCategory missing");
@@ -103,13 +104,10 @@ export async function POST(req) {
       };
 
       // ✅ Check if supplier already exists
+      // PAN is the stable supplier identity, so suppliers sharing a name stay distinct.
       const existing = await Supplier.findOne({
         companyId,
-        $or: [
-          { supplierName: row.supplierName },
-          { mobileNumber: row.mobileNumber },
-          { emailId: row.emailId },
-        ],
+        pan: pan.toUpperCase(),
       });
 
       if (existing) {
@@ -120,7 +118,7 @@ export async function POST(req) {
         existing.mobileNumber = row.mobileNumber || existing.mobileNumber;
         existing.gstNumber = row.gstNumber || existing.gstNumber;
         existing.gstCategory = row.gstCategory || existing.gstCategory;
-        existing.pan = row.pan || existing.pan;
+        existing.pan = row.pan ? row.pan.trim().toUpperCase() : existing.pan;
         existing.contactPersonName =
           row.contactPersonName || existing.contactPersonName;
         existing.commissionRate =
@@ -158,7 +156,7 @@ export async function POST(req) {
           mobileNumber: row.mobileNumber,
           gstNumber: row.gstNumber,
           gstCategory: row.gstCategory,
-          pan: row.pan,
+          pan: row.pan.trim().toUpperCase(),
           contactPersonName: row.contactPersonName,
           commissionRate: row.commissionRate,
           paymentTerms: row.paymentTerms,

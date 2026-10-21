@@ -4465,8 +4465,12 @@ export default function CreateConsignmentNote() {
     }
   };
 
-  const handleSelectOrder = async (order, { silent = false } = {}) => {
+  const handleSelectOrder = async (order, { silent = false, selectedRowId: requestedRowId = '', selectedRow: requestedRow = null } = {}) => {
     setFetchingOrder(true);
+    setPalletizationRows([]);
+    setUniformRows([]);
+    setLooseCargoRows([]);
+    setNonUniformRows([]);
 
     try {
       const token = localStorage.getItem('token');
@@ -4495,15 +4499,24 @@ export default function CreateConsignmentNote() {
       const isTaken = (r) => existingLrs.some((l) =>
         (l.orderRowId && String(l.orderRowId) === String(r._id)) ||
         (!l.orderRowId && normText(l.header?.orderNo) === normText(orderNo) && normText(l.header?.to) === normText(r.toName || r.to)));
+      const sameDrop = (a, b) => a && b
+        && normText(a.toName || a.to || a.cityName || a.city) === normText(b.toName || b.to || b.cityName || b.city)
+        && normText(a.fromName || a.from) === normText(b.fromName || b.from)
+        && normText(a.talukaName || a.taluka) === normText(b.talukaName || b.taluka);
       const pickedRow =
+        planRows.find((r) => String(r._id) === String(requestedRowId) && !isTaken(r)) ||
+        planRows.find((r) => sameDrop(r, requestedRow) && !isTaken(r)) ||
         planRows.find((r) => String(r._id) === String(order.originalRowId) && !isTaken(r)) ||
         planRows.find((r) => !isTaken(r)) ||
-        planRows[0];
+        planRows[0] || requestedRow;
       setSelectedRowId(pickedRow ? String(pickedRow._id) : '');
-      const orderTotalWt = planRows.reduce((s, r) => s + (Number(r.weight) || 0), 0);
-      const rowWt = Number(pickedRow?.weight) || 0;
-      const packFactor = orderTotalWt > 0 && rowWt > 0 ? rowWt / orderTotalWt : 1;
-      const scaleWt = (v) => (v === undefined || v === null || v === '') ? '' : String(Math.round((parseFloat(v) || 0) * packFactor * 1000) / 1000);
+      const eligibleDropRows = planRows.filter((row) => row.toName || row.to || row.cityName || row.city);
+      const singleDropId = eligibleDropRows.length === 1 ? String(eligibleDropRows[0]._id) : '';
+      const selectedDropId = pickedRow ? String(pickedRow._id) : '';
+      const packsForSelectedDrop = (rows = []) => rows.filter((item) => {
+        const linkedId = item.plantRowId ? String(item.plantRowId) : '';
+        return linkedId ? linkedId === selectedDropId : Boolean(singleDropId && singleDropId === selectedDropId);
+      });
 
       let plantCode = '';
       let plantName = '';
@@ -4522,7 +4535,7 @@ export default function CreateConsignmentNote() {
       let state = fullOrder.state || order.state || '';
 
       if (fullOrder.plantRows && fullOrder.plantRows.length > 0) {
-        const firstRow = fullOrder.plantRows[0];
+        const firstRow = pickedRow || fullOrder.plantRows[0];
         fromLocation = firstRow.fromName || firstRow.from || fromLocation;
         fromState = firstRow.fromState || '';
         toLocation = firstRow.toName || firstRow.to || toLocation;
@@ -4592,7 +4605,7 @@ export default function CreateConsignmentNote() {
 
       if (fullOrder.packData) {
         if (fullOrder.packData.PALLETIZATION && fullOrder.packData.PALLETIZATION.length > 0) {
-          const palletRows = fullOrder.packData.PALLETIZATION.map(item => patchPkgs({
+          const palletRows = packsForSelectedDrop(fullOrder.packData.PALLETIZATION).map(item => patchPkgs({
             _id: uid(),
             packType: "PALLETIZATION",
             noOfPallets: item.noOfPallets?.toString() || "",
@@ -4604,15 +4617,15 @@ export default function CreateConsignmentNote() {
             packWeight: item.packWeight?.toString() || "",
             productName: item.productName || "",
             wtLtr: item.wtLtr?.toString() || "",
-            actualWt: scaleWt(item.actualWt),
-            chargedWt: scaleWt(item.chargedWt),
+            actualWt: item.actualWt?.toString() || "",
+            chargedWt: item.chargedWt?.toString() || "",
             wtUom: item.wtUom || "MT",
           }));
           setPalletizationRows(palletRows);
         }
 
         if (fullOrder.packData['UNIFORM - BAGS/BOXES'] && fullOrder.packData['UNIFORM - BAGS/BOXES'].length > 0) {
-          const uniformRowsData = fullOrder.packData['UNIFORM - BAGS/BOXES'].map(item => patchPkgs({
+          const uniformRowsData = packsForSelectedDrop(fullOrder.packData['UNIFORM - BAGS/BOXES']).map(item => patchPkgs({
             _id: uid(),
             packType: "UNIFORM - BAGS/BOXES",
             totalPkgs: item.totalPkgs?.toString() || "",
@@ -4622,27 +4635,27 @@ export default function CreateConsignmentNote() {
             packWeight: item.packWeight?.toString() || "",
             productName: item.productName || "",
             wtLtr: item.wtLtr?.toString() || "",
-            actualWt: scaleWt(item.actualWt),
-            chargedWt: scaleWt(item.chargedWt),
+            actualWt: item.actualWt?.toString() || "",
+            chargedWt: item.chargedWt?.toString() || "",
             wtUom: item.wtUom || "MT",
           }));
           setUniformRows(uniformRowsData);
         }
 
         if (fullOrder.packData['LOOSE - CARGO'] && fullOrder.packData['LOOSE - CARGO'].length > 0) {
-          const looseRowsData = fullOrder.packData['LOOSE - CARGO'].map(item => ({
+          const looseRowsData = packsForSelectedDrop(fullOrder.packData['LOOSE - CARGO']).map(item => ({
             _id: uid(),
             packType: "LOOSE - CARGO",
             uom: item.uom || "MT",
             productName: item.productName || "",
-            actualWt: scaleWt(item.actualWt),
-            chargedWt: scaleWt(item.chargedWt),
+            actualWt: item.actualWt?.toString() || "",
+            chargedWt: item.chargedWt?.toString() || "",
           }));
           setLooseCargoRows(looseRowsData);
         }
 
         if (fullOrder.packData['NON-UNIFORM - GENERAL CARGO'] && fullOrder.packData['NON-UNIFORM - GENERAL CARGO'].length > 0) {
-          const nonUniformRowsData = fullOrder.packData['NON-UNIFORM - GENERAL CARGO'].map(item => ({
+          const nonUniformRowsData = packsForSelectedDrop(fullOrder.packData['NON-UNIFORM - GENERAL CARGO']).map(item => ({
             _id: uid(),
             packType: "NON-UNIFORM - GENERAL CARGO",
             nos: item.nos?.toString() || "",
@@ -4651,8 +4664,8 @@ export default function CreateConsignmentNote() {
             length: item.length?.toString() || "",
             width: item.width?.toString() || "",
             height: item.height?.toString() || "",
-            actualWt: scaleWt(item.actualWt),
-            chargedWt: scaleWt(item.chargedWt),
+            actualWt: item.actualWt?.toString() || "",
+            chargedWt: item.chargedWt?.toString() || "",
           }));
           setNonUniformRows(nonUniformRowsData);
         }
@@ -4677,26 +4690,15 @@ export default function CreateConsignmentNote() {
   };
 
   const chooseOrderRow = (row) => {
-    const prev = orderRows.find((r) => String(r._id) === selectedRowId);
-    const f = Number(prev?.weight) > 0 && Number(row.weight) > 0 ? Number(row.weight) / Number(prev.weight) : 1;
-    const sc = (v) => (v === undefined || v === null || v === '') ? '' : String(Math.round((parseFloat(v) || 0) * f * 1000) / 1000);
-    const rescale = (rows) => rows.map((r) => patchPkgs({ ...r, actualWt: sc(r.actualWt), chargedWt: sc(r.chargedWt) }));
-    setPalletizationRows(rescale);
-    setUniformRows(rescale);
-    setLooseCargoRows(rescale);
-    setNonUniformRows(rescale);
+    const selectedOrder = allOrders.find((order) => normText(order.orderNo || order.orderPanelNo) === normText(header.orderNo));
+    if (selectedOrder) {
+      setSelectedRowId(String(row._id));
+      setHeader((p) => ({ ...p, plantCode: row.plantCodeValue || row.plantCode || p.plantCode, plantName: row.plantName || p.plantName, from: row.fromName || row.from || p.from, fromState: row.fromState || '', to: row.toName || row.to || p.to, taluka: row.talukaName || row.taluka || '', district: row.districtName || row.district || '', state: row.stateName || row.state || '' }));
+      handleSelectOrder(selectedOrder, { silent: true, selectedRowId: String(row._id), selectedRow: row });
+      return;
+    }
     setSelectedRowId(String(row._id));
-    setHeader((p) => ({
-      ...p,
-      plantCode: row.plantCodeValue || row.plantCode || p.plantCode,
-      plantName: row.plantName || p.plantName,
-      from: row.fromName || row.from || p.from,
-      fromState: row.fromState || '',
-      to: row.toName || row.to || p.to,
-      taluka: row.talukaName || row.taluka || '',
-      district: row.districtName || row.district || '',
-      state: row.stateName || row.state || '',
-    }));
+    setHeader((p) => ({ ...p, plantCode: row.plantCodeValue || row.plantCode || p.plantCode, plantName: row.plantName || p.plantName, from: row.fromName || row.from || p.from, fromState: row.fromState || '', to: row.toName || row.to || p.to, taluka: row.talukaName || row.taluka || '', district: row.districtName || row.district || '', state: row.stateName || row.state || '' }));
   };
   // Real row data for the listed orders (the table list only has a summary row)
   useEffect(() => {
@@ -5121,7 +5123,7 @@ export default function CreateConsignmentNote() {
               👁 Preview LR
             </button>
             <button
-              onClick={handleSave}
+              onClick={() => handleSave('submit')}
               disabled={saving || fetchingOrder}
               className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${saving || fetchingOrder
                 ? 'bg-gray-400 cursor-not-allowed'
@@ -5295,7 +5297,7 @@ export default function CreateConsignmentNote() {
               <table className="min-w-full w-full text-sm">
                 <thead className="sticky top-0 bg-yellow-400">
                   <tr>
-                    {['', 'FROM', 'TO', 'TALUKA', 'DISTRICT', 'WEIGHT', 'ROW STATUS', 'LR'].map((h) => (
+                    {['', 'FROM', 'TO', 'LOCATION REMARK', 'TALUKA', 'DISTRICT', 'WEIGHT', 'ROW STATUS', 'LR'].map((h) => (
                       <th key={h} className="border border-yellow-500 px-2 py-3 text-xs font-extrabold">{h}</th>
                     ))}
                   </tr>
@@ -5310,6 +5312,7 @@ export default function CreateConsignmentNote() {
                         </td>
                         <td className="border border-yellow-300 px-2 py-2">{row.fromName || row.from}</td>
                         <td className="border border-yellow-300 px-2 py-2">{row.toName || row.to}</td>
+                        <td className="border border-yellow-300 px-2 py-2">{row.locationRemark || '—'}</td>
                         <td className="border border-yellow-300 px-2 py-2">{row.talukaName || row.taluka}</td>
                         <td className="border border-yellow-300 px-2 py-2">{row.districtName || row.district}</td>
                         <td className="border border-yellow-300 px-2 py-2 font-semibold">{row.weight || 0} MT</td>

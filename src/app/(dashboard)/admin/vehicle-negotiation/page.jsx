@@ -393,6 +393,7 @@ export default function VehicleNegotiationList() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="text-sm text-slate-600">{item.vendorName || '-'}</div>
+                        {item.vendorName && <span className="mt-1 block text-[11px] text-slate-500">PAN No: <span className="font-medium text-slate-600">{item.vendorPan || 'Not available'}</span></span>}
                       </td>
                       <td className="px-4 py-3 text-slate-700">{item.vehicleNo || '-'}</td>
                       <td className="px-4 py-3">

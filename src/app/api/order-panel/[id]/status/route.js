@@ -170,7 +170,7 @@ export const POST = withAuth(async (req, { params }, user) => {
       paidAdvances: paidAdvances.map((payment) => ({ paymentNo: payment.paymentNo, purchaseNo: payment.purchaseNo })),
       lrs: relevantLrs.map((lr) => ({ lrNo: lr.lrNo, status: lr.header?.status, invoiceUploaded: !!lr.invoice?.file?.filePath, locked: lockedLrs.includes(lr) })),
       loadingPanels: affectedLoadingPanels.map((panel) => ({ vehicleArrivalNo: panel.vehicleArrivalNo, status: panel.panelStatus || 'Linked' })),
-      vehicleNegotiations: negotiations.filter((n) => (n.orders || []).some((linkedRow) => belongsToOrder(linkedRow) && targetIds.has(idOf(sourceRowForVnnOrder(linkedRow))))).map((n) => ({ vnnNo: n.vnnNo, effect: action === 'Cancel' && negotiationsToCancel.includes(n) ? 'will cancel and release vehicle' : ['Cancel', 'Hold'].includes(action) ? 'will remain active; replacement order needed' : 'linked; unchanged' })),
+      vehicleNegotiations: negotiations.filter((n) => (n.orders || []).some((linkedRow) => belongsToOrder(linkedRow) && targetIds.has(idOf(sourceRowForVnnOrder(linkedRow))))).map((n) => ({ vnnNo: n.vnnNo, effect: action === 'Cancel' && negotiationsToCancel.includes(n) ? 'will cancel and release vehicle' : action === 'Cancel' && negotiationsNeedingReplacement.includes(n) && !n.pricingPanelId ? 'will move to Draft; replacement order needed' : action === 'Cancel' && negotiationsNeedingReplacement.includes(n) ? 'linked to Pricing Panel; manual review needed' : ['Cancel', 'Hold'].includes(action) ? 'will remain active; replacement order needed' : 'linked; unchanged' })),
       blockers,
       willCancelNegotiations: action === 'Cancel' ? negotiationsToCancel.map((n) => n.vnnNo) : [],
       willNeedReplacement: negotiationsNeedingReplacement.map((n) => n.vnnNo),
@@ -241,6 +241,48 @@ export const POST = withAuth(async (req, { params }, user) => {
           negotiation.approval.vehicleNo = '';
           negotiation.approval.vehicleData = null;
         }
+        await negotiation.save();
+      }
+      for (const negotiation of negotiationsNeedingReplacement) {
+        // Cancellation invalidates the approval basis for a still-active VNN.
+        // Stage it as an editable draft so the user can replace the cancelled
+        // order row and submit Part 1 again.
+        if (negotiation.pricingPanelId) continue;
+        const amendmentReason = `Linked order ${orderNo} row(s) cancelled: ${reason}`;
+        const amendedAt = new Date();
+        negotiation.workflow = negotiation.workflow || {};
+        negotiation.workflow.audit = negotiation.workflow.audit || [];
+        negotiation.workflow.part1Locked = false;
+        negotiation.workflow.part1LockedAt = null;
+        negotiation.workflow.part1LockedBy = null;
+        negotiation.workflow.amendmentCount = (negotiation.workflow.amendmentCount || 0) + 1;
+        negotiation.workflow.lastAmendmentReason = amendmentReason;
+        negotiation.workflow.lastAmendedAt = amendedAt;
+        negotiation.workflow.lastAmendedBy = user.id || null;
+        negotiation.workflow.rateTargetCompletedAt = null;
+        negotiation.workflow.rateTargetCompletedBy = null;
+        negotiation.workflow.rateTargetLastSavedAt = null;
+        negotiation.workflow.placementCompletedAt = null;
+        negotiation.workflow.placementCompletedBy = null;
+        negotiation.workflow.audit.push({ action: 'part1-amended', reason: amendmentReason, by: user.id || null, at: amendedAt });
+        negotiation.workflow.audit.push({ action: 'reapproval-required', reason: amendmentReason, by: user.id || null, at: amendedAt });
+        negotiation.negotiation.maxRate = 0;
+        negotiation.negotiation.targetRate = 0;
+        negotiation.negotiation.oldRatePercent = '';
+        negotiation.negotiation.remarks1 = '';
+        negotiation.voiceNote = '';
+        negotiation.voiceNoteFile = null;
+        negotiation.approval.part1Status = 'Pending';
+        negotiation.approval.part1Remarks = '';
+        negotiation.approval.part3Status = 'Pending';
+        negotiation.approval.part3Remarks = '';
+        negotiation.approval.vehicleNo = '';
+        negotiation.approval.vehicleId = '';
+        negotiation.approval.vehicleData = null;
+        negotiation.approval.mobile = '';
+        negotiation.approval.purchaseType = '';
+        negotiation.approval.paymentTerms = '';
+        negotiation.panelStatus = 'Draft';
         await negotiation.save();
       }
       await ConsignmentNote.updateMany(companyScopeFilter(user, { _id: { $in: relevantLrs.filter((lr) => !lockedLrs.includes(lr)).map((lr) => lr._id) } }), { $set: { 'header.status': 'Cancelled' } });
@@ -329,11 +371,18 @@ async function notifyVnnReplacementNeeded(user, negotiations, orderNo, rows, act
   }
   if (!recipients.size) return;
   const missing = rows.map((row) => row.plantName || row._id).join(', ');
+  const draftVnns = negotiations.filter((negotiation) => !negotiation.pricingPanelId).map((negotiation) => negotiation.vnnNo);
+  const linkedVnns = negotiations.filter((negotiation) => negotiation.pricingPanelId).map((negotiation) => negotiation.vnnNo);
+  const cancelMessage = `Order ${orderNo} row(s) ${missing} were cancelled.` +
+    (draftVnns.length ? ` VNN ${draftVnns.join(', ')} moved to Draft. Replace the cancelled order row(s) and submit Part 1 again.` : '') +
+    (linkedVnns.length ? ` VNN ${linkedVnns.join(', ')} is linked to Pricing Panel and needs manual review before it can be amended.` : '');
   await Notification.insertMany([...recipients].map((recipientId) => ({
     user: user.id,
     company: user.companyId,
     assignedTo: recipientId,
     type: 'vnn-replacement-needed',
-    message: `Order ${orderNo} row(s) ${missing} were ${action === 'Hold' ? 'put on hold' : 'cancelled'} in VNN ${negotiations.map((negotiation) => negotiation.vnnNo).join(', ')}. Add replacement open order rows and submit Part 1 again.`
+    message: action === 'Cancel'
+      ? cancelMessage
+      : `Order ${orderNo} row(s) ${missing} were put on hold in VNN ${negotiations.map((negotiation) => negotiation.vnnNo).join(', ')}. Add replacement open order rows and submit Part 1 again.`
   })));
 }

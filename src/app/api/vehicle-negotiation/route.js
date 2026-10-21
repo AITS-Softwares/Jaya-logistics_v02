@@ -356,6 +356,7 @@
 // //       cancellationCharges: order.cancellationCharges || 'Nil',
 // //       loadingCharges: order.loadingCharges || 'Nil',
 // //       otherCharges: Number(order.otherCharges) || 0,
+// //       locationRemark: order.locationRemark || '',
 // //       localStatus: order.localStatus || 'unknown',
 // //       localStatusLabel: order.localStatusLabel || 'Unknown',
 // //       // Sub-company fields for each order
@@ -612,6 +613,7 @@
 // //         cancellationCharges: order.cancellationCharges || 'Nil',
 // //         loadingCharges: order.loadingCharges || 'Nil',
 // //         otherCharges: Number(order.otherCharges) || 0,
+// //         locationRemark: order.locationRemark || '',
 // //         localStatus: order.localStatus || 'unknown',
 // //         localStatusLabel: order.localStatusLabel || 'Unknown',
 // //         // Sub-company fields for each order
@@ -1337,6 +1339,7 @@
 // //       cancellationCharges: order.cancellationCharges || 'Nil',
 // //       loadingCharges: order.loadingCharges || 'Nil',
 // //       otherCharges: Number(order.otherCharges) || 0,
+// //       locationRemark: order.locationRemark || '',
 // //       localStatus: order.localStatus || 'unknown',
 // //       localStatusLabel: order.localStatusLabel || 'Unknown',
 // //       // Sub-company fields for each order
@@ -1593,6 +1596,7 @@
 // //         cancellationCharges: order.cancellationCharges || 'Nil',
 // //         loadingCharges: order.loadingCharges || 'Nil',
 // //         otherCharges: Number(order.otherCharges) || 0,
+// //         locationRemark: order.locationRemark || '',
 // //         localStatus: order.localStatus || 'unknown',
 // //         localStatusLabel: order.localStatusLabel || 'Unknown',
 // //         // Sub-company fields for each order
@@ -2324,6 +2328,7 @@
 //       cancellationCharges: order.cancellationCharges || 'Nil',
 //       loadingCharges: order.loadingCharges || 'Nil',
 //       otherCharges: Number(order.otherCharges) || 0,
+//       locationRemark: order.locationRemark || '',
 //       localStatus: order.localStatus || 'unknown',
 //       localStatusLabel: order.localStatusLabel || 'Unknown',
 //       // Sub-company fields for each order
@@ -2588,6 +2593,7 @@
 // //         cancellationCharges: order.cancellationCharges || 'Nil',
 // //         loadingCharges: order.loadingCharges || 'Nil',
 // //         otherCharges: Number(order.otherCharges) || 0,
+// //         locationRemark: order.locationRemark || '',
 // //         localStatus: order.localStatus || 'unknown',
 // //         localStatusLabel: order.localStatusLabel || 'Unknown',
 // //         // Sub-company fields for each order
@@ -2971,6 +2977,7 @@
 //         cancellationCharges: order.cancellationCharges || 'Nil',
 //         loadingCharges: order.loadingCharges || 'Nil',
 //         otherCharges: Number(order.otherCharges) || 0,
+//         locationRemark: order.locationRemark || '',
 //         localStatus: order.localStatus || 'unknown',
 //         localStatusLabel: order.localStatusLabel || 'Unknown',
 //         subCompanyId: order.subCompanyId && isValidObjectId(order.subCompanyId) ? order.subCompanyId : null,
@@ -3372,6 +3379,7 @@
 import { NextResponse } from "next/server";
 import connectDb from "@/lib/db";
 import VehicleNegotiation from "./VehicleNegotiation";
+import Supplier from "@/models/SupplierModels";
 import PricingPanel from "@/app/api/pricing-panel/PricingPanel";
 import LoadingPanel from "@/app/api/loading-panel/LoadingPanel";
 import OrderPanel from "@/app/api/order-panel/OrderPanel";
@@ -3638,6 +3646,15 @@ export async function GET(req) {
         vehicleNegotiations = vehicleNegotiations.filter((vn) => getFinalVnnStatus(vn) === approvalStatus);
       }
 
+      const supplierCodes = [...new Set(vehicleNegotiations.map((vn) => vn.approval?.vendorCode).filter(Boolean))];
+      const supplierPanByCode = new Map();
+      if (supplierCodes.length) {
+        const suppliers = await Supplier.find(companyScopeFilter(user, { supplierCode: { $in: supplierCodes } }))
+          .select("supplierCode pan")
+          .lean();
+        suppliers.forEach((supplier) => supplierPanByCode.set(supplier.supplierCode, supplier.pan || ""));
+      }
+
       const tableData = [];
 
       vehicleNegotiations.forEach(vn => {
@@ -3654,6 +3671,7 @@ export async function GET(req) {
               partyName: order.partyName || vn.customerName || '',
               vendorName: vn.approval?.vendorName || '',
               vendorCode: vn.approval?.vendorCode || '',
+              vendorPan: supplierPanByCode.get(vn.approval?.vendorCode) || '',
               vehicleNo: vn.approval?.vehicleNo || '',
               plantCode: order.plantName || order.plantCodeValue || '',
               orderType: order.orderType || '',
@@ -3686,6 +3704,7 @@ export async function GET(req) {
             partyName: vn.customerName || '',
             vendorCode: vn.approval?.vendorCode || '',
             vendorName: vn.approval?.vendorName || '',
+            vendorPan: supplierPanByCode.get(vn.approval?.vendorCode) || '',
             vehicleNo: vn.approval?.vehicleNo || '',
             plantCode: '',
             orderType: '',
@@ -3799,6 +3818,7 @@ export async function POST(req) {
       cancellationCharges: order.cancellationCharges || 'Nil',
       loadingCharges: order.loadingCharges || 'Nil',
       otherCharges: Number(order.otherCharges) || 0,
+      locationRemark: order.locationRemark || '',
       localStatus: order.localStatus || 'unknown',
       localStatusLabel: order.localStatusLabel || 'Unknown',
       subCompanyId: user.activeOperatingCompanyId,
@@ -4151,6 +4171,7 @@ export async function PUT(req) {
         cancellationCharges: order.cancellationCharges || 'Nil',
         loadingCharges: order.loadingCharges || 'Nil',
         otherCharges: Number(order.otherCharges) || 0,
+        locationRemark: order.locationRemark || '',
         localStatus: order.localStatus || 'unknown',
         localStatusLabel: order.localStatusLabel || 'Unknown',
         subCompanyId: user.activeOperatingCompanyId,
@@ -4407,16 +4428,13 @@ export async function PATCH(req) {
         }, { status: 409 });
       }
 
-      const rateTargetCompleted = Boolean(vehicleNegotiation.workflow?.rateTargetCompletedAt) ||
-        (Number(vehicleNegotiation.negotiation?.maxRate) > 0 && Number(vehicleNegotiation.negotiation?.targetRate) > 0);
       if (partToUpdate === 'part3' && (
         vehicleNegotiation.approval?.part1Status !== 'Approved' ||
-        !vehicleNegotiation.workflow?.part1Locked ||
-        !rateTargetCompleted
+        !vehicleNegotiation.workflow?.part1Locked
       )) {
         return NextResponse.json({
           success: false,
-          message: 'Part 3 can be approved only after Part 1 is approved and locked, and Rate Target is completed.'
+          message: 'Part 3 can be approved only after Part 1 is approved and locked.'
         }, { status: 409 });
       }
 
