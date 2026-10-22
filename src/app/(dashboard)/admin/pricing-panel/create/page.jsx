@@ -3669,18 +3669,18 @@ export default function PricingPanelPage() {
   };
 
   const handleSaveAll = async ({ submitAfterSave = false } = {}) => {
-    if (!header.branch) {
+    if (submitAfterSave && !header.branch) {
       alert("Please select a branch");
       return;
     }
 
     const hasInvalidOrders = orders.some(order => !order.orderNo);
-    if (hasInvalidOrders) {
+    if (submitAfterSave && hasInvalidOrders) {
       alert("Please enter Order No for all order rows");
       return;
     }
     const hasMissingRate = orders.some((order) => !order.priceList || !order.locationRate || order.rate === '' || order.rate === null);
-    if (hasMissingRate) {
+    if (submitAfterSave && hasMissingRate) {
       alert('Select a Price List and Location Rate with a valid slab, or enter the approved manual Mail rate before saving.');
       return;
     }
@@ -3696,6 +3696,7 @@ export default function PricingPanelPage() {
       }
 
       const payload = {
+        saveMode: 'draft',
         header: {
           ...header,
           subCompanyId: header.subCompanyId || null,

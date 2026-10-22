@@ -3400,42 +3400,14 @@ export default function ApproveLoadingPanel() {
           </Card>
         </div>
 
-        {/* Arrival Details - EDITABLE */}
+        {/* Arrival details are populated by the workflow and remain read-only during approval. */}
         <div className="mt-4">
-          <Card title="Arrival Details - Editable">
+          <Card title="Arrival Details - Read Only">
             <div className="grid grid-cols-12 gap-4">
-              <div className="col-span-12 md:col-span-3">
-                <EditableInput
-                  label="Arrival Date"
-                  type="date"
-                  value={arrivalDetails.date}
-                  onChange={(v) => setArrivalDetails({ ...arrivalDetails, date: v })}
-                />
-              </div>
-              <div className="col-span-12 md:col-span-3">
-                <EditableInput
-                  label="Arrival Time"
-                  type="time"
-                  value={arrivalDetails.time}
-                  onChange={(v) => setArrivalDetails({ ...arrivalDetails, time: v })}
-                />
-              </div>
-              <div className="col-span-12 md:col-span-3">
-                <EditableInput
-                  label="Out Date"
-                  type="date"
-                  value={arrivalDetails.outDate}
-                  onChange={(v) => setArrivalDetails({ ...arrivalDetails, outDate: v })}
-                />
-              </div>
-              <div className="col-span-12 md:col-span-3">
-                <EditableInput
-                  label="Out Time"
-                  type="time"
-                  value={arrivalDetails.outTime}
-                  onChange={(v) => setArrivalDetails({ ...arrivalDetails, outTime: v })}
-                />
-              </div>
+              <Input col="col-span-12 md:col-span-3" label="Arrival Date" value={arrivalDetails.date ? new Date(`${arrivalDetails.date}T00:00:00`).toLocaleDateString() : "-"} />
+              <Input col="col-span-12 md:col-span-3" label="Arrival Time" value={arrivalDetails.time || "-"} />
+              <Input col="col-span-12 md:col-span-3" label="Out Date" value={arrivalDetails.outDate ? new Date(`${arrivalDetails.outDate}T00:00:00`).toLocaleDateString() : "-"} />
+              <Input col="col-span-12 md:col-span-3" label="Out Time" value={arrivalDetails.outTime || "-"} />
             </div>
           </Card>
         </div>

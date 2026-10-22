@@ -3213,7 +3213,6 @@ const PAYMENT_TERMS_OPTIONS = [
 ];
 const RATE_TYPE_OPTIONS = ["Per MT", "Fixed"];
 const VENDOR_STATUS_OPTIONS = ["Active", "Blacklisted"];
-const APPROVAL_OPTIONS = ["Approved", "Rejected", "Pending"];
 const VEHICLE_TYPE_OPTIONS = ["Truck - 6 Wheels", "Truck - 10 Wheels", "Truck - 14 Wheels", "Container", "Trailer"];
 
 
@@ -3444,7 +3443,6 @@ export default function EditPurchasePanel() {
   const purchaseId = params.id;
 
   const { hasPermission } = usePermission();
-  const canApproveHere = hasPermission("Purchase Panel", "approve");
   const canEditHere = hasPermission("Purchase Panel", "edit");
 
   /** =========================
@@ -3463,6 +3461,7 @@ export default function EditPurchasePanel() {
   const [vendors, setVendors] = useState([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [isDraft, setIsDraft] = useState(false);
   const [fetchingData, setFetchingData] = useState(false);
   const [apiError, setApiError] = useState(null);
   const [memoFileInfo, setMemoFileInfo] = useState(null);
@@ -3566,14 +3565,7 @@ export default function EditPurchasePanel() {
     isRegistered: false,
   });
 
-  /** =========================
-   * APPROVAL STATE
-   ========================= */
   const [isLocked, setIsLocked] = useState(false); // saved status is Approved/Completed
-  const [approval, setApproval] = useState({
-    status: "",
-    remarks: "",
-  });
 
   /** =========================
    * ARRIVAL DETAILS STATE
@@ -3883,18 +3875,12 @@ export default function EditPurchasePanel() {
         });
       }
 
-      setIsLocked(
+      const purchaseIsDraft = !!purchase.isDraft || purchase.panelStatus === "Draft";
+      setIsDraft(purchaseIsDraft);
+      setIsLocked(!purchaseIsDraft && (
         ["Approved", "Completed"].includes(purchase.panelStatus) ||
         purchase.approval?.status === "Approved"
-      );
-
-      // Set approval
-      if (purchase.approval) {
-        setApproval({
-          status: purchase.approval.status || "Pending",
-          remarks: purchase.approval.remarks || "",
-        });
-      }
+      ));
 
       // Set arrival details
       if (purchase.arrivalDetails) {
@@ -4347,11 +4333,6 @@ export default function EditPurchasePanel() {
         });
       }
 
-      setApproval({
-        status: approvalData.approvalStatus || "Pending",
-        remarks: approvalData.remarks || `Auto-filled from VNN: ${vnnData.vnnNo}`,
-      });
-
       // Set memo file from VNN if exists
       if (approvalData.memoFile && approvalData.memoFile.filePath) {
         setMemoFileInfo(approvalData.memoFile);
@@ -4712,7 +4693,8 @@ export default function EditPurchasePanel() {
   /** =========================
    * HANDLE UPDATE
    ========================= */
-  const handleUpdate = async () => {
+  const handleUpdate = async (saveMode = 'update') => {
+    const isDraftSave = saveMode === 'draft';
 
     if (isLocked) {
       alert("This purchase is approved and can no longer be edited.");
@@ -4724,12 +4706,12 @@ export default function EditPurchasePanel() {
       return;
     }
 
-    if (!header.branch) {
+    if (!isDraftSave && !header.branch) {
       alert("Please select a branch");
       return;
     }
 
-    if (!purchaseDetails.vendorName) {
+    if (!isDraftSave && !purchaseDetails.vendorName) {
       alert("Please select a vendor");
       return;
     }
@@ -4744,6 +4726,7 @@ export default function EditPurchasePanel() {
 
       const payload = {
         id: purchaseId,
+        ...(saveMode !== 'update' ? { saveMode } : {}),
         header: {
           ...header,
         },
@@ -4761,7 +4744,6 @@ export default function EditPurchasePanel() {
           vehiclePlate: registeredVehicle.registeredPlate,
           isRegistered: registeredVehicle.isRegistered,
         },
-        approval,
         arrivalDetails,
         loadingInfoNo,
         vnnNo: selectedVNN?.vnnNo || selectedVNNNo || "",
@@ -4796,9 +4778,13 @@ export default function EditPurchasePanel() {
       }
 
       const data = await res.json();
-      alert(`✅ Purchase updated successfully!\nPurchase No: ${header.purchaseNo}`);
-
-      router.push('/admin/Purchase-Panel');
+      if (isDraftSave) {
+        setIsDraft(true);
+        alert(`✅ Draft saved successfully!\nPurchase No: ${header.purchaseNo}`);
+      } else {
+        alert(`✅ Purchase updated successfully!\nPurchase No: ${header.purchaseNo}`);
+        router.push('/admin/Purchase-Panel');
+      }
 
     } catch (error) {
       console.error('Error updating purchase:', error);
@@ -4871,9 +4857,14 @@ export default function EditPurchasePanel() {
           </div>
 
           <div className="flex items-center gap-3">
+            {isDraft && <button
+              type="button"
+              onClick={() => handleUpdate('draft')}
+              disabled={saving || fetchingData || !canEditHere || isLocked}
+              className="rounded-xl border border-amber-300 bg-amber-50 px-5 py-2 text-sm font-bold text-amber-800 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+            >Save as Draft</button>}
             <button
-              onClick={handleUpdate}
-
+              onClick={() => handleUpdate(isDraft ? 'submit' : 'update')}
               disabled={saving || fetchingData || !canEditHere || isLocked}
               className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${saving || fetchingData
                 ? 'bg-gray-400 cursor-not-allowed'
@@ -4888,7 +4879,7 @@ export default function EditPurchasePanel() {
                   </svg>
                   Updating...
                 </span>
-              ) : 'Update Purchase'}
+              ) : isDraft ? 'Submit for Approval' : 'Update Purchase'}
             </button>
           </div>
         </div>
@@ -6227,43 +6218,6 @@ export default function EditPurchasePanel() {
               </Card>
             </div>
 
-            {/* Approval Section */}
-            <div className="mt-4">
-              <Card title="Approval">
-                <div className="grid grid-cols-12 gap-4">
-                  <div className="col-span-12 md:col-span-6">
-                    <div className="bg-white p-4 rounded-xl border border-slate-200">
-                      <h3 className="text-sm font-bold text-slate-800 mb-3">Approval / Rejection</h3>
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-3">
-                          <select
-                            disabled={!canApproveHere}
-                            value={approval.status}
-                            onChange={(e) => setApproval({ ...approval, status: e.target.value })}
-                            className="flex-1 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
-                          >
-                            <option value="">Select Status</option>
-                            {APPROVAL_OPTIONS.map((opt) => (
-                              <option key={opt} value={opt}>{opt}</option>
-                            ))}
-                          </select>
-                        </div>
-                        <div>
-                          <textarea
-                            disabled={!canApproveHere}
-                            value={approval.remarks}
-                            onChange={(e) => setApproval({ ...approval, remarks: e.target.value })}
-                            rows={2}
-                            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
-                            placeholder="Enter approval remarks..."
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            </div>
           </div>
         </fieldset>
       </div>

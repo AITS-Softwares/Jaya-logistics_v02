@@ -3870,8 +3870,7 @@ export default function EditPricingPanel() {
   const router = useRouter();
   const params = useParams();
   const panelId = params.id;
-  const { canApprove, canCreate, canEdit, canViewFinancialRates } = usePermission();
-  const PART2_APPROVAL_MODULE = 'Pricing Panel - Part 2 Approval';
+  const { canCreate, canEdit, canViewFinancialRates } = usePermission();
 
   const [branches, setBranches] = useState([]);
   const [countries, setCountries] = useState([]);
@@ -3881,7 +3880,7 @@ export default function EditPricingPanel() {
   const [saveError, setSaveError] = useState(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [workflowPhase, setWorkflowPhase] = useState('part1');
-  const [approvalDirty, setApprovalDirty] = useState(false);
+  const [isDraft, setIsDraft] = useState(false);
   const [workflowSaving, setWorkflowSaving] = useState(false);
 
   const locationData = useLocationData();
@@ -3969,6 +3968,7 @@ export default function EditPricingPanel() {
       }
 
       const panel = data.data;
+      setIsDraft(!!panel.isDraft || panel.panelStatus === 'Draft');
       setWorkflowPhase(panel.rateApproval?.workflowPhase || 'part1');
 
       // New panels persist a VNN number snapshot. For older panels that only
@@ -4054,8 +4054,6 @@ export default function EditPricingPanel() {
           approvalStatus: panel.rateApproval.approvalStatus || "Pending",
         });
       }
-      setApprovalDirty(false);
-
       if (panel.partyName) {
         setSelectedCustomer({
           _id: panel.customerId,
@@ -4298,18 +4296,19 @@ export default function EditPricingPanel() {
     }
   };
 
-  const handleUpdate = async () => {
-    if (!header.branch) {
+  const handleUpdate = async (saveMode = 'update') => {
+    const isDraftSave = saveMode === 'draft';
+    if (!isDraftSave && !header.branch) {
       alert("Please select a branch");
       return;
     }
 
     const hasInvalidOrders = orders.some(order => !order.orderNo);
-    if (hasInvalidOrders) {
+    if (!isDraftSave && hasInvalidOrders) {
       alert("Please enter Order No for all order rows");
       return;
     }
-    if (orders.some((order) => !order.priceList || !order.locationRate || order.rate === '' || order.rate === null)) {
+    if (!isDraftSave && orders.some((order) => !order.priceList || !order.locationRate || order.rate === '' || order.rate === null)) {
       alert('Select a Price List and Location Rate with a valid slab, or enter the approved manual Mail rate before saving.');
       return;
     }
@@ -4326,6 +4325,7 @@ export default function EditPricingPanel() {
 
       const payload = {
         id: panelId,
+        ...(saveMode !== 'update' ? { saveMode } : {}),
         header: {
           ...header,
           subCompanyId: header.subCompanyId || null,
@@ -4420,7 +4420,10 @@ export default function EditPricingPanel() {
       }
 
       setSaveSuccess(true);
-      alert(`✅ Pricing panel updated successfully.\nSubmit this revision for approval when it is ready.`);
+      if (isDraftSave) setIsDraft(true);
+      alert(isDraftSave
+        ? `✅ Pricing panel draft saved.\nSubmit this revision for approval when it is ready.`
+        : `✅ Pricing panel updated successfully.\nSubmit this revision for approval when it is ready.`);
       await fetchPricingPanelData();
 
     } catch (error) {
@@ -4451,7 +4454,6 @@ export default function EditPricingPanel() {
         return;
       }
       setWorkflowPhase(data.data.workflowPhase);
-      if (action === 'update-approval') setApprovalDirty(false);
       await fetchPricingPanelData();
     } catch (error) {
       alert(error.message || 'Unable to update workflow.');
@@ -4460,10 +4462,8 @@ export default function EditPricingPanel() {
     }
   };
 
-  // Workflow state controls whether an approval is awaiting Part 2. It never
-  // overrides a user's Pricing Panel edit permission for Part 1.
+  // Approval decisions are made only on the dedicated Part 2 approval page.
   const part1Editable = canEdit('Pricing Panel');
-  const part2Editable = workflowPhase === 'part2' && canApprove(PART2_APPROVAL_MODULE);
   const canSubmitPart1 = (part1Editable || canCreate('Pricing Panel')) && workflowPhase === 'part1' && rateApproval.approvalStatus !== 'Approved';
 
   const billingColumns = [
@@ -4506,7 +4506,7 @@ export default function EditPricingPanel() {
             </div>
             {saveSuccess && (
               <div className="text-sm text-green-600 font-medium mt-1">
-                ✅ Pricing panel updated successfully! Redirecting to list...
+                ✅ Pricing panel changes saved.
               </div>
             )}
             {saveError && (
@@ -4518,12 +4518,13 @@ export default function EditPricingPanel() {
 
           <div className="flex items-center gap-3">
             {canSubmitPart1 && (
-              <button onClick={() => handleWorkflowAction('submit-part1')} disabled={workflowSaving} className="rounded-xl bg-indigo-600 px-5 py-2 text-sm font-bold text-white hover:bg-indigo-700 disabled:bg-gray-400">
+              <button onClick={() => handleWorkflowAction('submit-part1')} disabled={workflowSaving || saving} className="rounded-xl bg-indigo-600 px-5 py-2 text-sm font-bold text-white hover:bg-indigo-700 disabled:bg-gray-400">
                 Submit Saved Part 1 for Approval
               </button>
             )}
-            <button
-              onClick={handleUpdate}
+            {isDraft && <button type="button" onClick={() => handleUpdate('draft')} disabled={saving || workflowSaving || !part1Editable} className="rounded-xl border border-amber-300 bg-amber-50 px-5 py-2 text-sm font-bold text-amber-800 hover:bg-amber-100 disabled:opacity-60">Save as Draft</button>}
+            {!isDraft && <button
+              onClick={() => handleUpdate('update')}
               disabled={saving || !part1Editable}
               className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${saving || !part1Editable ? 'bg-gray-400 cursor-not-allowed' : 'bg-yellow-600 hover:bg-yellow-700'
                 }`}
@@ -4536,15 +4537,13 @@ export default function EditPricingPanel() {
                   </svg>
                   Updating...
                 </span>
-              ) : 'Draft'}
-            </button>
+              ) : isDraft ? 'Save as Draft' : 'Update'}
+            </button>}
           </div>
         </div>
       </div>
 
       <div className="mx-auto max-w-full p-4 space-y-4">
-        {/* Do not use pointer-events-none here. Part 2 approvers must be able
-            to scroll and inspect every Part 1 table cell before approving. */}
         <fieldset disabled={!part1Editable} className="min-w-0">
           <Card title={`Pricing Panel - Part -1${part1Editable ? '' : ' (Read only)'}`}>
             <div className="grid grid-cols-12 gap-3 mb-4">
@@ -4694,22 +4693,7 @@ export default function EditPricingPanel() {
         </fieldset>
 
         <Card
-          title={`Rate - Approval - Part - 2${part2Editable ? ' (Open for approval)' : workflowPhase === 'part2' ? ' (Awaiting authorised approval)' : workflowPhase === 'approved' || workflowPhase === 'locked' ? ' (Approved)' : ' (Waiting for Part 1 submission)'}`}
-          right={part2Editable && (
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                disabled={workflowSaving}
-                onClick={() => approvalDirty
-                  ? handleWorkflowAction('update-approval', { approvalStatus: rateApproval.approvalStatus, remarks: rateApproval.remarks })
-                  : handleWorkflowAction('approve-with-update', { remarks: rateApproval.remarks })}
-                className={`rounded-xl px-4 py-2 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-slate-400 ${approvalDirty ? 'bg-sky-600 hover:bg-sky-700' : 'bg-emerald-600 hover:bg-emerald-700'
-                  }`}
-              >
-                {workflowSaving ? 'Saving...' : approvalDirty ? 'Save Approval Details' : 'Approve Part 2'}
-              </button>
-            </div>
-          )}
+          title={`Rate - Approval - Part - 2${workflowPhase === 'part2' ? ' (Awaiting authorised approval)' : workflowPhase === 'approved' || workflowPhase === 'locked' ? ' (Approved)' : ' (Waiting for Part 1 submission)'}`}
         >
           <div className="grid grid-cols-12 gap-4">
             <Select col="col-span-12 md:col-span-4" label="Rate Approval Type" value={rateApproval.approvalType} onChange={(value) => setRateApproval((previous) => ({ ...previous, approvalType: value }))} options={RATE_APPROVAL_TYPES} readOnly={!part1Editable} />
@@ -4723,16 +4707,12 @@ export default function EditPricingPanel() {
               col="col-span-12 md:col-span-4"
               label="Approval Status"
               value={rateApproval.approvalStatus}
-              onChange={(v) => {
-                setApprovalDirty(true);
-                setRateApproval((p) => ({ ...p, approvalStatus: v }));
-              }}
               options={APPROVAL_STATUS}
-              readOnly={!part2Editable}
+              readOnly={true}
             />
             <div className="col-span-12 md:col-span-8">
               <label className="text-xs font-bold text-slate-600">Remarks</label>
-              <textarea value={rateApproval.remarks || ''} onChange={(event) => { setApprovalDirty(true); setRateApproval((previous) => ({ ...previous, remarks: event.target.value })); }} readOnly={!part2Editable} className="mt-1 min-h-20 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm read-only:cursor-not-allowed" placeholder="Remarks are entered during approval" />
+              <textarea value={rateApproval.remarks || ''} readOnly={true} className="mt-1 min-h-20 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm read-only:cursor-not-allowed" placeholder="Remarks are entered during approval" />
             </div>
           </div>
         </Card>

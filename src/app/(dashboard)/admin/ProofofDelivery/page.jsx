@@ -1226,7 +1226,12 @@ export default function PODPanelList() {
                     <tr key={item._id} className="hover:bg-yellow-50 transition">
                       <td className="border border-slate-200 px-4 py-3 text-slate-600">{index + 1}</td>
                       <td className="border border-slate-200 px-4 py-3 text-slate-600">{item.date}</td>
-                      <td className="border border-slate-200 px-4 py-3 font-bold text-slate-900">{item.podNo || '-'}</td>
+                      <td className="border border-slate-200 px-4 py-3 font-bold text-slate-900">
+                        <span className="inline-flex items-center gap-2">
+                          {item.podNo || '-'}
+                          {item.isDraft && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">Draft</span>}
+                        </span>
+                      </td>
                       <td className="border border-slate-200 px-4 py-3 font-medium text-slate-900">{item.purchaseNo}</td>
                       <td className="border border-slate-200 px-4 py-3 text-slate-600">{item.orderNo || '-'}</td>
                       <td className="border border-slate-200 px-4 py-3 text-slate-800">{item.partyName}</td>

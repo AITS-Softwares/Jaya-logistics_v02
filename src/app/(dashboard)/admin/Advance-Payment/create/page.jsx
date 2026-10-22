@@ -1566,6 +1566,14 @@ function getPurchaseOrderNumbers(purchase) {
   return [...new Set((purchase?.orderRows || []).map((row) => row.orderNo).filter(Boolean))];
 }
 
+function isDraftPurchase(purchase) {
+  return !!purchase?.isDraft || purchase?.panelStatus === 'Draft' || purchase?.status === 'Draft';
+}
+
+function isApprovedPurchase(purchase) {
+  return purchase?.approval?.status === 'Approved' || purchase?.status === 'Approved';
+}
+
 /* =======================
   Data Fetching Hooks
 ========================= */
@@ -1590,6 +1598,8 @@ function usePurchasePanel() {
       const data = await res.json();
       if (data.success && Array.isArray(data.data)) {
         const availablePurchases = data.data.filter(p =>
+          !isDraftPurchase(p) &&
+          isApprovedPurchase(p) &&
           p.status !== 'Completed' && p.status !== 'Paid'
         );
         setPurchases(availablePurchases);
@@ -1611,12 +1621,19 @@ function usePurchasePanel() {
       });
 
       if (!res.ok) {
+        const errorData = await res.json().catch(() => null);
+        if (res.status === 404 && /draft purchase/i.test(errorData?.message || '')) {
+          alert(`Purchase ${purchaseNo} is still a draft. Submit it before creating an Advance Payment.`);
+        } else if (res.status === 409) {
+          alert(errorData?.message || `Purchase ${purchaseNo} must be approved before creating an Advance Payment.`);
+        }
         console.error(`API returned ${res.status}`);
         return null;
       }
 
       const data = await res.json();
-      return data.success ? data.data : null;
+      if (!data.success || !data.data || isDraftPurchase(data.data) || !isApprovedPurchase(data.data)) return null;
+      return data.data;
     } catch (error) {
       console.error('Error fetching purchase:', error);
       return null;
@@ -1744,6 +1761,15 @@ function PurchaseDropdown({
   };
 
   const handleSelectPurchase = async (purchase) => {
+    if (isDraftPurchase(purchase)) {
+      alert(`Purchase ${purchase.purchaseNo} is still a draft. Submit it before creating an Advance Payment.`);
+      return;
+    }
+    if (!isApprovedPurchase(purchase)) {
+      alert(`Purchase ${purchase.purchaseNo} must be Approved before creating an Advance Payment.`);
+      return;
+    }
+
     const orderNumbers = getPurchaseOrderNumbers(purchase);
     setSearchQuery(orderNumbers.join(', ') || purchase.purchaseNo);
     setShowDropdown(false);
@@ -1756,7 +1782,14 @@ function PurchaseDropdown({
 
       if (res.ok) {
         const data = await res.json();
-        if (data.success && data.data) onSelect(data.data);
+        if (data.success && data.data && !isDraftPurchase(data.data) && isApprovedPurchase(data.data)) onSelect(data.data);
+        else if (data.data && isDraftPurchase(data.data)) {
+          setSearchQuery('');
+          alert(`Purchase ${data.data.purchaseNo || purchase.purchaseNo} is still a draft. Submit it before creating an Advance Payment.`);
+        } else if (data.message) {
+          setSearchQuery('');
+          alert(data.message);
+        }
       }
     } catch (error) {
       console.error('Error fetching purchase details:', error);

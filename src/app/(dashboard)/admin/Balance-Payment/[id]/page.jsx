@@ -487,7 +487,7 @@ export default function EditBalancePayment() {
       setPaymentStatus(p.paymentStatus || "Pending");
       setQueueGenerated(!!p.queueGenerated);
       setQueueDate(p.queueDate || null);
-      setIsDraft(!!p.isDraft);
+      setIsDraft(!!p.isDraft || p.paymentStatus === 'Draft');
 
       // Unsettled payments are re-calculated by the server on save, so show the current POD figures
       // (exactly what will be saved). Paid / Completed payments keep their saved figures.
@@ -647,12 +647,13 @@ export default function EditBalancePayment() {
     }
   };
 
-  const handleUpdate = async () => {
+  const handleUpdate = async (saveMode = 'update') => {
+    const isDraftSave = saveMode === 'draft';
     if (!canEditHere) return alert("You don't have permission to edit balance payments");
     if (queueGenerated) return alert("Cannot update payment after queue generation.");
-    if (!podNo) return alert("Please select a POD No");
-    if (overLimit) return alert(`Final amount cannot exceed the final balance (${inr(finalBalance)}).`);
-    if (isPartial && !isSettled && (!remarks.trim() || remarks.trim() === "Balance Payment")) {
+    if (!isDraftSave && !podNo) return alert("Please select a POD No");
+    if (!isDraftSave && overLimit) return alert(`Final amount cannot exceed the final balance (${inr(finalBalance)}).`);
+    if (!isDraftSave && isPartial && !isSettled && (!remarks.trim() || remarks.trim() === "Balance Payment")) {
       return alert("You are paying less than the final balance. Please write the reason in Remarks.");
     }
 
@@ -663,6 +664,7 @@ export default function EditBalancePayment() {
       // paymentStatus is deliberately NOT sent: only an approver can change it (Approve page).
       const payload = {
         id: paymentId,
+        ...(saveMode !== 'update' ? { saveMode } : {}),
         companyName: companyInfo.companyName || "",
         companyCode: companyInfo.companyCode || "",
         subCompanyId: companyInfo.subCompanyId || null,
@@ -707,9 +709,14 @@ export default function EditBalancePayment() {
       });
       const data = await res.json();
       if (data.success) {
-        setIsDraft(false);
-        alert(`✅ Balance Payment updated successfully!\nPayment No: ${data.data?.balancePaymentNo || balancePaymentNo}\nSub-Company: ${data.data?.subCompanyName || "N/A"}`);
-        router.push("/admin/Balance-Payment");
+        if (isDraftSave) {
+          setIsDraft(true);
+          alert(`✅ Balance Payment draft saved!\nPayment No: ${data.data?.balancePaymentNo || balancePaymentNo}`);
+        } else {
+          setIsDraft(false);
+          alert(`✅ Balance Payment updated successfully!\nPayment No: ${data.data?.balancePaymentNo || balancePaymentNo}\nSub-Company: ${data.data?.subCompanyName || "N/A"}`);
+          router.push("/admin/Balance-Payment");
+        }
       } else {
         alert(data.message || "Failed to update balance payment");
       }
@@ -787,12 +794,18 @@ export default function EditBalancePayment() {
           </div>
           <div className="flex items-center gap-3">
             <button onClick={() => router.push("/admin/Balance-Payment")} className="rounded-xl border border-slate-300 bg-white px-5 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50 transition">Cancel</button>
+            {isDraft && <button
+              type="button"
+              onClick={() => handleUpdate('draft')}
+              disabled={saving || queueGenerated}
+              className="rounded-xl border border-amber-300 bg-amber-50 px-5 py-2 text-sm font-bold text-amber-800 hover:bg-amber-100 disabled:opacity-60"
+            >Save as Draft</button>}
             <button
-              onClick={handleUpdate}
+              onClick={() => handleUpdate(isDraft ? 'submit' : 'update')}
               disabled={saving || queueGenerated}
               className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${saving || queueGenerated ? "bg-gray-400 cursor-not-allowed" : "bg-emerald-600 hover:bg-emerald-700"}`}
             >
-              {queueGenerated ? "Queue Generated" : saving ? "Updating..." : "Update Payment"}
+              {queueGenerated ? "Queue Generated" : saving ? "Updating..." : isDraft ? "Submit for Approval" : "Update Payment"}
             </button>
           </div>
         </div>

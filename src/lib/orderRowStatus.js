@@ -8,12 +8,13 @@ export async function validateOpenOrderRows(user, rows = []) {
   const orderNos = [...new Set(rows.map((row) => text(row.orderNo || row.orderPanelNo)).filter(Boolean))];
   if (!orderNos.length) return null;
   const panels = await OrderPanel.find(companyScopeFilter(user, { orderPanelNo: { $in: orderNos } }))
-    .select('orderPanelNo plantRows')
+    .select('orderPanelNo plantRows panelStatus isDraft')
     .lean();
   const panelByNo = new Map(panels.map((panel) => [text(panel.orderPanelNo), panel]));
   for (const source of rows) {
     const panel = panelByNo.get(text(source.orderNo || source.orderPanelNo));
     if (!panel) continue;
+    if (panel.isDraft || panel.panelStatus === 'Draft') return `Order ${panel.orderPanelNo} is still a draft. Submit it for approval before using it in downstream documents.`;
     const candidates = panel.plantRows || [];
     const match = source.orderRowId || source.sourceRowId
       ? candidates.find((row) => String(row._id) === String(source.orderRowId || source.sourceRowId))
@@ -37,12 +38,13 @@ export async function filterOpenOrderRows(user, rows = []) {
   const orderNos = [...new Set(rows.map((row) => text(row.orderNo || row.orderPanelNo)).filter(Boolean))];
   if (!orderNos.length) return rows;
   const panels = await OrderPanel.find(companyScopeFilter(user, { orderPanelNo: { $in: orderNos } }))
-    .select('orderPanelNo plantRows')
+    .select('orderPanelNo plantRows panelStatus isDraft')
     .lean();
   const panelByNo = new Map(panels.map((panel) => [text(panel.orderPanelNo), panel]));
   return rows.filter((source) => {
     const panel = panelByNo.get(text(source.orderNo || source.orderPanelNo));
     if (!panel) return true;
+    if (panel.isDraft || panel.panelStatus === 'Draft') return false;
     const candidates = panel.plantRows || [];
     const match = source.orderRowId || source.sourceRowId
       ? candidates.find((row) => String(row._id) === String(source.orderRowId || source.sourceRowId))

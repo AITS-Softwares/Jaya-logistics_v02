@@ -15,7 +15,7 @@ export default function PendingToCreateChip({ endpoint, singular, plural, href, 
 
     useEffect(() => {
         let live = true;
-        (async () => {
+        const refreshCount = async () => {
             try {
                 const token = localStorage.getItem("token");
                 const res = await fetch(endpoint, { headers: { Authorization: `Bearer ${token}` } });
@@ -24,8 +24,14 @@ export default function PendingToCreateChip({ endpoint, singular, plural, href, 
             } catch {
                 /* the chip simply stays hidden */
             }
-        })();
-        return () => { live = false; };
+        };
+        const handleRefresh = () => refreshCount();
+        refreshCount();
+        window.addEventListener("pending-to-create-refresh", handleRefresh);
+        return () => {
+            live = false;
+            window.removeEventListener("pending-to-create-refresh", handleRefresh);
+        };
     }, [endpoint]);
 
     if (count === null) return null;

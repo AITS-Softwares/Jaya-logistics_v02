@@ -1356,7 +1356,12 @@ export default function AdvancePaymentList() {
                     <tr key={item._id} className="hover:bg-yellow-50 transition">
                       <td className="px-4 py-3 text-slate-600">{index + 1}</td>
                       <td className="px-4 py-3 text-slate-600">{item.date}</td>
-                      <td className="px-4 py-3 font-medium text-slate-900">{item.paymentNo}</td>
+                      <td className="px-4 py-3 font-medium text-slate-900">
+                        <span className="inline-flex items-center gap-2">
+                          {item.paymentNo}
+                          {item.isDraft && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">Draft</span>}
+                        </span>
+                      </td>
                       <td className="px-4 py-3">
                         <div>
                           <div className="font-medium text-slate-800">{item.purchaseNo}</div>

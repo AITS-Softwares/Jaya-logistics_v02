@@ -1129,6 +1129,15 @@ export async function POST(req) {
     // (Uses only this user's company scope, so no POD / Advance Payment permission is required.)
     const derived = await deriveBalanceForPod(user, body.podNo);
     if (derived.error) return NextResponse.json({ success: false, message: derived.error }, { status: derived.status });
+    const existingPayment = await BalancePayment.findOne(companyScopeFilter(user, { podNo: derived.pod.podNo }))
+      .select("balancePaymentNo")
+      .lean();
+    if (existingPayment) {
+      return NextResponse.json({
+        success: false,
+        message: `A Balance Payment (${existingPayment.balancePaymentNo}) already exists for POD ${derived.pod.podNo}. Open that payment to continue editing its draft.`,
+      }, { status: 409 });
+    }
     const f = derived.fields;
     if (f.finalBalance < 0) {
       return NextResponse.json({ success: false, message: "POD final balance is negative - nothing is payable." }, { status: 400 });
@@ -1285,10 +1294,24 @@ export async function PUT(req) {
 
     const payment = await BalancePayment.findOne(companyScopeFilter(user, { _id: id }));
     if (!payment) return NextResponse.json({ success: false, message: "Not found" }, { status: 404 });
+    const saveMode = body.saveMode;
+    const wasDraft = !!payment.isDraft || payment.paymentStatus === 'Draft';
+    if (saveMode && !['draft', 'submit'].includes(saveMode)) {
+      return NextResponse.json({ success: false, message: "Invalid saveMode" }, { status: 400 });
+    }
+    if (saveMode === 'submit' && !hasPermission(user, 'create')) {
+      return NextResponse.json({ success: false, message: "Permission denied: create action required to submit a Balance Payment draft." }, { status: 403 });
+    }
+    if ((saveMode === 'draft' || saveMode === 'submit') && !wasDraft) {
+      return NextResponse.json({ success: false, message: "Only a draft can be saved as draft or submitted" }, { status: 400 });
+    }
+    if (!saveMode && wasDraft) {
+      return NextResponse.json({ success: false, message: "Submit this draft for approval first" }, { status: 400 });
+    }
     if (payment.queueGenerated) {
       return NextResponse.json({ success: false, message: "Cannot update payment after queue generation." }, { status: 409 });
     }
-    if (payment.isDraft) {
+    if (saveMode === 'submit') {
       payment.isDraft = false;
       payment.paymentStatus = 'Pending';
     }
@@ -1362,8 +1385,8 @@ export async function PUT(req) {
     payment.accountNoCredit = body.accountNoCredit || payment.accountNoCredit;
     if (body.finalAmount !== undefined && body.finalAmount !== "") {
       const amtErr = assertValidAmounts({ finalAmount: body.finalAmount });
-      if (amtErr) return NextResponse.json({ success: false, message: amtErr }, { status: 400 });
-      if (payableLimit !== null && num(body.finalAmount) > payableLimit + 0.005) {
+      if (amtErr && saveMode !== 'draft') return NextResponse.json({ success: false, message: amtErr }, { status: 400 });
+      if (saveMode !== 'draft' && payableLimit !== null && num(body.finalAmount) > payableLimit + 0.005) {
         return NextResponse.json({ success: false, message: `Final amount cannot exceed the POD final balance (${payableLimit}).` }, { status: 400 });
       }
       payment.finalAmount = num(body.finalAmount);
@@ -1388,7 +1411,11 @@ export async function PUT(req) {
       payment.paymentStatus = body.paymentStatus;
     }
 
-    await payment.save();
+    if (saveMode === 'draft') {
+      payment.isDraft = true;
+      payment.paymentStatus = 'Draft';
+    }
+    await payment.save({ validateBeforeSave: saveMode !== 'draft' });
 
     return NextResponse.json({
       success: true,
@@ -1473,8 +1500,8 @@ export async function PATCH(req) {
       return NextResponse.json({ success: false, message: "Open and save this draft before changing its approval status." }, { status: 400 });
     }
 
-    // Get body for additional data
-    const body = await req.json();
+    // Quick approval sends an empty object; tolerate clients that omit it.
+    const body = await req.json().catch(() => ({}));
 
     if (body.paymentStatus && !BALANCE_STATUSES.includes(body.paymentStatus)) {
       return NextResponse.json({ success: false, message: `Invalid status. Allowed: ${BALANCE_STATUSES.join(", ")}` }, { status: 400 });

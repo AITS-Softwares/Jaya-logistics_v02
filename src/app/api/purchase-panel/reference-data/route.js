@@ -3,7 +3,6 @@ import { withAuth } from "@/lib/auth";
 import connectDb from "@/lib/db";
 import { companyScopeFilter } from "@/lib/companyScope";
 import PurchasePanel from "../PurchasePanel";
-import ConsignmentNote from "@/app/api/consignment-note/ConsignmentNote";
 import LoadingPanel from "@/app/api/loading-panel/LoadingPanel";
 import VehicleNegotiation from "@/app/api/vehicle-negotiation/VehicleNegotiation";
 import PricingPanel from "@/app/api/pricing-panel/PricingPanel";
@@ -56,37 +55,21 @@ function loadingInfoReference(panel) {
 
 /**
  * Loading Infos the Purchase create dropdown offers: Approved/Completed and not yet used by a
- * Purchase or an LR. The "yet to be created" count on the Purchase list uses this same rule.
+ * Purchase. The "yet to be created" count on the Purchase list uses this same rule.
  */
 async function getAvailableLoadingInfos(user) {
-  const [loadingInfos, purchases, consignmentNotes] = await Promise.all([
+  const [loadingInfos, purchases] = await Promise.all([
     LoadingPanel.find(
       companyScopeFilter(user, { panelStatus: { $in: selectableStatuses } }),
     ).sort({ createdAt: -1 }).lean(),
     PurchasePanel.find(companyScopeFilter(user), { loadingInfoNo: 1 }).lean(),
-    ConsignmentNote.find(companyScopeFilter(user), {
-      loadingInfoNo: 1,
-      vehicleNegotiationRef: 1,
-      "header.status": 1,
-    }).lean(),
   ]);
 
-  const usedLoadingInfoNumbers = new Set(
-    [...purchases, ...consignmentNotes].map((record) => record.loadingInfoNo).filter(Boolean),
-  );
-  // LRs created from an order row may have no loadingInfoNo, but they still
-  // point to the Vehicle Negotiation their Loading Info was built from.
-  const usedNegotiationRefs = new Set(
-    consignmentNotes
-      .filter((note) => note.header?.status !== "Rejected")
-      .map((note) => String(note.vehicleNegotiationRef || ""))
-      .filter(Boolean),
-  );
+  const usedLoadingInfoNumbers = new Set(purchases.map((purchase) => purchase.loadingInfoNo).filter(Boolean));
   return loadingInfos
     .filter((panel) =>
       panel.vehicleNegotiationNo &&
-      !usedLoadingInfoNumbers.has(panel.vehicleArrivalNo) &&
-      !usedNegotiationRefs.has(String(panel.selectedVehicleNegotiation?.id || "")));
+      !usedLoadingInfoNumbers.has(panel.vehicleArrivalNo));
 }
 
 /**

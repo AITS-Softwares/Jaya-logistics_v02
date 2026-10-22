@@ -815,8 +815,9 @@
 
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { usePermission } from "../../../hooks/usePermission";
 
 /* =========================
   CONSTANTS
@@ -978,7 +979,7 @@ function OrdersTable({ rows }) {
                 <tr key={row._id || idx} className="hover:bg-yellow-50 even:bg-slate-50">
                   <td className="border border-yellow-300 px-1 py-0.5 text-slate-700 text-xs whitespace-nowrap">{row.orderNo || '-'}</td>
                   <td className="border border-yellow-300 px-1 py-0.5 text-slate-700 text-xs whitespace-nowrap">{row.partyName || '-'}</td>
-                  <td className="border border-yellow-300 px-1 py-0.5 text-slate-700 text-xs whitespace-nowrap">{row.plantCode || '-'}</td>
+                  <td className="border border-yellow-300 px-1 py-0.5 text-slate-700 text-xs whitespace-nowrap">{row.plantCodeValue || (row.plantCode && !/^[a-f0-9]{24}$/i.test(String(row.plantCode)) ? row.plantCode : '-')}</td>
                   <td className="border border-yellow-300 px-1 py-0.5 text-slate-700 text-xs whitespace-nowrap">{row.plantName || '-'}</td>
                   <td className="border border-yellow-300 px-1 py-0.5 text-slate-700 text-xs whitespace-nowrap">{row.plantCodeValue || '-'}</td>
                   <td className="border border-yellow-300 px-1 py-0.5 text-slate-700 text-xs whitespace-nowrap">{row.orderType || '-'}</td>
@@ -1073,6 +1074,9 @@ export default function ApprovePricingPanel() {
   const router = useRouter();
   const params = useParams();
   const panelId = params.id;
+  const { canApprove, loading: permissionLoading } = usePermission();
+  const PART2_APPROVAL_MODULE = 'Pricing Panel - Part 2 Approval';
+  const hasPart2ApprovalPermission = canApprove(PART2_APPROVAL_MODULE);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -1099,13 +1103,7 @@ export default function ApprovePricingPanel() {
   const [workflowPhase, setWorkflowPhase] = useState('part1');
   const [capabilities, setCapabilities] = useState({ canAmendPart1: false, canAmendPart2: false });
 
-  // Legacy approval URL: retain the route for old bookmarks/email links but
-  // immediately use the single, permission-aware Part 2 screen.
-  useEffect(() => {
-    router.replace(`/admin/pricing-panel/${panelId}`);
-  }, [router, panelId]);
-
-  const fetchPricingPanelData = async () => {
+  const fetchPricingPanelData = useCallback(async () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
@@ -1192,7 +1190,18 @@ export default function ApprovePricingPanel() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [panelId]);
+
+  // Keep approval decisions on this dedicated screen and require the Part 2
+  // approval permission before loading or exposing the approval action.
+  useEffect(() => {
+    if (permissionLoading) return;
+    if (!hasPart2ApprovalPermission) {
+      router.replace('/admin/pricing-panel');
+      return;
+    }
+    fetchPricingPanelData();
+  }, [permissionLoading, hasPart2ApprovalPermission, router, fetchPricingPanelData]);
 
   const handleSendEmailApproval = async () => {
     if (!emailRecipient) {
@@ -1243,6 +1252,10 @@ export default function ApprovePricingPanel() {
   };
 
   const handleApprove = async (autoApprove = false) => {
+    if (!hasPart2ApprovalPermission) {
+      alert('Pricing Panel Part 2 Approval permission is required.');
+      return;
+    }
     if (workflowPhase !== 'part2') {
       alert('Part 2 is currently locked. Use Amend Part 2 before changing its approval details.');
       return;
@@ -1314,7 +1327,7 @@ export default function ApprovePricingPanel() {
     }
   };
 
-  const part2Editable = workflowPhase === 'part2';
+  const part2Editable = hasPart2ApprovalPermission && workflowPhase === 'part2';
 
   // Automatic approval via a URL is intentionally disabled. The authorised
   // Part 2 user must review the record and attachment in the canonical screen.

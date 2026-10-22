@@ -2739,6 +2739,7 @@ export default function EditConsignmentNote() {
   const [fetchLoading, setFetchLoading] = useState(true);
   const [fetchingData, setFetchingData] = useState(false);
   const [isReadOnly, setIsReadOnly] = useState(false);
+  const [isDraft, setIsDraft] = useState(false);
   const [previewNote, setPreviewNote] = useState(null);
 
   /** =========================
@@ -3151,6 +3152,9 @@ export default function EditConsignmentNote() {
 
       const note = data.data;
       console.log("📦 Consignment Note Data:", note);
+      const noteIsDraft = !!note.isDraft || note.header?.status === 'Draft';
+      setIsDraft(noteIsDraft);
+      setIsReadOnly(!noteIsDraft && !!note.header?.orderNo);
 
       // ✅ Set sub-company from note
       const subCompanyId = note.subCompanyId || note.header?.subCompanyId || '';
@@ -3267,10 +3271,7 @@ export default function EditConsignmentNote() {
         }
       }
 
-      // Check if note has a linked order to make it read-only
-      if (note.header?.orderNo) {
-        setIsReadOnly(true);
-      }
+      // Linked order details are locked for submitted LRs. Drafts remain editable.
 
     } catch (error) {
       console.error('Error fetching consignment note:', error);
@@ -3736,13 +3737,14 @@ export default function EditConsignmentNote() {
   /** =========================
    * HANDLE UPDATE - INCLUDING SUB-COMPANY
    ========================= */
-  const handleUpdate = async () => {
-    if (!header.partyName) {
+  const handleUpdate = async (saveMode = 'submit') => {
+    const isDraftSave = saveMode === 'draft';
+    if (!isDraftSave && !header.partyName) {
       alert("Please enter party name");
       return;
     }
 
-    if (!header.vendorName) {
+    if (!isDraftSave && !header.vendorName) {
       alert("Please enter vendor name");
       return;
     }
@@ -3757,6 +3759,7 @@ export default function EditConsignmentNote() {
 
       const payload = {
         id: noteId,
+        saveMode,
         header: {
           ...header,
           // ✅ Include sub-company in header
@@ -3806,9 +3809,14 @@ export default function EditConsignmentNote() {
       const data = await res.json();
 
       const subCompanyMsg = header.subCompanyName ? `\n🏢 Sub-Company: ${header.subCompanyName}` : '';
-      alert(`✅ Consignment Note updated successfully!\nLR No: ${header.lrNo}${subCompanyMsg}`);
-
-      router.push('/admin/Consignment-Note');
+      if (isDraftSave) {
+        setIsDraft(true);
+        alert(`✅ Consignment Note draft saved!\nLR No: ${header.lrNo}${subCompanyMsg}`);
+      } else {
+        setIsDraft(false);
+        alert(`✅ Consignment Note submitted successfully!\nLR No: ${header.lrNo}${subCompanyMsg}`);
+        router.push('/admin/Consignment-Note');
+      }
 
     } catch (error) {
       console.error('Error updating consignment note:', error);
@@ -3915,8 +3923,16 @@ export default function EditConsignmentNote() {
             >
               👁 Preview LR
             </button>
+            {isDraft && <button
+              type="button"
+              onClick={() => handleUpdate('draft')}
+              disabled={saving || fetchingData}
+              className="rounded-xl border border-amber-300 bg-amber-50 px-5 py-2 text-sm font-bold text-amber-800 hover:bg-amber-100 disabled:opacity-60"
+            >
+              Save as Draft
+            </button>}
             <button
-              onClick={handleUpdate}
+              onClick={() => handleUpdate(isDraft ? 'submit' : 'update')}
               disabled={saving || fetchingData}
               className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${saving || fetchingData
                 ? 'bg-gray-400 cursor-not-allowed'
@@ -3931,7 +3947,7 @@ export default function EditConsignmentNote() {
                   </svg>
                   Updating...
                 </span>
-              ) : 'Update LR'}
+              ) : isDraft ? 'Submit for Approval' : 'Update LR'}
             </button>
           </div>
         </div>
@@ -4669,9 +4685,8 @@ export default function EditConsignmentNote() {
                 <label className="text-xs font-bold text-slate-600">E-waybill</label>
                 <select
                   value={ewaybill.status}
-                  disabled={isReadOnly}
                   onChange={(e) => setEwaybill({ ...ewaybill, status: e.target.value })}
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 disabled:bg-slate-100"
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200"
                 >
                   <option value="">— Select —</option>
                   <option value="Provided by Customer">Provided by Customer</option>
@@ -4686,9 +4701,9 @@ export default function EditConsignmentNote() {
                   inputMode="numeric"
                   maxLength={14}
                   value={ewaybill.ewaybillNo}
-                  readOnly={isReadOnly || !ewaybill.status}
+                  readOnly={!ewaybill.status}
                   onChange={(e) => setEwaybill({ ...ewaybill, ewaybillNo: e.target.value })}
-                  className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 ${isReadOnly || !ewaybill.status ? "bg-slate-100 text-slate-400" : "bg-white"}`}
+                  className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 ${!ewaybill.status ? "bg-slate-100 text-slate-400" : "bg-white"}`}
                   placeholder="5641 3563 6264"
                 />
               </div>
@@ -4698,9 +4713,9 @@ export default function EditConsignmentNote() {
                 <input
                   type="date"
                   value={ewaybill.expiryDate}
-                  readOnly={isReadOnly || !ewaybill.status}
+                  readOnly={!ewaybill.status}
                   onChange={(e) => setEwaybill({ ...ewaybill, expiryDate: e.target.value })}
-                  className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 ${isReadOnly || !ewaybill.status ? "bg-slate-100 text-slate-400" : "bg-white"}`}
+                  className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 ${!ewaybill.status ? "bg-slate-100 text-slate-400" : "bg-white"}`}
                 />
               </div>
 
@@ -4709,9 +4724,8 @@ export default function EditConsignmentNote() {
                 <input
                   type="text"
                   value={ewaybill.containerNo}
-                  readOnly={isReadOnly}
                   onChange={(e) => setEwaybill({ ...ewaybill, containerNo: e.target.value })}
-                  className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 ${isReadOnly ? "bg-slate-100 text-slate-400" : "bg-white"}`}
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200"
                   placeholder="TEU8753185M"
                 />
               </div>

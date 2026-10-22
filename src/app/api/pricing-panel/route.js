@@ -1397,6 +1397,7 @@ export async function POST(req) {
 
   try {
     const body = await req.json();
+    const isDraftSave = body.saveMode === 'draft';
     const blockedRow = await validateOpenOrderRows(user, body.orders || []);
     if (blockedRow) return NextResponse.json({ success: false, message: blockedRow }, { status: 409 });
 
@@ -1407,6 +1408,7 @@ export async function POST(req) {
     if (vnnIds.length) {
       const approvedCount = await VehicleNegotiation.countDocuments(companyScopeFilter(user, {
         _id: { $in: vnnIds },
+        panelStatus: { $ne: 'Draft' },
         'approval.part3Status': 'Approved',
         'approval.vehicleNo': { $exists: true, $ne: '' },
         'approval.mobile': { $exists: true, $ne: '' },
@@ -1437,12 +1439,12 @@ export async function POST(req) {
       user,
       body.header?.branch || body.header?.branchCode || body.header?.branchName,
     );
-    if (!selectedBranch) {
+    if (!selectedBranch && !isDraftSave) {
       return NextResponse.json({ success: false, message: 'Select an active branch before saving the Pricing Panel.' }, { status: 400 });
     }
-    branchId = selectedBranch._id;
-    branchName = selectedBranch.name || '';
-    branchCode = selectedBranch.code || '';
+    branchId = selectedBranch?._id || null;
+    branchName = selectedBranch?.name || '';
+    branchCode = selectedBranch?.code || '';
 
     const subCompanyId = user.activeOperatingCompanyId;
     const subCompanyName = user.activeOperatingCompanyName || '';
@@ -1642,10 +1644,11 @@ export async function POST(req) {
       companyId: user.companyId,
       createdBy: user.id,
       panelStatus: 'Draft',
+      isDraft: isDraftSave,
       status: 'Active'
     });
 
-    await newPricingPanel.save();
+    await newPricingPanel.save({ validateBeforeSave: !isDraftSave });
 
     return NextResponse.json({
       success: true,
@@ -1722,6 +1725,18 @@ export async function PUT(req) {
         success: false,
         message: "Pricing panel not found"
       }, { status: 404 });
+    }
+
+    const saveMode = body.saveMode;
+    const wasDraft = !!pricingPanel.isDraft || pricingPanel.panelStatus === 'Draft';
+    if ((saveMode === 'draft' || saveMode === 'submit') && !wasDraft) {
+      return NextResponse.json({ success: false, message: "Only a draft can be saved as draft or submitted" }, { status: 400 });
+    }
+    if (!saveMode && wasDraft) {
+      return NextResponse.json({ success: false, message: "Submit this draft for approval first" }, { status: 400 });
+    }
+    if (saveMode === 'submit' && !hasPermission(user, 'create')) {
+      return NextResponse.json({ success: false, message: "Permission denied: create action required to submit a Pricing Panel draft." }, { status: 403 });
     }
 
     // Part 1 is editable whenever the caller has Pricing Panel edit
@@ -1873,19 +1888,32 @@ export async function PUT(req) {
     }
 
     const nextRevision = approvalRevision(pricingPanel) + 1;
+    if (saveMode === 'submit' && (!pricingPanel.branch || !pricingPanel.orders?.length || pricingPanel.orders.some((order) =>
+      !order.orderNo || !order.priceList || !order.locationRate || !Number.isFinite(Number(order.rate))))) {
+      return NextResponse.json({ success: false, message: 'Save a complete Part 1 with an order, Price List, Location Rate, and valid rate for every row before submitting it.' }, { status: 422 });
+    }
     pricingPanel.rateApproval.approvalRevision = nextRevision;
-    pricingPanel.rateApproval.submittedRevision = 0;
     pricingPanel.rateApproval.approvalStatus = 'Pending';
-    pricingPanel.rateApproval.workflowPhase = 'part1';
-    pricingPanel.panelStatus = 'Draft';
-    addApprovalHistory(pricingPanel, {
-      revision: nextRevision,
-      action: 'changed',
-      user,
-      remarks: 'Part 1 updated; approval is required for this revision.',
-    });
+    if (saveMode === 'submit') {
+      pricingPanel.rateApproval.submittedRevision = nextRevision;
+      pricingPanel.rateApproval.workflowPhase = 'part2';
+      pricingPanel.panelStatus = 'Submitted';
+      pricingPanel.isDraft = false;
+      addApprovalHistory(pricingPanel, { revision: nextRevision, action: 'submitted', user });
+    } else {
+      pricingPanel.rateApproval.submittedRevision = 0;
+      pricingPanel.rateApproval.workflowPhase = 'part1';
+      pricingPanel.panelStatus = 'Draft';
+      pricingPanel.isDraft = saveMode === 'draft';
+      addApprovalHistory(pricingPanel, {
+        revision: nextRevision,
+        action: 'changed',
+        user,
+        remarks: 'Part 1 updated; approval is required for this revision.',
+      });
+    }
 
-    await pricingPanel.save();
+    await pricingPanel.save({ validateBeforeSave: saveMode !== 'draft' });
     if (replacementApprovalPath && replacementApprovalPath !== previousApprovalPath) {
       try {
         await removeReplacedApprovalFile(previousApprovalPath);
@@ -2136,6 +2164,7 @@ export async function PATCH(req) {
         pricingPanel.rateApproval.workflowPhase = 'part2';
         pricingPanel.rateApproval.submittedRevision = approvalRevision(pricingPanel);
         pricingPanel.panelStatus = 'Submitted';
+        pricingPanel.isDraft = false;
         addApprovalHistory(pricingPanel, {
           revision: pricingPanel.rateApproval.submittedRevision,
           action: 'submitted',

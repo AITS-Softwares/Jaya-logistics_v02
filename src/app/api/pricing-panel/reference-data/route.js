@@ -19,7 +19,7 @@ import { filterOpenOrderRows } from '@/lib/orderRowStatus';
 const orderFields = [
   "orderNo", "orderRowId", "partyName", "customerId", "customerCode", "contactPerson", "plantCode",
   "plantCodeValue", "plantName", "orderType", "pinCode", "from", "fromName", "fromState",
-  "to", "toName", "taluka", "talukaName", "talukaId", "district", "districtName", "districtId", "state", "stateName", "stateId", "locationId",
+  "to", "toName", "locationRemark", "taluka", "talukaName", "talukaId", "district", "districtName", "districtId", "state", "stateName", "stateId", "locationId",
   "country", "countryName", "weight", "collectionCharges", "cancellationCharges", "loadingCharges",
   "otherCharges", "localStatus", "localStatusLabel",
 ];
@@ -106,7 +106,7 @@ async function getAvailableVnnsForPricing(user) {
       .map(String),
   );
 
-  const eligible = vehicleNegotiations.filter((vnn) => vnn.panelStatus !== 'Cancelled' && isVnnReadyForDownstream(vnn) && !usedVnnIds.has(String(vnn._id)));
+  const eligible = vehicleNegotiations.filter((vnn) => !['Draft', 'Cancelled'].includes(vnn.panelStatus) && isVnnReadyForDownstream(vnn) && !usedVnnIds.has(String(vnn._id)));
   const openRows = await Promise.all(eligible.map((vnn) => filterOpenOrderRows(user, vnn.orders || [])));
   return eligible.map((vnn, index) => ({ ...vnn, orders: openRows[index] })).filter((vnn) => vnn.orders.length);
 }
