@@ -1938,7 +1938,7 @@ export async function POST(req) {
     let paymentNo = await getNextAdvancePaymentNumber(user.companyId, user.activeOperatingCompanyId, user.activeOperatingCompanyCode);
 
     if (body.purchaseNo) {
-      const existing = await AdvancePayment.findOne(companyScopeFilter(user, { purchaseNo: body.purchaseNo, isDraft: { $ne: true } }));
+      const existing = await AdvancePayment.findOne(companyScopeFilter(user, { purchaseNo: body.purchaseNo }));
 
       if (existing) {
         return NextResponse.json({
@@ -1955,6 +1955,12 @@ export async function POST(req) {
     const sourcePurchase = await PurchasePanel.findOne(companyScopeFilter(user, purchaseLookup)).lean();
     if (!sourcePurchase) {
       return NextResponse.json({ success: false, message: "A valid Purchase Panel is required." }, { status: 400 });
+    }
+    if (sourcePurchase.isDraft || sourcePurchase.panelStatus === 'Draft') {
+      return NextResponse.json({ success: false, message: `Purchase ${sourcePurchase.purchaseNo} is still a draft. Submit it before creating an Advance Payment.` }, { status: 409 });
+    }
+    if (sourcePurchase.approval?.status !== 'Approved') {
+      return NextResponse.json({ success: false, message: `Purchase ${sourcePurchase.purchaseNo} must be Approved before creating an Advance Payment.` }, { status: 409 });
     }
     const heldPurchaseRow = await validateOpenOrderRows(user, sourcePurchase.orderRows || []);
     if (heldPurchaseRow) return NextResponse.json({ success: false, message: heldPurchaseRow }, { status: 409 });
@@ -2233,7 +2239,25 @@ export async function PUT(req) {
       }, { status: 404 });
     }
 
-    if (payment.isDraft) {
+    const saveMode = body.saveMode;
+    const wasDraft = !!payment.isDraft || payment.paymentDetails?.paymentStatus === 'Draft';
+    if (saveMode && !['draft', 'submit'].includes(saveMode)) {
+      return NextResponse.json({ success: false, message: "Invalid saveMode" }, { status: 400 });
+    }
+    if (saveMode && !canEdit) {
+      return NextResponse.json({ success: false, message: "Draft saving and submission require edit permission." }, { status: 403 });
+    }
+    if (saveMode === 'submit' && !hasPermission(user, 'create')) {
+      return NextResponse.json({ success: false, message: "Permission denied: create action required to submit an Advance Payment draft.", code: 'FORBIDDEN' }, { status: 403 });
+    }
+    if ((saveMode === 'draft' || saveMode === 'submit') && !wasDraft) {
+      return NextResponse.json({ success: false, message: "Only a draft can be saved as draft or submitted" }, { status: 400 });
+    }
+    if (!saveMode && wasDraft) {
+      return NextResponse.json({ success: false, message: "Submit this draft for approval first" }, { status: 400 });
+    }
+
+    if (saveMode === 'submit') {
       payment.isDraft = false;
       payment.paymentDetails.paymentStatus = 'Pending';
     }
@@ -2362,9 +2386,17 @@ export async function PUT(req) {
 
     if (body.paymentDetails) {
       // Only users with approve permission may change the payment (approval) status.
+      const currentStatus = wasDraft ? 'Pending' : (payment.paymentDetails?.paymentStatus || 'Pending');
+      const nextStatus = wasDraft
+        ? 'Pending'
+        : (body.paymentDetails.paymentStatus || currentStatus);
+      if (!wasDraft && !ADVANCE_STATUSES.includes(nextStatus)) {
+        return NextResponse.json({
+          success: false,
+          message: `Invalid payment status. Allowed: ${ADVANCE_STATUSES.join(', ')}`
+        }, { status: 400 });
+      }
       if (!canApprove) {
-        const currentStatus = payment.paymentDetails?.paymentStatus || 'Pending';
-        const nextStatus = body.paymentDetails.paymentStatus || currentStatus;
         if (nextStatus !== currentStatus) {
           return NextResponse.json({
             success: false,
@@ -2376,9 +2408,12 @@ export async function PUT(req) {
       const sourcePurchase = payment.purchaseId
         ? await PurchasePanel.findOne(companyScopeFilter(user, { _id: payment.purchaseId })).lean()
         : await PurchasePanel.findOne(companyScopeFilter(user, { purchaseNo: payment.purchaseNo })).lean();
+      const editablePaymentDetails = { ...body.paymentDetails };
+      delete editablePaymentDetails.paymentStatus;
       payment.paymentDetails = {
         ...payment.paymentDetails,
-        ...body.paymentDetails,
+        ...editablePaymentDetails,
+        paymentStatus: nextStatus,
         finalAmount: sourcePurchase ? await liveOfficeNetEffect(user, sourcePurchase) : payment.paymentDetails.finalAmount,
         paymentDate: body.paymentDetails.paymentDate ? new Date(body.paymentDetails.paymentDate) : payment.paymentDetails.paymentDate
       };
@@ -2406,7 +2441,11 @@ export async function PUT(req) {
       payment.status = body.status;
     }
 
-    await payment.save();
+    if (saveMode === 'draft') {
+      payment.isDraft = true;
+      payment.paymentDetails.paymentStatus = 'Draft';
+    }
+    await payment.save({ validateBeforeSave: saveMode !== 'draft' });
     await syncPodAdvanceForPurchase(user, payment.purchaseNo);
 
     return NextResponse.json({

@@ -467,6 +467,7 @@ export async function GET(req) {
         return {
           _id: pod._id,
           podNo: pod.podNo,
+          isDraft: !!pod.isDraft || pod.podStatus === "Draft",
           date: pod.createdAt ? new Date(pod.createdAt).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" }) : "",
           purchaseNo: pod.purchaseNo,
           companyName: pod.companyName || "",
@@ -523,7 +524,7 @@ export async function GET(req) {
 // A POD can only be created for an approved purchase with its memo uploaded.
 async function getPODEligiblePurchase(user, purchaseNo) {
   return PurchasePanel.findOne(
-    companyScopeFilter(user, { purchaseNo })
+    companyScopeFilter(user, { purchaseNo, isDraft: { $ne: true }, panelStatus: { $ne: 'Draft' } })
   ).select("purchaseNo approval.status memoFile.filePath memoFile.fullPath memoFile.filename").lean();
 }
 
@@ -547,13 +548,16 @@ export async function POST(req) {
     if (purchase.approval?.status !== "Approved") {
       return fail(`Purchase ${purchaseNo} must be Approved before a POD can be created.`, 400);
     }
+    if (purchase.isDraft || purchase.panelStatus === 'Draft') {
+      return fail(`Purchase ${purchaseNo} is still a draft. Submit it before creating a POD.`, 409);
+    }
     if (!isDraftSave && !(purchase.memoFile?.filePath || purchase.memoFile?.fullPath || purchase.memoFile?.filename)) {
       return fail(`Upload the memo for purchase ${purchaseNo} before creating a POD.`, 400);
     }
 
     if (!ALLOW_MULTIPLE_PODS_PER_PURCHASE) {
       const duplicate = await POD.findOne(
-        companyScopeFilter(user, { purchaseNo, podStatus: { $nin: ["Rejected", "Draft"] } })
+        companyScopeFilter(user, { purchaseNo, podStatus: { $ne: "Rejected" } })
       )
         .select("podNo")
         .lean();
@@ -717,6 +721,18 @@ export async function PUT(req) {
     const pod = await POD.findOne(companyScopeFilter(user, { _id: id }));
     if (!pod) return fail("POD not found", 404);
 
+    const saveMode = body.saveMode;
+    const wasDraft = !!pod.isDraft || pod.podStatus === 'Draft';
+    if (saveMode && !['draft', 'submit'].includes(saveMode)) return fail("Invalid saveMode", 400);
+    if (saveMode && !canEdit) return fail("Draft saving and submission require edit permission.", 403);
+    if (saveMode === 'submit' && !hasPermission(user, 'create')) {
+      return fail("Permission denied: create action required to submit a POD draft.", 403, { code: "FORBIDDEN" });
+    }
+    if ((saveMode === 'draft' || saveMode === 'submit') && !wasDraft) {
+      return fail("Only a draft can be saved as draft or submitted", 400);
+    }
+    if (!saveMode && wasDraft) return fail("Submit this draft for approval first", 400);
+
     // Only users with approve permission may change podStatus / paymentStatus.
     if (!canApprove) {
       const podStatusChanged = body.podStatus && body.podStatus !== (pod.podStatus || "Pending");
@@ -759,7 +775,7 @@ export async function PUT(req) {
       if (!(purchase.memoFile?.filePath || purchase.memoFile?.fullPath || purchase.memoFile?.filename)) {
         return fail(`Upload the memo for purchase ${newPurchaseNo} before linking it to a POD.`, 400);
       }
-      if (!ALLOW_MULTIPLE_PODS_PER_PURCHASE) {
+      if (saveMode !== 'draft' && !ALLOW_MULTIPLE_PODS_PER_PURCHASE) {
         const duplicate = await POD.findOne(
           companyScopeFilter(user, { purchaseNo: newPurchaseNo, _id: { $ne: pod._id }, podStatus: { $ne: "Rejected" } })
         )
@@ -829,7 +845,7 @@ export async function PUT(req) {
     // Advance always follows the real Advance Payment (re-read on every save that touches money or purchase)
     {
       const amountError = assertValidAmounts({ total: body.vendorFinancial?.total, podDeduction: body.vendorFinancial?.podDeduction, dueDays: body.vendorFinancial?.dueDays });
-      if (amountError) return fail(amountError, 400);
+      if (amountError && saveMode !== 'draft') return fail(amountError, 400);
       // refreshed on EVERY save, so a later advance change can never leave a stale figure
       const advanceInfo = await getAdvanceForPurchase(user, pod.purchaseNo);
       pod.vendorFinancial = buildVendorFinancial(body.vendorFinancial || {}, snapshot.vendorFinancial || {}, {
@@ -874,12 +890,17 @@ export async function PUT(req) {
     // Delete files that are no longer referenced (removed / replaced uploads)
     const keptFiles = new Set((pod.lrEntries || []).map((l) => normPath(l?.podFile?.filePath)).filter(Boolean));
 
-    if (pod.isDraft && canEdit) {
+    if (saveMode === 'submit' && canEdit) {
       pod.isDraft = false;
       pod.podStatus = 'Pending';
       pod.paymentStatus = 'Pending';
     }
-    await pod.save(); // totals + final balance are computed in the pre-save hook
+    if (saveMode === 'draft') {
+      pod.isDraft = true;
+      pod.podStatus = 'Draft';
+      pod.paymentStatus = 'Draft';
+    }
+    await pod.save({ validateBeforeSave: saveMode !== 'draft' }); // totals + final balance are computed in the pre-save hook
 
     for (const f of prevFiles) {
       if (!keptFiles.has(f)) await removeStoredFile(f);

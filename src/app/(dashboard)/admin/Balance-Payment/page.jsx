@@ -930,6 +930,7 @@ export default function BalancePaymentList() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
+        body: JSON.stringify({}),
       });
 
       const data = await res.json();
@@ -1250,7 +1251,7 @@ export default function BalancePaymentList() {
                           )}
 
                           {/* ✅ Quick Approve Button - Green (with checkmark) */}
-                          {canApprove(MODULE_NAME) && (
+                          {!item.isDraft && canApprove(MODULE_NAME) && (
                             <button
                               onClick={() => handleQuickApprove(item._id, item.balancePaymentNo)}
                               disabled={approveLoading === item._id}

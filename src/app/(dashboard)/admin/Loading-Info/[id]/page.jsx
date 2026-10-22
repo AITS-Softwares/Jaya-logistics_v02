@@ -5188,6 +5188,12 @@ function num(v) {
   return Number.isFinite(n) ? n : 0;
 }
 
+function normalizeNumericInput(value) {
+  if (value === null || value === undefined || String(value).trim() === "") return "";
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? String(parsed) : "";
+}
+
 // The database stores each VL image as one grouped Map entry (for example
 // vl1_0: { width, height, nose }). The form uses flat input keys. Accept both
 // shapes so existing records and newly saved dimensions reload correctly.
@@ -6151,6 +6157,7 @@ export default function EditLoadingInfoPanel() {
   const [loading, setLoading] = useState(false);
   const [fetchLoading, setFetchLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [isDraft, setIsDraft] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [apiError, setApiError] = useState(null);
   const [fetchingNegotiationData, setFetchingNegotiationData] = useState(false);
@@ -6445,6 +6452,7 @@ export default function EditLoadingInfoPanel() {
       }
 
       const panel = data.data;
+      setIsDraft(!!panel.isDraft || panel.panelStatus === 'Draft');
       setLinkedLRNo(panel.consignmentNote || "");
 
       if (panel.panelStatus === 'Approved' || panel.panelStatus === 'Completed') {
@@ -6721,11 +6729,11 @@ export default function EditLoadingInfoPanel() {
       if (panel.loadedWeighment) {
         setLoadedWeighment({
           approval: panel.loadedWeighment.approval || "",
-          loadingCharges: panel.loadedWeighment.loadingCharges?.toString() || "",
-          loadingStaffMunshiyana: panel.loadedWeighment.loadingStaffMunshiyana?.toString() || "",
-          otherExpenses: panel.loadedWeighment.otherExpenses?.toString() || "",
-          vehicleFloorTarpaulin: panel.loadedWeighment.vehicleFloorTarpaulin?.toString() || "",
-          vehicleOuterTarpaulin: panel.loadedWeighment.vehicleOuterTarpaulin?.toString() || "",
+          loadingCharges: normalizeNumericInput(panel.loadedWeighment.loadingCharges),
+          loadingStaffMunshiyana: normalizeNumericInput(panel.loadedWeighment.loadingStaffMunshiyana),
+          otherExpenses: normalizeNumericInput(panel.loadedWeighment.otherExpenses),
+          vehicleFloorTarpaulin: normalizeNumericInput(panel.loadedWeighment.vehicleFloorTarpaulin),
+          vehicleOuterTarpaulin: normalizeNumericInput(panel.loadedWeighment.vehicleOuterTarpaulin),
         });
 
         if (panel.loadedWeighment.weighSlip) {
@@ -7983,24 +7991,25 @@ export default function EditLoadingInfoPanel() {
     return uploadedPaths;
   };
 
-  const handleUpdate = async () => {
+  const handleUpdate = async (saveMode = 'update') => {
+    const isDraftSave = saveMode === 'draft';
     if (isReadOnly) {
       alert("This record is in read-only mode and cannot be edited.");
       return;
     }
 
-    if (!header.branch) {
+    if (!isDraftSave && !header.branch) {
       alert("Please select a branch");
       return;
     }
 
-    if (!vehicleInfo.vehicleNo) {
+    if (!isDraftSave && !vehicleInfo.vehicleNo) {
       alert("Please enter vehicle number");
       return;
     }
 
     const totalVlPhotos = getTotalVlPhotosCount();
-    if (totalVlPhotos < 5) {
+    if (!isDraftSave && totalVlPhotos < 5) {
       alert(`Please upload at least 5 Vehicle Loading (VL) photos. Currently uploaded: ${totalVlPhotos}/5`);
       return;
     }
@@ -8091,6 +8100,7 @@ export default function EditLoadingInfoPanel() {
 
       const payload = {
         id: panelId,
+        ...(saveMode !== 'update' ? { saveMode } : {}),
         header: {
           ...header,
           vehicleNegotiationNo: vehicleNegotiationNo,
@@ -8160,11 +8170,14 @@ export default function EditLoadingInfoPanel() {
 
       const data = await res.json();
 
-      alert(`✅ Loading Info updated successfully!\nVehicle Arrival No: ${header.vehicleArrivalNo}`);
-
-      setTimeout(() => {
-        router.push('/admin/Loading-Info');
-      }, 2000);
+      if (isDraftSave) {
+        setIsDraft(true);
+        alert(`✅ Loading Info draft saved!\nVehicle Arrival No: ${header.vehicleArrivalNo}`);
+      } else {
+        setIsDraft(false);
+        alert(`✅ Loading Info submitted successfully!\nVehicle Arrival No: ${header.vehicleArrivalNo}`);
+        setTimeout(() => router.push('/admin/Loading-Info'), 2000);
+      }
 
     } catch (error) {
       console.error('Error updating loading info:', error);
@@ -8241,8 +8254,10 @@ export default function EditLoadingInfoPanel() {
 
           <div className="flex items-center gap-3">
             {!isReadOnly && (
+              <>
+              {isDraft && <button type="button" onClick={() => handleUpdate('draft')} disabled={saving || uploading} className="rounded-xl border border-amber-300 bg-amber-50 px-5 py-2 text-sm font-bold text-amber-800 hover:bg-amber-100 disabled:opacity-60">Save as Draft</button>}
               <button
-                onClick={handleUpdate}
+                onClick={() => handleUpdate(isDraft ? 'submit' : 'update')}
                 disabled={saving || uploading}
                 className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${saving || uploading
                   ? 'bg-gray-400 cursor-not-allowed'
@@ -8257,8 +8272,9 @@ export default function EditLoadingInfoPanel() {
                     </svg>
                     {uploading ? 'Uploading...' : 'Updating...'}
                   </span>
-                ) : 'Update Loading Info'}
+                ) : isDraft ? 'Submit for Approval' : 'Update Loading Info'}
               </button>
+              </>
             )}
           </div>
         </div>

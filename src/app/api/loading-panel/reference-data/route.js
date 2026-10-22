@@ -156,8 +156,9 @@ function searchFilter(search, fields) {
 }
 
 /**
- * Vehicle Negotiations the Loading Info create dropdown offers: ready for the next step and not yet
- * used by a Loading Info. The "yet to be created" count on the Loading Info list uses this same rule.
+ * Vehicle Negotiations the Loading Info create dropdown offers: ready for the next step and with no
+ * existing Loading Info, including drafts. Draft Loading Info records are reopened from their edit
+ * page and must not allow another entry for the same VNN to be created.
  */
 async function getAvailableVnnsForLoading(user) {
   const [vehicleNegotiations, loadingPanels] = await Promise.all([
@@ -190,10 +191,7 @@ async function getAvailableVnnsForLoading(user) {
         "workflow.placementCompletedAt": 1,
       },
     ).sort({ createdAt: -1 }).lean(),
-    LoadingPanel.find(
-      companyScopeFilter(user),
-      { vehicleNegotiationNo: 1 },
-    ).lean(),
+    LoadingPanel.find(companyScopeFilter(user), { vehicleNegotiationNo: 1 }).lean(),
   ]);
 
   const usedVnnNumbers = new Set(
@@ -202,7 +200,7 @@ async function getAvailableVnnsForLoading(user) {
       .filter((vnnNo) => vnnNo && vnnNo !== "N/A" && vnnNo !== "-"),
   );
 
-  const eligible = vehicleNegotiations.filter((vnn) => vnn.panelStatus !== 'Cancelled' && isVnnReadyForDownstream(vnn) && !usedVnnNumbers.has(vnn.vnnNo));
+  const eligible = vehicleNegotiations.filter((vnn) => !['Draft', 'Cancelled'].includes(vnn.panelStatus) && isVnnReadyForDownstream(vnn) && !usedVnnNumbers.has(vnn.vnnNo));
   const openRows = await Promise.all(eligible.map((vnn) => filterOpenOrderRows(user, vnn.orders || [])));
   return eligible.map((vnn, index) => ({ ...vnn, orders: openRows[index] })).filter((vnn) => vnn.orders.length);
 }
@@ -261,7 +259,7 @@ export const GET = withAuth(async (req, context, user) => {
       }
 
       const vnn = await VehicleNegotiation.findOne(
-        companyScopeFilter(user, { _id: vnnId }),
+        companyScopeFilter(user, { _id: vnnId, panelStatus: { $ne: 'Draft' } }),
         {
           selectedOrderPanels: 1,
           "orders.orderPanelId": 1,

@@ -15,8 +15,8 @@ export const GET = withAuth(async (req, context, user) => {
     await connectDb();
     const url = new URL(req.url);
     if (url.searchParams.get("lookup") === "loadingInfoOrders") {
-      const loadingInfos = await LoadingPanel.find(companyScopeFilter(user))
-        .select("orderRows.orderNo")
+      const loadingInfos = await LoadingPanel.find(companyScopeFilter(user, { isDraft: { $ne: true }, panelStatus: { $ne: 'Draft' } }))
+        .select("vehicleArrivalNo orderRows.orderNo")
         .lean();
       const orderNumbers = [...new Set(loadingInfos.flatMap((loadingInfo) =>
         (loadingInfo.orderRows || []).map((row) => row.orderNo?.trim()).filter(Boolean),
@@ -34,7 +34,7 @@ export const GET = withAuth(async (req, context, user) => {
     }
 
     const vehicleNegotiation = await VehicleNegotiation.findOne(
-      companyScopeFilter(user, { "orders.orderNo": orderNo }),
+      companyScopeFilter(user, { "orders.orderNo": orderNo, panelStatus: { $ne: 'Draft' } }),
     )
       .sort({ updatedAt: -1 })
       .lean();

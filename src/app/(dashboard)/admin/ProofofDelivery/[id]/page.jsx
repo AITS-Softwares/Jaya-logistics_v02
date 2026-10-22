@@ -1670,6 +1670,7 @@ export default function EditPOD() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [isDraft, setIsDraft] = useState(false);
   const [purchases, setPurchases] = useState([]);
   const [selectedPurchase, setSelectedPurchase] = useState(null);
   const [allConsignmentNotes, setAllConsignmentNotes] = useState([]);
@@ -2054,6 +2055,7 @@ export default function EditPOD() {
 
       if (data.success && data.data) {
         const pod = data.data;
+      setIsDraft(!!pod.isDraft || pod.podStatus === 'Draft');
 
         console.log('📋 Loaded POD Data:', pod);
 
@@ -2426,8 +2428,9 @@ export default function EditPOD() {
   };
 
   // ==================== UPDATED: Handle Update with Company Info ====================
-  const handleUpdate = async () => {
-    if (!header.purchaseNo) {
+  const handleUpdate = async (saveMode = 'update') => {
+    const isDraftSave = saveMode === 'draft';
+    if (!isDraftSave && !header.purchaseNo) {
       alert("Please select a Purchase No");
       return;
     }
@@ -2439,6 +2442,7 @@ export default function EditPOD() {
 
       const payload = {
         id: podId,
+        ...(saveMode !== 'update' ? { saveMode } : {}),
         // ✅ Company info at root level
         companyName: companyInfo.companyName,
         companyCode: companyInfo.companyCode,
@@ -2500,8 +2504,14 @@ export default function EditPOD() {
       const data = await res.json();
 
       if (data.success) {
-        alert(`✅ POD updated successfully!\nCompany: ${companyInfo.companyName || 'N/A'}`);
-        router.push('/admin/ProofofDelivery');
+        if (isDraftSave) {
+          setIsDraft(true);
+          alert(`✅ POD draft saved successfully!\nPOD No: ${header.podNo}`);
+        } else {
+          setIsDraft(false);
+          alert(`✅ POD updated successfully!\nCompany: ${companyInfo.companyName || 'N/A'}`);
+          router.push('/admin/ProofofDelivery');
+        }
       } else {
         alert(data.message || 'Failed to update POD');
       }
@@ -2560,13 +2570,19 @@ export default function EditPOD() {
           </div>
 
           <div className="flex items-center gap-3">
+            {isDraft && <button
+              type="button"
+              onClick={() => handleUpdate('draft')}
+              disabled={saving}
+              className="rounded-xl border border-amber-300 bg-amber-50 px-5 py-2 text-sm font-bold text-amber-800 hover:bg-amber-100 disabled:opacity-60"
+            >Save as Draft</button>}
             <button
-              onClick={handleUpdate}
+              onClick={() => handleUpdate(isDraft ? 'submit' : 'update')}
               disabled={saving}
               className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${saving ? 'bg-gray-400 cursor-not-allowed' : 'bg-yellow-600 hover:bg-yellow-700'
                 }`}
             >
-              {saving ? 'Updating...' : 'Update POD'}
+              {saving ? 'Updating...' : isDraft ? 'Submit for Approval' : 'Update POD'}
             </button>
           </div>
         </div>

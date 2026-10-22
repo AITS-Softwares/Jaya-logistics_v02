@@ -1114,14 +1114,13 @@ export default function PricingPanelList() {
     router.push(`/admin/pricing-panel/${panelId}`);
   };
 
-  // Part 2 approval is always reviewed in the canonical detail page; this
-  // prevents the legacy approval route from using a different permission rule.
+  // Part 2 approval is handled only on its dedicated, permission-gated page.
   const handleApprove = (panelId) => {
     if (!canApprovePart2) {
       alert('You do not have permission to approve Pricing Panel Part 2.');
       return;
     }
-    router.push(`/admin/pricing-panel/${panelId}`);
+    router.push(`/admin/pricing-panel/approve/${panelId}`);
   };
 
   const handleCreateNew = () => {

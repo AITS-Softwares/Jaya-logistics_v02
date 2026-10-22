@@ -946,6 +946,7 @@ export default function PurchasePanelList() {
 
       if (data.success) {
         setPurchases(prev => prev.filter(item => item._id !== purchaseId));
+        window.dispatchEvent(new Event("pending-to-create-refresh"));
         alert('✅ Purchase deleted successfully!');
       } else {
         alert(data.message || 'Failed to delete purchase');

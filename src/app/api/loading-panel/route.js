@@ -1624,6 +1624,7 @@ export async function POST(req) {
       const vnnQuery = selectedVnnId && mongoose.Types.ObjectId.isValid(selectedVnnId) ? { _id: selectedVnnId } : { vnnNo: selectedVnnNo };
       const approvedVnn = await VehicleNegotiation.findOne(companyScopeFilter(user, {
         ...vnnQuery,
+        panelStatus: { $ne: 'Draft' },
         'approval.part3Status': 'Approved',
         'approval.vehicleNo': { $exists: true, $ne: '' },
         'approval.mobile': { $exists: true, $ne: '' },
@@ -2102,7 +2103,7 @@ export async function PUT(req) {
 
   try {
     const body = await req.json();
-    const { id, ...updateData } = body;
+    const { id, saveMode, ...updateData } = body;
 
     if (!id || !isValidObjectId(id)) {
       return NextResponse.json({
@@ -2121,7 +2122,26 @@ export async function PUT(req) {
       }, { status: 404 });
     }
 
-    if (existingPanel.isDraft) {
+    const wasDraft = !!existingPanel.isDraft || existingPanel.panelStatus === 'Draft';
+    if (saveMode && !['draft', 'submit'].includes(saveMode)) {
+      return NextResponse.json({ success: false, message: "Invalid saveMode" }, { status: 400 });
+    }
+    if (saveMode && !['draft', 'submit'].includes(saveMode)) {
+      return NextResponse.json({ success: false, message: "Invalid saveMode" }, { status: 400 });
+    }
+    if (saveMode === 'submit' && !hasPermission(user, 'create')) {
+      return NextResponse.json({ success: false, message: "Permission denied: create action required to submit a Loading Info draft." }, { status: 403 });
+    }
+    if ((saveMode === 'draft' || saveMode === 'submit') && !wasDraft) {
+      return NextResponse.json({ success: false, message: "Only a draft can be saved as draft or submitted" }, { status: 400 });
+    }
+    if (!saveMode && wasDraft) {
+      return NextResponse.json({ success: false, message: "Submit this draft for approval first" }, { status: 400 });
+    }
+    if (saveMode === 'draft') {
+      updateData.isDraft = true;
+      updateData.panelStatus = 'Draft';
+    } else if (saveMode === 'submit') {
       updateData.isDraft = false;
       updateData.panelStatus = 'Submitted';
     }
@@ -2335,13 +2355,15 @@ export async function PUT(req) {
     delete updateData.__v;
     delete updateData.createdAt;
     delete updateData.updatedAt;
+    delete updateData.companyId;
+    delete updateData.createdBy;
 
     updateData.updatedAt = new Date();
 
-    const updatedPanel = await LoadingPanel.findByIdAndUpdate(
-      id,
+    const updatedPanel = await LoadingPanel.findOneAndUpdate(
+      companyScopeFilter(user, { _id: id }),
       { $set: updateData },
-      { new: true, runValidators: true }
+      { new: true, runValidators: saveMode !== 'draft' }
     );
 
     return NextResponse.json({

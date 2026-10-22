@@ -3643,7 +3643,9 @@ export async function GET(req) {
       // approvalStatus field. Filtering here also keeps the result correct for
       // older records that pre-date the three-part workflow.
       if (approvalStatus) {
-        vehicleNegotiations = vehicleNegotiations.filter((vn) => getFinalVnnStatus(vn) === approvalStatus);
+        vehicleNegotiations = vehicleNegotiations.filter((vn) => approvalStatus === 'Draft'
+          ? vn.panelStatus === 'Draft'
+          : vn.panelStatus !== 'Draft' && getFinalVnnStatus(vn) === approvalStatus);
       }
 
       const supplierCodes = [...new Set(vehicleNegotiations.map((vn) => vn.approval?.vendorCode).filter(Boolean))];
@@ -3659,7 +3661,7 @@ export async function GET(req) {
 
       vehicleNegotiations.forEach(vn => {
         const formattedDate = vn.date ? formatDateDDMMYYYY(vn.date) : '';
-        const displayApproval = getFinalVnnStatus(vn);
+        const displayApproval = vn.panelStatus === 'Draft' ? 'Draft' : getFinalVnnStatus(vn);
 
         if (vn.orders && vn.orders.length > 0) {
           vn.orders.forEach(order => {
@@ -3744,7 +3746,7 @@ export async function GET(req) {
 
     vehicleNegotiations = vehicleNegotiations.map(withVnnDisplayData);
     if (eligibleFor === 'pricing' || eligibleFor === 'loading') {
-      vehicleNegotiations = vehicleNegotiations.filter((vn) => vn.isReadyForDownstream);
+      vehicleNegotiations = vehicleNegotiations.filter((vn) => vn.panelStatus !== 'Draft' && vn.panelStatus !== 'Cancelled' && vn.isReadyForDownstream);
     }
 
     return NextResponse.json({

@@ -87,6 +87,14 @@ const PURCHASE_LOOKUP_MODULES = {
   pod: "Proof Of Delivery",
 };
 
+function isPurchaseDraft(purchase) {
+  return !!purchase?.isDraft || purchase?.panelStatus === 'Draft';
+}
+
+function isPurchaseApproved(purchase) {
+  return purchase?.approval?.status === 'Approved';
+}
+
 async function validateUserForPurchaseLookup(req, forKey) {
   const moduleName = PURCHASE_LOOKUP_MODULES[forKey];
   if (!moduleName) return validateUser(req, "view");
@@ -316,8 +324,11 @@ export async function GET(req) {
         }, { status: 404 });
       }
 
-      if ((forKey === 'advance-payment' || forKey === 'pod') && purchase.isDraft) {
+      if ((forKey === 'advance-payment' || forKey === 'pod') && isPurchaseDraft(purchase)) {
         return NextResponse.json({ success: false, message: "Draft Purchase Panels are not available for this workflow" }, { status: 404 });
+      }
+      if (forKey === 'advance-payment' && !isPurchaseApproved(purchase)) {
+        return NextResponse.json({ success: false, message: "Only Approved Purchase Panels are available for Advance Payment." }, { status: 409 });
       }
 
       const enhancedPurchase = await enhancePurchase(purchase);
@@ -340,8 +351,11 @@ export async function GET(req) {
         }, { status: 404 });
       }
 
-      if ((forKey === 'advance-payment' || forKey === 'pod') && purchase.isDraft) {
+      if ((forKey === 'advance-payment' || forKey === 'pod') && isPurchaseDraft(purchase)) {
         return NextResponse.json({ success: false, message: "Draft Purchase Panels are not available for this workflow" }, { status: 404 });
+      }
+      if (forKey === 'advance-payment' && !isPurchaseApproved(purchase)) {
+        return NextResponse.json({ success: false, message: "Only Approved Purchase Panels are available for Advance Payment." }, { status: 409 });
       }
 
       const enhancedPurchase = await enhancePurchase(purchase);
@@ -370,7 +384,9 @@ export async function GET(req) {
       }
 
       if (statusFilter) {
-        if (statusFilter === 'Draft') query.isDraft = true;
+        if (statusFilter === 'Draft') {
+          query.$and = [...(query.$and || []), { $or: [{ isDraft: true }, { panelStatus: 'Draft' }] }];
+        }
         else query['approval.status'] = statusFilter;
       }
 
@@ -424,8 +440,8 @@ export async function GET(req) {
           amount: purchase.purchaseAmountFromVNN || purchase.purchaseDetails?.amount || 0,
           balance: purchase.balance || 0,
           memoStatus: purchase.memoFile?.filePath || purchase.memoFile?.fullPath || purchase.memoFile?.filename ? 'Uploaded' : 'Pending',
-          status: purchase.isDraft ? 'Draft' : (purchase.approval?.status || 'Pending'),
-          isDraft: !!purchase.isDraft,
+          status: isPurchaseDraft(purchase) ? 'Draft' : (purchase.approval?.status || 'Pending'),
+          isDraft: isPurchaseDraft(purchase),
           orderRows: forKey === 'advance-payment'
             ? await filterOpenOrderRows(user, purchase.orderRows || [])
             : (purchase.orderRows || []),
@@ -434,17 +450,20 @@ export async function GET(req) {
         };
       }));
 
-      // Advance Payment page only: hide purchases that already have an advance payment
+      // Advance Payment page only: hide purchases that already have an advance payment,
+      // including drafts, so a draft does not keep the purchase in the create picker/count.
       // Hide purchases that already have a payment/POD, for the page that is asking
       let tableResult = purchasesWithLR;
       const purchaseNos = purchasesWithLR.map((p) => p.purchaseNo);
 
       if (forKey === "advance-payment") {
         const existing = await AdvancePayment.find(
-          companyScopeFilter(user, { purchaseNo: { $in: purchaseNos }, isDraft: { $ne: true } })
+          companyScopeFilter(user, { purchaseNo: { $in: purchaseNos } })
         ).select("purchaseNo").lean();
         const used = new Set(existing.map((a) => a.purchaseNo));
-        tableResult = purchasesWithLR.filter((p) => !p.isDraft && !used.has(p.purchaseNo));
+        tableResult = purchasesWithLR.filter((p) =>
+          !p.isDraft && p.status === 'Approved' && !used.has(p.purchaseNo)
+        );
       } else if (forKey === "pod") {
         // POD requires an approved purchase with its memo uploaded.
         const eligibleSet = new Set(purchasesWithLR
@@ -458,7 +477,6 @@ export async function GET(req) {
           companyScopeFilter(user, {
             purchaseNo: { $in: purchaseNos },
             podStatus: { $ne: "Rejected" },
-            isDraft: { $ne: true },
           })
         ).select("purchaseNo").lean();
         const used = new Set(existing.map((p) => p.purchaseNo));
@@ -547,9 +565,8 @@ export async function POST(req) {
 
     console.log("📝 Creating new purchase");
 
-    // A Loading Info can create one purchase only, and only before it has
-    // progressed to a consignment note. A hard-deleted purchase is absent from
-    // this check, which automatically releases its Loading Info for reuse.
+    // A Loading Info can create one Purchase. A hard-deleted Purchase is
+    // absent from this check, which automatically releases its Loading Info.
     if (!body.loadingInfoNo) {
       return NextResponse.json({ success: false, message: "Loading Info is required." }, { status: 400 });
     }
@@ -564,28 +581,13 @@ export async function POST(req) {
     const heldLoadingRow = await validateOpenOrderRows(user, eligibleLoadingInfo.orderRows || []);
     if (heldLoadingRow) return NextResponse.json({ success: false, message: heldLoadingRow }, { status: 409 });
 
-    const [existingPurchase, existingConsignment] = await Promise.all([
-      PurchasePanel.findOne(companyScopeFilter(user, { loadingInfoNo: body.loadingInfoNo })).lean(),
-      ConsignmentNote.findOne(companyScopeFilter(user, {
-        $or: [
-          { loadingInfoNo: body.loadingInfoNo },
-          ...(eligibleLoadingInfo.selectedVehicleNegotiation?.id
-            ? [{
-              vehicleNegotiationRef: eligibleLoadingInfo.selectedVehicleNegotiation.id,
-              "header.status": { $ne: "Rejected" },
-            }]
-            : []),
-        ],
-      })).lean(),
-    ]);
+    const existingPurchase = await PurchasePanel.findOne(
+      companyScopeFilter(user, { loadingInfoNo: body.loadingInfoNo }),
+    ).lean();
 
     if (existingPurchase) {
       return NextResponse.json({ success: false, message: `Loading Info ${body.loadingInfoNo} is already used in purchase ${existingPurchase.purchaseNo}.` }, { status: 409 });
     }
-    if (existingConsignment) {
-      return NextResponse.json({ success: false, message: `Loading Info ${body.loadingInfoNo} is already used in consignment note ${existingConsignment.lrNo}; a purchase cannot be created after consignment.` }, { status: 409 });
-    }
-
     let purchaseNo = await getNextPurchaseNumber(user.companyId, user.activeOperatingCompanyId, user.activeOperatingCompanyCode);
 
     const subCompanyId = user.activeOperatingCompanyId;
@@ -857,29 +859,17 @@ export async function PUT(req) {
       }, { status });
     }
     const canEdit = hasPermission(user, 'edit');
-    const canApprove = hasPermission(user, 'approve');
-    if (!canEdit && !canApprove) {
+    const canCreate = hasPermission(user, 'create');
+    if (!canEdit) {
       return NextResponse.json({
         success: false,
-        message: "Permission denied: edit or approve action required for Purchase Panel.",
+        message: "Permission denied: edit action required for Purchase Panel.",
         code: 'FORBIDDEN'
       }, { status: 403 });
     }
 
     const body = await req.json();
     const { id } = body;
-
-    // Approve-only users may change nothing except the approval block.
-    if (!canEdit) {
-      const extra = Object.keys(body).filter((k) => k !== 'id' && k !== 'approval');
-      if (extra.length || !body.approval) {
-        return NextResponse.json({
-          success: false,
-          message: "Permission denied: edit action not allowed for Purchase Panel.",
-          code: 'FORBIDDEN'
-        }, { status: 403 });
-      }
-    }
 
     if (!id) {
       return NextResponse.json({
@@ -904,33 +894,36 @@ export async function PUT(req) {
       }, { status: 404 });
     }
 
-    if (purchase.isDraft && canEdit) {
+    const saveMode = body.saveMode;
+    const wasDraft = isPurchaseDraft(purchase);
+    if (saveMode && !['draft', 'submit'].includes(saveMode)) {
+      return NextResponse.json({ success: false, message: "Invalid saveMode" }, { status: 400 });
+    }
+    if (saveMode === 'submit' && !canCreate) {
+      return NextResponse.json({ success: false, message: "Permission denied: create action required to submit a Purchase Panel draft.", code: 'FORBIDDEN' }, { status: 403 });
+    }
+    if ((saveMode === 'draft' || saveMode === 'submit') && !wasDraft) {
+      return NextResponse.json({ success: false, message: "Only a draft can be saved as draft or submitted" }, { status: 400 });
+    }
+    if (!saveMode && wasDraft) {
+      return NextResponse.json({ success: false, message: "Submit this draft for approval first" }, { status: 400 });
+    }
+
+    if (saveMode === 'submit' && canEdit) {
       purchase.isDraft = false;
       purchase.panelStatus = 'Submitted';
       purchase.approval = { ...purchase.approval?.toObject?.(), status: 'Pending' };
     }
 
-    // Only users with approve permission may change the approval status.
-    if (body.approval && !canApprove) {
-      const current = purchase.approval?.status || 'Pending';
-      const next = body.approval.status || current;
-      if (next !== current) {
-        return NextResponse.json({
-          success: false,
-          message: "Permission denied: approve action not allowed for Purchase Panel.",
-          code: 'FORBIDDEN'
-        }, { status: 403 });
-      }
-      delete body.approval; // ignore remarks changes too
-    }
+    // Approval decisions are handled through the approval workflow, never the
+    // regular edit form. A submitted draft must enter that workflow as Pending.
 
-    // Once approved/completed the purchase is locked. Only the approval
-    // status/remarks and the MEMO file may still change.
+    // Once approved/completed the purchase is locked. Only the MEMO file may still change.
     const purchaseLocked =
       ['Approved', 'Completed'].includes(purchase.panelStatus) ||
       purchase.approval?.status === 'Approved';
     if (purchaseLocked) {
-      const blockedKeys = Object.keys(body).filter((k) => !['id', 'approval', 'memoFile'].includes(k));
+      const blockedKeys = Object.keys(body).filter((k) => !['id', 'memoFile'].includes(k));
       if (blockedKeys.length) {
         return NextResponse.json({
           success: false,
@@ -1111,14 +1104,6 @@ export async function PUT(req) {
       };
     }
 
-    // Update approval
-    if (body.approval) {
-      purchase.approval = {
-        ...purchase.approval,
-        ...body.approval
-      };
-    }
-
     // Keep Loading Info/LR timestamps and detention result server-controlled.
     if (body.arrivalDetails) {
       const source = purchase.loadingInfoNo
@@ -1139,7 +1124,11 @@ export async function PUT(req) {
       purchase.memoFile = body.memoFile;
     }
 
-    await purchase.save();
+    if (saveMode === 'draft') {
+      purchase.isDraft = true;
+      purchase.panelStatus = 'Draft';
+    }
+    await purchase.save({ validateBeforeSave: saveMode !== 'draft' });
 
     return NextResponse.json({
       success: true,

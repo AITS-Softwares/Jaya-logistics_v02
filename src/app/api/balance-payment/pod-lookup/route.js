@@ -178,7 +178,9 @@ export async function GET(req) {
         const pods = await POD.find(companyScopeFilter(user, APPROVED_POD_FILTER))
             .select("podNo purchaseNo companyName subCompanyName vendorFinancial products podStatus createdAt purchaseOrders.orderNo")
             .sort({ createdAt: -1 }).limit(5000).lean();
-        const existingPayments = await BalancePayment.find(companyScopeFilter(user, { isDraft: { $ne: true } }))
+        // A draft Balance Payment already reserves its POD. The same availability
+        // set feeds both the create dropdown and the pending-to-create count.
+        const existingPayments = await BalancePayment.find(companyScopeFilter(user))
             .select("podNo purchaseNo orderRows.orderNo")
             .lean();
         const paidPodNos = new Set(existingPayments.map((payment) => String(payment.podNo || "").trim()).filter(Boolean));

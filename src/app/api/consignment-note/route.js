@@ -1638,26 +1638,34 @@ export async function GET(req) {
     if (url.searchParams.get("lookup") === "pendingCount") {
       const normalize = (value) => String(value || "").trim().toLowerCase();
       const [orders, notes, loadingInfos] = await Promise.all([
-        OrderPanel.find(companyScopeFilter(user)).select("orderPanelNo plantRows").lean(),
-        ConsignmentNote.find(companyScopeFilter(user)).select("orderRowId header.orderNo header.to header.status").lean(),
-        LoadingPanel.find(companyScopeFilter(user)).select("orderRows.orderNo").lean(),
+        OrderPanel.find(companyScopeFilter(user)).select("orderPanelNo plantRows panelStatus isDraft").lean(),
+        ConsignmentNote.find(companyScopeFilter(user)).select("orderRowId isDraft header.orderNo header.to header.status").lean(),
+        LoadingPanel.find(companyScopeFilter(user, { isDraft: { $ne: true }, panelStatus: { $ne: 'Draft' } }))
+          .select("orderRows.orderNo")
+          .lean(),
       ]);
       const loadingInfoOrderNos = new Set(loadingInfos.flatMap((loadingInfo) =>
         (loadingInfo.orderRows || []).map((row) => normalize(row.orderNo)).filter(Boolean),
       ));
-      const approvedRows = new Set(notes.filter((note) => note.header?.status === "Approved" && note.orderRowId).map((note) => String(note.orderRowId)));
-      const legacyKeys = new Set(notes.filter((note) => note.header?.status === "Approved" && !note.orderRowId).map((note) => `${normalize(note.header?.orderNo)}|${normalize(note.header?.to)}`));
-      const sourceRows = orders.flatMap((order) => (
-        order.plantRows?.length
-          ? order.plantRows.map((row) => ({ originalRowId: row._id, orderNo: order.orderPanelNo, to: row.toName || row.to || "" }))
-          : [{ orderNo: order.orderPanelNo, to: "N/A" }]
-      ));
+      // Count only order rows exposed by the create picker: non-draft order
+      // panels with open rows, linked to a submitted Loading Info, and without
+      // an existing LR document. A draft LR already exists and is reopened
+      // from the list, so it must not be counted as waiting to be created.
+      const existingRows = new Set(notes.filter((note) => note.orderRowId).map((note) => String(note.orderRowId)));
+      const legacyKeys = new Set(notes.filter((note) => !note.orderRowId).map((note) => `${normalize(note.header?.orderNo)}|${normalize(note.header?.to)}`));
+      const sourceRows = orders.flatMap((order) => {
+        if (order.isDraft || (order.panelStatus || 'Draft') === 'Draft') return [];
+        const openRows = (order.plantRows || []).filter((row) => (row.status || 'Open') === 'Open' && !row.statusRequest?.action);
+        return order.plantRows?.length
+          ? openRows.map((row) => ({ originalRowId: row._id, orderNo: order.orderPanelNo, to: row.toName || row.to || "" }))
+          : [{ orderNo: order.orderPanelNo, to: "N/A" }];
+      });
       const seen = new Set();
       let count = 0;
       sourceRows.forEach((row) => {
         const no = normalize(row.orderNo);
         if (!no || !loadingInfoOrderNos.has(no)) return;
-        const covered = (row.originalRowId && approvedRows.has(String(row.originalRowId)))
+        const covered = (row.originalRowId && existingRows.has(String(row.originalRowId)))
           || legacyKeys.has(`${no}|${normalize(row.to)}`);
         if (covered || seen.has(no)) return;
         seen.add(no);
@@ -1758,7 +1766,15 @@ export async function GET(req) {
         }
       }
 
-      if (forKey === "pod") query.isDraft = { $ne: true };
+      if (forKey === "pod") {
+        // POD may only select submitted LRs. Cover legacy records that have a
+        // Draft header status even if their isDraft flag was never set.
+        query.$and = [
+          ...(query.$and || []),
+          { isDraft: { $ne: true } },
+          { "header.status": { $ne: "Draft" } },
+        ];
+      }
 
       const notes = await ConsignmentNote.find(companyScopeFilter(user, query))
         .sort({ createdAt: -1 })
@@ -1953,6 +1969,9 @@ export async function POST(req) {
           success: false,
           message: `Loading Info ${body.loadingInfoNo} was not found.`
         }, { status: 404 });
+      }
+      if (!isDraftSave && (linkedLoadingInfo.isDraft || linkedLoadingInfo.panelStatus === 'Draft')) {
+        return NextResponse.json({ success: false, message: `Loading Info ${body.loadingInfoNo} is still a draft. Submit it before creating a Consignment Note.` }, { status: 409 });
       }
       if (orderRowId) {
         const wanted = String(body.header?.orderNo || '').trim().toLowerCase();
@@ -2223,8 +2242,22 @@ export async function PUT(req) {
       }, { status: 404 });
     }
 
-    const wasDraft = !!note.isDraft;
-    if (wasDraft && body.orderRowId) {
+    const saveMode = body.saveMode;
+    const wasDraft = !!note.isDraft || note.header?.status === 'Draft';
+    if (saveMode && !['draft', 'submit'].includes(saveMode)) {
+      return NextResponse.json({ success: false, message: "Invalid saveMode" }, { status: 400 });
+    }
+    if (saveMode === 'submit' && !hasPermission(user, 'create')) {
+      return NextResponse.json({ success: false, message: "Permission denied: create action required to submit a Consignment Note draft." }, { status: 403 });
+    }
+    if ((saveMode === 'draft' || saveMode === 'submit') && !wasDraft) {
+      return NextResponse.json({ success: false, message: "Only a draft can be saved as draft or submitted" }, { status: 400 });
+    }
+    if (!saveMode && wasDraft) {
+      return NextResponse.json({ success: false, message: "Submit this draft for approval first" }, { status: 400 });
+    }
+    const isDraftSave = saveMode === 'draft';
+    if (saveMode === 'submit' && body.orderRowId) {
       const rowTaken = await ConsignmentNote.findOne(companyScopeFilter(user, {
         orderRowId: String(body.orderRowId), isDraft: { $ne: true }, _id: { $ne: id },
       })).select('lrNo').lean();
@@ -2234,7 +2267,7 @@ export async function PUT(req) {
     // Status transitions are approval actions. An editor may save LR details,
     // but may not approve, reject, or complete an LR through the edit endpoint.
     const currentStatus = note.header?.status || 'Pending';
-    if (body.header?.status !== undefined && body.header.status !== currentStatus) {
+    if (!saveMode && body.header?.status !== undefined && body.header.status !== currentStatus) {
       return NextResponse.json({
         success: false,
         message: 'Status can only be changed through the approval action.'
@@ -2242,7 +2275,7 @@ export async function PUT(req) {
     }
 
     // Check if loadingInfoNo is being changed and if new one is already used
-    if (body.loadingInfoNo && body.loadingInfoNo !== note.loadingInfoNo) {
+    if (saveMode !== 'draft' && body.loadingInfoNo && body.loadingInfoNo !== note.loadingInfoNo) {
       const existing = await ConsignmentNote.findOne(companyScopeFilter(user, {
         loadingInfoNo: body.loadingInfoNo,
         _id: { $ne: id },
@@ -2374,12 +2407,15 @@ export async function PUT(req) {
     }
 
     note.updatedAt = Date.now();
-    if (wasDraft) {
+    if (isDraftSave) {
+      note.isDraft = true;
+      note.header.status = 'Draft';
+    } else if (wasDraft) {
       note.isDraft = false;
       note.header.status = 'Pending';
     }
-    await note.save();
-    if (wasDraft && note.loadingInfoNo) {
+    await note.save({ validateBeforeSave: !isDraftSave });
+    if (wasDraft && !isDraftSave && note.loadingInfoNo) {
       const loadingInfo = await LoadingPanel.findOne(companyScopeFilter(user, { vehicleArrivalNo: note.loadingInfoNo }));
       if (loadingInfo && !loadingInfo.consignmentNote) {
         loadingInfo.consignmentNote = note.lrNo;

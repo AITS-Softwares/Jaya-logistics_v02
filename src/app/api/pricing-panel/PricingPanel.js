@@ -642,6 +642,7 @@ const pricingPanelSchema = new mongoose.Schema({
     enum: ['Draft', 'Submitted', 'Approved', 'Completed', 'Cancelled'],
     default: 'Draft'
   },
+  isDraft: { type: Boolean, default: false },
   status: {
     type: String,
     enum: ['Active', 'Inactive'],

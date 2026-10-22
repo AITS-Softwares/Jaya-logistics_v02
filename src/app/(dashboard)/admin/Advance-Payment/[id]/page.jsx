@@ -1742,7 +1742,7 @@ export default function EditAdvancePayment() {
 
       setPaymentNo(payment.paymentNo || "");
       setQueueGenerated(payment.queueGenerated || false);
-      setIsDraft(!!payment.isDraft);
+      setIsDraft(!!payment.isDraft || payment.paymentDetails?.paymentStatus === 'Draft');
 
       // ✅ Set Sub-Company from payment
       const subCompanyId = payment.subCompanyId || payment.header?.subCompanyId || '';
@@ -2116,13 +2116,14 @@ export default function EditAdvancePayment() {
     }
   };
 
-  const handleUpdate = async () => {
-    if (!header.branch) {
+  const handleUpdate = async (saveMode = 'update') => {
+    const isDraftSave = saveMode === 'draft';
+    if (!isDraftSave && !header.branch) {
       alert("Please select a branch");
       return;
     }
 
-    if (!vendorDetails.vendorName) {
+    if (!isDraftSave && !vendorDetails.vendorName) {
       alert("Please select a vendor");
       return;
     }
@@ -2139,6 +2140,7 @@ export default function EditAdvancePayment() {
 
       const payload = {
         id: paymentId,
+        ...(saveMode !== 'update' ? { saveMode } : {}),
         header: {
           ...header,
           subCompanyId: header.subCompanyId || '',
@@ -2176,6 +2178,7 @@ export default function EditAdvancePayment() {
         },
         paymentDetails: {
           ...paymentDetails,
+          paymentStatus: isDraft ? 'Pending' : paymentDetails.paymentStatus,
           finalAmount: num(paymentDetails.finalAmount),
         },
         purchaseAmountFromVNN,
@@ -2208,9 +2211,14 @@ export default function EditAdvancePayment() {
       const data = await res.json();
 
       const subCompanyMsg = header.subCompanyName ? `\n🏢 Sub-Company: ${header.subCompanyName}` : '';
-      alert(`✅ Advance Payment updated successfully!\nPayment No: ${paymentNo}${subCompanyMsg}`);
-
-      router.push('/admin/Advance-Payment');
+      if (isDraftSave) {
+        setIsDraft(true);
+        alert(`✅ Advance Payment draft saved!\nPayment No: ${paymentNo}${subCompanyMsg}`);
+      } else {
+        setIsDraft(false);
+        alert(`✅ Advance Payment updated successfully!\nPayment No: ${paymentNo}${subCompanyMsg}`);
+        router.push('/admin/Advance-Payment');
+      }
 
     } catch (error) {
       console.error('Error updating advance payment:', error);
@@ -2281,9 +2289,15 @@ export default function EditAdvancePayment() {
           </div>
 
           <div className="flex items-center gap-3">
+            {isDraft && !queueGenerated && <button
+              type="button"
+              onClick={() => handleUpdate('draft')}
+              disabled={saving}
+              className="rounded-xl border border-amber-300 bg-amber-50 px-5 py-2 text-sm font-bold text-amber-800 hover:bg-amber-100 disabled:opacity-60"
+            >Save as Draft</button>}
             {!queueGenerated && (
               <button
-                onClick={handleUpdate}
+                onClick={() => handleUpdate(isDraft ? 'submit' : 'update')}
                 disabled={saving}
                 className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${saving
                   ? 'bg-gray-400 cursor-not-allowed'
@@ -2298,7 +2312,7 @@ export default function EditAdvancePayment() {
                     </svg>
                     Updating...
                   </span>
-                ) : 'Update Payment'}
+                ) : isDraft ? 'Submit for Approval' : 'Update Payment'}
               </button>
             )}
           </div>

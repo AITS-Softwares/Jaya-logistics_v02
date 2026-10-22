@@ -296,6 +296,7 @@ export default function VehicleNegotiationList() {
                 className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200"
               >
                 <option value="">All Approval Status</option>
+                <option value="Draft">Draft</option>
                 <option value="Approved">Approved</option>
                 <option value="Pending">Pending</option>
                 <option value="Reject">Reject</option>
