@@ -21,6 +21,7 @@ const PAYMENT_TERMS = [
   "Rs.10,000/- Balance Only",
   "Rs. 5000/- Balance Only",
   "Full Payment after Delivery",
+  "Custom / Manual",
 ];
 const APPROVALS = ["Approved", "Reject", "Pending"];
 
@@ -2077,6 +2078,7 @@ export default function VehicleNegotiationPanel() {
     mobile: "",
     purchaseType: "",
     paymentTerms: "",
+    advance: "",
     approvalStatus: "",
     remarks: ""
   });
@@ -2285,6 +2287,7 @@ export default function VehicleNegotiationPanel() {
           mobile: approval.mobile,
           purchaseType: approval.purchaseType,
           paymentTerms: approval.paymentTerms,
+          advance: num(approval.advance),
           approvalStatus: approval.approvalStatus,
           remarks: approval.remarks
         },
@@ -2587,6 +2590,9 @@ export default function VehicleNegotiationPanel() {
                         placeholder="To"
                       />
                     </td>
+                    <td className="border border-yellow-300 px-2 py-2 text-slate-700">
+                      <span>{row.locationRemark || "-"}</span>
+                    </td>
                     <td className="border border-yellow-300 px-2 py-2">
                       <input
                         value={row.talukaName || row.taluka || ""}
@@ -2761,7 +2767,7 @@ export default function VehicleNegotiationPanel() {
                   </span>
                 ) : 'Save Draft'}
               </button>
-              <button onClick={() => handleSaveAll(true)} disabled={saving} className="rounded-xl bg-indigo-600 px-5 py-2 text-sm font-bold text-white hover:bg-indigo-700 disabled:bg-slate-400">Submit & Lock Part 1</button>
+              <button onClick={() => handleSaveAll(true)} disabled={saving} className="rounded-xl bg-indigo-600 px-5 py-2 text-sm font-bold text-white hover:bg-indigo-700 disabled:bg-slate-400">Submit for Approval</button>
             </div>
           </div>
         </div>
@@ -2940,12 +2946,12 @@ export default function VehicleNegotiationPanel() {
                   value={selectedSupplier ? `${selectedSupplier.supplierName} · PAN: ${selectedSupplier.pan || 'Not provided'}` : approval.vendorName}
                   onSelect={handleSupplierSelect}
                   placeholder="Search supplier..."
-                  readOnly={true}
+                  readOnly={false}
                   suppliers={supplierSearch.suppliers}
                   loading={supplierSearch.loading}
                 />
               </div>
-              <Select col="col-span-12 md:col-span-4" label="Supplier (Status)" value={approval.vendorStatus} onChange={(v) => setApproval((p) => ({ ...p, vendorStatus: v }))} options={VENDOR_STATUS} readOnly={true} />
+              <Select col="col-span-12 md:col-span-4" label="Supplier (Status)" value={approval.vendorStatus} onChange={(v) => setApproval((p) => ({ ...p, vendorStatus: v }))} options={VENDOR_STATUS} readOnly={false} />
               <Select
                 col="col-span-12 md:col-span-4"
                 label="Rate - Type"
@@ -2959,7 +2965,7 @@ export default function VehicleNegotiationPanel() {
                   }
                 }}
                 options={RATE_TYPES}
-                readOnly={true}
+                readOnly={false}
               />
             </div>
 
@@ -2969,7 +2975,7 @@ export default function VehicleNegotiationPanel() {
                 label="Final - Per MT (A)"
                 value={approval.finalPerMT}
                 onChange={(v) => setApproval((p) => ({ ...p, finalPerMT: v }))}
-                readOnly={true}
+                readOnly={false}
               />
               <div className="col-span-12 md:col-span-4 mt-2">
                 <div className="flex flex-col">
@@ -2991,7 +2997,7 @@ export default function VehicleNegotiationPanel() {
                 label="Final - Fix"
                 value={approval.finalFix}
                 onChange={(v) => setApproval((p) => ({ ...p, finalFix: v }))}
-                readOnly={true}
+                readOnly={false}
               />
               <Select
                 col="col-span-12 md:col-span-4"
@@ -3035,9 +3041,19 @@ export default function VehicleNegotiationPanel() {
                 label="Payment - Terms"
                 value={approval.paymentTerms}
                 onChange={(v) => setApproval((p) => ({ ...p, paymentTerms: v }))}
-                options={paymentTerms.length > 0 ? paymentTerms : PAYMENT_TERMS}
-                readOnly={true}
+                options={[...new Set([...(paymentTerms.length > 0 ? paymentTerms : PAYMENT_TERMS), "Custom / Manual"])]}
+                readOnly={false}
               />
+              {approval.paymentTerms === "Custom / Manual" && (
+                <Input
+                  col="col-span-12 md:col-span-4"
+                  label="Manual Advance (₹)"
+                  value={approval.advance}
+                  onChange={(v) => setApproval((p) => ({ ...p, advance: v }))}
+                  type="number"
+                  readOnly={false}
+                />
+              )}
             </div>
           </Card>
 

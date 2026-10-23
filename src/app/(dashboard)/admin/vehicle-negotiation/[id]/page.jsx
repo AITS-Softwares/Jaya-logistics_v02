@@ -7276,6 +7276,7 @@ export default function EditVehicleNegotiation() {
     mobile: "",
     purchaseType: "",
     paymentTerms: "",
+    advance: "",
     part1Status: "Pending",
     part1Remarks: "",
     part3Status: "Pending",
@@ -7287,7 +7288,7 @@ export default function EditVehicleNegotiation() {
   const isPart1Locked = Boolean(workflow.part1Locked);
   const isPart3Finalized = approval.part3Status === 'Approved';
   const canEditVnn = canEdit('Vehicle Negotiation');
-  const canEditPart3 = canEditVnn && isPart1Locked && !isPart3Finalized;
+  const canEditPart3 = canEditVnn && !isPart3Finalized;
   const canEditPlacement = canEdit('Vehicle Negotiation Placement') && isPart1Locked && isPart3Finalized;
   const affectedOrderStatuses = orders.reduce((grouped, order) => {
     const status = String(order.sourceOrderStatus || '').trim();
@@ -7513,6 +7514,7 @@ export default function EditVehicleNegotiation() {
           mobile: vn.approval.mobile || "",
           purchaseType: vn.approval.purchaseType || "",
           paymentTerms: vn.approval.paymentTerms || "",
+          advance: vn.approval.advance?.toString() || "",
           part1Status: vn.approval.part1Status || "Pending",
           part1Remarks: vn.approval.part1Remarks || "",
           part3Status: vn.approval.part3Status || "Pending",
@@ -7929,7 +7931,7 @@ export default function EditVehicleNegotiation() {
         alert('Part 1 amendment opened. All approvals have been reset and must be completed again.');
       } else {
         setWorkflow(data.data.workflow);
-        alert('Part 1 is locked. You can now complete Commercial Part 3; Rate Target is optional.');
+        alert('VNN submitted for approval. Part 1 is locked; Commercial Part 3 can be completed independently.');
       }
     } catch (error) {
       setSaveError(error.message);
@@ -7945,7 +7947,7 @@ export default function EditVehicleNegotiation() {
       return false;
     }
     if (isPart1Locked && !canEditPart3 && !canEditPlacement) {
-      alert('Commercial Part 3 opens after Part 1 is locked. Vehicle placement opens after Part 3 approval with Vehicle Negotiation Placement edit permission.');
+      alert('Vehicle placement opens after Part 3 approval with Vehicle Negotiation Placement edit permission.');
       return false;
     }
     if (!header.branch) {
@@ -8062,6 +8064,7 @@ export default function EditVehicleNegotiation() {
           mobile: approval.mobile,
           purchaseType: approval.purchaseType,
           paymentTerms: approval.paymentTerms,
+          advance: num(approval.advance),
           approvalStatus: approval.approvalStatus,
           remarks: approval.remarks
         }
@@ -8286,6 +8289,9 @@ export default function EditVehicleNegotiation() {
                         placeholder="To"
                       />
                     </td>
+                    <td className="border border-yellow-300 px-2 py-2 text-slate-700">
+                      <span>{row.locationRemark || "-"}</span>
+                    </td>
                     <td className="border border-yellow-300 px-2 py-2">
                       <input
                         value={row.talukaName || row.taluka || ""}
@@ -8481,7 +8487,7 @@ export default function EditVehicleNegotiation() {
                 </div>
               )}
               <div className="text-xs text-blue-600 mt-1">
-                ⓘ Commercial Part 3 is editable after Part 1 is locked. Vehicle placement opens only after Part 3 approval.
+                ⓘ Part 1 and Commercial Part 3 can be completed independently. Vehicle placement opens after Part 3 approval.
               </div>
             </div>
 
@@ -8502,11 +8508,11 @@ export default function EditVehicleNegotiation() {
                     </svg>
                     Updating...
                   </span>
-                ) : (isPart1Locked ? (isPart3Finalized ? 'Save Vehicle Placement' : 'Save Part 3') : 'Save Draft')}
+                ) : (isPart1Locked ? (isPart3Finalized ? 'Save Vehicle Placement' : 'Save Part 3') : 'Save VNN')}
               </button>
               {!isPart1Locked && canEditVnn ? (
                 <button onClick={() => handleWorkflowAction('lock-part1')} disabled={saving} className="rounded-xl bg-indigo-600 px-5 py-2 text-sm font-bold text-white hover:bg-indigo-700 disabled:bg-slate-400">
-                  Submit & Lock Part 1
+                  Submit for Approval
                 </button>
               ) : (isPart1Locked && canEditVnn && (
                 <button onClick={() => handleWorkflowAction('amend-part1')} disabled={saving} className="rounded-xl bg-amber-600 px-5 py-2 text-sm font-bold text-white hover:bg-amber-700 disabled:bg-slate-400">
@@ -8817,13 +8823,13 @@ export default function EditVehicleNegotiation() {
             </div>
           </Card>}
 
-          {/* PART 3: VEHICLE APPROVAL - PART 3 - Editable after Part 1 is locked */}
+          {/* PART 3: VEHICLE APPROVAL - independent of Part 1 */}
           <Card title="Vehicle - Approval - Part - 3">
             {!canEditPart3 && !canEditPlacement && (
               <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-700">
                 {isPart3Finalized
                   ? 'Vehicle placement requires Vehicle Negotiation Placement edit permission.'
-                  : 'Commercial Part 3 is locked until Part 1 is approved and locked. Vehicle placement opens after Part 3 approval.'}
+                  : 'Commercial Part 3 can be completed independently. Vehicle placement opens after Part 3 approval.'}
               </div>
             )}
             <div className="grid grid-cols-12 gap-3 mb-4">
@@ -8891,6 +8897,25 @@ export default function EditVehicleNegotiation() {
                 onChange={(v) => setApproval((p) => ({ ...p, finalFix: v }))}
                 readOnly={!canEditPart3 || approval.rateType === "Per MT"}
               />
+              <Select
+                col="col-span-12 md:col-span-4"
+                label="Payment - Terms"
+                value={approval.paymentTerms}
+                onChange={(v) => setApproval((p) => ({ ...p, paymentTerms: v }))}
+                options={[...new Set([...(paymentTerms.length > 0 ? paymentTerms : PAYMENT_TERMS), "Custom / Manual"])]}
+                readOnly={!canEditPart3}
+              />
+              {approval.paymentTerms === "Custom / Manual" && (
+                <Input
+                  col="col-span-12 md:col-span-4"
+                  label="Manual Advance (₹)"
+                  value={approval.advance}
+                  onChange={(v) => setApproval((p) => ({ ...p, advance: v }))}
+                  type="number"
+                  readOnly={!canEditPart3}
+                  disabled={!canEditPart3}
+                />
+              )}
             </div>
 
             <div className="grid grid-cols-12 gap-3 mb-4">
@@ -8923,14 +8948,6 @@ export default function EditVehicleNegotiation() {
                 value={approval.purchaseType}
                 onChange={(v) => setApproval((p) => ({ ...p, purchaseType: v }))}
                 options={purchaseTypes.length > 0 ? purchaseTypes : PURCHASE_TYPES}
-                readOnly={!canEditPlacement}
-              />
-              <Select
-                col="col-span-12 md:col-span-4"
-                label="Payment - Terms"
-                value={approval.paymentTerms}
-                onChange={(v) => setApproval((p) => ({ ...p, paymentTerms: v }))}
-                options={paymentTerms.length > 0 ? paymentTerms : PAYMENT_TERMS}
                 readOnly={!canEditPlacement}
               />
             </div>

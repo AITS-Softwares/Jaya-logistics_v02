@@ -3208,6 +3208,7 @@ export default function EditConsignmentNote() {
         name: note.consignee?.name || "",
         address: note.consignee?.address || "",
         customerId: note.consignee?.customerId || "",
+        gstNumber: note.consignee?.gstNumber || "",
         selectedAddressTitle: note.consignee?.selectedAddressTitle || ""
       });
 
@@ -3609,6 +3610,7 @@ export default function EditConsignmentNote() {
       name: customer.customerName,
       address: addresses.length > 0 ? addresses[0].address : '',
       customerId: customer._id,
+      gstNumber: addresses.length > 0 ? addresses[0].gstNumber : (customer.gstNumber || ''),
       selectedAddressTitle: addresses.length > 0 ? addresses[0].title : ''
     });
 
@@ -3639,6 +3641,7 @@ export default function EditConsignmentNote() {
     setConsignee(prev => ({
       ...prev,
       address: addressObj.address,
+      gstNumber: addressObj.gstNumber || '',
       selectedAddressTitle: addressObj.title
     }));
     setShowConsigneeAddressDropdown(false);

@@ -3911,7 +3911,8 @@ export async function POST(req) {
         vehicleData: null,
         mobile: '',
         purchaseType: '',
-        paymentTerms: '',
+        paymentTerms: body.approval?.paymentTerms || '',
+        advance: Number(body.approval?.advance) || 0,
         memoStatus: body.approval?.memoStatus || 'Pending',
         memoFile: body.approval?.memoFile || null
       },
@@ -3923,7 +3924,7 @@ export async function POST(req) {
         part1LockedBy: body.lockPart1 === true ? user.id : null,
         audit: body.lockPart1 === true ? [{ action: 'part1-locked', by: user.id, at: new Date() }] : []
       },
-      panelStatus: 'Draft'
+      panelStatus: body.lockPart1 === true ? 'Submitted' : 'Draft'
     });
 
     await newVehicleNegotiation.save();
@@ -4218,45 +4219,52 @@ export async function PUT(req) {
       vehicleNegotiation.voiceNoteFile = body.voiceFileInfo;
     }
 
-    // ─── UPDATE APPROVAL FIELDS (requires 'approve' permission) ───
-    if (body.approval && hasApprovePermission) {
+    // Approval decisions require approve permission; commercial Part 3 terms
+    // are editable by users with Vehicle Negotiation edit permission.
+    if (body.approval) {
       // Update Part 1 fields
-      if (body.approval.part1Status !== undefined) {
+      if (hasApprovePermission && body.approval.part1Status !== undefined) {
         vehicleNegotiation.approval.part1Status = body.approval.part1Status;
       }
-      if (body.approval.part1Remarks !== undefined) {
+      if (hasApprovePermission && body.approval.part1Remarks !== undefined) {
         vehicleNegotiation.approval.part1Remarks = body.approval.part1Remarks;
       }
 
       // Update Part 3 fields
-      if (body.approval.part3Status !== undefined) {
+      if (hasApprovePermission && body.approval.part3Status !== undefined) {
         vehicleNegotiation.approval.part3Status = body.approval.part3Status;
       }
-      if (body.approval.part3Remarks !== undefined) {
+      if (hasApprovePermission && body.approval.part3Remarks !== undefined) {
         vehicleNegotiation.approval.part3Remarks = body.approval.part3Remarks;
       }
 
-      // Update shared fields
-      if (body.approval.vendorName !== undefined) {
+      // Update commercial Part 3 fields
+      if (hasEditPermission && body.approval.vendorName !== undefined) {
         vehicleNegotiation.approval.vendorName = body.approval.vendorName;
       }
-      if (body.approval.vendorCode !== undefined) {
+      if (hasEditPermission && body.approval.vendorCode !== undefined) {
         vehicleNegotiation.approval.vendorCode = body.approval.vendorCode;
       }
-      if (body.approval.vendorId !== undefined) {
+      if (hasEditPermission && body.approval.vendorId !== undefined) {
         vehicleNegotiation.approval.vendorId = body.approval.vendorId;
       }
-      if (body.approval.vendorStatus !== undefined) {
+      if (hasEditPermission && body.approval.vendorStatus !== undefined) {
         vehicleNegotiation.approval.vendorStatus = body.approval.vendorStatus;
       }
-      if (body.approval.rateType !== undefined) {
+      if (hasEditPermission && body.approval.rateType !== undefined) {
         vehicleNegotiation.approval.rateType = body.approval.rateType;
       }
-      if (body.approval.finalPerMT !== undefined) {
+      if (hasEditPermission && body.approval.finalPerMT !== undefined) {
         vehicleNegotiation.approval.finalPerMT = Number(body.approval.finalPerMT);
       }
-      if (body.approval.finalFix !== undefined) {
+      if (hasEditPermission && body.approval.finalFix !== undefined) {
         vehicleNegotiation.approval.finalFix = Number(body.approval.finalFix);
+      }
+      if (hasEditPermission && body.approval.paymentTerms !== undefined) {
+        vehicleNegotiation.approval.paymentTerms = body.approval.paymentTerms;
+      }
+      if (hasEditPermission && body.approval.advance !== undefined) {
+        vehicleNegotiation.approval.advance = Number(body.approval.advance) || 0;
       }
       // Placement fields are written only by the dedicated placement endpoint,
       // and memo metadata only by its dedicated memo endpoint. This keeps the
@@ -4427,16 +4435,6 @@ export async function PATCH(req) {
         return NextResponse.json({
           success: false,
           message: 'Rate Target has no separate approval. Save the Rate Target record to complete Part 2.'
-        }, { status: 409 });
-      }
-
-      if (partToUpdate === 'part3' && (
-        vehicleNegotiation.approval?.part1Status !== 'Approved' ||
-        !vehicleNegotiation.workflow?.part1Locked
-      )) {
-        return NextResponse.json({
-          success: false,
-          message: 'Part 3 can be approved only after Part 1 is approved and locked.'
         }, { status: 409 });
       }
 

@@ -66,6 +66,7 @@ export async function POST(req) {
         errors.push("PAN format invalid (expected ABCDE1234F)");
       }
       if (!row.gstCategory) errors.push("gstCategory missing");
+      if (row.dueDays === undefined || row.dueDays === null || String(row.dueDays).trim() === "" || !Number.isFinite(Number(row.dueDays)) || Number(row.dueDays) < 0) errors.push("dueDays is required and must be zero or a positive number");
 
       if (errors.length > 0) {
         skippedCount++;
@@ -124,6 +125,7 @@ export async function POST(req) {
         existing.commissionRate =
           row.commissionRate || existing.commissionRate;
         existing.paymentTerms = row.paymentTerms || existing.paymentTerms;
+        existing.dueDays = Number(row.dueDays);
         existing.billingAddresses = [billingAddress];
         existing.shippingAddresses = [shippingAddress];
 
@@ -160,6 +162,7 @@ export async function POST(req) {
           contactPersonName: row.contactPersonName,
           commissionRate: row.commissionRate,
           paymentTerms: row.paymentTerms,
+          dueDays: Number(row.dueDays),
           billingAddresses: [billingAddress],
           shippingAddresses: [shippingAddress],
           glAccount: glAccountId, // optional

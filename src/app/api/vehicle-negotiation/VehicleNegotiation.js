@@ -1141,6 +1141,7 @@ const vehicleNegotiationSchema = new mongoose.Schema({
     mobile: { type: String, default: '' },
     purchaseType: { type: String, default: '' },
     paymentTerms: { type: String, default: '' },
+    advance: { type: Number, default: 0 },
     memoStatus: { type: String, enum: ['Uploaded', 'Pending'], default: 'Pending' },
     memoFile: {
       type: {

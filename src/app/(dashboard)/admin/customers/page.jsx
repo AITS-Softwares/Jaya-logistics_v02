@@ -4,6 +4,8 @@ import axios from "axios";
 import CountryStateSearch from "@/components/CountryStateSearch";
 import GroupSearch from "@/components/groupmaster";
 
+const authConfig = () => ({ headers: { Authorization: `Bearer ${localStorage.getItem("token") || ""}` } });
+
 export default function CustomerPage({ customerId }) {
   const [customerDetails, setCustomerDetails] = useState({
     customerCode: "",
@@ -42,7 +44,7 @@ export default function CustomerPage({ customerId }) {
     if (customerId) {
       const fetchCustomerDetails = async () => {
         try {
-          const response = await axios.get(`/api/customers/${customerId}`);
+          const response = await axios.get(`/api/customers/${customerId}`, authConfig());
           setCustomerDetails(response.data);
         } catch (error) {
           console.error("Error fetching customer details:", error);
@@ -116,11 +118,11 @@ export default function CustomerPage({ customerId }) {
       try {
         if (customerId) {
           // Edit customer
-          await axios.put(`/api/customers/${customerId}`, customerDetails);
+          await axios.put(`/api/customers/${customerId}`, customerDetails, authConfig());
           alert("Customer updated successfully!");
         } else {
           // Create new customer
-          await axios.post("/api/customers", customerDetails);
+          await axios.post("/api/customers", customerDetails, authConfig());
           alert("Customer created successfully!");
         }
         setCustomerDetails(initialFormState); // Reset form

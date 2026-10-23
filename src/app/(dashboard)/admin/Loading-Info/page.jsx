@@ -807,6 +807,9 @@ import Link from "next/link";
 import PendingToCreateChip from "@/components/PendingToCreateChip";
 import OrderRowStatusActions from "@/components/OrderRowStatusActions";
 
+const isCancelledLoadingPanel = (item) => item.panelStatus === 'Cancelled' ||
+  (item.linkedOrderRows?.length > 0 && item.linkedOrderRows.every((row) => row.status === 'Cancelled'));
+
 export default function LoadingPanelList() {
   const router = useRouter();
   const { canView, canCreate, canEdit, canDelete, canApprove, loading: permissionLoading } = usePermission();
@@ -1214,7 +1217,7 @@ export default function LoadingPanelList() {
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-center gap-2 flex-wrap">
                           {/* Edit Button - Only shown if user has edit permission */}
-                          {canEdit(MODULE_NAME) && (
+                          {!isCancelledLoadingPanel(item) && canEdit(MODULE_NAME) && (
                             <button
                               onClick={() => handleEdit(item._id)}
                               className="p-2 bg-sky-100 text-sky-700 rounded-lg hover:bg-sky-200 transition"
@@ -1227,7 +1230,7 @@ export default function LoadingPanelList() {
                           )}
 
                           {/* ✅ Quick Approve Button - Green (with checkmark) - Based ONLY on permission */}
-                          {canApprove(MODULE_NAME) && (
+                          {!isCancelledLoadingPanel(item) && canApprove(MODULE_NAME) && (
                             <button
                               onClick={() => handleQuickApprove(item._id, item.vehicleArrivalNo)}
                               disabled={approveLoading === item._id}
@@ -1245,7 +1248,7 @@ export default function LoadingPanelList() {
                           )}
 
                           {/* ✅ Full Approve Button - Blue (with details) - Based ONLY on permission */}
-                          {canApprove(MODULE_NAME) && (
+                          {!isCancelledLoadingPanel(item) && canApprove(MODULE_NAME) && (
                             <button
                               onClick={() => handleApprove(item._id)}
                               className="p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition"

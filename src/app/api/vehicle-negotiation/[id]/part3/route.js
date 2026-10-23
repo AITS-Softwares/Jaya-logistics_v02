@@ -28,18 +28,16 @@ export async function PATCH(req, { params }) {
   await dbConnect();
   const record = await VehicleNegotiation.findOne(companyScopeFilter(auth.user, { _id: id }));
   if (!record) return NextResponse.json({ success: false, message: 'Vehicle Negotiation not found.' }, { status: 404 });
-  if (!record.workflow?.part1Locked) {
-    return NextResponse.json({ success: false, message: 'Commercial Part 3 can be entered only after Part 1 is locked.' }, { status: 409 });
-  }
   if (record.approval?.part3Status === 'Approved') {
     return NextResponse.json({ success: false, message: 'Commercial Part 3 fields are locked after final VNN approval.' }, { status: 409 });
   }
   const data = body.approval || {};
-  for (const key of ['vendorName', 'vendorId', 'vendorCode', 'vendorStatus', 'rateType']) {
+  for (const key of ['vendorName', 'vendorId', 'vendorCode', 'vendorStatus', 'rateType', 'paymentTerms']) {
     if (data[key] !== undefined) record.approval[key] = data[key];
   }
   if (data.finalPerMT !== undefined) record.approval.finalPerMT = Number(data.finalPerMT) || 0;
   if (data.finalFix !== undefined) record.approval.finalFix = Number(data.finalFix) || 0;
+  if (data.advance !== undefined) record.approval.advance = Number(data.advance) || 0;
   record.workflow.audit = record.workflow.audit || [];
   record.workflow.audit.push({ action: 'part3-saved', by: auth.user.id || null, at: new Date() });
   await record.save();

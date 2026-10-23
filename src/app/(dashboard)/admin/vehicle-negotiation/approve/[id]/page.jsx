@@ -3620,6 +3620,7 @@ function OrdersTable({ rows }) {
     { key: "pinCode", label: "Pin Code", minWidth: "100px" },
     { key: "from", label: "From", minWidth: "120px" },
     { key: "to", label: "To", minWidth: "120px" },
+    { key: "locationRemark", label: "Location Remark", minWidth: "160px" },
     { key: "taluka", label: "Taluka", minWidth: "120px" },
     { key: "district", label: "District", minWidth: "100px" },
     { key: "state", label: "State", minWidth: "100px" },
@@ -3665,6 +3666,7 @@ function OrdersTable({ rows }) {
               <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.pinCode || '-'}</td>
               <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.fromName || row.from || '-'}</td>
               <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.toName || row.to || '-'}</td>
+              <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.locationRemark || '-'}</td>
               <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.talukaName || row.taluka || '-'}</td>
               <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.districtName || row.district || '-'}</td>
               <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.stateName || row.state || '-'}</td>
@@ -4282,8 +4284,8 @@ export default function ApproveVehicleNegotiation() {
             right={
               <button
                 onClick={handleSubmitPart1}
-                disabled={savingPart1 || savingPart2 || savingPart3}
-                className={`rounded-xl px-4 py-2 text-xs font-bold text-white transition ${savingPart1 || savingPart2 || savingPart3 ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
+                disabled={savingPart1}
+                className={`rounded-xl px-4 py-2 text-xs font-bold text-white transition ${savingPart1 ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
                   }`}
               >
                 {savingPart1 ? 'Saving...' : 'Submit Part 1'}
@@ -4421,8 +4423,8 @@ export default function ApproveVehicleNegotiation() {
             right={
               <button
                 onClick={handleSubmitPart3}
-                disabled={savingPart1 || savingPart2 || savingPart3}
-                className={`rounded-xl px-4 py-2 text-xs font-bold text-white transition ${savingPart1 || savingPart2 || savingPart3 ? 'bg-gray-400 cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-700'
+                disabled={savingPart3}
+                className={`rounded-xl px-4 py-2 text-xs font-bold text-white transition ${savingPart3 ? 'bg-gray-400 cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-700'
                   }`}
               >
                 {savingPart3 ? 'Saving...' : 'Submit Part 3'}

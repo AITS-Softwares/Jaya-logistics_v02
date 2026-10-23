@@ -8285,6 +8285,7 @@ export default function EditOrderPanel() {
     subCompanyName: "",
     subCompanyCode: "",
     delivery: "Normal",
+    loadingInfoPhotosOptional: false,
     date: new Date().toISOString().split('T')[0],
     partyName: "",
     customerId: null,
@@ -8578,6 +8579,7 @@ export default function EditOrderPanel() {
         subCompanyName: prev.subCompanyName,
         subCompanyCode: prev.subCompanyCode,
         delivery: order.delivery || "Normal",
+        loadingInfoPhotosOptional: !!order.loadingInfoPhotosOptional,
         date: order.date ? new Date(order.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
         partyName: order.partyName || order.customerName || "",
         customerId: order.customerId || null,
@@ -8737,6 +8739,7 @@ export default function EditOrderPanel() {
 
     if (selectedCustomer && query !== selectedCustomer.customerName) {
       setSelectedCustomer(null);
+      setPackRows((prev) => prev.map((row) => ({ ...row, productId: "", productName: "" })));
       setTop(prev => ({
         ...prev,
         customerId: null,
@@ -8749,6 +8752,9 @@ export default function EditOrderPanel() {
   };
 
   const handleSelectCustomer = (customer) => {
+    if (selectedCustomer && String(selectedCustomer._id) !== String(customer._id)) {
+      setPackRows((prev) => prev.map((row) => ({ ...row, productId: "", productName: "" })));
+    }
     setSelectedCustomer(customer);
     setCustomerSearchQuery(customer.customerName);
     setShowCustomerDropdown(false);
@@ -8987,7 +8993,13 @@ export default function EditOrderPanel() {
       return;
     }
 
-    // A draft can be saved with whatever is filled in so far; update / submit need the required fields
+    const missingDropRows = plantRows.filter(row => !String(row.toName || row.cityName || row.city || row.to || '').trim());
+    if (missingDropRows.length) {
+      alert("Please select a drop location for every order row");
+      return;
+    }
+
+    // Branch and plant selections are required when submitting an order.
     if (saveMode !== 'draft') {
       if (!top.branch) {
         alert("Please select a branch");
@@ -8999,6 +9011,7 @@ export default function EditOrderPanel() {
         alert("Please select plant for all plant rows");
         return;
       }
+
     }
 
     setSaving(true);
@@ -9021,6 +9034,7 @@ export default function EditOrderPanel() {
         subCompanyName: top.subCompanyName || '',
         subCompanyCode: top.subCompanyCode || '',
         delivery: top.delivery,
+        loadingInfoPhotosOptional: top.loadingInfoPhotosOptional,
         date: top.date,
         customerId: selectedCustomer?._id || null,
         customerCode: selectedCustomer?.customerCode || '',
@@ -9298,6 +9312,21 @@ export default function EditOrderPanel() {
               options={DELIVERY_OPTIONS}
             />
 
+            <div className="col-span-12">
+              <label className="inline-flex items-start gap-2 text-sm text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={!!top.loadingInfoPhotosOptional}
+                  onChange={(e) => setTop((p) => ({ ...p, loadingInfoPhotosOptional: e.target.checked }))}
+                  className="mt-0.5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                />
+                <span>
+                  Make Loading Info photos optional for this order
+                  <span className="block text-xs text-slate-500">If any order linked to a Loading Info has this selected, photos are optional for that Loading Info.</span>
+                </span>
+              </label>
+            </div>
+
             <Input
               col="col-span-12 md:col-span-4"
               type="date"
@@ -9440,7 +9469,7 @@ export default function EditOrderPanel() {
                 pkgTypes={pkgTypes}
                 uoms={uoms}
                 skuSizes={skuSizes}
-                items={items}
+                items={selectedCustomer ? items.filter((item) => String(item.customerId) === String(selectedCustomer._id)) : []}
                 onNavigateToCreate={() => router.push('/admin/pkg-type?returnUrl=/admin/order-panel/edit')}
                 onNavigateToCreateUOM={() => router.push('/admin/uoms?returnUrl=/admin/order-panel/edit')}
                 onNavigateToCreateSKUSize={() => router.push('/admin/sku-sizes?returnUrl=/admin/order-panel/edit')}
@@ -9778,7 +9807,7 @@ function PlantGridTable({
     { key: "orderType", label: "Order Type", width: "150px" },
     { key: "pinCode", label: "Pin Code", width: "120px" },
     { key: "from", label: "From", width: "250px" },
-    { key: "to", label: "To / City", width: "220px" },
+    { key: "to", label: "To / City *", width: "220px" },
     { key: "taluka", label: "Taluka", width: "150px" },
     { key: "district", label: "District", width: "150px" },
     { key: "state", label: "State", width: "150px" },

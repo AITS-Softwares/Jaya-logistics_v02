@@ -7,8 +7,6 @@ export default function OrderRowStatusActions({ orderId, orderNo, status, onUpda
   const [reason, setReason] = useState('');
   const [impact, setImpact] = useState(null);
   const [requiresApproval, setRequiresApproval] = useState(false);
-  const [charge, setCharge] = useState('0');
-  const [mode, setMode] = useState('flat');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [editing, setEditing] = useState(false);
@@ -57,8 +55,7 @@ export default function OrderRowStatusActions({ orderId, orderNo, status, onUpda
       const token = localStorage.getItem('token');
       const response = await fetch(`/api/order-panel/${orderId}/status`, {
         method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, reason,
-          ...(action === 'Cancel' ? { cancellationCharge: { amount: charge, mode } } : {}) }),
+        body: JSON.stringify({ action, reason }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Could not update order status.');
@@ -99,7 +96,6 @@ export default function OrderRowStatusActions({ orderId, orderNo, status, onUpda
           {impact?.blockers?.length > 0 && <ul className="mt-2 list-disc pl-5 text-red-700">{impact.blockers.map((blocker, index) => <li className="min-w-0 whitespace-normal break-words [overflow-wrap:anywhere]" key={index}>{blocker.reason}</li>)}</ul>}
         </div>
         <label className="mt-4 block text-sm font-semibold">Reason (required)</label><textarea value={reason} onChange={(e) => setReason(e.target.value)} className="mt-1 block w-full rounded-lg border border-slate-300 p-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100" rows={3} />
-        {action === 'Cancel' && <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2"><label className="block min-w-0 text-sm font-semibold">Cancellation charge<input type="number" min="0" value={charge} onChange={(e) => setCharge(e.target.value)} className="mt-1 block w-full min-w-0 rounded border p-2" /></label><label className="block min-w-0 text-sm font-semibold">Charge mode<select value={mode} onChange={(e) => setMode(e.target.value)} className="mt-1 block w-full min-w-0 rounded border p-2"><option value="flat">Flat</option><option value="per MT">Per MT</option></select></label></div>}
         {error && <p className="mt-2 text-sm text-red-700">{error}</p>}
         <div className="mt-4 flex justify-end gap-2"><button onClick={() => { setAction(''); setError(''); }} className="rounded border px-3 py-2">Close</button><button disabled={busy || !impact || !reason.trim() || (action !== 'Resume' && (impact?.blockers?.length || 0) > 0)} onClick={submit} title={action !== 'Resume' && impact?.blockers?.length ? 'This order can no longer be held or cancelled.' : undefined} className="rounded bg-indigo-600 px-3 py-2 text-white disabled:opacity-40">{action !== 'Resume' && impact?.blockers?.length ? 'Unavailable' : requiresApproval ? 'Request approval' : 'Confirm'}</button></div>
       </div>

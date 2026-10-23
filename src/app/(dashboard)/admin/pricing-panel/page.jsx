@@ -1019,10 +1019,14 @@ export default function PricingPanelList() {
               approval: item.approval || 'Pending',
               orderCount: 1,
               vnnNumbers: item.vnn && item.vnn !== '-' ? [item.vnn] : [],
-              orderNumbers: item.orderNo ? [item.orderNo] : []
+              orderNumbers: item.orderNo ? [item.orderNo] : [],
+              cancelledOrderNumbers: item.orderNo && item.orderCancelled ? [item.orderNo] : [],
+              cancellationChargeRequired: !!item.cancellationChargeRequired
             };
           } else {
             grouped[item.panelId].orderCount += 1;
+            grouped[item.panelId].cancellationChargeRequired ||= !!item.cancellationChargeRequired;
+            if (item.orderNo && item.orderCancelled && !grouped[item.panelId].cancelledOrderNumbers.includes(item.orderNo)) grouped[item.panelId].cancelledOrderNumbers.push(item.orderNo);
             if (item.vnn && item.vnn !== '-' && !grouped[item.panelId].vnnNumbers.includes(item.vnn)) {
               grouped[item.panelId].vnnNumbers.push(item.vnn);
             }
@@ -1345,7 +1349,8 @@ export default function PricingPanelList() {
                       </td>
                       <td className="px-4 py-3 font-medium">{item.weight} MT</td>
                       <td className="px-4 py-3">
-                        <div className="flex max-w-48 flex-wrap gap-1">{item.orderNumbers.map((orderNo) => <span key={orderNo} className="rounded-full bg-purple-100 px-2 py-1 text-xs font-medium text-purple-800">{orderNo}</span>)}</div>
+                        <div className="flex max-w-48 flex-wrap gap-1">{(item.orderNumbers || []).map((orderNo) => <span key={orderNo} className="inline-flex flex-wrap items-center gap-1 rounded-full bg-purple-100 px-2 py-1 text-xs font-medium text-purple-800">{orderNo}{(item.cancelledOrderNumbers || []).includes(orderNo) && <span className="rounded-full bg-rose-100 px-1.5 py-0.5 text-[9px] font-bold text-rose-800">Cancelled</span>}</span>)}</div>
+                        {item.cancellationChargeRequired && <span className="mt-1 inline-flex rounded-full bg-rose-100 px-2 py-1 text-[10px] font-bold text-rose-800">Cancellation charge required</span>}
                       </td>
                       <td className="px-4 py-3">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${item.pricing === 'Approved' ? 'bg-green-100 text-green-800' :

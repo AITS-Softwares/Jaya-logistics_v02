@@ -6,6 +6,7 @@ export default function BranchPage() {
   const [branches, setBranches] = useState([]);
   const [name, setName] = useState('');
   const [code, setCode] = useState('');
+  const [editingBranchId, setEditingBranchId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -35,12 +36,12 @@ export default function BranchPage() {
   };
 
   // ✅ Add Branch
-  const addBranch = async (e) => {
+  const saveBranch = async (e) => {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/branches', {
-        method: 'POST',
+      const res = await fetch(editingBranchId ? `/api/branches?id=${editingBranchId}` : '/api/branches', {
+        method: editingBranchId ? 'PUT' : 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
@@ -49,17 +50,33 @@ export default function BranchPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.message || 'Failed to add branch');
+        setError(data.message || `Failed to ${editingBranchId ? 'update' : 'add'} branch`);
         return;
       }
       setName('');
       setCode('');
+      setEditingBranchId(null);
       setError(null);
       fetchBranches();
     } catch (error) {
-      console.error('Error adding branch:', error.message);
-      setError('Failed to add branch.');
+      console.error('Error saving branch:', error.message);
+      setError(`Failed to ${editingBranchId ? 'update' : 'add'} branch.`);
     }
+  };
+
+  const editBranch = (branch) => {
+    setEditingBranchId(branch._id);
+    setName(branch.name || '');
+    setCode(branch.code || '');
+    setError(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const cancelEdit = () => {
+    setEditingBranchId(null);
+    setName('');
+    setCode('');
+    setError(null);
   };
 
   // ✅ Delete Branch
@@ -93,7 +110,7 @@ export default function BranchPage() {
 
       {error && <div className="text-red-500 mb-4">{error}</div>}
 
-      <form onSubmit={addBranch} className="mb-6">
+      <form onSubmit={saveBranch} className="mb-6">
         <input
           type="text"
           placeholder="Branch Name"
@@ -111,8 +128,9 @@ export default function BranchPage() {
           required
         />
         <button type="submit" className="bg-blue-500 text-white px-4 py-2">
-          Add Branch
+          {editingBranchId ? 'Save Changes' : 'Add Branch'}
         </button>
+        {editingBranchId && <button type="button" onClick={cancelEdit} className="ml-2 border px-4 py-2">Cancel</button>}
       </form>
 
       {loading ? (
@@ -125,12 +143,10 @@ export default function BranchPage() {
                 <span>
                   {branch.name} ({branch.code})
                 </span>
-                <button
-                  onClick={() => deleteBranch(branch._id)}
-                  className="bg-red-500 text-white px-2 py-1"
-                >
-                  Delete
-                </button>
+                <div className="flex gap-2">
+                  <button type="button" onClick={() => editBranch(branch)} className="bg-amber-500 text-white px-2 py-1">Edit</button>
+                  <button type="button" onClick={() => deleteBranch(branch._id)} className="bg-red-500 text-white px-2 py-1">Delete</button>
+                </div>
               </li>
             ))
           ) : (

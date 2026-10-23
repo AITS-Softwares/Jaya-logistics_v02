@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import Item from "@/models/ItemModels";
+import Customer from "@/models/CustomerModel";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import { validateMasterDataRequest } from '@/lib/masterDataPermission';
 import { syncItem } from '@/lib/frappe-item.mjs';
@@ -105,11 +106,16 @@ export async function POST(req) {
 
     // ✅ Validate required fields
     // Match the required fields in the connected Frappe Item form.
-    const requiredFields = ["itemCode", "category", "gstCode", "uom"];
+    const requiredFields = ["itemCode", "category", "gstCode", "uom", "customerId"];
     for (let field of requiredFields) {
       if (!data[field]) {
         return NextResponse.json({ success: false, message: `${field} is required` }, { status: 400 });
       }
+    }
+
+    const customer = await Customer.findOne({ _id: data.customerId, companyId: user.companyId }).select('customerName customerCode');
+    if (!customer) {
+      return NextResponse.json({ success: false, message: "Select a valid customer from Customer Management" }, { status: 400 });
     }
 
     // ✅ Prevent duplicate itemCode within the company
@@ -124,6 +130,9 @@ export async function POST(req) {
     // ✅ Save item
     const item = new Item({
       ...data,
+      customerId: customer._id,
+      customerName: customer.customerName,
+      customerCode: customer.customerCode || "",
       companyId: user.companyId,
       createdBy: user.id,
     });

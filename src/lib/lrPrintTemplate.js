@@ -27,7 +27,6 @@ const DEFAULT_BUSINESS_INFO = {
   fax: "Fax - 022 27570044",
   gst: "GST NO - 27CDHPS2205M12A",
   pan: "PAN: CDHPS2205M",
-  transportGst: "27AAMFS9446C1ZU",
   emergencyContact: "9653489852 9004645555"
 };
 
@@ -323,8 +322,8 @@ export function buildLRHtml(note, businessInfo, loadingInfoNoArg = "") {
               <span class="info-value">${businessInfo.emergencyContact || '9653489852 9004645555'}</span>
             </div>
             <div class="info-row">
-              <span class="info-label">Transport GST:</span>
-              <span class="info-value">${businessInfo.transportGst || '27AAMFS9446C1ZU'}</span>
+              <span class="info-label">Consignee GST:</span>
+              <span class="info-value">${consignee.gstNumber || ''}</span>
               <span class="info-label">E-Way Bill No:</span>
               <span class="info-value">${ewaybill.ewaybillNo || (ewaybill.status ? ewaybill.status : '')}</span>
             </div>

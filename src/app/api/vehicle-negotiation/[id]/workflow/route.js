@@ -40,6 +40,7 @@ export async function PATCH(req, { params }) {
     record.workflow.part1Locked = true;
     record.workflow.part1LockedAt = new Date();
     record.workflow.part1LockedBy = auth.user.id || null;
+    record.panelStatus = record.panelStatus === 'Draft' ? 'Submitted' : record.panelStatus;
     record.workflow.audit.push({ action: 'part1-locked', by: auth.user.id || null, at: new Date() });
   } else {
     if (!record.workflow.part1Locked) return NextResponse.json({ success: false, message: 'Only a locked Part 1 can be amended.' }, { status: 409 });

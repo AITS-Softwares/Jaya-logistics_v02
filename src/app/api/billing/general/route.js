@@ -236,37 +236,43 @@ export async function POST(req) {
       const pricingPanelRate = pricingRatesByOrderNo.get(String(note.header?.orderNo || '').trim());
       const rowRate = Number(pricingPanelRate ?? orderRow?.rate ?? orderRow?.locationRate ?? 0);
 
-      extractProductsFromNote(note).forEach((product, idx) => {
-        const amount = (product.billedWt || 0) * rowRate;
-        billData.push({
-          _id: `${note._id}_${idx}`,
-          date: istDate(note.createdAt),
-          lrCreatedAt: note.createdAt || null,
-          invoiceNo: note.invoice?.boeInvoiceNo || '',
-          lrNo: note.lrNo || 'N/A',
-          vehicleNo: note.header?.vehicleNo || 'N/A',
-          from: note.header?.from || 'N/A',
-          to: note.header?.to || 'N/A',
-          partyName: note.header?.partyName || note.consignor?.name || 'N/A',
-          productName: product.productName || 'General Cargo',
-          weight: product.billedWt || 0,
-          quantity: product.actualWt || 0,
-          unit: product.unit || note.header?.unit || 'MT',
-          rate: rowRate,
-          rateMissing: !(rowRate > 0),
-          amount,
-          orderType: effectiveOrderType || 'N/A',
-          plantCode: note.header?.plantCode || orderRow?.plantCodeValue || '',
-        });
-        if (!(rowRate > 0)) missingRateCount += 1;
-        totalWeight += product.billedWt || 0;
-        totalAmount += amount;
+      // General billing = ONE row per LR (products are summed, not split)
+      const products = extractProductsFromNote(note);
+      if (!products.length) return;
+
+      const lrBilledWt = products.reduce((s, p) => s + (p.billedWt || 0), 0);
+      const lrActualWt = products.reduce((s, p) => s + (p.actualWt || 0), 0);
+      const productNames = [...new Set(products.map(p => p.productName).filter(Boolean))].join(', ');
+      const amount = lrBilledWt * rowRate;
+
+      billData.push({
+        _id: String(note._id),
+        date: istDate(note.createdAt),
+        lrCreatedAt: note.createdAt || null,
+        invoiceNo: note.invoice?.boeInvoiceNo || '',
+        lrNo: note.lrNo || 'N/A',
+        vehicleNo: note.header?.vehicleNo || 'N/A',
+        from: note.header?.from || 'N/A',
+        to: String(orderRow?.locationRemark || '').trim() || note.header?.to || 'N/A',
+        partyName: note.header?.partyName || note.consignor?.name || 'N/A',
+        productName: productNames || 'General Cargo',
+        weight: lrBilledWt,
+        quantity: lrActualWt,
+        unit: products[0]?.unit || note.header?.unit || 'MT',
+        rate: rowRate,
+        rateMissing: !(rowRate > 0),
+        amount,
+        orderType: effectiveOrderType || 'N/A',
+        plantCode: note.header?.plantCode || orderRow?.plantCodeValue || '',
       });
+      if (!(rowRate > 0)) missingRateCount += 1;
+      totalWeight += lrBilledWt;
+      totalAmount += amount;
     });
 
     return NextResponse.json({
       success: true,
-      data: billData,
+      data: billData.sort((a, b) => String(a.to || '').localeCompare(String(b.to || ''), undefined, { sensitivity: 'base' })),
       summary: { totalRecords: billData.length, totalWeight, totalAmount, missingRateCount },
     }, { status: 200 });
   } catch (error) {

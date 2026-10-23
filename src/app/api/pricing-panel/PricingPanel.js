@@ -385,6 +385,8 @@ const pricingPanelSchema = new mongoose.Schema({
     },
     orderNo: String,
     orderRowId: { type: String, default: '' },
+    cancellationCharges: { type: String, default: '' },
+    cancellationChargeRequired: { type: Boolean, default: false },
     vehicleNegotiationId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'VehicleNegotiation'

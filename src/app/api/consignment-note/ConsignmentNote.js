@@ -219,6 +219,7 @@ const addressSchema = new mongoose.Schema({
   name: { type: String, default: '' },
   address: { type: String, default: '' },
   customerId: { type: String, default: '' },
+  gstNumber: { type: String, default: '' },
   selectedAddressTitle: { type: String, default: '' }
 }, { _id: false });
 

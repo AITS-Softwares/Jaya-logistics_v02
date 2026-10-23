@@ -9,6 +9,7 @@ import AdvancePayment from '@/app/api/Advance-Payment/AdvancePayment';
 import ConsignmentNote from '@/app/api/consignment-note/ConsignmentNote';
 import VehicleNegotiation from '@/app/api/vehicle-negotiation/VehicleNegotiation';
 import LoadingPanel from '@/app/api/loading-panel/LoadingPanel';
+import PricingPanel from '@/app/api/pricing-panel/PricingPanel';
 import CompanyUser from '@/models/CompanyUser';
 import Notification from '@/models/project/NotificationModel';
 
@@ -59,7 +60,6 @@ export const POST = withAuth(async (req, { params }, user) => {
       if (requestedActions.length !== 1) return NextResponse.json({ success: false, message: 'Review requests for one action at a time.' }, { status: 409 });
       action = requestedActions[0];
       reason = requestRows[0].statusRequest.reason;
-      body.cancellationCharge = requestRows[0].statusRequest.cancellationCharge;
       approvingStatusRequest = true;
       approvalRows = requestRows;
     }
@@ -180,16 +180,6 @@ export const POST = withAuth(async (req, { params }, user) => {
     if (body.dryRun === true) return NextResponse.json({ success: true, impact, canConfirm: blockers.length === 0, requiresApproval });
     if (action === 'Hold' && requested.some((row) => row.status !== 'Open')) return NextResponse.json({ success: false, message: 'Only open rows can be held.' }, { status: 409 });
     if ((action === 'Cancel' || action === 'Hold') && blockers.length) return NextResponse.json({ success: false, message: blockers.map((b) => b.reason).join(' '), blockers }, { status: 409 });
-    let cancellationCharge = null;
-    if (action === 'Cancel' && body.cancellationCharge !== undefined) {
-      const charge = Number(body.cancellationCharge.amount);
-      const mode = body.cancellationCharge.mode;
-      if (!Number.isFinite(charge) || charge < 0 || !['flat', 'per MT'].includes(mode)) {
-        return NextResponse.json({ success: false, message: 'Cancellation charge needs a non-negative amount and flat or per MT mode.' }, { status: 400 });
-      }
-      cancellationCharge = { amount: charge, mode };
-    }
-
     if (requiresApproval) {
       const now = new Date();
       for (const row of requested) {
@@ -199,7 +189,6 @@ export const POST = withAuth(async (req, { params }, user) => {
           reason,
           by: user.id,
           at: now,
-          cancellationCharge: cancellationCharge || { amount: 0, mode: 'flat' }
         };
         row.statusHistory.push({ action: `${action} Requested`, from, to: from, reason, by: user.id, at: now });
       }
@@ -220,14 +209,30 @@ export const POST = withAuth(async (req, { params }, user) => {
       if (action === 'Hold' && body.holdUntil) row.holdUntil = new Date(body.holdUntil);
       if (action === 'Resume') row.holdUntil = null;
       row.statusRequest = undefined;
-      if (cancellationCharge) {
-        row.cancellationCharges = cancellationCharge.amount;
-        row.cancellationChargeMode = cancellationCharge.mode;
-      }
       row.statusHistory.push({ action, from, to, reason, by: user.id, at: now });
     }
 
     if (action === 'Cancel') {
+      const linkedVnnIds = [...new Set(negotiations.map((item) => idOf(item)).filter((value) => mongoose.Types.ObjectId.isValid(value)))];
+      const pricingPanels = affectedLoadingPanels.length
+        ? await PricingPanel.find(companyScopeFilter(user, { $or: [
+          { 'orders.orderNo': orderNo },
+          ...(linkedVnnIds.length ? [{ 'orders.vehicleNegotiationId': { $in: linkedVnnIds } }] : [])
+        ] }))
+        : [];
+      const rowsNeedingCharge = [];
+      for (const panel of pricingPanels) {
+        let changed = false;
+        for (const pricingOrder of panel.orders || []) {
+          const matchesCancelledRow = pricingOrder.orderNo === orderNo &&
+            (targetIds.has(String(pricingOrder.orderRowId || '')) || requested.length === 1 || linkedVnnIds.includes(idOf(pricingOrder.vehicleNegotiationId)));
+          if (!matchesCancelledRow) continue;
+          pricingOrder.cancellationChargeRequired = true;
+          rowsNeedingCharge.push({ pricingSerialNo: panel.pricingSerialNo, orderNo: pricingOrder.orderNo });
+          changed = true;
+        }
+        if (changed) await panel.save();
+      }
       for (const { purchase } of relevantPurchases) {
         purchase.panelStatus = 'Cancelled';
         await purchase.save();
@@ -285,15 +290,15 @@ export const POST = withAuth(async (req, { params }, user) => {
         negotiation.panelStatus = 'Draft';
         await negotiation.save();
       }
+      if (rowsNeedingCharge.length) {
+        try { await notifyPricingChargeRequired(user, rowsNeedingCharge); }
+        catch (notificationError) { console.error('Could not notify Pricing Panel users about cancellation charges:', notificationError); }
+      }
       await ConsignmentNote.updateMany(companyScopeFilter(user, { _id: { $in: relevantLrs.filter((lr) => !lockedLrs.includes(lr)).map((lr) => lr._id) } }), { $set: { 'header.status': 'Cancelled' } });
     }
 
     const remaining = order.plantRows.filter((row) => !targetIds.has(idOf(row)));
     const finalRows = [...remaining, ...requested];
-    if (action === 'Cancel' && cancellationCharge) {
-      order.cancellationCharges = cancellationCharge.amount;
-      order.cancellationChargeMode = cancellationCharge.mode;
-    }
     if (finalRows.length && finalRows.every((row) => row.status === 'Cancelled')) order.panelStatus = 'Cancelled';
     else if (finalRows.some((row) => row.status === 'Hold')) order.panelStatus = 'Partially on hold';
     else if (order.panelStatus === 'Partially on hold' || order.panelStatus === 'Cancelled') order.panelStatus = 'Approved';
@@ -356,6 +361,22 @@ async function notifyOrderStatusApprovers(user, orderNo, rows, action, reason) {
     assignedTo: recipientId,
     type: 'order-status-approval',
     message: `${action} approval requested for order ${orderNo} (${rows.map((row) => row.plantName || row._id).join(', ')}). Reason: ${reason}`
+  })));
+}
+
+async function notifyPricingChargeRequired(user, rows) {
+  const users = await CompanyUser.find({ companyId: user.companyId, isActive: { $ne: false } }).select('_id modules').lean();
+  const assignedTo = users.filter((recipient) => {
+    const module = recipient.modules instanceof Map ? recipient.modules.get('Pricing Panel') : recipient.modules?.['Pricing Panel'];
+    return module?.selected && (module.permissions?.view || module.permissions?.edit || module.permissions?.create);
+  }).map((recipient) => recipient._id);
+  if (!assignedTo.length) return;
+  const details = [...new Map(rows.map((row) => [`${row.pricingSerialNo}:${row.orderNo}`, row])).values()]
+    .map((row) => `${row.pricingSerialNo} (order ${row.orderNo})`).join(', ');
+  await Notification.insertMany(assignedTo.map((recipientId) => ({
+    user: user.id, company: user.companyId, assignedTo: recipientId,
+    type: 'pricing-cancellation-charge-required',
+    message: `Cancellation charges need to be entered in Pricing Panel ${details}.`
   })));
 }
 
