@@ -57,9 +57,16 @@ export async function PUT(req, { params }) {
   try {
     const data = await req.json();
 
+    const existing = await Supplier.findOne({ _id: params.id, companyId: user.companyId }).select('dueDays');
+    if (!existing) return NextResponse.json({ success: false, message: "Supplier not found" }, { status: 404 });
+    const dueDays = data.dueDays ?? existing.dueDays;
+    if (dueDays === undefined || dueDays === null || String(dueDays).trim() === "" || !Number.isFinite(Number(dueDays)) || Number(dueDays) < 0) {
+      return NextResponse.json({ success: false, message: "Due days are required and must be zero or a positive number" }, { status: 400 });
+    }
+
     const updated = await Supplier.findOneAndUpdate(
       { _id: params.id, companyId: user.companyId },
-      data,
+      { ...data, dueDays: Number(dueDays) },
       { new: true, runValidators: true }
     ).populate("glAccount", "accountName accountCode");
 

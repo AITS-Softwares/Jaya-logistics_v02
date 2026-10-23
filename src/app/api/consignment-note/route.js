@@ -1408,6 +1408,7 @@
 import { NextResponse } from "next/server";
 import connectDb from "@/lib/db";
 import ConsignmentNote from "./ConsignmentNote";
+import Customer from "@/models/CustomerModel";
 import LoadingPanel from "../loading-panel/LoadingPanel";
 import PurchasePanel from "../purchase-panel/PurchasePanel";
 import OrderPanel from "../order-panel/OrderPanel";
@@ -1419,6 +1420,18 @@ import { getLRCompletion, LR_COMPLETION_SELECT } from "../loading-panel/findLRs"
 import mongoose from 'mongoose';
 import { activeOperatingCompanyId, companyScopeFilter } from "@/lib/companyScope";
 import { validateOpenOrderRows } from '@/lib/orderRowStatus';
+
+async function includeConsigneeGst(note, user) {
+  if (!note || note.consignee?.gstNumber || !note.consignee?.customerId) return note;
+  const customer = await Customer.findOne(companyScopeFilter(user, { _id: note.consignee.customerId }))
+    .select('gstNumber billingAddresses shippingAddresses')
+    .lean();
+  if (!customer) return note;
+  const addresses = [...(customer.billingAddresses || []), ...(customer.shippingAddresses || [])];
+  const selectedAddress = addresses.find((address) => address.title === note.consignee.selectedAddressTitle);
+  note.consignee.gstNumber = selectedAddress?.gstNumber || customer.gstNumber || '';
+  return note;
+}
 
 // ── PERMISSION FUNCTIONS ──
 
@@ -1696,6 +1709,7 @@ export async function GET(req) {
         return NextResponse.json({ success: false, message: "Draft Consignment Notes are not available for Proof of Delivery" }, { status: 404 });
       }
 
+      await includeConsigneeGst(note, user);
       return NextResponse.json({
         success: true,
         data: note
@@ -1717,6 +1731,7 @@ export async function GET(req) {
         return NextResponse.json({ success: false, message: "Draft Consignment Notes are not available for Proof of Delivery" }, { status: 404 });
       }
 
+      await includeConsigneeGst(note, user);
       return NextResponse.json({
         success: true,
         data: note
@@ -1728,6 +1743,7 @@ export async function GET(req) {
       const notes = await ConsignmentNote.find(
         companyScopeFilter(user, { loadingInfoNo })
       ).sort({ createdAt: 1 }).lean();
+      await Promise.all(notes.map((note) => includeConsigneeGst(note, user)));
       return NextResponse.json({ success: true, data: notes }, { status: 200 });
     }
 
@@ -2124,6 +2140,7 @@ export async function POST(req) {
         name: body.consignee?.name || '',
         address: body.consignee?.address || '',
         customerId: body.consignee?.customerId || '',
+        gstNumber: body.consignee?.gstNumber || '',
         selectedAddressTitle: body.consignee?.selectedAddressTitle || ''
       },
       invoice: {

@@ -976,6 +976,8 @@ import mongoose from 'mongoose';
 import { activeOperatingCompanyId, companyScopeFilter } from "@/lib/companyScope";
 import { validateOpenOrderRows } from '@/lib/orderRowStatus';
 import VehicleNegotiation from '@/app/api/vehicle-negotiation/VehicleNegotiation';
+import OrderPanel from '@/app/api/order-panel/OrderPanel';
+import LoadingPanel from '@/app/api/loading-panel/LoadingPanel';
 import RateMaster from '@/app/api/rate-master/schema';
 import Location from '@/app/api/locations/schema';
 import Branch from '@/app/api/branches/schema';
@@ -1230,6 +1232,36 @@ export async function GET(req) {
         .sort({ date: -1, createdAt: -1 })
         .lean();
 
+      // Reconcile cancellations that happened before the pending-charge flag
+      // was introduced. A charge is pending only when the cancelled order row
+      // is present in Loading Info and the Pricing Panel row is still blank.
+      const cancelledOrderPanels = await OrderPanel.find(companyScopeFilter(user, { 'plantRows.status': 'Cancelled' }))
+        .select('orderPanelNo plantRows._id plantRows.status')
+        .lean();
+      const cancelledRowsByOrderNo = new Map();
+      for (const sourcePanel of cancelledOrderPanels) {
+        const rows = (sourcePanel.plantRows || []).filter((row) => row.status === 'Cancelled');
+        if (rows.length) cancelledRowsByOrderNo.set(sourcePanel.orderPanelNo, rows);
+      }
+      const loadingPanelsForCancelledOrders = cancelledRowsByOrderNo.size
+        ? await LoadingPanel.find(companyScopeFilter(user, { 'orderRows.orderNo': { $in: [...cancelledRowsByOrderNo.keys()] } }))
+          .select('orderRows.orderNo orderRows.orderPanelId orderRows.orderRowId')
+          .lean()
+        : [];
+      const cancelledRowsWithLoadingInfo = new Set();
+      const cancelledOrderNumbersWithLoadingInfo = new Set();
+      for (const loadingPanel of loadingPanelsForCancelledOrders) {
+        for (const loadingRow of loadingPanel.orderRows || []) {
+          const candidates = cancelledRowsByOrderNo.get(loadingRow.orderNo) || [];
+          const matched = candidates.filter((row) => String(row._id) === String(loadingRow.orderRowId || ''));
+          const linkedCancelledRows = matched.length ? matched : candidates.length === 1 ? candidates : [];
+          for (const row of linkedCancelledRows) {
+            cancelledRowsWithLoadingInfo.add(`${loadingRow.orderNo}:${String(row._id)}`);
+            cancelledOrderNumbersWithLoadingInfo.add(loadingRow.orderNo);
+          }
+        }
+      }
+
       console.log(`Found ${pricingPanels.length} pricing panels`);
 
       const tableData = [];
@@ -1248,6 +1280,12 @@ export async function GET(req) {
 
         if (panel.orders && panel.orders.length > 0) {
           for (const order of panel.orders) {
+            const cancellationChargeEntered = String(order.cancellationCharges || '').trim() !== '' && String(order.cancellationCharges || '').trim().toLowerCase() !== 'nil';
+            const cancellationChargeRequired = !cancellationChargeEntered && (
+              !!order.cancellationChargeRequired || cancelledRowsWithLoadingInfo.has(`${order.orderNo}:${String(order.orderRowId || '')}`) ||
+              ([...cancelledRowsWithLoadingInfo].some((key) => key.startsWith(`${order.orderNo}:`)) && !order.orderRowId)
+            );
+            const orderCancelled = !!order.cancellationChargeRequired || cancelledOrderNumbersWithLoadingInfo.has(order.orderNo);
             let vnnNumber = '-';
             if (order.vehicleNegotiationId) {
               try {
@@ -1281,6 +1319,8 @@ export async function GET(req) {
               from: order.fromName || '',
               to: order.toName || '',
               weight: order.weight || 0,
+              cancellationChargeRequired,
+              orderCancelled,
               totalWeight: panelTotalWeight,
               pricing,
               approval: panel.rateApproval?.approvalStatus || 'Pending',
@@ -1808,12 +1848,17 @@ export async function PUT(req) {
       const requestedTotalWeight = body.orders.reduce((sum, order) => sum + (Number(order?.weight) || 0), 0);
       const processedOrders = await Promise.all(body.orders.map(async (order) => {
         const resolvedRate = await resolvePricingRate(user, order, requestedTotalWeight);
+        const existingOrder = (pricingPanel.orders || []).find((current) => String(current._id) === String(order._id) || (current.orderNo === order.orderNo && current.orderRowId === (order.orderRowId || order.originalRowId || order._id || '')));
+        const cancellationCharges = order.cancellationCharges ?? existingOrder?.cancellationCharges ?? '';
+        const chargeEntered = String(cancellationCharges).trim() !== '' && String(cancellationCharges).trim().toLowerCase() !== 'nil';
         return {
           _id: order._id && isValidObjectId(order._id)
             ? new mongoose.Types.ObjectId(order._id)
             : new mongoose.Types.ObjectId(),
           orderNo: order.orderNo || '',
       orderRowId: order.orderRowId || order.originalRowId || order._id || '',
+          cancellationCharges,
+          cancellationChargeRequired: !!existingOrder?.cancellationChargeRequired && !chargeEntered,
           vehicleNegotiationId: order.vehicleNegotiationId || null,
           vnnNumber: order.vnnNumber || '',
           partyName: order.partyName || '',

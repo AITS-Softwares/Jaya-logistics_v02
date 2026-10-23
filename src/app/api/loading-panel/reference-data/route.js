@@ -14,7 +14,7 @@ import Owner from "@/app/api/owners/Owner";
 import { filterOpenOrderRows } from '@/lib/orderRowStatus';
 
 const orderFields = [
-  "orderNo", "orderRowId", "partyName", "plantCode", "plantCodeValue", "plantName", "orderType",
+  "orderNo", "orderPanelId", "orderRowId", "partyName", "plantCode", "plantCodeValue", "plantName", "orderType",
   "pinCode", "from", "fromName", "fromState", "to", "toName", "taluka", "talukaName",
   "district", "districtName", "state", "stateName", "weight", "collectionCharges",
   "cancellationCharges", "loadingCharges", "otherCharges", "localStatus", "localStatusLabel",
@@ -103,6 +103,7 @@ function loadingVnnReference(vnn) {
     otherCharges: vnn.otherCharges || "",
     vehicleNo: vnn.approval?.vehicleNo || "",
     driverMobileNo: vnn.approval?.mobile || "",
+    loadingInfoPhotosOptional: !!vnn.loadingInfoPhotosOptional,
     orders: (vnn.orders || []).map(loadingOrderReference),
   };
 }
@@ -202,7 +203,24 @@ async function getAvailableVnnsForLoading(user) {
 
   const eligible = vehicleNegotiations.filter((vnn) => !['Draft', 'Cancelled'].includes(vnn.panelStatus) && isVnnReadyForDownstream(vnn) && !usedVnnNumbers.has(vnn.vnnNo));
   const openRows = await Promise.all(eligible.map((vnn) => filterOpenOrderRows(user, vnn.orders || [])));
-  return eligible.map((vnn, index) => ({ ...vnn, orders: openRows[index] })).filter((vnn) => vnn.orders.length);
+  const orderPanelIds = [...new Set(eligible.flatMap((vnn) => (vnn.orders || []).map((order) => String(order.orderPanelId || '')).filter((id) => /^[a-f\d]{24}$/i.test(id))))];
+  const orderNumbers = [...new Set(eligible.flatMap((vnn) => (vnn.orders || []).map((order) => order.orderNo).filter(Boolean)))];
+  const orderPanelQuery = [
+    ...(orderPanelIds.length ? [{ _id: { $in: orderPanelIds } }] : []),
+    ...(orderNumbers.length ? [{ orderPanelNo: { $in: orderNumbers } }] : []),
+  ];
+  const orderPanels = orderPanelQuery.length
+    ? await OrderPanel.find(companyScopeFilter(user, { $or: orderPanelQuery }), { orderPanelNo: 1, loadingInfoPhotosOptional: 1 }).lean()
+    : [];
+  const optionalPanelIds = new Set(orderPanels.filter((panel) => panel.loadingInfoPhotosOptional).map((panel) => String(panel._id)));
+  const optionalPanelNos = new Set(orderPanels.filter((panel) => panel.loadingInfoPhotosOptional).map((panel) => String(panel.orderPanelNo)));
+  return eligible.map((vnn, index) => {
+    const orders = openRows[index];
+    const loadingInfoPhotosOptional = orders.some((order) =>
+      optionalPanelIds.has(String(order.orderPanelId || '')) || optionalPanelNos.has(String(order.orderNo || '')),
+    );
+    return { ...vnn, orders, loadingInfoPhotosOptional };
+  }).filter((vnn) => vnn.orders.length);
 }
 
 /**

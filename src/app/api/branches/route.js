@@ -124,6 +124,45 @@ export async function POST(req) {
 }
 
 /* ========================================
+   PUT /api/branches?id=123
+======================================== */
+export async function PUT(req) {
+  await connectDb();
+  const { user, error, status } = await validateUser(req, 'edit');
+  if (error) return NextResponse.json({ success: false, message: error }, { status });
+
+  try {
+    const branchId = new URL(req.url).searchParams.get("id");
+    const { name, code } = await req.json();
+    const normalizedName = String(name || "").trim();
+    const normalizedCode = String(code || "").trim().toUpperCase();
+
+    if (!branchId) return NextResponse.json({ success: false, message: "Branch ID is required" }, { status: 400 });
+    if (!normalizedName || !normalizedCode) {
+      return NextResponse.json({ success: false, message: "Name and code are required" }, { status: 400 });
+    }
+
+    const duplicate = await Branch.findOne({
+      companyId: user.companyId,
+      code: normalizedCode,
+      _id: { $ne: branchId },
+    });
+    if (duplicate) return NextResponse.json({ success: false, message: "Branch code already exists" }, { status: 400 });
+
+    const branch = await Branch.findOneAndUpdate(
+      { _id: branchId, companyId: user.companyId },
+      { $set: { name: normalizedName, code: normalizedCode } },
+      { new: true, runValidators: true }
+    );
+    if (!branch) return NextResponse.json({ success: false, message: "Branch not found" }, { status: 404 });
+    return NextResponse.json({ success: true, data: branch, message: "Branch updated successfully" });
+  } catch (err) {
+    console.error("PUT /branches error:", err);
+    return NextResponse.json({ success: false, message: "Failed to update branch" }, { status: 500 });
+  }
+}
+
+/* ========================================
    DELETE /api/branches?id=123
 ======================================== */
 export async function DELETE(req) {

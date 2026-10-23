@@ -86,7 +86,8 @@ const VALIDATORS = {
     if (d.gstNumber && !/^\d{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(d.gstNumber))
       e.gstNumber = "Invalid GST (e.g. 22ABCDE1234F1Z5)";
     if (!d.glAccount?._id) e.glAccount = "GL Account is required";
-    if (d.dueDays && (isNaN(d.dueDays) || d.dueDays < 0)) e.dueDays = "Due days must be a positive number";
+    if (d.dueDays === "" || d.dueDays === null || d.dueDays === undefined) e.dueDays = "Due days are required";
+    else if (isNaN(d.dueDays) || Number(d.dueDays) < 0) e.dueDays = "Due days must be zero or a positive number";
     return e;
   },
   5: (d) => {
@@ -922,13 +923,13 @@ export default function SupplierManagement() {
               <input className={fi("")} name="paymentTerms" type="number" placeholder="e.g. 30" value={sd.paymentTerms || ""} onChange={handleChange} />
             </div>
             <div>
-              <Lbl text="Due Days" />
+              <Lbl text="Due Days" req />
               <input 
                 className={fi("dueDays")} 
                 name="dueDays" 
                 type="number" 
                 placeholder="e.g. 15" 
-                value={sd.dueDays || ""} 
+                value={sd.dueDays ?? ""}
                 onChange={handleChange}
               />
               <p className="text-[11px] text-gray-400 mt-1">Number of days for payment due</p>
@@ -1013,7 +1014,7 @@ export default function SupplierManagement() {
             <RRow l="GST Category" v={sd.gstCategory} />
             <RRow l="PAN" v={sd.pan} />
             <RRow l="Payment Terms" v={sd.paymentTerms ? `${sd.paymentTerms} days` : ""} />
-            <RRow l="Due Days" v={sd.dueDays ? `${sd.dueDays} days` : ""} />
+            <RRow l="Due Days" v={sd.dueDays !== "" && sd.dueDays !== null && sd.dueDays !== undefined ? `${sd.dueDays} days` : ""} />
             <RRow l="GL Account" v={sd.glAccount?.accountName} />
           </div>
 
@@ -1169,7 +1170,7 @@ export default function SupplierManagement() {
                           <span className="text-gray-200 text-xs">—</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-gray-600 text-xs font-medium">{s.dueDays ? `${s.dueDays} days` : <span className="text-gray-200">—</span>}</td>
+                      <td className="px-4 py-3 text-gray-600 text-xs font-medium">{s.dueDays !== null && s.dueDays !== undefined ? `${s.dueDays} days` : <span className="text-gray-200">—</span>}</td>
                       <td className="px-4 py-3">
                         {s.valid === true ? <span className="text-[10.5px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600">✓ Valid</span>
                          : s.valid === false ? <span className="text-[10.5px] font-semibold px-2 py-0.5 rounded-full bg-red-50 text-red-500">✗ Invalid</span>
@@ -1359,7 +1360,7 @@ function SupplierViewModal({ open, onClose, supplier: s, onEdit }) {
               <Row l="GST Category" v={s.gstCategory} />
               <Row l="PAN" v={s.pan} />
               <Row l="Payment Terms" v={s.paymentTerms ? `${s.paymentTerms} days` : ""} />
-              <Row l="Due Days" v={s.dueDays ? `${s.dueDays} days` : ""} />
+              <Row l="Due Days" v={s.dueDays !== null && s.dueDays !== undefined ? `${s.dueDays} days` : ""} />
               <Row l="GL Account" v={s.glAccount?.accountName} />
             </div>
           </div>

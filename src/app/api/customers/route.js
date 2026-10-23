@@ -64,7 +64,9 @@ export async function GET(req) {
   if (error)
     return NextResponse.json({ success: false, message: error }, { status });
 
-  if (!isAuthorized(user)) {
+  const masterDataViewer = user.modules?.["Master Data"]?.selected === true
+    && user.modules?.["Master Data"]?.permissions?.view !== false;
+  if (!isAuthorized(user) && !masterDataViewer) {
     return NextResponse.json(
       { success: false, message: "Forbidden: insufficient permissions" },
       { status: 403 }

@@ -4273,6 +4273,7 @@ export default function EditPurchasePanel() {
         driverMobileNo: driverMobileNo,
         purchaseType: approvalData.purchaseType || negotiation.purchaseType || "Loading & Unloading",
         paymentTerms: approvalData.paymentTerms || "80 % Advance",
+        advance: approvalData.paymentTerms === "Custom / Manual" ? String(approvalData.advance ?? "") : "",
         rateType: approvalData.rateType || "Per MT",
         rate: approvalData.finalPerMT?.toString() || approvalData.finalFix?.toString() || "",
         amount: calculatedPurchaseAmount.toString(),

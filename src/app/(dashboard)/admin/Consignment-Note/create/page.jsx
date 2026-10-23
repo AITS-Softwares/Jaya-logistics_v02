@@ -4058,6 +4058,7 @@ export default function CreateConsignmentNote() {
     name: "",
     address: "",
     customerId: "",
+    gstNumber: "",
     selectedAddressTitle: ""
   });
 
@@ -4860,6 +4861,7 @@ export default function CreateConsignmentNote() {
       name: customer.customerName,
       address: addresses.length > 0 ? addresses[0].address : '',
       customerId: customer._id,
+      gstNumber: addresses.length > 0 ? addresses[0].gstNumber : (customer.gstNumber || ''),
       selectedAddressTitle: addresses.length > 0 ? addresses[0].title : ''
     });
 
@@ -4890,6 +4892,7 @@ export default function CreateConsignmentNote() {
     setConsignee(prev => ({
       ...prev,
       address: addressObj.address,
+      gstNumber: addressObj.gstNumber || '',
       selectedAddressTitle: addressObj.title
     }));
     setShowConsigneeAddressDropdown(false);

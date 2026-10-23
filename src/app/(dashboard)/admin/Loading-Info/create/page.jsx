@@ -6142,6 +6142,7 @@ export default function CreateLoadingInfoPanel() {
   const [showVehicleNegotiationDropdown, setShowVehicleNegotiationDropdown] = useState(false);
   const [filteredVehicleNegotiations, setFilteredVehicleNegotiations] = useState([]);
   const [selectedVehicleNegotiation, setSelectedVehicleNegotiation] = useState(null);
+  const [loadingInfoPhotosOptional, setLoadingInfoPhotosOptional] = useState(false);
   const vehicleNegotiationDropdownRef = useRef(null);
 
   const [hasHelper, setHasHelper] = useState(false);
@@ -6723,6 +6724,7 @@ export default function CreateLoadingInfoPanel() {
   const handleSelectVehicleNegotiation = async (negotiation) => {
     if (isReadOnly) return;
     setSelectedVehicleNegotiation(negotiation);
+    setLoadingInfoPhotosOptional(!!negotiation.loadingInfoPhotosOptional);
     setVehicleNegotiationNo(negotiation.vnnNo);
     setShowVehicleNegotiationDropdown(false);
     setFetchingNegotiationData(true);
@@ -6771,6 +6773,7 @@ export default function CreateLoadingInfoPanel() {
           setOrderRows(fullNegotiation.orders.map((order) => ({
             _id: uid(),
             orderNo: order.orderNo || '',
+            orderPanelId: order.orderPanelId || '',
             partyName: order.partyName || fullNegotiation.customerName || '',
             plantCode: order.plantCode || '',
             plantCodeValue: order.plantCodeValue || '',
@@ -7338,7 +7341,7 @@ export default function CreateLoadingInfoPanel() {
     }
 
     const totalVlPhotos = getTotalVlPhotosCount();
-    if (!isDraftSave && totalVlPhotos < 5) {
+    if (!isDraftSave && !loadingInfoPhotosOptional && totalVlPhotos < 5) {
       alert(`Please upload at least 5 Vehicle Loading (VL) photos. Currently uploaded: ${totalVlPhotos}/5`);
       return;
     }
@@ -7602,6 +7605,7 @@ export default function CreateLoadingInfoPanel() {
     });
     setVehicleNegotiationNo("");
     setSelectedVehicleNegotiation(null);
+    setLoadingInfoPhotosOptional(false);
     setOrderRows([defaultOrderRow()]);
     setVehicleInfo({
       vehicleNo: "",
@@ -9302,7 +9306,7 @@ export default function CreateLoadingInfoPanel() {
                 <div>
                   <h3 className="text-sm font-bold text-slate-800">Vehicle Loading Pictures (VL)</h3>
                   <p className="text-xs text-slate-500 mt-1">
-                    Minimum 5 photos required • Maximum 25 photos allowed • Current: {getTotalVlPhotosCount()} / 25
+                    {loadingInfoPhotosOptional ? 'Photos optional for this Loading Info' : 'Minimum 5 photos required'} • Maximum 25 photos allowed • Current: {getTotalVlPhotosCount()} / 25
                   </p>
                   <p className="text-xs text-blue-500 mt-1">
                     Active Fields: {vlFields.length} • Max Fields: 15
@@ -9320,7 +9324,7 @@ export default function CreateLoadingInfoPanel() {
                       Add Field VL-{vlFields.length + 1}
                     </button>
                   )}
-                  {getTotalVlPhotosCount() < 5 && (
+                  {!loadingInfoPhotosOptional && getTotalVlPhotosCount() < 5 && (
                     <div className="text-xs text-red-500 font-medium flex items-center">
                       ⚠️ Need {5 - getTotalVlPhotosCount()} more photo(s)
                     </div>
@@ -9526,7 +9530,7 @@ export default function CreateLoadingInfoPanel() {
                   />
                 </div>
                 <div className="flex justify-between text-xs mt-1">
-                  <span className="text-red-500">⚠️ Minimum: 5 photos</span>
+                  <span className={loadingInfoPhotosOptional ? "text-green-600" : "text-red-500"}>{loadingInfoPhotosOptional ? "✓ Photos optional" : "⚠️ Minimum: 5 photos"}</span>
                   <span className="text-green-500">✓ Maximum: 25 photos</span>
                 </div>
               </div>
@@ -9544,7 +9548,7 @@ export default function CreateLoadingInfoPanel() {
                 </span>
               </div>
 
-              {getTotalVlPhotosCount() > 0 && getTotalVlPhotosCount() < 5 && (
+              {!loadingInfoPhotosOptional && getTotalVlPhotosCount() > 0 && getTotalVlPhotosCount() < 5 && (
                 <div className="mt-3 p-3 bg-red-50 rounded-lg border border-red-200">
                   <p className="text-xs text-red-600 flex items-center gap-2">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

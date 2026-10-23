@@ -1985,19 +1985,25 @@ const Submenu = ({ label, icon, isOpen, onToggle, children }) => (
   </div>
 );
 
-const Item = ({ href, icon, label, onClick, isActive }) => (
-  <Link
-    href={href}
-    onClick={onClick}
-    className={`flex gap-3 px-4 py-2 text-[13px] rounded-l-md transition-all ${isActive
+const Item = ({ href, icon, label, onClick, isActive, disabled = false }) => {
+  const className = `flex gap-3 px-4 py-2 text-[13px] rounded-l-md transition-all ${disabled
+    ? "cursor-not-allowed text-gray-500 opacity-60"
+    : isActive
       ? "text-white bg-blue-600/40 border-r-2 border-blue-400"
       : "text-gray-300 hover:text-white hover:bg-blue-600/20"
-      }`}
-  >
+    }`;
+
+  const content = <>
     <span className="text-base opacity-70 shrink-0">{icon}</span>
     <span className="truncate">{label}</span>
-  </Link>
-);
+  </>;
+
+  if (disabled) {
+    return <div aria-disabled="true" title={`${label} is currently unavailable`} className={className}>{content}</div>;
+  }
+
+  return <Link href={href} onClick={onClick} className={className}>{content}</Link>;
+};
 
 // ── MAIN LAYOUT ──
 
@@ -2440,7 +2446,7 @@ export default function Layout({ children }) {
                       href="/admin/rate-target-vehicle-negotiation"
                       icon={<HiCurrencyRupee />}
                       label="Rate Target (Vehicle Negotiation)"
-                      onClick={closeSidebar}
+                      disabled
                       isActive={isActive("/admin/rate-target-vehicle-negotiation")}
                     />
                   )}
@@ -3172,7 +3178,7 @@ export default function Layout({ children }) {
                       href="/admin/rate-target-vehicle-negotiation"
                       icon={<HiCurrencyRupee />}
                       label="Rate Target"
-                      onClick={closeSidebar}
+                      disabled
                       isActive={isActive('/admin/rate-target-vehicle-negotiation')}
                     />
                   )}

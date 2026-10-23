@@ -72,6 +72,9 @@ import { NextResponse } from "next/server";
 import connectDb from "@/lib/db";
 import ConsignmentNote from "../../consignment-note/ConsignmentNote";
 import OrderPanel from "../../order-panel/OrderPanel";
+import LoadingPanel from "../../loading-panel/LoadingPanel";
+import PricingPanel from "../../pricing-panel/PricingPanel";
+import { companyScopeFilter } from "@/lib/companyScope";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 
 // ── PERMISSION FUNCTIONS ──
@@ -168,16 +171,58 @@ export async function POST(req) {
       totalAmount += 500;
     });
 
-    const orders = await OrderPanel.find({ companyId: user.companyId })
+    const orders = await OrderPanel.find(companyScopeFilter(user, { companyId: user.companyId }))
       .select('orderPanelNo partyName customerName branchName date plantRows')
       .lean();
-    orders.forEach((order) => (order.plantRows || []).forEach((row) => {
-      const amount = Math.max(0, Number(row.cancellationCharges) || 0) * (row.cancellationChargeMode === 'per MT' ? (Number(row.weight) || 0) / 1000 : 1);
-      if (!amount || row.status !== 'Cancelled') return;
-      if (clientName && !String(order.partyName || order.customerName || '').toLowerCase().includes(String(clientName).toLowerCase())) return;
+    const cancelledOrderRows = orders.flatMap((order) => (order.plantRows || [])
+      .filter((row) => row.status === 'Cancelled')
+      .map((row) => ({ order, row })));
+    const orderNos = [...new Set(cancelledOrderRows.map(({ order }) => order.orderPanelNo).filter(Boolean))];
+    const [loadingPanels, pricingPanels] = orderNos.length
+      ? await Promise.all([
+        LoadingPanel.find(companyScopeFilter(user, { 'orderRows.orderNo': { $in: orderNos } }))
+          .select('orderRows.orderNo orderRows.orderPanelId orderRows.orderRowId orderRows.plantName orderRows.plantCodeValue orderRows.fromName orderRows.toName')
+          .lean(),
+        PricingPanel.find(companyScopeFilter(user, { 'orders.orderNo': { $in: orderNos } }))
+          .select('pricingSerialNo orders.orderNo orders.orderRowId orders.plantName orders.plantCodeValue orders.fromName orders.toName orders.cancellationCharges')
+          .lean(),
+      ])
+      : [[], []];
+
+    const sameOrderRow = (source, candidate, candidatesForOrder) => {
+      if (candidate.orderRowId && String(candidate.orderRowId) === String(source.row._id)) return true;
+      if (candidatesForOrder.length === 1) return true;
+      const plantMatches = String(candidate.plantCodeValue || candidate.plantName || '').trim().toLowerCase() ===
+        String(source.row.plantCodeValue || source.row.plantName || '').trim().toLowerCase();
+      const fromMatches = !candidate.fromName || String(candidate.fromName).trim().toLowerCase() === String(source.row.fromName || '').trim().toLowerCase();
+      const toMatches = !candidate.toName || String(candidate.toName).trim().toLowerCase() === String(source.row.toName || '').trim().toLowerCase();
+      // Older Loading Info / Pricing Panel rows may carry a row id from a
+      // different source record. Use the stable plant and route fields as a
+      // fallback so those linked rows are not silently excluded.
+      return plantMatches && fromMatches && toMatches;
+    };
+
+    for (const source of cancelledOrderRows) {
+      const { order, row } = source;
+      if (excludeLRs.includes(order.orderPanelNo)) continue;
+      if (clientName && !String(order.partyName || order.customerName || '').toLowerCase().includes(String(clientName).toLowerCase())) continue;
+      const rowsForOrder = cancelledOrderRows.filter((item) => item.order.orderPanelNo === order.orderPanelNo);
+      const loadingExists = loadingPanels.some((panel) => (panel.orderRows || []).some((candidate) =>
+        candidate.orderNo === order.orderPanelNo && sameOrderRow(source, candidate, rowsForOrder)
+      ));
+      if (!loadingExists) continue;
+
+      const pricingOrderRows = pricingPanels.flatMap((panel) => (panel.orders || [])
+        .filter((candidate) => candidate.orderNo === order.orderPanelNo && sameOrderRow(source, candidate, rowsForOrder)));
+      const amount = pricingOrderRows.reduce((sum, pricingRow) => {
+        const value = Number(pricingRow.cancellationCharges);
+        return sum + (Number.isFinite(value) && value > 0 ? value : 0);
+      }, 0);
+      if (!amount) continue;
+
       const date = row.statusChangedAt || order.date || order.createdAt;
-      if (startDate && new Date(date) < new Date(startDate)) return;
-      if (endDate && new Date(date) > new Date(`${endDate}T23:59:59`)) return;
+      if (startDate && new Date(date) < new Date(startDate)) continue;
+      if (endDate && new Date(date) > new Date(`${endDate}T23:59:59`)) continue;
       billingData.push({
         id: `order-${order.orderPanelNo}-${row._id}`,
         date,
@@ -190,7 +235,7 @@ export async function POST(req) {
         amount,
       });
       totalAmount += amount;
-    }));
+    }
     
     return NextResponse.json({
       success: true,

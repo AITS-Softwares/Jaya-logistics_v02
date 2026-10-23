@@ -3,10 +3,32 @@ import dbConnect from "@/lib/db";
 import Customer from "@/models/CustomerModel";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 
-function isAuthorized(user) {
+function isAuthorized(user, action = "view") {
+  if (!user) return false;
   if (user.type === "company") return true;
-  if (["Admin"].includes(user.role)) return true;
-  return user.permissions?.includes("customer");
+
+  const roles = (Array.isArray(user.roles) ? user.roles : [user.role])
+    .filter(Boolean)
+    .map((role) => String(role).trim().toLowerCase());
+  const legacyAllowedRoles = [
+    "admin",
+    "crm",
+    "sales manager",
+    "purchase manager",
+    "inventory manager",
+    "accounts manager",
+    "hr manager",
+    "support executive",
+    "production head",
+    "project manager",
+  ];
+  if (roles.includes("admin") || roles.some((role) => legacyAllowedRoles.includes(role))) return true;
+  if (user.permissions?.includes("customer")) return true;
+
+  return ["Customers", "Master Data"].some((moduleName) => {
+    const module = user.modules?.[moduleName];
+    return module?.selected === true && module.permissions?.[action] === true;
+  });
 }
 
 export async function GET(req, { params }) {
@@ -14,18 +36,12 @@ export async function GET(req, { params }) {
 
   try {
     const token = getTokenFromHeader(req);
-    if (!token) {
-      return NextResponse.json({ success: false, message: "Token missing" }, { status: 401 });
+    const user = token ? verifyJWT(token) : null;
+    if (!user) {
+      return NextResponse.json({ success: false, message: "Authentication required. Please login again." }, { status: 401 });
     }
 
-    let user;
-    try {
-      user = verifyJWT(token);
-    } catch (err) {
-      return NextResponse.json({ success: false, message: "Invalid or expired token" }, { status: 401 });
-    }
-
-    if (!isAuthorized(user)) {
+    if (!isAuthorized(user, "view")) {
       return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 403 });
     }
 
@@ -52,15 +68,13 @@ export async function PUT(req, { params }) {
 
   try {
     const token = getTokenFromHeader(req);
-    let user;
-    try {
-      user = verifyJWT(token);
-    } catch {
-      return NextResponse.json({ success: false, message: "Invalid token" }, { status: 401 });
+    const user = token ? verifyJWT(token) : null;
+    if (!user) {
+      return NextResponse.json({ success: false, message: "Authentication required. Please login again." }, { status: 401 });
     }
 
-    if (!isAuthorized(user)) {
-      return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 403 });
+    if (!isAuthorized(user, "edit")) {
+      return NextResponse.json({ success: false, message: "You do not have permission to edit Customers." }, { status: 403 });
     }
 
     const { id } = params;
@@ -99,15 +113,13 @@ export async function DELETE(req, { params }) {
   await dbConnect();
   try {
     const token = getTokenFromHeader(req);
-    let user;
-    try {
-      user = verifyJWT(token);
-    } catch {
-      return NextResponse.json({ success: false, message: "Invalid token" }, { status: 401 });
+    const user = token ? verifyJWT(token) : null;
+    if (!user) {
+      return NextResponse.json({ success: false, message: "Authentication required. Please login again." }, { status: 401 });
     }
 
-    if (!isAuthorized(user)) {
-      return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 403 });
+    if (!isAuthorized(user, "delete")) {
+      return NextResponse.json({ success: false, message: "You do not have permission to delete Customers." }, { status: 403 });
     }
 
     const { id } = params;

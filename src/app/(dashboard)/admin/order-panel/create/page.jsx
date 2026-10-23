@@ -9804,6 +9804,7 @@ export default function CreateOrderPanel() {
     subCompanyName: "",
     subCompanyCode: "",
     delivery: "Normal",
+    loadingInfoPhotosOptional: false,
     date: new Date().toISOString().split('T')[0],
     partyName: "",
     collectionCharges: "",
@@ -9966,6 +9967,7 @@ export default function CreateOrderPanel() {
 
     if (selectedCustomer && query !== selectedCustomer.customerName) {
       setSelectedCustomer(null);
+      setPackRows((prev) => prev.map((row) => ({ ...row, productId: "", productName: "" })));
       setTop(prev => ({
         ...prev,
         customerId: "",
@@ -9978,6 +9980,9 @@ export default function CreateOrderPanel() {
   };
 
   const handleSelectCustomer = (customer) => {
+    if (selectedCustomer && String(selectedCustomer._id) !== String(customer._id)) {
+      setPackRows((prev) => prev.map((row) => ({ ...row, productId: "", productName: "" })));
+    }
     setSelectedCustomer(customer);
     setCustomerSearchQuery(customer.customerName);
     setShowCustomerDropdown(false);
@@ -10484,7 +10489,13 @@ export default function CreateOrderPanel() {
       return;
     }
 
-    // A draft can be saved with whatever is filled in so far; only a real submit needs the required fields
+    const missingDropRows = plantRows.filter(row => !String(row.toName || row.cityName || row.city || row.to || '').trim());
+    if (missingDropRows.length) {
+      alert("Please select a drop location for every order row");
+      return;
+    }
+
+    // Branch and plant selections are required when submitting an order.
     if (!isDraftSave) {
       if (!top.branch) {
         alert("Please select a branch");
@@ -10496,6 +10507,7 @@ export default function CreateOrderPanel() {
         alert("Please select plant for all plant rows");
         return;
       }
+
     }
 
     setSaving(true);
@@ -10593,6 +10605,7 @@ export default function CreateOrderPanel() {
         subCompanyName: top.subCompanyName || '',
         subCompanyCode: top.subCompanyCode || '',
         delivery: top.delivery,
+        loadingInfoPhotosOptional: top.loadingInfoPhotosOptional,
         date: top.date,
         customerId: selectedCustomer?._id || null,
         customerCode: selectedCustomer?.customerCode || '',
@@ -10911,6 +10924,21 @@ export default function CreateOrderPanel() {
               />
             </div>
 
+            <div className="col-span-12">
+              <label className="inline-flex items-start gap-2 text-sm text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={!!top.loadingInfoPhotosOptional}
+                  onChange={(e) => setTop((p) => ({ ...p, loadingInfoPhotosOptional: e.target.checked }))}
+                  className="mt-0.5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                />
+                <span>
+                  Make Loading Info photos optional for this order
+                  <span className="block text-xs text-slate-500">If any order linked to a Loading Info has this selected, photos are optional for that Loading Info.</span>
+                </span>
+              </label>
+            </div>
+
             <div className="col-span-12 md:col-span-4">
               <InputWithRef
                 ref={dateRef}
@@ -11098,7 +11126,7 @@ export default function CreateOrderPanel() {
                 pkgTypes={pkgTypes}
                 uoms={uoms}
                 skuSizes={skuSizes}
-                items={items}
+                items={selectedCustomer ? items.filter((item) => String(item.customerId) === String(selectedCustomer._id)) : []}
                 onRefreshItems={fetchItems}
                 onRefreshPkgTypes={fetchPkgTypes}
                 onRefreshUOMs={fetchUOMs}
@@ -11508,7 +11536,7 @@ function PlantGridTable({
     { key: "orderType", label: "Order Type", width: "150px" },
     { key: "pinCode", label: "Pin Code", width: "120px" },
     { key: "from", label: "From", width: "250px" },
-    { key: "to", label: "To / City", width: "220px" },
+    { key: "to", label: "To / City *", width: "220px" },
     { key: "taluka", label: "Taluka", width: "150px" },
     { key: "district", label: "District", width: "150px" },
     { key: "state", label: "State", width: "150px" },
@@ -12345,7 +12373,7 @@ function PackTypeTable({
   const [itemHighlightedIndex, setItemHighlightedIndex] = useState({});
   const [itemSearchQuery, setItemSearchQuery] = useState({});
   const [filteredItems, setFilteredItems] = useState({});
-  const [itemDropdownPosition, setItemDropdownPosition] = useState({ top: 0, left: 0, width: 0, direction: 'down' });
+  const [itemDropdownPosition, setItemDropdownPosition] = useState({ top: 0, bottom: 0, left: 0, width: 0, maxHeight: 300, direction: 'down' });
   const [activeItemRowId, setActiveItemRowId] = useState(null);
   const itemInputRefs = useRef({});
   const itemDropdownRef = useRef({});
@@ -12466,24 +12494,31 @@ function PackTypeTable({
     setActiveItemRowId(null);
   };
 
+  const positionItemDropdown = (rowId) => {
+    const input = itemInputRefs.current[rowId];
+    if (!input) return;
+    const rect = input.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const shouldOpenUp = spaceBelow < 180 && rect.top > spaceBelow;
+    const availableHeight = Math.max(0, Math.min(300, shouldOpenUp ? rect.top : spaceBelow));
+    const width = Math.min(Math.max(rect.width, 240), Math.max(180, window.innerWidth - 16));
+    const left = Math.min(Math.max(8, rect.left), Math.max(8, window.innerWidth - width - 8));
+    setItemDropdownPosition({
+      top: rect.bottom,
+      bottom: window.innerHeight - rect.top,
+      left,
+      width,
+      maxHeight: availableHeight,
+      direction: shouldOpenUp ? 'up' : 'down'
+    });
+  };
+
   const handleItemInputFocus = (rowId, event) => {
     onRefreshItems?.();
     if (!showItemDropdown[rowId]) {
       setFilteredItems(prev => ({ ...prev, [rowId]: items }));
-
-      const rect = event.target.getBoundingClientRect();
-      const viewportHeight = window.innerHeight;
-      const spaceBelow = viewportHeight - rect.bottom;
-      const dropdownHeight = 300;
-      const direction = spaceBelow < dropdownHeight ? 'up' : 'down';
-
-      setItemDropdownPosition({
-        top: direction === 'down' ? rect.bottom + window.scrollY : rect.top + window.scrollY - dropdownHeight,
-        left: rect.left + window.scrollX,
-        width: rect.width,
-        direction: direction
-      });
-
+      itemInputRefs.current[rowId] = event.target;
+      positionItemDropdown(rowId);
       setShowItemDropdown(prev => ({ ...prev, [rowId]: true }));
       setActiveItemRowId(rowId);
     }
@@ -12502,18 +12537,7 @@ function PackTypeTable({
   useEffect(() => {
     const handleScroll = () => {
       if (activeItemRowId && itemInputRefs.current[activeItemRowId]) {
-        const rect = itemInputRefs.current[activeItemRowId].getBoundingClientRect();
-        const viewportHeight = window.innerHeight;
-        const spaceBelow = viewportHeight - rect.bottom;
-        const dropdownHeight = 300;
-        const direction = spaceBelow < dropdownHeight ? 'up' : 'down';
-
-        setItemDropdownPosition({
-          top: direction === 'down' ? rect.bottom + window.scrollY : rect.top + window.scrollY - dropdownHeight,
-          left: rect.left + window.scrollX,
-          width: rect.width,
-          direction: direction
-        });
+        positionItemDropdown(activeItemRowId);
       }
     };
 
@@ -12783,10 +12807,11 @@ function PackTypeTable({
                                     ref={el => itemDropdownRef.current[r._id] = el}
                                     className="fixed z-[100000] bg-white border border-slate-200 rounded-lg shadow-xl overflow-y-auto"
                                     style={{
-                                      top: `${itemDropdownPosition.top}px`,
+                                      top: itemDropdownPosition.direction === 'down' ? `${itemDropdownPosition.top}px` : undefined,
+                                      bottom: itemDropdownPosition.direction === 'up' ? `${itemDropdownPosition.bottom}px` : undefined,
                                       left: `${itemDropdownPosition.left}px`,
                                       width: `${itemDropdownPosition.width}px`,
-                                      maxHeight: '300px',
+                                      maxHeight: `${itemDropdownPosition.maxHeight}px`,
                                       minWidth: '200px'
                                     }}
                                   >

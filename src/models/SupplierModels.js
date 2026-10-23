@@ -219,7 +219,7 @@ const SupplierSchema = new mongoose.Schema({
 
 dueDays: {
   type: Number,
-  default: 0,
+  required: [true, "Due days are required"],
   min: [0, "Due days must be non-negative"],
   description: "Number of days for payment due"
 },

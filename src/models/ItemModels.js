@@ -26,6 +26,9 @@ const ItemSchema = new mongoose.Schema(
 
     itemCode: { type: String, required: true },
     itemName: { type: String },
+    customerId: { type: mongoose.Schema.Types.ObjectId, ref: "Customer", required: [true, "Customer is required"] },
+    customerName: { type: String, required: true, trim: true },
+    customerCode: { type: String, trim: true, default: "" },
     frappeSync: {
       status: { type: String, enum: ['not_configured', 'synced', 'failed'] },
       name: String,

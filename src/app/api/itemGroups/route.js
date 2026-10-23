@@ -215,13 +215,18 @@ function isAuthorized(user) {
 }
 
 // ✅ Validate user token & permissions
-async function validateUser(req) {
+async function validateUser(req, allowMasterDataViewer = false) {
   const token = getTokenFromHeader(req);
   if (!token) return { error: "Token missing", status: 401 };
 
   try {
     const user = await verifyJWT(token);
-    if (!user || !isAuthorized(user)) return { error: "Unauthorized", status: 403 };
+    if (!user) return { error: "Invalid token", status: 401 };
+    const masterDataViewer = user.modules?.["Master Data"]?.selected === true
+      && user.modules?.["Master Data"]?.permissions?.view !== false;
+    if (!isAuthorized(user) && !(allowMasterDataViewer && masterDataViewer)) {
+      return { error: "You do not have permission to view item groups", status: 403 };
+    }
     return { user };
   } catch (err) {
     console.error("JWT Verification Failed:", err.message);
@@ -271,7 +276,7 @@ export async function POST(req) {
 export async function GET(req) {
   await dbConnect();
 
-  const { user, error, status } = await validateUser(req);
+  const { user, error, status } = await validateUser(req, true);
   if (error) {
     return NextResponse.json({ success: false, message: error }, { status });
   }

@@ -1244,6 +1244,19 @@ function num(value) {
   return Number.isFinite(n) ? n : 0;
 }
 
+async function areLoadingInfoPhotosOptional(user, orderRows = []) {
+  const orderPanelIds = [...new Set(orderRows.map((row) => String(row.orderPanelId || '')).filter((id) => mongoose.Types.ObjectId.isValid(id)))];
+  const orderNumbers = [...new Set(orderRows.map((row) => String(row.orderNo || '').trim()).filter(Boolean))];
+  const alternatives = [
+    ...(orderPanelIds.length ? [{ _id: { $in: orderPanelIds } }] : []),
+    ...(orderNumbers.length ? [{ orderPanelNo: { $in: orderNumbers } }] : []),
+  ];
+  if (!alternatives.length) return false;
+  return Boolean(await OrderPanel.exists(companyScopeFilter(user, {
+    $and: [{ $or: alternatives }, { loadingInfoPhotosOptional: true }],
+  })));
+}
+
 function indiaUploadDateTime(timestamp = new Date()) {
   const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
     .formatToParts(timestamp).reduce((result, part) => ({ ...result, [part.type]: part.value }), {});
@@ -1615,6 +1628,7 @@ export async function POST(req) {
   try {
     const body = await req.json();
     const isDraftSave = body.saveMode === 'draft';
+    const loadingInfoPhotosOptional = await areLoadingInfoPhotosOptional(user, body.orderRows || []);
     const blockedRow = isDraftSave ? null : await validateOpenOrderRows(user, body.orderRows || []);
     if (blockedRow) return NextResponse.json({ success: false, message: blockedRow }, { status: 409 });
 
@@ -1870,6 +1884,7 @@ export async function POST(req) {
     const loadingPanelData = {
       vehicleArrivalNo,
       vehicleNegotiationNo: body.vehicleNegotiationNo || body.header?.vehicleNegotiationNo || '',
+      loadingInfoPhotosOptional,
 
       // Header
       branch: branchId,
@@ -2221,6 +2236,7 @@ export async function PUT(req) {
       }));
 
       updateData.totalWeight = updateData.orderRows.reduce((sum, row) => sum + row.weight, 0);
+      updateData.loadingInfoPhotosOptional = await areLoadingInfoPhotosOptional(user, updateData.orderRows);
     }
 
     // Process helper info if present

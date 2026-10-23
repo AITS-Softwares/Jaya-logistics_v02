@@ -6178,6 +6178,7 @@ export default function EditLoadingInfoPanel() {
   const [showVehicleNegotiationDropdown, setShowVehicleNegotiationDropdown] = useState(false);
   const [filteredVehicleNegotiations, setFilteredVehicleNegotiations] = useState([]);
   const [selectedVehicleNegotiation, setSelectedVehicleNegotiation] = useState(null);
+  const [loadingInfoPhotosOptional, setLoadingInfoPhotosOptional] = useState(false);
   const vehicleNegotiationDropdownRef = useRef(null);
 
   /** =========================
@@ -6452,6 +6453,7 @@ export default function EditLoadingInfoPanel() {
       }
 
       const panel = data.data;
+      setLoadingInfoPhotosOptional(!!panel.loadingInfoPhotosOptional);
       setIsDraft(!!panel.isDraft || panel.panelStatus === 'Draft');
       setLinkedLRNo(panel.consignmentNote || "");
 
@@ -8009,7 +8011,7 @@ export default function EditLoadingInfoPanel() {
     }
 
     const totalVlPhotos = getTotalVlPhotosCount();
-    if (!isDraftSave && totalVlPhotos < 5) {
+    if (!isDraftSave && !loadingInfoPhotosOptional && totalVlPhotos < 5) {
       alert(`Please upload at least 5 Vehicle Loading (VL) photos. Currently uploaded: ${totalVlPhotos}/5`);
       return;
     }
@@ -9668,7 +9670,7 @@ export default function EditLoadingInfoPanel() {
                 <div>
                   <h3 className="text-sm font-bold text-slate-800">Vehicle Loading Pictures (VL)</h3>
                   <p className="text-xs text-slate-500 mt-1">
-                    Minimum 5 photos required • Maximum 25 photos allowed • Current: {getTotalVlPhotosCount()} / 25
+                    {loadingInfoPhotosOptional ? 'Photos optional for this Loading Info' : 'Minimum 5 photos required'} • Maximum 25 photos allowed • Current: {getTotalVlPhotosCount()} / 25
                   </p>
                   <p className="text-xs text-blue-500 mt-1">
                     Active Fields: {vlFields.length} • Max Fields: 15
@@ -9686,7 +9688,7 @@ export default function EditLoadingInfoPanel() {
                       Add Field VL-{vlFields.length + 1}
                     </button>
                   )}
-                  {getTotalVlPhotosCount() < 5 && (
+                  {!loadingInfoPhotosOptional && getTotalVlPhotosCount() < 5 && (
                     <div className="text-xs text-red-500 font-medium flex items-center">
                       ⚠️ Need {5 - getTotalVlPhotosCount()} more photo(s)
                     </div>
@@ -9985,7 +9987,7 @@ export default function EditLoadingInfoPanel() {
                 </span>
               </div>
 
-              {getTotalVlPhotosCount() > 0 && getTotalVlPhotosCount() < 5 && (
+              {!loadingInfoPhotosOptional && getTotalVlPhotosCount() > 0 && getTotalVlPhotosCount() < 5 && (
                 <div className="mt-3 p-3 bg-red-50 rounded-lg border border-red-200">
                   <p className="text-xs text-red-600 flex items-center gap-2">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

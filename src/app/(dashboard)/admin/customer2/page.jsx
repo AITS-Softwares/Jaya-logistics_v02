@@ -3,6 +3,8 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useRouter } from 'next/navigation';
 
+const authConfig = () => ({ headers: { Authorization: `Bearer ${localStorage.getItem("token") || ""}` } });
+
 export default function CustomerPage({ customerId }) {
   const router = useRouter();
   const [customerDetails, setCustomerDetails] = useState({
@@ -45,7 +47,7 @@ export default function CustomerPage({ customerId }) {
     if (customerId) {
       const fetchCustomerDetails = async () => {
         try {
-          const response = await axios.get(`/api/customers/${customerId}`);
+          const response = await axios.get(`/api/customers/${customerId}`, authConfig());
           setCustomerDetails(response.data);
         } catch (error) {
           console.error("Error fetching customer details:", error);
@@ -144,11 +146,11 @@ const generateCustomerCode = async () => {
       try {
         if (customerId) {
           // Edit customer
-          await axios.put(`/api/customers/${customerId}`, customerDetails);
+          await axios.put(`/api/customers/${customerId}`, customerDetails, authConfig());
           setSuccess("Customer updated successfully!");
         } else {
           // Create new customer
-          await axios.post("/api/customers", customerDetails);
+          await axios.post("/api/customers", customerDetails, authConfig());
           setSuccess("Customer created successfully!");
           
           // Ask user if they want to return to Order Panel

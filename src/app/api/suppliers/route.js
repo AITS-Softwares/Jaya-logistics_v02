@@ -83,6 +83,10 @@ export async function POST(req) {
       }
     }
 
+    if (body.dueDays === undefined || body.dueDays === null || String(body.dueDays).trim() === "" || !Number.isFinite(Number(body.dueDays)) || Number(body.dueDays) < 0) {
+      return NextResponse.json({ success: false, message: "Due days are required and must be zero or a positive number" }, { status: 400 });
+    }
+
     const pan = String(body.pan || "").trim().toUpperCase();
     if (!/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(pan)) {
       return NextResponse.json({ success: false, message: "Invalid PAN format. Example: ABCDE1234F" }, { status: 400 });
@@ -127,13 +131,18 @@ export async function PUT(req, { params }) {
       return NextResponse.json({ success: false, message: "Supplier not found" }, { status: 404 });
     }
 
+    const dueDays = body.dueDays ?? existingSupplier.dueDays;
+    if (dueDays === undefined || dueDays === null || String(dueDays).trim() === "" || !Number.isFinite(Number(dueDays)) || Number(dueDays) < 0) {
+      return NextResponse.json({ success: false, message: "Due days are required and must be zero or a positive number" }, { status: 400 });
+    }
+
     const pan = String(body.pan ?? existingSupplier.pan ?? "").trim().toUpperCase();
     if (!/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(pan)) {
       return NextResponse.json({ success: false, message: "Valid PAN is required. Example: ABCDE1234F" }, { status: 400 });
     }
     const updatedSupplier = await Supplier.findByIdAndUpdate(
       id,
-      { ...body, pan, companyId: user.companyId, createdBy: user.id },
+      { ...body, dueDays: Number(dueDays), pan, companyId: user.companyId, createdBy: user.id },
       { new: true, runValidators: true }
     ).populate("glAccount", "accountName accountCode");
 

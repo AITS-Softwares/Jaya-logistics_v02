@@ -433,6 +433,7 @@ const loadingPanelSchema = new mongoose.Schema({
     index: true,
     sparse: true
   },
+  loadingInfoPhotosOptional: { type: Boolean, default: false },
   
   // Header Information
   branch: {

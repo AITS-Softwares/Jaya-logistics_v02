@@ -895,6 +895,8 @@
 
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import Papa from "papaparse";
+import * as XLSX from "xlsx";
 import {
   FaEdit, FaTrash, FaPlus, FaSearch, FaArrowLeft,
   FaChevronLeft, FaChevronRight, FaCheck, FaFileUpload,
@@ -919,6 +921,7 @@ const STEPS = [
 
 const INITIAL = {
   itemCode: "", itemName: "", description: "", category: "",
+  customerId: "", customerName: "", customerCode: "",
   subgroup: "",
   unitPrice: "", quantity: "", reorderLevel: "", leadTime: "",
   itemType: "", uom: "", managedBy: "", managedValue: "",
@@ -942,6 +945,7 @@ const VALIDATORS = {
     const e = {};
     if (!d.itemCode?.trim()) e.itemCode  = "Item Code is required";
     if (!d.category?.trim()) e.category  = "Item Group is required";
+    if (!d.customerId) e.customerId = "Customer is required";
     if (!d.gstCode?.trim()) e.gstCode = "HSN/SAC is required";
     if (!d.uom)     e.uom     = "Unit of Measure is required";
     return e;
@@ -970,8 +974,9 @@ export default function ItemManagement() {
   // State for subgroups based on selected category
   const [availableSubgroups, setAvailableSubgroups] = useState([]);
   const [itemGroups, setItemGroups] = useState([]);
+  const [customers, setCustomers] = useState([]);
 
-  useEffect(() => { fetchItems(); fetchItemGroups(); }, []);
+  useEffect(() => { fetchItems(); fetchItemGroups(); fetchCustomers(); }, []);
 
   const fetchItems = async () => {
     setLoading(true);
@@ -979,7 +984,7 @@ export default function ItemManagement() {
       const token = localStorage.getItem("token");
       const res   = await axios.get("/api/items", { headers: { Authorization: `Bearer ${token}` } });
       if (res.data.success) setItems(res.data.data || []);
-    } catch { toast.error("Failed to load items"); }
+    } catch (error) { toast.error(error.response?.data?.message || "Failed to load items"); }
     setLoading(false);
   };
 
@@ -994,6 +999,28 @@ export default function ItemManagement() {
     } catch (error) {
       console.error("Error fetching item groups:", error);
     }
+  };
+
+  const fetchCustomers = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.get("/api/customers", { headers: { Authorization: `Bearer ${token}` } });
+      if (res.data.success) setCustomers(res.data.data || []);
+    } catch (error) {
+      console.error("Error fetching customers:", error);
+      toast.error(error.response?.data?.message || "Failed to load customers for item linking");
+    }
+  };
+
+  const handleCustomerChange = (e) => {
+    const customer = customers.find((entry) => entry._id === e.target.value);
+    setId((prev) => ({
+      ...prev,
+      customerId: customer?._id || "",
+      customerName: customer?.customerName || "",
+      customerCode: customer?.customerCode || "",
+    }));
+    clearErr("customerId");
   };
 
   // Update available subgroups when category changes
@@ -1153,11 +1180,17 @@ export default function ItemManagement() {
   // ── Bulk ──
   const downloadTemplate = async () => {
     try {
-      const res  = await fetch("/api/items/template");
-      if (!res.ok) throw new Error();
+      const token = localStorage.getItem("token");
+      const res  = await fetch("/api/items/template", { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.message || `Template download failed (${res.status})`);
+      }
       const blob = await res.blob();
-      const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "item_template.csv"; a.click();
-    } catch { toast.error("Error downloading template"); }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a"); a.href = url; a.download = "item_bulk_upload_template.xlsx"; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (error) { toast.error(error.message || "Error downloading template"); }
   };
 
   const handleBulk = async (e) => {
@@ -1165,10 +1198,23 @@ export default function ItemManagement() {
     setUploading(true);
     try {
       const token = localStorage.getItem("token");
-      const text  = await file.text();
-      const lines = text.split("\n").filter(l => l.trim());
-      const hdrs  = lines[0].split(",").map(h => h.trim());
-      const jsonData = lines.slice(1).map(line => { const v = line.split(","); const o = {}; hdrs.forEach((k, i) => (o[k] = v[i]?.trim() || "")); return o; });
+      let jsonData;
+      if (/\.xlsx?$/i.test(file.name)) {
+        const workbook = XLSX.read(await file.arrayBuffer(), { type: "array", cellDates: false });
+        const itemsSheet = workbook.Sheets.Items || workbook.Sheets[workbook.SheetNames[0]];
+        const range = XLSX.utils.decode_range(itemsSheet["!ref"] || "A1");
+        // Dropdown options are stored in hidden columns on this same sheet.
+        // Import only the eight user-facing item columns, never those options.
+        range.s.c = 0;
+        range.e.c = Math.min(range.e.c, 7);
+        jsonData = XLSX.utils.sheet_to_json(itemsSheet, { range, defval: "", raw: false });
+      } else {
+        const parsed = Papa.parse(await file.text(), { header: true, skipEmptyLines: "greedy", transformHeader: (header) => header.trim() });
+        if (parsed.errors?.length) throw new Error(parsed.errors[0].message);
+        jsonData = parsed.data;
+      }
+      jsonData = jsonData.filter((row) => Object.values(row).some((value) => String(value ?? "").trim()));
+      if (!jsonData.length) throw new Error("The file has no item rows");
       const res = await axios.post("/api/items/bulk", { items: jsonData }, { headers: { Authorization: `Bearer ${token}` } });
       const { success, results } = res.data;
       if (success) {
@@ -1176,11 +1222,15 @@ export default function ItemManagement() {
         const up = results.filter(r => r.success && r.action === "updated").length;
         const sk = results.filter(r => !r.success).length;
         toast.success(`${cr} created · ${up} updated · ${sk} skipped`);
+        results.filter(r => !r.success).slice(0, 5).forEach(r => toast.error(`Row ${r.row}: ${(r.errors || []).join("; ")}`));
+        if (sk > 5) toast.info(`${sk - 5} more row(s) were skipped. Check the template values and try again.`);
         results.filter(r => r.warnings?.length).forEach(r => toast.warn(`Row ${r.row}: ${r.warnings.join(", ")}`));
         fetchItems();
         if (cr || up) publishMasterDataChanged("items");
       } else toast.error(res.data.message || "Bulk upload failed");
-    } catch { toast.error("Invalid CSV or server error"); }
+    } catch (error) {
+      toast.error(error.response?.data?.message || error.message || "Invalid CSV or server error");
+    }
     finally { setUploading(false); e.target.value = ""; }
   };
 
@@ -1223,7 +1273,7 @@ export default function ItemManagement() {
   // ── Derived ──
   const filtered = items.filter(it => {
     const q  = searchTerm.toLowerCase();
-    const mQ = [it.itemCode, it.itemName, it.category, it.itemType, it.subgroup].some(v => v?.toLowerCase().includes(q));
+    const mQ = [it.itemCode, it.itemName, it.category, it.itemType, it.subgroup, it.customerName, it.customerCode].some(v => v?.toLowerCase().includes(q));
     const mT = filterType === "All" || it.itemType === filterType;
     return mQ && mT;
   }).slice().reverse();
@@ -1339,6 +1389,20 @@ export default function ItemManagement() {
               )}
               <Err k="subgroup" />
             </div>
+          </div>
+
+          <div>
+            <Lbl text="Customer" req />
+            <select className={fi("customerId")} name="customerId" value={id.customerId || ""} onChange={handleCustomerChange}>
+              <option value="">Select customer…</option>
+              {customers.map((customer) => (
+                <option key={customer._id} value={customer._id}>
+                  {customer.customerName}{customer.customerCode ? ` (${customer.customerCode})` : ""}
+                </option>
+              ))}
+            </select>
+            {!customers.length && <p className="mt-1 text-xs text-amber-600">No customers available. Add a customer in Customer Management first.</p>}
+            <Err k="customerId" />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1642,6 +1706,7 @@ export default function ItemManagement() {
             <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3 flex items-center gap-1.5"><FaBoxOpen className="text-indigo-400" /> Basic Info</p>
             <RRow l="Code"       v={id.itemCode} />
             <RRow l="Name"       v={id.itemName} />
+            <RRow l="Customer"   v={id.customerName} />
             <RRow l="Category"   v={id.category} />
             <RRow l="Subgroup"   v={id.subgroup || "—"} />
             <RRow l="Type"       v={id.itemType} />
@@ -1713,7 +1778,7 @@ export default function ItemManagement() {
             </button>
             <label className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-violet-600 text-white text-sm font-semibold hover:bg-violet-700 cursor-pointer transition-all">
               {uploading ? "Uploading…" : <><FaFileUpload className="text-xs" /> Bulk Upload</>}
-              <input type="file" hidden accept=".csv" onChange={handleBulk} />
+              <input type="file" hidden accept=".csv,.xlsx" onChange={handleBulk} />
             </label>
             <button onClick={syncAllItemsToFrappe} disabled={syncingFrappe || items.length === 0}
               className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 disabled:opacity-50 transition-all">
@@ -1794,7 +1859,7 @@ export default function ItemManagement() {
             <table className="w-full text-sm border-collapse">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-100">
-                  {["Code","Item","Category","Subgroup","Type","Price","UOM","Status","POS","Actions"].map(h => (
+                  {["Code","Item","Customer","Category","Subgroup","Type","Price","UOM","Status","POS","Actions"].map(h => (
                     <th key={h} className="px-4 py-3 text-left text-[10.5px] font-bold uppercase tracking-wider text-gray-400 whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -1803,13 +1868,13 @@ export default function ItemManagement() {
                 {loading ? (
                   Array(5).fill(0).map((_, i) => (
                     <tr key={i} className="border-b border-gray-50">
-                      {Array(10).fill(0).map((__, j) => (
+                      {Array(11).fill(0).map((__, j) => (
                         <td key={j} className="px-4 py-3"><div className="h-3.5 rounded bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 bg-[length:400%_100%] animate-[shimmer_1.4s_infinite]" /></td>
                       ))}
                     </tr>
                   ))
                 ) : filtered.length === 0 ? (
-                  <tr><td colSpan={10} className="text-center py-16">
+                  <tr><td colSpan={11} className="text-center py-16">
                     <div className="text-4xl mb-2 opacity-20">📦</div>
                     <p className="text-sm font-medium text-gray-300">No items found</p>
                   </td></tr>
@@ -1822,6 +1887,7 @@ export default function ItemManagement() {
                       <p className="font-semibold text-gray-900 text-sm leading-tight">{it.itemName}</p>
                       {it.manufacturer && <p className="text-xs text-gray-400">{it.manufacturer}</p>}
                     </td>
+                    <td className="px-4 py-3 text-xs text-gray-600 font-medium">{it.customerName || <span className="text-gray-200">—</span>}</td>
                     <td className="px-4 py-3 text-xs text-gray-500 font-medium">{it.category || <span className="text-gray-200">—</span>}</td>
                     <td className="px-4 py-3 text-xs text-gray-500 font-medium">
                       {it.subgroup ? (

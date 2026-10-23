@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import Item from "@/models/ItemModels";
+import Customer from "@/models/CustomerModel";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import { validateMasterDataRequest } from '@/lib/masterDataPermission';
 
@@ -90,9 +91,17 @@ export async function PUT(req, { params }) {
       return NextResponse.json({ success: false, message: "No data provided" }, { status: 400 });
     }
 
+    if (!data.customerId) {
+      return NextResponse.json({ success: false, message: "Customer is required" }, { status: 400 });
+    }
+    const customer = await Customer.findOne({ _id: data.customerId, companyId: user.companyId }).select('customerName customerCode');
+    if (!customer) {
+      return NextResponse.json({ success: false, message: "Select a valid customer from Customer Management" }, { status: 400 });
+    }
+
     const updatedItem = await Item.findOneAndUpdate(
       { _id: id, companyId: user.companyId },
-      data,
+      { ...data, customerId: customer._id, customerName: customer.customerName, customerCode: customer.customerCode || "" },
       { new: true, runValidators: true }
     );
 

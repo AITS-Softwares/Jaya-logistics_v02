@@ -4632,7 +4632,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { Fragment, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { usePermission } from "../hooks/usePermission";
 import Link from "next/link";
@@ -5012,7 +5012,21 @@ function generateGeneralBillPDFHTML(reportData, currentDate, billNumber) {
   const client = reportData.clientSnapshot || {};
   const filters = reportData.filters || {};
   const data = Array.isArray(reportData.data) ? [...reportData.data] : [];
-  data.sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")) || String(a.lrNo || "").localeCompare(String(b.lrNo || "")));
+  const getDestination = (item) => String(item.locationRemark || "").trim() || String(item.to || "").trim() || "-";
+  data.sort((a, b) => getDestination(a).localeCompare(getDestination(b), undefined, { sensitivity: "base" })
+    || String(a.date || "").localeCompare(String(b.date || ""))
+    || String(a.lrNo || "").localeCompare(String(b.lrNo || "")));
+  const destinationGroups = new Map();
+  data.forEach((item) => {
+    const destination = getDestination(item);
+    const key = destination.toLocaleLowerCase();
+    if (!destinationGroups.has(key)) destinationGroups.set(key, { destination, rows: [], quantity: 0, weight: 0, amount: 0 });
+    const group = destinationGroups.get(key);
+    group.rows.push(item);
+    group.quantity += Number(item.quantity ?? item.weight) || 0;
+    group.weight += Number(item.weight) || 0;
+    group.amount += Number(item.amount) || 0;
+  });
 
   const round2 = (n) => Math.round((Number(n) + Number.EPSILON) * 100) / 100;
   const money = (v) => (Number(v) || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -5065,11 +5079,15 @@ function generateGeneralBillPDFHTML(reportData, currentDate, billNumber) {
     : [{ label: `IGST @ ${gstRate}%`, amount: round2(taxable * gstRate / 100) }];
   const grandTotal = round2(taxable + taxRows.reduce((sum, row) => sum + row.amount, 0));
 
-  const annexureRows = data.map((item) => `<tr>
+  const annexureRows = [...destinationGroups.values()].map((group) => {
+    const rows = group.rows.map((item) => `<tr>
       <td>${esc(item.lrNo || "")}</td><td>${fmtDate(item.date)}</td><td>${esc(item.vehicleNo || "")}</td><td>${esc(item.invoiceNo || "")}</td>
-      <td>${esc(item.from || "")}</td><td>${esc(item.to || "")}</td><td>Sales @ ${gstRate}%</td>
+      <td>${esc(item.from || "")}</td><td>${esc(getDestination(item))}</td><td>Sales @ ${gstRate}%</td>
       <td class="r">${money(item.quantity ?? item.weight)}</td><td class="r">${money(item.weight)}</td><td class="r">${rateFmt(item.rate)}</td><td class="r">${money(item.amount)}</td>
     </tr>`).join("");
+    return `${rows}<tr class="subtotal"><td colspan="5"></td><td>Sub Total</td><td></td>
+      <td class="r">${money(group.quantity)}</td><td class="r">${money(group.weight)}</td><td></td><td class="r">${money(group.amount)}</td></tr>`;
+  }).join("");
   const annexureTaxRows = taxRows.map((row) => `<tr class="tax"><td colspan="10" class="r">${esc(row.label)}</td><td class="r">${money(row.amount)}</td></tr>`).join("");
 
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Bill ${esc(billNumber)}</title>
@@ -5115,6 +5133,7 @@ function generateGeneralBillPDFHTML(reportData, currentDate, billNumber) {
   .annex th, .annex td { border: 1px solid #000; padding: 4px 5px; font-size: 10.5px; vertical-align: top; }
   .annex th { background: #f1f1f1; text-align: left; }
   .annex th.r, .annex td.r { text-align: right; }
+  .annex tr.subtotal td { font-weight: bold; background: #f1f1f1; }
   .annex tr.tax td, .annex tr.grand td { font-weight: bold; }
   .annex thead { display: table-header-group; }
   .annex tr { page-break-inside: avoid; }
@@ -5457,6 +5476,15 @@ async function getGeneratedGeneralLRNumbers() {
   }
 }
 
+function previewBillNumber({ branch, client, filters }) {
+  const parts = new Intl.DateTimeFormat("en-US", { timeZone: "Asia/Kolkata", year: "numeric", month: "numeric" }).formatToParts(new Date());
+  const get = (k) => Number(parts.find((p) => p.type === k)?.value || 0);
+  const fyStart = get("month") >= 4 ? get("year") : get("year") - 1;
+  const fy = `${String(fyStart).slice(-2)}${String(fyStart + 1).slice(-2)}`;
+  const branchCode = branch?.code || filters?.branchCode || "BRANCH";
+  const partyCode = client?.customerCodeValue || "PARTY";
+  return `${branchCode}/${partyCode}/${fy}/XXX`;
+}
 async function createTemporaryBillingPreview({ type, data, summary, filters, branches, clients, clientId }) {
   const selectedClient = clients.find((client) => String(client._id) === String(clientId));
   const billingAddress = selectedClient?.billingAddresses?.[0] || {};
@@ -5504,7 +5532,10 @@ async function createTemporaryBillingPreview({ type, data, summary, filters, bra
     data,
     summary,
   };
-  return generatePDFHTML(report, report.generatedAt, type, reportFilters, "PREVIEW - NOT SAVED");
+  const previewNo = (type === "general" || type === "product-wise")
+    ? previewBillNumber({ branch, client: selectedClient, filters })
+    : "PREVIEW - NOT SAVED";
+  return generatePDFHTML(report, report.generatedAt, type, reportFilters, previewNo);
 }
 
 function BillingPreviewModal({ html, onClose }) {
@@ -5845,7 +5876,7 @@ function ProductWiseBillingComponent({ branches, clients, plants, loadingBranche
       data: selected,
       summary: getSelectedSummary(),
     };
-    setPreviewHtml(generatePDFHTML(previewReport, previewReport.generatedAt, "product-wise", previewReport.filters, "PREVIEW - NOT SAVED"));
+    setPreviewHtml(generatePDFHTML(previewReport, previewReport.generatedAt, "product-wise", previewReport.filters, previewBillNumber({ branch, client: selectedClient, filters })));
   };
 
   useEffect(() => {
@@ -6126,7 +6157,9 @@ function GeneralBillingComponent({ branches, clients, loadingBranches, loadingCl
       });
       const data = await response.json();
       if (data.success) {
-        const filteredData = (data.data || []).filter((item) => !generatedLRs.includes(item.lrNo));
+        const filteredData = (data.data || [])
+          .filter((item) => !generatedLRs.includes(item.lrNo))
+          .sort((a, b) => String(a.to || '').localeCompare(String(b.to || ''), undefined, { sensitivity: 'base' }));
         setBillData(filteredData);
         setSummary({
           totalWeight: filteredData.reduce((s, i) => s + (i.weight || 0), 0),
@@ -6249,6 +6282,17 @@ function GeneralBillingComponent({ branches, clients, loadingBranches, loadingCl
   };
 
   const selectedCount = Object.keys(selectedRows).filter((k) => selectedRows[k]).length;
+  const groupedBillData = [...billData.reduce((groups, item, index) => {
+    const destination = String(item.to || "-").trim() || "-";
+    const key = destination.toLocaleLowerCase();
+    if (!groups.has(key)) groups.set(key, { destination, rows: [], quantity: 0, weight: 0, amount: 0 });
+    const group = groups.get(key);
+    group.rows.push({ item, index });
+    group.quantity += Number(item.quantity ?? item.weight ?? 0) || 0;
+    group.weight += Number(item.weight || 0) || 0;
+    group.amount += Number(item.amount || 0) || 0;
+    return groups;
+  }, new Map()).values()];
 
   return (
     <Card title="General - Billing">
@@ -6389,8 +6433,10 @@ function GeneralBillingComponent({ branches, clients, loadingBranches, loadingCl
               </tr>
             </thead>
             <tbody>
-              {billData.map((item, idx) => (
-                <tr key={idx} className={selectedRows[idx] && canGenerate ? "bg-blue-50" : ""}>
+              {groupedBillData.map((group) => (
+                <Fragment key={group.destination.toLocaleLowerCase()}>
+                  {group.rows.map(({ item, index: idx }) => (
+                    <tr key={item._id || `${item.lrNo}-${idx}`} className={selectedRows[idx] && canGenerate ? "bg-blue-50" : ""}>
                   {canGenerate && (
                     <td className="px-3 py-2 border text-center">
                       <input type="checkbox" checked={!!selectedRows[idx]} onChange={() => handleSelectRow(idx)} />
@@ -6412,6 +6458,15 @@ function GeneralBillingComponent({ branches, clients, loadingBranches, loadingCl
                   </td>
                   <td className="px-3 py-2 border text-right">₹ {item.amount?.toFixed(2) || "0.00"}</td>
                 </tr>
+                  ))}
+                  <tr className="bg-emerald-50 font-bold">
+                    <td colSpan={canGenerate ? 10 : 9} className="px-3 py-2 border text-right">{group.destination} Subtotal</td>
+                    <td className="px-3 py-2 border text-right">{group.quantity.toFixed(2)}</td>
+                    <td className="px-3 py-2 border text-right">{group.weight.toFixed(2)}</td>
+                    <td className="px-3 py-2 border"></td>
+                    <td className="px-3 py-2 border text-right">₹ {group.amount.toFixed(2)}</td>
+                  </tr>
+                </Fragment>
               ))}
             </tbody>
             <tfoot className="bg-emerald-100 font-bold">
@@ -6963,7 +7018,7 @@ function CancellationBillingComponent({ branches, clients, loadingBranches, load
                 )}
                 <th className="px-3 py-2 border">S.No</th>
                 <th className="px-3 py-2 border">Date</th>
-                <th className="px-3 py-2 border">LR No</th>
+                <th className="px-3 py-2 border">Order No</th>
                 <th className="px-3 py-2 border">Vehicle No</th>
                 <th className="px-3 py-2 border">From</th>
                 <th className="px-3 py-2 border">To</th>

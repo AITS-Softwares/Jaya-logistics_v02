@@ -2164,6 +2164,10 @@ function validatePackDropLocations(packData = {}, plantRows = [], required = fal
   return { ok: errors.length === 0, errors };
 }
 
+function missingOrderDropRows(plantRows = []) {
+  return plantRows.filter((row) => !String(row.toName || row.cityName || row.city || row.to || '').trim());
+}
+
 function calculatePendingDays(orderDate, status) {
   if (!orderDate || status === 'Completed' || status === 'Cancelled' || status === 'Draft') return '0 Days';
 
@@ -2228,6 +2232,7 @@ export const GET = withAuth(async (req, context, user) => {
         isDraft: !!orderPanel.isDraft,
         approvalRemarks: orderPanel.approvalRemarks || '',
         delivery: orderPanel.delivery || 'Normal',
+        loadingInfoPhotosOptional: !!orderPanel.loadingInfoPhotosOptional,
         plantRows: (openOnly ? (orderPanel.plantRows || []).filter((row) => (row.status || 'Open') === 'Open' && !row.statusRequest?.action) : (orderPanel.plantRows || [])).map(row => ({
           ...row,
           plantCode: row.plantCode?._id || row.plantCode || null,
@@ -2401,6 +2406,10 @@ export const POST = withAuth(async (req, context, user) => {
     // Callers that send no saveMode keep the old behaviour (plain 'Draft', approvable).
     const isDraftSave = body.saveMode === 'draft';
     const isSubmitSave = body.saveMode === 'submit';
+    const missingDrops = missingOrderDropRows(body.plantRows || []);
+    if (missingDrops.length) {
+      return NextResponse.json({ success: false, message: `Select a drop location for every order row. Missing on row(s): ${missingDrops.map((row, index) => row.plantName || `Row ${index + 1}`).join(', ')}.` }, { status: 400 });
+    }
 
     const orderPanelNo = await getNextOrderPanelNumber(user.companyId, user.activeOperatingCompanyId, user.activeOperatingCompanyCode);
 
@@ -2573,6 +2582,7 @@ export const POST = withAuth(async (req, context, user) => {
       subCompanyName: subCompanyName || body.subCompanyName || '',
       subCompanyCode: subCompanyCode || body.subCompanyCode || '',
       delivery: body.delivery || 'Normal',
+      loadingInfoPhotosOptional: body.loadingInfoPhotosOptional === true,
       date: body.date ? new Date(body.date) : new Date(),
       customerId,
       customerCode: body.customerCode || '',
@@ -2669,6 +2679,12 @@ export const PUT = withAuth(async (req, context, user) => {
 
     // Draft handling: Save as Draft / Submit for Approval only apply to an order still in Draft
     const saveMode = body.saveMode;
+    if (Array.isArray(body.plantRows)) {
+      const missingDrops = missingOrderDropRows(body.plantRows);
+      if (missingDrops.length) {
+        return NextResponse.json({ success: false, message: `Select a drop location for every order row. Missing on row(s): ${missingDrops.map((row, index) => row.plantName || `Row ${index + 1}`).join(', ')}.` }, { status: 400 });
+      }
+    }
     if ((saveMode === 'draft' || saveMode === 'submit') && orderPanel.panelStatus !== 'Draft') {
       return NextResponse.json({
         success: false,
@@ -2680,6 +2696,7 @@ export const PUT = withAuth(async (req, context, user) => {
     if (body.branchName) orderPanel.branchName = body.branchName;
     if (body.branchCode) orderPanel.branchCode = body.branchCode;
     if (body.delivery) orderPanel.delivery = body.delivery;
+    if (body.loadingInfoPhotosOptional !== undefined) orderPanel.loadingInfoPhotosOptional = body.loadingInfoPhotosOptional === true;
     if (body.date) orderPanel.date = new Date(body.date);
     if (body.customerName) orderPanel.customerName = body.customerName;
     if (body.partyName) orderPanel.partyName = body.partyName;

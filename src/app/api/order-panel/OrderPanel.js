@@ -923,6 +923,7 @@ const orderPanelSchema = new mongoose.Schema({
     enum: ['Urgent', 'Normal', 'Express', 'Scheduled'],
     default: 'Normal'
   },
+  loadingInfoPhotosOptional: { type: Boolean, default: false },
   date: {
     type: Date,
     default: Date.now
@@ -1020,10 +1021,6 @@ const orderPanelSchema = new mongoose.Schema({
       reason: { type: String, default: '' },
       by: { type: mongoose.Schema.Types.ObjectId, ref: 'CompanyUser', default: null },
       at: { type: Date, default: null },
-      cancellationCharge: {
-        amount: { type: Number, default: 0 },
-        mode: { type: String, enum: ['flat', 'per MT'], default: 'flat' }
-      }
     },
     statusHistory: [{
       action: { type: String, enum: ['Hold', 'Resume', 'Cancel', 'Hold Requested', 'Cancel Requested', 'Hold Request Rejected', 'Cancel Request Rejected'], required: true },
