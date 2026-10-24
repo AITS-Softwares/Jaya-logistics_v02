@@ -1,5 +1,6 @@
 // src/app/api/subcompanies/route.js
 import { NextResponse } from "next/server";
+import { identifierFormatError } from "@/lib/identifierFormats";
 import connectDb from "@/lib/db";
 import SubCompany from "./SubCompany";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
@@ -198,6 +199,8 @@ export async function PUT(req) {
     if (error) return NextResponse.json({ success: false, message: error }, { status });
 
     const { id, legalProfile = {} } = await req.json();
+    const formatError = identifierFormatError(legalProfile);
+    if (formatError) return NextResponse.json({ success: false, message: formatError }, { status: 400 });
     if (!id) return NextResponse.json({ success: false, message: "Sub-company ID is required" }, { status: 400 });
     const editableProfile = {
       legalName: String(legalProfile.legalName || "").trim(),

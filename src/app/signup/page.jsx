@@ -86,7 +86,7 @@ function FloatInput({label,name,value,onChange,type,error,multiline}){
     <div style={{marginBottom:16}}>
       <div style={{position:"relative",background:"rgba(255,255,255,0.025)",borderRadius:10,border:"1px solid "+border,boxShadow:shadow,transition:"all 0.2s",overflow:"hidden"}}>
         <label style={{position:"absolute",left:14,top:active?7:"50%",transform:active?"none":"translateY(-50%)",fontSize:active?9:12,fontWeight:700,color:error?"#f87171":focused?"#00f5ff":"rgba(255,255,255,0.3)",letterSpacing:active?"0.15em":"0.02em",textTransform:active?"uppercase":"none",pointerEvents:"none",transition:"all 0.2s",zIndex:2}}>{label}</label>
-        {multiline?<textarea name={name} value={value} onChange={onChange} onFocus={()=>setFocused(true)} onBlur={()=>setFocused(false)} rows={2} style={{width:"100%",background:"transparent",border:"none",outline:"none",color:"#e2e8f0",fontFamily:"monospace",fontSize:13,padding:"26px 14px 10px",resize:"none",boxSizing:"border-box"}}/>:<input name={name} type={type||"text"} value={value} onChange={onChange} onFocus={()=>setFocused(true)} onBlur={()=>setFocused(false)} style={{width:"100%",background:"transparent",border:"none",outline:"none",color:"#e2e8f0",fontFamily:"monospace",fontSize:13,padding:"26px 14px 10px",boxSizing:"border-box"}}/>}
+        {multiline?<textarea name={name} value={value} onChange={onChange} onFocus={()=>setFocused(true)} onBlur={()=>setFocused(false)} rows={2} style={{width:"100%",background:"transparent",border:"none",outline:"none",color:"#e2e8f0",fontFamily:"monospace",fontSize:13,padding:"26px 14px 10px",resize:"none",boxSizing:"border-box"}}/>:<input name={name} type={type||"text"} inputMode={name==="phone"||name==="pinCode"?"numeric":undefined} maxLength={name==="phone"?10:name==="pinCode"?6:name==="gstNumber"?15:undefined} value={value} onChange={onChange} onFocus={()=>setFocused(true)} onBlur={()=>setFocused(false)} style={{width:"100%",background:"transparent",border:"none",outline:"none",color:"#e2e8f0",fontFamily:"monospace",fontSize:13,padding:"26px 14px 10px",boxSizing:"border-box"}}/>}
         <div style={{position:"absolute",bottom:0,left:"50%",transform:"translateX(-50%)",height:1,background:"linear-gradient(90deg,transparent,#00f5ff,transparent)",width:focused?"100%":"0%",transition:"width 0.35s ease"}}/>
       </div>
       {error&&<p style={{fontSize:10,color:"#f87171",marginTop:4,paddingLeft:4,fontWeight:600}}>{"! "+error}</p>}
@@ -162,7 +162,7 @@ export default function App(){
   const[form,setForm]=useState({companyName:"",contactName:"",email:"",phone:"",businessType:"",industry:"",gstNumber:"",country:"",address:"",pinCode:"",password:"",confirmPwd:"",agreeToTerms:false,upi:"",cardNumber:"",cardName:"",cardExpiry:"",cardCvv:""});
   useEffect(()=>{const iv=setInterval(()=>setPackets(v=>v+Math.floor(Math.random()*40-10)),1100);return()=>clearInterval(iv);},[]);
   const price=useMemo(()=>BUNDLES.find(b=>b.id===activeBundle),[activeBundle]);
-  const handleChange=(e)=>{const n=e.target.name,v=e.target.type==="checkbox"?e.target.checked:e.target.value;setForm(p=>({...p,[n]:v}));if(errors[n])setErrors(p=>({...p,[n]:null}));};
+  const handleChange=(e)=>{const n=e.target.name;let v=e.target.type==="checkbox"?e.target.checked:e.target.value;if(n==="phone")v=v.replace(/\D/g,"").slice(0,10);if(n==="pinCode")v=v.replace(/\D/g,"").slice(0,6);if(n==="gstNumber")v=v.toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,15);setForm(p=>({...p,[n]:v}));if(errors[n])setErrors(p=>({...p,[n]:null}));};
   const validate=()=>{
     const e={};
     if(step===0){
@@ -174,7 +174,7 @@ export default function App(){
     if(step===1){
       if(!form.businessType) e.businessType="Select type";
       if(!form.industry) e.industry="Select industry";
-      if(form.gstNumber&&!/^[0-9A-Z]{15}$/.test(form.gstNumber.toUpperCase())) e.gstNumber="Must be 15 alphanumeric chars";
+      if(form.gstNumber&&!/^\d{2}[A-Z]{5}\d{4}[A-Z][1-9A-Z]Z[A-Z0-9]$/.test(form.gstNumber.toUpperCase())) e.gstNumber="Enter a valid 15-character GSTIN";
     }
     if(step===2){
       if(!form.country) e.country="Select country";

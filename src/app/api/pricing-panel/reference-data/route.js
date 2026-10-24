@@ -143,6 +143,10 @@ export const GET = withAuth(async (req, context, user) => {
       const pending = await getAvailableVnnsForPricing(user);
       return NextResponse.json({ success: true, data: { count: pending.length } });
     }
+    if (url.searchParams.get("lookup") === "pendingList") {
+      const rows = (await getAvailableVnnsForPricing(user)).map(pricingVnnReference);
+      return NextResponse.json({ success: true, data: { rows } });
+    }
 
     const [branches, plants, subCompanies, locations, countries, states, rawRateMasters] = await Promise.all([
       Branch.find({ companyId: user.companyId, isActive: { $ne: false } }, { name: 1, code: 1 })

@@ -5,6 +5,7 @@ import Supplier from "@/models/SupplierModels";
 import BankHead from "@/models/BankHead";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import { validateMasterDataRequest } from '@/lib/masterDataPermission';
+import { identifierFormatError } from "@/lib/identifierFormats";
 
 // ── Auth helper
 function getToken(req) {
@@ -75,6 +76,8 @@ export async function POST(req) {
 
   try {
     const body = await req.json();
+    const formatError = identifierFormatError(body);
+    if (formatError) return NextResponse.json({ success: false, message: formatError }, { status: 400 });
 
     const requiredFields = ["supplierCode", "supplierName", "supplierType", "pan"];
     for (const field of requiredFields) {
@@ -125,6 +128,8 @@ export async function PUT(req, { params }) {
     }
 
     const body = await req.json();
+    const formatError = identifierFormatError(body);
+    if (formatError) return NextResponse.json({ success: false, message: formatError }, { status: 400 });
 
     const existingSupplier = await Supplier.findOne({ _id: id, companyId: user.companyId });
     if (!existingSupplier) {

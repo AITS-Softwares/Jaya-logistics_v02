@@ -3,6 +3,7 @@ import dbConnect from "@/lib/db.js";
 import Customer from "@/models/CustomerModel";
 import BankHead from "@/models/BankHead";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
+import { validateIdentifierFormats } from "@/lib/identifierFormats";
 
 export async function POST(req) {
   await dbConnect();
@@ -52,6 +53,7 @@ export async function POST(req) {
       const row = customers[i];
       const errors = [];
       const warnings = [];
+      errors.push(...validateIdentifierFormats(row));
 
       // Validate required fields
       if (!row.customerName) errors.push("customerName missing");

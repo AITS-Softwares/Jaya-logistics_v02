@@ -9,6 +9,7 @@ import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import Counter from "@/models/Counter";
 import { checkPermission } from "@/lib/checkPermission";
 import { companyPrefix } from "@/lib/documentSequence";
+import { identifierFormatError } from "@/lib/identifierFormats";
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -36,6 +37,12 @@ export async function POST(req) {
 
     const formData = await req.formData();
     const jsonData = JSON.parse(formData.get("quotationData"));
+    const formatError = identifierFormatError(jsonData);
+    if (formatError) {
+      await session.abortTransaction();
+      session.endSession();
+      return NextResponse.json({ success: false, error: formatError }, { status: 400 });
+    }
     const files = formData.getAll("attachments");
 
     if (!jsonData.customer || !mongoose.isValidObjectId(jsonData.customer)) {

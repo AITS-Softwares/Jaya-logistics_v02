@@ -966,6 +966,7 @@
 
 // app/api/pricing-panel/route.js
 import { NextResponse } from "next/server";
+import { identifierFormatError } from "@/lib/identifierFormats";
 import { unlink } from 'fs/promises';
 import path from 'path';
 import connectDb from "@/lib/db";
@@ -1437,6 +1438,8 @@ export async function POST(req) {
 
   try {
     const body = await req.json();
+    const formatError = identifierFormatError(body);
+    if (formatError) return NextResponse.json({ success: false, message: formatError }, { status: 400 });
     const isDraftSave = body.saveMode === 'draft';
     const blockedRow = await validateOpenOrderRows(user, body.orders || []);
     if (blockedRow) return NextResponse.json({ success: false, message: blockedRow }, { status: 409 });
@@ -1740,6 +1743,8 @@ export async function PUT(req) {
 
   try {
     const body = await req.json();
+    const formatError = identifierFormatError(body);
+    if (formatError) return NextResponse.json({ success: false, message: formatError }, { status: 400 });
     const { id } = body;
 
     if (!id) {
@@ -2092,6 +2097,8 @@ export async function PATCH(req) {
 
   try {
     const body = await req.json();
+    const formatError = identifierFormatError(body);
+    if (formatError) return NextResponse.json({ success: false, message: formatError }, { status: 400 });
     const { id, action, approvalData } = body;
 
     if (!id) {

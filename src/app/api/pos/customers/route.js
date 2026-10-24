@@ -5,6 +5,7 @@ import POSCustomer from "@/models/pos/POSCustomer";
 import Customer from "@/models/CustomerModel";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import { NextResponse } from "next/server";
+import { identifierFormatError } from "@/lib/identifierFormats";
 
 /**
  * GET → List POS customers (company-wise)
@@ -44,6 +45,8 @@ export async function POST(req) {
     const user = verifyJWT(token);
 
     const body = await req.json();
+    const formatError = identifierFormatError(body);
+    if (formatError) return NextResponse.json({ success: false, message: formatError }, { status: 400 });
     const { name, mobile, email, gstin, customerRef } = body;
 
     if (!name) {

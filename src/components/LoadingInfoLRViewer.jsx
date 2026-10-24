@@ -91,15 +91,6 @@ function SummaryBar({ data, onRefresh, showPrint }) {
                             </span>
                         ))}
                     </div>
-                    {data.approvals.purchase?.orders?.length > 0 && (
-                        <div className="mt-1 flex flex-wrap gap-1">
-                            {data.approvals.purchase.orders.map((o) => (
-                                <span key={o.orderNo} title={o.purchaseNo ? `Purchase ${o.purchaseNo}` : ""} className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${o.ready ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
-                                    Purchase {o.orderNo}: {o.ready ? "Approved + Memo" : o.reason}
-                                </span>
-                            ))}
-                        </div>
-                    )}
                 </div>
             )}
             {!data.complete && (
@@ -167,7 +158,7 @@ function DisabledBtn({ children, reason }) {
     );
 }
 
-const LOCK_REASON = "Not Approved: available once VBP, VFT, VOT and VL are Approved, every order's Purchase Panel is Approved with memo, and all LRs are created, approved and have their invoice uploaded";
+const LOCK_REASON = "Available once VBP, VFT, VOT and VL are Approved, and all LRs are created, approved and have their invoice uploaded";
 
 const STATUS_HINT = {
     unsaved: "Save this Loading Info first. The LR is created by the Consignment Note team and will appear here.",

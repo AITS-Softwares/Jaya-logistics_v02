@@ -894,6 +894,7 @@
 // }
 
 import { NextResponse } from "next/server";
+import { identifierFormatError } from "@/lib/identifierFormats";
 import connectDb from "@/lib/db";
 import BalancePayment from "./BalancePayment";
 import { getNextBalancePaymentNumber } from "./BalancePaymentCounter";
@@ -1114,6 +1115,8 @@ export async function POST(req) {
     }
 
     const body = await req.json();
+    const formatError = identifierFormatError(body);
+    if (formatError) return NextResponse.json({ success: false, message: formatError }, { status: 400 });
     const isDraftSave = body.saveMode === 'draft';
 
     console.log("📝 Creating Balance Payment with body:", body);
@@ -1286,6 +1289,8 @@ export async function PUT(req) {
     }
 
     const body = await req.json();
+    const formatError = identifierFormatError(body);
+    if (formatError) return NextResponse.json({ success: false, message: formatError }, { status: 400 });
     const { id } = body;
 
     if (!id || !isValidObjectId(id)) {

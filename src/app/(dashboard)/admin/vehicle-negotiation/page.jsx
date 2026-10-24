@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { usePermission } from "../hooks/usePermission";
 import Link from "next/link";
 import PendingToCreateChip from "@/components/PendingToCreateChip";
+import PendingToCreateTable from "@/components/PendingToCreateTable";
 
 export default function VehicleNegotiationList() {
   const router = useRouter();
@@ -24,6 +25,7 @@ export default function VehicleNegotiationList() {
   });
 
   const MODULE_NAME = 'Vehicle Negotiation';
+  const showPendingToCreate = filters.approvalStatus === 'Pending to Create';
 
   // Fetch negotiations - wrapped in useCallback to prevent infinite re-renders
   const fetchNegotiations = useCallback(async () => {
@@ -35,7 +37,7 @@ export default function VehicleNegotiationList() {
       // Build query string with filters
       const params = new URLSearchParams({ format: 'table' });
       if (filters.search) params.append('search', filters.search);
-      if (filters.approvalStatus) params.append('approvalStatus', filters.approvalStatus);
+      if (filters.approvalStatus && !showPendingToCreate) params.append('approvalStatus', filters.approvalStatus);
       if (filters.memoStatus) params.append('memoStatus', filters.memoStatus);
       if (filters.fromDate) params.append('fromDate', filters.fromDate);
       if (filters.toDate) params.append('toDate', filters.toDate);
@@ -59,7 +61,7 @@ export default function VehicleNegotiationList() {
     } finally {
       setLoading(false);
     }
-  }, [filters]);
+  }, [filters, showPendingToCreate]);
 
   // Group data by VNN number to show unique VNN rows
   const groupByVNN = (data) => {
@@ -295,11 +297,12 @@ export default function VehicleNegotiationList() {
                 onChange={(e) => handleFilterChange('approvalStatus', e.target.value)}
                 className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200"
               >
-                <option value="">All Approval Status</option>
+                <option value="">All Status</option>
                 <option value="Draft">Draft</option>
                 <option value="Approved">Approved</option>
-                <option value="Pending">Pending</option>
+        <option value="Pending">Pending for Approval</option>
                 <option value="Reject">Reject</option>
+                <option value="Pending to Create">Pending to Create</option>
               </select>
             </div>
             <div className="col-span-12 md:col-span-2">
@@ -347,8 +350,10 @@ export default function VehicleNegotiationList() {
           </div>
         </div>
 
+        <PendingToCreateTable enabled={showPendingToCreate || !filters.approvalStatus} endpoint="/api/vehicle-negotiation?lookup=pendingList" createHref="/admin/vehicle-negotiation/create" title="Order Panels Pending to Create Negotiation" />
+
         {/* Negotiations Table */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className={`bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden ${showPendingToCreate ? 'hidden' : ''}`}>
           <div className="overflow-x-auto">
             <table className="w-full text-sm compact-list-table">
               <thead className="bg-yellow-400 border-b border-yellow-500">

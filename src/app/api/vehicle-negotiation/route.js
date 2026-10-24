@@ -3377,6 +3377,7 @@
 // src/app/api/vehicle-negotiation/route.js
 
 import { NextResponse } from "next/server";
+import { identifierFormatError } from "@/lib/identifierFormats";
 import connectDb from "@/lib/db";
 import VehicleNegotiation from "./VehicleNegotiation";
 import Supplier from "@/models/SupplierModels";
@@ -3535,14 +3536,26 @@ export async function GET(req) {
     const approvalStatus = url.searchParams.get("approvalStatus");
     const memoStatus = url.searchParams.get("memoStatus");
     const eligibleFor = url.searchParams.get('eligibleFor');
-    if (url.searchParams.get("lookup") === "pendingCount") {
+    const pendingLookup = url.searchParams.get("lookup");
+    if (pendingLookup === "pendingCount" || pendingLookup === "pendingList") {
       const [orderPanels, negotiations] = await Promise.all([
-        OrderPanel.find(companyScopeFilter(user, { panelStatus: { $in: ['Approved', 'Partially on hold'] } }), { orderPanelNo: 1, plantRows: 1 }).lean(),
+        OrderPanel.find(companyScopeFilter(user, { panelStatus: { $in: ['Approved', 'Partially on hold'] } }), { orderPanelNo: 1, plantRows: 1, createdAt: 1 }).lean(),
         VehicleNegotiation.find(companyScopeFilter(user), { orders: 1 }).lean(),
       ]);
       const usedOrders = new Set(negotiations.flatMap((item) => (item.orders || []).map((order) => String(order.orderNo || ""))));
-      const count = orderPanels.filter((panel) => panel.orderPanelNo && (panel.plantRows || []).some((row) => (row.status || 'Open') === 'Open' && !row.statusRequest?.action) && !usedOrders.has(String(panel.orderPanelNo))).length;
-      return NextResponse.json({ success: true, data: { count } });
+      const pending = orderPanels.filter((panel) => panel.orderPanelNo && (panel.plantRows || []).some((row) => (row.status || 'Open') === 'Open' && !row.statusRequest?.action) && !usedOrders.has(String(panel.orderPanelNo)));
+      if (pendingLookup === "pendingList") {
+        const rows = pending.map((panel) => ({
+          _id: panel._id,
+          orderNo: panel.orderPanelNo,
+          date: panel.createdAt ? new Date(panel.createdAt).toISOString().split('T')[0] : '',
+          partyName: panel.plantRows?.[0]?.partyName || '',
+          to: panel.plantRows?.[0]?.toName || panel.plantRows?.[0]?.to || '',
+          weight: (panel.plantRows || []).reduce((sum, row) => sum + (Number(row.weight) || 0), 0),
+        }));
+        return NextResponse.json({ success: true, data: { rows } });
+      }
+      return NextResponse.json({ success: true, data: { count: pending.length } });
     }
     const fromDate = url.searchParams.get("fromDate");
     const toDate = url.searchParams.get("toDate");
@@ -3777,6 +3790,8 @@ export async function POST(req) {
     }
 
     const body = await req.json();
+    const formatError = identifierFormatError(body);
+    if (formatError) return NextResponse.json({ success: false, message: formatError }, { status: 400 });
     const blockedRow = await validateOpenOrderRows(user, body.orders || body.orderRows || []);
     if (blockedRow) return NextResponse.json({ success: false, message: blockedRow }, { status: 409 });
 
@@ -3964,6 +3979,8 @@ export async function PUT(req) {
     await connectDb();
 
     const body = await req.json();
+    const formatError = identifierFormatError(body);
+    if (formatError) return NextResponse.json({ success: false, message: formatError }, { status: 400 });
     const { id } = body;
 
     if (!id) {
@@ -4400,6 +4417,8 @@ export async function PATCH(req) {
     }
 
     const body = await req.json();
+    const formatError = identifierFormatError(body);
+    if (formatError) return NextResponse.json({ success: false, message: formatError }, { status: 400 });
     const { id, action, part, remarks, vendorName, vendorCode, finalPerMT, finalFix, memoStatus } = body;
 
     if (!id) {

@@ -3,6 +3,7 @@ import dbConnect from "@/lib/db";
 import Supplier from "@/models/SupplierModels";
 import BankHead from "@/models/BankHead";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
+import { validateIdentifierFormats } from "@/lib/identifierFormats";
 
 export async function POST(req) {
   await dbConnect();
@@ -54,6 +55,7 @@ export async function POST(req) {
     for (let i = 0; i < suppliers.length; i++) {
       const row = suppliers[i];
       const errors = [];
+      errors.push(...validateIdentifierFormats(row));
 
       // Required fields validation
       if (!row.supplierName) errors.push("supplierName missing");

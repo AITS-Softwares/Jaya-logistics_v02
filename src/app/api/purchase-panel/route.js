@@ -1,5 +1,6 @@
 // app/api/purchase-panel/route.js
 import { NextResponse } from "next/server";
+import { identifierFormatError } from "@/lib/identifierFormats";
 import connectDb from "@/lib/db";
 import PurchasePanel from "./PurchasePanel";
 import ConsignmentNote from "../consignment-note/ConsignmentNote";
@@ -559,6 +560,8 @@ export async function POST(req) {
     }
 
     const body = await req.json();
+    const formatError = identifierFormatError(body);
+    if (formatError) return NextResponse.json({ success: false, message: formatError }, { status: 400 });
     const isDraftSave = body.saveMode === 'draft';
     const blockedRow = isDraftSave ? null : await validateOpenOrderRows(user, body.orderRows || body.orders || []);
     if (blockedRow) return NextResponse.json({ success: false, message: blockedRow }, { status: 409 });
@@ -869,6 +872,8 @@ export async function PUT(req) {
     }
 
     const body = await req.json();
+    const formatError = identifierFormatError(body);
+    if (formatError) return NextResponse.json({ success: false, message: formatError }, { status: 400 });
     const { id } = body;
 
     if (!id) {
@@ -1217,6 +1222,8 @@ export async function PATCH(req) {
     }
 
     const body = await req.json();
+    const formatError = identifierFormatError(body);
+    if (formatError) return NextResponse.json({ success: false, message: formatError }, { status: 400 });
     const { id, action, remarks } = body;
 
     if (!id || !isValidObjectId(id)) {

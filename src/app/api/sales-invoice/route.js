@@ -11,6 +11,7 @@ import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import { v2 as cloudinary } from "cloudinary";
 import Counter from "@/models/Counter";
 import { companyPrefix } from "@/lib/documentSequence";
+import { identifierFormatError } from "@/lib/identifierFormats";
 
 export const config = { api: { bodyParser: false } };
 
@@ -114,6 +115,8 @@ export async function POST(req) {
 
     const { fields, files } = await parseMultipart(req);
     const invoiceData = JSON.parse(fields.invoiceData || "{}");
+    const formatError = identifierFormatError(invoiceData);
+    if (formatError) return new Response(JSON.stringify({ success: false, message: formatError }), { status: 400, headers: { "Content-Type": "application/json" } });
     const isFromDelivery = invoiceData.sourceModel?.toLowerCase() === 'delivery';
 
     // 1. Validate stock before transaction

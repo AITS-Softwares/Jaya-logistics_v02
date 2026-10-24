@@ -97,6 +97,10 @@ export const GET = withAuth(async (req, context, user) => {
       const pending = await getAvailableLoadingInfos(user);
       return NextResponse.json({ success: true, data: { count: pending.length } });
     }
+    if (lookup === "pendingList") {
+      const rows = (await getAvailableLoadingInfos(user)).map(loadingInfoReference);
+      return NextResponse.json({ success: true, data: { rows } });
+    }
 
     if (vehicleArrivalNo || vnnNo) {
       const panelQuery = vehicleArrivalNo ? { vehicleArrivalNo } : { vehicleNegotiationNo: vnnNo };

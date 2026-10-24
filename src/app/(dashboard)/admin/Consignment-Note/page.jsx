@@ -873,6 +873,7 @@ import { useRouter } from "next/navigation";
 import { usePermission } from "../hooks/usePermission";
 import Link from "next/link";
 import PendingToCreateChip from "@/components/PendingToCreateChip";
+import PendingToCreateTable from "@/components/PendingToCreateTable";
 
 export default function ConsignmentNoteList() {
   const router = useRouter();
@@ -891,6 +892,7 @@ export default function ConsignmentNoteList() {
   });
 
   const MODULE_NAME = 'Consignment Note';
+  const showPendingToCreate = filters.status === 'Pending to Create';
 
   // Fetch notes - wrapped in useCallback to prevent infinite re-renders
   const fetchNotes = useCallback(async () => {
@@ -903,7 +905,7 @@ export default function ConsignmentNoteList() {
       if (filters.search) params.append('search', filters.search);
       if (filters.fromDate) params.append('fromDate', filters.fromDate);
       if (filters.toDate) params.append('toDate', filters.toDate);
-      if (filters.status) params.append('status', filters.status);
+      if (filters.status && !showPendingToCreate) params.append('status', filters.status);
 
       const res = await fetch(`/api/consignment-note?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -926,7 +928,7 @@ export default function ConsignmentNoteList() {
     } finally {
       setLoading(false);
     }
-  }, [filters]);
+  }, [filters, showPendingToCreate]);
 
   // Only fetch when permissions are loaded and user has view permission
   useEffect(() => {
@@ -1228,10 +1230,11 @@ export default function ConsignmentNoteList() {
               >
                 <option value="">All Status</option>
                 <option value="Draft">Draft</option>
-                <option value="Pending">Pending</option>
+                <option value="Pending">Pending for Approval</option>
                 <option value="Approved">Approved</option>
                 <option value="Rejected">Rejected</option>
                 <option value="Completed">Completed</option>
+                <option value="Pending to Create">Pending to Create</option>
               </select>
             </div>
             <div className="col-span-12 md:col-span-3 flex gap-2">
@@ -1252,8 +1255,10 @@ export default function ConsignmentNoteList() {
           </div>
         </div>
 
+        <PendingToCreateTable enabled={showPendingToCreate || !filters.status} endpoint="/api/consignment-note?lookup=pendingList" createHref="/admin/Consignment-Note/create" title="Orders Pending to Create Consignment Note" />
+
         {/* Consignment Notes Table */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className={`bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden ${showPendingToCreate ? 'hidden' : ''}`}>
           <div className="overflow-x-auto">
             <table className="w-full text-sm compact-list-table">
               <thead className="bg-yellow-400 border-b border-yellow-500">

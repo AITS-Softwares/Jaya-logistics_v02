@@ -115,7 +115,7 @@ export default function LoginPage() {
              <FiShield className="text-white" />
           </div>
           <h1 className="text-white text-3xl font-black tracking-tighter uppercase">
-            AITS <span className="text-indigo-500">Cloud</span>
+            Jaya <span className="text-indigo-500">Group</span>
           </h1>
           <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.4em] mt-2">Enterprise Resource Hub</p>
         </div>
@@ -126,9 +126,9 @@ export default function LoginPage() {
           {/* TAB SELECTOR */}
           <div className="flex p-2 bg-black/20 gap-1">
             {[
-              { id: 'Company', icon: <FiBriefcase /> },
+              { id: 'Customer', icon: <FiMail /> },
               { id: 'User', icon: <FiUser /> },
-              { id: 'Customer', icon: <FiMail /> }
+              { id: 'Company', icon: <FiBriefcase /> }
             ].map((m) => (
               <button
                 key={m.id}
@@ -248,7 +248,7 @@ export default function LoginPage() {
 
           {/* FOOTER STRIP */}
           <div className="bg-black/40 py-4 px-8 border-t border-white/5 flex justify-between items-center">
-            <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">AITS v3.0.4</span>
+            <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Jaya Group ERP</span>
             <div className="flex gap-2">
                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] animate-pulse" />
                <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Servers Online</span>
