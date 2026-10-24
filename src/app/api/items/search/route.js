@@ -2,31 +2,20 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/db";
 import Item from "@/models/ItemModels";
-import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
+import { validateMasterDataRequest } from "@/lib/masterDataPermission";
 
 export async function GET(req) {
   try {
     await connectDB();
 
-    const token = getTokenFromHeader(req);
-    if (!token)
-      return NextResponse.json(
-        { success: false, error: "Unauthorized - Missing token" },
-        { status: 401 }
-      );
-
-    const decoded = verifyJWT(token);
-    if (!decoded?.companyId)
-      return NextResponse.json(
-        { success: false, error: "Unauthorized - Invalid token payload" },
-        { status: 401 }
-      );
+    const { user, error, status } = await validateMasterDataRequest(req, 'view', 'Items', { allowLookup: true });
+    if (error) return NextResponse.json({ success: false, error }, { status });
 
     const { searchParams } = new URL(req.url);
     const q = searchParams.get("q")?.trim() || "";
     const limit = Math.min(Number(searchParams.get("limit") || 20), 100);
 
-    const filter = { companyId: decoded.companyId };
+    const filter = { companyId: user.companyId };
 
     if (q) {
       const rx = new RegExp(q, "i");

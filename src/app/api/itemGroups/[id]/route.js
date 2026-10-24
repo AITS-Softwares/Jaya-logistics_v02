@@ -118,49 +118,14 @@
 import dbConnect from "@/lib/db";
 import ItemGroup from "@/models/ItemGroupModels";
 import { NextResponse } from "next/server";
-import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
-
-// ✅ Role-based access
-function isAuthorized(user) {
-  if (!user) return false;
-  if (user.type === "company") return true;
-  
-  const allowedRoles = [
-    "admin",
-    "sales manager",
-    "purchase manager",
-    "inventory manager",
-    "accounts manager",
-    "hr manager",
-    "support executive",
-    "production head",
-    "project manager",
-  ];
-
-  const userRoles = Array.isArray(user.roles) ? user.roles : user.role ? [user.role] : [];
-  return userRoles.some(role => allowedRoles.includes(role.trim().toLowerCase()));
-}
-
-async function validateUser(req) {
-  const token = getTokenFromHeader(req);
-  if (!token) return { error: "Token missing", status: 401 };
-
-  try {
-    const user = await verifyJWT(token);
-    if (!user || !isAuthorized(user)) return { error: "Unauthorized", status: 403 };
-    return { user };
-  } catch (err) {
-    console.error("JWT Verification Failed:", err.message);
-    return { error: "Invalid token", status: 401 };
-  }
-}
+import { validateMasterDataRequest } from "@/lib/masterDataPermission";
 
 // ✍️ UPDATE Item Group
 export async function PUT(req, { params }) {
   try {
     await dbConnect();
 
-    const { user, error, status } = await validateUser(req);
+    const { user, error, status } = await validateMasterDataRequest(req, 'edit', 'Item Groups');
     if (error) return NextResponse.json({ success: false, message: error }, { status });
 
     const { id } = await params;
@@ -199,7 +164,7 @@ export async function DELETE(req, { params }) {
   try {
     await dbConnect();
 
-    const { user, error, status } = await validateUser(req);
+    const { user, error, status } = await validateMasterDataRequest(req, 'delete', 'Item Groups');
     if (error) return NextResponse.json({ success: false, message: error }, { status });
 
     const { id } = await params;

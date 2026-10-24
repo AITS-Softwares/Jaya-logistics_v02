@@ -1945,6 +1945,7 @@ import LogoutButton from "@/components/LogoutButton";
 
 // ✅ FIXED: Changed from "./hooks/usePermission" to "@/hooks/usePermission"
 import { usePermission } from "./hooks/usePermission";
+import { MASTER_PERMISSION_REGISTRY, canUseMasterPermission } from "@/lib/masterPermissionRegistry";
 
 // ── UI COMPONENTS ──
 
@@ -2068,6 +2069,16 @@ export default function Layout({ children }) {
     setIsSidebarOpen(false);
   }, [pathname]);
 
+  useEffect(() => {
+    if (!session || session.type?.toLowerCase() === "company" || session.roles?.includes("Admin")) return;
+    const matchedResource = MASTER_PERMISSION_REGISTRY.find((resource) =>
+      resource.menus.some(({ path }) => pathname === path || pathname.startsWith(`${path}/`))
+    );
+    if (matchedResource && !canUseMasterPermission(session, matchedResource.key, "view")) {
+      router.replace("/unauthorized");
+    }
+  }, [pathname, router, session]);
+
   // A JAYA GROUP token has intentionally no active legal-company scope. Keep
   // it out of operational pages until the administrator explicitly selects a
   // workspace; otherwise those APIs correctly reject the request.
@@ -2105,6 +2116,14 @@ export default function Layout({ children }) {
   const isAdminUser = isCompany || session?.roles?.includes("Admin");
   const hasFullAccess = isAdminUser;
   const modules = session?.modules || {};
+  const assignedMasterItems = MASTER_PERMISSION_REGISTRY.flatMap((resource) =>
+    resource.menus.filter((menu) => menu.section === "masters" && canUseMasterPermission(session, resource.key, "view"))
+      .map((menu) => ({ ...menu, key: resource.key }))
+  );
+  const assignedMasterViewItems = MASTER_PERMISSION_REGISTRY.flatMap((resource) =>
+    resource.menus.filter((menu) => menu.section === "mastersView" && canUseMasterPermission(session, resource.key, "view"))
+      .map((menu) => ({ ...menu, key: resource.key }))
+  );
   // Some App Router folders intentionally retain their legacy casing. Do not
   // derive those URLs from the display name: Linux production hosts are
   // case-sensitive, unlike local Windows development.
@@ -3142,7 +3161,10 @@ export default function Layout({ children }) {
 
               // This is a field-level permission inside an existing VNN record,
               // not a standalone transaction page.
-              if (['Vehicle Negotiation Placement', 'Master Data', 'Rate Master', 'Pricing Panel - Part 2 Approval'].includes(moduleName)) return null;
+              if (
+                ['Vehicle Negotiation Placement', 'Master Data', 'Rate Master', 'Pricing Panel - Part 2 Approval'].includes(moduleName) ||
+                MASTER_PERMISSION_REGISTRY.some((resource) => resource.key === moduleName)
+              ) return null;
 
               // Check if user has view permission for this module
               if (!canView(moduleName)) return null;
@@ -3187,69 +3209,30 @@ export default function Layout({ children }) {
             })
           }
 
-          {/* Master navigation for assigned users.  The normal-user block above
-              is transaction-oriented; these routes require Master Data access. */}
-          {!hasFullAccess && canView('Master Data') && (
+          {/* Each master menu entry is driven by the same permission registry
+              used by the permissions page and master API guards. */}
+          {!hasFullAccess && assignedMasterItems.length > 0 && (
             <Section
               title="Masters"
               icon={<HiUsers />}
               isOpen={openMenu === 'assignedMasters'}
               onToggle={() => toggleMenu('assignedMasters')}
             >
-              <Item href="/admin/createCustomers" icon={<HiUserGroup />} label="Customers" onClick={closeSidebar} isActive={isActive('/admin/createCustomers')} />
-              <Item href="/admin/supplier" icon={<HiUserGroup />} label="Suppliers" onClick={closeSidebar} isActive={isActive('/admin/supplier')} />
-              <Item href="/admin/item" icon={<HiCube />} label="Items" onClick={closeSidebar} isActive={isActive('/admin/item')} />
-              <Item href="/admin/CreateGroup" icon={<HiUserGroup />} label="Create Group" onClick={closeSidebar} isActive={isActive('/admin/CreateGroup')} />
-              <Item href="/admin/CreateItemGroup" icon={<HiOutlineCube />} label="Create Item Group" onClick={closeSidebar} isActive={isActive('/admin/CreateItemGroup')} />
-              <Item href="/admin/account-bankhead" icon={<HiOutlineLibrary />} label="Account Head" onClick={closeSidebar} isActive={isActive('/admin/account-bankhead')} />
-              <Item href="/admin/bank-head-details" icon={<HiCurrencyDollar />} label="General Ledger" onClick={closeSidebar} isActive={isActive('/admin/bank-head-details')} />
-              <Item href="/admin/WarehouseDetailsForm" icon={<HiOutlineLibrary />} label="Warehouse Details" onClick={closeSidebar} isActive={isActive('/admin/WarehouseDetailsForm')} />
-              <Item href="/admin/subcompanies" icon={<HiOutlineLibrary />} label="Sub Companies" onClick={closeSidebar} isActive={isActive('/admin/subcompanies')} />
-              <Item href="/admin/branches" icon={<HiOfficeBuilding />} label="Branches" onClick={closeSidebar} isActive={isActive('/admin/branches')} />
-              <Item href="/admin/locations" icon={<HiOfficeBuilding />} label="Locations" onClick={closeSidebar} isActive={isActive('/admin/locations')} />
-              <Item href="/admin/pkg-type" icon={<HiOfficeBuilding />} label="Package Types" onClick={closeSidebar} isActive={isActive('/admin/pkg-type')} />
-              <Item href="/admin/vehicles" icon={<HiTruck />} label="Vehicles" onClick={closeSidebar} isActive={isActive('/admin/vehicles')} />
-              <Item href="/admin/owners" icon={<HiTruck />} label="Vehicle Owners" onClick={closeSidebar} isActive={isActive('/admin/owners')} />
-              <Item href="/admin/plants" icon={<HiTruck />} label="Plants" onClick={closeSidebar} isActive={isActive('/admin/plants')} />
-              <Item href="/admin/UOM" icon={<HiCurrencyRupee />} label="UOM" onClick={closeSidebar} isActive={isActive('/admin/UOM')} />
-              <Item href="/admin/sku-sizes" icon={<HiCurrencyRupee />} label="SKU Sizes" onClick={closeSidebar} isActive={isActive('/admin/sku-sizes')} />
-              <Item href="/admin/purchase-type" icon={<HiCurrencyRupee />} label="Purchase Types" onClick={closeSidebar} isActive={isActive('/admin/purchase-type')} />
+              {assignedMasterItems.map((item) => (
+                <Item key={`${item.key}-${item.path}`} href={item.path} icon={<HiOutlineCube />} label={item.label} onClick={closeSidebar} isActive={isActive(item.path)} />
+              ))}
             </Section>
           )}
-          {!hasFullAccess && canView('Master Data') && (
+          {!hasFullAccess && assignedMasterViewItems.length > 0 && (
             <Section
               title="Masters View"
               icon={<HiViewGrid />}
               isOpen={openMenu === 'assignedMastersView'}
               onToggle={() => toggleMenu('assignedMastersView')}
             >
-              <Item href="/admin/customer-view" icon={<HiUsers />} label="Customer View" onClick={closeSidebar} isActive={isActive('/admin/customer-view')} />
-              <Item href="/admin/supplier" icon={<HiUserGroup />} label="Supplier View" onClick={closeSidebar} isActive={isActive('/admin/supplier')} />
-              <Item href="/admin/item" icon={<HiCube />} label="Item View" onClick={closeSidebar} isActive={isActive('/admin/item')} />
-              <Item href="/admin/account-head-view" icon={<HiOutlineLibrary />} label="Account Head View" onClick={closeSidebar} isActive={isActive('/admin/account-head-view')} />
-              <Item href="/admin/bank-head-details-view" icon={<HiCurrencyDollar />} label="General Ledger View" onClick={closeSidebar} isActive={isActive('/admin/bank-head-details-view')} />
-              <Item href="/admin/email-templates" icon={<HiDocumentText />} label="Email Templates" onClick={closeSidebar} isActive={isActive('/admin/email-templates')} />
-              <Item href="/admin/email-masters" icon={<HiOutlineCreditCard />} label="Email & App Password Master" onClick={closeSidebar} isActive={isActive('/admin/email-masters')} />
-              <Item href="/admin/branches" icon={<HiOfficeBuilding />} label="Branches" onClick={closeSidebar} isActive={isActive('/admin/branches')} />
-              <Item href="/admin/locations" icon={<HiOfficeBuilding />} label="From-location" onClick={closeSidebar} isActive={isActive('/admin/locations')} />
-              <Item href="/admin/pkg-type" icon={<HiOfficeBuilding />} label="Pkg-type" onClick={closeSidebar} isActive={isActive('/admin/pkg-type')} />
-              <Item href="/admin/vehicles" icon={<HiTruck />} label="Vehicles" onClick={closeSidebar} isActive={isActive('/admin/vehicles')} />
-              <Item href="/admin/owners" icon={<HiTruck />} label="Vehicles-owner" onClick={closeSidebar} isActive={isActive('/admin/owners')} />
-              <Item href="/admin/plants" icon={<HiTruck />} label="Plants" onClick={closeSidebar} isActive={isActive('/admin/plants')} />
-              <Item href="/admin/rate-master/create" icon={<HiCurrencyRupee />} label="Rate-Location-Master-create" onClick={closeSidebar} isActive={isActive('/admin/rate-master/create')} />
-              <Item href="/admin/UOM" icon={<HiCurrencyRupee />} label="UOM" onClick={closeSidebar} isActive={isActive('/admin/UOM')} />
-              <Item href="/admin/sku-sizes" icon={<HiCurrencyRupee />} label="SKU Sizes" onClick={closeSidebar} isActive={isActive('/admin/sku-sizes')} />
-              <Item href="/admin/purchase-type" icon={<HiCurrencyRupee />} label="Purchase Types" onClick={closeSidebar} isActive={isActive('/admin/purchase-type')} />
-            </Section>
-          )}
-          {!hasFullAccess && canView('Rate Master') && (
-            <Section
-              title="Rate Master"
-              icon={<HiCurrencyRupee />}
-              isOpen={openMenu === 'assignedRateMaster'}
-              onToggle={() => toggleMenu('assignedRateMaster')}
-            >
-              <Item href="/admin/rate-master/create" icon={<HiCurrencyRupee />} label="Price Lists" onClick={closeSidebar} isActive={isActive('/admin/rate-master/create')} />
+              {assignedMasterViewItems.map((item) => (
+                <Item key={`${item.key}-${item.path}`} href={item.path} icon={<HiOutlineCube />} label={item.label} onClick={closeSidebar} isActive={isActive(item.path)} />
+              ))}
             </Section>
           )}
           {!hasFullAccess && canView('Pricing Panel - Part 2 Approval') && !canView('Pricing Panel') && (

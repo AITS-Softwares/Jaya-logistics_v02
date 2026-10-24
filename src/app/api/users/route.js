@@ -41,6 +41,7 @@ import connectDb from "@/lib/db";
 import CompanyUser from "@/models/CompanyUser";
 import bcrypt from "bcryptjs";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
+import { MASTER_PERMISSION_ACTIONS } from "@/lib/masterPermissionRegistry";
 
 // ── PERMISSION DEFINITIONS ──
 const MODULE_PERMISSIONS = {
@@ -79,6 +80,7 @@ const MODULE_PERMISSIONS = {
   "Users": ['view', 'create', 'edit', 'delete'],
   "Accounts": ['view', 'create', 'edit', 'approve', 'reject'],
   "Employees": ['view', 'create', 'edit', 'approve', 'reject'],
+  ...MASTER_PERMISSION_ACTIONS,
 
   // Inventory
   "Inventory": ['view', 'create', 'edit', 'delete', 'adjust'],

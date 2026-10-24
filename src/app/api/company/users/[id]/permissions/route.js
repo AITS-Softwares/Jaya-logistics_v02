@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import connectDb from "@/lib/db";
 import CompanyUser from "@/models/CompanyUser";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
+import { MASTER_PERMISSION_ACTIONS, MASTER_PERMISSION_KEYS } from "@/lib/masterPermissionRegistry";
 
 // ── PERMISSION DEFINITIONS ──
 const MODULE_PERMISSIONS = {
@@ -41,6 +42,7 @@ const MODULE_PERMISSIONS = {
   "Users": ['view', 'create', 'edit', 'delete'],
   "Accounts": ['view', 'create', 'edit', 'approve', 'reject'],
   "Employees": ['view', 'create', 'edit', 'approve', 'reject'],
+  ...MASTER_PERMISSION_ACTIONS,
 
   // Inventory
   "Inventory": ['view', 'create', 'edit', 'delete', 'adjust'],
@@ -78,24 +80,38 @@ const MODULE_PERMISSIONS = {
   "PPC": ['view', 'create', 'edit', 'delete']
 };
 
-function validateUser(req) {
+async function validateUser(req) {
   const token = getTokenFromHeader(req);
   if (!token) {
     return { error: "Authentication required", status: 401 };
   }
 
   try {
-    const user = verifyJWT(token);
-    if (!user) {
+    const tokenUser = verifyJWT(token);
+    if (!tokenUser) {
       return { error: "Invalid token", status: 401 };
     }
-    
-    // Only company admins can manage permissions
-    if (user.type !== 'company' && !user.roles?.includes('Admin')) {
+
+    // A signed company account (including the JAYA GROUP workspace token) is
+    // an administrator. For employee accounts, use current database roles so
+    // a newly granted Admin role does not require waiting for JWT renewal.
+    if (tokenUser.type === 'company' || tokenUser.isGroupAdmin === true) {
+      return { user: tokenUser, error: null, status: 200 };
+    }
+    const currentUser = await CompanyUser.findById(tokenUser.id)
+      .select('roles companyId isActive')
+      .lean();
+    const isAdmin = currentUser?.isActive !== false && (currentUser?.roles || [])
+      .some((role) => ['admin', 'company admin', 'company administrator'].includes(String(role).trim().toLowerCase()));
+    if (!isAdmin) {
       return { error: "Only company admins can manage permissions", status: 403 };
     }
-    
-    return { user, error: null, status: 200 };
+
+    return {
+      user: { ...tokenUser, roles: currentUser.roles || [], companyId: currentUser.companyId || tokenUser.companyId },
+      error: null,
+      status: 200,
+    };
   } catch (err) {
     console.error("JWT Verification Failed:", err);
     return { error: "Authentication failed", status: 401 };
@@ -106,7 +122,7 @@ function validateUser(req) {
 export async function PUT(req, { params }) {
   await connectDb();
   
-  const { user, error, status } = validateUser(req);
+  const { user, error, status } = await validateUser(req);
   if (error) {
     return NextResponse.json({ 
       success: false, 
@@ -115,7 +131,7 @@ export async function PUT(req, { params }) {
   }
 
   try {
-    const { id } = params;
+    const { id } = await params;
     const body = await req.json();
     const { modules } = body;
 
@@ -155,7 +171,9 @@ export async function PUT(req, { params }) {
       const providedPerms = moduleData.permissions || {};
 
       availablePerms.forEach(perm => {
-        validPermissions[perm] = providedPerms[perm] === true;
+        validPermissions[perm] = perm === 'delete' && !MASTER_PERMISSION_KEYS.includes(moduleName)
+          ? false
+          : providedPerms[perm] === true;
       });
 
       moduleMap.set(moduleName, {
@@ -211,7 +229,7 @@ export async function PUT(req, { params }) {
 export async function GET(req, { params }) {
   await connectDb();
   
-  const { user, error, status } = validateUser(req);
+  const { user, error, status } = await validateUser(req);
   if (error) {
     return NextResponse.json({ 
       success: false, 
@@ -220,7 +238,7 @@ export async function GET(req, { params }) {
   }
 
   try {
-    const { id } = params;
+    const { id } = await params;
 
     const targetUser = await CompanyUser.findOne({
       _id: id,

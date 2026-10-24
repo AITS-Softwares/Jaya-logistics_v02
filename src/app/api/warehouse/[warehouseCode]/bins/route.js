@@ -2,9 +2,12 @@
 import Warehouse from "@/models/warehouseModels";
 import dbConnect from "@/lib/db";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
+import { validateMasterDataRequest } from "@/lib/masterDataPermission";
 
 export async function POST(req, { params }) {
   await dbConnect();
+  const access = await validateMasterDataRequest(req, 'edit', 'Warehouse Details');
+  if (access.error) return new Response(JSON.stringify({ success: false, message: access.error }), { status: access.status });
 
   try {
     // 1️⃣ Authenticate
@@ -35,7 +38,7 @@ export async function POST(req, { params }) {
     }
 
     // 3️⃣ Find warehouse by code
-    const warehouse = await Warehouse.findOne({ warehouseCode });
+    const warehouse = await Warehouse.findOne({ warehouseCode, companyId: access.user.companyId });
     if (!warehouse) {
       return new Response(
         JSON.stringify({ success: false, message: "Warehouse not found" }),
@@ -90,6 +93,8 @@ export async function POST(req, { params }) {
 // GET /api/warehouse/[warehouseCode]/bins
 export async function GET(req, { params }) {
   await dbConnect();
+  const access = await validateMasterDataRequest(req, 'view', 'Warehouse Details', { allowLookup: true });
+  if (access.error) return new Response(JSON.stringify({ success: false, message: access.error }), { status: access.status });
 
   try {
     const { warehouseCode } = params;
@@ -101,7 +106,7 @@ export async function GET(req, { params }) {
       );
     }
 
-    const warehouse = await Warehouse.findOne({ warehouseCode });
+    const warehouse = await Warehouse.findOne({ warehouseCode, companyId: access.user.companyId });
     if (!warehouse) {
       return new Response(
         JSON.stringify({ success: false, message: "Warehouse not found" }),

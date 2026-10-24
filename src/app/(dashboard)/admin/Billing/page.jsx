@@ -7693,17 +7693,23 @@ export default function BillingPage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white">
       <div className="sticky top-0 z-40 border-b bg-white/80 backdrop-blur">
         <div className="mx-auto max-w-full px-6 py-4">
-          <div className="flex items-center gap-3">
-            <button onClick={() => router.push("/admin")} className="text-emerald-600 hover:text-emerald-800 font-medium text-sm flex items-center gap-1">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-              Back to Dashboard
-            </button>
-            <div>
-              <h1 className="text-xl font-extrabold text-slate-900">Billing</h1>
-              <p className="mt-0.5 text-sm text-slate-500">Review transport charges and generate billing reports.</p>
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <button onClick={() => router.push("/admin")} className="text-emerald-600 hover:text-emerald-800 font-medium text-sm flex items-center gap-1">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Back to Dashboard
+              </button>
+              <div>
+                <h1 className="text-xl font-extrabold text-slate-900">Billing</h1>
+                <p className="mt-0.5 text-sm text-slate-500">Review transport charges and generate billing reports.</p>
+              </div>
             </div>
+            <Link href="/admin/Billing/reports" className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-bold text-emerald-800 transition hover:border-emerald-300 hover:bg-emerald-100">
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 5h16M4 10h16M4 15h10M4 20h10"/><path d="M18 16v6m-3-3h6"/></svg>
+              Billing Register
+            </Link>
           </div>
         </div>
       </div>

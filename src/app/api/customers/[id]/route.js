@@ -1,50 +1,15 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import Customer from "@/models/CustomerModel";
-import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import { identifierFormatError } from "@/lib/identifierFormats";
-
-function isAuthorized(user, action = "view") {
-  if (!user) return false;
-  if (user.type === "company") return true;
-
-  const roles = (Array.isArray(user.roles) ? user.roles : [user.role])
-    .filter(Boolean)
-    .map((role) => String(role).trim().toLowerCase());
-  const legacyAllowedRoles = [
-    "admin",
-    "crm",
-    "sales manager",
-    "purchase manager",
-    "inventory manager",
-    "accounts manager",
-    "hr manager",
-    "support executive",
-    "production head",
-    "project manager",
-  ];
-  if (roles.includes("admin") || roles.some((role) => legacyAllowedRoles.includes(role))) return true;
-  if (user.permissions?.includes("customer")) return true;
-
-  return ["Customers", "Master Data"].some((moduleName) => {
-    const module = user.modules?.[moduleName];
-    return module?.selected === true && module.permissions?.[action] === true;
-  });
-}
+import { validateMasterDataRequest } from "@/lib/masterDataPermission";
 
 export async function GET(req, { params }) {
   await dbConnect();
 
   try {
-    const token = getTokenFromHeader(req);
-    const user = token ? verifyJWT(token) : null;
-    if (!user) {
-      return NextResponse.json({ success: false, message: "Authentication required. Please login again." }, { status: 401 });
-    }
-
-    if (!isAuthorized(user, "view")) {
-      return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 403 });
-    }
+    const { user, error, status } = await validateMasterDataRequest(req, "view", "Customers", { allowLookup: true });
+    if (error) return NextResponse.json({ success: false, message: error }, { status });
 
     const { id } = params;
     // ✅ FIXED: Check both ID and companyId
@@ -68,15 +33,8 @@ export async function PUT(req, { params }) {
   await dbConnect();
 
   try {
-    const token = getTokenFromHeader(req);
-    const user = token ? verifyJWT(token) : null;
-    if (!user) {
-      return NextResponse.json({ success: false, message: "Authentication required. Please login again." }, { status: 401 });
-    }
-
-    if (!isAuthorized(user, "edit")) {
-      return NextResponse.json({ success: false, message: "You do not have permission to edit Customers." }, { status: 403 });
-    }
+    const { user, error, status } = await validateMasterDataRequest(req, "edit", "Customers");
+    if (error) return NextResponse.json({ success: false, message: error }, { status });
 
     const { id } = params;
     const body = await req.json();
@@ -115,15 +73,8 @@ export async function PUT(req, { params }) {
 export async function DELETE(req, { params }) {
   await dbConnect();
   try {
-    const token = getTokenFromHeader(req);
-    const user = token ? verifyJWT(token) : null;
-    if (!user) {
-      return NextResponse.json({ success: false, message: "Authentication required. Please login again." }, { status: 401 });
-    }
-
-    if (!isAuthorized(user, "delete")) {
-      return NextResponse.json({ success: false, message: "You do not have permission to delete Customers." }, { status: 403 });
-    }
+    const { user, error, status } = await validateMasterDataRequest(req, "delete", "Customers");
+    if (error) return NextResponse.json({ success: false, message: error }, { status });
 
     const { id } = params;
     const deleted = await Customer.findOneAndDelete({ _id: id, companyId: user.companyId });

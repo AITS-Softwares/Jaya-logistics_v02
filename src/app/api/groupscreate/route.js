@@ -8,7 +8,7 @@ import { validateMasterDataRequest } from '@/lib/masterDataPermission';
  * ✅ Validate JWT & Return User
  */
 async function authenticate(req, action = 'view') {
-  return validateMasterDataRequest(req, action);
+  return validateMasterDataRequest(req, action, "Groups");
   const token = getTokenFromHeader(req);
   if (!token) {
     return { error: "Token missing", status: 401 };

@@ -126,6 +126,7 @@ import { NextResponse } from "next/server";
 import connectDb from "@/lib/db";
 import Location from "../schema";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
+import { validateMasterDataRequest } from "@/lib/masterDataPermission";
 
 // Helper function to capitalize first letter of each word
 function capitalizeName(str) {
@@ -205,7 +206,7 @@ async function validateUser(req) {
 // POST /api/locations/bulk
 export async function POST(req) {
   await connectDb();
-  const { user, error, status } = await validateUser(req);
+  const { user, error, status } = await validateMasterDataRequest(req, 'create', 'Locations');
   if (error) return NextResponse.json({ success: false, message: error }, { status });
 
   try {

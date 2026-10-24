@@ -2,6 +2,7 @@
 import dbConnect from "@/lib/db";
 import EmailTemplate from "@/models/emailMaster/EmailTemplate";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
+import { validateMasterDataRequest } from "@/lib/masterDataPermission";
 
 async function requireAuth(req) {
   const token = getTokenFromHeader(req);
@@ -12,6 +13,8 @@ async function requireAuth(req) {
 }
 
 export async function GET(req, { params }) {
+  const access = await validateMasterDataRequest(req, 'view', 'Email Templates', { allowLookup: true });
+  if (access.error) return new Response(JSON.stringify({ error: access.error }), { status: access.status });
   try {
     await dbConnect();
     const user = await requireAuth(req);
@@ -32,6 +35,8 @@ export async function GET(req, { params }) {
 }
 
 export async function PUT(req, { params }) {
+  const access = await validateMasterDataRequest(req, 'edit', 'Email Templates');
+  if (access.error) return new Response(JSON.stringify({ error: access.error }), { status: access.status });
   try {
     await dbConnect();
     const user = await requireAuth(req);
@@ -61,6 +66,8 @@ export async function PUT(req, { params }) {
 }
 
 export async function DELETE(req, { params }) {
+  const access = await validateMasterDataRequest(req, 'delete', 'Email Templates');
+  if (access.error) return new Response(JSON.stringify({ error: access.error }), { status: access.status });
   try {
     await dbConnect();
     const user = await requireAuth(req);

@@ -3,6 +3,7 @@ import dbConnect from "@/lib/db";
 import EmailMaster from "@/models/emailMaster/emailMaster";
 import crypto from "crypto";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
+import { validateMasterDataRequest } from "@/lib/masterDataPermission";
 
 export const runtime = "nodejs";
 
@@ -41,6 +42,8 @@ function maskPassword(pwd = "") {
    GET /api/email-masters/[id]
 ===================================================== */
 export async function GET(req, { params }) {
+  const access = await validateMasterDataRequest(req, 'view', 'Email & App Password Master', { allowLookup: true });
+  if (access.error) return NextResponse.json({ error: access.error }, { status: access.status });
   await dbConnect();
 
   const companyId = await getCompanyId(req);
@@ -63,6 +66,8 @@ export async function GET(req, { params }) {
    PUT /api/email-masters/[id]
 ===================================================== */
 export async function PUT(req, { params }) {
+  const access = await validateMasterDataRequest(req, 'edit', 'Email & App Password Master');
+  if (access.error) return NextResponse.json({ error: access.error }, { status: access.status });
   await dbConnect();
 
   const companyId = await getCompanyId(req);
@@ -96,6 +101,8 @@ export async function PUT(req, { params }) {
    DELETE /api/email-masters/[id]
 ===================================================== */
 export async function DELETE(req, { params }) {
+  const access = await validateMasterDataRequest(req, 'delete', 'Email & App Password Master');
+  if (access.error) return NextResponse.json({ error: access.error }, { status: access.status });
   await dbConnect();
 
   const companyId = await getCompanyId(req);

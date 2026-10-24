@@ -5,7 +5,7 @@ import { getTokenFromHeader, verifyJWT } from '@/lib/auth';
 import { validateMasterDataRequest } from '@/lib/masterDataPermission';
 
 async function validateUser(req, action = 'view') {
-  return validateMasterDataRequest(req, action);
+  return validateMasterDataRequest(req, action, "Purchase Types", { allowLookup: action === "view" });
   const token = getTokenFromHeader(req);
 
   if (!token) {

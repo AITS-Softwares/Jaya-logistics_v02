@@ -53,7 +53,7 @@ function resolveCustomer(value, customers) {
 export async function POST(req) {
   await dbConnect();
   try {
-    const { user, error, status } = await validateMasterDataRequest(req, "view");
+    const { user, error, status } = await validateMasterDataRequest(req, "view", "Items");
     if (error) return NextResponse.json({ success: false, message: error }, { status });
     const companyId = user.companyId;
     const createdBy = user.id;
@@ -157,7 +157,7 @@ export async function POST(req) {
       }
       const requiredAction = existingItem ? "edit" : "create";
       if (!permissionCache.has(requiredAction)) {
-        const permission = await validateMasterDataRequest(req, requiredAction);
+        const permission = await validateMasterDataRequest(req, requiredAction, "Items");
         permissionCache.set(requiredAction, permission.error || null);
       }
       const permissionError = permissionCache.get(requiredAction);

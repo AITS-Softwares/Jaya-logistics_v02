@@ -603,6 +603,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { usePermission } from "../hooks/usePermission";
+import { MASTER_PERMISSION_KEYS, MASTER_PERMISSION_MODULES } from "@/lib/masterPermissionRegistry";
 import {
   FiShield, FiUser, FiCheck, FiX, FiSearch, FiEdit2,
   FiSave, FiRefreshCw, FiUsers, FiEye, FiPlus, FiTrash2,
@@ -651,7 +652,6 @@ const MODULES_CONFIG = {
   'Purchase Report': { icon: '📊', permissions: ['view', 'export', 'print'] },
 
   // Masters
-  'Master Data': { icon: '🗂️', permissions: ['view', 'create', 'edit', 'approve', 'reject'] },
   'Rate Master': { icon: '💱', permissions: ['view', 'create', 'edit', 'approve', 'reject'] },
   'Customers': { icon: '👥', permissions: ['view', 'create', 'edit', 'approve', 'reject'] },
   'Suppliers': { icon: '🏭', permissions: ['view', 'create', 'edit', 'approve', 'reject'] },
@@ -660,6 +660,7 @@ const MODULES_CONFIG = {
   'Users': { icon: '👤', permissions: ['view', 'create', 'edit', 'delete'] },
   'Accounts': { icon: '💰', permissions: ['view', 'create', 'edit', 'approve', 'reject'] },
   'Employees': { icon: '👨‍💼', permissions: ['view', 'create', 'edit', 'approve', 'reject'] },
+  ...MASTER_PERMISSION_MODULES,
 
   // Inventory
   'Inventory': { icon: '📊', permissions: ['view', 'create', 'edit', 'delete', 'adjust'] },
@@ -739,9 +740,13 @@ export default function PermissionsPage() {
     setSelectedUser(user);
     const userModules = user.modules || {};
     const initializedPermissions = {};
+    const legacyMasterData = userModules['Master Data'];
     
     Object.keys(MODULES_CONFIG).forEach(moduleName => {
-      const moduleData = userModules[moduleName] || { selected: false, permissions: {} };
+      const existingModuleData = userModules[moduleName];
+      const moduleData = MASTER_PERMISSION_KEYS.includes(moduleName) && legacyMasterData?.selected
+        ? legacyMasterData
+        : existingModuleData || { selected: false, permissions: {} };
       initializedPermissions[moduleName] = {
         selected: moduleData.selected || false,
         permissions: {
@@ -1073,6 +1078,12 @@ export default function PermissionsPage() {
                     </button>
                   </div>
                 </div>
+
+                {selectedUser.modules?.['Master Data']?.selected && (
+                  <div className="mb-5 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                    This user still has the legacy <strong>Master Data</strong> permission. Its current access is prefilled across the individual master areas below. Review these permissions before saving; saving replaces the legacy access with the per-area selections.
+                  </div>
+                )}
 
                 {/* Quick Select */}
                 <div className="mb-6 flex flex-wrap items-center gap-3 p-3 bg-gray-50 rounded-lg">

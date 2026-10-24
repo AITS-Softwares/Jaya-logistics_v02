@@ -2,21 +2,15 @@ import { NextResponse } from "next/server";
 import connectDb from "@/lib/db";
 import RateMaster from "../schema";
 import RateHistory from "../history-schema";
-import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
+import Location from "../../locations/schema";
+import { validateMasterDataRequest } from "@/lib/masterDataPermission";
 
 export async function POST(req) {
   await connectDb();
   
   try {
-    const token = getTokenFromHeader(req);
-    if (!token) {
-      return NextResponse.json({ success: false, message: "Token missing" }, { status: 401 });
-    }
-
-    const user = await verifyJWT(token);
-    if (!user) {
-      return NextResponse.json({ success: false, message: "Invalid token" }, { status: 401 });
-    }
+    const { user, error, status } = await validateMasterDataRequest(req, 'edit', 'Rate Master');
+    if (error) return NextResponse.json({ success: false, message: error }, { status });
 
     const { masterId, locationId } = await req.json();
 

@@ -1,32 +1,16 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db.js";
 import Customer from "@/models/CustomerModel";
-import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
+import { validateMasterDataRequest } from "@/lib/masterDataPermission";
 import { syncCustomer } from "@/lib/frappe-customer.mjs";
 
 export const runtime = "nodejs";
 
-function isAuthorized(user) {
-  if (!user) return false;
-  if (user.type === "company") return true;
-
-  const allowedRoles = [
-    "admin", "crm", "sales manager", "purchase manager", "inventory manager",
-    "accounts manager", "hr manager", "support executive", "production head", "project manager",
-  ];
-  return (Array.isArray(user.roles) ? user.roles : [])
-    .some((role) => allowedRoles.includes(String(role).trim().toLowerCase()));
-}
-
 export async function POST(req) {
   try {
     await dbConnect();
-    const token = getTokenFromHeader(req);
-    const user = verifyJWT(token);
-
-    if (!isAuthorized(user)) {
-      return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
-    }
+    const { user, error, status } = await validateMasterDataRequest(req, 'edit', 'Customers');
+    if (error) return NextResponse.json({ success: false, message: error }, { status });
 
     const customers = await Customer.find({ companyId: user.companyId }).sort({ createdAt: 1 });
     const summary = { total: customers.length, synced: 0, failed: 0, notConfigured: 0 };

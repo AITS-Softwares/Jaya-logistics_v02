@@ -45,7 +45,7 @@ function isAuthorized(user) {
   return false;
 }
 async function validateUser(req, action = 'view') {
-  return validateMasterDataRequest(req, action);
+  return validateMasterDataRequest(req, action, "SKU Sizes", { allowLookup: action === "view" });
   const token = getTokenFromHeader(req);
   if (!token) return { error: "Token missing", status: 401 };
 
