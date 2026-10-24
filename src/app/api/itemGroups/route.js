@@ -185,59 +185,17 @@
 import dbConnect from "@/lib/db";
 import ItemGroup from "@/models/ItemGroupModels";
 import { NextResponse } from "next/server";
-import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
-
-// ✅ Role-based access for item management
-function isAuthorized(user) {
-  if (!user) return false;
-
-  if (user.type === "company") return true;
-
-  const allowedRoles = [
-    "admin",
-    "sales manager",
-    "purchase manager",
-    "inventory manager",
-    "accounts manager",
-    "hr manager",
-    "support executive",
-    "production head",
-    "project manager",
-  ];
-
-  const userRoles = Array.isArray(user.roles)
-    ? user.roles
-    : [];
-
-  return userRoles.some(role =>
-    allowedRoles.includes(role.trim().toLowerCase())
-  );
-}
+import { validateMasterDataRequest } from "@/lib/masterDataPermission";
 
 // ✅ Validate user token & permissions
-async function validateUser(req, allowMasterDataViewer = false) {
-  const token = getTokenFromHeader(req);
-  if (!token) return { error: "Token missing", status: 401 };
-
-  try {
-    const user = await verifyJWT(token);
-    if (!user) return { error: "Invalid token", status: 401 };
-    const masterDataViewer = user.modules?.["Master Data"]?.selected === true
-      && user.modules?.["Master Data"]?.permissions?.view !== false;
-    if (!isAuthorized(user) && !(allowMasterDataViewer && masterDataViewer)) {
-      return { error: "You do not have permission to view item groups", status: 403 };
-    }
-    return { user };
-  } catch (err) {
-    console.error("JWT Verification Failed:", err.message);
-    return { error: "Invalid token", status: 401 };
-  }
+async function validateUser(req, action = "view") {
+  return validateMasterDataRequest(req, action, "Item Groups", { allowLookup: action === "view" });
 }
 
 export async function POST(req) {
   await dbConnect();
 
-  const { user, error, status } = await validateUser(req);
+  const { user, error, status } = await validateUser(req, "create");
   if (error) return NextResponse.json({ success: false, message: error }, { status });
 
   try {
@@ -276,7 +234,7 @@ export async function POST(req) {
 export async function GET(req) {
   await dbConnect();
 
-  const { user, error, status } = await validateUser(req, true);
+  const { user, error, status } = await validateUser(req, "view");
   if (error) {
     return NextResponse.json({ success: false, message: error }, { status });
   }
@@ -313,7 +271,7 @@ export async function GET(req) {
 export async function PUT(req) {
   await dbConnect();
 
-  const { user, error, status } = await validateUser(req);
+  const { user, error, status } = await validateUser(req, "edit");
   if (error) return NextResponse.json({ success: false, message: error }, { status });
 
   try {
@@ -360,7 +318,7 @@ export async function PUT(req) {
 export async function DELETE(req) {
   await dbConnect();
 
-  const { user, error, status } = await validateUser(req);
+  const { user, error, status } = await validateUser(req, "delete");
   if (error) return NextResponse.json({ success: false, message: error }, { status });
 
   try {

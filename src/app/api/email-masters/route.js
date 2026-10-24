@@ -3,6 +3,7 @@ import dbConnect from "@/lib/db";
 import EmailMaster from "@/models/emailMaster/emailMaster";
 import crypto from "crypto";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
+import { validateMasterDataRequest } from "@/lib/masterDataPermission";
 
 export const runtime = "nodejs";
 
@@ -42,6 +43,8 @@ async function getCompanyId(req) {
    GET /api/email-masters  -> list
 ===================================================== */
 export async function GET(req) {
+  const access = await validateMasterDataRequest(req, 'view', 'Email & App Password Master', { allowLookup: true });
+  if (access.error) return NextResponse.json({ error: access.error }, { status: access.status });
   try {
     await dbConnect();
 
@@ -71,6 +74,8 @@ export async function GET(req) {
    POST /api/email-masters  -> create
 ===================================================== */
 export async function POST(req) {
+  const access = await validateMasterDataRequest(req, 'create', 'Email & App Password Master');
+  if (access.error) return NextResponse.json({ error: access.error }, { status: access.status });
   try {
     await dbConnect();
 

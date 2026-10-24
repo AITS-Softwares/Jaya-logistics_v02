@@ -258,7 +258,7 @@ function isAuthorized(user) {
 }
 
 async function validateUser(req, action = 'view') {
-  return validateMasterDataRequest(req, action);
+  return validateMasterDataRequest(req, action, "Locations", { allowLookup: action === "view" });
 }
 
 /* ========================================

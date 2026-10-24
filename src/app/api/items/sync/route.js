@@ -9,7 +9,7 @@ export const runtime = "nodejs";
 export async function POST(req) {
   try {
     await dbConnect();
-    const { user, error, status } = await validateMasterDataRequest(req, 'create');
+    const { user, error, status } = await validateMasterDataRequest(req, 'create', "Items");
     if (error) return NextResponse.json({ success: false, message: error }, { status });
 
     const body = await req.json().catch(() => ({}));

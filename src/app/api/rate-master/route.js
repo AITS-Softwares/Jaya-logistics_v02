@@ -463,68 +463,12 @@ import RateHistory from "./history-schema";
 import Branch from "../branches/schema";
 import Location from "../locations/schema";
 import Customer from "@/models/CustomerModel";
-import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
+import { validateMasterDataRequest } from "@/lib/masterDataPermission";
 import fs from 'fs';
 import path from 'path';
 
-// ✅ Role-based access for vehicle negotiation management
-function isAuthorized(user, action = 'view') {
-  if (!user) return false;
-
-  // ✅ Company users have full access
-  if (user.type === "company") return true;
-
-  // ✅ Check for specific roles
-  const allowedRoles = [
-    "admin",
-    "sales manager",
-    "purchase manager",
-    "inventory manager",
-    "accounts manager",
-    "hr manager",
-    "support executive",
-    "production head",
-    "project manager"
-  ];
-
-  // Handle both single role and roles array
-  const userRoles = Array.isArray(user.roles) 
-    ? user.roles 
-    : (user.role ? [user.role] : []);
-
-  const hasAllowedRole = userRoles.some(role =>
-    allowedRoles.includes(role.trim().toLowerCase())
-  );
-
-  if (hasAllowedRole) return true;
-
-  const module = user.modules?.['Rate Master'];
-  if (module?.selected && module.permissions?.[action] === true) {
-    return true;
-  }
-
-  // ✅ Backward-compatible permission check for previously assigned users.
-  if (Array.isArray(user.permissions) && 
-      user.permissions.includes("vehicle_negotiation")) {
-    return true;
-  }
-
-  return false;
-}
-
 async function validateUser(req, action = 'view') {
-  const token = getTokenFromHeader(req);
-  if (!token) return { error: "Token missing", status: 401 };
-
-  try {
-    const user = await verifyJWT(token);
-    if (!user) return { error: "Invalid token", status: 401 };
-    if (!isAuthorized(user, action)) return { error: "Unauthorized", status: 403 };
-    return { user, error: null, status: 200 };
-  } catch (err) {
-    console.error("JWT Verification Failed:", err);
-    return { error: "Invalid token", status: 401 };
-  }
+  return validateMasterDataRequest(req, action, 'Rate Master', { allowLookup: action === 'view' });
 }
 
 export async function GET(req) {

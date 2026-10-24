@@ -2,6 +2,7 @@
 import dbConnect from "@/lib/db";
 import EmailTemplate from "@/models/emailMaster/EmailTemplate";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
+import { validateMasterDataRequest } from "@/lib/masterDataPermission";
 
 async function requireAuth(req) {
   const token = getTokenFromHeader(req); // your helper should read Authorization header
@@ -12,6 +13,8 @@ async function requireAuth(req) {
 }
 
 export async function GET(req) {
+  const access = await validateMasterDataRequest(req, 'view', 'Email Templates', { allowLookup: true });
+  if (access.error) return new Response(JSON.stringify({ error: access.error }), { status: access.status });
   try {
     await dbConnect();
     const user = await requireAuth(req);
@@ -34,6 +37,8 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
+  const access = await validateMasterDataRequest(req, 'create', 'Email Templates');
+  if (access.error) return new Response(JSON.stringify({ error: access.error }), { status: access.status });
   try {
     await dbConnect();
     const user = await requireAuth(req);

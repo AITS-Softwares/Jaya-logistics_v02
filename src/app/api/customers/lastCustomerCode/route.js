@@ -1,18 +1,14 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db.js";
 import Customer from "@/models/CustomerModel";
-import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
+import { validateMasterDataRequest } from "@/lib/masterDataPermission";
 
 export async function GET(req) {
   try {
     await dbConnect();
     
-    const token = getTokenFromHeader(req);
-    const user = await verifyJWT(token);
-    
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const { user, error, status } = await validateMasterDataRequest(req, 'create', 'Customers');
+    if (error) return NextResponse.json({ error }, { status });
     
     // Get the last customer for this company
     const lastCustomer = await Customer.findOne({ 

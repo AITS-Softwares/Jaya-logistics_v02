@@ -114,7 +114,7 @@ function addDropdownValidations(workbookBuffer, validations) {
 
 export async function GET(req) {
   await dbConnect();
-  const { user, error, status } = await validateMasterDataRequest(req, "view");
+  const { user, error, status } = await validateMasterDataRequest(req, "view", "Items");
   if (error) return NextResponse.json({ success: false, message: error }, { status });
 
   const [groups, customers] = await Promise.all([

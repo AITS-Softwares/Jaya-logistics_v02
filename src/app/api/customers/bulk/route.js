@@ -2,24 +2,19 @@ import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db.js";
 import Customer from "@/models/CustomerModel";
 import BankHead from "@/models/BankHead";
-import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
+import { validateMasterDataRequest } from "@/lib/masterDataPermission";
 import { validateIdentifierFormats } from "@/lib/identifierFormats";
 
 export async function POST(req) {
   await dbConnect();
 
   try {
-    // ✅ 1️⃣ Authenticate user
-    const token = getTokenFromHeader(req);
-    if (!token)
-      return NextResponse.json(
-        { success: false, message: "Unauthorized" },
-        { status: 401 }
-      );
-
-    const decoded = verifyJWT(token);
-    const companyId = decoded.companyId;
-    const createdBy = decoded.userId;
+    const { user, error, status } = await validateMasterDataRequest(req, 'create', 'Customers');
+    if (error) return NextResponse.json({ success: false, message: error }, { status });
+    const editAccess = await validateMasterDataRequest(req, 'edit', 'Customers');
+    if (editAccess.error) return NextResponse.json({ success: false, message: editAccess.error }, { status: editAccess.status });
+    const companyId = user.companyId;
+    const createdBy = user.id;
 
     // ✅ 2️⃣ Parse input
     const { customers } = await req.json();

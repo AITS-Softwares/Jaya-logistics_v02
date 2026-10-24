@@ -2,6 +2,7 @@ import dbConnect from "@/lib/db";
 import AccountHead from "@/models/AccountHead";
 import { NextResponse } from "next/server";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
+import { validateMasterDataRequest } from "@/lib/masterDataPermission";
 
 // ✅ Auth helper
 async function authenticate(req) {
@@ -21,6 +22,8 @@ async function authenticate(req) {
  * ✅ GET: Fetch all account heads
  */
 export async function GET(req) {
+  const access = await validateMasterDataRequest(req, 'view', 'Account Head', { allowLookup: true });
+  if (access.error) return NextResponse.json({ success: false, message: access.error }, { status: access.status });
   await dbConnect();
   const { user, error, status } = await authenticate(req);
   if (error) return NextResponse.json({ success: false, message: error }, { status });
@@ -37,6 +40,8 @@ export async function GET(req) {
  * ✅ POST: Create a new account head
  */
 export async function POST(req) {
+  const access = await validateMasterDataRequest(req, 'create', 'Account Head');
+  if (access.error) return NextResponse.json({ success: false, message: access.error }, { status: access.status });
   await dbConnect();
   const { user, error, status } = await authenticate(req);
   if (error) return NextResponse.json({ success: false, message: error }, { status });

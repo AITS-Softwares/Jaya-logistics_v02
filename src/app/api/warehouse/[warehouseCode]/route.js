@@ -1,12 +1,15 @@
 import  dbConnect from "@/lib/db";
 import Warehouse from "@/models/warehouseModels";
+import { validateMasterDataRequest } from "@/lib/masterDataPermission";
 
 // ✅ GET WAREHOUSE BY CODE
 export async function GET(req, { params }) {
   try {
+    const { user, error, status } = await validateMasterDataRequest(req, 'view', 'Warehouse Details', { allowLookup: true });
+    if (error) return Response.json({ message: error }, { status });
     await dbConnect();
-    const { warehouseCode } = params;
-    const warehouse = await Warehouse.findOne({ warehouseCode });
+    const { warehouseCode } = await params;
+    const warehouse = await Warehouse.findOne({ warehouseCode, companyId: user.companyId });
 
     if (!warehouse) {
       return new Response(
@@ -31,11 +34,15 @@ export async function GET(req, { params }) {
 // ✅ UPDATE WAREHOUSE BY CODE
 export async function PUT(req, { params }) {
   try {
+    const { user, error, status } = await validateMasterDataRequest(req, 'edit', 'Warehouse Details');
+    if (error) return Response.json({ message: error }, { status });
     await dbConnect();
-    const { warehouseCode } = params;
+    const { warehouseCode } = await params;
     const updateData = await req.json();
+    delete updateData._id;
+    delete updateData.companyId;
     const updatedWarehouse = await Warehouse.findOneAndUpdate(
-      { warehouseCode },
+      { warehouseCode, companyId: user.companyId },
       updateData,
       { new: true }
     );
@@ -63,9 +70,11 @@ export async function PUT(req, { params }) {
 // ✅ DELETE WAREHOUSE BY CODE
 export async function DELETE(req, { params }) {
   try {
+    const { user, error, status } = await validateMasterDataRequest(req, 'delete', 'Warehouse Details');
+    if (error) return Response.json({ message: error }, { status });
     await dbConnect();
-    const { warehouseCode } = params;
-    const deletedWarehouse = await Warehouse.findOneAndDelete({ warehouseCode });
+    const { warehouseCode } = await params;
+    const deletedWarehouse = await Warehouse.findOneAndDelete({ warehouseCode, companyId: user.companyId });
 
     if (!deletedWarehouse) {
       return new Response(

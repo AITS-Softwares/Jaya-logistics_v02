@@ -2,25 +2,14 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/db";
 import Supplier from "@/models/SupplierModels";
-import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
+import { validateMasterDataRequest } from "@/lib/masterDataPermission";
 
 export async function GET(req) {
   try {
     await connectDB();
 
-    const token = getTokenFromHeader(req);
-    if (!token)
-      return NextResponse.json(
-        { success: false, error: "Unauthorized - Missing token" },
-        { status: 401 }
-      );
-
-    const decoded = verifyJWT(token);
-    if (!decoded?.companyId)
-      return NextResponse.json(
-        { success: false, error: "Unauthorized - Invalid token payload" },
-        { status: 401 }
-      );
+    const { user, error, status } = await validateMasterDataRequest(req, 'view', 'Suppliers', { allowLookup: true });
+    if (error) return NextResponse.json({ success: false, error }, { status });
 
     const { searchParams } = new URL(req.url);
     const q = searchParams.get("q")?.trim() || "";
@@ -28,7 +17,7 @@ export async function GET(req) {
     const rx = new RegExp(q, "i");
 
     const data = await Supplier.find({
-      companyId: decoded.companyId,
+      companyId: user.companyId,
       $or: [{ supplierCode: rx }, { supplierName: rx }, { pan: rx }, { contactPersonName: rx }],
     })
       .limit(20)

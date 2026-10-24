@@ -2,6 +2,7 @@ import dbConnect from "@/lib/db";
 import BankHead from "@/models/BankHead";
 import { NextResponse } from "next/server";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
+import { validateMasterDataRequest } from "@/lib/masterDataPermission";
 
 async function authenticate(req) {
   const token = getTokenFromHeader(req);
@@ -18,6 +19,8 @@ async function authenticate(req) {
 
 // ✅ PUT (Update)
 export async function PUT(req, { params }) {
+  const access = await validateMasterDataRequest(req, 'edit', 'General Ledger');
+  if (access.error) return NextResponse.json({ success: false, message: access.error }, { status: access.status });
   await dbConnect();
   const { user, error, status } = await authenticate(req);
   if (error) return NextResponse.json({ success: false, message: error }, { status });
@@ -42,6 +45,8 @@ export async function PUT(req, { params }) {
 
 // ✅ DELETE
 export async function DELETE(req, { params }) {
+  const access = await validateMasterDataRequest(req, 'delete', 'General Ledger');
+  if (access.error) return NextResponse.json({ success: false, message: access.error }, { status: access.status });
   await dbConnect();
   const { user, error, status } = await authenticate(req);
   if (error) return NextResponse.json({ success: false, message: error }, { status });

@@ -92,6 +92,7 @@
 // lib/auth.js
 
 import jwt from "jsonwebtoken";
+import { MASTER_PERMISSION_KEYS } from "@/lib/masterPermissionRegistry";
 
 const SECRET = process.env.JWT_SECRET;
 
@@ -138,7 +139,7 @@ function removeDeletePermissionsForNonAdmin(user) {
   const safeModules = Object.fromEntries(entries.map(([name, value]) => {
     const plainValue = value && typeof value.toObject === 'function' ? value.toObject() : value;
     const permissions = { ...(plainValue?.permissions || {}) };
-    delete permissions.delete;
+    if (!MASTER_PERMISSION_KEYS.includes(name)) delete permissions.delete;
     return [name, { ...plainValue, permissions }];
   }));
   return { ...user, modules: safeModules };

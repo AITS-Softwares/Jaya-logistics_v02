@@ -2,6 +2,7 @@ import dbConnect from "@/lib/db";
 import AccountHead from "@/models/AccountHead";
 import { NextResponse } from "next/server";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
+import { validateMasterDataRequest } from "@/lib/masterDataPermission";
 
 async function authenticate(req) {
   const token = getTokenFromHeader(req);
@@ -18,6 +19,8 @@ async function authenticate(req) {
 
 /* ✅ PUT - Update account head */
 export async function PUT(req, { params }) {
+  const access = await validateMasterDataRequest(req, 'edit', 'Account Head');
+  if (access.error) return NextResponse.json({ success: false, message: access.error }, { status: access.status });
   await dbConnect();
   const { user, error, status } = await authenticate(req);
   if (error) return NextResponse.json({ success: false, message: error }, { status });
@@ -44,6 +47,8 @@ export async function PUT(req, { params }) {
 
 /* ✅ DELETE - Remove account head */
 export async function DELETE(req, { params }) {
+  const access = await validateMasterDataRequest(req, 'delete', 'Account Head');
+  if (access.error) return NextResponse.json({ success: false, message: access.error }, { status: access.status });
   await dbConnect();
   const { user, error, status } = await authenticate(req);
   if (error) return NextResponse.json({ success: false, message: error }, { status });

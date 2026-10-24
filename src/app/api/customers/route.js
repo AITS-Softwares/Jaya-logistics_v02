@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db.js";
 import Customer from "@/models/CustomerModel";
-import CompanyUser from "@/models/CompanyUser";
-import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 
 // ✅ Import BankHead model if you need it for population
 // If you don't have BankHead model, comment out the population
@@ -10,69 +8,15 @@ import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 
 import { syncCustomer } from "@/lib/frappe-customer.mjs";
 import { identifierFormatError } from "@/lib/identifierFormats";
+import { validateMasterDataRequest } from "@/lib/masterDataPermission";
 export const runtime = "nodejs";
-
-/* -------------------------------
-   🔐 Role-Based Access Check
--------------------------------- */
-function isAuthorized(user) {
-  if (!user) return false;
-
-  if (user.type === "company") return true;
-
-  const allowedRoles = [
-    "admin",
-    "crm",
-    "sales manager",
-    "purchase manager",
-    "inventory manager",
-    "accounts manager",
-    "hr manager",
-    "support executive",
-    "production head",
-    "project manager",
-  ];
-
-  const userRoles = Array.isArray(user.roles)
-    ? user.roles
-    : [];
-
-  return userRoles.some(role =>
-    allowedRoles.includes(role.trim().toLowerCase())
-  );
-}
-
-/* ✅ Validate User Helper */
-async function validateUser(req) {
-  try {
-    const token = getTokenFromHeader(req);
-    if (!token) return { error: "No token provided", status: 401 };
-
-    const decoded = verifyJWT(token);
-    if (!decoded) return { error: "Invalid token", status: 401 };
-
-    return { user: decoded, error: null, status: 200 };
-  } catch (err) {
-    console.log("validateUser error:", err);
-    return { error: "Authentication failed", status: 401 };
-  }
-}
 
 export async function GET(req) {
   await dbConnect();
 
-  const { user, error, status } = await validateUser(req);
+  const { user, error, status } = await validateMasterDataRequest(req, "view", "Customers", { allowLookup: true });
   if (error)
     return NextResponse.json({ success: false, message: error }, { status });
-
-  const masterDataViewer = user.modules?.["Master Data"]?.selected === true
-    && user.modules?.["Master Data"]?.permissions?.view !== false;
-  if (!isAuthorized(user) && !masterDataViewer) {
-    return NextResponse.json(
-      { success: false, message: "Forbidden: insufficient permissions" },
-      { status: 403 }
-    );
-  }
 
   try {
     // ✅ OPTION 1: Remove population if BankHead model doesn't exist
@@ -102,12 +46,8 @@ export async function POST(req) {
   await dbConnect();
 
   try {
-    const token = getTokenFromHeader(req);
-    const user = await verifyJWT(token);
-
-    if (!user || !isAuthorized(user)) {
-      return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
-    }
+    const { user, error, status } = await validateMasterDataRequest(req, "create", "Customers");
+    if (error) return NextResponse.json({ success: false, message: error }, { status });
 
     const contentType = req.headers.get("content-type") || "";
     if (!contentType.includes("application/json")) {
