@@ -4,6 +4,7 @@ import ConsignmentNote from "../../consignment-note/ConsignmentNote";
 import OrderPanel from "../../order-panel/OrderPanel";
 import PricingPanel from "../../pricing-panel/PricingPanel";
 import Customer from "@/models/CustomerModel";
+import Item from "@/models/ItemModels";
 import { companyScopeFilter } from "@/lib/companyScope";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import { getBilledLrNumbers } from "@/lib/billedLrs";
@@ -141,7 +142,7 @@ export async function POST(req) {
     }
 
     const body = await req.json();
-    const { branchId, clientId, clientName, orderType, startDate, endDate, excludeLRs = [] } = body;
+    const { branchId, clientId, clientName, orderType, startDate, endDate, excludeLRs = [], type = 'general' } = body;
 
     const query = { companyId: user.companyId };
     if (startDate && endDate) {
@@ -168,8 +169,14 @@ export async function POST(req) {
       );
     }
 
+    const itemMaster = clientId
+      ? await Item.find({ companyId: user.companyId, customerId: clientId, status: 'active' }).select('itemName gstCode').lean()
+      : [];
+    const itemSacByName = new Map(itemMaster.map(item => [normName(item.itemName), item.gstCode || '']));
+
     // LRs already billed in a General bill (Yara bills are tracked separately)
-    const billedLrs = await getBilledLrNumbers(user.companyId, 'general');
+    const reportType = type === 'mosaic' ? 'mosaic' : 'general';
+    const billedLrs = await getBilledLrNumbers(user.companyId, reportType);
     excludeLRs.forEach(lr => billedLrs.add(lr));
 
     const requestedOrderType = String(orderType || '').trim();
@@ -244,6 +251,14 @@ export async function POST(req) {
       const lrActualWt = products.reduce((s, p) => s + (p.actualWt || 0), 0);
       const productNames = [...new Set(products.map(p => p.productName).filter(Boolean))].join(', ');
       const amount = lrBilledWt * rowRate;
+      const productLines = products.map(product => ({
+        productName: product.productName || 'General Cargo',
+        sacCode: itemSacByName.get(normName(product.productName)) || '',
+        actualWt: product.actualWt || 0,
+        billedWt: product.billedWt || 0,
+        unit: product.unit || 'MT',
+        amount: (Number(product.billedWt) || 0) * rowRate,
+      }));
 
       billData.push({
         _id: String(note._id),
@@ -254,8 +269,10 @@ export async function POST(req) {
         vehicleNo: note.header?.vehicleNo || 'N/A',
         from: note.header?.from || 'N/A',
         to: String(orderRow?.locationRemark || '').trim() || note.header?.to || 'N/A',
+        district: orderRow?.districtName || orderRow?.district || note.header?.district || '',
         partyName: note.header?.partyName || note.consignor?.name || 'N/A',
         productName: productNames || 'General Cargo',
+        productLines,
         weight: lrBilledWt,
         quantity: lrActualWt,
         unit: products[0]?.unit || note.header?.unit || 'MT',

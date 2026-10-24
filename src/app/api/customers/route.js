@@ -9,6 +9,7 @@ import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 // import BankHead from "@/models/BankHead";
 
 import { syncCustomer } from "@/lib/frappe-customer.mjs";
+import { identifierFormatError } from "@/lib/identifierFormats";
 export const runtime = "nodejs";
 
 /* -------------------------------
@@ -114,6 +115,8 @@ export async function POST(req) {
     }
 
     const body = await req.json();
+    const formatError = identifierFormatError(body);
+    if (formatError) return NextResponse.json({ success: false, message: formatError }, { status: 400 });
     for (const [field, label] of [['customerName', 'Customer Name'], ['customerType', 'Customer Type'], ['gstCategory', 'GST Category']]) {
       if (typeof body[field] !== 'string' || !body[field].trim()) {
         return NextResponse.json({ success: false, message: label + ' is required' }, { status: 400 });

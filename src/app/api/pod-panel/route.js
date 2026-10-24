@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { identifierFormatError } from "@/lib/identifierFormats";
 import path from "path";
 import { unlink } from "fs/promises";
 import mongoose from "mongoose";
@@ -536,6 +537,8 @@ export async function POST(req) {
 
     const body = await readJson(req);
     if (body === null) return fail("Request body must be valid JSON", 400);
+    const formatError = identifierFormatError(body);
+    if (formatError) return fail(formatError, 400);
 
     const purchaseNo = str(body.purchaseNo || body.header?.purchaseNo).trim();
     const isDraftSave = body.saveMode === 'draft';
@@ -701,6 +704,8 @@ export async function PUT(req) {
 
     const body = await readJson(req);
     if (body === null) return fail("Request body must be valid JSON", 400);
+    const formatError = identifierFormatError(body);
+    if (formatError) return fail(formatError, 400);
     const { id } = body;
 
     // Approve-only users may send nothing except the approval fields.
@@ -986,6 +991,8 @@ export async function PATCH(req) {
 
     const body = await readJson(req); // empty body => {}
     if (body === null) return fail("Request body must be valid JSON", 400);
+    const formatError = identifierFormatError(body);
+    if (formatError) return fail(formatError, 400);
 
     const pod = await POD.findOne(companyScopeFilter(user, { _id: id }));
     if (!pod) return fail("POD not found", 404);

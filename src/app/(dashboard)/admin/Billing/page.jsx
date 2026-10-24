@@ -4791,6 +4791,7 @@ function BillingTypeSelector({ value, onChange, label = "Select Billing Type" })
   const billingTypes = [
     { value: "product-wise", label: "Yara · Product-wise" },
     { value: "general", label: "General" },
+    { value: "mosaic", label: "Mosaic Format" },
     { value: "detention", label: "Detention" },
     { value: "cancellation", label: "Cancellation" },
     { value: "other", label: "Other charges" },
@@ -5006,6 +5007,103 @@ function generateYaraProductWisePDFHTML(reportData, currentDate, billNumber) {
   </body></html>`;
 }
 
+function generateMosaicBillPDFHTML(reportData, currentDate, billNumber) {
+  const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const money = (value) => (Number(value) || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const qty = (value) => (Number(value) || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const issuer = reportData.issuer || {};
+  const client = reportData.clientSnapshot || {};
+  const filters = reportData.filters || {};
+  const data = Array.isArray(reportData.data) ? reportData.data : [];
+  const issuerName = issuer.name || issuer.subCompanyName || "Operating Company";
+  const issuerGST = issuer.gstNumber || "";
+  const issuerAddress = [issuer.address, issuer.address2, issuer.city, issuer.state, issuer.pinCode].filter(Boolean).join(", ");
+  const clientName = client.name || filters.clientName || "Client";
+  const clientGST = client.gstNumber || filters.clientGST || "";
+  const clientAddress = [client.address, client.city, client.state, client.pinCode].filter(Boolean).join(", ");
+  const invoiceDate = new Date(reportData.generatedAt || currentDate);
+  const dateLabel = Number.isNaN(invoiceDate.getTime()) ? "" : invoiceDate.toLocaleDateString("en-GB", { timeZone: "Asia/Kolkata" });
+  const monthLabel = Number.isNaN(invoiceDate.getTime()) ? "" : invoiceDate.toLocaleDateString("en-US", { month: "short", year: "2-digit", timeZone: "Asia/Kolkata" });
+  const state = client.state || filters.clientState || "";
+  const stateCode = clientGST.slice(0, 2) || filters.clientStateCode || "";
+  const products = new Map();
+  data.forEach((item) => {
+    const lines = Array.isArray(item.productLines) && item.productLines.length ? item.productLines : [{
+      productName: item.productName || "General Cargo", sacCode: item.sacCode || "",
+      billedWt: item.weight ?? item.quantity, amount: item.amount,
+    }];
+    lines.forEach((line) => {
+      const name = String(line.productName || "General Cargo").trim() || "General Cargo";
+      const sacCode = String(line.sacCode || "").trim();
+      const key = `${name.toLocaleLowerCase()}|${sacCode.toLocaleLowerCase()}`;
+      if (!products.has(key)) products.set(key, { name, sacCode, quantity: 0, amount: 0 });
+      const product = products.get(key);
+      product.quantity += Number(line.billedWt ?? line.quantity) || 0;
+      product.amount += Number(line.amount) || 0;
+    });
+  });
+  const productRows = [...products.values()].map((product, index) => `<tr>
+    <td style="text-align:center">${index + 1}</td><td>${esc(product.name)}</td><td style="text-align:center">${esc(product.sacCode)}</td>
+    <td style="text-align:right">${qty(product.quantity)}</td><td></td><td></td><td style="text-align:right">${money(product.amount)}</td>
+  </tr>`).join("");
+  const taxable = data.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+  const amountInWords = (amount) => {
+    const ones = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"];
+    const tens = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
+    const two = (n) => n < 20 ? ones[n] : `${tens[Math.floor(n / 10)]}${n % 10 ? ` ${ones[n % 10]}` : ""}`;
+    const three = (n) => `${n >= 100 ? `${ones[Math.floor(n / 100)]} Hundred${n % 100 ? " " : ""}` : ""}${two(n % 100)}`;
+    const rupees = Math.round(Number(amount) || 0);
+    const parts = [];
+    const crore = Math.floor(rupees / 10000000);
+    const lakh = Math.floor(rupees / 100000) % 100;
+    const thousand = Math.floor(rupees / 1000) % 100;
+    const remainder = rupees % 1000;
+    if (crore) parts.push(`${three(crore)} Crore`);
+    if (lakh) parts.push(`${two(lakh)} Lakh`);
+    if (thousand) parts.push(`${two(thousand)} Thousand`);
+    if (remainder) parts.push(three(remainder));
+    return `INR ${parts.join(" ") || "Zero"} Only`;
+  };
+  const annexureReport = { ...reportData, filters: { ...filters, mosaicReverseCharge: true } };
+  const baseHtml = generateGeneralBillPDFHTML(annexureReport, currentDate, billNumber);
+  const bodyPrefix = baseHtml.slice(0, baseHtml.indexOf('<div class="page">'));
+  const annexure = baseHtml.slice(baseHtml.lastIndexOf('<div class="page">'));
+  const firstPage = `<div class="page" style="font-size:12px">
+    <table style="width:100%;border-collapse:collapse;border:1px solid #000">
+      <tr><th colspan="7" style="border:1px solid #000;font-size:22px;padding:7px">Tax Invoice</th></tr>
+      <tr><td colspan="4" style="border:1px solid #000;padding:7px;vertical-align:top"><b>${esc(issuerName)}</b><br>${esc(issuerAddress)}<br></td>
+        <td colspan="3" style="border:1px solid #000;padding:7px;vertical-align:top">GSTIN: <b>${esc(issuerGST)}</b></td></tr>
+      <tr><th colspan="4" style="border:1px solid #000;padding:5px">INVOICE DETAILS</th><th colspan="3" style="border:1px solid #000;padding:5px">BILLED TO</th></tr>
+      <tr><td colspan="4" style="border:1px solid #000;padding:5px;vertical-align:top">Invoice no: <b>${esc(billNumber)}</b><br>Invoice Date: ${esc(dateLabel)}<br>Month: ${esc(monthLabel)}<br><b>PLACE OF SUPPLY</b><br>State Name: ${esc(state)}<br>State Code: ${esc(stateCode)}<br><b>PRODUCT</b>: ${esc([...products.values()].map((product) => product.name).join(", "))}</td>
+        <td colspan="3" style="border:1px solid #000;padding:5px;vertical-align:top"><b>${esc(clientName)}</b><br>${esc(clientAddress)}<br>State Name: ${esc(state)}<br>State Code: ${esc(stateCode)}<br>GST No.: ${esc(clientGST)}</td></tr>
+      <tr><td colspan="7" style="border:1px solid #000;padding:0">
+        <table style="width:100%;border-collapse:collapse;table-layout:fixed">
+          <colgroup><col style="width:3.6%"><col style="width:6.5%"><col style="width:3.5%"><col style="width:5%"><col style="width:30%"><col style="width:24.5%"><col style="width:26.9%"></colgroup>
+          <thead><tr style="font-weight:bold;text-align:center"><th style="border:1px solid #000;padding:7px">S.No.</th><th style="border:1px solid #000;padding:7px">Description</th><th style="border:1px solid #000;padding:7px">SAC code</th><th style="border:1px solid #000;padding:7px">Quantity (PER MT)</th><th style="border:1px solid #000;padding:7px">Quantity (Bags)</th><th style="border:1px solid #000;padding:7px">Rate Per M.T</th><th style="border:1px solid #000;padding:7px">Total Amount</th></tr></thead>
+          <tbody>${productRows}</tbody>
+          <tfoot><tr><td colspan="6" style="border:1px solid #000;padding:6px;text-align:right;font-weight:bold">Total Value</td><td style="border:1px solid #000;padding:6px;text-align:right;font-weight:bold">${money(taxable)}</td></tr></tfoot>
+        </table>
+      </td></tr>
+      <tr>
+        <td colspan="4" style="border:1px solid #000;vertical-align:top;padding:8px">GST to be charged under Reverse Charge</td>
+        <td colspan="3" style="border:1px solid #000;padding:0">
+          <table style="width:100%;border-collapse:collapse;table-layout:fixed">
+            <colgroup><col style="width:46%"><col style="width:24%"><col style="width:30%"></colgroup>
+            <tr><th style="border:1px solid #000;padding:5px;text-align:left">GST</th><th style="border:1px solid #000;padding:5px;text-align:right">Rate</th><th style="border:1px solid #000;padding:5px;text-align:right">Amount</th></tr>
+            <tr><td style="border:1px solid #000;padding:5px">Central Tax</td><td style="border:1px solid #000;padding:5px;text-align:right">0.00%</td><td style="border:1px solid #000;padding:5px;text-align:right">—</td></tr>
+            <tr><td style="border:1px solid #000;padding:5px">State Tax</td><td style="border:1px solid #000;padding:5px;text-align:right">0.00%</td><td style="border:1px solid #000;padding:5px;text-align:right">—</td></tr>
+            <tr><td style="border:1px solid #000;padding:5px">Integrated Tax</td><td style="border:1px solid #000;padding:5px;text-align:right">0.00%</td><td style="border:1px solid #000;padding:5px;text-align:right">—</td></tr>
+            <tr><td colspan="2" style="border:1px solid #000;padding:5px;font-weight:bold">Total GST charged</td><td style="border:1px solid #000;padding:5px;text-align:right">—</td></tr>
+          </table>
+        </td>
+      </tr>
+      <tr><td colspan="6" style="border:1px solid #000;padding:6px;text-align:right;font-weight:bold">Grand Total</td><td style="border:1px solid #000;padding:6px;text-align:right;font-weight:bold">${money(taxable)}</td></tr>
+      <tr><td colspan="7" style="border:1px solid #000;padding:8px 5px;min-height:145px"><b><i>Total Invoice value (in words)</i></b><div style="margin-top:8px">${esc(amountInWords(taxable))}</div><div style="margin-top:18px">GST to be charged under Reverse Charge</div><div style="text-align:right;margin-top:38px">For ${esc(issuerName)}<br><br><br>Authorised Signatory</div></td></tr>
+    </table>
+  </div>`;
+  return `${bodyPrefix}${firstPage}${annexure}`;
+}
+
 function generateGeneralBillPDFHTML(reportData, currentDate, billNumber) {
   const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const issuer = reportData.issuer || {};
@@ -5020,12 +5118,8 @@ function generateGeneralBillPDFHTML(reportData, currentDate, billNumber) {
   data.forEach((item) => {
     const destination = getDestination(item);
     const key = destination.toLocaleLowerCase();
-    if (!destinationGroups.has(key)) destinationGroups.set(key, { destination, rows: [], quantity: 0, weight: 0, amount: 0 });
-    const group = destinationGroups.get(key);
-    group.rows.push(item);
-    group.quantity += Number(item.quantity ?? item.weight) || 0;
-    group.weight += Number(item.weight) || 0;
-    group.amount += Number(item.amount) || 0;
+    if (!destinationGroups.has(key)) destinationGroups.set(key, { destination, rows: [] });
+    destinationGroups.get(key).rows.push(item);
   });
 
   const round2 = (n) => Math.round((Number(n) + Number.EPSILON) * 100) / 100;
@@ -5059,6 +5153,12 @@ function generateGeneralBillPDFHTML(reportData, currentDate, billNumber) {
   };
 
   const issuerName = issuer.name || issuer.subCompanyName || "Operating Company";
+  const selectedOrderType = String(filters.orderType || "").trim();
+  const rowOrderTypes = [...new Set(data.map((item) => String(item.orderType || "").trim()).filter(Boolean))];
+  const orderTypeLabel = !selectedOrderType || ["NA", "All Types", "All Order Types"].includes(selectedOrderType)
+    ? (rowOrderTypes.length === 1 ? rowOrderTypes[0] : rowOrderTypes.length > 1 ? "Multiple Order Types" : "All Order Types")
+    : selectedOrderType;
+  const issuerNameWithOrderType = `${issuerName} (${orderTypeLabel.toUpperCase()})`;
   const issuerGST = issuer.gstNumber || "";
   const issuerStateCode = issuerGST.slice(0, 2);
   const issuerPan = issuer.pan || (issuerGST.length >= 12 ? issuerGST.slice(2, 12) : "");
@@ -5069,7 +5169,7 @@ function generateGeneralBillPDFHTML(reportData, currentDate, billNumber) {
   const paymentTerms = client.paymentTerms || filters.paymentTerms || "";
   const termsDays = (paymentTerms.match(/\d+/) || [])[0];
   const termsText = /^\s*\d+\s*$/.test(paymentTerms) ? `Within ${paymentTerms.trim()} Days of receiving Invoice` : paymentTerms;
-  const gstRate = Number(filters.gstRate) > 0 ? Number(filters.gstRate) : 12;
+  const gstRate = filters.mosaicReverseCharge ? 0 : Number(filters.gstRate) > 0 ? Number(filters.gstRate) : 12;
   const sacCode = filters.applySac && filters.sacCode ? filters.sacCode : "";
 
   const taxable = round2(data.reduce((sum, item) => sum + (Number(item.amount) || 0), 0));
@@ -5082,13 +5182,12 @@ function generateGeneralBillPDFHTML(reportData, currentDate, billNumber) {
   const annexureRows = [...destinationGroups.values()].map((group) => {
     const rows = group.rows.map((item) => `<tr>
       <td>${esc(item.lrNo || "")}</td><td>${fmtDate(item.date)}</td><td>${esc(item.vehicleNo || "")}</td><td>${esc(item.invoiceNo || "")}</td>
-      <td>${esc(item.from || "")}</td><td>${esc(getDestination(item))}</td><td>Sales @ ${gstRate}%</td>
+      <td>${esc(item.from || "")}</td><td>${esc(getDestination(item))}</td><td>${esc(item.district || "")}</td><td>SALES</td>
       <td class="r">${money(item.quantity ?? item.weight)}</td><td class="r">${money(item.weight)}</td><td class="r">${rateFmt(item.rate)}</td><td class="r">${money(item.amount)}</td>
     </tr>`).join("");
-    return `${rows}<tr class="subtotal"><td colspan="5"></td><td>Sub Total</td><td></td>
-      <td class="r">${money(group.quantity)}</td><td class="r">${money(group.weight)}</td><td></td><td class="r">${money(group.amount)}</td></tr>`;
+    return rows;
   }).join("");
-  const annexureTaxRows = taxRows.map((row) => `<tr class="tax"><td colspan="10" class="r">${esc(row.label)}</td><td class="r">${money(row.amount)}</td></tr>`).join("");
+  const annexureTaxRows = taxRows.map((row) => `<tr class="tax"><td colspan="11" class="r">${esc(row.label)}</td><td class="r">${money(row.amount)}</td></tr>`).join("");
 
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Bill ${esc(billNumber)}</title>
 <style>
@@ -5120,13 +5219,6 @@ function generateGeneralBillPDFHTML(reportData, currentDate, billNumber) {
   .part tr.main td.amt { text-align: right; }
   .part tr.line td { height: 28px; text-align: left; }
   .part tr.line td.amt { text-align: right; }
-  .paybox { table-layout: fixed; }
-  .paybox td { vertical-align: top; padding: 4px 7px; font-size: 10px; }
-  .paybox td.pl { width: 70%; border-right: 1px solid #000; }
-  .paytitle { text-align: center; margin-bottom: 2px; }
-  .paykv { width: auto; }
-  .paykv td { border: 0; padding: 1px 0; font-size: 10px; font-weight: bold; }
-  .paykv td.k { width: 90px; }
   .foot { margin-top: 10px; text-align: center; font-size: 10px; }
   .r { text-align: right; }
   .annex-title { text-align: center; font-size: 15px; font-weight: bold; margin: 0 0 8px; }
@@ -5145,7 +5237,7 @@ function generateGeneralBillPDFHTML(reportData, currentDate, billNumber) {
       <tr>
         <td class="c1">
           <div class="lbl">Bill From :</div>
-          <div class="nm">${esc(issuerName)}</div>
+          <div class="nm">${esc(issuerNameWithOrderType)}</div>
           <div>${esc(issuerAddress)}</div>
           <div>GSTIN/UIN: ${esc(issuerGST)}</div>
           <div>State Name : ${esc(issuer.state || "")}, Code : ${esc(issuerStateCode)}</div>
@@ -5185,36 +5277,20 @@ function generateGeneralBillPDFHTML(reportData, currentDate, billNumber) {
         <tr class="line"><td>${esc(inrWords(grandTotal))}</td><td class="amt">${money(grandTotal)}</td></tr>
       </tbody>
     </table>
-    <table class="paybox">
-      <tr>
-        <td class="pl">
-          <div class="paytitle">Payment Details</div>
-          <table class="paykv">
-            <tr><td class="k">Chq No</td><td>:</td></tr>
-            <tr><td class="k">Date</td><td>:</td></tr>
-            <tr><td class="k">Amount</td><td>:</td></tr>
-            <tr><td class="k">Less</td><td>:</td></tr>
-            <tr><td class="k">TDS</td><td>:</td></tr>
-            <tr><td class="k">Net Amount</td><td>:</td></tr>
-          </table>
-        </td>
-        <td></td>
-      </tr>
-    </table>
   </div>
   <div class="foot">This is computer generated invoice and does not require any signature</div>
 </div>
 <div class="page">
-  <div class="annex-title">${esc(issuerName)}</div>
+  <div class="annex-title">${esc(issuerNameWithOrderType)}</div>
   <table class="annex">
     <thead><tr>
-      <th>G.C No</th><th>DATE</th><th>VEHICLE No</th><th>INVOICE No</th><th>FROM</th><th>TO</th><th>PARTICULARS</th>
+      <th>G.C No</th><th>DATE</th><th>VEHICLE No</th><th>INVOICE No</th><th>FROM</th><th>TO</th><th>DISTRICT</th><th>PARTICULARS</th>
       <th class="r">Act. WT(MT)</th><th class="r">Billed WT(MT)</th><th class="r">RATE</th><th class="r">AMOUNT</th>
     </tr></thead>
     <tbody>
       ${annexureRows}
       ${annexureTaxRows}
-      <tr class="grand"><td colspan="10" class="r">TOTAL</td><td class="r">${money(grandTotal)}</td></tr>
+      <tr class="grand"><td colspan="11" class="r">TOTAL</td><td class="r">${money(grandTotal)}</td></tr>
     </tbody>
   </table>
 </div>
@@ -5223,6 +5299,7 @@ function generateGeneralBillPDFHTML(reportData, currentDate, billNumber) {
 
 function generatePDFHTML(reportData, currentDate, type, filters, billNumber) {
   if (type === "product-wise") return generateYaraProductWisePDFHTML(reportData, currentDate, billNumber);
+  if (type === "mosaic") return generateMosaicBillPDFHTML(reportData, currentDate, billNumber);
   if (type === "general") return generateGeneralBillPDFHTML(reportData, currentDate, billNumber);
   let title = "";
   let headers = [];
@@ -5460,10 +5537,10 @@ function billingMonthLabel(value) {
   return Number.isNaN(d.getTime()) ? "-" : d.toLocaleDateString("en-US", { month: "short", year: "numeric", timeZone: "Asia/Kolkata" });
 }
 
-async function getGeneratedGeneralLRNumbers() {
+async function getGeneratedGeneralLRNumbers(type = "general") {
   try {
     const token = localStorage.getItem("token");
-    const response = await fetch("/api/saved-reports?type=general", { headers: { Authorization: `Bearer ${token}` } });
+    const response = await fetch(`/api/saved-reports?type=${encodeURIComponent(type)}`, { headers: { Authorization: `Bearer ${token}` } });
     const data = await response.json();
     const lrNumbers = new Set();
     if (data.success && Array.isArray(data.data)) {
@@ -5471,7 +5548,7 @@ async function getGeneratedGeneralLRNumbers() {
     }
     return Array.from(lrNumbers);
   } catch (error) {
-    console.error("Error fetching generated General LR numbers:", error);
+    console.error(`Error fetching generated ${type} LR numbers:`, error);
     return [];
   }
 }
@@ -5532,7 +5609,7 @@ async function createTemporaryBillingPreview({ type, data, summary, filters, bra
     data,
     summary,
   };
-  const previewNo = (type === "general" || type === "product-wise")
+  const previewNo = (type === "general" || type === "mosaic" || type === "product-wise")
     ? previewBillNumber({ branch, client: selectedClient, filters })
     : "PREVIEW - NOT SAVED";
   return generatePDFHTML(report, report.generatedAt, type, reportFilters, previewNo);
@@ -6052,7 +6129,7 @@ function ProductWiseBillingComponent({ branches, clients, plants, loadingBranche
   );
 }
 
-function GeneralBillingComponent({ branches, clients, loadingBranches, loadingClients, canGenerate }) {
+function GeneralBillingComponent({ branches, clients, loadingBranches, loadingClients, canGenerate, billingFormat = "general" }) {
   const [loading, setLoading] = useState(false);
   const [billData, setBillData] = useState([]);
   const [summary, setSummary] = useState({ totalWeight: 0, totalAmount: 0, totalRecords: 0 });
@@ -6088,16 +6165,19 @@ function GeneralBillingComponent({ branches, clients, loadingBranches, loadingCl
     const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
     const formatDate = (date) => date.toISOString().split("T")[0];
     setFilters((prev) => ({ ...prev, startDate: formatDate(firstDayOfMonth), endDate: formatDate(lastDayOfMonth) }));
-    loadGeneratedLRs();
-    loadSacCodes();
+    if (billingFormat === "general") loadSacCodes();
   }, []);
+
+  useEffect(() => {
+    loadGeneratedLRs();
+  }, [billingFormat]);
 
   useEffect(() => {
     if (filters.clientId && filters.startDate && filters.endDate) fetchData();
   }, [filters.clientId, filters.branchId, filters.orderType, filters.startDate, filters.endDate]);
 
   const loadGeneratedLRs = async () => {
-    const lrs = await getGeneratedGeneralLRNumbers();
+    const lrs = await getGeneratedGeneralLRNumbers(billingFormat);
     setGeneratedLRs(lrs);
   };
 
@@ -6140,7 +6220,7 @@ function GeneralBillingComponent({ branches, clients, loadingBranches, loadingCl
       const token = localStorage.getItem("token");
       const orderTypeValue = filters.orderType === "NA" ? "" : filters.orderType;
       const payload = {
-        type: "general",
+        type: billingFormat,
         branchId: filters.branchId,
         branchName: branches.find((b) => b._id === filters.branchId)?.name || "",
         clientId: filters.clientId,
@@ -6157,9 +6237,12 @@ function GeneralBillingComponent({ branches, clients, loadingBranches, loadingCl
       });
       const data = await response.json();
       if (data.success) {
+        const destinationOf = (item) => String(item.locationRemark || "").trim() || String(item.to || "").trim() || "-";
         const filteredData = (data.data || [])
           .filter((item) => !generatedLRs.includes(item.lrNo))
-          .sort((a, b) => String(a.to || '').localeCompare(String(b.to || ''), undefined, { sensitivity: 'base' }));
+          .sort((a, b) => destinationOf(a).localeCompare(destinationOf(b), undefined, { sensitivity: "base" })
+            || String(a.date || "").localeCompare(String(b.date || ""))
+            || String(a.lrNo || "").localeCompare(String(b.lrNo || "")));
         setBillData(filteredData);
         setSummary({
           totalWeight: filteredData.reduce((s, i) => s + (i.weight || 0), 0),
@@ -6222,14 +6305,15 @@ function GeneralBillingComponent({ branches, clients, loadingBranches, loadingCl
     if (noRate.length) {
       return alert(`Rate missing for LR: ${[...new Set(noRate.map((r) => r.lrNo))].join(", ")}. Fix the rate before billing.`);
     }
-    const sac = applySac ? sacCodes.find((c) => c._id === selectedSacId) : null;
-    if (applySac && !sac) return alert("Select a SAC code, or turn off 'Apply SAC code'.");
+    const useSac = billingFormat === "general" && applySac;
+    const sac = useSac ? sacCodes.find((c) => c._id === selectedSacId) : null;
+    if (useSac && !sac) return alert("Select a SAC code, or turn off 'Apply SAC code'.");
     setGenerating(true);
     const selectedSummary = getSelectedSummary();
     const branch = branches.find((b) => b._id === filters.branchId);
     const reportData = {
       reportId: `RPT_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      type: "general",
+      type: billingFormat,
       filters: {
         clientId: filters.clientId,
         clientName: filters.clientName,
@@ -6254,7 +6338,7 @@ function GeneralBillingComponent({ branches, clients, loadingBranches, loadingCl
       totalRecords: billData.length,
       selectedRecords: selected.length,
     };
-    await generateAndSaveReport(reportData, "general", filters, async () => {
+    await generateAndSaveReport(reportData, billingFormat, filters, async () => {
       await loadGeneratedLRs();
       setSelectedRows({});
       setSelectAll(false);
@@ -6266,8 +6350,9 @@ function GeneralBillingComponent({ branches, clients, loadingBranches, loadingCl
     const selected = getSelectedData();
     if (!selected.length) return alert("Select at least one billing row to preview.");
     const branch = branches.find((item) => item._id === filters.branchId);
-    const previewSac = applySac ? sacCodes.find((c) => c._id === selectedSacId) : null;
-    if (applySac && !previewSac) return alert("Select a SAC code, or turn off 'Apply SAC code'.");
+    const useSac = billingFormat === "general" && applySac;
+    const previewSac = useSac ? sacCodes.find((c) => c._id === selectedSacId) : null;
+    if (useSac && !previewSac) return alert("Select a SAC code, or turn off 'Apply SAC code'.");
     const previewFilters = {
       ...filters,
       branchName: branch?.name || "N/A",
@@ -6278,24 +6363,21 @@ function GeneralBillingComponent({ branches, clients, loadingBranches, loadingCl
       sacDescription: previewSac?.description || "",
       paymentTerms: clients.find((c) => String(c._id) === String(filters.clientId))?.paymentTerms || "",
     };
-    setPreviewHtml(await createTemporaryBillingPreview({ type: "general", data: selected, summary: getSelectedSummary(), filters: previewFilters, branches, clients, clientId: filters.clientId }));
+    setPreviewHtml(await createTemporaryBillingPreview({ type: billingFormat, data: selected, summary: getSelectedSummary(), filters: previewFilters, branches, clients, clientId: filters.clientId }));
   };
 
   const selectedCount = Object.keys(selectedRows).filter((k) => selectedRows[k]).length;
   const groupedBillData = [...billData.reduce((groups, item, index) => {
-    const destination = String(item.to || "-").trim() || "-";
+    const destination = String(item.locationRemark || "").trim() || String(item.to || "-").trim() || "-";
     const key = destination.toLocaleLowerCase();
-    if (!groups.has(key)) groups.set(key, { destination, rows: [], quantity: 0, weight: 0, amount: 0 });
+    if (!groups.has(key)) groups.set(key, { destination, rows: [] });
     const group = groups.get(key);
     group.rows.push({ item, index });
-    group.quantity += Number(item.quantity ?? item.weight ?? 0) || 0;
-    group.weight += Number(item.weight || 0) || 0;
-    group.amount += Number(item.amount || 0) || 0;
     return groups;
-  }, new Map()).values()];
+  }, new Map()).values()].sort((a, b) => a.destination.localeCompare(b.destination, undefined, { sensitivity: "base" }));
 
   return (
-    <Card title="General - Billing">
+    <Card title={billingFormat === "mosaic" ? "Mosaic Format - Billing" : "General - Billing"}>
       <div className="grid grid-cols-12 gap-5">
         <div className="col-span-12 md:col-span-3">
           <ClientSelector value={filters.clientId} onChange={handleClientChange} clients={clients} loading={loadingClients} />
@@ -6326,7 +6408,7 @@ function GeneralBillingComponent({ branches, clients, loadingBranches, loadingCl
         </div>
       </div>
 
-      <div className="mt-4 rounded-xl border border-slate-200 p-3">
+      {billingFormat === "general" && <div className="mt-4 rounded-xl border border-slate-200 p-3">
         <div className="flex flex-wrap items-center gap-4">
           <label className="flex items-center gap-2 text-sm font-semibold">
             <input
@@ -6371,7 +6453,7 @@ function GeneralBillingComponent({ branches, clients, loadingBranches, loadingCl
             )}
           </div>
         )}
-      </div>
+      </div>}
 
       {generatedLRs.length > 0 && (
         <div className="mt-3 p-2 bg-blue-50 rounded-lg text-xs text-blue-700">
@@ -6424,6 +6506,8 @@ function GeneralBillingComponent({ branches, clients, loadingBranches, loadingCl
                 <th className="px-3 py-2 border">Vehicle No</th>
                 <th className="px-3 py-2 border">From</th>
                 <th className="px-3 py-2 border">To</th>
+                <th className="px-3 py-2 border">District</th>
+                <th className="px-3 py-2 border">Order Type</th>
                 <th className="px-3 py-2 border">Plant Code</th>
                 <th className="px-3 py-2 border">Product</th>
                 <th className="px-3 py-2 border text-right">Actual Wt</th>
@@ -6448,7 +6532,9 @@ function GeneralBillingComponent({ branches, clients, loadingBranches, loadingCl
                   <td className="px-3 py-2 border font-medium text-emerald-700">{item.lrNo || "-"}</td>
                   <td className="px-3 py-2 border">{item.vehicleNo || "-"}</td>
                   <td className="px-3 py-2 border">{item.from || "-"}</td>
-                  <td className="px-3 py-2 border">{item.to || "-"}</td>
+                  <td className="px-3 py-2 border">{item.locationRemark || item.to || "-"}</td>
+                  <td className="px-3 py-2 border">{item.district || "-"}</td>
+                  <td className="px-3 py-2 border">{item.orderType || "N/A"}</td>
                   <td className="px-3 py-2 border">{item.plantCode || "-"}</td>
                   <td className="px-3 py-2 border">{item.productName || "-"}</td>
                   <td className="px-3 py-2 border text-right">{Number(item.quantity ?? item.weight ?? 0).toFixed(2)}</td>
@@ -6459,25 +6545,9 @@ function GeneralBillingComponent({ branches, clients, loadingBranches, loadingCl
                   <td className="px-3 py-2 border text-right">₹ {item.amount?.toFixed(2) || "0.00"}</td>
                 </tr>
                   ))}
-                  <tr className="bg-emerald-50 font-bold">
-                    <td colSpan={canGenerate ? 10 : 9} className="px-3 py-2 border text-right">{group.destination} Subtotal</td>
-                    <td className="px-3 py-2 border text-right">{group.quantity.toFixed(2)}</td>
-                    <td className="px-3 py-2 border text-right">{group.weight.toFixed(2)}</td>
-                    <td className="px-3 py-2 border"></td>
-                    <td className="px-3 py-2 border text-right">₹ {group.amount.toFixed(2)}</td>
-                  </tr>
                 </Fragment>
               ))}
             </tbody>
-            <tfoot className="bg-emerald-100 font-bold">
-              <tr>
-                <td colSpan={canGenerate ? 10 : 9} className="px-3 py-2 border text-right">TOTAL</td>
-                <td className="px-3 py-2 border text-right">{billData.reduce((sum, i) => sum + Number(i.quantity ?? i.weight ?? 0), 0).toFixed(2)}</td>
-                <td className="px-3 py-2 border text-right">{summary.totalWeight.toFixed(2)}</td>
-                <td className="px-3 py-2 border text-right"></td>
-                <td className="px-3 py-2 border text-right">₹ {summary.totalAmount.toFixed(2)}</td>
-              </tr>
-            </tfoot>
           </table>
         </div>
       )}
@@ -7598,6 +7668,8 @@ export default function BillingPage() {
         return <ProductWiseBillingComponent branches={branches} clients={clients} plants={plants} loadingBranches={loadingBranches} loadingClients={loadingClients} loadingPlants={loadingPlants} canGenerate={canGenerate} />;
       case "general":
         return <GeneralBillingComponent branches={branches} clients={clients} loadingBranches={loadingBranches} loadingClients={loadingClients} canGenerate={canGenerate} />;
+      case "mosaic":
+        return <GeneralBillingComponent branches={branches} clients={clients} loadingBranches={loadingBranches} loadingClients={loadingClients} canGenerate={canGenerate} billingFormat="mosaic" />;
       case "detention":
         return <DetentionBillingComponent branches={branches} clients={clients} loadingBranches={loadingBranches} loadingClients={loadingClients} canGenerate={canGenerate} />;
       case "cancellation":
@@ -7611,7 +7683,7 @@ export default function BillingPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
             <p className="text-slate-500 text-lg">Please select a billing type from the dropdown above</p>
-            <p className="text-slate-400 text-sm mt-2">Choose Yara Product-Wise, General, Detention, Cancellation, or Other Billing</p>
+            <p className="text-slate-400 text-sm mt-2">Choose Yara Product-Wise, General, Mosaic Format, Detention, Cancellation, or Other Billing</p>
           </div>
         );
     }

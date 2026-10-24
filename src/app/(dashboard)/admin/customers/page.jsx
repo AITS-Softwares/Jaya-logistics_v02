@@ -250,11 +250,13 @@ export default function CustomerPage({ customerId }) {
               </label>
               <input
                 type="text"
+                inputMode="numeric"
+                maxLength={10}
                 value={customerDetails.mobileNumber}
                 onChange={(e) =>
                   setCustomerDetails({
                     ...customerDetails,
-                    mobileNumber: e.target.value,
+                    mobileNumber: e.target.value.replace(/\D/g, "").slice(0, 10),
                   })
                 }
                 className="border border-gray-300 rounded-lg px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -311,12 +313,14 @@ export default function CustomerPage({ customerId }) {
               <br />
               <input
                 type="text"
+                inputMode={!customerDetails.billingCountry || /india/i.test(customerDetails.billingCountry) ? "numeric" : undefined}
+                maxLength={!customerDetails.billingCountry || /india/i.test(customerDetails.billingCountry) ? 6 : undefined}
                 placeholder="PIN Code"
                 value={customerDetails.billingZip}
                 onChange={(e) =>
                   setCustomerDetails({
                     ...customerDetails,
-                    billingZip: e.target.value,
+                    billingZip: !customerDetails.billingCountry || /india/i.test(customerDetails.billingCountry) ? e.target.value.replace(/\D/g, "").slice(0, 6) : e.target.value,
                   })
                 }
                 className="border border-gray-300 rounded-lg px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -371,12 +375,14 @@ export default function CustomerPage({ customerId }) {
               <br />
               <input
                 type="text"
+                inputMode={!customerDetails.shippingCountry || /india/i.test(customerDetails.shippingCountry) ? "numeric" : undefined}
+                maxLength={!customerDetails.shippingCountry || /india/i.test(customerDetails.shippingCountry) ? 6 : undefined}
                 placeholder="PIN Code"
                 value={customerDetails.shippingZip}
                 onChange={(e) =>
                   setCustomerDetails({
                     ...customerDetails,
-                    shippingZip: e.target.value,
+                    shippingZip: !customerDetails.shippingCountry || /india/i.test(customerDetails.shippingCountry) ? e.target.value.replace(/\D/g, "").slice(0, 6) : e.target.value,
                   })
                 }
                 className="border border-gray-300 rounded-lg px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -406,11 +412,12 @@ export default function CustomerPage({ customerId }) {
               </label>
               <input
                 type="text"
+                maxLength={15}
                 value={customerDetails.gstNumber}
                 onChange={(e) =>
                   setCustomerDetails({
                     ...customerDetails,
-                    gstNumber: e.target.value,
+                    gstNumber: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 15),
                   })
                 }
                 className="border border-gray-300 rounded-lg px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -440,11 +447,12 @@ export default function CustomerPage({ customerId }) {
               </label>
               <input
                 type="text"
+                maxLength={10}
                 value={customerDetails.pan}
                 onChange={(e) =>
                   setCustomerDetails({
                     ...customerDetails,
-                    pan: e.target.value,
+                    pan: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 10),
                   })
                 }
                 className="border border-gray-300 rounded-lg px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"

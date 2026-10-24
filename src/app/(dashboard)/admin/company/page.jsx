@@ -17,7 +17,13 @@ export default function CompanyForm() {
     gstCategory: "Registered Regular",
   });
 
-  const handle = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  const handle = (e) => {
+    const { name } = e.target;
+    let value = e.target.value;
+    if (name === "gstin" || name === "pan") value = value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, name === "gstin" ? 15 : 10);
+    if (name === "phoneNo") value = value.replace(/\D/g, "").slice(0, 10);
+    setForm((current) => ({ ...current, [name]: value }));
+  };
   const handleCountryState = (c, s) => setForm({ ...form, country: c, stateCode: s });
 
   const submit = async (e) => {
@@ -65,16 +71,16 @@ export default function CompanyForm() {
         <div className="md:col-span-2 space-y-4">
           <h2 className="font-semibold text-lg">Tax Details</h2>
           <div className="grid md:grid-cols-3 gap-4">
-            <Field label="GSTIN / UIN" name="gstin" value={form.gstin || ""} onChange={handle} />
+            <Field label="GSTIN / UIN" name="gstin" value={form.gstin || ""} onChange={handle} maxLength={15} />
             <SelectField label="GST Category" name="gstCategory" value={form.gstCategory} onChange={handle} options={["Registered Regular", "Composition", "Unregistered", "Consumer", "Overseas", "Special Economic Zone"]} />
-            <Field label="PAN" name="pan" value={form.pan || ""} onChange={handle} />
+            <Field label="PAN" name="pan" value={form.pan || ""} onChange={handle} maxLength={10} />
           </div>
         </div>
 
         <div className="md:col-span-2 space-y-4">
           <h2 className="font-semibold text-lg">Address & Contact</h2>
           <div className="grid md:grid-cols-2 gap-4">
-            <Field label="Phone" name="phoneNo" value={form.phoneNo || ""} onChange={handle} />
+            <Field label="Phone" name="phoneNo" value={form.phoneNo || ""} onChange={handle} maxLength={10} inputMode="numeric" />
             <Field label="Email" name="email" value={form.email || ""} onChange={handle} />
             <Field label="Website" name="website" value={form.website || ""} onChange={handle} />
             <Field label="Fax" name="fax" value={form.fax || ""} onChange={handle} />

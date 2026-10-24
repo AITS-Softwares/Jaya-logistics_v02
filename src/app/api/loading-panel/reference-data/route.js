@@ -86,6 +86,7 @@ function loadingVnnReference(vnn) {
   return {
     _id: vnn._id,
     vnnNo: vnn.vnnNo,
+    date: vnn.createdAt ? new Date(vnn.createdAt).toISOString().split("T")[0] : "",
     customerName: vnn.customerName || "",
     branch: vnn.branch || "",
     branchName: vnn.branchName || "",
@@ -167,6 +168,7 @@ async function getAvailableVnnsForLoading(user) {
       companyScopeFilter(user),
       {
         vnnNo: 1,
+        createdAt: 1,
         panelStatus: 1,
         customerName: 1,
         branch: 1,
@@ -244,6 +246,11 @@ export const GET = withAuth(async (req, context, user) => {
     if (lookup === "pendingCount") {
       const pending = await getAvailableVnnsForLoading(user);
       return NextResponse.json({ success: true, data: { count: pending.length } });
+    }
+
+    if (lookup === "pendingList") {
+      const pending = (await getAvailableVnnsForLoading(user)).map(loadingVnnReference);
+      return NextResponse.json({ success: true, data: { rows: pending } });
     }
 
     if (lookup === "vehicles") {

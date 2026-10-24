@@ -10,6 +10,7 @@ import { getTokenFromHeader, verifyJWT } from '@/lib/auth';
 import { v2 as cloudinary } from 'cloudinary';
 import Counter from '@/models/Counter';
 import { companyPrefix } from "@/lib/documentSequence";
+import { identifierFormatError } from "@/lib/identifierFormats";
 
 export const config = { api: { bodyParser: false } };
 
@@ -79,6 +80,12 @@ export async function POST(req) {
 
     const { fields, files } = await parseMultipart(req);
     const orderData = JSON.parse(fields.orderData || "{}");
+    const formatError = identifierFormatError(orderData);
+    if (formatError) {
+      await mongoSession.abortTransaction();
+      mongoSession.endSession();
+      return NextResponse.json({ success: false, message: formatError }, { status: 400 });
+    }
 
     delete orderData._id;
     orderData.items?.forEach(i => delete i._id);
@@ -253,7 +260,7 @@ for (const item of orderData.items) {
     await mongoSession.abortTransaction();
     mongoSession.endSession();
     console.error("❌ Error creating sales order:", err.message);
-    const code = /Forbidden|Unauthorized|JWT/.test(err.message) ? 401 : 500;
+    const code = err.status || (/Forbidden|Unauthorized|JWT/.test(err.message) ? 401 : 500);
     return NextResponse.json({ success: false, message: err.message }, { status: code });
   }
 }

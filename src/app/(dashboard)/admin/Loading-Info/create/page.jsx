@@ -6056,6 +6056,7 @@ function PackTypeTable({ packType, rows, onChange, onRemove, onDuplicate, onTogg
 
 export default function CreateLoadingInfoPanel() {
   const router = useRouter();
+  const pendingVnnSelectionHandled = useRef(false);
 
   /** =========================
    * STATE FOR API DATA
@@ -6852,6 +6853,16 @@ export default function CreateLoadingInfoPanel() {
     if (vehicleNegotiation.negotiations.length > 0) {
       setFilteredVehicleNegotiations(vehicleNegotiation.negotiations);
     }
+  }, [vehicleNegotiation.negotiations]);
+
+  useEffect(() => {
+    if (pendingVnnSelectionHandled.current || !vehicleNegotiation.negotiations.length) return;
+    const requestedVnnId = new URLSearchParams(window.location.search).get('vnnId');
+    if (!requestedVnnId) return;
+    const negotiation = vehicleNegotiation.negotiations.find((entry) => String(entry._id) === requestedVnnId);
+    if (!negotiation) return;
+    pendingVnnSelectionHandled.current = true;
+    handleSelectVehicleNegotiation(negotiation);
   }, [vehicleNegotiation.negotiations]);
 
   /** =========================
@@ -7999,6 +8010,7 @@ export default function CreateLoadingInfoPanel() {
                           className="p-3 hover:bg-emerald-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors"
                         >
                           <div className="font-medium text-slate-800">{nego.vnnNo}</div>
+                          <div className="text-xs font-semibold text-slate-600 mt-0.5">Vehicle: {nego.vehicleNo || 'Not assigned'}</div>
                           <div className="text-xs text-slate-500 mt-1">
                             Order: {orderNumbers.join(', ') || '—'} | Route: {routes.join(', ') || '—'}
                           </div>
@@ -8039,8 +8051,10 @@ export default function CreateLoadingInfoPanel() {
               <label className="text-xs font-bold text-slate-600">Mobile Number</label>
               <input
                 type="text"
+                inputMode="numeric"
+                maxLength={10}
                 value={vehicleInfo.driverMobileNo}
-                onChange={(e) => setVehicleInfo({ ...vehicleInfo, driverMobileNo: e.target.value })}
+                onChange={(e) => setVehicleInfo({ ...vehicleInfo, driverMobileNo: e.target.value.replace(/\D/g, "").slice(0, 10) })}
                 className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 ${selectedVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
                   }`}
                 placeholder="Enter mobile number"
@@ -8411,8 +8425,10 @@ export default function CreateLoadingInfoPanel() {
                       <td className="border border-yellow-300 px-2 py-2">
                         <input
                           type="text"
+                          inputMode="numeric"
+                          maxLength={6}
                           value={row.pinCode || ""}
-                          onChange={(e) => updateOrderRow(row._id, 'pinCode', e.target.value)}
+                          onChange={(e) => updateOrderRow(row._id, 'pinCode', e.target.value.replace(/\D/g, "").slice(0, 6))}
                           readOnly={!!selectedVehicleNegotiation}
                           className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-emerald-500 ${selectedVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
                             }`}
@@ -9043,8 +9059,10 @@ export default function CreateLoadingInfoPanel() {
                               <label className="text-xs font-bold text-slate-600">Helper Mobile Number</label>
                               <input
                                 type="tel"
+                                inputMode="numeric"
+                                maxLength={10}
                                 value={helperInfo.mobileNo}
-                                onChange={(e) => setHelperInfo({ ...helperInfo, mobileNo: e.target.value })}
+                                onChange={(e) => setHelperInfo({ ...helperInfo, mobileNo: e.target.value.replace(/\D/g, "").slice(0, 10) })}
                                 className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500"
                                 placeholder="Enter mobile number"
                               />

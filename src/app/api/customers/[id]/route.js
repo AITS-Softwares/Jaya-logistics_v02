@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import Customer from "@/models/CustomerModel";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
+import { identifierFormatError } from "@/lib/identifierFormats";
 
 function isAuthorized(user, action = "view") {
   if (!user) return false;
@@ -79,6 +80,8 @@ export async function PUT(req, { params }) {
 
     const { id } = params;
     const body = await req.json();
+    const formatError = identifierFormatError(body);
+    if (formatError) return NextResponse.json({ success: false, message: formatError }, { status: 400 });
 
     // ✅ FIX: assignedAgents ko ObjectId array me convert karo
     if (Array.isArray(body.assignedAgents)) {

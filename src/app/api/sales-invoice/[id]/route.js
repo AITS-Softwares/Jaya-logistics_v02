@@ -1,5 +1,6 @@
 import dbConnect from "@/lib/db";
 import SalesInvoice from "@/models/SalesInvoice";
+import { identifierFormatError } from "@/lib/identifierFormats";
 
 
 // GET /api/grn/[id]: Get a single GRN by ID
@@ -32,6 +33,8 @@ export async function PUT(req, { params }) {
     await dbConnect();
     const { id } = await params;  // Ensure params are awaited here.
     const data = await req.json();
+    const formatError = identifierFormatError(data);
+    if (formatError) return new Response(JSON.stringify({ success: false, message: formatError }), { status: 400, headers: { "Content-Type": "application/json" } });
     const updatedSalesInvoice = await SalesInvoice.findByIdAndUpdate(id, data, {
       new: true,
       runValidators: true,

@@ -805,6 +805,7 @@ import { useRouter } from "next/navigation";
 import { usePermission } from "../hooks/usePermission";
 import Link from "next/link";
 import PendingToCreateChip from "@/components/PendingToCreateChip";
+import PendingToCreateTable from "@/components/PendingToCreateTable";
 import OrderRowStatusActions from "@/components/OrderRowStatusActions";
 
 const isCancelledLoadingPanel = (item) => item.panelStatus === 'Cancelled' ||
@@ -814,6 +815,7 @@ export default function LoadingPanelList() {
   const router = useRouter();
   const { canView, canCreate, canEdit, canDelete, canApprove, loading: permissionLoading } = usePermission();
   const [panels, setPanels] = useState([]);
+  const [pendingVnns, setPendingVnns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(null);
@@ -831,7 +833,8 @@ export default function LoadingPanelList() {
   const [filters, setFilters] = useState({
     search: "",
     fromDate: "",
-    toDate: ""
+    toDate: "",
+    status: ""
   });
 
   const MODULE_NAME = 'Loading Info';
@@ -848,6 +851,31 @@ export default function LoadingPanelList() {
       if (filters.search) params.append('search', filters.search);
       if (filters.fromDate) params.append('fromDate', filters.fromDate);
       if (filters.toDate) params.append('toDate', filters.toDate);
+
+      if (filters.status === 'Pending to Create') {
+        const pendingParams = new URLSearchParams({ lookup: 'pendingList' });
+        const pendingRes = await fetch(`/api/loading-panel/reference-data?${pendingParams.toString()}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const pendingData = await pendingRes.json();
+        if (pendingData.success) {
+          const matches = (pendingData.data?.rows || []).filter((row) => {
+            const searchable = [row.vnnNo, row.customerName, row.branchName, row.branch, row.vehicleNo,
+              row.driverMobileNo, ...(row.orders || []).map((order) => order.orderNo)].join(' ').toLowerCase();
+            if (filters.search && !searchable.includes(filters.search.toLowerCase())) return false;
+            if (filters.fromDate && row.date && row.date < filters.fromDate) return false;
+            if (filters.toDate && row.date && row.date > filters.toDate) return false;
+            return true;
+          });
+          setPendingVnns(matches);
+          setPanels([]);
+        } else {
+          setError(pendingData.message || 'Failed to fetch pending Loading Info records');
+        }
+        return;
+      }
+      setPendingVnns([]);
+      if (filters.status) params.append('status', filters.status);
 
       const res = await fetch(`/api/loading-panel?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -894,9 +922,9 @@ export default function LoadingPanelList() {
     setFilters({
       search: "",
       fromDate: "",
-      toDate: ""
+      toDate: "",
+      status: ""
     });
-    setTimeout(() => fetchPanels(), 100);
   };
 
   const handleDelete = async (panelId, vehicleArrivalNo) => {
@@ -1093,16 +1121,16 @@ export default function LoadingPanelList() {
         <div className="mb-6 bg-white rounded-xl border border-slate-200 p-4">
           <h2 className="text-sm font-bold text-slate-700 mb-3">Filter Loading Entries</h2>
           <div className="grid grid-cols-12 gap-3">
-            <div className="col-span-12 md:col-span-4">
+            <div className="col-span-12 md:col-span-3">
               <input
                 type="text"
-                placeholder="Search by Vehicle No, Driver, Arrival No..."
+                placeholder="Search VNN, order, branch, vehicle..."
                 value={filters.search}
                 onChange={(e) => handleFilterChange('search', e.target.value)}
                 className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200"
               />
             </div>
-            <div className="col-span-12 md:col-span-3">
+            <div className="col-span-12 md:col-span-2">
               <input
                 type="date"
                 value={filters.fromDate}
@@ -1110,6 +1138,24 @@ export default function LoadingPanelList() {
                 className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200"
                 placeholder="From Date"
               />
+            </div>
+            <div className="col-span-12 md:col-span-2">
+              <select
+                value={filters.status}
+                onChange={(e) => handleFilterChange('status', e.target.value)}
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200"
+                aria-label="Filter by status"
+              >
+                <option value="">All Status</option>
+                <option value="Draft">Draft</option>
+                <option value="Submitted">Submitted</option>
+                <option value="Pending">Pending for Approval</option>
+                <option value="Approved">Approved</option>
+                <option value="Rejected">Rejected</option>
+                <option value="Completed">Completed</option>
+                <option value="Cancelled">Cancelled</option>
+                <option value="Pending to Create">Pending to Create</option>
+              </select>
             </div>
             <div className="col-span-12 md:col-span-3">
               <input
@@ -1137,6 +1183,8 @@ export default function LoadingPanelList() {
             </div>
           </div>
         </div>
+
+        <PendingToCreateTable enabled={!filters.status} endpoint="/api/loading-panel/reference-data?lookup=pendingList" createHref="/admin/Loading-Info/create" createParam="vnnId" title="Vehicle Negotiations Pending to Create Loading Info" />
 
         {/* Loading Panels Table */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
@@ -1169,6 +1217,28 @@ export default function LoadingPanelList() {
                       </div>
                     </td>
                   </tr>
+                ) : filters.status === 'Pending to Create' && pendingVnns.length > 0 ? (
+                  pendingVnns.map((vnn, index) => {
+                    const weight = (vnn.orders || []).reduce((sum, order) => sum + (Number(order.weight) || 0), 0);
+                    return (
+                      <tr key={vnn._id} className="hover:bg-yellow-50 transition">
+                        <td className="px-4 py-3 text-slate-600">{index + 1}</td>
+                        <td className="px-4 py-3 text-slate-600">{vnn.date || '—'}</td>
+                        <td className="px-4 py-3 text-slate-500">Pending</td>
+                        <td className="px-4 py-3"><span className="rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800">{vnn.vnnNo}</span></td>
+                        <td className="px-4 py-3"><div className="flex max-w-72 flex-wrap gap-1">{(vnn.orders || []).map((order, orderIndex) => <span key={`${order.orderNo}-${orderIndex}`} className="rounded-lg bg-purple-50 px-2 py-1 text-xs font-semibold text-purple-800">{order.orderNo}</span>)}</div></td>
+                        <td className="px-4 py-3">{vnn.branchName || vnn.branch || '—'}</td>
+                        <td className="px-4 py-3">{vnn.vehicleNo || '—'}</td>
+                        <td className="px-4 py-3">{vnn.driverMobileNo || '—'}</td>
+                        <td className="px-4 py-3">{weight ? `${weight} MT` : '—'}</td>
+                        <td className="px-4 py-3 text-slate-400">—</td>
+                        <td className="px-4 py-3 text-slate-400">—</td>
+                        <td className="px-4 py-3 text-slate-400">—</td>
+                        <td className="px-4 py-3 text-slate-400">—</td>
+                        <td className="px-4 py-3 text-center">{canCreate(MODULE_NAME) ? <button onClick={() => router.push(`/admin/Loading-Info/create?vnnId=${encodeURIComponent(vnn._id)}`)} className="rounded-lg bg-yellow-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-yellow-700">Create</button> : <span className="text-slate-400">—</span>}</td>
+                      </tr>
+                    );
+                  })
                 ) : panels.length > 0 ? (
                   panels.map((item, index) => (
                     <tr key={item._id} className="hover:bg-yellow-50 transition">
@@ -1283,13 +1353,13 @@ export default function LoadingPanelList() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="13" className="px-4 py-12 text-center text-slate-500">
+                    <td colSpan="14" className="px-4 py-12 text-center text-slate-500">
                       <div className="flex flex-col items-center">
                         <svg className="w-16 h-16 text-slate-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7h12m0 0v8m0-8l-8 8-4-4-6 6" />
                         </svg>
-                        <p className="text-lg font-medium mb-2">No loading entries found</p>
-                        <p className="text-sm mb-4">Get started by creating your first loading entry</p>
+                        <p className="text-lg font-medium mb-2">{filters.status === 'Pending to Create' ? 'No pending records found' : 'No loading entries found'}</p>
+                        <p className="text-sm mb-4">{filters.status === 'Pending to Create' ? 'All eligible Vehicle Negotiations already have a Loading Info entry.' : 'Get started by creating your first loading entry'}</p>
                         {canCreate(MODULE_NAME) && (
                           <button
                             onClick={handleCreateNew}
@@ -1307,9 +1377,9 @@ export default function LoadingPanelList() {
           </div>
 
           {/* Table Footer */}
-          {panels.length > 0 && (
+          {(filters.status === 'Pending to Create' ? pendingVnns.length : panels.length) > 0 && (
             <div className="px-4 py-3 bg-slate-50 border-t border-slate-200 text-sm text-slate-600">
-              Total {panels.length} loading entr{panels.length !== 1 ? 'ies' : 'y'} found
+              Total {filters.status === 'Pending to Create' ? pendingVnns.length : panels.length} {filters.status === 'Pending to Create' ? 'pending record' : 'loading entr'}{(filters.status === 'Pending to Create' ? pendingVnns.length : panels.length) !== 1 ? 's' : ''} found
             </div>
           )}
         </div>

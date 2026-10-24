@@ -1406,6 +1406,7 @@
 // }
 
 import { NextResponse } from "next/server";
+import { identifierFormatError } from "@/lib/identifierFormats";
 import connectDb from "@/lib/db";
 import ConsignmentNote from "./ConsignmentNote";
 import Customer from "@/models/CustomerModel";
@@ -1648,13 +1649,14 @@ export async function GET(req) {
     const toDate = url.searchParams.get("toDate");
     const statusFilter = url.searchParams.get("status");
     const loadingInfoNo = url.searchParams.get("loadingInfoNo");
-    if (url.searchParams.get("lookup") === "pendingCount") {
+    const pendingLookup = url.searchParams.get("lookup");
+    if (pendingLookup === "pendingCount" || pendingLookup === "pendingList") {
       const normalize = (value) => String(value || "").trim().toLowerCase();
       const [orders, notes, loadingInfos] = await Promise.all([
         OrderPanel.find(companyScopeFilter(user)).select("orderPanelNo plantRows panelStatus isDraft").lean(),
         ConsignmentNote.find(companyScopeFilter(user)).select("orderRowId isDraft header.orderNo header.to header.status").lean(),
         LoadingPanel.find(companyScopeFilter(user, { isDraft: { $ne: true }, panelStatus: { $ne: 'Draft' } }))
-          .select("orderRows.orderNo")
+          .select("vehicleArrivalNo orderRows.orderNo")
           .lean(),
       ]);
       const loadingInfoOrderNos = new Set(loadingInfos.flatMap((loadingInfo) =>
@@ -1670,11 +1672,11 @@ export async function GET(req) {
         if (order.isDraft || (order.panelStatus || 'Draft') === 'Draft') return [];
         const openRows = (order.plantRows || []).filter((row) => (row.status || 'Open') === 'Open' && !row.statusRequest?.action);
         return order.plantRows?.length
-          ? openRows.map((row) => ({ originalRowId: row._id, orderNo: order.orderPanelNo, to: row.toName || row.to || "" }))
+          ? openRows.map((row) => ({ originalRowId: row._id, orderNo: order.orderPanelNo, to: row.toName || row.to || "", weight: row.weight || "", partyName: row.partyName || "" }))
           : [{ orderNo: order.orderPanelNo, to: "N/A" }];
       });
       const seen = new Set();
-      let count = 0;
+      const pendingRows = [];
       sourceRows.forEach((row) => {
         const no = normalize(row.orderNo);
         if (!no || !loadingInfoOrderNos.has(no)) return;
@@ -1682,9 +1684,17 @@ export async function GET(req) {
           || legacyKeys.has(`${no}|${normalize(row.to)}`);
         if (covered || seen.has(no)) return;
         seen.add(no);
-        count += 1;
+        pendingRows.push({
+          orderNo: row.orderNo,
+          to: row.to,
+          date: "",
+          weight: row.weight || "",
+          loadingInfoNo: loadingInfos.find((info) => (info.orderRows || []).some((entry) => normalize(entry.orderNo) === no))?.vehicleArrivalNo || "",
+          partyName: row.partyName || "",
+        });
       });
-      return NextResponse.json({ success: true, data: { count } });
+      if (pendingLookup === "pendingList") return NextResponse.json({ success: true, data: { rows: pendingRows } });
+      return NextResponse.json({ success: true, data: { count: pendingRows.length } });
     }
 
     // ============ CASE 1: GET SINGLE BY ID ============
@@ -1933,6 +1943,8 @@ export async function POST(req) {
     }
 
     const body = await req.json();
+    const formatError = identifierFormatError(body);
+    if (formatError) return NextResponse.json({ success: false, message: formatError }, { status: 400 });
     const isDraftSave = body.saveMode === 'draft';
     const blockedRow = isDraftSave ? null : await validateOpenOrderRows(user, [{
       orderNo: body.header?.orderNo,
@@ -2234,6 +2246,8 @@ export async function PUT(req) {
     }
 
     const body = await req.json();
+    const formatError = identifierFormatError(body);
+    if (formatError) return NextResponse.json({ success: false, message: formatError }, { status: 400 });
     const { id } = body;
 
     if (!id) {
@@ -2565,6 +2579,8 @@ export async function PATCH(req) {
     }
 
     const body = await req.json();
+    const formatError = identifierFormatError(body);
+    if (formatError) return NextResponse.json({ success: false, message: formatError }, { status: 400 });
     const { id, action } = body;
 
     if (!id || !isValidObjectId(id)) {

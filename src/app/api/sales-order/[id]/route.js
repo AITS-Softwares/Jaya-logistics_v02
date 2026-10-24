@@ -7,6 +7,7 @@ import SalesOrder from '@/models/SalesOrder';
 import { getTokenFromHeader, verifyJWT } from '@/lib/auth';
 import { checkPermission } from "@/lib/checkPermission";
 import { v2 as cloudinary } from 'cloudinary';
+import { identifierFormatError } from "@/lib/identifierFormats";
 
 export const config = { api: { bodyParser: false } };
 
@@ -64,6 +65,12 @@ export async function PUT(req, { params }) {
         /* 2 — Parse multipart data */
         const { fields, files } = await parseMultipart(req);
         const updatedData = JSON.parse(fields.orderData?.[0] || fields.orderData || "{}");
+        const formatError = identifierFormatError(updatedData);
+        if (formatError) {
+            const error = new Error(formatError);
+            error.status = 400;
+            throw error;
+        }
         const removedFiles = JSON.parse(fields.removedFiles?.[0] || fields.removedFiles || "[]");
 
         // Safety: Prevent ID overwrite
@@ -116,7 +123,7 @@ export async function PUT(req, { params }) {
     } catch (err) {
         await mongoSession.abortTransaction();
         console.error("❌ Error updating sales order:", err);
-        return NextResponse.json({ success: false, message: err.message }, { status: 500 });
+        return NextResponse.json({ success: false, message: err.message }, { status: err.status || 500 });
     } finally {
         mongoSession.endSession();
     }

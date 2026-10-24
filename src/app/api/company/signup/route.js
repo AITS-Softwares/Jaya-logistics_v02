@@ -3,6 +3,7 @@ import Company from "@/models/Company";
 import { NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
+import { identifierFormatError } from "@/lib/identifierFormats";
 
 // 🔹 Middleware for authentication
 async function authenticate(req) {
@@ -54,6 +55,8 @@ export async function GET(req) {
 export async function POST(request) {
   try {
     const body = await request.json();
+    const formatError = identifierFormatError(body);
+    if (formatError) return NextResponse.json({ message: formatError }, { status: 400 });
 
     // basic validation
     if (!body.email || !body.password || !body.contactName) {

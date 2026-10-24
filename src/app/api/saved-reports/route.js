@@ -12,7 +12,7 @@ import { getBilledLrNumbers } from "@/lib/billedLrs";
 // Saved Report Schema
 const savedReportSchema = new mongoose.Schema({
   reportId: { type: String, required: true, unique: true },
-  type: { type: String, required: true }, // product-wise, general, detention, cancellation, other
+  type: { type: String, required: true }, // product-wise, general, mosaic, detention, cancellation, other
   billNumber: { type: String, default: "" },
   subCompanyId: { type: mongoose.Schema.Types.ObjectId, ref: "SubCompany", default: null },
   subCompanyCode: { type: String, default: "" },
@@ -86,7 +86,7 @@ export async function POST(req) {
     const body = await req.json();
     const { reportId, type, billNumber, filters, data, summary, totalRecords, selectedRecords } = body;
 
-    if (type === "product-wise" || type === "general") {
+    if (type === "product-wise" || type === "general" || type === "mosaic") {
       const rows = Array.isArray(data) ? data : [];
       const zeroRate = rows.filter((r) => !(Number(r.rate) > 0)).map((r) => r.lrNo);
       if (zeroRate.length) {
@@ -124,7 +124,7 @@ export async function POST(req) {
     const fyStart = part("month") >= 4 ? year : year - 1;
     const financialYear = `${String(fyStart).slice(-2)}${String(fyStart + 1).slice(-2)}`;
     let generatedBillNumber = billNumber || `BILL/${Date.now()}`;
-    if (type === "product-wise" || type === "general") {
+    if (type === "product-wise" || type === "general" || type === "mosaic") {
       const counterId = `Billing-${subCompanyId}-${financialYear}`;
       let counter;
       try {

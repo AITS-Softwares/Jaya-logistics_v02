@@ -7,6 +7,7 @@ import SalesQuotation from "@/models/SalesQuotationModel";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import { checkPermission } from "@/lib/checkPermission";
 import { v2 as cloudinary } from "cloudinary";
+import { identifierFormatError } from "@/lib/identifierFormats";
 
 // ✅ Cloudinary Config
 cloudinary.config({
@@ -72,6 +73,8 @@ export async function PUT(req, { params }) {
       // ✅ Parse FormData for full update
       const formData = await req.formData();
       jsonData = JSON.parse(formData.get("quotationData"));
+      const formatError = identifierFormatError(jsonData);
+      if (formatError) return NextResponse.json({ success: false, error: formatError }, { status: 400 });
       const files = formData.getAll("attachments");
 
       // ✅ Upload files

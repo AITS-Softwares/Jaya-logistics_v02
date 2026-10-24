@@ -925,6 +925,7 @@ import { useRouter } from "next/navigation";
 import { usePermission } from "../hooks/usePermission";
 import Link from "next/link";
 import PendingToCreateChip from "@/components/PendingToCreateChip";
+import PendingToCreateTable from "@/components/PendingToCreateTable";
 
 export default function AdvancePaymentList() {
   const router = useRouter();
@@ -943,6 +944,7 @@ export default function AdvancePaymentList() {
   });
 
   const MODULE_NAME = 'Advance Payment';
+  const showPendingToCreate = filters.status === 'Pending to Create';
 
   // Fetch payments - wrapped in useCallback to prevent infinite re-renders
   const fetchPayments = useCallback(async () => {
@@ -955,7 +957,7 @@ export default function AdvancePaymentList() {
       if (filters.search) params.append('search', filters.search);
       if (filters.fromDate) params.append('fromDate', filters.fromDate);
       if (filters.toDate) params.append('toDate', filters.toDate);
-      if (filters.status) params.append('status', filters.status);
+      if (filters.status && !showPendingToCreate) params.append('status', filters.status);
 
       const res = await fetch(`/api/Advance-Payment?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -978,7 +980,7 @@ export default function AdvancePaymentList() {
     } finally {
       setLoading(false);
     }
-  }, [filters]);
+  }, [filters, showPendingToCreate]);
 
   // Only fetch when permissions are loaded and user has view permission
   useEffect(() => {
@@ -1295,11 +1297,12 @@ export default function AdvancePaymentList() {
                 className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200"
               >
                 <option value="">All Status</option>
-                <option value="Pending">Pending</option>
+                <option value="Pending">Pending for Approval</option>
                 <option value="Approved">Approved</option>
                 <option value="Rejected">Rejected</option>
                 <option value="Paid">Paid</option>
                 <option value="Completed">Completed</option>
+                <option value="Pending to Create">Pending to Create</option>
               </select>
             </div>
             <div className="col-span-12 md:col-span-3 flex gap-2">
@@ -1320,8 +1323,10 @@ export default function AdvancePaymentList() {
           </div>
         </div>
 
+        <PendingToCreateTable enabled={showPendingToCreate || !filters.status} endpoint="/api/purchase-panel?for=advance-payment&format=table" createHref="/admin/Advance-Payment/create" title="Purchases Pending to Create Advance Payment" />
+
         {/* Payments Table */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className={`bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden ${showPendingToCreate ? 'hidden' : ''}`}>
           <div className="overflow-x-auto">
             <table className="w-full text-sm compact-list-table">
               <thead className="bg-yellow-400 border-b border-yellow-500">

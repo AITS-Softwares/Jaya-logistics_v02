@@ -1155,6 +1155,7 @@
 
 // app/api/loading-panel/route.js
 import { NextResponse } from "next/server";
+import { identifierFormatError } from "@/lib/identifierFormats";
 import connectDb from "@/lib/db";
 import LoadingPanel from "./LoadingPanel";
 import { getNextLoadingNumber } from "./LoadingCounter";
@@ -1313,6 +1314,7 @@ export async function GET(req) {
     const search = url.searchParams.get("search");
     const fromDate = url.searchParams.get("fromDate");
     const toDate = url.searchParams.get("toDate");
+    const panelStatus = url.searchParams.get("status");
 
     // ============ CASE 1: GET SINGLE LOADING PANEL ============
     if (id || vehicleArrivalNo) {
@@ -1406,6 +1408,10 @@ export async function GET(req) {
       if (toDate) {
         query.date.$lte = new Date(toDate + 'T23:59:59');
       }
+    }
+
+    if (panelStatus && panelStatus !== "Pending to Create") {
+      query.panelStatus = panelStatus;
     }
 
     const loadingPanels = await LoadingPanel.find(companyScopeFilter(user, query))
@@ -1627,6 +1633,8 @@ export async function POST(req) {
 
   try {
     const body = await req.json();
+    const formatError = identifierFormatError(body);
+    if (formatError) return NextResponse.json({ success: false, message: formatError }, { status: 400 });
     const isDraftSave = body.saveMode === 'draft';
     const loadingInfoPhotosOptional = await areLoadingInfoPhotosOptional(user, body.orderRows || []);
     const blockedRow = isDraftSave ? null : await validateOpenOrderRows(user, body.orderRows || []);
@@ -2118,6 +2126,8 @@ export async function PUT(req) {
 
   try {
     const body = await req.json();
+    const formatError = identifierFormatError(body);
+    if (formatError) return NextResponse.json({ success: false, message: formatError }, { status: 400 });
     const { id, saveMode, ...updateData } = body;
 
     if (!id || !isValidObjectId(id)) {
@@ -2473,6 +2483,8 @@ export async function PATCH(req) {
 
   try {
     const body = await req.json();
+    const formatError = identifierFormatError(body);
+    if (formatError) return NextResponse.json({ success: false, message: formatError }, { status: 400 });
     const { id, action, ...updateFields } = body;
 
     if (!id || !isValidObjectId(id)) {

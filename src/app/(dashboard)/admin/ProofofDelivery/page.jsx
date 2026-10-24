@@ -843,6 +843,7 @@ import { useRouter } from "next/navigation";
 import { usePermission } from "../hooks/usePermission";
 import Link from "next/link";
 import PendingToCreateChip from "@/components/PendingToCreateChip";
+import PendingToCreateTable from "@/components/PendingToCreateTable";
 
 export default function PODPanelList() {
   const router = useRouter();
@@ -861,6 +862,7 @@ export default function PODPanelList() {
   const requestIdRef = useRef(0);
 
   const MODULE_NAME = 'Proof Of Delivery';
+  const showPendingToCreate = appliedFilters.podStatus === 'Pending to Create';
 
   // Fetch POD list - wrapped in useCallback to prevent infinite re-renders
   const fetchPODList = useCallback(async () => {
@@ -874,7 +876,7 @@ export default function PODPanelList() {
       if (appliedFilters.search.trim()) params.append('search', appliedFilters.search.trim());
       if (appliedFilters.fromDate) params.append('fromDate', appliedFilters.fromDate);
       if (appliedFilters.toDate) params.append('toDate', appliedFilters.toDate);
-      if (appliedFilters.podStatus) params.append('podStatus', appliedFilters.podStatus);
+      if (appliedFilters.podStatus && !showPendingToCreate) params.append('podStatus', appliedFilters.podStatus);
 
       const res = await fetch(`/api/pod-panel?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -900,7 +902,7 @@ export default function PODPanelList() {
     } finally {
       if (requestId === requestIdRef.current) setLoading(false);
     }
-  }, [appliedFilters, refreshKey]);
+  }, [appliedFilters, refreshKey, showPendingToCreate]);
 
   // Only fetch when permissions are loaded and user has view permission
   useEffect(() => {
@@ -1161,12 +1163,13 @@ export default function PODPanelList() {
                 className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200"
               >
                 <option value="">All Status</option>
-                <option value="Pending">Pending</option>
+                <option value="Pending">Pending for Approval</option>
                 <option value="Received">Received</option>
                 <option value="Clear & Ok">Clear & Ok</option>
                 <option value="Partial">Partial</option>
                 <option value="Rejected">Rejected</option>
                 <option value="Deductions">Deductions</option>
+                <option value="Pending to Create">Pending to Create</option>
               </select>
             </div>
             <div className="col-span-12 md:col-span-3 flex gap-2">
@@ -1186,8 +1189,10 @@ export default function PODPanelList() {
           </div>
         </div>
 
+        <PendingToCreateTable enabled={showPendingToCreate || !appliedFilters.podStatus} endpoint="/api/purchase-panel?for=pod&format=table" createHref="/admin/ProofofDelivery/create" title="Purchases Pending to Create POD" />
+
         {/* PODs Table - Excel Format */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className={`bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden ${showPendingToCreate ? 'hidden' : ''}`}>
           <div className="overflow-x-auto">
             <table className="w-full text-sm compact-list-table">
               <thead className="bg-yellow-400">
