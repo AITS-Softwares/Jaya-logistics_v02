@@ -14,7 +14,7 @@ function safePayload(payload = {}) {
 // Read-only, staff-only event history. Driver credentials, token metadata, and
 // raw location point payloads are intentionally not part of this endpoint.
 export async function GET(req, { params }) {
-  if (!isDriverMobileEnabled()) return mobileUnavailableResponse();
+  if (!(await isDriverMobileEnabled())) return mobileUnavailableResponse();
   const staff = requireDriverMobileStaff(req);
   if (staff.error) return staff.error;
   const { tripId } = await params;

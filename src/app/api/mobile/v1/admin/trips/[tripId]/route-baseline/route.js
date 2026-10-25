@@ -8,7 +8,7 @@ import { requireDriverMobileStaff } from "@/lib/driverMobileStaff";
 // The dispatcher explicitly approves map-derived route data before it becomes
 // visible as an ETA baseline. GPS never silently rewrites the plan.
 export async function POST(req, { params }) {
-  if (!isDriverMobileEnabled()) return mobileUnavailableResponse();
+  if (!(await isDriverMobileEnabled())) return mobileUnavailableResponse();
   const staff = requireDriverMobileStaff(req, "edit");
   if (staff.error) return staff.error;
   const { tripId } = await params;

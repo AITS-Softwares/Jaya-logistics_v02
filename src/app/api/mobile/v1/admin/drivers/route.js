@@ -7,7 +7,7 @@ import { requireDriverMobileStaff } from "@/lib/driverMobileStaff";
 import { normalizeDriverMobile } from "@/lib/driverMobileCore.mjs";
 
 export async function GET(req) {
-  if (!isDriverMobileEnabled()) return mobileUnavailableResponse();
+  if (!(await isDriverMobileEnabled())) return mobileUnavailableResponse();
   const staff = requireDriverMobileStaff(req);
   if (staff.error) return staff.error;
   await dbConnect();
@@ -16,7 +16,7 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
-  if (!isDriverMobileEnabled()) return mobileUnavailableResponse();
+  if (!(await isDriverMobileEnabled())) return mobileUnavailableResponse();
   const staff = requireDriverMobileStaff(req, "edit");
   if (staff.error) return staff.error;
   try {

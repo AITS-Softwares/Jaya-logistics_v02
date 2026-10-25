@@ -3,7 +3,7 @@ import dbConnect from "@/lib/db";
 import { isDriverMobileEnabled, mobileUnavailableResponse, rotateMobileSession } from "@/lib/driverMobileAuth";
 
 export async function POST(req) {
-  if (!isDriverMobileEnabled()) return mobileUnavailableResponse();
+  if (!(await isDriverMobileEnabled())) return mobileUnavailableResponse();
   try {
     const { refreshToken } = await req.json();
     await dbConnect();

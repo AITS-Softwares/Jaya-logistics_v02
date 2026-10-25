@@ -14,7 +14,7 @@ import { createIdempotencyKey, driverSafeTripDto } from "@/lib/driverMobileCore.
 const ACTIVE_STATES = ["assigned", "started", "at_pickup", "in_transit", "at_stop", "delivered"];
 
 export async function GET(req) {
-  if (!isDriverMobileEnabled()) return mobileUnavailableResponse();
+  if (!(await isDriverMobileEnabled())) return mobileUnavailableResponse();
   const staff = requireDriverMobileStaff(req);
   if (staff.error) return staff.error;
   await dbConnect();
@@ -27,7 +27,7 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
-  if (!isDriverMobileEnabled()) return mobileUnavailableResponse();
+  if (!(await isDriverMobileEnabled())) return mobileUnavailableResponse();
   const staff = requireDriverMobileStaff(req, "edit");
   if (staff.error) return staff.error;
   try {

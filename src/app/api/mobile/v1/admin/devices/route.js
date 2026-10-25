@@ -8,7 +8,7 @@ import { requireDriverMobileStaff } from "@/lib/driverMobileStaff";
 // Deliberately returns device metadata only. Installation identifiers and
 // session credentials are never exposed to ERP screens.
 export async function GET(req) {
-  if (!isDriverMobileEnabled()) return mobileUnavailableResponse();
+  if (!(await isDriverMobileEnabled())) return mobileUnavailableResponse();
   const staff = requireDriverMobileStaff(req);
   if (staff.error) return staff.error;
   await dbConnect();

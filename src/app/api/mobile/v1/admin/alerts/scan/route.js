@@ -18,7 +18,7 @@ function alertDto(alert, trip) {
 // caller's company and auto-resolves tracking alerts once a healthy signal is
 // detected. Driver-reported issues require a dispatcher to resolve them.
 export async function POST(req) {
-  if (!isDriverMobileEnabled()) return mobileUnavailableResponse();
+  if (!(await isDriverMobileEnabled())) return mobileUnavailableResponse();
   const staff = requireDriverMobileStaff(req);
   if (staff.error) return staff.error;
   await dbConnect();
