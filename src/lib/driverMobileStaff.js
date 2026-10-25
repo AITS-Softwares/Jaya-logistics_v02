@@ -17,3 +17,15 @@ export function requireDriverMobileStaff(req, action = "view") {
     return { error: NextResponse.json({ success: false, code: "UNAUTHORIZED", message: "A valid staff token is required." }, { status: 401 }) };
   }
 }
+
+export function requireDriverMobileSettingsStaff(req, action = "view") {
+  try {
+    const user = verifyToken(req);
+    if (!user) throw new Error("Unauthorized");
+    const permitted = user.type === "company" || user.roles?.includes("Admin") || hasAnyPermission(user, "Driver Mobile Settings", action === "edit" ? ["edit"] : ["view", "edit"]);
+    if (!permitted) return { error: NextResponse.json({ success: false, code: "FORBIDDEN", message: "Driver Mobile Settings permission is required." }, { status: 403 }) };
+    return { user };
+  } catch {
+    return { error: NextResponse.json({ success: false, code: "UNAUTHORIZED", message: "A valid staff token is required." }, { status: 401 }) };
+  }
+}

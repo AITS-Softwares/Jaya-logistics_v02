@@ -27,12 +27,14 @@ const configPath = path.join(root, "mobile", "driver", "capacitor.config.ts");
 if (!fs.existsSync(configPath)) errors.push("Driver Capacitor configuration is missing.");
 
 const driverUrl = process.env.DRIVER_APP_URL || "";
+const allowCleartextTesting = process.env.DRIVER_ALLOW_CLEARTEXT_TESTING === "true";
 if (!driverUrl) {
   errors.push("DRIVER_APP_URL is required. Set it to the public HTTPS driver hostname before syncing or building a driver APK.");
 } else {
   try {
     const parsed = new URL(driverUrl);
-    if (parsed.protocol !== "https:") errors.push("DRIVER_APP_URL must use HTTPS.");
+    if (parsed.protocol !== "https:" && !(allowCleartextTesting && parsed.protocol === "http:")) errors.push("DRIVER_APP_URL must use HTTPS. HTTP is allowed only when DRIVER_ALLOW_CLEARTEXT_TESTING=true for a controlled debug build.");
+    if (parsed.protocol === "http:" && allowCleartextTesting) warnings.push("HTTP cleartext testing is enabled. Build only a debug APK; do not use real driver credentials or distribute this APK.");
     if (parsed.hostname === "localhost" || parsed.hostname.endsWith(".local") || /^(10\.|127\.|192\.168\.|172\.(1[6-9]|2\d|3[0-1])\.)/.test(parsed.hostname)) {
       errors.push("DRIVER_APP_URL must be publicly reachable; private, localhost, and office-network addresses are not valid release targets.");
     }

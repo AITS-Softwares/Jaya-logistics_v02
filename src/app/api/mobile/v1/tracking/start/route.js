@@ -5,6 +5,7 @@ import TripEvent from "@/models/TripEvent";
 import { requireMobileAuth } from "@/lib/driverMobileAuth";
 import { createIdempotencyKey } from "@/lib/driverMobileCore.mjs";
 import { isObjectId, sameObjectId, TRACKING_POLICY } from "@/lib/driverTracking";
+import { getDriverMobileConfig } from "@/lib/driverMobileConfig";
 
 export async function POST(req) {
   const auth = await requireMobileAuth(req);
@@ -25,7 +26,9 @@ export async function POST(req) {
       session.state = "active"; session.endedAt = null; await session.save();
     }
     if (!trip.deviceId) { trip.deviceId = auth.device._id; await trip.save(); }
-    return NextResponse.json({ success: true, data: { sessionId: String(session._id), state: session.state, policy: TRACKING_POLICY } });
+    const config = await getDriverMobileConfig(auth.driver.companyId);
+    const policy = { ...TRACKING_POLICY, movingIntervalSec: config?.movingIntervalSec || TRACKING_POLICY.movingIntervalSec, minDistanceM: config?.minDistanceM || TRACKING_POLICY.minDistanceM };
+    return NextResponse.json({ success: true, data: { sessionId: String(session._id), state: session.state, policy } });
   } catch (error) {
     console.error("mobile tracking start:", error.message);
     return NextResponse.json({ success: false, code: "TRACKING_START_FAILED", message: "Unable to start tracking." }, { status: 500 });

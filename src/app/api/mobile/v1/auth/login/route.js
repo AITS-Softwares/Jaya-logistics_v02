@@ -21,7 +21,6 @@ function allowedAttempt(req, mobile) {
 }
 
 export async function POST(req) {
-  if (!isDriverMobileEnabled()) return mobileUnavailableResponse();
   try {
     const body = await req.json();
     const mobileE164 = normalizeDriverMobile(body.mobile);
@@ -35,7 +34,8 @@ export async function POST(req) {
     if (!driver || !(await validateDriverPin(driver, pin))) {
       return NextResponse.json({ success: false, code: "INVALID_CREDENTIALS", message: "Mobile number or PIN is invalid." }, { status: 401 });
     }
-    if (!isDriverAllowedForMobileRollout(driver.mobileE164)) return NextResponse.json({ success: false, code: "PILOT_NOT_ENROLLED", message: "Mobile pilot access is not enabled for this driver." }, { status: 403 });
+    if (!(await isDriverMobileEnabled(driver.companyId))) return mobileUnavailableResponse();
+    if (!(await isDriverAllowedForMobileRollout(driver.mobileE164, driver.companyId))) return NextResponse.json({ success: false, code: "PILOT_NOT_ENROLLED", message: "Mobile pilot access is not enabled for this driver." }, { status: 403 });
     const session = await createMobileSession({ companyId: driver.companyId, driverId: driver._id });
     return NextResponse.json({
       success: true,

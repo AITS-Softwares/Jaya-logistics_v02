@@ -6,7 +6,7 @@ import { isDriverMobileEnabled, mobileUnavailableResponse } from "@/lib/driverMo
 import { requireDriverMobileStaff } from "@/lib/driverMobileStaff";
 
 export async function PATCH(req, { params }) {
-  if (!isDriverMobileEnabled()) return mobileUnavailableResponse();
+  if (!(await isDriverMobileEnabled())) return mobileUnavailableResponse();
   const staff = requireDriverMobileStaff(req, "edit");
   if (staff.error) return staff.error;
   const { alertId } = await params;

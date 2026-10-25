@@ -13,7 +13,7 @@ const ACTIVE_STATES = ["assigned", "started", "at_pickup", "in_transit", "at_sto
 // Cancellation is deliberately separate from Loading Info: a dispatcher can
 // stop mobile delivery access without changing the established ERP record.
 export async function PATCH(req, { params }) {
-  if (!isDriverMobileEnabled()) return mobileUnavailableResponse();
+  if (!(await isDriverMobileEnabled())) return mobileUnavailableResponse();
   const staff = requireDriverMobileStaff(req, "edit");
   if (staff.error) return staff.error;
   const { tripId } = await params;

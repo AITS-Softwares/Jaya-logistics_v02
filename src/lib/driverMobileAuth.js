@@ -5,26 +5,36 @@ import dbConnect from "@/lib/db";
 import DriverProfile from "@/models/DriverProfile";
 import DriverDevice from "@/models/DriverDevice";
 import DriverMobileSession from "@/models/DriverMobileSession";
+import DriverMobileConfig from "@/models/DriverMobileConfig";
 import { createOpaqueToken, hashSecret } from "@/lib/driverMobileCore.mjs";
 import { driverMobileRolloutMode, isDriverAllowedInRollout, pilotMobileAllowList } from "@/lib/driverRollout.mjs";
+import { decryptDriverMobileSecret, getDriverMobileConfig } from "@/lib/driverMobileConfig";
 
 const ACCESS_TTL_SECONDS = 15 * 60;
 const REFRESH_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
-export function isDriverMobileEnabled() {
-  return process.env.DRIVER_MOBILE_ENABLED === "true";
+export async function isDriverMobileEnabled(companyId) {
+  if (!companyId) {
+    await dbConnect();
+    return Boolean(await DriverMobileConfig.exists({ enabled: true })) || process.env.DRIVER_MOBILE_ENABLED === "true";
+  }
+  const config = await getDriverMobileConfig(companyId);
+  return config ? config.enabled === true : process.env.DRIVER_MOBILE_ENABLED === "true";
 }
 
-export function mobileRolloutMode() {
-  return driverMobileRolloutMode(process.env.DRIVER_MOBILE_ROLLOUT_MODE);
+export async function mobileRolloutMode(companyId) {
+  const config = companyId ? await getDriverMobileConfig(companyId) : null;
+  return driverMobileRolloutMode(config?.rolloutMode || process.env.DRIVER_MOBILE_ROLLOUT_MODE);
 }
 
-export function isDriverAllowedForMobileRollout(mobile) {
-  return isDriverAllowedInRollout(mobile, mobileRolloutMode(), pilotMobileAllowList(process.env.DRIVER_MOBILE_PILOT_MOBILES));
+export async function isDriverAllowedForMobileRollout(mobile, companyId) {
+  const config = companyId ? await getDriverMobileConfig(companyId) : null;
+  return isDriverAllowedInRollout(mobile, config?.rolloutMode || process.env.DRIVER_MOBILE_ROLLOUT_MODE, new Set(config?.pilotMobiles || pilotMobileAllowList(process.env.DRIVER_MOBILE_PILOT_MOBILES)));
 }
 
-function secret() {
-  const value = process.env.DRIVER_MOBILE_JWT_SECRET || process.env.JWT_SECRET;
+async function secret(companyId) {
+  const config = companyId ? await getDriverMobileConfig(companyId, { includeSecret: true }) : null;
+  const value = (config?.encryptedJwtSecret ? decryptDriverMobileSecret(config.encryptedJwtSecret) : "") || process.env.DRIVER_MOBILE_JWT_SECRET || process.env.JWT_SECRET;
   if (!value) throw new Error("Driver mobile authentication is not configured");
   return value;
 }
@@ -42,14 +52,14 @@ function tokenFromRequest(req) {
   return auth.startsWith("Bearer ") ? auth.slice(7) : "";
 }
 
-function signAccess(session) {
+async function signAccess(session) {
   return jwt.sign({
     aud: "driver-mobile",
     sub: String(session.driverId),
     companyId: String(session.companyId),
     deviceId: session.deviceId ? String(session.deviceId) : null,
     sessionId: String(session._id),
-  }, secret(), { expiresIn: ACCESS_TTL_SECONDS, issuer: "jaya-logistics" });
+  }, await secret(session.companyId), { expiresIn: ACCESS_TTL_SECONDS, issuer: "jaya-logistics" });
 }
 
 export async function createMobileSession({ companyId, driverId, deviceId = null, familyId = createOpaqueToken() }) {
@@ -64,7 +74,7 @@ export async function createMobileSession({ companyId, driverId, deviceId = null
     lastUsedAt: new Date(),
   });
   return {
-    accessToken: signAccess(session),
+    accessToken: await signAccess(session),
     refreshToken,
     expiresInSeconds: ACCESS_TTL_SECONDS,
     session,
@@ -94,7 +104,7 @@ export async function rotateMobileSession(refreshToken) {
     await session.save();
     return null;
   }
-  if (!isDriverAllowedForMobileRollout(driver.mobileE164)) return null;
+  if (!(await isDriverAllowedForMobileRollout(driver.mobileE164, session.companyId))) return null;
   session.revokedAt = new Date();
   session.revokeReason = "rotated";
   await session.save();
@@ -102,12 +112,13 @@ export async function rotateMobileSession(refreshToken) {
 }
 
 export async function requireMobileAuth(req, { requireDevice = true } = {}) {
-  if (!isDriverMobileEnabled()) return { error: mobileUnavailableResponse() };
   const token = tokenFromRequest(req);
   if (!token) return { error: mobileError("A driver access token is required.") };
+  const decoded = jwt.decode(token);
+  if (!decoded?.companyId || !(await isDriverMobileEnabled(decoded.companyId))) return { error: mobileUnavailableResponse() };
   let payload;
   try {
-    payload = jwt.verify(token, secret(), { audience: "driver-mobile", issuer: "jaya-logistics" });
+    payload = jwt.verify(token, await secret(decoded.companyId), { audience: "driver-mobile", issuer: "jaya-logistics" });
   } catch {
     return { error: mobileError("The driver access token is invalid or expired.") };
   }
@@ -116,7 +127,7 @@ export async function requireMobileAuth(req, { requireDevice = true } = {}) {
   if (!session || session.revokedAt || session.expiresAt <= new Date()) return { error: mobileError("The driver session is no longer active.") };
   const driver = await DriverProfile.findOne({ _id: payload.sub, companyId: payload.companyId, status: "active" });
   if (!driver) return { error: mobileError("The driver account is not active.", 403, "DRIVER_INACTIVE") };
-  if (!isDriverAllowedForMobileRollout(driver.mobileE164)) return { error: mobileError("Mobile pilot access is not enabled for this driver.", 403, "PILOT_NOT_ENROLLED") };
+  if (!(await isDriverAllowedForMobileRollout(driver.mobileE164, payload.companyId))) return { error: mobileError("Mobile pilot access is not enabled for this driver.", 403, "PILOT_NOT_ENROLLED") };
   let device = null;
   if (payload.deviceId) {
     device = await DriverDevice.findOne({ _id: payload.deviceId, companyId: payload.companyId, driverId: payload.sub });

@@ -15,7 +15,7 @@ const ACTIVE_TRIP_STATES = ["assigned", "started", "at_pickup", "in_transit", "a
 // Staff-only view for the existing Tracking Plan screen. It never exposes raw
 // mobile credentials or lets the desktop ERP mutate a driver's tracking data.
 export async function GET(req) {
-  if (!isDriverMobileEnabled()) return mobileUnavailableResponse();
+  if (!(await isDriverMobileEnabled())) return mobileUnavailableResponse();
   const staff = requireDriverMobileStaff(req);
   if (staff.error) return staff.error;
 
