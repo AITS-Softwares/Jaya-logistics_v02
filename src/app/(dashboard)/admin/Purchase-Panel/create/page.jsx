@@ -2872,7 +2872,7 @@
 "use client";
 
 import { useMemo, useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 /** =========================
  * CONSTANTS
@@ -3072,6 +3072,9 @@ function defaultDeductionRow() {
 
 export default function CreatePurchasePanel() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const pendingLoadingInfoId = searchParams.get("sourceId");
+  const pendingLoadingInfoNo = searchParams.get("sourceNo");
 
   /** =========================
    * CUSTOM HOOKS
@@ -3817,6 +3820,16 @@ export default function CreatePurchasePanel() {
       setFetchingData(false);
     }
   };
+
+  useEffect(() => {
+    const available = loadingInfoHook.loadingInfos || [];
+    if (!pendingLoadingInfoId && !pendingLoadingInfoNo) return;
+    const selected = available.find((item) =>
+      (pendingLoadingInfoId && String(item._id) === pendingLoadingInfoId) ||
+      (pendingLoadingInfoNo && String(item.vehicleArrivalNo || item.loadingInfoNo || "").trim().toLowerCase() === pendingLoadingInfoNo.trim().toLowerCase())
+    );
+    if (selected) handleSelectLoadingInfo(selected);
+  }, [pendingLoadingInfoId, pendingLoadingInfoNo, loadingInfoHook.loadingInfos]);
 
   const handleLoadingInfoInputFocus = () => {
     if (!showLoadingInfoDropdown) {

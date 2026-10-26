@@ -38,7 +38,6 @@ export default function LandingPage() {
           <span className="landing-brandname">JAYA<small>GROUP OF COMPANIES</small></span>
         </a>
         <nav className="landing-nav" aria-label="Main navigation">
-          <a href="#home">Home</a>
           <Link className="landing-sign-top" href="/signin">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><circle cx="12" cy="7" r="4" /><path d="M4 21v-2a8 8 0 0 1 16 0v2" /></svg>
             Sign In
@@ -51,7 +50,7 @@ export default function LandingPage() {
         <div className="landing-card">
           <h1 id="landing-title">Welcome to <span>Jaya Group Of Companies</span></h1>
           <p>Manage your sales, purchases, inventory, and logistics operations from one centralized, modern ERP platform.</p>
-          <Link className="landing-cta" href="/signin">Sign In</Link>
+          <Link className="landing-cta" href="/signin">Get Started</Link>
         </div>
       </section>
 

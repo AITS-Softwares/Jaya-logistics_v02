@@ -3800,7 +3800,7 @@
 "use client";
 
 import { useMemo, useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import LRInvoiceUpload from "@/components/LRInvoiceUpload";
 import LRPreviewModal, { makePreviewNote } from "@/components/LRPreviewModal";
 
@@ -3918,6 +3918,8 @@ function defaultNonUniformRow() {
 }
 
 export default function CreateConsignmentNote() {
+  const searchParams = useSearchParams();
+  const pendingOrderNo = searchParams.get("orderNo") || searchParams.get("sourceNo");
   const router = useRouter();
 
   const [loading, setLoading] = useState(false);
@@ -4447,6 +4449,14 @@ export default function CreateConsignmentNote() {
   /** =========================
    * ORDER SEARCH HANDLERS
    ========================= */
+  useEffect(() => {
+    if (!pendingOrderNo || !allOrders.length) return;
+    const selectedOrder = allOrders.find((order) =>
+      normText(order.orderNo || order.orderPanelNo) === normText(pendingOrderNo)
+    );
+    if (selectedOrder) handleSelectOrder(selectedOrder, { silent: true });
+  }, [pendingOrderNo, allOrders]);
+
   const handleOrderSearch = (query) => {
     setHeader(prev => ({ ...prev, orderNo: query }));
 

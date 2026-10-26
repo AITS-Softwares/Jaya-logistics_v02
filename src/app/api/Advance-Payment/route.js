@@ -1628,6 +1628,7 @@ import { activeOperatingCompanyId, companyScopeFilter } from "@/lib/companyScope
 import { syncPodAdvanceForPurchase } from "@/lib/advanceSettlement";
 import { ADVANCE_STATUSES, assertValidAmounts } from "@/lib/paymentRules";
 import { validateOpenOrderRows } from '@/lib/orderRowStatus';
+import { handleModuleDelete } from '@/lib/deletion/handler';
 
 // ── PERMISSION FUNCTIONS ──
 
@@ -2482,6 +2483,7 @@ export async function DELETE(req) {
         code: status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN'
       }, { status });
     }
+    return await handleModuleDelete(req, 'advance', user);
 
     const url = new URL(req.url);
     const id = url.searchParams.get("id");

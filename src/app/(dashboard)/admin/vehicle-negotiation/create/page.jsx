@@ -1682,8 +1682,8 @@ export default function VehicleNegotiationPanel() {
     }
 
     const urlParams = new URLSearchParams(window.location.search);
-    const orderIds = urlParams.get('orderIds');
-    const orderPanelNos = urlParams.get('orderPanelNos');
+    const orderIds = urlParams.get('orderIds') || urlParams.get('sourceId');
+    const orderPanelNos = urlParams.get('orderPanelNos') || urlParams.get('sourceNo');
 
     if (!orderIds) {
       console.log('ℹ️ No order IDs found in URL');
@@ -3024,7 +3024,7 @@ export default function VehicleNegotiationPanel() {
                 <label className="text-xs font-bold text-slate-600">Vehicle Number</label>
                 <input type="text" value={approval.vehicleNo || ""} onChange={(e) => setApproval((p) => ({ ...p, vehicleNo: e.target.value }))} className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none cursor-not-allowed" placeholder="Enter vehicle number..." readOnly={true} />
               </div>
-              <Input col="col-span-12 md:col-span-4" label="Mobile" value={approval.mobile} onChange={(v) => setApproval((p) => ({ ...p, mobile: v }))} readOnly={true} />
+              <Input col="col-span-12 md:col-span-4" label="Mobile (10 digits)" value={approval.mobile} onChange={(v) => setApproval((p) => ({ ...p, mobile: v }))} readOnly={true} />
             </div>
 
             <div className="grid grid-cols-12 gap-3 mb-4">

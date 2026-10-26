@@ -120,6 +120,7 @@
 // export default BalancePayment;
 
 import mongoose from 'mongoose';
+import softDeletePlugin from '@/lib/softDelete';
 
 // Order Row Schema - UPDATED with fromState and Local/Not Local
 const orderRowSchema = new mongoose.Schema({
@@ -261,6 +262,7 @@ balancePaymentSchema.pre('save', function (next) {
   next();
 });
 
+balancePaymentSchema.plugin(softDeletePlugin);
 const BalancePayment = mongoose.models.BalancePayment ||
   mongoose.model('BalancePayment', balancePaymentSchema);
 

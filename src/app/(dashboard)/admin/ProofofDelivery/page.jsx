@@ -940,6 +940,9 @@ export default function PODPanelList() {
       return;
     }
 
+    window.dispatchEvent(new CustomEvent('logistics:delete-impact', { detail: { type: 'pod', apiPath: '/api/pod-panel', recordId: podId, recordNo: podNo, onDeleted: () => setRefreshKey((k) => k + 1) } }));
+    return;
+
     if (!confirm(`Are you sure you want to delete POD ${podNo}?`)) return;
 
     setDeleteLoading(podId);
@@ -1096,7 +1099,7 @@ export default function PODPanelList() {
             </p>
           </div>
 
-          <PendingToCreateChip
+          <PendingToCreateChip canCreate={canCreate(MODULE_NAME)}
             endpoint="/api/purchase-panel?for=pod&format=table&count=1"
             singular="POD"
             plural="PODs"
@@ -1189,7 +1192,7 @@ export default function PODPanelList() {
           </div>
         </div>
 
-        <PendingToCreateTable enabled={showPendingToCreate || !appliedFilters.podStatus} endpoint="/api/purchase-panel?for=pod&format=table" createHref="/admin/ProofofDelivery/create" title="Purchases Pending to Create POD" />
+        <PendingToCreateTable canCreate={canCreate(MODULE_NAME)} enabled={showPendingToCreate || !appliedFilters.podStatus} endpoint="/api/purchase-panel?for=pod&format=table" createHref="/admin/ProofofDelivery/create" title="Purchases Pending to Create POD" displayMode="pod" />
 
         {/* PODs Table - Excel Format */}
         <div className={`bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden ${showPendingToCreate ? 'hidden' : ''}`}>

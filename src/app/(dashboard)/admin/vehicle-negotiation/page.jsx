@@ -141,6 +141,9 @@ export default function VehicleNegotiationList() {
       return;
     }
 
+    window.dispatchEvent(new CustomEvent('logistics:delete-impact', { detail: { type: 'vnn', apiPath: '/api/vehicle-negotiation', recordId: vnId, recordNo: vnnNo, onDeleted: fetchNegotiations } }));
+    return;
+
     if (!confirm(`Are you sure you want to delete Vehicle Negotiation ${vnnNo}?`)) {
       return;
     }
@@ -248,7 +251,7 @@ export default function VehicleNegotiationList() {
             </p>
           </div>
 
-          <PendingToCreateChip
+          <PendingToCreateChip canCreate={canCreate(MODULE_NAME)}
             endpoint="/api/vehicle-negotiation?lookup=pendingCount"
             singular="Order Panel"
             plural="Order Panels"
@@ -350,7 +353,7 @@ export default function VehicleNegotiationList() {
           </div>
         </div>
 
-        <PendingToCreateTable enabled={showPendingToCreate || !filters.approvalStatus} endpoint="/api/vehicle-negotiation?lookup=pendingList" createHref="/admin/vehicle-negotiation/create" title="Order Panels Pending to Create Negotiation" />
+        <PendingToCreateTable canCreate={canCreate(MODULE_NAME)} enabled={showPendingToCreate || !filters.approvalStatus} endpoint="/api/vehicle-negotiation?lookup=pendingList" createHref="/admin/vehicle-negotiation/create" title="Order Panels Pending to Create Negotiation" displayMode="vehicle-negotiation" />
 
         {/* Negotiations Table */}
         <div className={`bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden ${showPendingToCreate ? 'hidden' : ''}`}>

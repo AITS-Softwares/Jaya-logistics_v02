@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { identifierFormatError } from "@/lib/identifierFormats";
 import connectDb from "@/lib/db";
 import PurchasePanel from "./PurchasePanel";
+import { handleModuleDelete } from "@/lib/deletion/handler";
 import ConsignmentNote from "../consignment-note/ConsignmentNote";
 import LoadingPanel from "../loading-panel/LoadingPanel";
 import { getLRCompletion, LR_COMPLETION_SELECT } from "../loading-panel/findLRs";
@@ -1171,6 +1172,7 @@ export async function DELETE(req) {
         code: status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN'
       }, { status });
     }
+    return await handleModuleDelete(req, 'purchase', user);
 
     const url = new URL(req.url);
     const id = url.searchParams.get("id");

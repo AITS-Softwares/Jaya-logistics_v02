@@ -100,7 +100,7 @@ export default function LoginPage() {
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-[#0a0a0f] relative overflow-hidden font-sans">
-      
+
       {/* ADVANCED BACKGROUND BLOBS */}
       <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-indigo-600/10 blur-[120px] rounded-full animate-pulse" />
       <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-amber-500/10 blur-[120px] rounded-full animate-pulse delay-700" />
@@ -108,11 +108,11 @@ export default function LoginPage() {
       <ToastContainer position="top-center" theme="dark" />
 
       <div className="w-full max-w-[440px] z-10 px-6">
-        
+
         {/* LOGO AREA */}
         <div className="flex flex-col items-center mb-10">
           <div className="w-16 h-16 bg-indigo-600 rounded-[22px] flex items-center justify-center text-3xl shadow-2xl shadow-indigo-500/20 mb-4 transition-transform hover:scale-110 duration-500">
-             <FiShield className="text-white" />
+            <FiShield className="text-white" />
           </div>
           <h1 className="text-white text-3xl font-black tracking-tighter uppercase">
             Jaya <span className="text-indigo-500">Group</span>
@@ -122,7 +122,7 @@ export default function LoginPage() {
 
         {/* LOGIN CARD */}
         <div className="bg-[#11111d] border border-white/5 shadow-[0_32px_64px_-12px_rgba(0,0,0,0.6)] rounded-[40px] overflow-hidden transition-all duration-500">
-          
+
           {/* TAB SELECTOR */}
           <div className="flex p-2 bg-black/20 gap-1">
             {[
@@ -137,11 +137,10 @@ export default function LoginPage() {
                   setMode(m.id);
                   setForm({ email: '', password: '', operatingCompanyCode: '' });
                 }}
-                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all duration-500 ${
-                  mode === m.id 
-                  ? 'bg-indigo-600 text-white shadow-lg' 
-                  : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
-                }`}
+                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all duration-500 ${mode === m.id
+                    ? 'bg-indigo-600 text-white shadow-lg'
+                    : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
+                  }`}
               >
                 {m.icon} {m.id}
               </button>
@@ -150,7 +149,7 @@ export default function LoginPage() {
 
           <div className="p-10 pt-8">
             <form onSubmit={submit} className="space-y-6">
-              
+
               {/* EMAIL FIELD */}
               <div className="group">
                 <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1 transition-colors group-focus-within:text-indigo-400">Identity Identifier</label>
@@ -239,19 +238,19 @@ export default function LoginPage() {
             </form>
 
             {/* REGISTER LINK */}
-            <div className="mt-8 text-center">
+            {/* <div className="mt-8 text-center">
               <p className="text-slate-600 text-[10px] font-black uppercase tracking-widest">
                 New to the platform? <Link href="/signup" className="text-indigo-500 hover:text-indigo-400 underline decoration-2 underline-offset-4 ml-1">Establish Instance</Link>
               </p>
-            </div>
+            </div> */}
           </div>
 
           {/* FOOTER STRIP */}
           <div className="bg-black/40 py-4 px-8 border-t border-white/5 flex justify-between items-center">
             <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Jaya Group ERP</span>
             <div className="flex gap-2">
-               <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] animate-pulse" />
-               <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Servers Online</span>
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] animate-pulse" />
+              <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Servers Online</span>
             </div>
           </div>
         </div>

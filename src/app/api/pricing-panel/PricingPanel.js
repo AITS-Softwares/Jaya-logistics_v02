@@ -298,6 +298,7 @@
 
 // models/PricingPanel.js
 import mongoose from 'mongoose';
+import softDeletePlugin from '@/lib/softDelete';
 
 const pricingPanelSchema = new mongoose.Schema({
   // Auto-generated pricing serial number
@@ -700,6 +701,7 @@ pricingPanelSchema.pre('save', function(next) {
   next();
 });
 
+pricingPanelSchema.plugin(softDeletePlugin);
 const PricingPanel = mongoose.models.PricingPanel || 
   mongoose.model('PricingPanel', pricingPanelSchema);
 

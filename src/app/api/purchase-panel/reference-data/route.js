@@ -37,6 +37,7 @@ function loadingInfoReference(panel) {
 
   return {
     _id: panel._id,
+    date: panel.date || panel.createdAt || null,
     vehicleArrivalNo: panel.vehicleArrivalNo || "",
     vehicleNegotiationNo: panel.vehicleNegotiationNo || "",
     branch: panel.branchName || panel.branchCode || "",

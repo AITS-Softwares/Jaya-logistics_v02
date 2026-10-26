@@ -998,6 +998,9 @@ export default function ConsignmentNoteList() {
       return;
     }
 
+    window.dispatchEvent(new CustomEvent('logistics:delete-impact', { detail: { type: 'lr', apiPath: '/api/consignment-note', recordId: noteId, recordNo: lrNo, onDeleted: fetchNotes } }));
+    return;
+
     if (!confirm(`Are you sure you want to delete Consignment Note ${lrNo}?`)) {
       return;
     }
@@ -1161,7 +1164,7 @@ export default function ConsignmentNoteList() {
             </p>
           </div>
 
-          <PendingToCreateChip
+          <PendingToCreateChip canCreate={canCreate(MODULE_NAME)}
             endpoint="/api/consignment-note?lookup=pendingCount"
             singular="Consignment Note"
             plural="Consignment Notes"
@@ -1255,7 +1258,7 @@ export default function ConsignmentNoteList() {
           </div>
         </div>
 
-        <PendingToCreateTable enabled={showPendingToCreate || !filters.status} endpoint="/api/consignment-note?lookup=pendingList" createHref="/admin/Consignment-Note/create" title="Orders Pending to Create Consignment Note" />
+        <PendingToCreateTable canCreate={canCreate(MODULE_NAME)} enabled={showPendingToCreate || !filters.status} endpoint="/api/consignment-note?lookup=pendingList" createHref="/admin/Consignment-Note/create" createNoField="orderNo" title="Orders Pending to Create Consignment Note" displayMode="lr" />
 
         {/* Consignment Notes Table */}
         <div className={`bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden ${showPendingToCreate ? 'hidden' : ''}`}>

@@ -10,6 +10,7 @@ import { getNextPODNumber } from "./PODCounter";
 import { activeOperatingCompanyId, companyScopeFilter } from "@/lib/companyScope";
 import Plant from "@/app/api/plants/schema";
 import Company from "@/models/Company";
+import { handleModuleDelete } from "@/lib/deletion/handler";
 import { getPaidAdvanceForPurchase } from "@/lib/advanceSettlement";
 import PurchasePanel from "../purchase-panel/PurchasePanel";
 import { assertValidAmounts } from "@/lib/paymentRules";
@@ -936,6 +937,7 @@ export async function DELETE(req) {
     await connectDb();
     const { user, error, status } = await validateUser(req, "delete");
     if (error) return authFail(error, status);
+    return await handleModuleDelete(req, 'pod', user);
 
     const id = new URL(req.url).searchParams.get("id");
     if (!id) return fail("POD ID is required", 400);

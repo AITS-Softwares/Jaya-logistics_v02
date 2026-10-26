@@ -277,6 +277,7 @@
 
 // models/PurchasePanel.js
 import mongoose from 'mongoose';
+import softDeletePlugin from '@/lib/softDelete';
 
 const purchasePanelSchema = new mongoose.Schema({
   purchaseNo: {
@@ -593,6 +594,7 @@ purchasePanelSchema.pre('save', function (next) {
   next();
 });
 
+purchasePanelSchema.plugin(softDeletePlugin);
 const PurchasePanel = mongoose.models.PurchasePanel ||
   mongoose.model('PurchasePanel', purchasePanelSchema);
 

@@ -903,6 +903,7 @@ import mongoose from 'mongoose';
 import { activeOperatingCompanyId, companyScopeFilter } from "@/lib/companyScope";
 import { deriveBalanceForPod } from "@/lib/advanceSettlement";
 import { assertValidAmounts, BALANCE_STATUSES, SETTLED_BALANCE_STATUSES } from "@/lib/paymentRules";
+import { handleModuleDelete } from "@/lib/deletion/handler";
 
 // ── PERMISSION FUNCTIONS ──
 
@@ -1453,6 +1454,7 @@ export async function DELETE(req) {
         code: status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN'
       }, { status });
     }
+    return await handleModuleDelete(req, 'balance', user);
 
     const url = new URL(req.url);
     const id = url.searchParams.get("id");

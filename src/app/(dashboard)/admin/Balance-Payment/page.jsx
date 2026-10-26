@@ -877,6 +877,9 @@ export default function BalancePaymentList() {
       return;
     }
 
+    window.dispatchEvent(new CustomEvent('logistics:delete-impact', { detail: { type: 'balance', apiPath: '/api/balance-payment', recordId: paymentId, recordNo: paymentNo, onDeleted: fetchPayments } }));
+    return;
+
     if (!confirm(`Are you sure you want to delete Balance Payment ${paymentNo}?`)) {
       return;
     }
@@ -1085,7 +1088,7 @@ export default function BalancePaymentList() {
             <p className="text-sm text-slate-600 mt-1">Manage all balance payments in one place</p>
           </div>
 
-          <PendingToCreateChip
+          <PendingToCreateChip canCreate={canCreate(MODULE_NAME)}
             endpoint="/api/balance-payment/pod-lookup?lookup=pendingCount"
             singular="Balance Payment"
             plural="Balance Payments"
@@ -1144,7 +1147,7 @@ export default function BalancePaymentList() {
           </div>
         </div>
 
-        <PendingToCreateTable enabled={showPendingToCreate || !filters.status} endpoint="/api/balance-payment/pod-lookup" createHref="/admin/Balance-Payment/create" title="PODs Pending to Create Balance Payment" />
+        <PendingToCreateTable canCreate={canCreate(MODULE_NAME)} enabled={showPendingToCreate || !filters.status} endpoint="/api/balance-payment/pod-lookup" createHref="/admin/Balance-Payment/create" title="PODs Pending to Create Balance Payment" displayMode="balance" />
 
         {/* Payments Table */}
         <div className={`bg-white rounded-2xl border border-yellow-400 shadow-sm overflow-hidden ${showPendingToCreate ? 'hidden' : ''}`}>

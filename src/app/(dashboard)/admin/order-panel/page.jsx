@@ -2423,6 +2423,9 @@ export default function OrderPanelList() {
       return;
     }
 
+    window.dispatchEvent(new CustomEvent('logistics:delete-impact', { detail: { type: 'order', apiPath: '/api/order-panel', recordId: orderId, recordNo: orderNo, onDeleted: fetchOrders } }));
+    return;
+
     if (!confirm(`Are you sure you want to delete order ${orderNo}?`)) {
       return;
     }

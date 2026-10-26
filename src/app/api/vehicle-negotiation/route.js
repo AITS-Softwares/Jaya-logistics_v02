@@ -3388,6 +3388,7 @@ import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import { getNextVehicleNegotiationNumber } from "./VehicleNegotiationCounter";
 import { activeOperatingCompanyId, companyScopeFilter } from "@/lib/companyScope";
 import { validateOpenOrderRows } from '@/lib/orderRowStatus';
+import { handleModuleDelete } from '@/lib/deletion/handler';
 import mongoose from 'mongoose';
 import { getFinalVnnStatus, withVnnDisplayData } from '@/lib/vehicleNegotiationWorkflow';
 
@@ -3539,7 +3540,7 @@ export async function GET(req) {
     const pendingLookup = url.searchParams.get("lookup");
     if (pendingLookup === "pendingCount" || pendingLookup === "pendingList") {
       const [orderPanels, negotiations] = await Promise.all([
-        OrderPanel.find(companyScopeFilter(user, { panelStatus: { $in: ['Approved', 'Partially on hold'] } }), { orderPanelNo: 1, plantRows: 1, createdAt: 1 }).lean(),
+        OrderPanel.find(companyScopeFilter(user, { panelStatus: { $in: ['Approved', 'Partially on hold'] } }), { orderPanelNo: 1, plantRows: 1, createdAt: 1, customerName: 1, partyName: 1, branchName: 1 }).lean(),
         VehicleNegotiation.find(companyScopeFilter(user), { orders: 1 }).lean(),
       ]);
       const usedOrders = new Set(negotiations.flatMap((item) => (item.orders || []).map((order) => String(order.orderNo || ""))));
@@ -3549,7 +3550,8 @@ export async function GET(req) {
           _id: panel._id,
           orderNo: panel.orderPanelNo,
           date: panel.createdAt ? new Date(panel.createdAt).toISOString().split('T')[0] : '',
-          partyName: panel.plantRows?.[0]?.partyName || '',
+          partyName: panel.partyName || panel.customerName || panel.plantRows?.[0]?.partyName || '',
+          branchName: panel.branchName || '',
           to: panel.plantRows?.[0]?.toName || panel.plantRows?.[0]?.to || '',
           weight: (panel.plantRows || []).reduce((sum, row) => sum + (Number(row.weight) || 0), 0),
         }));
@@ -4329,6 +4331,7 @@ export async function DELETE(req) {
     if (error) {
       return NextResponse.json({ success: false, message: error, code: status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN' }, { status });
     }
+    return await handleModuleDelete(req, 'vnn', user);
 
     const url = new URL(req.url);
     const id = url.searchParams.get("id");
@@ -4458,7 +4461,15 @@ export async function PATCH(req) {
       }
 
       // Update specific part status
-      if (partToUpdate === 'part1') {
+      if (partToUpdate === 'all') {
+        vehicleNegotiation.approval.part1Status = 'Approved';
+        vehicleNegotiation.approval.part3Status = 'Approved';
+        if (remarks !== undefined) {
+          vehicleNegotiation.approval.part1Remarks = remarks;
+          vehicleNegotiation.approval.part3Remarks = remarks;
+        }
+        vehicleNegotiation.panelStatus = 'Approved';
+      } else if (partToUpdate === 'part1') {
         vehicleNegotiation.approval.part1Status = 'Approved';
         if (remarks !== undefined) vehicleNegotiation.approval.part1Remarks = remarks;
       } else if (partToUpdate === 'part3') {
@@ -4478,7 +4489,7 @@ export async function PATCH(req) {
 
       return NextResponse.json({
         success: true,
-        message: `Part ${partToUpdate} approved successfully`,
+        message: partToUpdate === 'all' ? 'Vehicle negotiation approved successfully' : `Part ${partToUpdate} approved successfully`,
         data: {
           _id: vehicleNegotiation._id,
           vnnNo: vehicleNegotiation.vnnNo,
@@ -4499,7 +4510,15 @@ export async function PATCH(req) {
         }, { status: 409 });
       }
 
-      if (partToUpdate === 'part1') {
+      if (partToUpdate === 'all') {
+        vehicleNegotiation.approval.part1Status = 'Reject';
+        vehicleNegotiation.approval.part3Status = 'Reject';
+        if (remarks !== undefined) {
+          vehicleNegotiation.approval.part1Remarks = remarks;
+          vehicleNegotiation.approval.part3Remarks = remarks;
+        }
+        vehicleNegotiation.panelStatus = 'Rejected';
+      } else if (partToUpdate === 'part1') {
         vehicleNegotiation.approval.part1Status = 'Reject';
         if (remarks !== undefined) vehicleNegotiation.approval.part1Remarks = remarks;
       } else if (partToUpdate === 'part3') {
@@ -4512,7 +4531,7 @@ export async function PATCH(req) {
 
       return NextResponse.json({
         success: true,
-        message: `Part ${partToUpdate} rejected successfully`,
+        message: partToUpdate === 'all' ? 'Vehicle negotiation rejected successfully' : `Part ${partToUpdate} rejected successfully`,
         data: {
           _id: vehicleNegotiation._id,
           vnnNo: vehicleNegotiation.vnnNo,

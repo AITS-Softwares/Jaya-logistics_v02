@@ -933,6 +933,9 @@ export default function LoadingPanelList() {
       return;
     }
 
+    window.dispatchEvent(new CustomEvent('logistics:delete-impact', { detail: { type: 'loading', apiPath: '/api/loading-panel', recordId: panelId, recordNo: vehicleArrivalNo, onDeleted: fetchPanels } }));
+    return;
+
     if (!confirm(`Are you sure you want to delete Loading Panel ${vehicleArrivalNo}?`)) {
       return;
     }
@@ -1087,7 +1090,7 @@ export default function LoadingPanelList() {
             </p>
           </div>
 
-          <PendingToCreateChip
+          <PendingToCreateChip canCreate={canCreate(MODULE_NAME)}
             endpoint="/api/loading-panel/reference-data?lookup=pendingCount"
             singular="Loading Info"
             plural="Loading Info records"
@@ -1184,7 +1187,7 @@ export default function LoadingPanelList() {
           </div>
         </div>
 
-        <PendingToCreateTable enabled={!filters.status} endpoint="/api/loading-panel/reference-data?lookup=pendingList" createHref="/admin/Loading-Info/create" createParam="vnnId" title="Vehicle Negotiations Pending to Create Loading Info" />
+        <PendingToCreateTable canCreate={canCreate(MODULE_NAME)} enabled={!filters.status} endpoint="/api/loading-panel/reference-data?lookup=pendingList" createHref="/admin/Loading-Info/create" createParam="vnnId" title="Vehicle Negotiations Pending to Create Loading Info" displayMode="loading-info" />
 
         {/* Loading Panels Table */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">

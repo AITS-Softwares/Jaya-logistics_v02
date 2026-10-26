@@ -1017,6 +1017,9 @@ export default function AdvancePaymentList() {
       return;
     }
 
+    window.dispatchEvent(new CustomEvent('logistics:delete-impact', { detail: { type: 'advance', apiPath: '/api/Advance-Payment', recordId: paymentId, recordNo: paymentNo, onDeleted: fetchPayments } }));
+    return;
+
     if (!confirm(`Are you sure you want to delete Advance Payment ${paymentNo}?`)) {
       return;
     }
@@ -1229,7 +1232,7 @@ export default function AdvancePaymentList() {
             </p>
           </div>
 
-          <PendingToCreateChip
+          <PendingToCreateChip canCreate={canCreate(MODULE_NAME)}
             endpoint="/api/purchase-panel?for=advance-payment&format=table&count=1"
             singular="Advance"
             plural="Advances"
@@ -1323,7 +1326,7 @@ export default function AdvancePaymentList() {
           </div>
         </div>
 
-        <PendingToCreateTable enabled={showPendingToCreate || !filters.status} endpoint="/api/purchase-panel?for=advance-payment&format=table" createHref="/admin/Advance-Payment/create" title="Purchases Pending to Create Advance Payment" />
+        <PendingToCreateTable canCreate={canCreate(MODULE_NAME)} enabled={showPendingToCreate || !filters.status} endpoint="/api/purchase-panel?for=advance-payment&format=table" createHref="/admin/Advance-Payment/create" title="Purchases Pending to Create Advance Payment" displayMode="advance-payment" />
 
         {/* Payments Table */}
         <div className={`bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden ${showPendingToCreate ? 'hidden' : ''}`}>

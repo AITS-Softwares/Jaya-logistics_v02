@@ -2000,7 +2000,7 @@
   "use client";
 
 import { useMemo, useState, useEffect, useRef, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 /* =========================
   CONSTANTS
@@ -3424,6 +3424,9 @@ function OrdersTable({
 ========================= */
 export default function PricingPanelPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const pendingVnnId = searchParams.get("sourceId");
+  const pendingVnnNo = searchParams.get("sourceNo");
 
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
@@ -3582,6 +3585,16 @@ export default function PricingPanelPage() {
       }
     }
   };
+
+  useEffect(() => {
+    const available = vehicleNegotiationSearch.vehicleNegotiations || [];
+    if (!pendingVnnId && !pendingVnnNo) return;
+    const selected = available.find((item) =>
+      (pendingVnnId && String(item._id) === pendingVnnId) ||
+      (pendingVnnNo && String(item.vnnNo || "").trim().toLowerCase() === pendingVnnNo.trim().toLowerCase())
+    );
+    if (selected) handleSelectVehicleNegotiation(selected);
+  }, [pendingVnnId, pendingVnnNo, vehicleNegotiationSearch.vehicleNegotiations]);
 
   const updateOrder = (id, key, value) => {
     setOrders((prev) => prev.map((r) => (r._id === id ? { ...r, [key]: value } : r)));

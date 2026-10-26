@@ -808,6 +808,7 @@
 // export default VehicleNegotiation;
 
 import mongoose from 'mongoose';
+import softDeletePlugin from '@/lib/softDelete';
 
 const vehicleNegotiationSchema = new mongoose.Schema({
   // Auto-generated vehicle negotiation number (VNN-0001, VNN-0002, etc.)
@@ -1270,6 +1271,7 @@ vehicleNegotiationSchema.pre('save', function(next) {
   next();
 });
 
+vehicleNegotiationSchema.plugin(softDeletePlugin);
 const VehicleNegotiation = mongoose.models.VehicleNegotiation || 
   mongoose.model('VehicleNegotiation', vehicleNegotiationSchema);
 
