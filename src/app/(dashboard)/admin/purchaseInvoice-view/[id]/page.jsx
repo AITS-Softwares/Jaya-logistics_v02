@@ -14,7 +14,10 @@ export default function InvoiceDetail() {
   useEffect(() => {
     const fetchInvoice = async () => {
       try {
-        const res = await axios.get(`/api/purchaseInvoice/${id}`);
+        const token = localStorage.getItem("token");
+        const res = await axios.get(`/api/purchaseInvoice/${id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         setInvoice(res.data.data);
       } catch (error) {
         console.error('Failed to fetch purchaseInvoice:', error);

@@ -13,6 +13,7 @@ import StockMovement from "@/models/StockMovement";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import Counter from "@/models/Counter";
 import { companyPrefix } from "@/lib/documentSequence";
+import { activeOperatingCompanyId, attachOperatingCompany, companyScopeFilter } from "@/lib/companyScope";
 
 
 export const dynamic = 'force-dynamic';
@@ -278,14 +279,23 @@ export async function POST(req) {
     const decoded = verifyJWT(token);
     const companyId = decoded?.companyId;
     if (!decoded?.companyId) throw new Error("Invalid token payload");
+    activeOperatingCompanyId(decoded);
 
     const { fields, files } = await parseForm(req);
     const invoiceData = JSON.parse(fields.invoiceData || "{}");
     const removedFilesPublicIds = JSON.parse(fields.removedFiles || "[]");
     const existingFilesMetadata = JSON.parse(fields.existingFiles || "[]");
 
-    invoiceData.companyId = decoded.companyId;
+    // The UI must never select or overwrite the legal issuer. The selected
+    // operating company in the authenticated session is authoritative.
+    delete invoiceData.companyId;
+    delete invoiceData.createdBy;
+    delete invoiceData.subCompanyId;
+    delete invoiceData.subCompanyName;
+    delete invoiceData.subCompanyCode;
+    delete invoiceData.erpNext;
     delete invoiceData._id;
+    Object.assign(invoiceData, attachOperatingCompany({ companyId: decoded.companyId, createdBy: decoded.id }, decoded));
 
     // ✅ Upload new files
     const newUploadedFiles = await uploadFiles(files.newAttachments || [], "purchase-invoices", decoded.companyId);
@@ -355,7 +365,7 @@ export async function POST(req) {
 
     // ✅ Step: Update GRN or Inventory based on invoiceType
     if (invoiceData.invoiceType?.trim().toLowerCase() === "grncopy") {
-      const grnDoc = await GRN.findById(invoiceData.grn).session(session);
+      const grnDoc = await GRN.findOne(companyScopeFilter(decoded, { _id: invoiceData.grn })).session(session);
       if (grnDoc) {
         grnDoc.status = "Close";
         grnDoc.invoiceId = invoice._id;
@@ -376,7 +386,7 @@ export async function POST(req) {
 
     // ✅ Update linked Purchase Order
     if (invoiceData.purchaseOrderId) {
-      const po = await PurchaseOrder.findById(invoiceData.purchaseOrderId).session(session);
+      const po = await PurchaseOrder.findOne(companyScopeFilter(decoded, { _id: invoiceData.purchaseOrderId })).session(session);
       if (po) {
         let allItemsInvoiced = true;
         for (const poItem of po.items) {
@@ -423,17 +433,18 @@ export async function GET(req) {
     const user = verifyJWT(token);
     if (!user)
       return new Response(JSON.stringify({ message: "Invalid token" }), { status: 403 });
+    activeOperatingCompanyId(user);
 
     const { searchParams } = new URL(req.url);
     const supplierCode = searchParams.get("supplierCode");
 
     // 🛠 Build the query
-    const query = { companyId: user.companyId };
+    const query = {};
     if (supplierCode) {
       query.supplierCode = supplierCode; // ✅ use the direct field
     }
 
-    const invoices = await PurchaseInvoice.find(query).sort({ createdAt: -1 });
+    const invoices = await PurchaseInvoice.find(companyScopeFilter(user, query)).sort({ createdAt: -1 });
 
     return new Response(JSON.stringify({ success: true, data: invoices }), {
       status: 200,

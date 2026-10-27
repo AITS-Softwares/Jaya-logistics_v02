@@ -9,6 +9,7 @@ import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import Supplier from "@/models/SupplierModels";
 import itemModels from "@/models/ItemModels";
 import warehouseModels from "@/models/warehouseModels";
+import { activeOperatingCompanyId, companyScopeFilter } from "@/lib/companyScope";
 
 // Cloudinary config
 cloudinary.config({
@@ -80,7 +81,12 @@ export async function GET(req, { params }) {
       return NextResponse.json({ success: false, message: "Invalid ID" }, { status: 400 });
     }
 
-    const invoice = await PurchaseInvoice.findById(id)
+    const token = getTokenFromHeader(req);
+    if (!token) return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
+    const user = verifyJWT(token);
+    activeOperatingCompanyId(user);
+
+    const invoice = await PurchaseInvoice.findOne(companyScopeFilter(user, { _id: id }))
       .populate("supplier")
       .populate({
         path: "items.item",
@@ -117,6 +123,10 @@ export async function PUT(req, { params }) {
     const token = getTokenFromHeader(req);
     if (!token) throw new Error("Unauthorized");
     const decoded = verifyJWT(token);
+    activeOperatingCompanyId(decoded);
+
+    const existingInvoice = await PurchaseInvoice.findOne(companyScopeFilter(decoded, { _id: id })).session(session);
+    if (!existingInvoice) throw new Error("Invoice not found");
 
     const { fields, files } = await parseForm(req);
     const invoiceData = JSON.parse(fields.invoiceData);
@@ -143,14 +153,16 @@ export async function PUT(req, { params }) {
 
     // Clean up extra fields
     delete invoiceData.removedFiles;
+    delete invoiceData._id;
+    delete invoiceData.companyId;
+    delete invoiceData.createdBy;
+    delete invoiceData.subCompanyId;
+    delete invoiceData.subCompanyName;
+    delete invoiceData.subCompanyCode;
+    delete invoiceData.erpNext;
 
-    const updatedInvoice = await PurchaseInvoice.findByIdAndUpdate(id, invoiceData, {
-      new: true,
-      runValidators: true,
-      session,
-    });
-
-    if (!updatedInvoice) throw new Error("Invoice not found");
+    existingInvoice.set(invoiceData);
+    const updatedInvoice = await existingInvoice.save({ session, validateBeforeSave: true });
 
     await session.commitTransaction();
     session.endSession();
