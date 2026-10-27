@@ -3,6 +3,7 @@ import dbConnect from "@/lib/db.js";
 import Item from "@/models/ItemModels";
 import Customer from "@/models/CustomerModel";
 import ItemGroup from "@/models/ItemGroupModels";
+import UOM from "@/app/api/uoms/schema";
 import { validateMasterDataRequest } from "@/lib/masterDataPermission";
 
 const ITEM_TYPES = new Map([
@@ -10,14 +11,6 @@ const ITEM_TYPES = new Map([
   ["service", "Service"],
   ["raw material", "Raw Material"],
 ]);
-const UOMS = new Map([
-  ["kilogram (kg)", "KG"], ["kg", "KG"],
-  ["metric ton (mtp)", "MTP"], ["mtp", "MTP"],
-  ["piece (pc)", "PC"], ["pc", "PC"],
-  ["liter (ltr)", "LTR"], ["ltr", "LTR"],
-  ["meter (mtr)", "MTR"], ["mtr", "MTR"],
-]);
-
 const normalizeKey = (value) => String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
 const normalizeValue = (value) => String(value ?? "").trim();
 
@@ -62,11 +55,13 @@ export async function POST(req) {
       return NextResponse.json({ success: false, message: "Invalid or empty items array" }, { status: 400 });
     }
 
-    const [customers, itemGroups, lastItem] = await Promise.all([
+    const [customers, itemGroups, uomRecords, lastItem] = await Promise.all([
       Customer.find({ companyId }).select("customerName customerCode").lean(),
       ItemGroup.find({ companyId }).select("name subgroups").lean(),
+      UOM.find({ companyId, isActive: true }).select("name").lean(),
       Item.findOne({ companyId }).sort({ createdAt: -1 }).select("itemCode").lean(),
     ]);
+    const uomsByName = new Map(uomRecords.map((record) => [String(record.name || "").trim().toLocaleLowerCase(), record.name]));
     let nextCodeNumber = lastItem ? parseInt(String(lastItem.itemCode || "").split("-")[1] || "0", 10) + 1 : 1;
     const results = [];
     let createdCount = 0;
@@ -108,7 +103,7 @@ export async function POST(req) {
       if (customerError) errors.push(customerError);
       const normalizedItemType = itemType.toLocaleLowerCase();
       if (itemType && !ITEM_TYPES.has(normalizedItemType)) errors.push(`Item Type '${itemType}' is invalid; use Product, Service, or Raw Material`);
-      const uom = UOMS.get(uomValue.toLocaleLowerCase());
+      const uom = uomsByName.get(uomValue.toLocaleLowerCase());
       if (uomValue && !uom) errors.push(`Unit Of Measure '${uomValue}' is invalid; choose a value from the template dropdown`);
 
       if (errors.length) {
