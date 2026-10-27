@@ -1926,6 +1926,8 @@
 
 // src/app/(dashboard)/admin/layout.js
 "use client";
+import { AdminShowDeletedRecords } from "@/components/ShowDeletedRecords";
+import { AdminDeleteImpactHost } from "@/components/DeleteImpactModal";
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
@@ -3372,8 +3374,10 @@ export default function Layout({ children }) {
         </header>
 
         <main onClick={handleMainClick} className="flex-1 overflow-y-auto bg-[#f8fafc]">
+          <AdminShowDeletedRecords />
           {children}
         </main>
+        <AdminDeleteImpactHost />
       </div >
     </div >
   );

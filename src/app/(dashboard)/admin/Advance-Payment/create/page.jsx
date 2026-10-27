@@ -2082,7 +2082,7 @@ function MemoImage({ filePath, alt, purchaseId, paymentId }) {
 export default function CreateAdvancePayment() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const purchaseNoFromUrl = searchParams.get('purchaseNo');
+  const purchaseNoFromUrl = searchParams.get('purchaseNo') || searchParams.get('sourceNo');
 
   const purchaseHook = usePurchasePanel();
   const vendorHook = useVendors();

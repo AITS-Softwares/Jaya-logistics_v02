@@ -6115,12 +6115,14 @@ function Card({ title, right, children }) {
   );
 }
 
-function Input({ label, value, onChange, col = "", type = "text", readOnly = false, disabled = false }) {
+function Input({ label, value, onChange, col = "", type = "text", readOnly = false, disabled = false, maxLength, inputMode }) {
   return (
     <div className={col}>
       <label className="text-xs font-bold text-slate-600">{label}</label>
       <input
         type={type}
+        maxLength={maxLength}
+        inputMode={inputMode}
         value={value || ""}
         onChange={(e) => onChange?.(e.target.value)}
         readOnly={readOnly}
@@ -7967,6 +7969,11 @@ export default function EditVehicleNegotiation() {
       return false;
     }
 
+    if (canEditPlacement && isPart1Locked && isPart3Finalized && !/^\d{10}$/.test(String(approval.mobile || ""))) {
+      alert("Mobile number must contain exactly 10 digits.");
+      return false;
+    }
+
     setSaving(true);
     setSaveError(null);
     setSaveSuccess(false);
@@ -8933,9 +8940,11 @@ export default function EditVehicleNegotiation() {
               </div>
               <Input
                 col="col-span-12 md:col-span-4"
-                label="Mobile"
+                label="Mobile (10 digits)"
                 value={approval.mobile}
-                onChange={(v) => setApproval((p) => ({ ...p, mobile: v }))}
+                onChange={(v) => setApproval((p) => ({ ...p, mobile: v.replace(/\D/g, "").slice(0, 10) }))}
+                maxLength={10}
+                inputMode="numeric"
                 readOnly={!canEditPlacement}
                 disabled={!canEditPlacement}
               />

@@ -3789,9 +3789,7 @@ export default function ApproveVehicleNegotiation() {
   const audioRef = useRef(null);
 
   const [loading, setLoading] = useState(true);
-  const [savingPart1, setSavingPart1] = useState(false);
-  const [savingPart2, setSavingPart2] = useState(false);
-  const [savingPart3, setSavingPart3] = useState(false);
+  const [savingApproval, setSavingApproval] = useState(false);
   const [purchaseTypes, setPurchaseTypes] = useState([]);
   const [paymentTerms, setPaymentTerms] = useState([]);
   const [branches, setBranches] = useState([]);
@@ -3851,20 +3849,8 @@ export default function ApproveVehicleNegotiation() {
   });
 
   // Separate state for each section's approval
-  const [part1Approval, setPart1Approval] = useState({
-    approvalStatus: "Pending",
-    remarks: ""
-  });
-
-  const [part2Approval, setPart2Approval] = useState({
-    approvalStatus: "Pending",
-    remarks: ""
-  });
-
-  const [part3Approval, setPart3Approval] = useState({
-    approvalStatus: "Pending",
-    remarks: ""
-  });
+  const [approvalDecision, setApprovalDecision] = useState("Pending");
+  const [approvalRemarks, setApprovalRemarks] = useState("");
 
   // Fetch data
   useEffect(() => {
@@ -4025,21 +4011,10 @@ export default function ApproveVehicleNegotiation() {
           paymentTerms: vn.approval.paymentTerms || ""
         });
 
-        // Set each part's approval independently from the database
-        setPart1Approval({
-          approvalStatus: vn.approval.part1Status || "Pending",
-          remarks: vn.approval.part1Remarks || ""
-        });
-
-        setPart2Approval({
-          approvalStatus: vn.approval.part2Status || "Pending",
-          remarks: vn.approval.part2Remarks || ""
-        });
-
-        setPart3Approval({
-          approvalStatus: vn.approval.part3Status || "Pending",
-          remarks: vn.approval.part3Remarks || ""
-        });
+        const part1Status = vn.approval.part1Status || "Pending";
+        const part3Status = vn.approval.part3Status || "Pending";
+        setApprovalDecision(part1Status === part3Status && ["Approved", "Reject"].includes(part1Status) ? part1Status : "Pending");
+        setApprovalRemarks(vn.approval.part1Remarks || vn.approval.part3Remarks || "");
 
         if (vn.approval.vendorName) {
           setSelectedSupplier({ supplierName: vn.approval.vendorName });
@@ -4066,21 +4041,16 @@ export default function ApproveVehicleNegotiation() {
     }
   };
 
-  // ============================================
-  // PART 1 - Using PATCH for approval
-  // ============================================
-  const handleSubmitPart1 = async () => {
-    if (!part1Approval.approvalStatus) {
-      alert("Please select approval status for Part 1");
+  const handleSubmitApproval = async () => {
+    if (!["Approved", "Reject"].includes(approvalDecision)) {
+      alert("Please select Approved or Reject before submitting. Pending cannot be submitted as a decision.");
       return;
     }
 
-    setSavingPart1(true);
+    setSavingApproval(true);
     try {
       const token = localStorage.getItem('token');
-      const action = part1Approval.approvalStatus === 'Approved' ? 'approve' : 'reject';
-
-      // ✅ USE PATCH for approval
+      const action = approvalDecision === 'Approved' ? 'approve' : 'reject';
       const res = await fetch('/api/vehicle-negotiation', {
         method: 'PATCH',
         headers: {
@@ -4089,133 +4059,21 @@ export default function ApproveVehicleNegotiation() {
         },
         body: JSON.stringify({
           id: negotiationId,
-          action: action,
-          part: 'part1',
-          remarks: part1Approval.remarks
+          action,
+          part: 'all',
+          remarks: approvalRemarks,
         }),
       });
 
       const data = await res.json();
-      if (data.success) {
-        alert(`✅ Part 1 ${part1Approval.approvalStatus} successfully!`);
-        // ONLY update Part 1 state
-        setPart1Approval(prev => ({
-          ...prev,
-          approvalStatus: part1Approval.approvalStatus,
-          remarks: part1Approval.remarks
-        }));
-        // Refresh data to get updated status
-        await fetchNegotiationData();
-      } else {
-        alert(data.message || 'Failed to update approval');
-      }
+      if (!res.ok || !data.success) throw new Error(data.message || 'Failed to update approval');
+      alert(`✅ Vehicle Negotiation ${approvalDecision.toLowerCase()} successfully!`);
+      await fetchNegotiationData();
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error updating Vehicle Negotiation approval:', error);
       alert(`Error: ${error.message}`);
     } finally {
-      setSavingPart1(false);
-    }
-  };
-
-  // ============================================
-  // PART 2 - Using PATCH for approval
-  // ============================================
-  const handleSubmitPart2 = async () => {
-    if (!part2Approval.approvalStatus) {
-      alert("Please select approval status for Part 2");
-      return;
-    }
-
-    setSavingPart2(true);
-    try {
-      const token = localStorage.getItem('token');
-      const action = part2Approval.approvalStatus === 'Approved' ? 'approve' : 'reject';
-
-      // ✅ USE PATCH for approval
-      const res = await fetch('/api/vehicle-negotiation', {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          id: negotiationId,
-          action: action,
-          part: 'part2',
-          remarks: part2Approval.remarks
-        }),
-      });
-
-      const data = await res.json();
-      if (data.success) {
-        alert(`✅ Part 2 ${part2Approval.approvalStatus} successfully!`);
-        // ONLY update Part 2 state
-        setPart2Approval(prev => ({
-          ...prev,
-          approvalStatus: part2Approval.approvalStatus,
-          remarks: part2Approval.remarks
-        }));
-        // Refresh data to get updated status
-        await fetchNegotiationData();
-      } else {
-        alert(data.message || 'Failed to update approval');
-      }
-    } catch (error) {
-      console.error('Error:', error);
-      alert(`Error: ${error.message}`);
-    } finally {
-      setSavingPart2(false);
-    }
-  };
-
-  // ============================================
-  // PART 3 - Using PATCH for approval
-  // ============================================
-  const handleSubmitPart3 = async () => {
-    if (!part3Approval.approvalStatus) {
-      alert("Please select approval status for Part 3");
-      return;
-    }
-
-    setSavingPart3(true);
-    try {
-      const token = localStorage.getItem('token');
-      const action = part3Approval.approvalStatus === 'Approved' ? 'approve' : 'reject';
-
-      // ✅ USE PATCH for approval
-      const res = await fetch('/api/vehicle-negotiation', {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          id: negotiationId,
-          action: action,
-          part: 'part3',
-          remarks: part3Approval.remarks
-        }),
-      });
-
-      const data = await res.json();
-      if (data.success) {
-        alert(`✅ Part 3 ${part3Approval.approvalStatus} successfully!`);
-        // ONLY update Part 3 state
-        setPart3Approval(prev => ({
-          ...prev,
-          approvalStatus: part3Approval.approvalStatus,
-          remarks: part3Approval.remarks
-        }));
-        // Refresh data to get updated status
-        await fetchNegotiationData();
-      } else {
-        alert(data.message || 'Failed to update approval');
-      }
-    } catch (error) {
-      console.error('Error:', error);
-      alert(`Error: ${error.message}`);
-    } finally {
-      setSavingPart3(false);
+      setSavingApproval(false);
     }
   };
 
@@ -4271,27 +4129,50 @@ export default function ApproveVehicleNegotiation() {
                 </div>
               </div>
               <div className="text-xs text-green-600 mt-1 font-medium">
-                ⓘ Submit approval for each section separately
+                ⓘ Submit one decision for the full Vehicle Negotiation
               </div>
             </div>
           </div>
         </div>
 
         <div className="mx-auto max-w-full p-4 space-y-4">
-          {/* PART 1 - Vehicle Negotiation - Panel - Part -1 with Approval Fields Editable */}
           <Card
-            title="Vehicle Negotiation - Panel - Part -1"
+            title="Vehicle Negotiation Approval"
             right={
               <button
-                onClick={handleSubmitPart1}
-                disabled={savingPart1}
-                className={`rounded-xl px-4 py-2 text-xs font-bold text-white transition ${savingPart1 ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
-                  }`}
+                onClick={handleSubmitApproval}
+                disabled={savingApproval || !["Approved", "Reject"].includes(approvalDecision)}
+                className="rounded-xl bg-emerald-600 px-5 py-2 text-sm font-bold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-400"
               >
-                {savingPart1 ? 'Saving...' : 'Submit Part 1'}
+                {savingApproval ? 'Submitting...' : 'Submit Approval'}
               </button>
             }
           >
+            <div className="grid grid-cols-12 gap-4">
+              <div className="col-span-12 md:col-span-4">
+                <label className="text-xs font-bold text-slate-600">Approval Decision *</label>
+                <Select
+                  value={approvalDecision}
+                  onChange={setApprovalDecision}
+                  options={APPROVALS}
+                  readOnly={false}
+                />
+              </div>
+              <div className="col-span-12 md:col-span-8">
+                <label className="text-xs font-bold text-slate-600">Approval Remarks</label>
+                <textarea
+                  value={approvalRemarks}
+                  onChange={(event) => setApprovalRemarks(event.target.value)}
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white p-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+                  rows={2}
+                  placeholder="Enter remarks..."
+                />
+              </div>
+            </div>
+          </Card>
+
+          {/* PART 1 - Vehicle Negotiation - Panel - Part -1 with Approval Fields Editable */}
+          <Card title="Vehicle Negotiation - Panel - Part -1">
             <div className="grid grid-cols-12 gap-3 mb-4">
               <Input col="col-span-12 md:col-span-3" label="Vehicle Negotiation No" value={vnnNumber} readOnly={true} />
 
@@ -4324,28 +4205,6 @@ export default function ApproveVehicleNegotiation() {
               <Input col="col-span-12 md:col-span-3" label="Delivery" value={header.delivery} readOnly={true} />
               <Input type="date" col="col-span-12 md:col-span-3" label="Date" value={header.date} readOnly={true} />
 
-              {/* APPROVAL STATUS - PART 1 - Editable */}
-              <Select
-                col="col-span-12 md:col-span-3"
-                label="Approval Status"
-                value={part1Approval.approvalStatus}
-                onChange={(v) => setPart1Approval(prev => ({ ...prev, approvalStatus: v }))}
-                options={APPROVALS}
-                readOnly={false}
-              />
-
-              {/* APPROVAL REMARKS - PART 1 - Editable */}
-              <div className="col-span-12 md:col-span-3">
-                <label className="text-xs font-bold text-slate-600">Approval Remarks</label>
-                <textarea
-                  value={part1Approval.remarks}
-                  onChange={(e) => setPart1Approval(prev => ({ ...prev, remarks: e.target.value }))}
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white p-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-                  rows={1}
-                  placeholder="Enter remarks..."
-                  readOnly={false}
-                />
-              </div>
             </div>
 
             {/* Billing Type / Charges */}
@@ -4377,7 +4236,7 @@ export default function ApproveVehicleNegotiation() {
             </div>
           </Card>
 
-          {/* PART 2 - Rate Target is completed by a validated save, not by approval. */}
+          {/*
           <Card
             title="Vehicle - Negotiation - Part - 2 (Rate-Target)"
           >
@@ -4394,7 +4253,6 @@ export default function ApproveVehicleNegotiation() {
               </div>
             </div>
 
-            {/* Remarks & Voice Note */}
             <div className="grid grid-cols-12 gap-4">
               <div className="col-span-12 md:col-span-7">
                 <div className="rounded-xl border border-slate-200 p-4">
@@ -4416,21 +4274,10 @@ export default function ApproveVehicleNegotiation() {
               </div>
             </div>
           </Card>
+          */}
 
-          {/* PART 3 - VEHICLE APPROVAL - Approval Status and Remarks Editable */}
-          <Card
-            title="Vehicle - Approval - Part - 3"
-            right={
-              <button
-                onClick={handleSubmitPart3}
-                disabled={savingPart3}
-                className={`rounded-xl px-4 py-2 text-xs font-bold text-white transition ${savingPart3 ? 'bg-gray-400 cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-700'
-                  }`}
-              >
-                {savingPart3 ? 'Saving...' : 'Submit Part 3'}
-              </button>
-            }
-          >
+          {/* PART 3 - VEHICLE APPROVAL */}
+          <Card title="Vehicle - Approval - Part - 3">
             <div className="grid grid-cols-12 gap-3 mb-4">
               <div className="col-span-12 md:col-span-4">
                 <label className="text-xs font-bold text-slate-600">Supplier Name</label>
@@ -4455,26 +4302,6 @@ export default function ApproveVehicleNegotiation() {
                 <label className="text-xs font-bold text-slate-600">Purchase Amount (A x B)</label>
                 <div className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-extrabold text-emerald-700">₹{purchaseAmount.toLocaleString('en-IN')}</div>
               </div>
-              <div className="col-span-12 md:col-span-4">
-                <label className="text-xs font-bold text-slate-600">Approval Status</label>
-                <Select
-                  value={part3Approval.approvalStatus}
-                  onChange={(v) => setPart3Approval(prev => ({ ...prev, approvalStatus: v }))}
-                  options={APPROVALS}
-                  readOnly={false}
-                />
-              </div>
-            </div>
-
-            <div className="mb-4">
-              <label className="text-xs font-bold text-slate-600">Approval Remarks</label>
-              <textarea
-                value={part3Approval.remarks}
-                onChange={(e) => setPart3Approval(prev => ({ ...prev, remarks: e.target.value }))}
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-white p-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-                rows={2}
-                placeholder="Enter remarks..."
-              />
             </div>
 
             <div className="grid grid-cols-12 gap-3 mb-4">
@@ -4482,7 +4309,7 @@ export default function ApproveVehicleNegotiation() {
                 <label className="text-xs font-bold text-slate-600">Vehicle Number</label>
                 <Input value={approval.vehicleNo} readOnly={true} />
               </div>
-              <Input col="col-span-12 md:col-span-4" label="Mobile" value={approval.mobile} readOnly={true} />
+              <Input col="col-span-12 md:col-span-4" label="Mobile (10 digits)" value={approval.mobile} readOnly={true} />
             </div>
 
             <div className="grid grid-cols-12 gap-3 mb-4">

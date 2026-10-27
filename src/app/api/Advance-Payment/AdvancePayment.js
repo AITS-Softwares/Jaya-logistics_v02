@@ -253,6 +253,7 @@
 // export default AdvancePayment;
 
 import mongoose from 'mongoose';
+import softDeletePlugin from '@/lib/softDelete';
 
 // ✅ MUST BE DEFINED FIRST - BEFORE using in schema
 function num(value) {
@@ -525,6 +526,7 @@ advancePaymentSchema.pre('save', function(next) {
   next();
 });
 
+advancePaymentSchema.plugin(softDeletePlugin);
 const AdvancePayment = mongoose.models.AdvancePayment || 
   mongoose.model('AdvancePayment', advancePaymentSchema);
 

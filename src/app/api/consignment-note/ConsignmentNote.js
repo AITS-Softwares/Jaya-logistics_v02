@@ -211,6 +211,7 @@
 // export default ConsignmentNote;
 
 import mongoose from 'mongoose';
+import softDeletePlugin from '@/lib/softDelete';
 
 
 
@@ -508,6 +509,7 @@ consignmentNoteSchema.index(
   { unique: true, partialFilterExpression: { orderRowId: { $type: 'string', $gt: '' } } }
 );
 
+consignmentNoteSchema.plugin(softDeletePlugin);
 const ConsignmentNote = mongoose.models.ConsignmentNote ||
   mongoose.model('ConsignmentNote', consignmentNoteSchema);
 

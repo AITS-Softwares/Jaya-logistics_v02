@@ -884,6 +884,7 @@
 
 // app/api/order-panel/OrderPanel.js
 import mongoose from 'mongoose';
+import softDeletePlugin from '@/lib/softDelete';
 
 const orderPanelSchema = new mongoose.Schema({
   // Auto-generated order panel number (OP-0001, OP-0002, etc.)
@@ -1244,5 +1245,6 @@ orderPanelSchema.pre('save', function (next) {
   next();
 });
 
+orderPanelSchema.plugin(softDeletePlugin);
 const OrderPanel = mongoose.models.OrderPanel || mongoose.model('OrderPanel', orderPanelSchema);
 export default OrderPanel;

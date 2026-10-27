@@ -144,7 +144,10 @@ function SalesInvoiceForm() {
   useEffect(() => {
     if (editId && /^[0-9a-fA-F]{24}$/.test(editId)) {
       setLoading(true);
-      axios.get(`/api/sales-invoice/${editId}`)
+      const token = localStorage.getItem("token");
+      axios.get(`/api/sales-invoice/${editId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
         .then(res => {
           const record = res.data.data;
           const items = Array.isArray(record.items)

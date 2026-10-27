@@ -182,6 +182,7 @@
 // export default POD;
 
 import mongoose from 'mongoose';
+import softDeletePlugin from '@/lib/softDelete';
 
 // Product Schema
 const productSchema = new mongoose.Schema({
@@ -418,6 +419,7 @@ podSchema.pre('save', function (next) {
   next();
 });
 
+podSchema.plugin(softDeletePlugin);
 const POD = mongoose.models.POD || mongoose.model('POD', podSchema);
 
 export default POD;

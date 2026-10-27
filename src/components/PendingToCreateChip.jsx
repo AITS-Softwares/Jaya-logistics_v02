@@ -10,10 +10,11 @@ import Link from "next/link";
  *
  * Props: endpoint, singular, plural, href (optional: makes the chip a link), hint (tooltip)
  */
-export default function PendingToCreateChip({ endpoint, singular, plural, href, hint }) {
+export default function PendingToCreateChip({ canCreate = false, endpoint, singular, plural, href, hint }) {
     const [count, setCount] = useState(null);
 
     useEffect(() => {
+        if (!canCreate) return;
         let live = true;
         const refreshCount = async () => {
             try {
@@ -32,8 +33,9 @@ export default function PendingToCreateChip({ endpoint, singular, plural, href, 
             live = false;
             window.removeEventListener("pending-to-create-refresh", handleRefresh);
         };
-    }, [endpoint]);
+    }, [canCreate, endpoint]);
 
+    if (!canCreate) return null;
     if (count === null) return null;
 
     const pending = count > 0;

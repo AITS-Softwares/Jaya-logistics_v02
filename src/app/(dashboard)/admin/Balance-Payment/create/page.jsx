@@ -1899,7 +1899,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 function uid() {
   return Math.random().toString(36).slice(2, 10);
@@ -2209,6 +2209,8 @@ function SummaryCards({ figures, breakdown, finalAmount, isPartial, unpaid }) {
 
 export default function CreateBalancePayment() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const pendingPodNo = searchParams.get("podNo") || searchParams.get("sourceNo");
   const [saving, setSaving] = useState(false);
   const [loadingData, setLoadingData] = useState(false);
   const [loadedMsg, setLoadedMsg] = useState("");
@@ -2377,6 +2379,10 @@ export default function CreateBalancePayment() {
       setLoadingData(false);
     }
   };
+
+  useEffect(() => {
+    if (pendingPodNo) handlePODSelect({ podNo: pendingPodNo });
+  }, [pendingPodNo]);
 
   const removeOrderRow = (rowId) => {
     if (orderRows.length > 1) setOrderRows((prev) => prev.filter((r) => r._id !== rowId));

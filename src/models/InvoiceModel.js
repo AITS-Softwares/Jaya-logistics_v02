@@ -22,6 +22,25 @@ const QualityCheckDetailSchema = new mongoose.Schema(
   { _id: false }
 );
 
+// This is a display/cache summary only. The immutable operation history lives
+// in ErpNextSyncLog; do not store ERPNext credentials or request payloads here.
+const ErpNextReferenceSchema = new mongoose.Schema(
+  {
+    company: { type: String, trim: true, default: "" },
+    doctype: { type: String, trim: true, default: "Purchase Invoice" },
+    name: { type: String, trim: true, default: "" },
+    docstatus: { type: Number, default: null },
+    syncStatus: {
+      type: String,
+      enum: ["not_started", "pending", "processing", "synced", "failed", "requires_review"],
+      default: "not_started",
+    },
+    lastSyncedAt: { type: Date, default: null },
+    lastError: { type: String, trim: true, default: "", maxlength: 500 },
+  },
+  { _id: false }
+);
+
 // Updated Invoice Item Schema with fields from GRNItemSchema.
 const InvoiceItemSchema = new mongoose.Schema(
   {
@@ -61,6 +80,12 @@ const PurchaseInvoiceSchema = new mongoose.Schema(
   {
     companyId: { type: mongoose.Schema.Types.ObjectId, ref: "Company", required: true },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" }, 
+    // Every new invoice belongs to the currently selected legal entity. Older
+    // JGL invoices without this value stay readable only through the explicit
+    // legacy rule in companyScopeFilter.
+    subCompanyId: { type: mongoose.Schema.Types.ObjectId, ref: "SubCompany", default: null },
+    subCompanyName: { type: String, trim: true, default: "" },
+    subCompanyCode: { type: String, trim: true, uppercase: true, default: "" },
     // invoiceNumber: { type: String, unique: true },
     supplier: { type: mongoose.Schema.Types.ObjectId, ref: "Supplier" },
     supplierCode: { type: String },
@@ -114,12 +139,14 @@ const PurchaseInvoiceSchema = new mongoose.Schema(
       uploadedAt: Date,
       publicId: String
     }
-  ]
+  ],
+  erpNext: { type: ErpNextReferenceSchema, default: () => ({}) },
   },
   { timestamps: true }
 );
 
 PurchaseInvoiceSchema.index({ companyId: 1, documentNumberPurchaseInvoice: 1 }, { unique: true });
+PurchaseInvoiceSchema.index({ companyId: 1, subCompanyId: 1, createdAt: -1 });
 
 
 // PurchaseInvoiceSchema.pre("save", async function (next) {

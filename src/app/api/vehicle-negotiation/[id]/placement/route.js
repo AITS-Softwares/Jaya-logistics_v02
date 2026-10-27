@@ -37,6 +37,9 @@ export async function PATCH(req, { params }) {
   if (required.some((key) => !String(data[key] || '').trim())) {
     return NextResponse.json({ success: false, message: 'Vehicle Number, Mobile, Purchase Type, and Payment Terms are required.' }, { status: 422 });
   }
+  if (!/^\d{10}$/.test(String(data.mobile).trim())) {
+    return NextResponse.json({ success: false, message: 'Mobile number must contain exactly 10 digits.' }, { status: 422 });
+  }
 
   await dbConnect();
   const record = await VehicleNegotiation.findOne(companyScopeFilter(auth.user, { _id: id }));

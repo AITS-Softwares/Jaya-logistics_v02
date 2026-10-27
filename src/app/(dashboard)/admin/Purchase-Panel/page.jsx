@@ -932,6 +932,9 @@ export default function PurchasePanelList() {
       return;
     }
 
+    window.dispatchEvent(new CustomEvent('logistics:delete-impact', { detail: { type: 'purchase', apiPath: '/api/purchase-panel', recordId: purchaseId, recordNo: purchaseNo, onDeleted: fetchPurchases } }));
+    return;
+
     if (!confirm(`Are you sure you want to delete Purchase ${purchaseNo}?`)) {
       return;
     }
@@ -1097,7 +1100,7 @@ export default function PurchasePanelList() {
             </p>
           </div>
 
-          <PendingToCreateChip
+          <PendingToCreateChip canCreate={canCreate(MODULE_NAME)}
             endpoint="/api/purchase-panel/reference-data?lookup=pendingCount"
             singular="Purchase"
             plural="Purchases"
@@ -1193,7 +1196,7 @@ export default function PurchasePanelList() {
           </div>
         </div>
 
-        <PendingToCreateTable enabled={showPendingToCreate || !filters.status} endpoint="/api/purchase-panel/reference-data?lookup=pendingList" createHref="/admin/Purchase-Panel/create" title="Loading Infos Pending to Create Purchase" />
+        <PendingToCreateTable canCreate={canCreate(MODULE_NAME)} enabled={showPendingToCreate || !filters.status} endpoint="/api/purchase-panel/reference-data?lookup=pendingList" createHref="/admin/Purchase-Panel/create" title="Loading Infos Pending to Create Purchase" displayMode="purchase" />
 
         {/* Purchases Table */}
         <div className={`bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden ${showPendingToCreate ? 'hidden' : ''}`}>

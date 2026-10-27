@@ -1084,6 +1084,9 @@ export default function PricingPanelList() {
       return;
     }
 
+    window.dispatchEvent(new CustomEvent('logistics:delete-impact', { detail: { type: 'pricing', apiPath: '/api/pricing-panel', recordId: panelId, recordNo: pricingSerialNo, onDeleted: fetchPanels } }));
+    return;
+
     if (!confirm(`Are you sure you want to delete Pricing Panel ${pricingSerialNo}?`)) {
       return;
     }
@@ -1190,7 +1193,7 @@ export default function PricingPanelList() {
             </p>
           </div>
 
-          <PendingToCreateChip
+          <PendingToCreateChip canCreate={canCreate(MODULE_NAME)}
   endpoint="/api/pricing-panel/reference-data?lookup=pendingCount"
   singular="Pricing Panel"
   plural="Pricing Panels"
@@ -1299,7 +1302,7 @@ export default function PricingPanelList() {
           </div>
         </div>
 
-        <PendingToCreateTable enabled={showPendingToCreate || !filters.pricingStatus} endpoint="/api/pricing-panel/reference-data?lookup=pendingList" createHref="/admin/pricing-panel/create" title="Vehicle Negotiations Pending to Create Pricing" />
+        <PendingToCreateTable canCreate={canCreate(MODULE_NAME)} enabled={showPendingToCreate || !filters.pricingStatus} endpoint="/api/pricing-panel/reference-data?lookup=pendingList" createHref="/admin/pricing-panel/create" title="Vehicle Negotiations Pending to Create Pricing" displayMode="pricing" />
 
         {/* Pricing Panels Table */}
         <div className={`bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden ${showPendingToCreate ? 'hidden' : ''}`}>

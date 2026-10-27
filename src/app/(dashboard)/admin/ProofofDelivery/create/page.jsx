@@ -1461,7 +1461,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 function uid() {
   return Math.random().toString(36).slice(2, 10);
@@ -1650,6 +1650,8 @@ function Card({ title, right, children }) {
 
 export default function CreatePOD() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const pendingPurchaseNo = searchParams.get("purchaseNo") || searchParams.get("sourceNo");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [purchases, setPurchases] = useState([]);
@@ -2206,6 +2208,10 @@ ${companyMsg}${subCompanyMsg}${vehicleMsg}${routeMsg}${lrMsg}
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (pendingPurchaseNo) handlePurchaseSelect(pendingPurchaseNo);
+  }, [pendingPurchaseNo]);
 
   useEffect(() => {
     if (allConsignmentNotes.length > 0 && purchaseOrders.length > 0) {

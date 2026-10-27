@@ -1421,6 +1421,7 @@ import { getLRCompletion, LR_COMPLETION_SELECT } from "../loading-panel/findLRs"
 import mongoose from 'mongoose';
 import { activeOperatingCompanyId, companyScopeFilter } from "@/lib/companyScope";
 import { validateOpenOrderRows } from '@/lib/orderRowStatus';
+import { handleModuleDelete } from '@/lib/deletion/handler';
 
 async function includeConsigneeGst(note, user) {
   if (!note || note.consignee?.gstNumber || !note.consignee?.customerId) return note;
@@ -2503,6 +2504,7 @@ export async function DELETE(req) {
         code: status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN'
       }, { status });
     }
+    return await handleModuleDelete(req, 'lr', user);
 
     const url = new URL(req.url);
     const id = url.searchParams.get("id");

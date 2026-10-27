@@ -1166,6 +1166,7 @@ import VehicleNegotiation from '@/app/api/vehicle-negotiation/VehicleNegotiation
 import OrderPanel from '@/app/api/order-panel/OrderPanel';
 import { findLRsForPanel, getLRCompletion, LR_COMPLETION_SELECT } from "./findLRs";
 import { validateOpenOrderRows } from '@/lib/orderRowStatus';
+import { handleModuleDelete } from '@/lib/deletion/handler';
 
 // ── PERMISSION FUNCTIONS ──
 
@@ -2432,6 +2433,7 @@ export async function DELETE(req) {
       code: status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN'
     }, { status });
   }
+  return await handleModuleDelete(req, 'loading', user);
 
   try {
     const url = new URL(req.url);

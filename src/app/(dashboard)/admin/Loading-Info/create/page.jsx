@@ -5165,7 +5165,7 @@
 "use client";
 
 import { useMemo, useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 /** =========================
  * CONSTANTS
@@ -6055,6 +6055,8 @@ function PackTypeTable({ packType, rows, onChange, onRemove, onDuplicate, onTogg
 }
 
 export default function CreateLoadingInfoPanel() {
+  const searchParams = useSearchParams();
+  const pendingVnnNo = searchParams.get("vnnNo") || searchParams.get("sourceNo");
   const router = useRouter();
   const pendingVnnSelectionHandled = useRef(false);
 
@@ -6840,6 +6842,15 @@ export default function CreateLoadingInfoPanel() {
       setShowVehicleNegotiationDropdown(true);
     }
   };
+
+  useEffect(() => {
+    if (!pendingVnnNo || !vehicleNegotiation.negotiations.length) return;
+    const selected = vehicleNegotiation.negotiations.find((item) =>
+      String(item._id) === searchParams.get("vnnId") ||
+      String(item.vnnNo || "").trim().toLowerCase() === pendingVnnNo.trim().toLowerCase()
+    );
+    if (selected) handleSelectVehicleNegotiation(selected);
+  }, [pendingVnnNo, vehicleNegotiation.negotiations]);
 
   const handleVehicleNegotiationInputBlur = () => {
     setTimeout(() => {

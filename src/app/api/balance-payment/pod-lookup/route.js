@@ -200,7 +200,7 @@ export async function GET(req) {
         const data = availablePods.map((p) => {
             const f = derivePodFigures(p, advMap.get(String(p.purchaseNo || "").trim())?.advance || 0);
             return {
-                _id: p._id, podNo: p.podNo, purchaseNo: p.purchaseNo,
+                _id: p._id, date: p.createdAt || null, podNo: p.podNo, purchaseNo: p.purchaseNo,
                 orderNo: [...new Set((p.purchaseOrders || []).map((o) => o.orderNo).filter(Boolean))].join(", "),
                 companyName: p.companyName || "",
                 subCompanyName: p.subCompanyName || "", vendorName: p.vendorFinancial?.vendorName || "",

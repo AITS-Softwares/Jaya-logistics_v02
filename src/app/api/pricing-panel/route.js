@@ -976,6 +976,7 @@ import { getNextPricingSerialNumber } from "./PricingCounter";
 import mongoose from 'mongoose';
 import { activeOperatingCompanyId, companyScopeFilter } from "@/lib/companyScope";
 import { validateOpenOrderRows } from '@/lib/orderRowStatus';
+import { handleModuleDelete } from '@/lib/deletion/handler';
 import VehicleNegotiation from '@/app/api/vehicle-negotiation/VehicleNegotiation';
 import OrderPanel from '@/app/api/order-panel/OrderPanel';
 import LoadingPanel from '@/app/api/loading-panel/LoadingPanel';
@@ -2018,6 +2019,7 @@ export async function DELETE(req) {
       code: status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN'
     }, { status });
   }
+  return await handleModuleDelete(req, 'pricing', user);
 
   try {
     const url = new URL(req.url);

@@ -2135,6 +2135,7 @@ import Plant from "@/app/api/plants/schema";
 import mongoose from 'mongoose';
 import { withAuth, hasPermission } from "@/lib/auth";
 import { getNextOrderPanelNumber } from "./OrderCounter";
+import { handleModuleDelete } from "@/lib/deletion/handler";
 import { companyScopeFilter } from "@/lib/companyScope";
 
 // Register the referenced model before populating plantRows.plantCode below.
@@ -2887,6 +2888,7 @@ export const PUT = withAuth(async (req, context, user) => {
 // ── DELETE: Requires 'delete' permission ──
 export const DELETE = withAuth(async (req, context, user) => {
   await connectDb();
+  return handleModuleDelete(req, 'order', user);
 
   try {
     const url = new URL(req.url);

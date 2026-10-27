@@ -417,6 +417,7 @@
 
 // models/LoadingPanel.js
 import mongoose from 'mongoose';
+import softDeletePlugin from '@/lib/softDelete';
 
 const loadingPanelSchema = new mongoose.Schema({
   // Auto-generated vehicle arrival number
@@ -852,6 +853,7 @@ loadingPanelSchema.index({ vehicleNegotiationNo: 1 });
 loadingPanelSchema.index({ 'vehicleInfo.vehicleNo': 1 });
 loadingPanelSchema.index({ subCompanyId: 1 });
 
+loadingPanelSchema.plugin(softDeletePlugin);
 const LoadingPanel = mongoose.models.LoadingPanel || 
   mongoose.model('LoadingPanel', loadingPanelSchema);
 
