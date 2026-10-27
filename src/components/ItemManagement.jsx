@@ -975,8 +975,10 @@ export default function ItemManagement() {
   const [availableSubgroups, setAvailableSubgroups] = useState([]);
   const [itemGroups, setItemGroups] = useState([]);
   const [customers, setCustomers] = useState([]);
+  const [uoms, setUoms] = useState([]);
+  const [uomsLoading, setUomsLoading] = useState(false);
 
-  useEffect(() => { fetchItems(); fetchItemGroups(); fetchCustomers(); }, []);
+  useEffect(() => { fetchItems(); fetchItemGroups(); fetchCustomers(); fetchUoms(); }, []);
 
   const fetchItems = async () => {
     setLoading(true);
@@ -1009,6 +1011,22 @@ export default function ItemManagement() {
     } catch (error) {
       console.error("Error fetching customers:", error);
       toast.error(error.response?.data?.message || "Failed to load customers for item linking");
+    }
+  };
+
+  const fetchUoms = async () => {
+    setUomsLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.get("/api/uoms", { headers: { Authorization: `Bearer ${token}` } });
+      if (res.data.success) setUoms(res.data.data || []);
+      else throw new Error(res.data.message || "Failed to load units of measure");
+    } catch (error) {
+      console.error("Error fetching UOMs for Item Master:", error);
+      toast.error(error.response?.data?.message || error.message || "Failed to load units of measure");
+      setUoms([]);
+    } finally {
+      setUomsLoading(false);
     }
   };
 
@@ -1451,12 +1469,10 @@ export default function ItemManagement() {
             <div>
               <Lbl text="Unit of Measure" req />
               <select className={fi("uom")} name="uom" value={id.uom || ""} onChange={handleChange}>
-                <option value="">Select UOM…</option>
-                <option value="KG">Kilogram (KG)</option>
-                <option value="MTP">Metric Ton (MTP)</option>
-                <option value="PC">Piece (PC)</option>
-                <option value="LTR">Liter (LTR)</option>
-                <option value="MTR">Meter (MTR)</option>
+                <option value="">{uomsLoading ? "Loading UOMs…" : "Select UOM…"}</option>
+                {uoms.map((uom) => (
+                  <option key={uom._id} value={uom.name}>{uom.name}</option>
+                ))}
               </select>
               <Err k="uom" />
             </div>

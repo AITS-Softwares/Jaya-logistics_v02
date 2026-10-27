@@ -4,10 +4,10 @@ import * as XLSX from "xlsx";
 import dbConnect from "@/lib/db";
 import Customer from "@/models/CustomerModel";
 import ItemGroup from "@/models/ItemGroupModels";
+import UOM from "@/app/api/uoms/schema";
 import { validateMasterDataRequest } from "@/lib/masterDataPermission";
 
 const ITEM_TYPES = ["Product", "Service", "Raw Material"];
-const UOMS = ["Kilogram (KG)", "Metric Ton (MTP)", "Piece (PC)", "Liter (LTR)", "Meter (MTR)"];
 
 function crc32(buffer) {
   let crc = 0xffffffff;
@@ -117,9 +117,10 @@ export async function GET(req) {
   const { user, error, status } = await validateMasterDataRequest(req, "view", "Items");
   if (error) return NextResponse.json({ success: false, message: error }, { status });
 
-  const [groups, customers] = await Promise.all([
+  const [groups, customers, uoms] = await Promise.all([
     ItemGroup.find({ companyId: user.companyId }).sort({ name: 1 }).lean(),
     Customer.find({ companyId: user.companyId }).select("customerName customerCode").sort({ customerName: 1 }).lean(),
+    UOM.find({ companyId: user.companyId, isActive: true }).select("name").sort({ name: 1 }).lean(),
   ]);
   const subgroups = [...new Set(groups.flatMap((group) => group.subgroups || []).map((name) => String(name).trim()).filter(Boolean))]
     .sort((a, b) => a.localeCompare(b));
@@ -128,7 +129,7 @@ export async function GET(req) {
     { column: "J", values: subgroups, target: "C2:C1000" },
     { column: "K", values: customers.map((customer) => `${customer.customerName}${customer.customerCode ? ` (${customer.customerCode})` : ""}`), target: "D2:D1000" },
     { column: "L", values: ITEM_TYPES, target: "F2:F1000" },
-    { column: "M", values: UOMS, target: "G2:G1000" },
+    { column: "M", values: uoms.map((uom) => uom.name), target: "G2:G1000" },
   ];
   const workbook = XLSX.utils.book_new();
   const rows = [[
