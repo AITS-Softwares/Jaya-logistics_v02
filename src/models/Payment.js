@@ -2,6 +2,26 @@ import mongoose from "mongoose";
 
 const { Schema } = mongoose;
 
+// This is a small display/cache pointer only. Detailed ERPNext attempts live
+// in ErpNextSyncLog so credentials, payloads and raw responses never become
+// part of a financial document.
+const ERPNextPaymentReferenceSchema = new Schema(
+  {
+    company: { type: String, trim: true, default: "" },
+    doctype: { type: String, trim: true, default: "Payment Entry" },
+    name: { type: String, trim: true, default: "" },
+    docstatus: { type: Number, min: 0, max: 2, default: null },
+    syncStatus: {
+      type: String,
+      enum: ["not_started", "pending", "processing", "synced", "failed", "requires_review"],
+      default: "not_started",
+    },
+    lastSyncedAt: { type: Date, default: null },
+    lastError: { type: String, trim: true, default: "", maxlength: 500 },
+  },
+  { _id: false }
+);
+
 // Payment Reference Schema (linked to an invoice)
 const PaymentReferenceSchema = new Schema(
   {
@@ -20,6 +40,12 @@ const PaymentReferenceSchema = new Schema(
 const PaymentSchema = new Schema(
   {
     companyId: { type: Schema.Types.ObjectId, required: true, ref: "Company" },
+    // Every new payment is owned by the legal operating company selected in
+    // the authenticated workspace. Records without this value remain legacy
+    // JGL records only through the explicit companyScopeFilter fallback.
+    subCompanyId: { type: Schema.Types.ObjectId, ref: "SubCompany", default: null, index: true },
+    subCompanyName: { type: String, trim: true, default: "" },
+    subCompanyCode: { type: String, trim: true, uppercase: true, default: "" },
     createdBy: { type: Schema.Types.ObjectId,  ref: "User" },
     paymentNumber: { type: String, unique: true },
     paymentDate: { type: Date, default: Date.now },
@@ -39,6 +65,8 @@ const PaymentSchema = new Schema(
     // List of invoices this payment is applied to
     references: { type: [PaymentReferenceSchema], default: [] },
 
+    erpNext: { type: ERPNextPaymentReferenceSchema, default: () => ({}) },
+
     status: {
       type: String,
       enum: ["Pending", "Completed", "Cancelled"],
@@ -47,6 +75,8 @@ const PaymentSchema = new Schema(
   },
   { timestamps: true }
 );
+
+PaymentSchema.index({ companyId: 1, subCompanyId: 1, paymentDate: -1 });
 
 // Auto-generate payment number (like PAY-001)
 PaymentSchema.pre("save", async function (next) {

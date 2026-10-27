@@ -6,6 +6,24 @@ import { type } from "os";
 
 const { Schema } = mongoose;
 
+// This is a lightweight local pointer to the authoritative ERPNext Sales
+// Invoice. Detailed attempts and errors live in ErpNextSyncLog so the invoice
+// itself never stores request payloads, tokens, or raw external responses.
+const ERPNextSalesInvoiceSchema = new Schema(
+  {
+    doctype: { type: String, default: "Sales Invoice" },
+    name: { type: String, trim: true, default: "" },
+    docstatus: { type: Number, min: 0, max: 2, default: null },
+    syncStatus: {
+      type: String,
+      enum: ["not_started", "pending", "processing", "synced", "failed", "requires_review"],
+      default: "not_started",
+    },
+    lastSyncedAt: { type: Date, default: null },
+  },
+  { _id: false }
+);
+
 // Schema for batch details (embedded, no separate _id)
 const BatchSchema = new Schema(
   {
@@ -60,6 +78,12 @@ const SalesInvoiceItemSchema = new Schema(
 const SalesInvoiceSchema = new Schema(
   {
     companyId: { type: Schema.Types.ObjectId, ref: "Company", required: true },
+    // The selected operating company is the legal issuer. New invoices always
+    // receive these values from the authenticated server-side workspace, never
+    // from client-provided form data.
+    subCompanyId: { type: Schema.Types.ObjectId, ref: "SubCompany", default: null, index: true },
+    subCompanyName: { type: String, trim: true, default: "" },
+    subCompanyCode: { type: String, trim: true, uppercase: true, default: "" },
     createdBy: { type: Schema.Types.ObjectId, ref: "User" },
     branchId: { type: Schema.Types.ObjectId, ref: "Branch"},
     branchName: { type: String,  },
@@ -98,6 +122,7 @@ const SalesInvoiceSchema = new Schema(
     // For handling copies:
     sourceId: { type: Schema.Types.ObjectId },
     sourceModel: { type: String, enum: ["salesorder", "delivery"] },
+    erpNext: { type: ERPNextSalesInvoiceSchema, default: () => ({}) },
     attachments: [
       { 
        
@@ -112,6 +137,7 @@ const SalesInvoiceSchema = new Schema(
 );
 
 SalesInvoiceSchema.index({ invoiceNumber: 1, companyId: 1 }, { unique: true });
+SalesInvoiceSchema.index({ companyId: 1, subCompanyId: 1, createdAt: -1 });
 
 
 /* per‑tenant auto‑increment */

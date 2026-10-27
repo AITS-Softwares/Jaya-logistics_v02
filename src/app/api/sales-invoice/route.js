@@ -12,6 +12,7 @@ import { v2 as cloudinary } from "cloudinary";
 import Counter from "@/models/Counter";
 import { companyPrefix } from "@/lib/documentSequence";
 import { identifierFormatError } from "@/lib/identifierFormats";
+import { activeOperatingCompanyId, companyScopeFilter } from "@/lib/companyScope";
 
 export const config = { api: { bodyParser: false } };
 
@@ -22,6 +23,44 @@ cloudinary.config({
 });
 
 const { Types } = mongoose;
+
+function json(body, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+// Sales invoices are legal-entity records. A parent-tenant token without an
+// active operating-company workspace may use master screens but cannot create,
+// list, or edit invoices.
+function getScopedUser(req) {
+  const token = getTokenFromHeader(req);
+  if (!token) return { response: json({ success: false, message: "Unauthorized" }, 401) };
+
+  try {
+    const user = verifyJWT(token);
+    if (!user?.companyId) return { response: json({ success: false, message: "Invalid token" }, 401) };
+    if (!user.activeOperatingCompanyId || !user.activeOperatingCompanyCode) {
+      return { response: json({ success: false, message: "Select an operating company before working with Sales Invoices." }, 400) };
+    }
+    activeOperatingCompanyId(user);
+    return { user };
+  } catch {
+    return { response: json({ success: false, message: "Unauthorized" }, 401) };
+  }
+}
+
+function stripServerOwnedFields(data) {
+  for (const key of Object.keys(data || {})) {
+    if (
+      ["_id", "__v", "companyId", "subCompanyId", "subCompanyName", "subCompanyCode", "createdBy", "invoiceNumber", "erpNext"].includes(key)
+      || key.startsWith("erpNext.")
+    ) {
+      delete data[key];
+    }
+  }
+}
 
 // --- Helpers ---
 async function toNodeReq(request) {
@@ -108,24 +147,29 @@ export async function POST(req) {
   await dbConnect();
 
   try {
-    const token = getTokenFromHeader(req);
-    if (!token) throw new Error("Unauthorized: No token provided");
-    const user = verifyJWT(token);
-    if (!user?.companyId) throw new Error("Invalid token payload");
+    const auth = getScopedUser(req);
+    if (auth.response) return auth.response;
+    const { user } = auth;
 
     const { fields, files } = await parseMultipart(req);
     const invoiceData = JSON.parse(fields.invoiceData || "{}");
     const formatError = identifierFormatError(invoiceData);
     if (formatError) return new Response(JSON.stringify({ success: false, message: formatError }), { status: 400, headers: { "Content-Type": "application/json" } });
+    // Never allow a browser to choose the legal issuer, alter the generated
+    // number, or write ERPNext status fields directly.
+    stripServerOwnedFields(invoiceData);
     const isFromDelivery = invoiceData.sourceModel?.toLowerCase() === 'delivery';
 
     // 1. Validate stock before transaction
     if (!isFromDelivery) await validateStockAvailability(invoiceData.items);
 
     // 2. Upload files **outside transaction**
-    const newFiles = Array.isArray(files.newAttachments)
-      ? files.newAttachments
-      : files.newAttachments ? [files.newAttachments] : [];
+    // The active UI uses `newFiles`; retain `newAttachments` while older
+    // screens are still present so no client-side migration is required.
+    const newFiles = ["newFiles", "newAttachments"].flatMap((fieldName) => {
+      const value = files[fieldName];
+      return Array.isArray(value) ? value : value ? [value] : [];
+    });
     const uploadedFiles = await Promise.all(
       newFiles.map(async (file) => {
         const result = await cloudinary.uploader.upload(file.filepath, { folder: "invoices", resource_type: "auto" });
@@ -154,6 +198,9 @@ export async function POST(req) {
 
       invoiceData.invoiceNumber = `${companyPrefix(user)}/SALES-INV/${financialYear}/${String(counterDoc.seq).padStart(5, "0")}`;
       invoiceData.companyId = user.companyId;
+      invoiceData.subCompanyId = user.activeOperatingCompanyId;
+      invoiceData.subCompanyName = user.activeOperatingCompanyName || "";
+      invoiceData.subCompanyCode = user.activeOperatingCompanyCode;
 
       const [invoice] = await SalesInvoice.create([invoiceData], { session });
 
@@ -430,24 +477,17 @@ export async function GET(req) {
   try {
     await dbConnect();
 
-    // ✅ Authenticate request
-    const token = getTokenFromHeader(req);
-    if (!token)
-      return new Response(JSON.stringify({ message: "Unauthorized" }), { status: 401 });
-
-    const user = verifyJWT(token);
-    if (!user)
-      return new Response(JSON.stringify({ message: "Invalid token" }), { status: 403 });
+    const auth = getScopedUser(req);
+    if (auth.response) return auth.response;
+    const { user } = auth;
 
     // ✅ Parse query params
     const { searchParams } = new URL(req.url);
     const customerCode = searchParams.get("customerCode");
 
-    // ✅ Build secure query scoped to user's company
-    const query = { companyId: user.companyId };
-    if (customerCode) {
-      query.customerCode = customerCode;
-    }
+    // Keep JGL's defined legacy visibility while isolating all new invoices
+    // to the selected legal operating company.
+    const query = companyScopeFilter(user, customerCode ? { customerCode } : {});
 
     // ✅ Fetch and populate
     const invoices = await SalesInvoice.find(query)
