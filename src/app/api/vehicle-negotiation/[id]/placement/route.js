@@ -54,7 +54,7 @@ export async function PATCH(req, { params }) {
   if (record.approval?.part3Status !== 'Approved') {
     return NextResponse.json({ success: false, message: 'Vehicle placement becomes available only after Part 3 approval.' }, { status: 409 });
   }
-  const wasReadyForDownstream = isVnnReadyForDownstream(record);
+  // const wasReadyForDownstream = isVnnReadyForDownstream(record);
 
   record.approval.vehicleNo = String(data.vehicleNo).trim();
   record.approval.mobile = String(data.mobile).trim();
