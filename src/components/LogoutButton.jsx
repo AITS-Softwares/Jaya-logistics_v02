@@ -1,14 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { unsubscribeCurrentBrowserPush } from "@/lib/clientPush";
 
 export default function LogoutButton() {
   const router = useRouter();
 
-  const handleLogout = async () => {
-    const token = localStorage.getItem("token");
-    await unsubscribeCurrentBrowserPush(token);
+  const handleLogout = () => {
     // ✅ Token aur user dono clear karo
     localStorage.removeItem("token");
     localStorage.removeItem("user");
