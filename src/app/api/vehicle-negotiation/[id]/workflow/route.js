@@ -4,6 +4,7 @@ import dbConnect from '@/lib/db';
 import VehicleNegotiation from '@/app/api/vehicle-negotiation/VehicleNegotiation';
 import { getTokenFromHeader, verifyJWT } from '@/lib/auth';
 import { activeOperatingCompanyId, companyScopeFilter } from '@/lib/companyScope';
+import { isVnnReadyForDownstream } from '@/lib/vehicleNegotiationWorkflow';
 
 function authorize(req) {
   const token = getTokenFromHeader(req);
@@ -32,6 +33,10 @@ export async function PATCH(req, { params }) {
   await dbConnect();
   const record = await VehicleNegotiation.findOne(companyScopeFilter(auth.user, { _id: id }));
   if (!record) return NextResponse.json({ success: false, message: 'Vehicle Negotiation not found.' }, { status: 404 });
+  if (record.upstreamPending?.length || record.reapprovalState === 'blockedByUpstream') return NextResponse.json({ success: false, message: 'This Vehicle Negotiation is blocked by an upstream correction.' }, { status: 409 });
+  if (record.reapprovalState === 'syncFailed') return NextResponse.json({ success: false, message: 'This Vehicle Negotiation is waiting for approval or admin sync recovery.' }, { status: 409 });
+  if (body.action === 'amend-part1' && record.approval?.part3Status === 'Approved' && !['unlocked', 'pendingReapproval'].includes(record.reapprovalState)) return NextResponse.json({ success: false, message: 'An admin must unlock this approved record before Parts 1 and 3 can be amended.' }, { status: 409 });
+  if (body.action === 'lock-part1' && isVnnReadyForDownstream(record) && record.reapprovalState !== 'unlocked') return NextResponse.json({ success: false, message: 'Approved Vehicle Negotiations are locked. Ask an admin to unlock this record first.' }, { status: 409 });
   record.workflow = record.workflow || { audit: [] };
   record.workflow.audit = record.workflow.audit || [];
 
@@ -40,11 +45,13 @@ export async function PATCH(req, { params }) {
     record.workflow.part1Locked = true;
     record.workflow.part1LockedAt = new Date();
     record.workflow.part1LockedBy = auth.user.id || null;
-    record.panelStatus = record.panelStatus === 'Draft' ? 'Submitted' : record.panelStatus;
+    record.panelStatus = 'Submitted';
+    record.approval.part1Status = 'Pending';
+    record.approval.part3Status = 'Pending';
+    if (['unlocked', 'pendingReapproval'].includes(record.reapprovalState)) record.reapprovalState = 'pendingApproval';
     record.workflow.audit.push({ action: 'part1-locked', by: auth.user.id || null, at: new Date() });
   } else {
     if (!record.workflow.part1Locked) return NextResponse.json({ success: false, message: 'Only a locked Part 1 can be amended.' }, { status: 409 });
-    if (record.pricingPanelId) return NextResponse.json({ success: false, message: 'This record is already used by Pricing Panel and cannot be amended.' }, { status: 409 });
     const reason = String(body.reason || '').trim();
     if (!reason) return NextResponse.json({ success: false, message: 'An amendment reason is required.' }, { status: 422 });
     record.workflow.part1Locked = false;
@@ -55,26 +62,12 @@ export async function PATCH(req, { params }) {
     record.workflow.lastAmendedAt = new Date();
     record.workflow.lastAmendedBy = auth.user.id || null;
     record.workflow.audit.push({ action: 'part1-amended', reason, by: auth.user.id || null, at: new Date() });
-    record.negotiation.maxRate = 0;
-    record.negotiation.targetRate = 0;
-    record.negotiation.oldRatePercent = '';
-    record.negotiation.remarks1 = '';
-    record.voiceNote = '';
-    record.voiceNoteFile = null;
-    record.workflow.rateTargetCompletedAt = null;
-    record.workflow.rateTargetCompletedBy = null;
-    record.workflow.rateTargetLastSavedAt = null;
-    record.workflow.placementCompletedAt = null;
-    record.workflow.placementCompletedBy = null;
     record.approval.part1Status = 'Pending';
     record.approval.part1Remarks = '';
     record.approval.part3Status = 'Pending';
     record.approval.part3Remarks = '';
-    record.approval.vehicleNo = '';
-    record.approval.mobile = '';
-    record.approval.purchaseType = '';
-    record.approval.paymentTerms = '';
-    record.panelStatus = 'Submitted';
+    record.panelStatus = 'Draft';
+    record.reapprovalState = 'unlocked';
     record.workflow.audit.push({ action: 'reapproval-required', reason, by: auth.user.id || null, at: new Date() });
   }
 

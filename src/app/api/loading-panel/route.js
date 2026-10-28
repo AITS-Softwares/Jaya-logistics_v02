@@ -1161,12 +1161,14 @@ import LoadingPanel from "./LoadingPanel";
 import { getNextLoadingNumber } from "./LoadingCounter";
 import mongoose from 'mongoose';
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
+import { assertSourcesCurrent, captureSourceDependencies, recordApprovedRevision } from '@/lib/reapprovalService';
 import { activeOperatingCompanyId, companyScopeFilter } from "@/lib/companyScope";
 import VehicleNegotiation from '@/app/api/vehicle-negotiation/VehicleNegotiation';
 import OrderPanel from '@/app/api/order-panel/OrderPanel';
 import { findLRsForPanel, getLRCompletion, LR_COMPLETION_SELECT } from "./findLRs";
 import { validateOpenOrderRows } from '@/lib/orderRowStatus';
 import { handleModuleDelete } from '@/lib/deletion/handler';
+import { notifyModuleCreateUsers, notifyModuleApprovers } from '@/lib/workflowNotifications';
 
 // ── PERMISSION FUNCTIONS ──
 
@@ -1267,6 +1269,17 @@ function indiaUploadDateTime(timestamp = new Date()) {
 
 function isValidObjectId(id) {
   return id && mongoose.Types.ObjectId.isValid(id);
+}
+
+async function notifyConsignmentNoteTeamLoadingInfoReady(user, loadingInfo) {
+  return notifyModuleCreateUsers({
+    user,
+    module: 'Consignment Note',
+    panelLabel: 'Loading Info',
+    reference: loadingInfo.vehicleArrivalNo,
+    readyMessage: `Loading Info ${loadingInfo.vehicleArrivalNo} is ready for LR creation.`,
+    url: '/admin/Consignment-Note',
+  });
 }
 
 // Uploaded slips are stored as ".../<Date.now()>-<uuid>-<name>", so for records saved
@@ -1653,9 +1666,12 @@ export async function POST(req) {
         'approval.mobile': { $exists: true, $ne: '' },
         'approval.purchaseType': { $exists: true, $ne: '' },
         'approval.paymentTerms': { $exists: true, $ne: '' },
-      })).select('_id orders').lean();
+      })).select('_id orders reapprovalState').lean();
       if (!approvedVnn) {
         return NextResponse.json({ success: false, message: 'Only Part 3 approved Vehicle Negotiations with completed vehicle placement can be used for Loading.' }, { status: 409 });
+      }
+      if (['unlocked', 'pendingApproval', 'pendingReapproval', 'blockedByUpstream', 'syncFailed'].includes(approvedVnn.reapprovalState)) {
+        return NextResponse.json({ success: false, message: `Vehicle Negotiation ${selectedVnnNo || ''} is under correction or awaiting reapproval. Loading creation is paused.` }, { status: 409 });
       }
       const heldNegotiationRow = await validateOpenOrderRows(user, approvedVnn.orders || []);
       if (heldNegotiationRow) return NextResponse.json({ success: false, message: heldNegotiationRow }, { status: 409 });
@@ -2074,6 +2090,7 @@ export async function POST(req) {
     // Create and save
     const newLoadingPanel = new LoadingPanel(loadingPanelData);
     const savedPanel = await newLoadingPanel.save({ validateBeforeSave: !isDraftSave });
+    if (!isDraftSave) await captureSourceDependencies('loading', savedPanel, user.companyId);
 
     console.log("✅ Loading panel saved successfully, ID:", savedPanel._id);
 
@@ -2148,6 +2165,16 @@ export async function PUT(req) {
       }, { status: 404 });
     }
 
+    if (existingPanel.upstreamPending?.length || existingPanel.reapprovalState === 'blockedByUpstream') {
+      return NextResponse.json({ success: false, message: 'This record is waiting for upstream corrections to be reviewed first.' }, { status: 409 });
+    }
+    if (existingPanel.reapprovalState === 'pendingApproval' || existingPanel.reapprovalState === 'syncFailed') return NextResponse.json({ success: false, message: 'This Loading Info is waiting for approval or admin sync recovery.' }, { status: 409 });
+    const isApprovedLocked = ['Approved', 'Completed'].includes(existingPanel.panelStatus);
+    const isReapprovalEdit = ['unlocked', 'pendingApproval', 'pendingReapproval'].includes(existingPanel.reapprovalState);
+    if (isApprovedLocked && !isReapprovalEdit) {
+      return NextResponse.json({ success: false, message: 'Approved Loading Info is locked. Ask an admin to unlock it before editing.' }, { status: 409 });
+    }
+
     const wasDraft = !!existingPanel.isDraft || existingPanel.panelStatus === 'Draft';
     if (saveMode && !['draft', 'submit'].includes(saveMode)) {
       return NextResponse.json({ success: false, message: "Invalid saveMode" }, { status: 400 });
@@ -2158,7 +2185,7 @@ export async function PUT(req) {
     if (saveMode === 'submit' && !hasPermission(user, 'create')) {
       return NextResponse.json({ success: false, message: "Permission denied: create action required to submit a Loading Info draft." }, { status: 403 });
     }
-    if ((saveMode === 'draft' || saveMode === 'submit') && !wasDraft) {
+    if ((saveMode === 'draft' || saveMode === 'submit') && !wasDraft && !(isReapprovalEdit && saveMode === 'submit')) {
       return NextResponse.json({ success: false, message: "Only a draft can be saved as draft or submitted" }, { status: 400 });
     }
     if (!saveMode && wasDraft) {
@@ -2170,6 +2197,11 @@ export async function PUT(req) {
     } else if (saveMode === 'submit') {
       updateData.isDraft = false;
       updateData.panelStatus = 'Submitted';
+    }
+    if (isReapprovalEdit && saveMode !== 'draft') {
+      updateData.isDraft = false;
+      updateData.panelStatus = 'Submitted';
+      updateData.reapprovalState = 'pendingApproval';
     }
 
     // Merge vehicleInfo instead of replacing it, and never let a save blank the vehicle number.
@@ -2393,6 +2425,17 @@ export async function PUT(req) {
       { new: true, runValidators: saveMode !== 'draft' }
     );
 
+    if (saveMode === 'submit' && (wasDraft || isReapprovalEdit) && updatedPanel?.panelStatus === 'Submitted') {
+      await notifyConsignmentNoteTeamLoadingInfoReady(user, updatedPanel);
+      await notifyModuleApprovers({
+        user,
+        module: 'Loading Info',
+        panelLabel: 'Loading Info',
+        reference: updatedPanel.vehicleArrivalNo,
+        url: `/admin/Loading-Info/${updatedPanel._id}`,
+      });
+    }
+
     return NextResponse.json({
       success: true,
       message: "Loading panel updated successfully",
@@ -2507,6 +2550,54 @@ export async function PATCH(req) {
       }, { status: 404 });
     }
 
+    if (action === 'approve') {
+      const orderMarkers = (loadingPanel.upstreamPending || []).filter((marker) => marker.panel === 'order');
+      if (orderMarkers.length && loadingPanel.vehicleNegotiationNo) {
+        const markerOrderIds = orderMarkers.map((marker) => String(marker.recordId || '')).filter((value) => mongoose.isValidObjectId(value));
+        const markerOrderNos = orderMarkers.map((marker) => String(marker.recordNo || '')).filter(Boolean);
+        const orderFilters = [
+          ...(markerOrderIds.length ? [{ _id: { $in: markerOrderIds } }] : []),
+          ...(markerOrderNos.length ? [{ orderPanelNo: { $in: markerOrderNos } }] : []),
+        ];
+        const [orders, vnn] = await Promise.all([
+          orderFilters.length
+            ? OrderPanel.find({ companyId: user.companyId, $or: orderFilters }).select('_id orderPanelNo reapprovalState panelStatus status').lean()
+            : Promise.resolve([]),
+          VehicleNegotiation.findOne({ companyId: user.companyId, vnnNo: loadingPanel.vehicleNegotiationNo })
+            .select('_id orders reapprovalState panelStatus status').lean(),
+        ]);
+        const approvedOrderKeys = new Set(orders.filter((order) =>
+          (!order.reapprovalState || order.reapprovalState === 'none')
+          && ['Approved', 'Completed'].includes(order.panelStatus || order.status)
+        ).flatMap((order) => [`id:${String(order._id)}`, `no:${String(order.orderPanelNo || '')}`]));
+        const resolvedOrderMarkers = orderMarkers.filter((marker) =>
+          (vnn?.orders || []).some((row) =>
+            (marker.recordNo && String(row.orderNo || '').trim().toLowerCase() === String(marker.recordNo).trim().toLowerCase())
+            || (marker.recordId && String(row.orderPanelId || '') === String(marker.recordId))
+          ) && (approvedOrderKeys.has(`id:${String(marker.recordId || '')}`)
+            || approvedOrderKeys.has(`no:${String(marker.recordNo || '')}`))
+        );
+        if (resolvedOrderMarkers.length && vnn && (!vnn.reapprovalState || vnn.reapprovalState === 'none')
+          && ['Approved', 'Completed'].includes(vnn.panelStatus || vnn.status)) {
+          const resolvedIds = new Set(resolvedOrderMarkers.map((marker) => String(marker.recordId || '')).filter(Boolean));
+          const resolvedNos = new Set(resolvedOrderMarkers.map((marker) => String(marker.recordNo || '')).filter(Boolean));
+          loadingPanel.upstreamPending = (loadingPanel.upstreamPending || []).filter((marker) => !(marker.panel === 'order'
+            && (resolvedIds.has(String(marker.recordId || '')) || resolvedNos.has(String(marker.recordNo || '')))));
+          if (loadingPanel.reapprovalState === 'blockedByUpstream'
+            && !loadingPanel.upstreamPending.some((marker) => marker.panel !== 'loading')) {
+            loadingPanel.reapprovalState = 'pendingReapproval';
+            loadingPanel.pendingStateBeforeBlock = '';
+          }
+          await loadingPanel.save();
+        }
+      }
+    }
+
+    if (loadingPanel.upstreamPending?.length || loadingPanel.reapprovalState === 'blockedByUpstream') {
+      return NextResponse.json({ success: false, message: 'This record cannot be approved until its upstream corrections are reviewed.' }, { status: 409 });
+    }
+    if (loadingPanel.reapprovalState === 'unlocked') return NextResponse.json({ success: false, message: 'This record must be edited and resubmitted before approval.' }, { status: 409 });
+
     if (loadingPanel.isDraft) {
       return NextResponse.json({ success: false, message: "Open and save this draft before changing its approval status." }, { status: 400 });
     }
@@ -2518,6 +2609,10 @@ export async function PATCH(req) {
         success: false,
         message: "Invalid action. Allowed: approve, reject, complete"
       }, { status: 400 });
+    }
+    if (action === 'approve') {
+      try { await assertSourcesCurrent(loadingPanel, user.companyId); }
+      catch (staleError) { return NextResponse.json({ success: false, message: staleError.message }, { status: staleError.status || 409 }); }
     }
 
     // Update approval statuses
@@ -2624,7 +2719,22 @@ export async function PATCH(req) {
       action === 'approve' ? 'Approved' :
         'Rejected';
 
+    if (action === 'reject' && ['pendingApproval', 'pendingReapproval'].includes(loadingPanel.reapprovalState)) loadingPanel.reapprovalState = 'unlocked';
     await loadingPanel.save();
+    if (action === 'approve') {
+      try { await recordApprovedRevision('loading', loadingPanel._id, user); }
+      catch (syncError) { return NextResponse.json({ success: false, message: `Loading Info approved, but downstream sync failed and is blocked for admin retry: ${syncError.message}` }, { status: 503 }); }
+    }
+
+    if (action === 'approve' || action === 'complete') {
+      await notifyModuleCreateUsers({
+        user,
+        module: 'Purchase Panel',
+        panelLabel: 'Purchase Panel',
+        reference: loadingPanel.vehicleArrivalNo,
+        url: '/admin/Purchase-Panel/create',
+      });
+    }
 
     return NextResponse.json({
       success: true,

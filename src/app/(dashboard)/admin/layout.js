@@ -1928,6 +1928,7 @@
 "use client";
 import { AdminShowDeletedRecords } from "@/components/ShowDeletedRecords";
 import { AdminDeleteImpactHost } from "@/components/DeleteImpactModal";
+import ReapprovalWorkspace from "@/components/ReapprovalWorkspace";
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
@@ -1944,6 +1945,7 @@ import { GiStockpiles } from "react-icons/gi";
 import { SiCivicrm } from "react-icons/si";
 import { useRouter, usePathname } from "next/navigation";
 import LogoutButton from "@/components/LogoutButton";
+import PushNotificationControl from "@/components/PushNotificationControl";
 
 // ✅ FIXED: Changed from "./hooks/usePermission" to "@/hooks/usePermission"
 import { usePermission } from "./hooks/usePermission";
@@ -3309,6 +3311,8 @@ export default function Layout({ children }) {
             </div>
 
             <div className="flex items-center gap-3 shrink-0">
+              <PushNotificationControl />
+              <ReapprovalWorkspace placement="header" />
               <div className="hidden md:flex items-center gap-3 text-sm text-gray-300">
                 <span>{session.name || session.email}</span>
               </div>
@@ -3375,6 +3379,7 @@ export default function Layout({ children }) {
 
         <main onClick={handleMainClick} className="flex-1 overflow-y-auto bg-[#f8fafc]">
           <AdminShowDeletedRecords />
+          <ReapprovalWorkspace placement="content" />
           {children}
         </main>
         <AdminDeleteImpactHost />

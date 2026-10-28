@@ -17,7 +17,7 @@ export default function PendingToCreateTable({ enabled, canCreate = false, endpo
       setError("");
       try {
         const token = localStorage.getItem("token");
-        const response = await fetch(endpoint, { headers: { Authorization: `Bearer ${token}` } });
+        const response = await fetch(endpoint, { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store' });
         const result = await response.json();
         if (!response.ok || !result.success) throw new Error(result.message || "Unable to load pending records");
         const data = result.data;
@@ -83,7 +83,7 @@ export default function PendingToCreateTable({ enabled, canCreate = false, endpo
       case "loading-info": return [index + 1, date, "Pending", value(row, "vnnNo"), chips, value(row, "branchName", "branch"), value(row, "vehicleNo"), value(row, "driverMobileNo", "driverNo", "driverName"), weight ? `${weight} MT` : "—", "—", "—", "—", "—", button];
       case "purchase": return [index + 1, date, value(row, "vehicleArrivalNo"), value(row, "vehicleNegotiationNo", "vnnNo"), <div className="flex max-w-72 flex-wrap gap-1">{(row.orderRows || []).map((item, orderIndex) => <span key={`${item.orderNo}-${orderIndex}`} className="rounded-lg bg-purple-50 px-2 py-1 text-xs font-semibold text-purple-800">{item.orderNo || "—"}</span>)}</div>, value(row, "branchName", "branch"), value(row, "vehicleNo", "vehicleInfo.vehicleNo"), value(row, "driverNo", "vehicleInfo.driverMobileNo"), weight ? `${weight} MT` : "—", button];
       case "advance-payment": return [index + 1, date, value(row, "purchaseNo"), (row.orderRows || []).map((item) => item.orderNo).filter(Boolean).join(", ") || value(row, "orderNo"), value(row, "vendorName"), value(row, "vehicleNo"), value(row, "amount"), value(row, "balance"), button];
-      case "lr": return [index + 1, value(row, "loadingInfoNo"), value(row, "orderNo"), value(row, "partyName"), value(row, "to"), value(row, "weight"), button];
+      case "lr": return [index + 1, value(row, "loadingInfoNo"), value(row, "orderNo"), value(row, "partyName", "customerName"), value(row, "to"), value(row, "weight"), button];
       case "balance": return [index + 1, value(row, "podNo"), value(row, "purchaseNo"), value(row, "orderNo"), value(row, "vendorName"), value(row, "totalAmount"), value(row, "finalBalance"), value(row, "podStatus"), button];
       case "pod": return [index + 1, date, value(row, "purchaseNo"), (row.orderRows || []).map((item) => item.orderNo).filter(Boolean).join(", ") || orderText, value(row, "companyName", "customerName"), value(row, "vendorName"), value(row, "vehicleNo"), value(row, "amount"), button];
       default: return null;

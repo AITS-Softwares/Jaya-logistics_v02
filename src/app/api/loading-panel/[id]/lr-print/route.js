@@ -26,9 +26,20 @@ export const POST = withAuth(async (req, context, user) => {
 
         await connectDb();
         const panel = await LoadingPanel.findOne(companyScopeFilter(user, { _id: panelId }))
-            .select("vehicleArrivalNo consignmentNote createdAt orderRows._id orderRows.orderNo orderRows.to orderRows.toName orderRows.weight " + LOADING_APPROVAL_SELECT)
+            .select("vehicleArrivalNo consignmentNote createdAt reapprovalState upstreamPending orderRows._id orderRows.orderNo orderRows.to orderRows.toName orderRows.weight " + LOADING_APPROVAL_SELECT)
             .lean();
         if (!panel) return fail("Loading Info not found.", 404);
+        if (panel.reapprovalState && panel.reapprovalState !== "none" || panel.upstreamPending?.length) {
+            return fail("LR printing is blocked while this Loading Info has pending upstream review.", 409);
+        }
+
+        const note = await ConsignmentNote.findOne(companyScopeFilter(user, { _id: lrId, loadingInfoNo: panel.vehicleArrivalNo }))
+            .select("reapprovalState upstreamPending")
+            .lean();
+        if (!note) return fail("This LR does not belong to this Loading Info.", 403);
+        if (note.reapprovalState && note.reapprovalState !== "none" || note.upstreamPending?.length) {
+            return fail("LR printing is blocked while this LR has pending upstream review.", 409);
+        }
 
         const approvals = await getLoadingGate(user, panel);
         if (!approvals.allApproved) return fail(approvals.message, 403);

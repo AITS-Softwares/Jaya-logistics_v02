@@ -1413,6 +1413,7 @@ import Customer from "@/models/CustomerModel";
 import LoadingPanel from "../loading-panel/LoadingPanel";
 import PurchasePanel from "../purchase-panel/PurchasePanel";
 import OrderPanel from "../order-panel/OrderPanel";
+import VehicleNegotiation from "../vehicle-negotiation/VehicleNegotiation";
 import DetentionRule from "../detention-rules/DetentionRule";
 import { calculateDetention, selectDetentionRule } from "@/lib/detentionCalculation";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
@@ -1422,6 +1423,9 @@ import mongoose from 'mongoose';
 import { activeOperatingCompanyId, companyScopeFilter } from "@/lib/companyScope";
 import { validateOpenOrderRows } from '@/lib/orderRowStatus';
 import { handleModuleDelete } from '@/lib/deletion/handler';
+import { notifyModuleApprovers } from '@/lib/workflowNotifications';
+import { assertSourcesCurrent, captureSourceDependencies, recordApprovedRevision } from '@/lib/reapprovalService';
+import { getLrCargoWeight, withLrCargoWeight } from '@/lib/lrWeight.mjs';
 
 async function includeConsigneeGst(note, user) {
   if (!note || note.consignee?.gstNumber || !note.consignee?.customerId) return note;
@@ -1654,12 +1658,28 @@ export async function GET(req) {
     if (pendingLookup === "pendingCount" || pendingLookup === "pendingList") {
       const normalize = (value) => String(value || "").trim().toLowerCase();
       const [orders, notes, loadingInfos] = await Promise.all([
-        OrderPanel.find(companyScopeFilter(user)).select("orderPanelNo plantRows panelStatus isDraft").lean(),
+        OrderPanel.find(companyScopeFilter(user)).select("orderPanelNo plantRows panelStatus isDraft partyName customerName customerId").lean(),
         ConsignmentNote.find(companyScopeFilter(user)).select("orderRowId isDraft header.orderNo header.to header.status").lean(),
         LoadingPanel.find(companyScopeFilter(user, { isDraft: { $ne: true }, panelStatus: { $ne: 'Draft' } }))
-          .select("vehicleArrivalNo orderRows.orderNo")
+          .select("vehicleArrivalNo orderRows.orderNo orderRows.orderRowId orderRows.partyName orderRows.toName")
           .lean(),
       ]);
+      const partyName = (...names) => names.map((name) => String(name || '').trim())
+        .find((name) => name && !['n/a', 'na', '-', '—', 'null', 'undefined'].includes(name.toLowerCase())) || '';
+      const customerIds = [...new Set(orders.flatMap((order) => [order.customerId, ...(order.plantRows || []).map((row) => row.customerId)])
+        .map((value) => String(value || '')).filter((value) => mongoose.Types.ObjectId.isValid(value)))];
+      const customers = customerIds.length ? await Customer.find(companyScopeFilter(user, { _id: { $in: customerIds } }))
+        .select('customerName').lean() : [];
+      const customerNames = new Map(customers.map((customer) => [String(customer._id), customer.customerName]));
+      const resolvePartyName = (order, row = {}) => {
+        const linkedRows = loadingInfos.flatMap((info) => info.orderRows || []).filter((entry) =>
+          normalize(entry.orderNo) === normalize(order.orderPanelNo)
+          && (!entry.orderRowId || !row._id || String(entry.orderRowId) === String(row._id)));
+        const loadingParties = [...new Set(linkedRows.map((entry) => partyName(entry.partyName)).filter(Boolean))];
+        return partyName(row.partyName, order.partyName, order.customerName,
+          customerNames.get(String(row.customerId || order.customerId || '')),
+          loadingParties.length === 1 ? loadingParties[0] : '');
+      };
       const loadingInfoOrderNos = new Set(loadingInfos.flatMap((loadingInfo) =>
         (loadingInfo.orderRows || []).map((row) => normalize(row.orderNo)).filter(Boolean),
       ));
@@ -1673,8 +1693,8 @@ export async function GET(req) {
         if (order.isDraft || (order.panelStatus || 'Draft') === 'Draft') return [];
         const openRows = (order.plantRows || []).filter((row) => (row.status || 'Open') === 'Open' && !row.statusRequest?.action);
         return order.plantRows?.length
-          ? openRows.map((row) => ({ originalRowId: row._id, orderNo: order.orderPanelNo, to: row.toName || row.to || "", weight: row.weight || "", partyName: row.partyName || "" }))
-          : [{ orderNo: order.orderPanelNo, to: "N/A" }];
+          ? openRows.map((row) => ({ originalRowId: row._id, orderNo: order.orderPanelNo, to: row.toName || row.to || "", weight: row.weight || "", partyName: resolvePartyName(order, row) }))
+          : [{ orderNo: order.orderPanelNo, to: "N/A", partyName: resolvePartyName(order) }];
       });
       const seen = new Set();
       const pendingRows = [];
@@ -1807,6 +1827,23 @@ export async function GET(req) {
         .sort({ createdAt: -1 })
         .lean();
 
+      // Fetch whole-order totals alongside the LR list so they refresh after
+      // reapproval and do not depend on the user's separate Order Panel access.
+      const noteOrderNumbers = (note) => [...new Set([note.header?.orderNo, ...(note.consignmentBreakdown || []).map((line) => line.orderNo)]
+        .map((value) => String(value || '').trim()).filter((value) => value && value !== 'N/A'))];
+      const orderNumbers = [...new Set(notes.flatMap(noteOrderNumbers))];
+      const linkedOrders = orderNumbers.length ? await OrderPanel.find(companyScopeFilter(user, {
+        orderPanelNo: { $in: orderNumbers },
+      })).select('orderPanelNo plantRows.weight totalWeight reapprovalState approvedSnapshot.plantRows approvedSnapshot.totalWeight').lean() : [];
+      const orderTotals = new Map(linkedOrders.map((order) => {
+        const approved = order.reapprovalState && order.reapprovalState !== 'none' && order.approvedSnapshot
+          ? order.approvedSnapshot : order;
+        const total = approved.plantRows?.length
+          ? approved.plantRows.reduce((sum, row) => sum + (Number(row.weight) || 0), 0)
+          : Number(approved.totalWeight) || 0;
+        return [String(order.orderPanelNo).trim(), total];
+      }));
+
       // Older LRs (and LRs created before a server restart during development)
       // may not yet contain the saved split. Resolve it once from Loading Info.
       const missingBreakdownLoadingNos = notes
@@ -1821,7 +1858,15 @@ export async function GET(req) {
 
       const tableData = notes.map(note => {
         const sourceRows = loadingInfoByNo.get(note.loadingInfoNo)?.orderRows || [];
-        const sourceBreakdown = sourceRows.map((row) => ({
+        // A Loading Info can serve several LRs. Legacy fallback must select only
+        // this LR's drop rather than displaying the entire vehicle's orders.
+        const normalize = (value) => String(value || '').trim().toLowerCase();
+        const matchingRows = sourceRows.filter((row) => note.orderRowId
+          ? String(row.orderRowId || row.originalRowId || '') === String(note.orderRowId)
+          : normalize(row.orderNo) === normalize(note.header?.orderNo)
+            && normalize(row.toName || row.to) === normalize(note.header?.to)
+            && (!note.header?.from || normalize(row.fromName || row.from) === normalize(note.header.from)));
+        const sourceBreakdown = (matchingRows.length === 1 ? matchingRows : []).map((row) => ({
           orderNo: row.orderNo || note.header?.orderNo || 'N/A',
           from: row.fromName || row.from || note.header?.from || 'N/A',
           to: row.toName || row.to || note.header?.to || 'N/A',
@@ -1835,9 +1880,14 @@ export async function GET(req) {
           weight: note.totalWeight || 0,
           unit: note.header?.unit || 'MT'
         }];
-        const consignmentBreakdown = note.consignmentBreakdown?.length
+        const savedBreakdown = note.consignmentBreakdown?.length
           ? note.consignmentBreakdown
           : (sourceBreakdown.length ? sourceBreakdown : fallbackBreakdown);
+        const consignmentBreakdown = withLrCargoWeight(savedBreakdown, note);
+        const linkedOrderNumbers = noteOrderNumbers(note);
+        const orderTotalWeight = linkedOrderNumbers.length && linkedOrderNumbers.every((number) => orderTotals.has(number))
+          ? Math.round(linkedOrderNumbers.reduce((sum, number) => sum + orderTotals.get(number), 0) * 1000) / 1000
+          : undefined;
 
         return {
           _id: note._id,
@@ -1854,7 +1904,8 @@ export async function GET(req) {
           from: [...new Set(consignmentBreakdown.map(r => r.from).filter(v => v && v !== 'N/A'))].join(', ') || note.header?.from || 'N/A',
           to: [...new Set(consignmentBreakdown.map(r => r.to).filter(v => v && v !== 'N/A'))].join(', ') || note.header?.to || 'N/A',
           vehicleNo: note.header?.vehicleNo || 'N/A',
-          totalWeight: note.totalWeight || 0,
+          totalWeight: getLrCargoWeight(note),
+          orderTotalWeight,
           unit: note.header?.unit || 'MT',
           consignmentBreakdown,
           status: note.header?.status || 'Pending'
@@ -2177,6 +2228,13 @@ export async function POST(req) {
     });
 
     await consignmentNote.save({ validateBeforeSave: !isDraftSave });
+    if (!isDraftSave) await captureSourceDependencies('lr', consignmentNote, user.companyId);
+    if (!isDraftSave && consignmentNote.header?.status === 'Pending') {
+      await notifyModuleApprovers({
+        user, module: 'Consignment Note', panelLabel: 'Consignment Note',
+        reference: consignmentNote.lrNo, url: `/admin/Consignment-Note/${consignmentNote._id}`,
+      });
+    }
 
     // Bypass a stale Mongoose model cache in a running development server so
     // the new field is persisted immediately without requiring a restart.
@@ -2274,15 +2332,23 @@ export async function PUT(req) {
       }, { status: 404 });
     }
 
+    if (note.upstreamPending?.length || note.reapprovalState === 'blockedByUpstream') {
+      return NextResponse.json({ success: false, message: 'This LR is waiting for upstream corrections to be reviewed first.' }, { status: 409 });
+    }
+    if (note.reapprovalState === 'pendingApproval' || note.reapprovalState === 'syncFailed') return NextResponse.json({ success: false, message: 'This LR is waiting for approval or admin sync recovery.' }, { status: 409 });
+    const isApprovedLocked = ['Approved', 'Completed'].includes(note.header?.status);
+    const isReapprovalEdit = ['unlocked', 'pendingApproval', 'pendingReapproval'].includes(note.reapprovalState);
+    if (isApprovedLocked && !isReapprovalEdit) return NextResponse.json({ success: false, message: 'Approved LRs are locked. Ask an admin to unlock this LR before editing.' }, { status: 409 });
+
     const saveMode = body.saveMode;
     const wasDraft = !!note.isDraft || note.header?.status === 'Draft';
     if (saveMode && !['draft', 'submit'].includes(saveMode)) {
       return NextResponse.json({ success: false, message: "Invalid saveMode" }, { status: 400 });
     }
-    if (saveMode === 'submit' && !hasPermission(user, 'create')) {
+    if (saveMode === 'submit' && wasDraft && !hasPermission(user, 'create')) {
       return NextResponse.json({ success: false, message: "Permission denied: create action required to submit a Consignment Note draft." }, { status: 403 });
     }
-    if ((saveMode === 'draft' || saveMode === 'submit') && !wasDraft) {
+    if ((saveMode === 'draft' || saveMode === 'submit') && !wasDraft && !(isReapprovalEdit && saveMode === 'submit')) {
       return NextResponse.json({ success: false, message: "Only a draft can be saved as draft or submitted" }, { status: 400 });
     }
     if (!saveMode && wasDraft) {
@@ -2446,7 +2512,18 @@ export async function PUT(req) {
       note.isDraft = false;
       note.header.status = 'Pending';
     }
+    if (isReapprovalEdit && saveMode !== 'draft') {
+      note.isDraft = false;
+      note.header.status = 'Pending';
+      note.reapprovalState = 'pendingApproval';
+    }
     await note.save({ validateBeforeSave: !isDraftSave });
+    if (saveMode === 'submit' && (wasDraft || isReapprovalEdit) && note.header?.status === 'Pending') {
+      await notifyModuleApprovers({
+        user, module: 'Consignment Note', panelLabel: 'Consignment Note',
+        reference: note.lrNo, url: `/admin/Consignment-Note/${note._id}`,
+      });
+    }
     if (wasDraft && !isDraftSave && note.loadingInfoNo) {
       const loadingInfo = await LoadingPanel.findOne(companyScopeFilter(user, { vehicleArrivalNo: note.loadingInfoNo }));
       if (loadingInfo && !loadingInfo.consignmentNote) {
@@ -2533,6 +2610,9 @@ export async function DELETE(req) {
       }, { status: 404 });
     }
 
+    if (note.upstreamPending?.length || note.reapprovalState === 'blockedByUpstream') return NextResponse.json({ success: false, message: 'This LR cannot be approved until its upstream corrections are reviewed.' }, { status: 409 });
+    if (['unlocked', 'pendingReapproval'].includes(note.reapprovalState)) return NextResponse.json({ success: false, message: 'This LR must be edited and resubmitted before approval.' }, { status: 409 });
+
     // Don't delete approved/completed notes
     if (note.header?.status === 'Approved' || note.header?.status === 'Completed') {
       return NextResponse.json({
@@ -2614,6 +2694,69 @@ export async function PATCH(req) {
         message: "Invalid action. Allowed: approve, reject, complete"
       }, { status: 400 });
     }
+    if (action === 'approve') {
+      // Repair legacy Order blockers left on an LR after both the Order and
+      // its linked VNN have completed their approval hops. Keep any unrelated
+      // blockers intact; the LR approver can proceed only when this chain is clear.
+      const orderMarkers = (note.upstreamPending || []).filter((marker) => marker.panel === 'order');
+      if (orderMarkers.length && (note.vnnNo || note.vehicleNegotiationRef)) {
+        const markerOrderIds = orderMarkers.map((marker) => String(marker.recordId || '')).filter((value) => mongoose.isValidObjectId(value));
+        const markerOrderNos = orderMarkers.map((marker) => String(marker.recordNo || '')).filter(Boolean);
+        const orderFilters = [
+          ...(markerOrderIds.length ? [{ _id: { $in: markerOrderIds } }] : []),
+          ...(markerOrderNos.length ? [{ orderPanelNo: { $in: markerOrderNos } }] : []),
+        ];
+        const vnnFilters = [
+          ...(note.vnnNo ? [{ vnnNo: note.vnnNo }] : []),
+          ...(note.vehicleNegotiationRef ? [{ _id: note.vehicleNegotiationRef }] : []),
+        ];
+        const [orders, vnn] = await Promise.all([
+          orderFilters.length
+            ? OrderPanel.find({ companyId: user.companyId, $or: orderFilters }).select('_id orderPanelNo reapprovalState panelStatus status').lean()
+            : Promise.resolve([]),
+          vnnFilters.length ? VehicleNegotiation.findOne({ companyId: user.companyId, $or: vnnFilters })
+            .select('_id reapprovalState panelStatus status').lean() : Promise.resolve(null),
+        ]);
+        const approvedOrderKeys = new Set(orders.filter((order) =>
+          (!order.reapprovalState || order.reapprovalState === 'none')
+          && ['Approved', 'Completed'].includes(order.panelStatus || order.status)
+        ).flatMap((order) => [`id:${String(order._id)}`, `no:${String(order.orderPanelNo || '')}`]));
+        const resolvedOrderMarkers = orderMarkers.filter((marker) =>
+          approvedOrderKeys.has(`id:${String(marker.recordId || '')}`)
+          || approvedOrderKeys.has(`no:${String(marker.recordNo || '')}`)
+        );
+        if (resolvedOrderMarkers.length && vnn && (!vnn.reapprovalState || vnn.reapprovalState === 'none')
+          && ['Approved', 'Completed'].includes(vnn.panelStatus || vnn.status)) {
+          const resolvedIds = new Set(resolvedOrderMarkers.map((marker) => String(marker.recordId || '')).filter(Boolean));
+          const resolvedNos = new Set(resolvedOrderMarkers.map((marker) => String(marker.recordNo || '')).filter(Boolean));
+          note.upstreamPending = (note.upstreamPending || []).filter((marker) => !(marker.panel === 'order'
+            && (resolvedIds.has(String(marker.recordId || '')) || resolvedNos.has(String(marker.recordNo || '')))));
+          if (note.reapprovalState === 'blockedByUpstream' && !note.upstreamPending.some((marker) => marker.panel !== 'loading')) {
+            note.reapprovalState = 'pendingReapproval';
+            note.pendingStateBeforeBlock = '';
+          }
+          await note.save();
+        }
+      }
+      const legacyLoadingMarkers = (note.upstreamPending || []).filter((marker) => marker.panel === 'loading');
+      const upstreamMarkers = (note.upstreamPending || []).filter((marker) => marker.panel !== 'loading');
+      if (legacyLoadingMarkers.length && !upstreamMarkers.length && note.reapprovalState === 'blockedByUpstream') {
+        const previousState = legacyLoadingMarkers[legacyLoadingMarkers.length - 1]?.previousState || note.pendingStateBeforeBlock || 'none';
+        note.upstreamPending = [];
+        note.reapprovalState = previousState;
+        note.pendingStateBeforeBlock = '';
+      }
+      if (upstreamMarkers.length || (note.reapprovalState === 'blockedByUpstream' && !legacyLoadingMarkers.length)) {
+        const sourceMarker = upstreamMarkers[0];
+        const sourceLabel = sourceMarker?.panel === 'order' ? 'Order Panel' : sourceMarker?.panel === 'vnn' ? 'Vehicle Negotiation' : 'upstream panel';
+        const nextLabel = sourceMarker?.panel === 'order' ? 'Vehicle Negotiation' : sourceMarker?.panel === 'vnn' ? 'Consignment Note' : sourceLabel;
+        return NextResponse.json({ success: false, message: `Cannot approve this LR yet. Reapproval is still pending at ${nextLabel}${sourceMarker?.recordNo ? ` (upstream ${sourceLabel} ${sourceMarker.recordNo})` : ''}. Contact the ${nextLabel} approver first.` }, { status: 409 });
+      }
+    }
+    if (action === 'approve') {
+      try { await assertSourcesCurrent(note, user.companyId); }
+      catch (staleError) { return NextResponse.json({ success: false, message: staleError.message }, { status: staleError.status || 409 }); }
+    }
 
     const statusMap = {
       'approve': 'Approved',
@@ -2630,7 +2773,12 @@ export async function PATCH(req) {
     }
     note.updatedAt = Date.now();
 
+    if (action === 'reject' && note.reapprovalState === 'pendingApproval') note.reapprovalState = 'unlocked';
     await note.save();
+    if (action === 'approve') {
+      try { await recordApprovedRevision('lr', note._id, user); }
+      catch (syncError) { return NextResponse.json({ success: false, message: `LR approved, but revision recording failed and requires admin review: ${syncError.message}` }, { status: 503 }); }
+    }
 
     // Out Date/Time (and the Purchase detention) are set only when the LAST LR of
     // this Loading Info is approved with its invoice - not by the first LR.

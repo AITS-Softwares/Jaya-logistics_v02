@@ -4,6 +4,7 @@ import dbConnect from '@/lib/db';
 import VehicleNegotiation from '@/app/api/vehicle-negotiation/VehicleNegotiation';
 import { getTokenFromHeader, verifyJWT } from '@/lib/auth';
 import { activeOperatingCompanyId, companyScopeFilter } from '@/lib/companyScope';
+import { isVnnReadyForDownstream } from '@/lib/vehicleNegotiationWorkflow';
 
 function authorize(req) {
   const token = getTokenFromHeader(req);
@@ -33,12 +34,21 @@ export async function PATCH(req, { params }) {
   await dbConnect();
   const record = await VehicleNegotiation.findOne(companyScopeFilter(auth.user, { _id: id }));
   if (!record) return NextResponse.json({ success: false, message: 'Vehicle Negotiation not found.' }, { status: 404 });
+  if (record.upstreamPending?.length || record.reapprovalState === 'blockedByUpstream') return NextResponse.json({ success: false, message: 'This Vehicle Negotiation is blocked by an upstream correction.' }, { status: 409 });
+  if (record.reapprovalState === 'pendingApproval' || record.reapprovalState === 'syncFailed') return NextResponse.json({ success: false, message: 'This Vehicle Negotiation is waiting for approval or admin sync recovery.' }, { status: 409 });
+  if (isVnnReadyForDownstream(record) && !['unlocked', 'pendingApproval', 'pendingReapproval'].includes(record.reapprovalState)) return NextResponse.json({ success: false, message: 'Approved Vehicle Negotiation records are locked. Ask an admin to unlock this record first.' }, { status: 409 });
   const hasFile = memoFile && typeof memoFile === 'object' && (memoFile.filePath || memoFile.filename || memoFile.originalName);
   record.approval.memoFile = hasFile ? {
     filePath: memoFile.filePath || '', fullPath: memoFile.fullPath || '', filename: memoFile.filename || '',
     originalName: memoFile.originalName || '', size: Number(memoFile.size) || 0, mimeType: memoFile.mimeType || '', uploadedAt: new Date()
   } : null;
   record.approval.memoStatus = hasFile ? 'Uploaded' : 'Pending';
+  if (['unlocked', 'pendingApproval', 'pendingReapproval'].includes(record.reapprovalState)) {
+    record.approval.part1Status = 'Pending';
+    record.approval.part3Status = 'Pending';
+    record.panelStatus = 'Submitted';
+    record.reapprovalState = 'pendingApproval';
+  }
   record.workflow.audit = record.workflow.audit || [];
   record.workflow.audit.push({ action: hasFile ? 'memo-uploaded' : 'memo-cleared', by: auth.user.id || null, at: new Date() });
   await record.save();

@@ -223,12 +223,27 @@ const balancePaymentSchema = new mongoose.Schema({
   // Payment Transaction Details
   vendorNameDebit: { type: String, default: '' },
   accountNoCredit: { type: String, default: '' },
+  bankIfsc: { type: String, default: '' },
   finalAmount: { type: Number, default: 0 },
   remarks: { type: String, default: 'Balance Payment' },
   transactionId: { type: String, default: '' },
   queueGenerated: { type: Boolean, default: false },
   queueDate: { type: Date, default: null },
   bankVendorCode: { type: String, default: '' },
+  bankIntegration: {
+    provider: { type: String, default: '' },
+    uniqueId: { type: String, default: '' },
+    transactionType: { type: String, default: '' },
+    bankStatus: { type: String, default: '' },
+    requestId: { type: String, default: '' },
+    utrNumber: { type: String, default: '' },
+    message: { type: String, default: '' },
+    responseCode: { type: String, default: '' },
+    events: [{ event: { type: String }, bankStatus: { type: String }, message: { type: String }, requestId: { type: String }, utrNumber: { type: String }, at: { type: Date, default: Date.now } }],
+    submittedAt: { type: Date, default: null },
+    checkedAt: { type: Date, default: null },
+    lastError: { type: String, default: '' }
+  },
 
   // Payment Status
   paymentStatus: {

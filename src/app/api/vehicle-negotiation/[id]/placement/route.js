@@ -4,6 +4,9 @@ import dbConnect from '@/lib/db';
 import VehicleNegotiation from '@/app/api/vehicle-negotiation/VehicleNegotiation';
 import { getTokenFromHeader, verifyJWT } from '@/lib/auth';
 import { activeOperatingCompanyId, companyScopeFilter } from '@/lib/companyScope';
+import { isVnnReadyForDownstream } from '@/lib/vehicleNegotiationWorkflow';
+import { notifyModuleCreateUsers } from '@/lib/workflowNotifications';
+import { recordApprovedRevision } from '@/lib/reapprovalService';
 
 const MODULE = 'Vehicle Negotiation Placement';
 
@@ -44,9 +47,14 @@ export async function PATCH(req, { params }) {
   await dbConnect();
   const record = await VehicleNegotiation.findOne(companyScopeFilter(auth.user, { _id: id }));
   if (!record) return NextResponse.json({ success: false, message: 'Vehicle Negotiation not found.' }, { status: 404 });
+  if (record.upstreamPending?.length || record.reapprovalState === 'blockedByUpstream') return NextResponse.json({ success: false, message: 'This Vehicle Negotiation is blocked by an upstream correction.' }, { status: 409 });
+  if (record.reapprovalState === 'pendingApproval' || record.reapprovalState === 'syncFailed') return NextResponse.json({ success: false, message: 'This Vehicle Negotiation is waiting for approval or admin sync recovery.' }, { status: 409 });
+  const wasReadyForDownstream = isVnnReadyForDownstream(record);
+  if (wasReadyForDownstream && !['unlocked', 'pendingApproval', 'pendingReapproval'].includes(record.reapprovalState)) return NextResponse.json({ success: false, message: 'Approved Vehicle Negotiation placement is locked. Ask an admin to unlock it first.' }, { status: 409 });
   if (record.approval?.part3Status !== 'Approved') {
     return NextResponse.json({ success: false, message: 'Vehicle placement becomes available only after Part 3 approval.' }, { status: 409 });
   }
+  const wasReadyForDownstream = isVnnReadyForDownstream(record);
 
   record.approval.vehicleNo = String(data.vehicleNo).trim();
   record.approval.mobile = String(data.mobile).trim();
@@ -57,7 +65,31 @@ export async function PATCH(req, { params }) {
   record.workflow.placementCompletedAt = new Date();
   record.workflow.placementCompletedBy = auth.user.id || null;
   record.workflow.audit.push({ action: 'vehicle-placement-saved', by: auth.user.id || null, at: new Date() });
+  if (['unlocked', 'pendingApproval', 'pendingReapproval'].includes(record.reapprovalState)) {
+    record.approval.part1Status = 'Pending';
+    record.approval.part3Status = 'Pending';
+    record.panelStatus = 'Submitted';
+    record.reapprovalState = 'pendingApproval';
+  }
   await record.save();
+
+  if (!wasReadyForDownstream && isVnnReadyForDownstream(record)) {
+    try { await recordApprovedRevision('vnn', record._id, auth.user); }
+    catch (syncError) { return NextResponse.json({ success: false, message: `Placement saved, but downstream sync failed and is blocked for admin retry: ${syncError.message}` }, { status: 503 }); }
+  }
+
+  if (!wasReadyForDownstream && isVnnReadyForDownstream(record)) {
+    await Promise.all([
+      notifyModuleCreateUsers({
+        user: auth.user, module: 'Pricing Panel', panelLabel: 'Vehicle Negotiation',
+        reference: record.vnnNo, url: '/admin/pricing-panel/create',
+      }),
+      notifyModuleCreateUsers({
+        user: auth.user, module: 'Loading Info', panelLabel: 'Vehicle Negotiation',
+        reference: record.vnnNo, url: '/admin/Loading-Info/create',
+      }),
+    ]);
+  }
 
   return NextResponse.json({ success: true, data: { approval: record.approval, workflow: record.workflow } });
 }

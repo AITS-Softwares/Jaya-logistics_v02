@@ -1839,6 +1839,7 @@ export default function ApproveConsignmentNote() {
       const data = await res.json();
 
       if (data.success) {
+        window.dispatchEvent(new Event('reapproval:refresh'));
         alert(`✅ Consignment Note status updated to ${header.status} successfully!`);
         router.push('/admin/Consignment-Note');
       } else {

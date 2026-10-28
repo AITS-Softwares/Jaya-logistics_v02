@@ -385,6 +385,7 @@ export default function ApproveBalancePayment() {
   const handleGenerateQueue = async () => {
     if (!canApproveHere) return alert("You don't have permission to generate the payment queue");
     if (queueGenerated) return alert("Queue already generated for this payment.");
+    if (currentStatus !== "Approved") return alert("Approve this Balance Payment before generating its queue.");
     if (["Rejected", "Completed", "Paid"].includes(currentStatus)) {
       return alert(`Cannot generate a queue for a ${currentStatus} payment.`);
     }
@@ -518,7 +519,7 @@ export default function ApproveBalancePayment() {
             ) : (
               <button
                 onClick={handleGenerateQueue}
-                disabled={queueLoading || saving || ["Rejected", "Completed", "Paid"].includes(currentStatus)}
+                disabled={queueLoading || saving || currentStatus !== "Approved"}
                 className="rounded-xl bg-blue-600 px-5 py-2 text-sm font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-400"
               >
                 {queueLoading ? "Generating..." : "Generate Queue"}

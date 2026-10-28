@@ -26,6 +26,12 @@ export const POST = withAuth(async (req, { params }, user) => {
     if (!mongoose.Types.ObjectId.isValid(id)) return NextResponse.json({ success: false, message: 'Invalid order id.' }, { status: 400 });
     const order = await OrderPanel.findOne(companyScopeFilter(user, { _id: id }));
     if (!order) return NextResponse.json({ success: false, message: 'Order not found.' }, { status: 404 });
+    if (['Approved', 'Completed'].includes(order.panelStatus) && order.reapprovalState !== 'unlocked') {
+      return NextResponse.json({ success: false, message: 'Approved orders are locked. An admin must unlock this order before changing row status.' }, { status: 409 });
+    }
+    if (['pendingApproval', 'pendingReapproval', 'blockedByUpstream', 'syncFailed'].includes(order.reapprovalState)) {
+      return NextResponse.json({ success: false, message: 'This order cannot change row status while reapproval work is pending.' }, { status: 409 });
+    }
 
     const body = await req.json();
     let action = String(body.action || '').trim();

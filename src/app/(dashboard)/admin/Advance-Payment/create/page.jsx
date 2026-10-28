@@ -2244,7 +2244,7 @@ export default function CreateAdvancePayment() {
     } else if (purchaseData.purchaseDetails?.amount) {
       setPurchaseAmountFromVNN(num(purchaseData.purchaseDetails.amount));
     }
-    // Final amount is kept in sync with "Advance (Generate Queue)" by the effect below
+    // Final amount is kept in sync with "Final Advance Amount" by the effect below
 
     // Set Memo from VNN
     if (purchaseData.memoFile) {
@@ -2501,21 +2501,12 @@ export default function CreateAdvancePayment() {
     return (advance + totalAdditions - totalDeductions - calculateWarehouseDeduction()).toFixed(2);
   };
 
-  // Final Advance Amount / Final Amount always equal "Advance (Generate Queue)"
+  // Final Advance Amount / Final Amount always equal "Final Advance Amount"
   useEffect(() => {
     if (!purchaseData) return;
     setPaymentDetails(prev => ({ ...prev, finalAmount: calculateAdvanceWithAdjustment() }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [purchaseData, vendorDetails.advance, additions.totalAddition, deductions.totalDeduction]);
-
-  const handleGenerateQueue = () => {
-    if (!memoFileInfo?.filePath) {
-      alert("Attach a MEMO in the linked Purchase Panel before generating the payment queue.");
-      return;
-    }
-    const finalAmount = num(paymentDetails.finalAmount || vendorDetails.advance);
-    alert(`✅ Payment queue ready to generate for ${paymentDetails.vendorNameDebit}\nAmount: ₹${finalAmount.toLocaleString()}`);
-  };
 
   const handleSave = async (saveMode = 'submit') => {
     const isDraftSave = saveMode === 'draft';
@@ -2981,8 +2972,8 @@ export default function CreateAdvancePayment() {
         <div className="mt-4">
           <div className="grid grid-cols-12 gap-4">
             <div className="col-span-12 md:col-span-4"><div className="bg-purple-50 p-6 rounded-xl border border-purple-200"><h3 className="text-sm font-bold text-purple-800 mb-3">Balance Calculation</h3><div className="space-y-2"><div className="flex justify-between text-sm"><span>Purchase Amount (A x B):</span><span className="font-bold">₹{purchaseAmountFromVNN.toLocaleString()}</span></div><div className="flex justify-between text-sm"><span>Advance Payment:</span><span className="font-bold text-blue-600">- ₹{num(vendorDetails.advance).toLocaleString()}</span></div><div className="border-t border-purple-200 pt-2 flex justify-between font-bold"><span>Calculated Balance:</span><span>₹{num(calculateBalance()).toLocaleString()}</span></div></div></div></div>
-            <div className="col-span-12 md:col-span-4"><div className="bg-amber-50 p-6 rounded-xl border border-amber-200"><h3 className="text-sm font-bold text-amber-800 mb-3">Advance Amount with Adjustment</h3><div className="space-y-2 text-sm"><div className="flex justify-between"><span>Advance Amount:</span><span className="font-bold">₹{num(vendorDetails.advance).toLocaleString()}</span></div><div className="flex justify-between"><span>Additions:</span><span className="font-bold text-green-600">+ ₹{num(additions.totalAddition).toLocaleString()}</span></div><div className="flex justify-between"><span>Deductions:</span><span className="font-bold text-red-600">- ₹{num(deductions.totalDeduction).toLocaleString()}</span></div><div className="flex justify-between"><span>Deduct at Warehouse:</span><span className="font-bold text-red-600">- ₹{calculateWarehouseDeduction().toLocaleString()}</span></div><div className="border-t border-amber-200 pt-2 flex justify-between font-bold"><span>Advance (Generate Queue):</span><span>₹{num(calculateAdvanceWithAdjustment()).toLocaleString()}</span></div></div></div></div>
-            <div className="col-span-12 md:col-span-4"><div className="bg-blue-50 p-6 rounded-xl border border-blue-200 h-full flex items-center justify-center"><div className="text-center w-full"><h3 className="text-sm font-bold text-blue-800 mb-2">Final Advance Amount</h3><div className="text-4xl font-bold text-blue-700 bg-white border border-blue-300 rounded-lg px-4 py-4 text-center">₹{num(paymentDetails.finalAmount).toLocaleString()}</div><p className="text-xs text-blue-600 mt-2">Same as Advance (Generate Queue)</p></div></div></div>
+            <div className="col-span-12 md:col-span-4"><div className="bg-amber-50 p-6 rounded-xl border border-amber-200"><h3 className="text-sm font-bold text-amber-800 mb-3">Advance Amount with Adjustment</h3><div className="space-y-2 text-sm"><div className="flex justify-between"><span>Advance Amount:</span><span className="font-bold">₹{num(vendorDetails.advance).toLocaleString()}</span></div><div className="flex justify-between"><span>Additions:</span><span className="font-bold text-green-600">+ ₹{num(additions.totalAddition).toLocaleString()}</span></div><div className="flex justify-between"><span>Deductions:</span><span className="font-bold text-red-600">- ₹{num(deductions.totalDeduction).toLocaleString()}</span></div><div className="flex justify-between"><span>Deduct at Warehouse:</span><span className="font-bold text-red-600">- ₹{calculateWarehouseDeduction().toLocaleString()}</span></div><div className="border-t border-amber-200 pt-2 flex justify-between font-bold"><span>Final Advance Amount:</span><span>₹{num(calculateAdvanceWithAdjustment()).toLocaleString()}</span></div></div></div></div>
+            <div className="col-span-12 md:col-span-4"><div className="bg-blue-50 p-6 rounded-xl border border-blue-200 h-full flex items-center justify-center"><div className="text-center w-full"><h3 className="text-sm font-bold text-blue-800 mb-2">Final Advance Amount</h3><div className="text-4xl font-bold text-blue-700 bg-white border border-blue-300 rounded-lg px-4 py-4 text-center">₹{num(paymentDetails.finalAmount).toLocaleString()}</div><p className="text-xs text-blue-600 mt-2">Same as Final Advance Amount</p></div></div></div>
           </div>
         </div>
 
@@ -3082,17 +3073,7 @@ export default function CreateAdvancePayment() {
                 />
               </div>
 
-              <div className="col-span-12 md:col-span-2">
-                <label className="text-xs font-bold text-slate-600">Generate Queue</label>
-                <button
-                  onClick={handleGenerateQueue}
-                  disabled={!memoFileInfo?.filePath}
-                  title={!memoFileInfo?.filePath ? "A Purchase Panel MEMO is required" : "Generate Queue"}
-                  className={`mt-1 w-full rounded-xl px-4 py-2 text-sm font-bold text-white transition ${memoFileInfo?.filePath ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-400 cursor-not-allowed'}`}
-                >
-                  Generate Queue
-                </button>
-              </div>
+
             </div>
           </Card>
         </div>

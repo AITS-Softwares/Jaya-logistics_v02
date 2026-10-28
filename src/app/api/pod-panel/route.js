@@ -14,6 +14,7 @@ import { handleModuleDelete } from "@/lib/deletion/handler";
 import { getPaidAdvanceForPurchase } from "@/lib/advanceSettlement";
 import PurchasePanel from "../purchase-panel/PurchasePanel";
 import { assertValidAmounts } from "@/lib/paymentRules";
+import { notifyModuleApprovers, notifyModuleCreateUsers } from "@/lib/workflowNotifications";
 
 export const runtime = "nodejs";
 
@@ -666,6 +667,16 @@ export async function POST(req) {
 
     await pod.save({ validateBeforeSave: !isDraftSave }); // totals + final balance are computed in the pre-save hook
 
+    if (!isDraftSave && pod.podStatus === 'Pending') {
+      await notifyModuleApprovers({
+        user,
+        module: 'Proof Of Delivery',
+        panelLabel: 'Proof of Delivery',
+        reference: pod.podNo,
+        url: `/admin/ProofofDelivery/${pod._id}`,
+      });
+    }
+
     return json(
       {
         success: true,
@@ -908,6 +919,16 @@ export async function PUT(req) {
     }
     await pod.save({ validateBeforeSave: saveMode !== 'draft' }); // totals + final balance are computed in the pre-save hook
 
+    if (saveMode === 'submit' && wasDraft) {
+      await notifyModuleApprovers({
+        user,
+        module: 'Proof Of Delivery',
+        panelLabel: 'Proof of Delivery',
+        reference: pod.podNo,
+        url: `/admin/ProofofDelivery/${pod._id}`,
+      });
+    }
+
     for (const f of prevFiles) {
       if (!keptFiles.has(f)) await removeStoredFile(f);
     }
@@ -1065,6 +1086,16 @@ export async function PATCH(req) {
     if (body.remarks !== undefined) pod.remarks = str(body.remarks);
 
     await pod.save();
+
+    if (action === 'approve' && pod.approvalStatus === 'Approved') {
+      await notifyModuleCreateUsers({
+        user,
+        module: 'Balance-Payment',
+        panelLabel: 'Balance Payment',
+        reference: pod.podNo,
+        url: '/admin/Balance-Payment/create',
+      });
+    }
 
     return json({
       success: true,

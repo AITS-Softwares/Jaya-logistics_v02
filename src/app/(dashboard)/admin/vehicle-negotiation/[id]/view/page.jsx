@@ -7,6 +7,21 @@ import { usePermission } from '../../../hooks/usePermission';
 
 const Field = ({ label, value }) => <div><dt className="text-xs font-bold uppercase tracking-wide text-slate-500">{label}</dt><dd className="mt-1 text-sm text-slate-900">{value || '—'}</dd></div>;
 
+function getVnnStatusBadge(record) {
+  const reapprovalLabels = {
+    blockedByUpstream: 'Waiting for upstream review',
+    pendingReapproval: 'Reapproval pending',
+    pendingApproval: 'Approval pending',
+    unlocked: 'Edit pending',
+    syncFailed: 'Sync review needed',
+  };
+  const reapprovalStatus = reapprovalLabels[record?.reapprovalState];
+  if (reapprovalStatus) return { label: reapprovalStatus, className: 'bg-amber-100 text-amber-800' };
+  return record?.approval?.part3Status === 'Approved'
+    ? { label: 'Approved', className: 'bg-emerald-100 text-emerald-800' }
+    : { label: 'Pending', className: 'bg-amber-100 text-amber-800' };
+}
+
 export default function VehicleNegotiationViewPage() {
   const { id } = useParams();
   const router = useRouter();
@@ -27,6 +42,8 @@ export default function VehicleNegotiationViewPage() {
       } catch (err) { setError(err.message); }
     };
     load();
+    window.addEventListener('reapproval:refresh', load);
+    return () => window.removeEventListener('reapproval:refresh', load);
   }, [id]);
 
   useEffect(() => {
@@ -46,11 +63,12 @@ export default function VehicleNegotiationViewPage() {
   }, [record]);
 
   if (!record && !error) return <div className="p-8 text-sm text-slate-500">Loading Vehicle Negotiation…</div>;
+  const statusBadge = record ? getVnnStatusBadge(record) : null;
   return <div className="min-h-screen bg-slate-50 p-6"><div className="mx-auto max-w-6xl">
     <button onClick={() => router.back()} className="mb-4 text-sm font-semibold text-indigo-600">← Back to list</button>
     {error && <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
     {record && <>
-      <section className="rounded-xl border border-slate-200 bg-white p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div><h1 className="text-xl font-extrabold text-slate-900">Vehicle Negotiation: {record.vnnNo}</h1><p className="mt-1 text-sm text-slate-500">Read-only transaction details</p></div><span className={`rounded-full px-3 py-1 text-xs font-bold ${record.approval?.part3Status === 'Approved' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>{record.approval?.part3Status === 'Approved' ? 'Approved' : 'Pending'}</span></div>
+      <section className="rounded-xl border border-slate-200 bg-white p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div><h1 className="text-xl font-extrabold text-slate-900">Vehicle Negotiation: {record.vnnNo}</h1><p className="mt-1 text-sm text-slate-500">Read-only transaction details</p></div><span className={`rounded-full px-3 py-1 text-xs font-bold ${statusBadge.className}`}>{statusBadge.label}</span></div>
         <dl className="mt-5 grid grid-cols-2 gap-4 md:grid-cols-4"><Field label="Date" value={record.date ? new Date(record.date).toLocaleDateString('en-GB') : ''}/><Field label="Party" value={record.customerName || record.orders?.[0]?.partyName}/><Field label="Branch" value={record.branchName}/><Field label="Total weight" value={`${record.totalWeight || 0} kg`}/><Field label="Part 1" value={record.workflow?.part1LockedAt ? 'Locked' : 'Draft'}/><Field label="Rate Target" value={record.workflow?.rateTargetCompletedAt ? 'Completed' : 'Not completed'}/><Field label="Part 3" value={record.approval?.part3Status}/><Field label="Memo" value={record.approval?.memoStatus === 'Uploaded' ? 'Uploaded' : 'Not uploaded'}/></dl>
       </section>
       <section className="mt-5 overflow-hidden rounded-xl border border-slate-200 bg-white"><h2 className="border-b border-slate-200 px-5 py-4 font-bold text-slate-900">Orders</h2><div className="overflow-x-auto"><table className="min-w-full text-sm"><thead className="bg-slate-50 text-left text-xs uppercase text-slate-500"><tr><th className="px-4 py-3">Order</th><th className="px-4 py-3">Party</th><th className="px-4 py-3">From</th><th className="px-4 py-3">To</th><th className="px-4 py-3">Weight</th><th className="px-4 py-3">Order row status</th></tr></thead><tbody>{(record.orders || []).map((order) => { const source = linkedOrders[order.orderPanelId]; const sourceRow = source?.plantRows?.find((item) => String(item._id) === String(order.orderRowId)); return <tr key={order._id || order.orderNo} className="border-t border-slate-100"><td className="px-4 py-3 font-semibold">{order.orderNo || '—'}</td><td className="px-4 py-3">{order.partyName || '—'}</td><td className="px-4 py-3">{order.fromName || '—'}</td><td className="px-4 py-3">{order.toName || '—'}</td><td className="px-4 py-3">{order.weight || 0} kg</td><td className="px-4 py-3"><div className="flex flex-wrap items-center gap-2">{canManageOrderRows && sourceRow && !['Cancelled', 'Completed', 'Rejected'].includes(source?.panelStatus) && sourceRow.status !== 'Cancelled' && !sourceRow.statusRequest?.action ? <OrderRowStatusActions orderId={order.orderPanelId} rowId={order.orderRowId} orderNo={order.orderNo} status={sourceRow.status || 'Open'} onUpdated={(updated) => setLinkedOrders((current) => ({ ...current, [order.orderPanelId]: updated }))} /> : <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${sourceRow?.status === 'Cancelled' ? 'bg-rose-100 text-rose-800' : sourceRow?.status === 'Hold' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}`}>{sourceRow?.status || (order.orderPanelId ? 'Loading…' : 'Not linked')}</span>}</div></td></tr>; })}</tbody></table></div><p className="px-5 py-3 text-xs text-slate-500">Actions update the linked order row. The shared Vehicle Negotiation stays active for its other orders.</p></section>

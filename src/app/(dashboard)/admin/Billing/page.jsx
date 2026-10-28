@@ -5069,16 +5069,16 @@ function generateMosaicBillPDFHTML(reportData, currentDate, billNumber) {
   const bodyPrefix = baseHtml.slice(0, baseHtml.indexOf('<div class="page">'));
   const annexure = baseHtml.slice(baseHtml.lastIndexOf('<div class="page">'));
   const firstPage = `<div class="page" style="font-size:12px">
-    <table style="width:100%;border-collapse:collapse;border:1px solid #000">
+    <table style="width:100%;margin:0;border-collapse:collapse;table-layout:auto;border:1px solid #000">
       <tr><th colspan="7" style="border:1px solid #000;font-size:22px;padding:7px">Tax Invoice</th></tr>
-      <tr><td colspan="4" style="border:1px solid #000;padding:7px;vertical-align:top"><b>${esc(issuerName)}</b><br>${esc(issuerAddress)}<br></td>
-        <td colspan="3" style="border:1px solid #000;padding:7px;vertical-align:top">GSTIN: <b>${esc(issuerGST)}</b></td></tr>
+      <tr><td colspan="3" style="width:60%;border:1px solid #000;padding:7px;vertical-align:top"><b>${esc(issuerName)}</b><br>${esc(issuerAddress)}</td>
+        <td colspan="4" style="width:40%;border:1px solid #000;padding:7px;vertical-align:top">GSTIN: <b>${esc(issuerGST)}</b></td></tr>
       <tr><th colspan="4" style="border:1px solid #000;padding:5px">INVOICE DETAILS</th><th colspan="3" style="border:1px solid #000;padding:5px">BILLED TO</th></tr>
-      <tr><td colspan="4" style="border:1px solid #000;padding:5px;vertical-align:top">Invoice no: <b>${esc(billNumber)}</b><br>Invoice Date: ${esc(dateLabel)}<br>Month: ${esc(monthLabel)}<br><b>PLACE OF SUPPLY</b><br>State Name: ${esc(state)}<br>State Code: ${esc(stateCode)}<br><b>PRODUCT</b>: ${esc([...products.values()].map((product) => product.name).join(", "))}</td>
-        <td colspan="3" style="border:1px solid #000;padding:5px;vertical-align:top"><b>${esc(clientName)}</b><br>${esc(clientAddress)}<br>State Name: ${esc(state)}<br>State Code: ${esc(stateCode)}<br>GST No.: ${esc(clientGST)}</td></tr>
+      <tr><td colspan="3" style="width:60%;border:1px solid #000;padding:5px;vertical-align:top">Invoice no: <b>${esc(billNumber)}</b><br>Invoice Date: ${esc(dateLabel)}<br>Month: ${esc(monthLabel)}<br><b>PLACE OF SUPPLY</b><br>State Name: ${esc(state)}<br>State Code: ${esc(stateCode)}<br><b>PRODUCT</b>: ${esc([...products.values()].map((product) => product.name).join(", "))}</td>
+        <td colspan="4" style="width:40%;border:1px solid #000;padding:5px;vertical-align:top"><b>${esc(clientName)}</b><br>${esc(clientAddress)}<br>State Name: ${esc(state)}<br>State Code: ${esc(stateCode)}<br>GST No.: ${esc(clientGST)}</td></tr>
       <tr><td colspan="7" style="border:1px solid #000;padding:0">
-        <table style="width:100%;border-collapse:collapse;table-layout:fixed">
-          <colgroup><col style="width:3.6%"><col style="width:6.5%"><col style="width:3.5%"><col style="width:5%"><col style="width:30%"><col style="width:24.5%"><col style="width:26.9%"></colgroup>
+        <table style="width:100%;margin:0;border-collapse:collapse;table-layout:fixed">
+          <colgroup><col style="width:5%"><col style="width:54%"><col style="width:9%"><col style="width:8%"><col style="width:8%"><col style="width:7%"><col style="width:9%"></colgroup>
           <thead><tr style="font-weight:bold;text-align:center"><th style="border:1px solid #000;padding:7px">S.No.</th><th style="border:1px solid #000;padding:7px">Description</th><th style="border:1px solid #000;padding:7px">SAC code</th><th style="border:1px solid #000;padding:7px">Quantity (PER MT)</th><th style="border:1px solid #000;padding:7px">Quantity (Bags)</th><th style="border:1px solid #000;padding:7px">Rate Per M.T</th><th style="border:1px solid #000;padding:7px">Total Amount</th></tr></thead>
           <tbody>${productRows}</tbody>
           <tfoot><tr><td colspan="6" style="border:1px solid #000;padding:6px;text-align:right;font-weight:bold">Total Value</td><td style="border:1px solid #000;padding:6px;text-align:right;font-weight:bold">${money(taxable)}</td></tr></tfoot>

@@ -1438,6 +1438,7 @@
 
 "use client";
 
+import { usePermission } from '../../hooks/usePermission';
 import { useMemo, useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 
@@ -1597,6 +1598,10 @@ export default function EditAdvancePayment() {
   const router = useRouter();
   const params = useParams();
   const paymentId = params.id;
+  const { hasPermission, loading: permissionLoading } = usePermission();
+  const canEditHere = hasPermission('Advance Payment', 'edit');
+  const canApproveHere = hasPermission('Advance Payment', 'approve');
+  const canSubmitHere = canEditHere && hasPermission('Advance Payment', 'create');
 
   const vendorHook = useVendors();
 
@@ -1687,6 +1692,7 @@ export default function EditAdvancePayment() {
   const [queueGenerated, setQueueGenerated] = useState(false);
   const [isDraft, setIsDraft] = useState(false);
   const [paymentNo, setPaymentNo] = useState("");
+  const bankDetailsLocked = queueGenerated || ['Approved', 'Paid', 'Completed'].includes(paymentDetails.paymentStatus);
 
   const billingColumns = [
     { key: "billingType", label: "Billing Type", options: BILLING_TYPES },
@@ -2090,7 +2096,9 @@ export default function EditAdvancePayment() {
   };
 
   const handleGenerateQueue = async () => {
+    if (permissionLoading || !canApproveHere) return alert('Approve permission is required to generate the payment queue.');
     if (isDraft) return alert("Save this draft from the edit page before generating its queue.");
+    if (paymentDetails.paymentStatus !== 'Approved') return alert('Approve this Advance Payment before generating its queue.');
     if (queueGenerated) {
       alert("Queue already generated for this payment");
       return;
@@ -2110,13 +2118,14 @@ export default function EditAdvancePayment() {
       if (!res.ok || !data.success) throw new Error(data.message || 'Failed to generate payment queue');
 
       setQueueGenerated(true);
-      alert(`✅ Payment queue generated for ${paymentDetails.vendorNameDebit}\nAmount: ₹${num(calculateBalance()).toLocaleString()}`);
+      alert(`✅ Payment queue generated for ${paymentDetails.vendorNameDebit}\nAmount: ₹${num(data.data?.amount ?? paymentDetails.finalAmount).toLocaleString('en-IN')}`);
     } catch (error) {
       alert(`❌ ${error.message}`);
     }
   };
 
   const handleUpdate = async (saveMode = 'update') => {
+    if (permissionLoading || !canEditHere) return alert('Edit permission is required to update this payment.');
     const isDraftSave = saveMode === 'draft';
     if (!isDraftSave && !header.branch) {
       alert("Please select a branch");
@@ -2216,7 +2225,7 @@ export default function EditAdvancePayment() {
         alert(`✅ Advance Payment draft saved!\nPayment No: ${paymentNo}${subCompanyMsg}`);
       } else {
         setIsDraft(false);
-        alert(`✅ Advance Payment updated successfully!\nPayment No: ${paymentNo}${subCompanyMsg}`);
+        alert(`✅ ${data.data?.requiresApproval ? 'Advance Payment updated and sent for fresh approval.' : 'Advance Payment updated successfully!'}\nPayment No: ${paymentNo}${subCompanyMsg}`);
         router.push('/admin/Advance-Payment');
       }
 
@@ -2228,7 +2237,7 @@ export default function EditAdvancePayment() {
     }
   };
 
-  if (fetchLoading) {
+  if (fetchLoading || permissionLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white p-6">
         <div className="flex items-center justify-center h-64">
@@ -2240,6 +2249,8 @@ export default function EditAdvancePayment() {
       </div>
     );
   }
+
+  if (!canEditHere) return <div className="p-6"><p className="text-sm text-red-700">You do not have permission to edit Advance Payments.</p><button onClick={() => router.push('/admin/Advance-Payment')} className="mt-3 text-sm font-semibold text-emerald-700">Back to List</button></div>;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white">
@@ -2289,16 +2300,16 @@ export default function EditAdvancePayment() {
           </div>
 
           <div className="flex items-center gap-3">
-            {isDraft && !queueGenerated && <button
+            {isDraft && !queueGenerated && canEditHere && <button
               type="button"
               onClick={() => handleUpdate('draft')}
               disabled={saving}
               className="rounded-xl border border-amber-300 bg-amber-50 px-5 py-2 text-sm font-bold text-amber-800 hover:bg-amber-100 disabled:opacity-60"
             >Save as Draft</button>}
-            {!queueGenerated && (
+            {!queueGenerated && canEditHere && (
               <button
                 onClick={() => handleUpdate(isDraft ? 'submit' : 'update')}
-                disabled={saving}
+                disabled={saving || permissionLoading || (isDraft && !canSubmitHere)}
                 className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${saving
                   ? 'bg-gray-400 cursor-not-allowed'
                   : 'bg-emerald-600 hover:bg-emerald-700'
@@ -2909,6 +2920,7 @@ export default function EditAdvancePayment() {
         {/* Payment Transaction Details */}
         <div className="mt-4">
           <Card title="Payment Transaction Details">
+            {bankDetailsLocked && <p className="mb-3 text-xs text-slate-600">Bank details are locked after approval or queue generation.</p>}
             <div className="grid grid-cols-12 gap-4">
               <div className="col-span-12 md:col-span-3">
                 <label className="text-xs font-bold text-slate-600">Vendor Name (Debit)</label>
@@ -2916,8 +2928,8 @@ export default function EditAdvancePayment() {
                   type="text"
                   value={paymentDetails.vendorNameDebit || vendorDetails.vendorName}
                   onChange={(e) => setPaymentDetails({ ...paymentDetails, vendorNameDebit: e.target.value })}
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500"
-                  disabled={queueGenerated}
+                  className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none ${bankDetailsLocked ? 'bg-gray-100 cursor-not-allowed' : 'bg-white focus:border-emerald-500'}`}
+                  disabled={bankDetailsLocked}
                 />
               </div>
 
@@ -2927,8 +2939,8 @@ export default function EditAdvancePayment() {
                   type="text"
                   value={paymentDetails.accountNoCredit || vendorDetails.accountNo}
                   onChange={(e) => setPaymentDetails({ ...paymentDetails, accountNoCredit: e.target.value })}
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500"
-                  disabled={queueGenerated}
+                  className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none ${bankDetailsLocked ? 'bg-gray-100 cursor-not-allowed' : 'bg-white focus:border-emerald-500'}`}
+                  disabled={bankDetailsLocked}
                 />
               </div>
 
@@ -2983,9 +2995,9 @@ export default function EditAdvancePayment() {
                   type="text"
                   value={paymentDetails.transactionId || vendorDetails.transactionId}
                   onChange={(e) => setPaymentDetails({ ...paymentDetails, transactionId: e.target.value })}
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500"
+                  className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none ${bankDetailsLocked ? 'bg-gray-100 cursor-not-allowed' : 'bg-white focus:border-emerald-500'}`}
                   placeholder="Transaction ID"
-                  disabled={queueGenerated}
+                  disabled={bankDetailsLocked}
                 />
               </div>
 
@@ -2995,9 +3007,9 @@ export default function EditAdvancePayment() {
                   type="text"
                   value={paymentDetails.bankVendorCode || vendorDetails.vendorCode}
                   onChange={(e) => setPaymentDetails({ ...paymentDetails, bankVendorCode: e.target.value })}
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500"
+                  className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none ${bankDetailsLocked ? 'bg-gray-100 cursor-not-allowed' : 'bg-white focus:border-emerald-500'}`}
                   placeholder="Bank vendor code"
-                  disabled={queueGenerated}
+                  disabled={bankDetailsLocked}
                 />
               </div>
 
@@ -3005,9 +3017,9 @@ export default function EditAdvancePayment() {
                 <label className="text-xs font-bold text-slate-600">Generate Queue</label>
                 <button
                   onClick={handleGenerateQueue}
-                  disabled={queueGenerated || isDraft || !memoFileInfo?.filePath}
-                  title={isDraft ? "Save this draft before generating a queue" : !memoFileInfo?.filePath ? "A Purchase Panel MEMO is required" : "Generate Queue"}
-                  className={`mt-1 w-full rounded-xl px-4 py-2 text-sm font-bold text-white transition ${queueGenerated || isDraft || !memoFileInfo?.filePath
+                  disabled={queueGenerated || isDraft || paymentDetails.paymentStatus !== 'Approved' || !memoFileInfo?.filePath || permissionLoading || !canApproveHere}
+                  title={!canApproveHere ? "Approve permission is required" : isDraft ? "Save this draft before generating a queue" : paymentDetails.paymentStatus !== 'Approved' ? "Approve this payment first" : !memoFileInfo?.filePath ? "A Purchase Panel MEMO is required" : "Generate Queue"}
+                  className={`mt-1 w-full rounded-xl px-4 py-2 text-sm font-bold text-white transition ${queueGenerated || isDraft || paymentDetails.paymentStatus !== 'Approved' || !memoFileInfo?.filePath || permissionLoading || !canApproveHere
                     ? 'bg-gray-400 cursor-not-allowed'
                     : 'bg-blue-600 hover:bg-blue-700'
                     }`}

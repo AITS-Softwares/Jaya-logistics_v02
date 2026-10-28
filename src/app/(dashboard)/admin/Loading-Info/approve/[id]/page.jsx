@@ -2281,6 +2281,7 @@ export default function ApproveLoadingPanel() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+  const latestVnnSyncPromiseRef = useRef(null);
 
   // State for all data
   const [header, setHeader] = useState({});
@@ -2369,12 +2370,60 @@ export default function ApproveLoadingPanel() {
 
   useEffect(() => {
     fetchLoadingPanelData();
+    const handleLoadingRefresh = () => fetchLoadingPanelData();
+    window.addEventListener('loading-panel:refresh', handleLoadingRefresh);
+    return () => window.removeEventListener('loading-panel:refresh', handleLoadingRefresh);
   }, []);
 
   const fetchLoadingPanelData = async () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
+
+      // Legacy loading records can be left behind after an Order Panel link was
+      // removed from a VNN. When there is one unambiguous, approved VNN match,
+      // reconcile it as the approver opens this page, before loading the form.
+      // The API still enforces Loading Info edit/approve permission; ambiguous
+      // links remain manual review work.
+      if (!latestVnnSyncPromiseRef.current) {
+        latestVnnSyncPromiseRef.current = (async () => {
+          try {
+            const reapprovalUrl = `/api/reapproval/loading/${panelId}`;
+            const reviewRes = await fetch(reapprovalUrl, {
+              headers: { Authorization: `Bearer ${token}` },
+              cache: 'no-store',
+            });
+            const reviewData = await reviewRes.json();
+            const syncRequired = reviewRes.ok
+              && reviewData.success
+              && reviewData.record?.latestVnnSync?.required
+              && !reviewData.record?.latestVnnSync?.ambiguous
+              && reviewData.record?.canReconcileDetachedOrders;
+
+            if (syncRequired) {
+              const syncRes = await fetch(reapprovalUrl, {
+                method: 'POST',
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ action: 'reconcileDetachedOrders' }),
+              });
+              const syncData = await syncRes.json();
+              if (!syncRes.ok || !syncData.success) {
+                console.warn('Could not automatically sync Loading Info from the latest approved VNN:', syncData.message);
+              } else {
+                window.dispatchEvent(new Event('reapproval:refresh'));
+              }
+            }
+          } catch (syncError) {
+            // Keep the approval page usable; the reapproval workspace retains
+            // the manual sync action if automatic reconciliation cannot complete.
+            console.warn('Could not check for an approved VNN sync:', syncError);
+          }
+        })();
+      }
+      await latestVnnSyncPromiseRef.current;
 
       const res = await fetch(`/api/loading-panel?id=${panelId}`, {
         headers: { Authorization: `Bearer ${token}` },

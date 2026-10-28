@@ -28,7 +28,11 @@ export async function PATCH(req, { params }) {
   await dbConnect();
   const record = await VehicleNegotiation.findOne(companyScopeFilter(auth.user, { _id: id }));
   if (!record) return NextResponse.json({ success: false, message: 'Vehicle Negotiation not found.' }, { status: 404 });
-  if (record.approval?.part3Status === 'Approved') {
+  if (record.upstreamPending?.length || record.reapprovalState === 'blockedByUpstream') return NextResponse.json({ success: false, message: 'This Vehicle Negotiation is blocked by an upstream correction.' }, { status: 409 });
+  if (record.reapprovalState === 'pendingApproval' || record.reapprovalState === 'syncFailed') return NextResponse.json({ success: false, message: 'This Vehicle Negotiation is waiting for approval or admin sync recovery.' }, { status: 409 });
+  if (record.workflow?.part1Locked) return NextResponse.json({ success: false, message: 'Parts 1 and 3 are locked together. Use Amend to reopen both parts.' }, { status: 409 });
+  const isReapprovalEdit = ['unlocked', 'pendingApproval', 'pendingReapproval'].includes(record.reapprovalState);
+  if (record.approval?.part3Status === 'Approved' && !isReapprovalEdit) {
     return NextResponse.json({ success: false, message: 'Commercial Part 3 fields are locked after final VNN approval.' }, { status: 409 });
   }
   const data = body.approval || {};
@@ -40,6 +44,12 @@ export async function PATCH(req, { params }) {
   if (data.advance !== undefined) record.approval.advance = Number(data.advance) || 0;
   record.workflow.audit = record.workflow.audit || [];
   record.workflow.audit.push({ action: 'part3-saved', by: auth.user.id || null, at: new Date() });
+  if (isReapprovalEdit) {
+    record.approval.part1Status = 'Pending';
+    record.approval.part3Status = 'Pending';
+    record.panelStatus = 'Draft';
+    record.reapprovalState = 'unlocked';
+  }
   await record.save();
   return NextResponse.json({ success: true, data: record });
 }

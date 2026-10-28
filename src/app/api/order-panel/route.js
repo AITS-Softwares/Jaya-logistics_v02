@@ -2135,8 +2135,10 @@ import Plant from "@/app/api/plants/schema";
 import mongoose from 'mongoose';
 import { withAuth, hasPermission } from "@/lib/auth";
 import { getNextOrderPanelNumber } from "./OrderCounter";
+import { recordApprovedRevision } from '@/lib/reapprovalService';
 import { handleModuleDelete } from "@/lib/deletion/handler";
 import { companyScopeFilter } from "@/lib/companyScope";
+import { notifyModuleApprovers, notifyModuleCreateUsers } from "@/lib/workflowNotifications";
 
 // Register the referenced model before populating plantRows.plantCode below.
 void Plant;
@@ -2609,6 +2611,13 @@ export const POST = withAuth(async (req, context, user) => {
     const newOrderPanel = new OrderPanel(orderPanelData);
     const savedOrderPanel = await newOrderPanel.save();
 
+    if (isSubmitSave) {
+      await notifyModuleApprovers({
+        user, module: 'Order Panel', panelLabel: 'Order Panel',
+        reference: savedOrderPanel.orderPanelNo, url: `/admin/order-panel/${savedOrderPanel._id}`,
+      });
+    }
+
     return NextResponse.json({
       success: true,
       message: "Order panel created successfully",
@@ -2674,6 +2683,16 @@ export const PUT = withAuth(async (req, context, user) => {
       }, { status: 409 });
     }
 
+    if (orderPanel.upstreamPending?.length || orderPanel.reapprovalState === 'blockedByUpstream') {
+      return NextResponse.json({ success: false, message: 'This record is waiting for upstream corrections to be reviewed first.' }, { status: 409 });
+    }
+    if (orderPanel.reapprovalState === 'pendingApproval' || orderPanel.reapprovalState === 'syncFailed') return NextResponse.json({ success: false, message: 'This order is waiting for approval or admin sync recovery.' }, { status: 409 });
+    const isApprovedLocked = ['Approved', 'Completed'].includes(orderPanel.panelStatus);
+    const isReapprovalEdit = ['unlocked', 'pendingApproval', 'pendingReapproval'].includes(orderPanel.reapprovalState);
+    if (isApprovedLocked && !isReapprovalEdit) {
+      return NextResponse.json({ success: false, message: 'Approved orders are locked. Ask an admin to unlock this order before editing.' }, { status: 409 });
+    }
+
     orderPanel.subCompanyId = user.activeOperatingCompanyId;
     orderPanel.subCompanyName = user.activeOperatingCompanyName || '';
     orderPanel.subCompanyCode = user.activeOperatingCompanyCode || '';
@@ -2686,7 +2705,7 @@ export const PUT = withAuth(async (req, context, user) => {
         return NextResponse.json({ success: false, message: `Select a drop location for every order row. Missing on row(s): ${missingDrops.map((row, index) => row.plantName || `Row ${index + 1}`).join(', ')}.` }, { status: 400 });
       }
     }
-    if ((saveMode === 'draft' || saveMode === 'submit') && orderPanel.panelStatus !== 'Draft') {
+    if ((saveMode === 'draft' || saveMode === 'submit') && orderPanel.panelStatus !== 'Draft' && !(isReapprovalEdit && saveMode === 'submit')) {
       return NextResponse.json({
         success: false,
         message: `Only a draft can be saved as draft or submitted. This order is already ${orderPanel.panelStatus}.`
@@ -2857,6 +2876,11 @@ export const PUT = withAuth(async (req, context, user) => {
       orderPanel.isDraft = false;
       orderPanel.panelStatus = 'Submitted';
     }
+    if (isReapprovalEdit && saveMode !== 'draft') {
+      orderPanel.isDraft = false;
+      orderPanel.panelStatus = 'Submitted';
+      orderPanel.reapprovalState = 'pendingApproval';
+    }
 
     // Older order records may contain the display label "Nil" in numeric
     // charge fields. Normalize the hydrated document before validation/save.
@@ -2866,6 +2890,13 @@ export const PUT = withAuth(async (req, context, user) => {
     }
 
     await orderPanel.save();
+
+    if (saveMode === 'submit') {
+      await notifyModuleApprovers({
+        user, module: 'Order Panel', panelLabel: 'Order Panel',
+        reference: orderPanel.orderPanelNo, url: `/admin/order-panel/${orderPanel._id}`,
+      });
+    }
 
     return NextResponse.json({
       success: true,
@@ -2956,6 +2987,11 @@ export const PATCH = withAuth(async (req, context, user) => {
       return NextResponse.json({ success: false, message: 'Cancelled orders cannot be approved, rejected, or completed.' }, { status: 409 });
     }
 
+    if (orderPanel.upstreamPending?.length || orderPanel.reapprovalState === 'blockedByUpstream') {
+      return NextResponse.json({ success: false, message: 'This record cannot be approved until its upstream corrections are reviewed.' }, { status: 409 });
+    }
+    if (orderPanel.reapprovalState === 'unlocked') return NextResponse.json({ success: false, message: 'This record must be edited and resubmitted before approval.' }, { status: 409 });
+
     // A saved-as-draft order must be submitted before it can be approved / rejected / completed
     if (orderPanel.isDraft) {
       return NextResponse.json({
@@ -2968,7 +3004,7 @@ export const PATCH = withAuth(async (req, context, user) => {
     const remarks = (body.remarks || '').trim();
 
     if (action === 'approve') {
-      if (orderPanel.panelStatus !== 'Submitted') return NextResponse.json({ success: false, message: 'Only a submitted order can be approved.' }, { status: 400 });
+      if (orderPanel.panelStatus !== 'Submitted' && !(orderPanel.reapprovalState === 'pendingReapproval' && ['Approved', 'Completed'].includes(orderPanel.panelStatus))) return NextResponse.json({ success: false, message: 'Only a submitted order or a synced record pending reapproval can be approved.' }, { status: 400 });
       if (orderPanel.allocationEnabled) {
         const dropCheck = validatePackDropLocations(orderPanel.packData, orderPanel.plantRows, true);
         if (!dropCheck.ok) return NextResponse.json({ success: false, message: dropCheck.errors.join(' ') }, { status: 400 });
@@ -2978,7 +3014,7 @@ export const PATCH = withAuth(async (req, context, user) => {
       orderPanel.approvedAt = new Date();
       orderPanel.approvalRemarks = remarks || 'Approved via quick action';
     } else if (action === 'reject') {
-      if (orderPanel.panelStatus !== 'Submitted') return NextResponse.json({ success: false, message: 'Only a submitted order can be rejected.' }, { status: 400 });
+      if (orderPanel.panelStatus !== 'Submitted' && !(orderPanel.reapprovalState === 'pendingReapproval' && ['Approved', 'Completed'].includes(orderPanel.panelStatus))) return NextResponse.json({ success: false, message: 'Only a submitted order or a synced record pending reapproval can be rejected.' }, { status: 400 });
       orderPanel.panelStatus = 'Rejected';
       orderPanel.approvedBy = user.id;
       orderPanel.approvedAt = new Date();
@@ -2994,7 +3030,19 @@ export const PATCH = withAuth(async (req, context, user) => {
       }, { status: 400 });
     }
 
+    if (action === 'reject' && ['pendingApproval', 'pendingReapproval'].includes(orderPanel.reapprovalState)) orderPanel.reapprovalState = 'unlocked';
     await orderPanel.save();
+    if (action === 'approve') {
+      try { await recordApprovedRevision('order', orderPanel._id, user); }
+      catch (syncError) { return NextResponse.json({ success: false, message: `Order approved, but downstream sync failed and is blocked for admin retry: ${syncError.message}` }, { status: 503 }); }
+    }
+
+    if (action === 'approve' && orderPanel.panelStatus === 'Approved') {
+      await notifyModuleCreateUsers({
+        user, module: 'Vehicle Negotiation', panelLabel: 'Order Panel',
+        reference: orderPanel.orderPanelNo, url: '/admin/vehicle-negotiation/create',
+      });
+    }
 
     return NextResponse.json({
       success: true,

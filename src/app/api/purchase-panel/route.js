@@ -16,6 +16,7 @@ import { activeOperatingCompanyId, companyScopeFilter } from "@/lib/companyScope
 import AdvancePayment from "../Advance-Payment/AdvancePayment";
 import POD from "../pod-panel/POD";
 import { filterOpenOrderRows, validateOpenOrderRows } from '@/lib/orderRowStatus';
+import { notifyModuleApprovers, notifyModuleCreateUsers } from '@/lib/workflowNotifications';
 
 // ── PERMISSION FUNCTIONS ──
 
@@ -582,6 +583,9 @@ export async function POST(req) {
     if (!eligibleLoadingInfo) {
       return NextResponse.json({ success: false, message: "Select an approved or completed Loading Info." }, { status: 400 });
     }
+    if (eligibleLoadingInfo.reapprovalState && eligibleLoadingInfo.reapprovalState !== 'none' || eligibleLoadingInfo.upstreamPending?.length) {
+      return NextResponse.json({ success: false, message: 'This Loading Info is under review. Purchase creation is paused until its reapproval is complete.' }, { status: 409 });
+    }
     const heldLoadingRow = await validateOpenOrderRows(user, eligibleLoadingInfo.orderRows || []);
     if (heldLoadingRow) return NextResponse.json({ success: false, message: heldLoadingRow }, { status: 409 });
 
@@ -1135,6 +1139,12 @@ export async function PUT(req) {
       purchase.panelStatus = 'Draft';
     }
     await purchase.save({ validateBeforeSave: saveMode !== 'draft' });
+    if (saveMode === 'submit') {
+      await notifyModuleApprovers({
+        user, module: 'Purchase Panel', panelLabel: 'Purchase Panel',
+        reference: purchase.purchaseNo, url: `/admin/Purchase-Panel/${purchase._id}`,
+      });
+    }
 
     return NextResponse.json({
       success: true,
@@ -1276,6 +1286,19 @@ export async function PATCH(req) {
     purchase.panelStatus = statusMap[action];
 
     await purchase.save();
+
+    if (action === 'approve' || action === 'complete') {
+      await notifyModuleCreateUsers({
+        user, module: 'Advance Payment', panelLabel: 'Purchase Panel',
+        reference: purchase.purchaseNo, url: '/admin/Advance-Payment/create',
+      });
+      if (purchase.memoFile?.filePath || purchase.memoFile?.fullPath || purchase.memoFile?.filename) {
+        await notifyModuleCreateUsers({
+          user, module: 'Proof Of Delivery', panelLabel: 'Purchase Panel',
+          reference: purchase.purchaseNo, url: '/admin/ProofofDelivery/create',
+        });
+      }
+    }
 
     return NextResponse.json({
       success: true,
