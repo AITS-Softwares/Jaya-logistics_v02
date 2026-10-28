@@ -418,6 +418,7 @@
 // models/LoadingPanel.js
 import mongoose from 'mongoose';
 import softDeletePlugin from '@/lib/softDelete';
+import reapprovalPlugin from '@/lib/reapprovalPlugin';
 
 const loadingPanelSchema = new mongoose.Schema({
   // Auto-generated vehicle arrival number
@@ -849,11 +850,11 @@ loadingPanelSchema.pre('save', function(next) {
 // Index for better performance
 loadingPanelSchema.index({ companyId: 1, createdAt: -1 });
 loadingPanelSchema.index({ vehicleArrivalNo: 1, companyId: 1 });
-loadingPanelSchema.index({ vehicleNegotiationNo: 1 });
 loadingPanelSchema.index({ 'vehicleInfo.vehicleNo': 1 });
 loadingPanelSchema.index({ subCompanyId: 1 });
 
 loadingPanelSchema.plugin(softDeletePlugin);
+loadingPanelSchema.plugin(reapprovalPlugin);
 const LoadingPanel = mongoose.models.LoadingPanel || 
   mongoose.model('LoadingPanel', loadingPanelSchema);
 

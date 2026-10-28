@@ -2405,13 +2405,13 @@
 //       // APPROVAL SECTION WITH SEPARATE FIELDS FOR EACH PART
 //       approval: {
 //         // Part 1 Approval
-//         part1Status: body.approval?.part1Status || 'Pending',
+//         part1Status: 'Pending',
 //         part1Remarks: body.approval?.part1Remarks || '',
 //         // Part 2 Approval
 //         part2Status: body.approval?.part2Status || 'Pending',
 //         part2Remarks: body.approval?.part2Remarks || '',
 //         // Part 3 Approval
-//         part3Status: body.approval?.part3Status || 'Pending',
+//         part3Status: 'Pending',
 //         part3Remarks: body.approval?.part3Remarks || '',
 //         // Shared fields
 //         vendorName: body.approval?.vendorName || '',
@@ -3286,7 +3286,9 @@
 //       }, { status: 404 });
 //     }
 
-//     // Handle approve action for specific part
+//     if (!vehicleNegotiation.workflow?.part1Locked || vehicleNegotiation.panelStatus === 'Draft') return NextResponse.json({ success: false, message: 'Submit Parts 1 and 3 together before recording a VNN decision.' }, { status: 409 });
+
+    // Handle approve action for specific part
 //     if (action === 'approve') {
 //       const partToUpdate = part || 'part1';
 
@@ -3307,7 +3309,14 @@
 //       if (body.vendorCode) vehicleNegotiation.approval.vendorCode = body.vendorCode;
 //       if (body.finalPerMT !== undefined) vehicleNegotiation.approval.finalPerMT = Number(body.finalPerMT);
 //       if (body.finalFix !== undefined) vehicleNegotiation.approval.finalFix = Number(body.finalFix);
-//       if (body.vehicleNo) vehicleNegotiation.approval.vehicleNo = body.vehicleNo;
+//       if (body.vehicleNo) vehicleNegotiat if (type === 'vnn') {
+        // root.workflow = root.workflow || {};
+        // root.workflow.part1Locked = false;
+        // root.workflow.part1LockedAt = null;
+        // root.workflow.part1LockedBy = null;
+        // root.approval = root.approval || {};
+        // root.approval.part1Status = 'Pending';
+        // root.approval.part3Status = 'Pending';ion.approval.vehicleNo = body.vehicleNo;
 //       if (body.mobile) vehicleNegotiation.approval.mobile = body.mobile;
 //       if (body.purchaseType) vehicleNegotiation.approval.purchaseType = body.purchaseType;
 //       if (body.paymentTerms) vehicleNegotiation.approval.paymentTerms = body.paymentTerms;
@@ -3390,7 +3399,9 @@ import { activeOperatingCompanyId, companyScopeFilter } from "@/lib/companyScope
 import { validateOpenOrderRows } from '@/lib/orderRowStatus';
 import { handleModuleDelete } from '@/lib/deletion/handler';
 import mongoose from 'mongoose';
-import { getFinalVnnStatus, withVnnDisplayData } from '@/lib/vehicleNegotiationWorkflow';
+import { getFinalVnnStatus, isVnnReadyForDownstream, withVnnDisplayData } from '@/lib/vehicleNegotiationWorkflow';
+import { notifyModuleApprovers, notifyModuleCreateUsers } from '@/lib/workflowNotifications';
+import { applyApprovedVnnLocationRemarks, assertSourcesCurrent, captureSourceDependencies, recordApprovedRevision, withApprovedVnnLocationRemarks } from '@/lib/reapprovalService';
 
 // Helper function to format date as DD/MM/YYYY
 function formatDateDDMMYYYY(date) {
@@ -3491,10 +3502,10 @@ async function withLinkedOrderStatuses(negotiation, user) {
   const panels = await OrderPanel.find(companyScopeFilter(user, { $or: [
     ...(panelIds.length ? [{ _id: { $in: panelIds } }] : []),
     ...(orderNos.length ? [{ orderPanelNo: { $in: orderNos } }] : [])
-  ] }), { orderPanelNo: 1, plantRows: 1 }).lean();
+  ] }), { orderPanelNo: 1, plantRows: 1, panelStatus: 1, reapprovalState: 1, 'approvedSnapshot.plantRows': 1 }).lean();
   const byId = new Map(panels.map((panel) => [String(panel._id), panel]));
   const byNo = new Map(panels.map((panel) => [String(panel.orderPanelNo), panel]));
-  return {
+  return applyApprovedVnnLocationRemarks({
     ...negotiation,
     orders: orders.map((row) => {
       const panel = byId.get(String(row.orderPanelId || '')) || byNo.get(String(row.orderNo || ''));
@@ -3507,7 +3518,7 @@ async function withLinkedOrderStatuses(negotiation, user) {
       const plantRow = plantRowById || (matchingRows.length === 1 ? matchingRows[0] : null);
       return { ...row, orderPanelId: panel?._id ? String(panel._id) : row.orderPanelId, orderRowId: plantRow?._id ? String(plantRow._id) : row.orderRowId, sourceOrderStatus: plantRow?.status || (panel ? 'Open' : 'Unknown'), sourceStatusReason: plantRow?.statusReason || '' };
     })
-  };
+  }, panels);
 }
 
 function uniqueVnnOrderPanels(selectedOrderPanels = []) {
@@ -3538,6 +3549,21 @@ export async function GET(req) {
     const memoStatus = url.searchParams.get("memoStatus");
     const eligibleFor = url.searchParams.get('eligibleFor');
     const pendingLookup = url.searchParams.get("lookup");
+    if (pendingLookup === 'usedOrderPanels') {
+      const excludeVnnId = url.searchParams.get('excludeVnnId');
+      const usedQuery = {
+        panelStatus: { $ne: 'Cancelled' },
+        ...(mongoose.Types.ObjectId.isValid(excludeVnnId) ? { _id: { $ne: excludeVnnId } } : {}),
+      };
+      const negotiations = await VehicleNegotiation.find(companyScopeFilter(user, usedQuery))
+        .select('orders.orderNo selectedOrderPanels.orderPanelNo')
+        .lean();
+      const usedOrderNos = [...new Set(negotiations.flatMap((item) => [
+        ...(item.orders || []).map((order) => order.orderNo),
+        ...(item.selectedOrderPanels || []).map((panel) => panel.orderPanelNo),
+      ]).map((value) => String(value || '').trim()).filter(Boolean))];
+      return NextResponse.json({ success: true, data: { usedOrderNos } });
+    }
     if (pendingLookup === "pendingCount" || pendingLookup === "pendingList") {
       const [orderPanels, negotiations] = await Promise.all([
         OrderPanel.find(companyScopeFilter(user, { panelStatus: { $in: ['Approved', 'Partially on hold'] } }), { orderPanelNo: 1, plantRows: 1, createdAt: 1, customerName: 1, partyName: 1, branchName: 1 }).lean(),
@@ -3910,9 +3936,9 @@ export async function POST(req) {
       voiceNoteFile: body.voiceFileInfo || null,
 
       approval: {
-        part1Status: body.approval?.part1Status || 'Pending',
+        part1Status: 'Pending',
         part1Remarks: body.approval?.part1Remarks || '',
-        part3Status: body.approval?.part3Status || 'Pending',
+        part3Status: 'Pending',
         part3Remarks: body.approval?.part3Remarks || '',
         vendorName: body.approval?.vendorName || '',
         vendorCode: body.approval?.vendorCode || '',
@@ -3945,6 +3971,14 @@ export async function POST(req) {
     });
 
     await newVehicleNegotiation.save();
+    await captureSourceDependencies('vnn', newVehicleNegotiation, user.companyId);
+
+    if (body.lockPart1 === true) {
+      await notifyModuleApprovers({
+        user, module: 'Vehicle Negotiation', panelLabel: 'Vehicle Negotiation',
+        reference: newVehicleNegotiation.vnnNo, url: `/admin/vehicle-negotiation/${newVehicleNegotiation._id}`,
+      });
+    }
 
     return NextResponse.json({
       success: true,
@@ -4049,7 +4083,9 @@ export async function PUT(req) {
       body.approval.part3Remarks !== undefined
     );
 
-    const isGeneralEdit = body.header || body.orders || body.negotiation ||
+    if (isApprovalUpdate) return NextResponse.json({ success: false, message: 'Use the combined VNN approval action to approve or reject Parts 1 and 3 together.' }, { status: 409 });
+
+    const isGeneralEdit = body.approval || body.header || body.orders || body.negotiation ||
       body.vendors || body.selectedOrderPanels ||
       body.voiceUrl !== undefined || body.voiceFileInfo;
 
@@ -4094,10 +4130,20 @@ export async function PUT(req) {
       }, { status: 404 });
     }
 
-    if (vehicleNegotiation.workflow?.part1Locked && (body.header || body.selectedOrderPanels || body.orders || body.vendors || body.negotiation || body.voiceUrl !== undefined || body.voiceFileInfo)) {
+    const wasReadyForDownstream = isVnnReadyForDownstream(vehicleNegotiation);
+
+    if (vehicleNegotiation.upstreamPending?.length || vehicleNegotiation.reapprovalState === 'blockedByUpstream') {
+      return NextResponse.json({ success: false, message: 'This Vehicle Negotiation is waiting for upstream corrections to be reviewed first.' }, { status: 409 });
+    }
+    if (vehicleNegotiation.reapprovalState === 'pendingApproval' || vehicleNegotiation.reapprovalState === 'syncFailed') return NextResponse.json({ success: false, message: 'This Vehicle Negotiation is waiting for approval or admin sync recovery.' }, { status: 409 });
+    if (wasReadyForDownstream && !['unlocked', 'pendingApproval', 'pendingReapproval'].includes(vehicleNegotiation.reapprovalState)) {
+      return NextResponse.json({ success: false, message: 'Approved Vehicle Negotiations are locked. Ask an admin to unlock this record before editing.' }, { status: 409 });
+    }
+
+    if (vehicleNegotiation.workflow?.part1Locked && isGeneralEdit) {
       return NextResponse.json({
         success: false,
-        message: 'Part 1 is locked. Use the Rate Target workspace or Part 3 workflow as applicable.'
+        message: 'Parts 1 and 3 are locked together. Use Amend to reopen both parts.'
       }, { status: 409 });
     }
 
@@ -4291,8 +4337,48 @@ export async function PUT(req) {
       // receives a larger approval payload.
     }
 
+    // Saving an amendment keeps both parts open until explicit submission.
+    if (isGeneralEdit && ['unlocked', 'pendingReapproval'].includes(vehicleNegotiation.reapprovalState)) {
+      vehicleNegotiation.approval.part1Status = 'Pending';
+      vehicleNegotiation.approval.part3Status = 'Pending';
+      vehicleNegotiation.panelStatus = 'Draft';
+      vehicleNegotiation.reapprovalState = 'unlocked';
+    }
+
+    if (body.submitVnn === true) {
+      if (!isGeneralEdit) return NextResponse.json({ success: false, message: 'Save the VNN details before submitting them for approval.' }, { status: 400 });
+      vehicleNegotiation.approval.part1Status = 'Pending';
+      vehicleNegotiation.approval.part3Status = 'Pending';
+      vehicleNegotiation.approval.part1Remarks = '';
+      vehicleNegotiation.approval.part3Remarks = '';
+      vehicleNegotiation.panelStatus = 'Submitted';
+      vehicleNegotiation.workflow = vehicleNegotiation.workflow || {};
+      vehicleNegotiation.workflow.part1Locked = true;
+      vehicleNegotiation.workflow.part1LockedAt = new Date();
+      vehicleNegotiation.workflow.part1LockedBy = user.id || null;
+      if (vehicleNegotiation.reapprovalState === 'unlocked') vehicleNegotiation.reapprovalState = 'pendingApproval';
+      vehicleNegotiation.workflow.audit = vehicleNegotiation.workflow.audit || [];
+      vehicleNegotiation.workflow.audit.push({ action: 'vnn-submitted-for-combined-approval', by: user.id || null, at: new Date() });
+    }
+
     // Save the updated vehicle negotiation
     await vehicleNegotiation.save();
+
+    if (!wasReadyForDownstream && isVnnReadyForDownstream(vehicleNegotiation)) {
+      await Promise.all([
+        notifyModuleCreateUsers({
+          user, module: 'Pricing Panel', panelLabel: 'Vehicle Negotiation',
+          reference: vehicleNegotiation.vnnNo, url: '/admin/pricing-panel/create',
+        }),
+        notifyModuleCreateUsers({
+          user, module: 'Loading Info', panelLabel: 'Vehicle Negotiation',
+          reference: vehicleNegotiation.vnnNo, url: '/admin/Loading-Info/create',
+        }),
+      ]);
+    }
+    if (body.submitVnn === true) {
+      await notifyModuleApprovers({ user, module: 'Vehicle Negotiation', panelLabel: 'Vehicle Negotiation', reference: vehicleNegotiation.vnnNo, url: `/admin/vehicle-negotiation/${vehicleNegotiation._id}` });
+    }
 
     return NextResponse.json({
       success: true,
@@ -4449,9 +4535,23 @@ export async function PATCH(req) {
       }, { status: 404 });
     }
 
+    const wasReadyForDownstream = isVnnReadyForDownstream(vehicleNegotiation);
+    const isPendingReapproval = ['pendingApproval', 'pendingReapproval'].includes(vehicleNegotiation.reapprovalState);
+
+    if (vehicleNegotiation.upstreamPending?.length || vehicleNegotiation.reapprovalState === 'blockedByUpstream') {
+      return NextResponse.json({ success: false, message: 'This Vehicle Negotiation cannot be approved until its upstream corrections are reviewed.' }, { status: 409 });
+    }
+    if (vehicleNegotiation.reapprovalState === 'unlocked') return NextResponse.json({ success: false, message: 'This Vehicle Negotiation must be edited and resubmitted before approval.' }, { status: 409 });
+
     // Handle approve action for specific part
     if (action === 'approve') {
-      const partToUpdate = part || 'part1';
+      try { await assertSourcesCurrent(vehicleNegotiation, user.companyId); }
+      catch (staleError) { return NextResponse.json({ success: false, message: staleError.message }, { status: staleError.status || 409 }); }
+      const reviewedVnn = await withApprovedVnnLocationRemarks(vehicleNegotiation.toObject(), user);
+      for (let index = 0; index < vehicleNegotiation.orders.length; index++) {
+        vehicleNegotiation.orders[index].locationRemark = reviewedVnn.orders[index].locationRemark || '';
+      }
+      const partToUpdate = part === 'part2' ? 'part2' : 'all';
 
       if (partToUpdate === 'part2') {
         return NextResponse.json({
@@ -4487,6 +4587,21 @@ export async function PATCH(req) {
 
       await vehicleNegotiation.save();
 
+      if (isPendingReapproval || (!wasReadyForDownstream && isVnnReadyForDownstream(vehicleNegotiation))) {
+        try { await recordApprovedRevision('vnn', vehicleNegotiation._id, user); }
+        catch (syncError) { return NextResponse.json({ success: false, message: `Vehicle Negotiation approved, but downstream sync failed and is blocked for admin retry: ${syncError.message}` }, { status: 503 }); }
+        await Promise.all([
+          notifyModuleCreateUsers({
+            user, module: 'Pricing Panel', panelLabel: 'Vehicle Negotiation',
+            reference: vehicleNegotiation.vnnNo, url: '/admin/pricing-panel/create',
+          }),
+          notifyModuleCreateUsers({
+            user, module: 'Loading Info', panelLabel: 'Vehicle Negotiation',
+            reference: vehicleNegotiation.vnnNo, url: '/admin/Loading-Info/create',
+          }),
+        ]);
+      }
+
       return NextResponse.json({
         success: true,
         message: partToUpdate === 'all' ? 'Vehicle negotiation approved successfully' : `Part ${partToUpdate} approved successfully`,
@@ -4501,7 +4616,7 @@ export async function PATCH(req) {
 
     // Handle reject action for specific part
     else if (action === 'reject') {
-      const partToUpdate = part || 'part1';
+      const partToUpdate = part === 'part2' ? 'part2' : 'all';
 
       if (partToUpdate === 'part2') {
         return NextResponse.json({
@@ -4526,6 +4641,8 @@ export async function PATCH(req) {
         if (remarks !== undefined) vehicleNegotiation.approval.part3Remarks = remarks;
         vehicleNegotiation.panelStatus = 'Rejected';
       }
+
+      if (['pendingApproval', 'pendingReapproval'].includes(vehicleNegotiation.reapprovalState)) vehicleNegotiation.reapprovalState = 'unlocked';
 
       await vehicleNegotiation.save();
 

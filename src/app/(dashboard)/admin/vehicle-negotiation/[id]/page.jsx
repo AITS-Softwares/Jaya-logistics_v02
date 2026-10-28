@@ -5994,7 +5994,7 @@ function useVehicleSearch() {
 /* =======================
   Order Panel Search Hook
 ========================= */
-function useOrderPanelSearch() {
+function useOrderPanelSearch(excludeVnnId = '') {
   const [orderPanels, setOrderPanels] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -6004,15 +6004,17 @@ function useOrderPanelSearch() {
     setError(null);
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/order-panel', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (data.success && Array.isArray(data.data)) {
-        setOrderPanels(data.data);
-      } else {
-        setOrderPanels([]);
-      }
+      const headers = { Authorization: `Bearer ${token}` };
+      const [orderRes, vehicleRes] = await Promise.all([
+        fetch('/api/order-panel?openOnly=true', { headers, cache: 'no-store' }),
+        fetch(`/api/vehicle-negotiation?lookup=usedOrderPanels&excludeVnnId=${encodeURIComponent(excludeVnnId)}`, { headers, cache: 'no-store' }),
+      ]);
+      const [data, vehicleData] = await Promise.all([orderRes.json(), vehicleRes.json()]);
+      if (!orderRes.ok || !vehicleRes.ok || !vehicleData.success) throw new Error('Failed to load eligible orders');
+      const usedOrderNos = new Set((vehicleData.data?.usedOrderNos || [])
+        .map((orderNo) => String(orderNo).trim().toLocaleLowerCase()));
+      setOrderPanels((data.success && Array.isArray(data.data) ? data.data : []).filter((panel) => panel.panelStatus === 'Approved'
+        && !usedOrderNos.has(String(panel.orderPanelNo || '').trim().toLocaleLowerCase())));
     } catch (err) {
       console.error('Error fetching order panels:', err);
       setOrderPanels([]);
@@ -6707,6 +6709,7 @@ function SupplierSearchDropdown({
 function MultiSelectOrderPanelDropdown({
   selectedPanels = [],
   onSelect,
+  currentVnnId,
   placeholder = "Search and select order panels..."
 }) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -6717,7 +6720,7 @@ function MultiSelectOrderPanelDropdown({
   const dropdownRef = useRef(null);
   const inputRef = useRef(null);
   const selectionInProgressRef = useRef(false);
-  const orderPanelSearch = useOrderPanelSearch();
+  const orderPanelSearch = useOrderPanelSearch(currentVnnId);
   const normalizeOrderNo = (value) => String(value || '').trim().toLocaleLowerCase();
   const selectedOrderNos = new Set(selectedPanels.map((panel) => normalizeOrderNo(panel.orderPanelNo)).filter(Boolean));
 
@@ -7263,6 +7266,7 @@ export default function EditVehicleNegotiation() {
   const [vendors, setVendors] = useState([]);
   const [voiceUrl, setVoiceUrl] = useState("");
   const [workflow, setWorkflow] = useState({ part1Locked: false, amendmentCount: 0 });
+  // const [reapprovalState, setReapprovalState] = useState('none');
 
   const [approval, setApproval] = useState({
     vendorName: "",
@@ -7290,7 +7294,7 @@ export default function EditVehicleNegotiation() {
   const isPart1Locked = Boolean(workflow.part1Locked);
   const isPart3Finalized = approval.part3Status === 'Approved';
   const canEditVnn = canEdit('Vehicle Negotiation');
-  const canEditPart3 = canEditVnn && !isPart3Finalized;
+  const canEditPart3 = canEditVnn && !isPart1Locked && !isPart3Finalized;
   const canEditPlacement = canEdit('Vehicle Negotiation Placement') && isPart1Locked && isPart3Finalized;
   const affectedOrderStatuses = orders.reduce((grouped, order) => {
     const status = String(order.sourceOrderStatus || '').trim();
@@ -7379,6 +7383,7 @@ export default function EditVehicleNegotiation() {
 
       const vn = data.data;
       setWorkflow(vn.workflow || { part1Locked: false, amendmentCount: 0 });
+      // setReapprovalState(vn.reapprovalState || 'none');
 
       setVnnNumber(vn.vnnNo || "");
 
@@ -7914,9 +7919,9 @@ export default function EditVehicleNegotiation() {
     const reason = action === 'amend-part1' ? window.prompt('Enter the amendment reason:') : '';
     if (action === 'amend-part1' && !reason?.trim()) return;
     if (action === 'lock-part1') {
-      if (!window.confirm('This will save the current Part 1 data and permanently lock it until an amendment is opened. Continue?')) return;
-      const saved = await handleUpdate({ redirect: false });
-      if (!saved) return;
+      if (!window.confirm('Save and submit Parts 1 and 3 together for VNN approval? Both parts will be locked until an amendment is opened.')) return;
+      await handleUpdate({ redirect: false, submit: true });
+      return;
     }
     setSaving(true);
     try {
@@ -7930,10 +7935,10 @@ export default function EditVehicleNegotiation() {
       if (!res.ok) throw new Error(data.message || 'Workflow update failed.');
       if (action === 'amend-part1') {
         await fetchNegotiationData();
-        alert('Part 1 amendment opened. All approvals have been reset and must be completed again.');
+        alert('VNN amendment opened. Parts 1 and 3 are both editable. Submit them together for approval when ready.');
       } else {
         setWorkflow(data.data.workflow);
-        alert('VNN submitted for approval. Part 1 is locked; Commercial Part 3 can be completed independently.');
+        alert('Parts 1 and 3 submitted together for VNN approval.');
       }
     } catch (error) {
       setSaveError(error.message);
@@ -7943,13 +7948,15 @@ export default function EditVehicleNegotiation() {
     }
   };
 
-  const handleUpdate = async ({ redirect = true } = {}) => {
+  // const handleUpdate = async ({ redirect = true, submit = false } = {}) => {
+  //   const submitForApproval = submit || reapprovalState === 'unlocked';
+  const handleUpdate = async ({ redirect = true, submit = false } = {}) => {
     if (!canEditVnn && !canEditPlacement) {
       alert('You do not have permission to edit this Vehicle Negotiation stage.');
       return false;
     }
     if (isPart1Locked && !canEditPart3 && !canEditPlacement) {
-      alert('Vehicle placement opens after Part 3 approval with Vehicle Negotiation Placement edit permission.');
+      alert('Parts 1 and 3 are locked. Use Amend to edit both parts. Vehicle placement opens after VNN approval.');
       return false;
     }
     if (!header.branch) {
@@ -7986,6 +7993,7 @@ export default function EditVehicleNegotiation() {
 
       const payload = {
         id: negotiationId,
+        ...(submit ? { submitVnn: true } : {}),
         header: {
           ...header,
           customerName: selectedCustomer?.customerName || '',
@@ -8098,9 +8106,10 @@ export default function EditVehicleNegotiation() {
         throw new Error(data.message || `Failed to update vehicle negotiation: ${res.status}`);
       }
 
+      await fetchNegotiationData();
       setSaveSuccess(true);
-
-      alert(`✅ ${isPlacementSave ? 'Vehicle placement saved' : 'Vehicle negotiation updated'} successfully!\nVNN Number: ${header.vnnNo}`);
+      alert(`✅ ${submit ? 'Parts 1 and 3 submitted for VNN approval' : isPlacementSave ? 'Vehicle placement saved' : 'Vehicle negotiation updated'} successfully!\nVNN Number: ${header.vnnNo}`);
+      // alert(`✅ ${isPlacementSave ? 'Vehicle placement saved' : submitForApproval ? 'Vehicle negotiation submitted for combined approval' : 'Vehicle negotiation updated'} successfully!\nVNN Number: ${header.vnnNo}`);
 
       if (redirect) {
         setTimeout(() => {
@@ -8494,7 +8503,8 @@ export default function EditVehicleNegotiation() {
                 </div>
               )}
               <div className="text-xs text-blue-600 mt-1">
-                ⓘ Part 1 and Commercial Part 3 can be completed independently. Vehicle placement opens after Part 3 approval.
+                ⓘ Edit Parts 1 and 3 together and submit one VNN approval. Amend reopens both parts. Vehicle placement opens after approval.
+                {/* ⓘ Edit Part 1 and Commercial Part 3 together, then submit one VNN approval. Vehicle placement remains available after approval. */}
               </div>
             </div>
 
@@ -8515,7 +8525,7 @@ export default function EditVehicleNegotiation() {
                     </svg>
                     Updating...
                   </span>
-                ) : (isPart1Locked ? (isPart3Finalized ? 'Save Vehicle Placement' : 'Save Part 3') : 'Save VNN')}
+                ) : (isPart1Locked ? (isPart3Finalized ? 'Save Vehicle Placement' : 'Awaiting Approval') : 'Save VNN')}
               </button>
               {!isPart1Locked && canEditVnn ? (
                 <button onClick={() => handleWorkflowAction('lock-part1')} disabled={saving} className="rounded-xl bg-indigo-600 px-5 py-2 text-sm font-bold text-white hover:bg-indigo-700 disabled:bg-slate-400">
@@ -8523,7 +8533,7 @@ export default function EditVehicleNegotiation() {
                 </button>
               ) : (isPart1Locked && canEditVnn && (
                 <button onClick={() => handleWorkflowAction('amend-part1')} disabled={saving} className="rounded-xl bg-amber-600 px-5 py-2 text-sm font-bold text-white hover:bg-amber-700 disabled:bg-slate-400">
-                  Amend Part 1
+                  Amend VNN (Parts 1 &amp; 3)
                 </button>
               ))}
             </div>
@@ -8547,6 +8557,7 @@ export default function EditVehicleNegotiation() {
                   <MultiSelectOrderPanelDropdown
                     selectedPanels={selectedOrderPanels}
                     onSelect={handleOrderPanelSelect}
+                    currentVnnId={negotiationId}
                     placeholder="Search and select order panels..."
                   />
                   {selectedOrderPanels.length > 0 && (
@@ -8836,7 +8847,7 @@ export default function EditVehicleNegotiation() {
               <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-700">
                 {isPart3Finalized
                   ? 'Vehicle placement requires Vehicle Negotiation Placement edit permission.'
-                  : 'Commercial Part 3 can be completed independently. Vehicle placement opens after Part 3 approval.'}
+                  : 'Parts 1 and 3 are locked together. Use Amend to edit both, then submit one VNN approval.'}
               </div>
             )}
             <div className="grid grid-cols-12 gap-3 mb-4">

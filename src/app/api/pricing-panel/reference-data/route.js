@@ -69,6 +69,7 @@ async function getAvailableVnnsForPricing(user) {
       {
         vnnNo: 1,
         panelStatus: 1,
+        reapprovalState: 1,
         date: 1,
         customerId: 1,
         customerName: 1,
@@ -106,7 +107,7 @@ async function getAvailableVnnsForPricing(user) {
       .map(String),
   );
 
-  const eligible = vehicleNegotiations.filter((vnn) => !['Draft', 'Cancelled'].includes(vnn.panelStatus) && isVnnReadyForDownstream(vnn) && !usedVnnIds.has(String(vnn._id)));
+  const eligible = vehicleNegotiations.filter((vnn) => !['Draft', 'Cancelled'].includes(vnn.panelStatus) && (!vnn.reapprovalState || vnn.reapprovalState === 'none') && isVnnReadyForDownstream(vnn) && !usedVnnIds.has(String(vnn._id)));
   const openRows = await Promise.all(eligible.map((vnn) => filterOpenOrderRows(user, vnn.orders || [])));
   return eligible.map((vnn, index) => ({ ...vnn, orders: openRows[index] })).filter((vnn) => vnn.orders.length);
 }

@@ -959,6 +959,8 @@ export default function BalancePaymentList() {
       alert('You don\'t have permission to generate the payment queue');
       return;
     }
+    const selectedPayment = payments.find((item) => item._id === paymentId);
+    if (selectedPayment?.paymentStatus !== 'Approved') return alert('Approve this payment before generating its queue.');
     if (!confirm(`Generate payment queue for ${paymentNo}?`)) return;
 
     setQueueLoading(paymentId);
@@ -971,18 +973,44 @@ export default function BalancePaymentList() {
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
+        if (data.data?.uniqueId) setPayments((previous) => previous.map((item) => item._id === paymentId ? {
+          ...item,
+          queueGenerated: !!data.data.queueGenerated,
+          paymentStatus: data.data.paymentStatus || item.paymentStatus,
+          transactionId: data.data.utrNumber || item.transactionId,
+          bankIntegration: { ...(item.bankIntegration || {}), provider: 'ICICI_CIB', uniqueId: data.data.uniqueId, bankStatus: data.data.bankStatus, requestId: data.data.requestId, utrNumber: data.data.utrNumber },
+        } : item));
         alert(data.message || 'Failed to generate payment queue');
         return;
       }
       setPayments((previous) => previous.map((item) => item._id === paymentId
-        ? { ...item, queueGenerated: true, paymentStatus: 'Queued' }
+        ? { ...item, queueGenerated: !!data.data?.queueGenerated, paymentStatus: data.data?.paymentStatus || 'Queued', transactionId: data.data?.utrNumber || item.transactionId, bankIntegration: { ...(item.bankIntegration || {}), provider: data.data?.provider || 'ICICI_CIB', uniqueId: data.data?.uniqueId, bankStatus: data.data?.bankStatus, requestId: data.data?.requestId, utrNumber: data.data?.utrNumber } }
         : item));
-      alert('✅ Balance payment queue generated successfully!');
+      alert(data.message || 'Payment submitted to ICICI. Check CIB for authorization.');
     } catch (err) {
       alert(`❌ Error: ${err.message}`);
     } finally {
       setQueueLoading(null);
     }
+  };
+
+  const handleCheckBankStatus = async (paymentId) => {
+    setQueueLoading(paymentId);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/balance-payment?id=${paymentId}&action=check-status`, { method: 'PATCH', headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      if (!res.ok || !data.success) { alert(data.message || 'Could not refresh ICICI status'); return; }
+      setPayments((previous) => previous.map((item) => item._id === paymentId ? {
+        ...item,
+        queueGenerated: !!data.data.queueGenerated,
+        paymentStatus: data.data.bankStatus === 'SUCCESS' ? 'Completed' : ['FAILURE', 'REVERSED'].includes(data.data.bankStatus) ? 'Rejected' : item.paymentStatus,
+        transactionId: data.data.utrNumber || item.transactionId,
+        bankIntegration: { ...(item.bankIntegration || {}), ...data.data, provider: 'ICICI_CIB' },
+      } : item));
+      alert(`ICICI status: ${data.data.bankStatus}${data.data.retryAllowed ? '\nThe bank reports the transaction was not found after the retry window. You can safely submit again using the same reference.' : ''}${data.data.utrNumber ? `\nUTR: ${data.data.utrNumber}` : ''}`);
+    } catch (err) { alert(`Could not refresh ICICI status: ${err.message}`); }
+    finally { setQueueLoading(null); }
   };
 
   // ✅ Full Approve with Details - navigates to approve page
@@ -1212,7 +1240,7 @@ export default function BalancePaymentList() {
                       <td className="px-3 py-3 text-right text-red-600">{formatCurrency(item.podDeduction || 0)}</td>
                       <td className="px-3 py-3 text-right font-extrabold text-purple-700">{formatCurrency(item.finalBalance || item.balance || 0)}</td>
                       <td className="px-3 py-3 text-slate-600">{formatDate(item.dueDate)}</td>
-                      <td className="px-3 py-3 font-mono text-xs text-slate-600">{item.transactionId || '-'}</td>
+                      <td className="px-3 py-3 font-mono text-xs text-slate-600">{item.bankIntegration?.provider === 'ICICI_CIB' ? (item.bankIntegration?.utrNumber || <span className="font-sans text-amber-700">Pending bank</span>) : (item.transactionId || '-')}</td>
                       <td className="px-3 py-3 text-slate-600">{formatDate(item.paymentDate)}</td>
                       <td className="px-3 py-3 text-center">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(item.paymentStatus)}`}>
@@ -1220,15 +1248,20 @@ export default function BalancePaymentList() {
                         </span>
                       </td>
                       <td className="px-3 py-3 text-center">
-                        {item.queueGenerated ? (
-                          <span className="rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-800" title={item.queueDate ? `Generated ${formatDate(item.queueDate)}` : undefined}>✓ Generated</span>
-                        ) : (
-                          <span className="rounded-full bg-yellow-100 px-2 py-1 text-xs font-medium text-yellow-800">Pending</span>
-                        )}
+                        <div className="flex flex-col items-center gap-1">
+                          {item.queueGenerated ? (
+                            <span className="rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-800" title={item.bankIntegration?.message || (item.queueDate ? `Submitted ${formatDate(item.queueDate)}` : undefined)}>{item.bankIntegration?.bankStatus || 'Submitted'}</span>
+                          ) : (
+                            <span className="rounded-full bg-yellow-100 px-2 py-1 text-xs font-medium text-yellow-800">Pending</span>
+                          )}
+                          {item.bankIntegration?.provider === 'ICICI_CIB' && item.bankIntegration?.uniqueId && (
+                            <span className="text-xs text-slate-500" title="ERP-generated ICICI submission reference">Submission ref: {item.bankIntegration.uniqueId}</span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-3 py-3 text-center">
                         <div className="flex items-center justify-center gap-2 flex-wrap">
-                          {!item.isDraft && !item.queueGenerated && canApprove(MODULE_NAME) && !['Rejected', 'Completed', 'Paid'].includes(item.paymentStatus) && (
+                          {!item.isDraft && !item.queueGenerated && canApprove(MODULE_NAME) && item.paymentStatus === 'Approved' && (
                             <button
                               onClick={() => handleGenerateQueue(item._id, item.balancePaymentNo)}
                               disabled={queueLoading === item._id}
@@ -1245,8 +1278,13 @@ export default function BalancePaymentList() {
                               )}
                             </button>
                           )}
+                          {item.bankIntegration?.provider === 'ICICI_CIB' && (
+                            <button onClick={() => handleCheckBankStatus(item._id)} disabled={queueLoading === item._id} className="rounded-lg bg-indigo-100 px-2 py-1 text-xs font-semibold text-indigo-800 hover:bg-indigo-200 disabled:opacity-50" title="Refresh ICICI status">
+                              {queueLoading === item._id ? 'Checking…' : 'Check Bank Status'}
+                            </button>
+                          )}
                           {/* Edit Button - Only shown if user has edit permission */}
-                          {canEdit(MODULE_NAME) && (
+                          {canEdit(MODULE_NAME) && item.bankIntegration?.provider !== 'ICICI_CIB' && (
                             <button
                               onClick={() => handleEdit(item._id)}
                               className="p-2 bg-sky-100 text-sky-700 rounded-lg hover:bg-sky-200 transition"
@@ -1259,7 +1297,7 @@ export default function BalancePaymentList() {
                           )}
 
                           {/* ✅ Quick Approve Button - Green (with checkmark) */}
-                          {!item.isDraft && canApprove(MODULE_NAME) && (
+                          {!item.isDraft && item.bankIntegration?.provider !== 'ICICI_CIB' && canApprove(MODULE_NAME) && (
                             <button
                               onClick={() => handleQuickApprove(item._id, item.balancePaymentNo)}
                               disabled={approveLoading === item._id}
@@ -1277,7 +1315,7 @@ export default function BalancePaymentList() {
                           )}
 
                           {/* ✅ Full Approve Button - Blue (with details) */}
-                          {canApprove(MODULE_NAME) && (
+                          {item.bankIntegration?.provider !== 'ICICI_CIB' && canApprove(MODULE_NAME) && (
                             <button
                               onClick={() => handleApprove(item._id)}
                               className="p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition"
@@ -1290,7 +1328,7 @@ export default function BalancePaymentList() {
                           )}
 
                           {/* Delete Button - Only shown if user has delete permission */}
-                          {canDelete(MODULE_NAME) && (
+                          {canDelete(MODULE_NAME) && item.bankIntegration?.provider !== 'ICICI_CIB' && (
                             <button
                               onClick={() => handleDelete(item._id, item.balancePaymentNo)}
                               disabled={deleteLoading === item._id}

@@ -1616,6 +1616,7 @@
 //   }
 // }
 
+import { isIciciQueueApiSkipped, generateLocalPaymentQueue } from '@/lib/paymentQueueConfig.mjs';
 import { NextResponse } from "next/server";
 import connectDb from "@/lib/db";
 import AdvancePayment from "./AdvancePayment";
@@ -1629,6 +1630,10 @@ import { syncPodAdvanceForPurchase } from "@/lib/advanceSettlement";
 import { ADVANCE_STATUSES, assertValidAmounts } from "@/lib/paymentRules";
 import { validateOpenOrderRows } from '@/lib/orderRowStatus';
 import { handleModuleDelete } from '@/lib/deletion/handler';
+import { inquireCibNeftPayment, inquireCibPayment, normalizeCibStatus, stableIciciUniqueId, submitCibPayment } from '@/lib/iciciCib';
+import Supplier from '@/models/SupplierModels';
+import { notifyModuleApprovers } from '@/lib/workflowNotifications';
+import { advanceMaterialProjection, isAdvanceStatusUpdate, changedApprovedAdvanceBankFields } from '@/lib/advancePaymentReview.mjs';
 
 // ── PERMISSION FUNCTIONS ──
 
@@ -1880,6 +1885,7 @@ export async function GET(req) {
         balance: (payment.purchaseAmountFromVNN || 0) - (payment.vendorDetails?.advance || 0),
         finalAmount: payment.paymentDetails?.finalAmount || 0,
         transactionId: payment.paymentDetails?.transactionId || payment.vendorDetails?.transactionId || '',
+        bankIntegration: payment.bankIntegration || null,
         status: payment.isDraft ? 'Draft' : (payment.paymentDetails?.paymentStatus || 'Pending'),
         isDraft: !!payment.isDraft,
         queueGenerated: payment.queueGenerated || false
@@ -2205,7 +2211,7 @@ export async function PUT(req) {
 
     // Approve-only users: only id + paymentDetails.paymentStatus/remarks.
     if (!canEdit) {
-      const extra = Object.keys(body).filter((k) => k !== 'id' && k !== 'paymentDetails');
+      const extra = Object.keys(body).filter((k) => !['id', 'paymentDetails', 'expectedFinalAmount'].includes(k));
       const pdExtra = Object.keys(body.paymentDetails || {})
         .filter((k) => k !== 'paymentStatus' && k !== 'remarks');
       if (extra.length || pdExtra.length || !body.paymentDetails) {
@@ -2238,6 +2244,10 @@ export async function PUT(req) {
         success: false,
         message: "Advance payment not found"
       }, { status: 404 });
+    }
+
+    if (payment.bankIntegration?.provider === 'ICICI_CIB' && payment.queueGenerated) {
+      return NextResponse.json({ success: false, message: 'A payment submitted to ICICI cannot be edited. Reconcile or resolve it through the bank status workflow.' }, { status: 409 });
     }
 
     const saveMode = body.saveMode;
@@ -2273,6 +2283,29 @@ export async function PUT(req) {
         message: `Cannot update ${payment.paymentDetails.paymentStatus} payment`
       }, { status: 400 });
     }
+
+    if (changedApprovedAdvanceBankFields(payment, body).length) {
+      return NextResponse.json({ success: false, message: 'Bank details cannot be changed after this Advance Payment has been approved.' }, { status: 409 });
+    }
+
+    if (isAdvanceStatusUpdate(body)) {
+      if (!canApprove) return NextResponse.json({ success: false, message: 'Approve permission is required to update payment status or approval remarks.' }, { status: 403 });
+      const nextStatus = body.paymentDetails.paymentStatus || payment.paymentDetails.paymentStatus;
+      if (!ADVANCE_STATUSES.includes(nextStatus)) return NextResponse.json({ success: false, message: 'Invalid payment status.' }, { status: 400 });
+      if (body.expectedFinalAmount !== undefined && (!Number.isFinite(Number(body.expectedFinalAmount)) || Math.abs(Number(body.expectedFinalAmount) - num(payment.paymentDetails.finalAmount)) > 0.005)) {
+        return NextResponse.json({ success: false, message: 'The payable amount changed since this page was opened. Refresh and review it before approving.' }, { status: 409 });
+      }
+      // Approval changes only the selected status and remarks. Do not refresh
+      // purchase/loading amounts behind the approver's read-only page.
+      payment.paymentDetails.paymentStatus = nextStatus;
+      if (body.paymentDetails.remarks !== undefined) payment.paymentDetails.remarks = body.paymentDetails.remarks;
+      await payment.save();
+      await syncPodAdvanceForPurchase(user, payment.purchaseNo);
+      return NextResponse.json({ success: true, message: 'Payment status updated successfully.', data: { _id: payment._id, paymentNo: payment.paymentNo, paymentStatus: nextStatus } });
+    }
+
+    const previouslyApproved = payment.paymentDetails?.paymentStatus === 'Approved';
+    const previousMaterial = JSON.stringify(advanceMaterialProjection(payment));
 
     // ✅ Update sub-company
     payment.subCompanyId = user.activeOperatingCompanyId;
@@ -2446,17 +2479,34 @@ export async function PUT(req) {
       payment.isDraft = true;
       payment.paymentDetails.paymentStatus = 'Draft';
     }
+    const needsFreshApproval = previouslyApproved && previousMaterial !== JSON.stringify(advanceMaterialProjection(payment));
+    if (needsFreshApproval) {
+      payment.paymentDetails.paymentStatus = 'Pending';
+      payment.status = 'Pending';
+    }
     await payment.save({ validateBeforeSave: saveMode !== 'draft' });
     await syncPodAdvanceForPurchase(user, payment.purchaseNo);
 
+    if (needsFreshApproval || (saveMode === 'submit' && wasDraft && payment.paymentDetails?.paymentStatus === 'Pending')) {
+      await notifyModuleApprovers({
+        user,
+        module: 'Advance Payment',
+        panelLabel: 'Advance Payment',
+        reference: payment.paymentNo,
+        url: `/admin/Advance-Payment/${payment._id}`,
+      });
+    }
+
     return NextResponse.json({
       success: true,
-      message: "Advance payment updated successfully",
+      message: needsFreshApproval ? "Advance payment updated and submitted for fresh approval" : "Advance payment updated successfully",
       data: {
         _id: payment._id,
         paymentNo: payment.paymentNo,
         purchaseNo: payment.purchaseNo,
-        subCompanyName: payment.subCompanyName
+        subCompanyName: payment.subCompanyName,
+        requiresApproval: needsFreshApproval,
+        paymentStatus: payment.paymentDetails.paymentStatus
       }
     }, { status: 200 });
 
@@ -2502,6 +2552,10 @@ export async function DELETE(req) {
         success: false,
         message: "Advance payment not found"
       }, { status: 404 });
+    }
+
+    if (payment.bankIntegration?.provider === 'ICICI_CIB') {
+      return NextResponse.json({ success: false, message: 'A payment submitted to ICICI cannot be deleted. Reconcile or resolve it through the bank status workflow.' }, { status: 409 });
     }
 
     if (payment.paymentDetails?.paymentStatus === 'Paid' || payment.paymentDetails?.paymentStatus === 'Completed') {
@@ -2588,6 +2642,9 @@ export async function PATCH(req) {
       if (payment.queueGenerated) {
         return NextResponse.json({ success: false, message: "Payment queue has already been generated." }, { status: 409 });
       }
+      if ((payment.paymentDetails?.paymentStatus || payment.status) !== 'Approved') {
+        return NextResponse.json({ success: false, message: 'Approve this Advance Payment before generating its queue.' }, { status: 409 });
+      }
 
       const purchaseLookup = payment.purchaseId
         ? { _id: payment.purchaseId }
@@ -2600,28 +2657,142 @@ export async function PATCH(req) {
         }, { status: 400 });
       }
 
-      payment.queueGenerated = true;
-      payment.queueDate = new Date();
-      payment.paymentDetails.paymentStatus = 'Paid';
-      payment.status = 'Paid';
+      // Temporary API skip; normal ICICI submission below is preserved.
+      if (isIciciQueueApiSkipped()) {
+        let data;
+        try { data = generateLocalPaymentQueue('advance', payment, user); }
+        catch (error) { return NextResponse.json({ success: false, message: error.message }, { status: error.status || 400 }); }
+        await payment.save();
+        return NextResponse.json({ success: true, message: 'Payment queue generated successfully.', data });
+      }
+      if (payment.bankIntegration?.provider === 'ERP_QUEUE') return NextResponse.json({ success: false, message: 'This payment already has a generated queue. It will not be submitted again when bank API calling resumes.' }, { status: 409 });
+
+      const uniqueId = payment.bankIntegration?.uniqueId || stableIciciUniqueId('advance', payment._id);
+      let supplier = null;
+      if (payment.vendorDetails?.vendorCode) {
+        supplier = await Supplier.findOne({ companyId: user.companyId, supplierCode: payment.vendorDetails.vendorCode })
+          .select('supplierName bankAccountNumber ifscCode').lean();
+      }
+      const bankPayment = payment.toObject();
+      if (!bankPayment.paymentDetails.accountNoCredit) bankPayment.paymentDetails.accountNoCredit = supplier?.bankAccountNumber || '';
+      if (!bankPayment.vendorDetails.ifsc) bankPayment.vendorDetails.ifsc = supplier?.ifscCode || '';
+      if (!bankPayment.paymentDetails.vendorNameDebit) bankPayment.paymentDetails.vendorNameDebit = supplier?.supplierName || '';
+
+      let result;
+      try {
+        result = await submitCibPayment({ kind: 'advance', payment: bankPayment, uniqueId });
+      } catch (bankError) {
+        if (bankError.code === 'ICICI_PAYMENT_VALIDATION') return NextResponse.json({ success: false, message: bankError.message, code: bankError.code }, { status: 400 });
+        if (/configuration is incomplete|not enabled|restricted to the documented sandbox|must be RTG|OAEP_HASH/i.test(bankError.message)) {
+          return NextResponse.json({ success: false, message: bankError.message, code: 'ICICI_UAT_NOT_CONFIGURED' }, { status: 503 });
+        }
+        if (bankError.code !== 'ICICI_UNCERTAIN') return NextResponse.json({ success: false, message: 'Could not prepare the ICICI request. Check the server certificate configuration.' }, { status: 500 });
+        payment.bankIntegration = {
+          ...(payment.bankIntegration?.toObject?.() || payment.bankIntegration || {}),
+          provider: 'ICICI_CIB', uniqueId, transactionType: bankError.transactionType || '', bankStatus: 'UNCERTAIN', submittedAt: new Date(),
+          lastError: String(bankError.message || 'ICICI response was not received').slice(0, 500),
+        };
+        payment.bankIntegration.events = [...(payment.bankIntegration.events || []), { event: 'SUBMISSION_UNCERTAIN', bankStatus: 'UNCERTAIN', message: payment.bankIntegration.lastError, at: new Date() }].slice(-50);
+        payment.queueGenerated = true;
+        payment.queueDate = new Date();
+        payment.paymentDetails.paymentStatus = 'Pending';
+        payment.status = 'Pending';
+        await payment.save();
+        return NextResponse.json({ success: false, uncertain: true, message: 'ICICI response was not conclusive. Check bank status before any retry.', data: { uniqueId, bankStatus: 'UNCERTAIN' } }, { status: 502 });
+      }
+
+      let bankStatus = !result.accepted && !result.rejected ? 'UNCERTAIN' : normalizeCibStatus(result.status);
+      if (bankStatus === 'SUCCESS' && result.transactionType === 'RGS') bankStatus = 'PENDING FOR PROCESSING';
+      payment.bankIntegration = {
+        provider: 'ICICI_CIB', uniqueId, transactionType: result.transactionType, bankStatus,
+        requestId: result.requestId, utrNumber: result.utr, message: result.message,
+        responseCode: result.responseCode, submittedAt: new Date(), checkedAt: new Date(), lastError: '',
+        events: [...(payment.bankIntegration?.events || []), { event: 'PAYMENT_SUBMITTED', bankStatus, message: result.message, requestId: result.requestId, utrNumber: result.utr, at: new Date() }].slice(-50),
+      };
+      payment.queueGenerated = result.accepted || !result.rejected;
+      payment.queueDate = payment.queueGenerated ? new Date() : payment.queueDate;
+      if (result.utr) payment.paymentDetails.transactionId = result.utr;
+      if (bankStatus === 'SUCCESS' && result.transactionType !== 'RGS') {
+        payment.paymentDetails.paymentStatus = 'Completed';
+        payment.status = 'Completed';
+      } else if (bankStatus === 'FAILURE') {
+        payment.paymentDetails.paymentStatus = 'Rejected';
+        payment.status = 'Rejected';
+      } else {
+        payment.paymentDetails.paymentStatus = 'Pending';
+        payment.status = 'Pending';
+      }
       await payment.save();
 
       return NextResponse.json({
-        success: true,
-        message: "Payment queue generated successfully",
+        success: result.accepted,
+        uncertain: bankStatus === 'UNCERTAIN',
+        message: result.message || (bankStatus === 'UNCERTAIN'
+          ? 'ICICI did not return a conclusive status. Check bank status before retrying.'
+          : bankStatus === 'PENDING FOR APPROVAL'
+          ? 'Submitted to ICICI and waiting for authorization in CIB.'
+          : result.accepted ? 'Payment submitted to ICICI.' : 'ICICI did not accept the payment.'),
         data: {
           _id: payment._id,
           paymentNo: payment.paymentNo,
-          queueGenerated: true,
+          queueGenerated: payment.queueGenerated,
           queueDate: payment.queueDate,
           paymentStatus: payment.paymentDetails.paymentStatus,
+          amount: Number(bankPayment.paymentDetails?.finalAmount || bankPayment.vendorDetails?.advance),
+          bankStatus,
+          uniqueId,
+          requestId: result.requestId,
+          utrNumber: result.utr,
           subCompanyName: payment.subCompanyName
         }
-      }, { status: 200 });
+      }, { status: result.accepted ? 200 : 502 });
+    }
+
+    if (action === 'check-status') {
+      if (payment.bankIntegration?.provider === 'ERP_QUEUE') return NextResponse.json({ success: false, message: 'No bank submission exists for this generated queue.' }, { status: 409 });
+      const uniqueId = payment.bankIntegration?.uniqueId;
+      if (!uniqueId) return NextResponse.json({ success: false, message: 'No ICICI transaction ID exists for this payment.' }, { status: 400 });
+      const result = await inquireCibPayment({ uniqueId });
+      const transactionNotFound = normalizeCibStatus(result.status) === 'UNKNOWN' && /transaction not found|invalid inquiry req id.*unique id/i.test(result.message || '');
+      const retryAllowed = transactionNotFound && payment.bankIntegration.submittedAt && Date.now() - new Date(payment.bankIntegration.submittedAt).getTime() >= 2 * 60 * 60 * 1000;
+      let bankStatus = retryAllowed ? 'NOT_FOUND' : normalizeCibStatus(result.status);
+      let bankMessage = result.message;
+      let bankRequestId = result.requestId;
+      let bankUtr = result.utr;
+      if (payment.bankIntegration.transactionType === 'RGS' && bankStatus === 'SUCCESS' && (bankUtr || payment.bankIntegration.utrNumber)) {
+        const neftResult = await inquireCibNeftPayment({ utrNumber: bankUtr || payment.bankIntegration.utrNumber });
+        bankStatus = neftResult.status;
+        bankMessage = neftResult.message;
+        bankRequestId = neftResult.requestId || bankRequestId;
+        bankUtr = neftResult.utr || bankUtr;
+      }
+      payment.bankIntegration.bankStatus = bankStatus;
+      payment.bankIntegration.requestId = bankRequestId || payment.bankIntegration.requestId;
+      payment.bankIntegration.utrNumber = bankUtr || payment.bankIntegration.utrNumber;
+      payment.bankIntegration.message = bankMessage;
+      payment.bankIntegration.responseCode = result.responseCode;
+      payment.bankIntegration.checkedAt = new Date();
+      payment.bankIntegration.lastError = '';
+      payment.bankIntegration.events = [...(payment.bankIntegration.events || []), { event: payment.bankIntegration.transactionType === 'RGS' && bankStatus !== normalizeCibStatus(result.status) ? 'NEFT_INCREMENTAL_STATUS' : 'STATUS_INQUIRY', bankStatus, message: bankMessage, requestId: bankRequestId, utrNumber: bankUtr, at: new Date() }].slice(-50);
+      if (bankStatus === 'SUCCESS') {
+        payment.paymentDetails.paymentStatus = 'Completed';
+        payment.status = 'Completed';
+        payment.queueGenerated = true;
+      } else if (bankStatus === 'FAILURE' || bankStatus === 'REVERSED') {
+        payment.paymentDetails.paymentStatus = 'Rejected';
+        payment.status = 'Rejected';
+      } else if (retryAllowed) {
+        payment.queueGenerated = false;
+        payment.paymentDetails.paymentStatus = 'Pending';
+        payment.status = 'Pending';
+      }
+      await payment.save();
+      return NextResponse.json({ success: true, data: { paymentNo: payment.paymentNo, bankStatus, retryAllowed: !!retryAllowed, queueGenerated: payment.queueGenerated, uniqueId, requestId: payment.bankIntegration.requestId, utrNumber: payment.bankIntegration.utrNumber, checkedAt: payment.bankIntegration.checkedAt } });
     }
 
     // Approve action
     if (action === 'approve') {
+      if (payment.bankIntegration?.provider === 'ICICI_CIB') return NextResponse.json({ success: false, message: 'This payment must be authorized in ICICI CIB. ERP approval cannot approve a bank transaction.' }, { status: 409 });
       const newStatus = body.paymentStatus || 'Approved';
 
       payment.paymentDetails.paymentStatus = newStatus;
@@ -2649,6 +2820,7 @@ export async function PATCH(req) {
 
     // Reject action
     if (action === 'reject') {
+      if (payment.bankIntegration?.provider === 'ICICI_CIB') return NextResponse.json({ success: false, message: 'Reject this payment in ICICI CIB, then refresh its bank status in the ERP.' }, { status: 409 });
       payment.paymentDetails.paymentStatus = 'Rejected';
       payment.status = 'Rejected';
 
@@ -2673,6 +2845,7 @@ export async function PATCH(req) {
 
     // Update status only (for Pending status changes)
     if (action === 'update-status') {
+      if (payment.bankIntegration?.provider === 'ICICI_CIB') return NextResponse.json({ success: false, message: 'ICICI transaction status is bank-controlled. Use status inquiry to refresh it.' }, { status: 409 });
       if (body.paymentStatus) {
         payment.paymentDetails.paymentStatus = body.paymentStatus;
         payment.status = body.paymentStatus;

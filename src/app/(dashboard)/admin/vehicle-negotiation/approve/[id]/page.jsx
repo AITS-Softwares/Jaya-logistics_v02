@@ -4068,7 +4068,7 @@ export default function ApproveVehicleNegotiation() {
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.message || 'Failed to update approval');
       alert(`✅ Vehicle Negotiation ${approvalDecision.toLowerCase()} successfully!`);
-      await fetchNegotiationData();
+      router.push('/admin/vehicle-negotiation');
     } catch (error) {
       console.error('Error updating Vehicle Negotiation approval:', error);
       alert(`Error: ${error.message}`);

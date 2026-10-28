@@ -131,7 +131,7 @@ export async function resolveDeleteGraph(type, root, companyId, session) {
   return result;
 }
 
-export async function deletionBlockers(graph, companyId, session) {
+export async function deletionBlockers(graph, companyId, session, { blockFinalizedLoading = true } = {}) {
   const blockers = [];
   const lrs = graph.filter((item) => item.type === 'lr');
   const [productBills, generalBills] = await Promise.all([
@@ -146,7 +146,7 @@ export async function deletionBlockers(graph, companyId, session) {
     if (item.type === 'pod' && item.depth > 0) blockers.push(`POD ${item.no} exists for a linked LR`);
     if (item.type === 'lr' && billed.has(no(doc.lrNo))) blockers.push(`LR ${item.no} is already in a saved bill`);
   }
-  for (const item of graph.filter((entry) => entry.type === 'loading')) {
+  for (const item of graph.filter((entry) => blockFinalizedLoading && entry.type === 'loading')) {
     const linked = lrs.filter((lr) => no(lr.record.loadingInfoNo) === no(item.no));
     const finalized = ['Approved', 'Completed'].includes(item.record.panelStatus || item.record.status) && linked.length > 0 && linked.every((lr) => ['Approved', 'Completed'].includes(lr.record.header?.status) && !!no(lr.record.invoice?.file?.filePath));
     if (finalized) blockers.push(`Loading Info ${item.no} is finalized`);

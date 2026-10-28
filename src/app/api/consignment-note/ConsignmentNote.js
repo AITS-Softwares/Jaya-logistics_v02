@@ -212,6 +212,7 @@
 
 import mongoose from 'mongoose';
 import softDeletePlugin from '@/lib/softDelete';
+import reapprovalPlugin from '@/lib/reapprovalPlugin';
 
 
 
@@ -510,6 +511,7 @@ consignmentNoteSchema.index(
 );
 
 consignmentNoteSchema.plugin(softDeletePlugin);
+consignmentNoteSchema.plugin(reapprovalPlugin);
 const ConsignmentNote = mongoose.models.ConsignmentNote ||
   mongoose.model('ConsignmentNote', consignmentNoteSchema);
 

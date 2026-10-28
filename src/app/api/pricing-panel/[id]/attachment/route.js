@@ -119,6 +119,12 @@ export async function DELETE(req, { params }) {
     await connectDb();
     const panel = await PricingPanel.findOne(companyScopeFilter(user, { _id: params.id }));
     if (!panel) return NextResponse.json({ success: false, message: 'Pricing panel not found.' }, { status: 404 });
+    if (panel.upstreamPending?.length || panel.reapprovalState === 'blockedByUpstream') {
+      return NextResponse.json({ success: false, message: 'This Pricing Panel is blocked while an upstream correction is in progress.' }, { status: 409 });
+    }
+    if (['Approved', 'Completed'].includes(panel.rateApproval?.approvalStatus || panel.panelStatus) && panel.reapprovalState !== 'unlocked') {
+      return NextResponse.json({ success: false, message: 'Approved Pricing Panels are locked. An admin must unlock this record before changing its approval attachment.' }, { status: 409 });
+    }
 
     const relativePath = panel.rateApproval?.uploadFilePath || '';
 

@@ -426,6 +426,20 @@ const advancePaymentSchema = new mongoose.Schema({
     paymentDate: { type: Date, default: Date.now },
     paymentStatus: { type: String, enum: ['Pending', 'Approved', 'Rejected', 'Paid', 'Completed'], default: 'Pending' }
   },
+  bankIntegration: {
+    provider: { type: String, default: '' },
+    uniqueId: { type: String, default: '' },
+      transactionType: { type: String, default: '' },
+    bankStatus: { type: String, default: '' },
+    requestId: { type: String, default: '' },
+    utrNumber: { type: String, default: '' },
+    message: { type: String, default: '' },
+    responseCode: { type: String, default: '' },
+    events: [{ event: { type: String }, bankStatus: { type: String }, message: { type: String }, requestId: { type: String }, utrNumber: { type: String }, at: { type: Date, default: Date.now } }],
+    submittedAt: { type: Date, default: null },
+    checkedAt: { type: Date, default: null },
+    lastError: { type: String, default: '' }
+  },
 
   // Memo File from Vehicle Negotiation
   memoFile: {
@@ -519,7 +533,7 @@ advancePaymentSchema.pre('save', function(next) {
   this.balance = purchaseAmount - advance + totalAdditions - totalDeductions;
   
   // Set final amount in payment details if not set
-  if (!this.paymentDetails.finalAmount) {
+  if (this.paymentDetails.finalAmount == null) {
     this.paymentDetails.finalAmount = advance;
   }
   

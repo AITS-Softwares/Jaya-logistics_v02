@@ -620,6 +620,7 @@ export default function EditBalancePayment() {
     if (isDraft) return alert("Save this draft before generating its queue.");
     if (!canGenerateQueue) return alert("You need approval permission to generate the payment queue.");
     if (queueGenerated) return alert("Queue already generated for this payment.");
+    if (paymentStatus !== "Approved") return alert("Approve this Balance Payment before generating its queue.");
     if (["Rejected", "Completed", "Paid"].includes(paymentStatus)) {
       return alert(`Cannot generate a queue for a ${paymentStatus} payment.`);
     }
@@ -999,12 +1000,12 @@ export default function EditBalancePayment() {
           </div>
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
             <div className="text-sm text-slate-600">
-              {queueGenerated ? `Queue generated${queueDate ? ` on ${new Date(queueDate).toLocaleString("en-IN")}` : ""}` : "Generate the payment queue after the payment details are ready."}
+              {queueGenerated ? `Queue generated${queueDate ? ` on ${new Date(queueDate).toLocaleString("en-IN")}` : ""}` : "Generate the payment queue after this payment has been approved."}
             </div>
             {canGenerateQueue && !queueGenerated && (
               <button
                 onClick={handleGenerateQueue}
-                disabled={queueLoading || isDraft || ["Rejected", "Completed", "Paid"].includes(paymentStatus)}
+                disabled={queueLoading || isDraft || paymentStatus !== "Approved"}
                 className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400"
               >
                 {queueLoading ? "Generating..." : isDraft ? "Save Draft First" : "Generate Queue"}

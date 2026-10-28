@@ -1002,10 +1002,10 @@ function OrdersTable({ rows }) {
                 <td className="border border-yellow-300 px-2 py-2 text-slate-700 text-right">{row.weight || '0'}</td>
                 {/* <td className="border border-yellow-300 px-2 py-2 text-slate-700 text-right">₹{row.rate || '0'}</td> */}
                 {/* <td className="border border-yellow-300 px-2 py-2 text-slate-700 text-right font-medium">₹{row.totalAmount || '0'}</td> */}
-                {/* <td className="border border-yellow-300 px-2 py-2 text-slate-700 text-right">₹{row.collectionCharges || '0'}</td>
+                <td className="border border-yellow-300 px-2 py-2 text-slate-700 text-right">₹{row.collectionCharges || '0'}</td>
                 <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.cancellationCharges || '-'}</td>
                 <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.loadingCharges || '-'}</td>
-                <td className="border border-yellow-300 px-2 py-2 text-slate-700 text-right">₹{row.otherCharges || '0'}</td> */}
+                <td className="border border-yellow-300 px-2 py-2 text-slate-700 text-right">₹{row.otherCharges || '0'}</td>
               </tr>
             ))
           ) : (
@@ -1132,6 +1132,7 @@ export default function ApproveAdvancePayment() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [approvalLockReason, setApprovalLockReason] = useState('');
   const [error, setError] = useState(null);
 
   // State for all data (READ-ONLY)
@@ -1179,6 +1180,10 @@ export default function ApproveAdvancePayment() {
       }
 
       const payment = data.data;
+      setApprovalLockReason(payment.bankIntegration?.provider === 'ICICI_CIB' && payment.queueGenerated
+        ? 'This payment has been submitted to the bank. Its status must be updated through bank status inquiry.'
+        : payment.isDraft ? 'Submit this draft before approving it.'
+        : ['Paid', 'Completed'].includes(payment.paymentDetails?.paymentStatus) ? 'This payment is settled and cannot be changed.' : '');
       console.log("📦 Payment Data for Approval:", payment);
 
       setPaymentNo(payment.paymentNo || "");
@@ -1320,6 +1325,7 @@ export default function ApproveAdvancePayment() {
       alert("You do not have permission to approve Advance Payment.");
       return;
     }
+    if (approvalLockReason) { alert(approvalLockReason); return; }
     if (!paymentStatus) {
       alert("Please select payment status");
       return;
@@ -1337,6 +1343,7 @@ export default function ApproveAdvancePayment() {
         },
         body: JSON.stringify({
           id: paymentId,
+          expectedFinalAmount: num(paymentDetails.finalAmount),
           paymentDetails: {
             paymentStatus: paymentStatus,
             remarks: remarks
@@ -1366,7 +1373,7 @@ export default function ApproveAdvancePayment() {
     const advance = num(vendorDetails.advance);
     const totalAdditions = num(additions.totalAddition);
     const totalDeductions = num(deductions.totalDeduction);
-    return (amount - advance + totalAdditions - totalDeductions).toFixed(2);
+    return (amount - advance).toFixed(2);
   };
 
   // Calculate total order amount with all charges
@@ -1453,8 +1460,8 @@ export default function ApproveAdvancePayment() {
           <div className="flex items-center gap-3">
             <button
               onClick={handleApprove}
-              disabled={saving || permLoading || !canApprove}
-              title={!canApprove ? "You need Approve permission" : undefined}
+              disabled={saving || permLoading || !canApprove || !!approvalLockReason}
+              title={approvalLockReason || (!canApprove ? "You need Approve permission" : undefined)}
               className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${saving
                 ? 'bg-gray-400 cursor-not-allowed'
                 : 'bg-yellow-600 hover:bg-yellow-700'
@@ -1473,6 +1480,8 @@ export default function ApproveAdvancePayment() {
           </div>
         </div>
       </div>
+
+      {approvalLockReason && <p role="status" className="mx-4 mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">{approvalLockReason}</p>}
 
       {/* ===== Main Layout ===== */}
       <div className="mx-auto max-w-full p-4 space-y-4">
@@ -1654,14 +1663,6 @@ export default function ApproveAdvancePayment() {
                     <span className="text-slate-600">Advance Payment:</span>
                     <span className="font-bold text-blue-600">- ₹{num(vendorDetails.advance).toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-600">Total Additions:</span>
-                    <span className="font-bold text-green-600">+ ₹{num(additions.totalAddition).toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-600">Total Deductions:</span>
-                    <span className="font-bold text-red-600">- ₹{num(deductions.totalDeduction).toLocaleString()}</span>
-                  </div>
                   <div className="border-t border-purple-200 pt-2 mt-2">
                     <div className="flex justify-between font-bold">
                       <span className="text-purple-800">Calculated Balance:</span>
@@ -1672,17 +1673,17 @@ export default function ApproveAdvancePayment() {
               </div>
             </div>
 
-            {/* Final Payment Amount */}
+            {/* Final Advance Amount */}
             <div className="col-span-12 md:col-span-6">
               <div className="bg-blue-50 p-6 rounded-xl border border-blue-200 h-full flex items-center justify-center">
                 <div className="text-center w-full">
-                  <h3 className="text-sm font-bold text-blue-800 mb-2">Final Payment Amount</h3>
+                  <h3 className="text-sm font-bold text-blue-800 mb-2">Final Advance Amount</h3>
                   <div className="text-4xl font-bold text-blue-700 bg-white border border-blue-300 rounded-lg px-4 py-4 text-center">
-                    {formatCurrency(calculateBalance())}
+                    {formatCurrency(paymentDetails.finalAmount)}
                   </div>
-                  <p className="text-xs text-blue-600 mt-2">Balance amount to be paid after adjustments</p>
+                  <p className="text-xs text-blue-600 mt-2">Approved purchase net effect payable as advance</p>
                   <p className="text-xs text-slate-500 mt-1">
-                    (Purchase Amount - Advance + Additions - Deductions)
+                    (Advance + Additions - Deductions - Warehouse Deduction)
                   </p>
                 </div>
               </div>
@@ -1695,7 +1696,7 @@ export default function ApproveAdvancePayment() {
           <div className="grid grid-cols-12 gap-4">
             <Input col="col-span-12 md:col-span-3" label="Vendor Name (Debit)" value={paymentDetails.vendorNameDebit} readOnly={true} />
             <Input col="col-span-12 md:col-span-3" label="Account No (Credit)" value={paymentDetails.accountNoCredit} readOnly={true} />
-            <Input col="col-span-12 md:col-span-2" label="Final Amount" value={formatCurrency(calculateBalance())} readOnly={true} />
+            <Input col="col-span-12 md:col-span-2" label="Final Amount" value={formatCurrency(paymentDetails.finalAmount)} readOnly={true} />
             <Input col="col-span-12 md:col-span-2" label="Payment Date" value={paymentDetails.paymentDate} readOnly={true} />
             <Input col="col-span-12 md:col-span-2" label="Transaction ID" value={paymentDetails.transactionId} readOnly={true} />
             <Input col="col-span-12 md:col-span-3" label="Bank Vendor Code" value={paymentDetails.bankVendorCode} readOnly={true} />
@@ -1705,6 +1706,7 @@ export default function ApproveAdvancePayment() {
               <label className="text-xs font-bold text-slate-600">Payment Status *</label>
               <select
                 value={paymentStatus}
+                disabled={!canApprove || !!approvalLockReason}
                 onChange={(e) => setPaymentStatus(e.target.value)}
                 className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200"
               >
@@ -1720,6 +1722,7 @@ export default function ApproveAdvancePayment() {
               <input
                 type="text"
                 value={remarks}
+                disabled={!canApprove || !!approvalLockReason}
                 onChange={(e) => setRemarks(e.target.value)}
                 className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200"
                 placeholder="ADV Payment"

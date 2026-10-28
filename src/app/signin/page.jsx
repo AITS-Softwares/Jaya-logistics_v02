@@ -3,9 +3,10 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
-import { FiEye, FiEyeOff, FiMail, FiLock, FiChevronRight, FiLoader, FiShield, FiUser, FiBriefcase } from 'react-icons/fi';
+import { FiEye, FiEyeOff, FiMail, FiLock, FiChevronRight, FiLoader, FiShield, FiUser, FiBriefcase, FiGlobe, FiBox, FiSettings, FiLayers } from 'react-icons/fi';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import './signin.css';
 const Link = ({ href, children, className }) => (
   <a href={href} className={className}>
     {children}
@@ -99,167 +100,165 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-[#0a0a0f] relative overflow-hidden font-sans">
-
-      {/* ADVANCED BACKGROUND BLOBS */}
-      <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-indigo-600/10 blur-[120px] rounded-full animate-pulse" />
-      <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-amber-500/10 blur-[120px] rounded-full animate-pulse delay-700" />
-
-      <ToastContainer position="top-center" theme="dark" />
-
-      <div className="w-full max-w-[440px] z-10 px-6">
-
-        {/* LOGO AREA */}
-        <div className="flex flex-col items-center mb-10">
-          <div className="w-16 h-16 bg-indigo-600 rounded-[22px] flex items-center justify-center text-3xl shadow-2xl shadow-indigo-500/20 mb-4 transition-transform hover:scale-110 duration-500">
-            <FiShield className="text-white" />
+    <main className="signin-landing">
+      <img className="signin-hero-image" src="/images/jaya-group-hero-original.png" alt="Jaya Group global logistics: ships, trucks and air freight" fetchPriority="high" />
+      <ToastContainer position="top-center" theme="light" />
+      <div className="signin-layout">
+        <section className="signin-intro" aria-labelledby="signin-headline">
+          <div className="signin-brand">
+            <span className="signin-monogram" aria-hidden="true">JG</span>
+            <span className="signin-brand-name">JAYA GROUP</span>
           </div>
-          <h1 className="text-white text-3xl font-black tracking-tighter uppercase">
-            Jaya <span className="text-indigo-500">Group</span>
-          </h1>
-          <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.4em] mt-2">Enterprise Resource Hub</p>
-        </div>
-
-        {/* LOGIN CARD */}
-        <div className="bg-[#11111d] border border-white/5 shadow-[0_32px_64px_-12px_rgba(0,0,0,0.6)] rounded-[40px] overflow-hidden transition-all duration-500">
-
-          {/* TAB SELECTOR */}
-          <div className="flex p-2 bg-black/20 gap-1">
-            {[
-              { id: 'Customer', icon: <FiMail /> },
-              { id: 'User', icon: <FiUser /> },
-              { id: 'Company', icon: <FiBriefcase /> }
-            ].map((m) => (
-              <button
-                key={m.id}
-                type="button"
-                onClick={() => {
-                  setMode(m.id);
-                  setForm({ email: '', password: '', operatingCompanyCode: '' });
-                }}
-                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all duration-500 ${mode === m.id
-                    ? 'bg-indigo-600 text-white shadow-lg'
-                    : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
-                  }`}
-              >
-                {m.icon} {m.id}
-              </button>
-            ))}
+          <div className="signin-message">
+            <p className="signin-eyebrow">Connected logistics. Endless possibilities.</p>
+            <h1 id="signin-headline">Built for speed.<br />Designed for scale.<br /><span>Trusted forever.</span></h1>
+            <ul className="signin-benefits">
+              <li><FiLayers aria-hidden="true" /><span>5PL<br /><strong>Solutions</strong></span></li>
+              <li><FiBox aria-hidden="true" /><span>End-to-end visibility<br /><strong>across operations</strong></span></li>
+              <li><FiSettings aria-hidden="true" /><span>Intelligent<br /><strong>operations</strong></span></li>
+              <li><FiGlobe aria-hidden="true" /><span>Global<br /><strong>network</strong></span></li>
+            </ul>
           </div>
-
-          <div className="p-10 pt-8">
-            <form onSubmit={submit} className="space-y-6">
-
-              {/* EMAIL FIELD */}
-              <div className="group">
-                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1 transition-colors group-focus-within:text-indigo-400">Identity Identifier</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-slate-600 group-focus-within:text-indigo-500 transition-colors">
-                    <FiMail size={18} />
-                  </div>
-                  <input
-                    type="email"
-                    name="email"
-                    value={form.email}
-                    onChange={handle}
-                    className="w-full bg-black/40 border-2 border-transparent focus:border-indigo-500/50 text-white pl-14 pr-5 py-4 rounded-2xl outline-none transition-all duration-300 placeholder:text-slate-700 font-bold text-sm shadow-inner"
-                    placeholder="name@company.com"
-                  />
-                </div>
-              </div>
-
-              {mode === 'User' && (
-                <div className="group">
-                  <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1 transition-colors group-focus-within:text-indigo-400">Operating Company</label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-slate-600 group-focus-within:text-indigo-500 transition-colors">
-                      <FiBriefcase size={18} />
-                    </div>
-                    <select
-                      name="operatingCompanyCode"
-                      value={form.operatingCompanyCode}
-                      onChange={handle}
-                      required
-                      className="w-full appearance-none bg-black/40 border-2 border-transparent focus:border-indigo-500/50 text-white pl-14 pr-5 py-4 rounded-2xl outline-none transition-all duration-300 font-bold text-sm shadow-inner"
-                    >
-                      <option value="" className="bg-slate-900">Select company</option>
-                      {operatingCompanies.map((company) => (
-                        <option key={company.code} value={company.code} className="bg-slate-900">
-                          {company.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              )}
-
-              {/* PASSWORD FIELD */}
-              <div className="group">
-                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1 transition-colors group-focus-within:text-indigo-400">Access Secret</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-slate-600 group-focus-within:text-indigo-500 transition-colors">
-                    <FiLock size={18} />
-                  </div>
-                  <input
-                    type={show ? "text" : "password"}
-                    name="password"
-                    value={form.password}
-                    onChange={handle}
-                    className="w-full bg-black/40 border-2 border-transparent focus:border-indigo-500/50 text-white pl-14 pr-14 py-4 rounded-2xl outline-none transition-all duration-300 placeholder:text-slate-700 font-bold text-sm shadow-inner"
-                    placeholder="••••••••"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShow(!show)}
-                    className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-600 hover:text-indigo-400 transition-colors"
-                  >
-                    {show ? <FiEyeOff size={18} /> : <FiEye size={18} />}
-                  </button>
-                </div>
-              </div>
-
-              {/* FORGOT PASS */}
-              <div className="flex justify-end px-1">
-                <button type="button" className="text-[10px] font-black text-indigo-500 uppercase tracking-widest hover:text-indigo-400 transition-colors">Forgot Secret Key?</button>
-              </div>
-
-              {/* SUBMIT BUTTON */}
-              <button
-                type="submit"
-                disabled={loading}
-                className="group relative w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black py-5 rounded-2xl overflow-hidden transition-all duration-300 active:scale-95 shadow-2xl shadow-indigo-500/20"
-              >
-                <div className="relative z-10 flex items-center justify-center gap-3 text-xs uppercase tracking-[0.2em]">
-                  {loading ? <FiLoader className="animate-spin" /> : "Authenticate Connection"}
-                  {!loading && <FiChevronRight className="group-hover:translate-x-1 transition-transform" />}
-                </div>
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
-              </button>
-            </form>
-
-            {/* REGISTER LINK */}
-            {/* <div className="mt-8 text-center">
-              <p className="text-slate-600 text-[10px] font-black uppercase tracking-widest">
-                New to the platform? <Link href="/signup" className="text-indigo-500 hover:text-indigo-400 underline decoration-2 underline-offset-4 ml-1">Establish Instance</Link>
-              </p>
-            </div> */}
-          </div>
-
-          {/* FOOTER STRIP */}
-          <div className="bg-black/40 py-4 px-8 border-t border-white/5 flex justify-between items-center">
-            <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Jaya Group ERP</span>
-            <div className="flex gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] animate-pulse" />
-              <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Servers Online</span>
+        </section>
+        <section className="signin-panel" aria-labelledby="signin-title">
+          <div className="signin-card">
+            <div className="signin-card-heading">
+              <span className="signin-welcome">YOUR WORKSPACE, CONNECTED</span>
+              <h2 id="signin-title">Welcome back</h2>
+              <p>Please sign in to your account</p>
             </div>
-          </div>
-        </div>
+            <div className="signin-tabs">
+              {/* TAB SELECTOR */}
+              <div className="flex p-2 bg-black/20 gap-1">
+                {[
+                  { id: 'Customer', icon: <FiMail /> },
+                  { id: 'User', icon: <FiUser /> },
+                  { id: 'Company', icon: <FiBriefcase /> }
+                ].map((m) => (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => {
+                      setMode(m.id);
+                      setForm({ email: '', password: '', operatingCompanyCode: '' });
+                    }}
+                    className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all duration-500 ${mode === m.id
+                      ? 'bg-[#b3842e] text-white shadow-lg'
+                      : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
+                      }`}
+                  >
+                    {m.icon} {m.id}
+                  </button>
+                ))}
+              </div>
 
-        {/* SECURITY NOTE */}
-        <p className="text-slate-700 text-center mt-8 text-[9px] font-black uppercase tracking-[0.3em] leading-relaxed px-10">
-          Encrypted with military-grade 256-bit AES protocol. Authorized access only.
-        </p>
+
+            </div>
+            <div className="signin-form-body">
+              <form onSubmit={submit} className="space-y-6">
+
+                {/* EMAIL FIELD */}
+                <div className="group">
+                  <label htmlFor="signin-email" className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1 transition-colors group-focus-within:text-[#8a621c]">Email address</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-slate-600 group-focus-within:text-[#a47622] transition-colors">
+                      <FiMail size={18} />
+                    </div>
+                    <input
+                      type="email"
+                      id="signin-email"
+                      autoComplete="username"
+                      name="email"
+                      value={form.email}
+                      onChange={handle}
+                      className="w-full bg-black/40 border-2 border-transparent focus:border-[#a47622]/50 text-white pl-14 pr-5 py-4 rounded-2xl outline-none transition-all duration-300 placeholder:text-slate-700 font-bold text-sm shadow-inner"
+                      placeholder="name@company.com"
+                    />
+                  </div>
+                </div>
+
+                {mode === 'User' && (
+                  <div className="group">
+                    <label htmlFor="signin-company" className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1 transition-colors group-focus-within:text-[#8a621c]">Operating Company</label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-slate-600 group-focus-within:text-[#a47622] transition-colors">
+                        <FiBriefcase size={18} />
+                      </div>
+                      <select
+                        id="signin-company"
+                        name="operatingCompanyCode"
+                        value={form.operatingCompanyCode}
+                        onChange={handle}
+                        required
+                        className="w-full appearance-none bg-black/40 border-2 border-transparent focus:border-[#a47622]/50 text-white pl-14 pr-5 py-4 rounded-2xl outline-none transition-all duration-300 font-bold text-sm shadow-inner"
+                      >
+                        <option value="" className="bg-[#fff8e9]">Select company</option>
+                        {operatingCompanies.map((company) => (
+                          <option key={company.code} value={company.code} className="bg-[#fff8e9]">
+                            {company.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
+
+                {/* PASSWORD FIELD */}
+                <div className="group">
+                  <label htmlFor="signin-password" className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1 transition-colors group-focus-within:text-[#8a621c]">Password</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-slate-600 group-focus-within:text-[#a47622] transition-colors">
+                      <FiLock size={18} />
+                    </div>
+                    <input
+                      type={show ? "text" : "password"}
+                      id="signin-password"
+                      autoComplete="current-password"
+                      name="password"
+                      value={form.password}
+                      onChange={handle}
+                      className="w-full bg-black/40 border-2 border-transparent focus:border-[#a47622]/50 text-white pl-14 pr-14 py-4 rounded-2xl outline-none transition-all duration-300 placeholder:text-slate-700 font-bold text-sm shadow-inner"
+                      placeholder="••••••••"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShow(!show)}
+                      aria-label={show ? "Hide password" : "Show password"}
+                      aria-pressed={show}
+                      className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-600 hover:text-[#8a621c] transition-colors"
+                    >
+                      {show ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* FORGOT PASS */}
+                <div className="flex justify-end px-1">
+                  <button type="button" className="text-[10px] font-black text-[#a47622] uppercase tracking-widest hover:text-[#8a621c] transition-colors">Forgot password?</button>
+                </div>
+
+                {/* SUBMIT BUTTON */}
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="group relative w-full bg-[#b3842e] hover:bg-[#a47622] text-white font-black py-5 rounded-2xl overflow-hidden transition-all duration-300 active:scale-95 shadow-2xl shadow-[#a47622]/20"
+                >
+                  <div className="relative z-10 flex items-center justify-center gap-3 text-xs uppercase tracking-[0.2em]">
+                    {loading ? <FiLoader className="animate-spin" /> : "Sign in"}
+                    {!loading && <FiChevronRight className="group-hover:translate-x-1 transition-transform" />}
+                  </div>
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+                </button>
+              </form>
+
+
+            </div>
+            <div className="signin-card-footer"><FiShield aria-hidden="true" /><span>Jaya Group · Enterprise Resource Hub</span></div>
+          </div>
+          <p className="signin-access-note">Authorized access only</p>
+        </section>
       </div>
+      <footer className="signin-footer"><span>Moving business forward. Together.</span><span>© {new Date().getFullYear()} Jaya Group</span></footer>
     </main>
   );
 }

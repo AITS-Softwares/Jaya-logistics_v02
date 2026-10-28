@@ -983,6 +983,8 @@ import LoadingPanel from '@/app/api/loading-panel/LoadingPanel';
 import RateMaster from '@/app/api/rate-master/schema';
 import Location from '@/app/api/locations/schema';
 import Branch from '@/app/api/branches/schema';
+import { notifyModuleApprovers } from '@/lib/workflowNotifications';
+import { assertSourcesCurrent, captureSourceDependencies, recordApprovedRevision } from '@/lib/reapprovalService';
 
 // ── PERMISSION FUNCTIONS ──
 const PART2_APPROVAL_MODULE = 'Pricing Panel - Part 2 Approval';
@@ -1453,6 +1455,7 @@ export async function POST(req) {
       const approvedCount = await VehicleNegotiation.countDocuments(companyScopeFilter(user, {
         _id: { $in: vnnIds },
         panelStatus: { $ne: 'Draft' },
+        reapprovalState: { $in: [null, 'none'] },
         'approval.part3Status': 'Approved',
         'approval.vehicleNo': { $exists: true, $ne: '' },
         'approval.mobile': { $exists: true, $ne: '' },
@@ -1693,6 +1696,7 @@ export async function POST(req) {
     });
 
     await newPricingPanel.save({ validateBeforeSave: !isDraftSave });
+    await captureSourceDependencies('pricing', newPricingPanel, user.companyId);
 
     return NextResponse.json({
       success: true,
@@ -1771,6 +1775,16 @@ export async function PUT(req) {
         success: false,
         message: "Pricing panel not found"
       }, { status: 404 });
+    }
+
+    if (pricingPanel.upstreamPending?.length || pricingPanel.reapprovalState === 'blockedByUpstream') {
+      return NextResponse.json({ success: false, message: 'This Pricing Panel is blocked while an upstream correction is in progress.' }, { status: 409 });
+    }
+    if (['Approved', 'Completed'].includes(pricingPanel.rateApproval?.approvalStatus || pricingPanel.panelStatus) && pricingPanel.reapprovalState !== 'unlocked') {
+      return NextResponse.json({ success: false, message: 'Approved Pricing Panels are locked. An admin must unlock this record before editing.' }, { status: 409 });
+    }
+    if (pricingPanel.reapprovalState === 'pendingApproval' || pricingPanel.reapprovalState === 'syncFailed') {
+      return NextResponse.json({ success: false, message: 'This Pricing Panel is awaiting approval or admin sync recovery.' }, { status: 409 });
     }
 
     const saveMode = body.saveMode;
@@ -1964,7 +1978,19 @@ export async function PUT(req) {
       });
     }
 
+    if (pricingPanel.sourceDependencies?.length) {
+      try { await assertSourcesCurrent(pricingPanel, user.companyId); }
+      catch (staleError) { return NextResponse.json({ success: false, message: staleError.message }, { status: staleError.status || 409 }); }
+    }
+    if (pricingPanel.reapprovalState === 'unlocked' && saveMode !== 'draft') pricingPanel.reapprovalState = 'pendingApproval';
     await pricingPanel.save({ validateBeforeSave: saveMode !== 'draft' });
+    await captureSourceDependencies('pricing', pricingPanel, user.companyId);
+    if (saveMode === 'submit') {
+      await notifyModuleApprovers({
+        user, module: 'Pricing Panel - Part 2 Approval', panelLabel: 'Pricing Panel',
+        reference: pricingPanel.pricingSerialNo, url: `/admin/pricing-panel/${pricingPanel._id}`,
+      });
+    }
     if (replacementApprovalPath && replacementApprovalPath !== previousApprovalPath) {
       try {
         await removeReplacedApprovalFile(previousApprovalPath);
@@ -2128,6 +2154,10 @@ export async function PATCH(req) {
       }, { status: 404 });
     }
 
+    if (pricingPanel.upstreamPending?.length || pricingPanel.reapprovalState === 'blockedByUpstream') {
+      return NextResponse.json({ success: false, message: 'This Pricing Panel cannot be approved while an upstream correction is in progress.' }, { status: 409 });
+    }
+
     const part2Actions = ['approve', 'reject', 'update-approval', 'approve-with-update', 'amend-part2'];
     // Submitting is the final step of creating a Part 1 draft. A user with
     // create-only access must be able to submit the draft they just created;
@@ -2143,6 +2173,14 @@ export async function PATCH(req) {
     }
     if (action === 'complete' && !hasPermission(user, 'approve')) {
       return NextResponse.json({ success: false, message: 'Permission denied: approve action not allowed for Pricing Panel.' }, { status: 403 });
+    }
+
+    if (['amend-part1', 'amend-part2'].includes(action) && pricingPanel.reapprovalState !== 'unlocked') {
+      return NextResponse.json({ success: false, message: 'An admin must unlock this approved Pricing Panel before it can be amended.' }, { status: 409 });
+    }
+    if (['submit-part1', 'approve', 'approve-with-update'].includes(action) && pricingPanel.sourceDependencies?.length) {
+      try { await assertSourcesCurrent(pricingPanel, user.companyId); }
+      catch (staleError) { return NextResponse.json({ success: false, message: staleError.message }, { status: staleError.status || 409 }); }
     }
 
     const workflowPhase = pricingPanel.rateApproval?.workflowPhase || 'part1';
@@ -2179,6 +2217,7 @@ export async function PATCH(req) {
         pricingPanel.rateApproval.approvalStatus = 'Rejected';
         pricingPanel.rateApproval.workflowPhase = 'part1';
         pricingPanel.panelStatus = 'Draft';
+        if (pricingPanel.reapprovalState === 'pendingApproval') pricingPanel.reapprovalState = 'pendingReapproval';
         addApprovalHistory(pricingPanel, {
           revision: pricingPanel.rateApproval.submittedRevision || approvalRevision(pricingPanel),
           action: 'rejected',
@@ -2219,6 +2258,7 @@ export async function PATCH(req) {
         pricingPanel.rateApproval.submittedRevision = approvalRevision(pricingPanel);
         pricingPanel.panelStatus = 'Submitted';
         pricingPanel.isDraft = false;
+        if (['unlocked', 'pendingReapproval'].includes(pricingPanel.reapprovalState)) pricingPanel.reapprovalState = 'pendingApproval';
         addApprovalHistory(pricingPanel, {
           revision: pricingPanel.rateApproval.submittedRevision,
           action: 'submitted',
@@ -2282,6 +2322,7 @@ export async function PATCH(req) {
         pricingPanel.rateApproval.approvalStatus = 'Pending';
         pricingPanel.rateApproval.workflowPhase = 'part1';
         pricingPanel.panelStatus = 'Draft';
+        if (pricingPanel.reapprovalState === 'pendingApproval') pricingPanel.reapprovalState = 'pendingReapproval';
         break;
 
       case 'amend-part2':
@@ -2303,6 +2344,16 @@ export async function PATCH(req) {
     }
 
     await pricingPanel.save();
+    if (['approve', 'approve-with-update'].includes(action)) {
+      try { await recordApprovedRevision('pricing', pricingPanel._id, user); }
+      catch (syncError) { return NextResponse.json({ success: false, message: `Pricing Panel approved, but its revision could not be recorded: ${syncError.message}` }, { status: 503 }); }
+    }
+    if (['submit-part1', 'amend-part2'].includes(action)) {
+      await notifyModuleApprovers({
+        user, module: 'Pricing Panel - Part 2 Approval', panelLabel: 'Pricing Panel',
+        reference: pricingPanel.pricingSerialNo, url: `/admin/pricing-panel/${pricingPanel._id}`,
+      });
+    }
 
     let successMessage = `Pricing panel ${action}d successfully`;
     if (action === 'update-approval') {
