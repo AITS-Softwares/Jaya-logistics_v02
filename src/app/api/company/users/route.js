@@ -1,3 +1,4 @@
+import { validateBranchAssignment } from '@/lib/branchAccess';
 import dbConnect from "@/lib/db";
 import CompanyUser from "@/models/CompanyUser";
 import { NextResponse } from "next/server";
@@ -113,7 +114,7 @@ export async function GET(req) {
     return NextResponse.json(users);
   } catch (e) {
     console.error("GET /api/company/users error:", e);
-    const status = /Unauthorized|Forbidden/.test(e.message) ? 401 : 500;
+    const status = e.status || (/Unauthorized|Forbidden/.test(e.message) ? 401 : 500);
     return NextResponse.json({ message: e.message }, { status });
   }
 }
@@ -122,10 +123,11 @@ export async function GET(req) {
 export async function POST(req) {
   try {
     const company = verifyCompany(req); // ✅ POST ke liye company-only
+    const body = await req.json();
     const {
       employeeId, name, email, password, roles = [], modules = {},
       operatingCompanyIds = [], accessAllOperatingCompanies = false, defaultOperatingCompanyId = null,
-    } = await req.json();
+    } = body;
 
     if (!name || !email || !password) {
       return NextResponse.json({ message: "Name, email, and password are required" }, { status: 400 });
@@ -167,6 +169,7 @@ export async function POST(req) {
       password: hash,
       roles, modules: withoutDeletePermissions(modules),
       ...companyAccess,
+      ...await validateBranchAssignment(company.companyId, body),
     });
 
     return NextResponse.json({
@@ -179,11 +182,13 @@ export async function POST(req) {
       operatingCompanyIds: user.operatingCompanyIds || [],
       defaultOperatingCompanyId: user.defaultOperatingCompanyId || null,
       accessAllOperatingCompanies: user.accessAllOperatingCompanies === true,
+      accessAllBranches: user.accessAllBranches !== false,
+      branchIds: user.branchIds || [],
     }, { status: 201 });
 
   } catch (e) {
     console.error("POST /api/company/users error:", e);
-    const status = /Unauthorized|Forbidden/.test(e.message) ? 401 : 500;
+    const status = e.status || (/Unauthorized|Forbidden/.test(e.message) ? 401 : 500);
     return NextResponse.json({ message: e.message }, { status });
   }
 }
@@ -244,7 +249,7 @@ export async function POST(req) {
 //     return NextResponse.json(users);
 //   } catch (e) {
 //     console.error("GET /api/company/users error:", e);
-//     const status = /Unauthorized|Forbidden/.test(e.message) ? 401 : 500;
+//     const status = e.status || (/Unauthorized|Forbidden/.test(e.message) ? 401 : 500);
 //     return NextResponse.json({ message: e.message }, { status });
 //   }
 // }
@@ -326,7 +331,7 @@ export async function POST(req) {
 //     );
 //   } catch (e) {
 //     console.error("POST /api/company/users error:", e);
-//     const status = /Unauthorized|Forbidden/.test(e.message) ? 401 : 500;
+//     const status = e.status || (/Unauthorized|Forbidden/.test(e.message) ? 401 : 500);
 //     return NextResponse.json({ message: e.message }, { status });
 //   }
 // }
@@ -371,7 +376,7 @@ export async function POST(req) {
 
 //     return NextResponse.json(users);
 //   } catch (e) {
-//     const status = /Unauthorized|Forbidden/.test(e.message) ? 401 : 500;
+//     const status = e.status || (/Unauthorized|Forbidden/.test(e.message) ? 401 : 500);
 //     return NextResponse.json({ message: e.message }, { status });
 //   }
 // }
@@ -412,7 +417,7 @@ export async function POST(req) {
 //       { status: 201 }
 //     );
 //   } catch (e) {
-//     const status = /Unauthorized|Forbidden/.test(e.message) ? 401 : 500;
+//     const status = e.status || (/Unauthorized|Forbidden/.test(e.message) ? 401 : 500);
 //     return NextResponse.json({ message: e.message }, { status });
 //   }
 // }

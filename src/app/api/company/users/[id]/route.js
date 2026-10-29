@@ -1,4 +1,5 @@
 // app/api/company/users/[id]/route.js
+import { validateBranchAssignment } from '@/lib/branchAccess';
 import dbConnect from "@/lib/db";
 import CompanyUser from "@/models/CompanyUser";
 import { NextResponse } from "next/server";
@@ -72,7 +73,7 @@ export async function GET(req, { params }) {
     return NextResponse.json(user);
   } catch (e) {
     console.error("GET /api/company/users/[id] error:", e);
-    const status = /Unauthorized|Forbidden/.test(e.message) ? 401 : 500;
+    const status = e.status || (/Unauthorized|Forbidden/.test(e.message) ? 401 : 500);
     return NextResponse.json({ message: e.message }, { status });
   }
 }
@@ -161,6 +162,8 @@ export async function PUT(req, { params }) {
       );
     }
 
+    Object.assign(updateData, await validateBranchAssignment(company.companyId, body, user));
+
     // Handle modules if provided
     if (body.modules && typeof body.modules === 'object') {
       const modulesWithoutDelete = withoutDeletePermissions(body.modules);
@@ -199,7 +202,7 @@ export async function PUT(req, { params }) {
     return NextResponse.json(updatedUser);
   } catch (e) {
     console.error("PUT /api/company/users/[id] error:", e);
-    const status = /Unauthorized|Forbidden/.test(e.message) ? 401 : 500;
+    const status = e.status || (/Unauthorized|Forbidden/.test(e.message) ? 401 : 500);
     return NextResponse.json({ message: e.message }, { status });
   }
 }
@@ -235,7 +238,7 @@ export async function DELETE(req, { params }) {
     });
   } catch (e) {
     console.error("DELETE /api/company/users/[id] error:", e);
-    const status = /Unauthorized|Forbidden/.test(e.message) ? 401 : 500;
+    const status = e.status || (/Unauthorized|Forbidden/.test(e.message) ? 401 : 500);
     return NextResponse.json({ message: e.message }, { status });
   }
 }

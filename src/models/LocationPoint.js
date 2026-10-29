@@ -1,3 +1,4 @@
+import branchScopePlugin from '@/lib/branchScopePlugin';
 import mongoose from "mongoose";
 
 const locationPointSchema = new mongoose.Schema({
@@ -28,5 +29,7 @@ locationPointSchema.index({ sessionId: 1, idempotencyKey: 1 }, { unique: true })
 locationPointSchema.index({ sessionId: 1, sequence: 1 }, { unique: true });
 locationPointSchema.index({ companyId: 1, tripId: 1, recordedAt: -1 });
 locationPointSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+
+locationPointSchema.plugin(branchScopePlugin, { model: 'LocationPoint' });
 
 export default mongoose.models.LocationPoint || mongoose.model("LocationPoint", locationPointSchema);

@@ -637,6 +637,7 @@ const MODULES_CONFIG = {
   'Loading Info': { icon: '📦', permissions: ['view', 'create', 'edit', 'delete', 'approve'] },
   'Purchase Panel': { icon: '🛒', permissions: ['view', 'create', 'edit', 'delete', 'approve'] },
   'Consignment Note': { icon: '📄', permissions: ['view', 'create', 'edit', 'delete', 'approve'] },
+  'Tracking Plan': { icon: '📍', permissions: ['view'] },
   'Advance Payment': { icon: '💳', permissions: ['view', 'create', 'edit', 'delete', 'approve'] },
   'Proof Of Delivery': { icon: '✅', permissions: ['view', 'create', 'edit', 'delete', 'approve'] },
   'Balance-Payment': { icon: '⚖️', permissions: ['view', 'create', 'edit', 'delete', 'approve'] },

@@ -1,3 +1,4 @@
+import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from "next/server";
 import path from "path";
 import { readFile } from "fs/promises";
@@ -69,7 +70,7 @@ async function readStoredUpload(relativePath) {
  * record and belongs to the caller's operating-company scope. This replaces
  * fragile direct /uploads URLs, which are not served by every deployment.
  */
-export const GET = withAuth(async (req, context, user) => {
+const branchHandlerGET = withAuth(async (req, context, user) => {
   try {
     // Next.js 15 exposes dynamic route params asynchronously.
     const { id: panelId } = await context.params;
@@ -101,3 +102,5 @@ export const GET = withAuth(async (req, context, user) => {
     return NextResponse.json({ success: false, message: "Unable to open attachment." }, { status: 500 });
   }
 }, { module: "Loading Info", actions: ["create", "edit", "view"] });
+
+export const GET = withBranchAccess(branchHandlerGET);

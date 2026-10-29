@@ -167,7 +167,7 @@ const PERMISSIONS = [
 ];
 
 // Delete is deliberately omitted for every non-admin user and module.
-const permissionsForModule = () => PERMISSIONS;
+const permissionsForModule = (moduleName) => moduleName === "Tracking Plan" ? ["view"] : PERMISSIONS;
 
 const PERM_ICONS = {
   create: "✦", view: "👁", edit: "✎", view_financial_rates: "₹", delete: "⌫",
@@ -196,6 +196,7 @@ const defaultColor = { bg: "bg-gray-50", text: "text-gray-600", border: "border-
 const emptyForm = () => ({
   employeeId: "", name: "", email: "", password: "", roles: [], modules: {},
   operatingCompanyIds: [], defaultOperatingCompanyId: "", accessAllOperatingCompanies: false,
+  accessAllBranches: true, branchIds: [],
 });
 
 export default function UsersPage() {
@@ -212,6 +213,8 @@ export default function UsersPage() {
   const [expandedMods, setExpandedMods] = useState({});
   const [activeTab, setActiveTab] = useState("info"); // "info" | "roles" | "modules"
   const [operatingCompanies, setOperatingCompanies] = useState([]);
+  const [branches, setBranches] = useState([]);
+  const [branchLoadError, setBranchLoadError] = useState(false);
 
   useEffect(() => {
     if (typeof window !== "undefined") setToken(localStorage.getItem("token"));
@@ -220,6 +223,10 @@ export default function UsersPage() {
   useEffect(() => {
     if (!token) return;
     fetchUsers();
+    setBranchLoadError(false);
+    axios.get('/api/branches', { headers: { Authorization: `Bearer ${token}` } })
+      .then(({ data }) => setBranches(data?.data || []))
+      .catch(() => setBranchLoadError(true));
     axios.get("/api/subcompanies?operatingOnly=true&limit=100", {
       headers: { Authorization: `Bearer ${token}` },
     }).then(({ data }) => setOperatingCompanies(data?.data || [])).catch(() => setOperatingCompanies([]));
@@ -240,8 +247,9 @@ export default function UsersPage() {
 
   // ── Modules derived from selected roles ──
   const modulesList = useMemo(() => {
-    const seen = new Set();
-    const list = [];
+    // Tracking access can be granted independently of the user's role.
+    const seen = new Set(["Tracking Plan"]);
+    const list = ["Tracking Plan"];
     (form.roles || []).forEach(role =>
       (ROLE_OPTIONS[role] || []).forEach(m => { if (!seen.has(m)) { seen.add(m); list.push(m); } })
     );
@@ -321,6 +329,7 @@ export default function UsersPage() {
     if (!form.accessAllOperatingCompanies && !form.operatingCompanyIds.length) {
       return setErr("Assign at least one operating company, or allow access to all companies.");
     }
+    if (!form.accessAllBranches && !form.branchIds.length) return setErr('Select at least one branch.');
     setSaving(true);
     try {
       const safeModules = Object.fromEntries(Object.entries(form.modules || {}).map(([moduleName, data]) => {
@@ -364,6 +373,8 @@ export default function UsersPage() {
       operatingCompanyIds: (user?.operatingCompanyIds || []).map((id) => typeof id === "string" ? id : id?._id || String(id)),
       defaultOperatingCompanyId: user?.defaultOperatingCompanyId?._id || user?.defaultOperatingCompanyId || "",
       accessAllOperatingCompanies: user?.accessAllOperatingCompanies === true,
+      accessAllBranches: user?.accessAllBranches !== false,
+      branchIds: (user?.branchIds || []).map(id => typeof id === "string" ? id : id?._id || String(id)),
     });
     setActiveTab("info");
     setOpenModal(true);
@@ -470,6 +481,9 @@ export default function UsersPage() {
                   </div>
                 </div>
 
+                <p className="text-xs text-gray-500 mt-2">
+                  Branches: {u.accessAllBranches !== false ? 'All branches' : (u.branchIds || []).map(id => branches.find(b => b._id === String(id?._id || id))?.name || 'Assigned branch').join(', ') || 'None assigned'}
+                </p>
                 {/* Roles */}
                 <div className="flex flex-wrap gap-1.5 mt-3">
                   {(u.roles || []).map(role => {
@@ -590,6 +604,23 @@ export default function UsersPage() {
                         </button>
                       </div>
                     </div>
+
+                    <fieldset className="rounded-xl border border-gray-200 bg-gray-50 p-3.5">
+                      <legend className="text-xs font-bold text-gray-600 px-1">Branch access</legend>
+                      <p className="text-xs text-gray-500 mb-3">Applies to records in every assigned operating company, including viewing, editing and approval. Panel permissions are still required.</p>
+                      <div className="flex gap-5 text-sm text-gray-700 mb-3">
+                        <label className="flex gap-2 items-center"><input type="radio" name="branchAccess" checked={form.accessAllBranches} onChange={() => setForm(prev => ({ ...prev, accessAllBranches: true, branchIds: [] }))} />All branches</label>
+                        <label className="flex gap-2 items-center"><input type="radio" name="branchAccess" checked={!form.accessAllBranches} onChange={() => setForm(prev => ({ ...prev, accessAllBranches: false }))} />Selected branches</label>
+                      </div>
+                      {!form.accessAllBranches && <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {branches.filter(branch => branch.isActive !== false || form.branchIds.includes(branch._id)).map(branch => <label key={branch._id} className="flex gap-2 items-center text-sm text-gray-700">
+                          <input type="checkbox" checked={form.branchIds.includes(branch._id)} onChange={() => setForm(prev => ({ ...prev, branchIds: prev.branchIds.includes(branch._id) ? prev.branchIds.filter(id => id !== branch._id) : [...prev.branchIds, branch._id] }))} />
+                          {branch.name} ({branch.code}){branch.isActive === false ? ' · inactive' : ''}
+                        </label>)}
+                        {branchLoadError && <p className="text-xs text-red-600">Unable to load branches. Reopen this form before saving a branch restriction.</p>}
+                        {!branchLoadError && branches.length === 0 && <p className="text-xs text-amber-700">No branches available. Create an active branch first.</p>}
+                      </div>}
+                    </fieldset>
 
                     <div className="rounded-xl border border-gray-200 bg-gray-50 p-3.5">
                       <div className="flex items-start justify-between gap-4 mb-3">

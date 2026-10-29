@@ -883,6 +883,7 @@
 
 
 // app/api/order-panel/OrderPanel.js
+import branchScopePlugin from '@/lib/branchScopePlugin';
 import mongoose from 'mongoose';
 import softDeletePlugin from '@/lib/softDelete';
 import reapprovalPlugin from '@/lib/reapprovalPlugin';
@@ -1246,6 +1247,7 @@ orderPanelSchema.pre('save', function (next) {
   next();
 });
 
+orderPanelSchema.plugin(branchScopePlugin, { model: 'OrderPanel' });
 orderPanelSchema.plugin(softDeletePlugin);
 orderPanelSchema.plugin(reapprovalPlugin);
 const OrderPanel = mongoose.models.OrderPanel || mongoose.model('OrderPanel', orderPanelSchema);

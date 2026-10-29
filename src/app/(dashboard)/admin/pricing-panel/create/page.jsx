@@ -4005,7 +4005,8 @@ export default function PricingPanelPage() {
                 required={true}
                 displayField="name"
                 codeField="code"
-                readOnly={isHeaderReadOnly}
+                readOnly={true}
+                disabled={true}
               />
             </div>
 

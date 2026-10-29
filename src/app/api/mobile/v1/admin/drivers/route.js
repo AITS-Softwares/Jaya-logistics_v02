@@ -1,3 +1,4 @@
+import { withBranchAccess } from '@/lib/branchAccess';
 import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
@@ -6,7 +7,7 @@ import { isDriverMobileEnabled, mobileUnavailableResponse } from "@/lib/driverMo
 import { requireDriverMobileStaff } from "@/lib/driverMobileStaff";
 import { normalizeDriverMobile } from "@/lib/driverMobileCore.mjs";
 
-export async function GET(req) {
+async function branchHandlerGET(req) {
   if (!(await isDriverMobileEnabled())) return mobileUnavailableResponse();
   const staff = requireDriverMobileStaff(req);
   if (staff.error) return staff.error;
@@ -15,7 +16,7 @@ export async function GET(req) {
   return NextResponse.json({ success: true, data: drivers.map((driver) => ({ id: String(driver._id), displayName: driver.displayName, mobileE164: driver.mobileE164, status: driver.status, preferredLanguage: driver.preferredLanguage, createdAt: driver.createdAt })) });
 }
 
-export async function POST(req) {
+async function branchHandlerPOST(req) {
   if (!(await isDriverMobileEnabled())) return mobileUnavailableResponse();
   const staff = requireDriverMobileStaff(req, "edit");
   if (staff.error) return staff.error;
@@ -43,3 +44,6 @@ export async function POST(req) {
     return NextResponse.json({ success: false, code: "DRIVER_CREATE_FAILED", message: "Unable to create driver." }, { status: 500 });
   }
 }
+
+export const GET = withBranchAccess(branchHandlerGET);
+export const POST = withBranchAccess(branchHandlerPOST);

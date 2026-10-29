@@ -1,4 +1,5 @@
 // app/api/purchase-panel/route.js
+import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from "next/server";
 import { identifierFormatError } from "@/lib/identifierFormats";
 import connectDb from "@/lib/db";
@@ -16,7 +17,7 @@ import { activeOperatingCompanyId, companyScopeFilter } from "@/lib/companyScope
 import AdvancePayment from "../Advance-Payment/AdvancePayment";
 import POD from "../pod-panel/POD";
 import { filterOpenOrderRows, validateOpenOrderRows } from '@/lib/orderRowStatus';
-import { notifyModuleApprovers, notifyModuleCreateUsers } from '@/lib/workflowNotifications';
+import { notifyModuleApprovers, notifyModuleCreateUsers, notifyModuleDecision } from '@/lib/workflowNotifications';
 
 // ── PERMISSION FUNCTIONS ──
 
@@ -251,7 +252,7 @@ function loadingExpensesFromLoadingInfo(loadingInfo) {
   return { loadingExpenses, totalLoadingExpenses };
 }
 
-export async function GET(req) {
+async function branchHandlerGET(req) {
   try {
     await connectDb();
     const forKey = new URL(req.url).searchParams.get("for");
@@ -549,7 +550,7 @@ export async function GET(req) {
 /* ========================================
    POST /api/purchase-panel - Requires 'create' permission
 ======================================== */
-export async function POST(req) {
+async function branchHandlerPOST(req) {
   try {
     await connectDb();
     const { user, error, status } = await validateUser(req, 'create');
@@ -813,6 +814,10 @@ export async function POST(req) {
     }
 
     await purchase.save({ validateBeforeSave: !isDraftSave });
+    if (!isDraftSave && purchase.approval?.status === 'Pending') {
+      await notifyModuleApprovers({ user, module: 'Purchase Panel', panelLabel: 'Purchase Panel',
+        reference: purchase.purchaseNo, url: `/admin/Purchase-Panel/${purchase._id}` });
+    }
 
     return NextResponse.json({
       success: true,
@@ -855,7 +860,7 @@ export async function POST(req) {
 /* ========================================
    PUT /api/purchase-panel - Requires 'edit' permission
 ======================================== */
-export async function PUT(req) {
+async function branchHandlerPUT(req) {
   try {
     await connectDb();
     const { user, error, status } = await validateUser(req);
@@ -1171,7 +1176,7 @@ export async function PUT(req) {
 /* ========================================
    DELETE /api/purchase-panel - Requires 'delete' permission
 ======================================== */
-export async function DELETE(req) {
+async function branchHandlerDELETE(req) {
   try {
     await connectDb();
     const { user, error, status } = await validateUser(req, 'delete');
@@ -1221,7 +1226,7 @@ export async function DELETE(req) {
    PATCH /api/purchase-panel - Requires 'approve' permission
    Handles: approve, reject, complete with remarks
 ======================================== */
-export async function PATCH(req) {
+async function branchHandlerPATCH(req) {
   try {
     await connectDb();
     const { user, error, status } = await validateUser(req, 'approve');
@@ -1287,6 +1292,7 @@ export async function PATCH(req) {
 
     await purchase.save();
 
+    await notifyModuleDecision({ user, record: purchase, module: 'Purchase Panel', reference: purchase.purchaseNo, action, url: `/admin/Purchase-Panel/${purchase._id}` });
     if (action === 'approve' || action === 'complete') {
       await notifyModuleCreateUsers({
         user, module: 'Advance Payment', panelLabel: 'Purchase Panel',
@@ -1319,3 +1325,9 @@ export async function PATCH(req) {
     }, { status: 500 });
   }
 }
+
+export const GET = withBranchAccess(branchHandlerGET);
+export const POST = withBranchAccess(branchHandlerPOST);
+export const PUT = withBranchAccess(branchHandlerPUT);
+export const DELETE = withBranchAccess(branchHandlerDELETE);
+export const PATCH = withBranchAccess(branchHandlerPATCH);

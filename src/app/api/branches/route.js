@@ -1,3 +1,4 @@
+import { currentBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from "next/server";
 import connectDb from "@/lib/db";
 import Branch from "./schema";  // ✅ Make sure this imports the Branch schema
@@ -70,9 +71,11 @@ export async function GET(req) {
   if (error) return NextResponse.json({ success: false, message: error }, { status });
 
   try {
-    // Fetch branches for this company
+    const access = await currentBranchAccess(user);
+    // Fetch only assigned branches for transaction pickers. Company admins see all.
     const branches = await Branch.find({
       companyId: user.companyId,
+      ...(access.accessAllBranches ? {} : { _id: { $in: access.branchIds } }),
     }).sort({ name: 1 });
 
     return NextResponse.json({ success: true, data: branches }, { status: 200 });

@@ -893,6 +893,7 @@
 //   }
 // }
 
+import { withBranchAccess } from '@/lib/branchAccess';
 import { isIciciQueueApiSkipped, generateLocalPaymentQueue } from '@/lib/paymentQueueConfig.mjs';
 import { NextResponse } from "next/server";
 import { identifierFormatError } from "@/lib/identifierFormats";
@@ -907,7 +908,7 @@ import { assertValidAmounts, BALANCE_STATUSES, SETTLED_BALANCE_STATUSES } from "
 import { handleModuleDelete } from "@/lib/deletion/handler";
 import { inquireCibNeftPayment, inquireCibPayment, normalizeCibStatus, stableIciciUniqueId, submitCibPayment } from "@/lib/iciciCib";
 import Supplier from "@/models/SupplierModels";
-import { notifyModuleApprovers } from "@/lib/workflowNotifications";
+import { notifyModuleApprovers, notifyModuleDecision } from "@/lib/workflowNotifications";
 
 // ── PERMISSION FUNCTIONS ──
 
@@ -989,7 +990,7 @@ function isValidObjectId(id) {
 /* ========================================
    GET /api/balance-payment - Requires 'view' permission
 ======================================== */
-export async function GET(req) {
+async function branchHandlerGET(req) {
   try {
     await connectDb();
     // Opening one payment (edit / approve pages) needs view OR edit OR approve; the list still needs view
@@ -1108,7 +1109,7 @@ export async function GET(req) {
 /* ========================================
    POST /api/balance-payment - Requires 'create' permission
 ======================================== */
-export async function POST(req) {
+async function branchHandlerPOST(req) {
   try {
     await connectDb();
     const { user, error, status } = await validateUser(req, 'create');
@@ -1293,7 +1294,7 @@ export async function POST(req) {
 /* ========================================
    PUT /api/balance-payment - Requires 'edit' permission
 ======================================== */
-export async function PUT(req) {
+async function branchHandlerPUT(req) {
   try {
     await connectDb();
     const { user, error, status } = await validateUser(req, 'edit');
@@ -1473,7 +1474,7 @@ export async function PUT(req) {
 /* ========================================
    DELETE /api/balance-payment - Requires 'delete' permission
 ======================================== */
-export async function DELETE(req) {
+async function branchHandlerDELETE(req) {
   try {
     await connectDb();
     const { user, error, status } = await validateUser(req, 'delete');
@@ -1513,7 +1514,7 @@ export async function DELETE(req) {
    PATCH /api/balance-payment - Requires 'approve' permission
    Handles: approve, reject, complete, queue with remarks
 ======================================== */
-export async function PATCH(req) {
+async function branchHandlerPATCH(req) {
   try {
     await connectDb();
     const { user, error, status } = await validateUser(req, 'approve');
@@ -1558,6 +1559,8 @@ export async function PATCH(req) {
 
       await payment.save();
 
+      await notifyModuleDecision({ user, record: payment, module: 'Balance-Payment', reference: payment.balancePaymentNo,
+        action: payment.paymentStatus === 'Approved' ? 'approve' : ['Paid', 'Completed'].includes(payment.paymentStatus) ? 'complete' : payment.paymentStatus === 'Rejected' ? 'reject' : '', url: `/admin/Balance-Payment/${payment._id}` });
       return NextResponse.json({
         success: true,
         message: "Balance Payment approved successfully",
@@ -1580,6 +1583,7 @@ export async function PATCH(req) {
 
       await payment.save();
 
+      await notifyModuleDecision({ user, record: payment, module: 'Balance-Payment', reference: payment.balancePaymentNo, action: 'reject', url: `/admin/Balance-Payment/${payment._id}` });
       return NextResponse.json({
         success: true,
         message: "Balance Payment rejected successfully",
@@ -1602,6 +1606,7 @@ export async function PATCH(req) {
 
       await payment.save();
 
+      await notifyModuleDecision({ user, record: payment, module: 'Balance-Payment', reference: payment.balancePaymentNo, action: 'complete', url: `/admin/Balance-Payment/${payment._id}` });
       return NextResponse.json({
         success: true,
         message: "Balance Payment completed successfully",
@@ -1771,3 +1776,9 @@ export async function PATCH(req) {
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
 }
+
+export const GET = withBranchAccess(branchHandlerGET);
+export const POST = withBranchAccess(branchHandlerPOST);
+export const PUT = withBranchAccess(branchHandlerPUT);
+export const DELETE = withBranchAccess(branchHandlerDELETE);
+export const PATCH = withBranchAccess(branchHandlerPATCH);

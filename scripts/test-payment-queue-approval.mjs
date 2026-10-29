@@ -1,3 +1,4 @@
+import { unwrapBranchHandlers } from './route-business-source.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { isIciciQueueApiSkipped, generateLocalPaymentQueue } from '../src/lib/paymentQueueConfig.mjs';
@@ -20,7 +21,7 @@ const deps = {
   submitCibPayment: async () => { bankCalls++; throw new Error('ICICI CIB sandbox configuration is incomplete'); },
 };
 function load(path) {
-  const source = fs.readFileSync(path, 'utf8');
+  const source = unwrapBranchHandlers(fs.readFileSync(path, 'utf8'));
   const patch = source.slice(source.indexOf('\nexport async function PATCH')).replace('export async function PATCH', 'async function PATCH');
   return new Function(...Object.keys(deps), `${patch}\nreturn PATCH;`)(...Object.values(deps));
 }

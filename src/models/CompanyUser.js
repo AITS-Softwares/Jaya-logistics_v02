@@ -41,6 +41,9 @@ const CompanyUserSchema = new mongoose.Schema(
     operatingCompanyIds: [{ type: mongoose.Schema.Types.ObjectId, ref: "SubCompany" }],
     defaultOperatingCompanyId: { type: mongoose.Schema.Types.ObjectId, ref: "SubCompany", default: null },
     accessAllOperatingCompanies: { type: Boolean, default: false },
+    // Missing legacy assignments retain all-branch access until explicitly restricted.
+    accessAllBranches: { type: Boolean, default: true },
+    branchIds: [{ type: mongoose.Schema.Types.ObjectId, ref: "Branch" }],
      // 🔥 AGENT STATUS
   isActive: { type: Boolean, default: true },
 

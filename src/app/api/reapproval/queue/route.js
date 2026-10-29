@@ -1,3 +1,4 @@
+import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from 'next/server';
 import connectDb from '@/lib/db';
 import { verifyToken } from '@/lib/auth';
@@ -16,7 +17,7 @@ const entries = [
   { type: 'lr', module: 'Consignment Note', Model: ConsignmentNote, no: 'lrNo', path: 'Consignment-Note', viewPath: () => '/admin/Consignment-Note' },
 ];
 
-export async function GET(req) {
+async function branchHandlerGET(req) {
   await connectDb();
   let user;
   try { user = verifyToken(req); }
@@ -183,6 +184,8 @@ export async function GET(req) {
     else if (!isLatestVnnSyncAmbiguous && isApprovalPending && canApprove) path = `/admin/${entry.path}/approve/${doc._id}`;
     else if (displayReapprovalState === 'unlocked' && canEdit) path = `/admin/${entry.path}/${doc._id}`;
     else if (doc.reapprovalState === 'syncFailed' && isAdmin) path = `/admin/${entry.path}/${doc._id}`;
+    // Capture ownership of a real task before adding read-only status links.
+    const actionable = Boolean(path);
     if (!path) {
       const isStatusEntry = ['blockedByUpstream', 'syncFailed'].includes(displayReapprovalState);
       if (!isStatusEntry) continue;
@@ -192,6 +195,7 @@ export async function GET(req) {
     records.push({
       type: entry.type, module: entry.module, id: String(doc._id), no: doc[entry.no] || '',
       path,
+      actionable,
       status: doc.rateApproval?.approvalStatus || doc.panelStatus || doc.header?.status || '', reapprovalState: displayReapprovalState, updatedAt: doc.updatedAt,
       revision: doc.approvedRevision || 0, syncError: doc.reapprovalSyncError || '', upstreamPending: doc.upstreamPending || [], upstreamDetails,
       latestVnnSyncRequired: isLatestVnnSyncRequired,
@@ -212,3 +216,5 @@ export async function GET(req) {
   });
   return NextResponse.json({ success: true, records });
 }
+
+export const GET = withBranchAccess(branchHandlerGET);

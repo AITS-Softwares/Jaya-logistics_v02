@@ -5,6 +5,7 @@
 // Loading Info users are not allowed to create or edit LRs, and they may not
 // have any "Consignment Note" module access either. This endpoint therefore
 // only requires the Loading Info "view" permission and can never write.
+import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import connectDb from "@/lib/db";
@@ -16,7 +17,7 @@ import { getLRCompletion, getLoadingGate, LOADING_APPROVAL_SELECT } from "../../
 
 export const runtime = "nodejs";
 
-export const GET = withAuth(async (req, context, user) => {
+const branchHandlerGET = withAuth(async (req, context, user) => {
     try {
         // Next.js 15 exposes dynamic route params asynchronously.
         const { id: panelId } = await context.params;
@@ -61,3 +62,4 @@ export const GET = withAuth(async (req, context, user) => {
         return NextResponse.json({ success: false, message: "Unable to load the Consignment Note." }, { status: 500 });
     }
 }, { module: "Loading Info", action: "view" });
+export const GET = withBranchAccess(branchHandlerGET);

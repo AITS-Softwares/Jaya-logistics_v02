@@ -1,3 +1,4 @@
+import { unwrapBranchHandlers } from './route-business-source.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { createRequire } from 'node:module';
@@ -21,7 +22,7 @@ const deps = {
   liveOfficeNetEffect: async () => { liveAmountCalls++; return 23850; },
   syncPodAdvanceForPurchase: async () => {}, notifyModuleApprovers: async () => { notifications++; },
 };
-const api = fs.readFileSync('src/app/api/Advance-Payment/route.js', 'utf8');
+const api = unwrapBranchHandlers(fs.readFileSync('src/app/api/Advance-Payment/route.js', 'utf8'));
 const putCode = api.slice(api.indexOf('\nexport async function PUT'), api.indexOf('\nexport async function DELETE')).replace('export async function PUT', 'async function PUT');
 const put = new Function(...Object.keys(deps), `${putCode}\nreturn PUT;`)(...Object.values(deps));
 const request = (body) => ({ json: async () => ({ id: 'payment', ...body }) });

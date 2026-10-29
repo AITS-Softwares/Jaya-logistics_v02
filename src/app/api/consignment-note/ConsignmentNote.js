@@ -210,6 +210,7 @@
 
 // export default ConsignmentNote;
 
+import branchScopePlugin from '@/lib/branchScopePlugin';
 import mongoose from 'mongoose';
 import softDeletePlugin from '@/lib/softDelete';
 import reapprovalPlugin from '@/lib/reapprovalPlugin';
@@ -510,6 +511,7 @@ consignmentNoteSchema.index(
   { unique: true, partialFilterExpression: { orderRowId: { $type: 'string', $gt: '' } } }
 );
 
+consignmentNoteSchema.plugin(branchScopePlugin, { model: 'ConsignmentNote' });
 consignmentNoteSchema.plugin(softDeletePlugin);
 consignmentNoteSchema.plugin(reapprovalPlugin);
 const ConsignmentNote = mongoose.models.ConsignmentNote ||

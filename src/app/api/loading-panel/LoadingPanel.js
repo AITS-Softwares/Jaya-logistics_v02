@@ -416,6 +416,7 @@
 // export default LoadingPanel;
 
 // models/LoadingPanel.js
+import branchScopePlugin from '@/lib/branchScopePlugin';
 import mongoose from 'mongoose';
 import softDeletePlugin from '@/lib/softDelete';
 import reapprovalPlugin from '@/lib/reapprovalPlugin';
@@ -853,6 +854,7 @@ loadingPanelSchema.index({ vehicleArrivalNo: 1, companyId: 1 });
 loadingPanelSchema.index({ 'vehicleInfo.vehicleNo': 1 });
 loadingPanelSchema.index({ subCompanyId: 1 });
 
+loadingPanelSchema.plugin(branchScopePlugin, { model: 'LoadingPanel' });
 loadingPanelSchema.plugin(softDeletePlugin);
 loadingPanelSchema.plugin(reapprovalPlugin);
 const LoadingPanel = mongoose.models.LoadingPanel || 

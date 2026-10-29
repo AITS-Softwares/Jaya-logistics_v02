@@ -1,3 +1,4 @@
+import { withBranchAccess } from '@/lib/branchAccess';
 import crypto from "crypto";
 import { NextResponse } from "next/server";
 import { requireDriverMobileSettingsStaff } from "@/lib/driverMobileStaff";
@@ -5,14 +6,14 @@ import { encryptDriverMobileSecret, getDriverMobileConfig, normalisePilotMobiles
 import DriverMobileConfig from "@/models/DriverMobileConfig";
 import dbConnect from "@/lib/db";
 
-export async function GET(req) {
+async function branchHandlerGET(req) {
   const staff = requireDriverMobileSettingsStaff(req);
   if (staff.error) return staff.error;
   const config = await getDriverMobileConfig(staff.user.companyId, { includeSecret: true });
   return NextResponse.json({ success: true, data: publicDriverMobileConfig(config) });
 }
 
-export async function PUT(req) {
+async function branchHandlerPUT(req) {
   const staff = requireDriverMobileSettingsStaff(req, "edit");
   if (staff.error) return staff.error;
   try {
@@ -44,9 +45,13 @@ export async function PUT(req) {
   }
 }
 
-export async function POST(req) {
+async function branchHandlerPOST(req) {
   const staff = requireDriverMobileSettingsStaff(req, "edit");
   if (staff.error) return staff.error;
   const generated = crypto.randomBytes(48).toString("base64url");
   return NextResponse.json({ success: true, data: { generatedSecret: generated } });
 }
+
+export const GET = withBranchAccess(branchHandlerGET);
+export const PUT = withBranchAccess(branchHandlerPUT);
+export const POST = withBranchAccess(branchHandlerPOST);

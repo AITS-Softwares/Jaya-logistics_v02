@@ -1,3 +1,4 @@
+import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import DriverDevice from "@/models/DriverDevice";
@@ -7,7 +8,7 @@ import { requireDriverMobileStaff } from "@/lib/driverMobileStaff";
 
 // Deliberately returns device metadata only. Installation identifiers and
 // session credentials are never exposed to ERP screens.
-export async function GET(req) {
+async function branchHandlerGET(req) {
   if (!(await isDriverMobileEnabled())) return mobileUnavailableResponse();
   const staff = requireDriverMobileStaff(req);
   if (staff.error) return staff.error;
@@ -29,3 +30,5 @@ export async function GET(req) {
     } : null,
   })) });
 }
+
+export const GET = withBranchAccess(branchHandlerGET);

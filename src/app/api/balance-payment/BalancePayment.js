@@ -119,6 +119,7 @@
 
 // export default BalancePayment;
 
+import branchScopePlugin from '@/lib/branchScopePlugin';
 import mongoose from 'mongoose';
 import softDeletePlugin from '@/lib/softDelete';
 
@@ -277,6 +278,7 @@ balancePaymentSchema.pre('save', function (next) {
   next();
 });
 
+balancePaymentSchema.plugin(branchScopePlugin, { model: 'BalancePayment' });
 balancePaymentSchema.plugin(softDeletePlugin);
 const BalancePayment = mongoose.models.BalancePayment ||
   mongoose.model('BalancePayment', balancePaymentSchema);

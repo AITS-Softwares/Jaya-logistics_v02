@@ -1,3 +1,4 @@
+import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import path from "path";
@@ -24,7 +25,7 @@ async function readInvoiceFile(name) {
     throw missing;
 }
 
-export const GET = withAuth(async (req, context, user) => {
+const branchHandlerGET = withAuth(async (req, context, user) => {
     const { id } = await context.params;
     const lrId = new URL(req.url).searchParams.get("lrId");
     const fail = (m, s) => NextResponse.json({ success: false, message: m }, { status: s });
@@ -57,3 +58,4 @@ export const GET = withAuth(async (req, context, user) => {
         });
     } catch { return fail("Invoice file is no longer on the server.", 404); }
 }, { module: "Loading Info", action: "view" });
+export const GET = withBranchAccess(branchHandlerGET);

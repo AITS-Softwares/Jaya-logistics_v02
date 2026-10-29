@@ -90,6 +90,7 @@
 // For each order row of a loading, finds the customer-master shipping address of that town:
 // order row -> Order Panel (orderPanelNo) -> customerId -> Customer.shippingAddresses.
 // Read-only. LR addresses are applied by the Tracking Plan page, which already has the LR.
+import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import connectDb from "@/lib/db";
@@ -118,7 +119,7 @@ function matchShippingAddress(row, addresses) {
     return null;
 }
 
-export const GET = withAuth(async (req, context, user) => {
+const branchHandlerGET = withAuth(async (req, context, user) => {
     await connectDb();
     try {
         const loadingId = new URL(req.url).searchParams.get("loadingId");
@@ -172,3 +173,4 @@ export const GET = withAuth(async (req, context, user) => {
         return NextResponse.json({ success: false, message: "Unable to resolve customer addresses" }, { status: 500 });
     }
 }, { module: "Tracking Plan", action: "view" });
+export const GET = withBranchAccess(branchHandlerGET);

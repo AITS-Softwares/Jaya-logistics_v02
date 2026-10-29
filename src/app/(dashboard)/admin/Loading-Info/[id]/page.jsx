@@ -8517,7 +8517,9 @@ export default function EditLoadingInfoPanel() {
                 placeholder="Search branch..."
                 displayField="name"
                 codeField="code"
-                disabled={isReadOnly}
+                readOnly={true}
+
+                disabled={true}
               />
             </div>
 

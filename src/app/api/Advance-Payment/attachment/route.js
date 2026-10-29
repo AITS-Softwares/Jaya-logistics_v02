@@ -1,3 +1,4 @@
+import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from "next/server";
 import path from "path";
 import { readFile } from "fs/promises";
@@ -51,7 +52,7 @@ function canUseAdvancePayment(user) {
     return !!user.modules?.["Advance Payment"]?.selected;
 }
 
-export async function GET(req) {
+async function branchHandlerGET(req) {
     try {
         const token = getTokenFromHeader(req);
         if (!token) return NextResponse.json({ success: false, message: "Authentication required." }, { status: 401 });
@@ -100,3 +101,4 @@ export async function GET(req) {
         return NextResponse.json({ success: false, message: "Unable to open attachment." }, { status: 500 });
     }
 }
+export const GET = withBranchAccess(branchHandlerGET);

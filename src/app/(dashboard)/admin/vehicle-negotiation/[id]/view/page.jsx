@@ -10,9 +10,9 @@ const Field = ({ label, value }) => <div><dt className="text-xs font-bold upperc
 function getVnnStatusBadge(record) {
   const reapprovalLabels = {
     blockedByUpstream: 'Waiting for upstream review',
-    pendingReapproval: 'Reapproval pending',
-    pendingApproval: 'Approval pending',
-    unlocked: 'Edit pending',
+    pendingReapproval: 'Pending reapproval',
+    pendingApproval: 'Pending approval',
+    unlocked: 'Under correction',
     syncFailed: 'Sync review needed',
   };
   const reapprovalStatus = reapprovalLabels[record?.reapprovalState];

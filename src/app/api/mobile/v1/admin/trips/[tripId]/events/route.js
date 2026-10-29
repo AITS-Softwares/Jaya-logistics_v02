@@ -1,3 +1,4 @@
+import { withBranchAccess } from '@/lib/branchAccess';
 import mongoose from "mongoose";
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
@@ -13,7 +14,7 @@ function safePayload(payload = {}) {
 
 // Read-only, staff-only event history. Driver credentials, token metadata, and
 // raw location point payloads are intentionally not part of this endpoint.
-export async function GET(req, { params }) {
+async function branchHandlerGET(req, { params }) {
   if (!(await isDriverMobileEnabled())) return mobileUnavailableResponse();
   const staff = requireDriverMobileStaff(req);
   if (staff.error) return staff.error;
@@ -28,3 +29,5 @@ export async function GET(req, { params }) {
     events: events.map((event) => ({ id: String(event._id), type: event.type, source: event.source, occurredAt: event.occurredAt, payload: safePayload(event.payload) })),
   } });
 }
+
+export const GET = withBranchAccess(branchHandlerGET);

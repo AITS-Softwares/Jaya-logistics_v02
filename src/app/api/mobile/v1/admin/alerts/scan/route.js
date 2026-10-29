@@ -1,3 +1,4 @@
+import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import DriverTrip from "@/models/DriverTrip";
@@ -17,7 +18,7 @@ function alertDto(alert, trip) {
 // Explicit operator-triggered scan. It creates/refreshes alerts only for the
 // caller's company and auto-resolves tracking alerts once a healthy signal is
 // detected. Driver-reported issues require a dispatcher to resolve them.
-export async function POST(req) {
+async function branchHandlerPOST(req) {
   if (!(await isDriverMobileEnabled())) return mobileUnavailableResponse();
   const staff = requireDriverMobileStaff(req);
   if (staff.error) return staff.error;
@@ -47,3 +48,5 @@ export async function POST(req) {
   const tripById = new Map(trips.map((trip) => [String(trip._id), trip]));
   return NextResponse.json({ success: true, data: alerts.map((alert) => alertDto(alert, tripById.get(String(alert.tripId)))) });
 }
+
+export const POST = withBranchAccess(branchHandlerPOST);

@@ -3385,6 +3385,7 @@
 
 // src/app/api/vehicle-negotiation/route.js
 
+import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from "next/server";
 import { identifierFormatError } from "@/lib/identifierFormats";
 import connectDb from "@/lib/db";
@@ -3399,8 +3400,8 @@ import { activeOperatingCompanyId, companyScopeFilter } from "@/lib/companyScope
 import { validateOpenOrderRows } from '@/lib/orderRowStatus';
 import { handleModuleDelete } from '@/lib/deletion/handler';
 import mongoose from 'mongoose';
-import { getFinalVnnStatus, isVnnReadyForDownstream, withVnnDisplayData } from '@/lib/vehicleNegotiationWorkflow';
-import { notifyModuleApprovers, notifyModuleCreateUsers } from '@/lib/workflowNotifications';
+import { getFinalVnnStatus, getVnnListStatus, isVnnReadyForDownstream, withVnnDisplayData } from '@/lib/vehicleNegotiationWorkflow';
+import { notifyModuleApprovers, notifyModuleCreateUsers, notifyModuleDecision } from '@/lib/workflowNotifications';
 import { applyApprovedVnnLocationRemarks, assertSourcesCurrent, captureSourceDependencies, recordApprovedRevision, withApprovedVnnLocationRemarks } from '@/lib/reapprovalService';
 
 // Helper function to format date as DD/MM/YYYY
@@ -3532,7 +3533,7 @@ function uniqueVnnOrderPanels(selectedOrderPanels = []) {
   });
 }
 
-export async function GET(req) {
+async function branchHandlerGET(req) {
   try {
     await connectDb();
     const { user, error, status } = await validateUser(req, 'view');
@@ -3684,9 +3685,7 @@ export async function GET(req) {
       // approvalStatus field. Filtering here also keeps the result correct for
       // older records that pre-date the three-part workflow.
       if (approvalStatus) {
-        vehicleNegotiations = vehicleNegotiations.filter((vn) => approvalStatus === 'Draft'
-          ? vn.panelStatus === 'Draft'
-          : vn.panelStatus !== 'Draft' && getFinalVnnStatus(vn) === approvalStatus);
+        vehicleNegotiations = vehicleNegotiations.filter((vn) => getVnnListStatus(vn) === approvalStatus);
       }
 
       const supplierCodes = [...new Set(vehicleNegotiations.map((vn) => vn.approval?.vendorCode).filter(Boolean))];
@@ -3702,7 +3701,7 @@ export async function GET(req) {
 
       vehicleNegotiations.forEach(vn => {
         const formattedDate = vn.date ? formatDateDDMMYYYY(vn.date) : '';
-        const displayApproval = vn.panelStatus === 'Draft' ? 'Draft' : getFinalVnnStatus(vn);
+        const displayApproval = getVnnListStatus(vn);
 
         if (vn.orders && vn.orders.length > 0) {
           vn.orders.forEach(order => {
@@ -3809,7 +3808,7 @@ export async function GET(req) {
 /* ========================================
    POST /api/vehicle-negotiation - Requires 'create' permission
 ======================================== */
-export async function POST(req) {
+async function branchHandlerPOST(req) {
   try {
     await connectDb();
     const { user, error, status } = await validateUser(req, 'create');
@@ -4010,7 +4009,7 @@ export async function POST(req) {
 /* ========================================
    PUT /api/vehicle-negotiation - Supports both 'edit' and 'approve' permissions
 ======================================== */
-export async function PUT(req) {
+async function branchHandlerPUT(req) {
   try {
     await connectDb();
 
@@ -4132,6 +4131,9 @@ export async function PUT(req) {
 
     const wasReadyForDownstream = isVnnReadyForDownstream(vehicleNegotiation);
 
+    if (vehicleNegotiation.workflow?.cancelledOrderReplacementOnly && isGeneralEdit) {
+      return NextResponse.json({ success: false, message: 'Only cancelled order replacements can be changed in this amendment. Use the dedicated replacement action; other edits require the admin correction workflow.' }, { status: 409 });
+    }
     if (vehicleNegotiation.upstreamPending?.length || vehicleNegotiation.reapprovalState === 'blockedByUpstream') {
       return NextResponse.json({ success: false, message: 'This Vehicle Negotiation is waiting for upstream corrections to be reviewed first.' }, { status: 409 });
     }
@@ -4410,7 +4412,7 @@ export async function PUT(req) {
 /* ========================================
    DELETE /api/vehicle-negotiation - Requires 'delete' permission
 ======================================== */
-export async function DELETE(req) {
+async function branchHandlerDELETE(req) {
   try {
     await connectDb();
     const { user, error, status } = await validateUser(req, 'delete');
@@ -4497,7 +4499,7 @@ export async function DELETE(req) {
    PATCH /api/vehicle-negotiation - Requires 'approve' permission
    Specifically for approval/rejection actions
 ======================================== */
-export async function PATCH(req) {
+async function branchHandlerPATCH(req) {
   try {
     await connectDb();
     const { user, error, status } = await validateUser(req, 'approve');
@@ -4602,6 +4604,7 @@ export async function PATCH(req) {
         ]);
       }
 
+      await notifyModuleDecision({ user, record: vehicleNegotiation, module: 'Vehicle Negotiation', reference: vehicleNegotiation.vnnNo, action: 'approve', url: `/admin/vehicle-negotiation/${vehicleNegotiation._id}` });
       return NextResponse.json({
         success: true,
         message: partToUpdate === 'all' ? 'Vehicle negotiation approved successfully' : `Part ${partToUpdate} approved successfully`,
@@ -4646,6 +4649,7 @@ export async function PATCH(req) {
 
       await vehicleNegotiation.save();
 
+      await notifyModuleDecision({ user, record: vehicleNegotiation, module: 'Vehicle Negotiation', reference: vehicleNegotiation.vnnNo, action: 'reject', url: `/admin/vehicle-negotiation/${vehicleNegotiation._id}` });
       return NextResponse.json({
         success: true,
         message: partToUpdate === 'all' ? 'Vehicle negotiation rejected successfully' : `Part ${partToUpdate} rejected successfully`,
@@ -4673,3 +4677,9 @@ export async function PATCH(req) {
     }, { status: 500 });
   }
 }
+
+export const GET = withBranchAccess(branchHandlerGET);
+export const POST = withBranchAccess(branchHandlerPOST);
+export const PUT = withBranchAccess(branchHandlerPUT);
+export const DELETE = withBranchAccess(branchHandlerDELETE);
+export const PATCH = withBranchAccess(branchHandlerPATCH);

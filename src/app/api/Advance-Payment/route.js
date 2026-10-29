@@ -1616,6 +1616,7 @@
 //   }
 // }
 
+import { withBranchAccess } from '@/lib/branchAccess';
 import { isIciciQueueApiSkipped, generateLocalPaymentQueue } from '@/lib/paymentQueueConfig.mjs';
 import { NextResponse } from "next/server";
 import connectDb from "@/lib/db";
@@ -1632,7 +1633,7 @@ import { validateOpenOrderRows } from '@/lib/orderRowStatus';
 import { handleModuleDelete } from '@/lib/deletion/handler';
 import { inquireCibNeftPayment, inquireCibPayment, normalizeCibStatus, stableIciciUniqueId, submitCibPayment } from '@/lib/iciciCib';
 import Supplier from '@/models/SupplierModels';
-import { notifyModuleApprovers } from '@/lib/workflowNotifications';
+import { notifyModuleApprovers, notifyModuleDecision } from '@/lib/workflowNotifications';
 import { advanceMaterialProjection, isAdvanceStatusUpdate, changedApprovedAdvanceBankFields } from '@/lib/advancePaymentReview.mjs';
 
 // ── PERMISSION FUNCTIONS ──
@@ -1749,7 +1750,7 @@ async function liveOfficeNetEffect(user, purchase) {
   return purchaseOfficeNetEffect(purchase, loadingInfo);
 }
 
-export async function GET(req) {
+async function branchHandlerGET(req) {
   try {
     await connectDb();
     const { user, error, status } = await validateUser(req, 'view');
@@ -1921,7 +1922,7 @@ export async function GET(req) {
 /* ========================================
    POST /api/advance-payment - Requires 'create' permission
 ======================================== */
-export async function POST(req) {
+async function branchHandlerPOST(req) {
   try {
     await connectDb();
     const { user, error, status } = await validateUser(req, 'create');
@@ -2144,6 +2145,10 @@ export async function POST(req) {
     });
 
     await advancePayment.save({ validateBeforeSave: !isDraftSave });
+    if (!isDraftSave && advancePayment.paymentDetails?.paymentStatus === 'Pending') {
+      await notifyModuleApprovers({ user, module: 'Advance Payment', panelLabel: 'Advance Payment',
+        reference: advancePayment.paymentNo, url: `/admin/Advance-Payment/${advancePayment._id}` });
+    }
 
     return NextResponse.json({
       success: true,
@@ -2184,7 +2189,7 @@ export async function POST(req) {
 /* ========================================
    PUT /api/advance-payment - Requires 'edit' permission
 ======================================== */
-export async function PUT(req) {
+async function branchHandlerPUT(req) {
   try {
     await connectDb();
     const { user, error, status } = await validateUser(req);
@@ -2522,7 +2527,7 @@ export async function PUT(req) {
 /* ========================================
    DELETE /api/advance-payment - Requires 'delete' permission
 ======================================== */
-export async function DELETE(req) {
+async function branchHandlerDELETE(req) {
   try {
     await connectDb();
     const { user, error, status } = await validateUser(req, 'delete');
@@ -2588,7 +2593,7 @@ export async function DELETE(req) {
    PATCH /api/advance-payment - Requires 'approve' permission
    Handles: generate-queue, approve, reject, update-status
 ======================================== */
-export async function PATCH(req) {
+async function branchHandlerPATCH(req) {
   try {
     await connectDb();
     const { user, error, status } = await validateUser(req, 'approve');
@@ -2805,6 +2810,8 @@ export async function PATCH(req) {
       await payment.save();
       await syncPodAdvanceForPurchase(user, payment.purchaseNo);
 
+      await notifyModuleDecision({ user, record: payment, module: 'Advance Payment', reference: payment.paymentNo,
+        action: newStatus === 'Approved' ? 'approve' : ['Paid', 'Completed'].includes(newStatus) ? 'complete' : newStatus === 'Rejected' ? 'reject' : '', url: `/admin/Advance-Payment/${payment._id}` });
       return NextResponse.json({
         success: true,
         message: `Payment ${newStatus} successfully`,
@@ -2830,6 +2837,7 @@ export async function PATCH(req) {
 
       await payment.save();
 
+      await notifyModuleDecision({ user, record: payment, module: 'Advance Payment', reference: payment.paymentNo, action: 'reject', url: `/admin/Advance-Payment/${payment._id}` });
       return NextResponse.json({
         success: true,
         message: "Payment rejected successfully",
@@ -2883,3 +2891,9 @@ export async function PATCH(req) {
     }, { status: 500 });
   }
 }
+
+export const GET = withBranchAccess(branchHandlerGET);
+export const POST = withBranchAccess(branchHandlerPOST);
+export const PUT = withBranchAccess(branchHandlerPUT);
+export const DELETE = withBranchAccess(branchHandlerDELETE);
+export const PATCH = withBranchAccess(branchHandlerPATCH);

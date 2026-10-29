@@ -1,9 +1,10 @@
+import { unwrapBranchHandlers } from './route-business-source.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
-const source = fs.readFileSync('src/app/api/consignment-note/route.js', 'utf8');
+const source = unwrapBranchHandlers(fs.readFileSync('src/app/api/consignment-note/route.js', 'utf8'));
 const start = source.indexOf('      const normalize =', source.indexOf('\nexport async function GET'));
 const end = source.indexOf('    // ============ CASE 1:', start);
 const code = source.slice(start, end).replace(/\n    }\s*$/, '');

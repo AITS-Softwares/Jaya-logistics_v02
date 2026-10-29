@@ -1,3 +1,4 @@
+import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from "next/server";
 import { hasAnyPermission, withAuth } from "@/lib/auth";
 import connectDb from "@/lib/db";
@@ -117,7 +118,7 @@ async function getAvailableVnnsForPricing(user) {
  * permissions to the Vehicle Negotiation, Order Panel, Branch, Plant, and
  * Sub-company modules merely to create a pricing record.
  */
-export const GET = withAuth(async (req, context, user) => {
+const branchHandlerGET = withAuth(async (req, context, user) => {
   try {
     await connectDb();
     const canUsePricingReference =
@@ -234,3 +235,5 @@ export const GET = withAuth(async (req, context, user) => {
     );
   }
 });
+
+export const GET = withBranchAccess(branchHandlerGET);

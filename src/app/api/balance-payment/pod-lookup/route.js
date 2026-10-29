@@ -73,6 +73,7 @@
 //         return NextResponse.json({ success: false, message: err?.message || "Failed to load POD" }, { status: 500 });
 //     }
 // }
+import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from "next/server";
 import connectDb from "@/lib/db";
 import POD from "@/app/api/pod-panel/POD";
@@ -128,7 +129,7 @@ async function withPlantCodes(orders) {
     });
 }
 
-export async function GET(req) {
+async function branchHandlerGET(req) {
     try {
         await connectDb();
         const { user, error, status } = authorize(req);
@@ -214,3 +215,5 @@ export async function GET(req) {
         return NextResponse.json({ success: false, message: err?.message || "Failed to load POD" }, { status: 500 });
     }
 }
+
+export const GET = withBranchAccess(branchHandlerGET);

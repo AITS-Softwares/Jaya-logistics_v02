@@ -8,6 +8,13 @@ export function getFinalVnnStatus(record) {
     record?.approval?.part3Status === 'Reject' ? 'Reject' : 'Pending';
 }
 
+// List status includes lifecycle changes without rewriting historical approvals.
+export function getVnnListStatus(record) {
+  if (record?.panelStatus === 'Cancelled') return 'Cancelled';
+  if (record?.panelStatus === 'Draft') return 'Draft';
+  return getFinalVnnStatus(record);
+}
+
 export function isVnnReadyForDownstream(record) {
   const placement = record?.approval || {};
   const placementComplete = Boolean(record?.workflow?.placementCompletedAt) || [

@@ -1405,6 +1405,7 @@
 //   }
 // }
 
+import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from "next/server";
 import { identifierFormatError } from "@/lib/identifierFormats";
 import connectDb from "@/lib/db";
@@ -1423,7 +1424,7 @@ import mongoose from 'mongoose';
 import { activeOperatingCompanyId, companyScopeFilter } from "@/lib/companyScope";
 import { validateOpenOrderRows } from '@/lib/orderRowStatus';
 import { handleModuleDelete } from '@/lib/deletion/handler';
-import { notifyModuleApprovers } from '@/lib/workflowNotifications';
+import { notifyModuleApprovers, notifyModuleDecision } from '@/lib/workflowNotifications';
 import { assertSourcesCurrent, captureSourceDependencies, recordApprovedRevision } from '@/lib/reapprovalService';
 import { getLrCargoWeight, withLrCargoWeight } from '@/lib/lrWeight.mjs';
 
@@ -1632,7 +1633,7 @@ async function validateUserForLRLookup(req, forKey) {
 /* ========================================
    GET /api/consignment-note - Requires 'view' permission
 ======================================== */
-export async function GET(req) {
+async function branchHandlerGET(req) {
   try {
     await connectDb();
     const forKey = new URL(req.url).searchParams.get("for");
@@ -1982,7 +1983,7 @@ async function resolveLoadingInfoNo(user, body) {
 /* ========================================
    POST /api/consignment-note - Requires 'create' permission
 ======================================== */
-export async function POST(req) {
+async function branchHandlerPOST(req) {
   try {
     await connectDb();
     const { user, error, status } = await validateUser(req, 'create');
@@ -2292,7 +2293,7 @@ export async function POST(req) {
 /* ========================================
    PUT /api/consignment-note - Requires 'edit' permission
 ======================================== */
-export async function PUT(req) {
+async function branchHandlerPUT(req) {
   try {
     await connectDb();
     const { user, error, status } = await validateUser(req, 'edit');
@@ -2570,7 +2571,7 @@ export async function PUT(req) {
 /* ========================================
    DELETE /api/consignment-note - Requires 'delete' permission
 ======================================== */
-export async function DELETE(req) {
+async function branchHandlerDELETE(req) {
   try {
     await connectDb();
     const { user, error, status } = await validateUser(req, 'delete');
@@ -2648,7 +2649,7 @@ export async function DELETE(req) {
    PATCH /api/consignment-note - Requires 'approve' permission
    Handles: approve, reject, complete
 ======================================== */
-export async function PATCH(req) {
+async function branchHandlerPATCH(req) {
   try {
     await connectDb();
     const { user, error, status } = await validateUser(req, 'approve');
@@ -2780,6 +2781,7 @@ export async function PATCH(req) {
       catch (syncError) { return NextResponse.json({ success: false, message: `LR approved, but revision recording failed and requires admin review: ${syncError.message}` }, { status: 503 }); }
     }
 
+    await notifyModuleDecision({ user, record: note, module: 'Consignment Note', reference: note.lrNo, action, url: `/admin/Consignment-Note/${note._id}` });
     // Out Date/Time (and the Purchase detention) are set only when the LAST LR of
     // this Loading Info is approved with its invoice - not by the first LR.
     // if (action === 'approve' && note.loadingInfoNo) {
@@ -2803,3 +2805,9 @@ export async function PATCH(req) {
     }, { status: 500 });
   }
 }
+
+export const GET = withBranchAccess(branchHandlerGET);
+export const POST = withBranchAccess(branchHandlerPOST);
+export const PUT = withBranchAccess(branchHandlerPUT);
+export const DELETE = withBranchAccess(branchHandlerDELETE);
+export const PATCH = withBranchAccess(branchHandlerPATCH);

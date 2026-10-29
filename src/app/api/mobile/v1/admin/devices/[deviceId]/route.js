@@ -1,3 +1,4 @@
+import { withBranchAccess } from '@/lib/branchAccess';
 import mongoose from "mongoose";
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
@@ -5,7 +6,7 @@ import DriverDevice from "@/models/DriverDevice";
 import { isDriverMobileEnabled, mobileUnavailableResponse, revokeDriverSessions } from "@/lib/driverMobileAuth";
 import { requireDriverMobileStaff } from "@/lib/driverMobileStaff";
 
-export async function PATCH(req, { params }) {
+async function branchHandlerPATCH(req, { params }) {
   if (!(await isDriverMobileEnabled())) return mobileUnavailableResponse();
   const staff = requireDriverMobileStaff(req, "edit");
   if (staff.error) return staff.error;
@@ -39,3 +40,5 @@ export async function PATCH(req, { params }) {
     return NextResponse.json({ success: false, code: "DEVICE_UPDATE_FAILED", message: "Unable to update device." }, { status: 500 });
   }
 }
+
+export const PATCH = withBranchAccess(branchHandlerPATCH);

@@ -2807,7 +2807,8 @@ export default function VehicleNegotiationPanel() {
                   required={true}
                   displayField="name"
                   codeField="code"
-                  disabled={selectedOrderPanels.length > 0}
+                  readOnly={true}
+                  disabled={true}
                 />
               </div>
 

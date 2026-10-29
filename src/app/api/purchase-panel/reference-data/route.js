@@ -1,3 +1,4 @@
+import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/auth";
 import connectDb from "@/lib/db";
@@ -78,7 +79,7 @@ async function getAvailableLoadingInfos(user) {
  * scoped source records directly instead of requiring permissions for each
  * source module or its master-data endpoint.
  */
-export const GET = withAuth(async (req, context, user) => {
+const branchHandlerGET = withAuth(async (req, context, user) => {
   try {
     await connectDb();
     const url = new URL(req.url);
@@ -142,3 +143,5 @@ export const GET = withAuth(async (req, context, user) => {
     );
   }
 }, { module: "Purchase Panel", actions: ["create", "edit", "view"] });
+
+export const GET = withBranchAccess(branchHandlerGET);

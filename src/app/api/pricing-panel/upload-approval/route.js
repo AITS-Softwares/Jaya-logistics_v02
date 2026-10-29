@@ -1,3 +1,4 @@
+import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from "next/server";
 import { mkdir, writeFile } from "fs/promises";
 import path from "path";
@@ -8,7 +9,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /** Uploads the Part 1 pricing approval document for Pricing Panel users only. */
-export const POST = withAuth(async (request) => {
+const branchHandlerPOST = withAuth(async (request) => {
   try {
     const formData = await request.formData();
     const file = formData.get("file");
@@ -46,3 +47,5 @@ export const POST = withAuth(async (request) => {
     return NextResponse.json({ success: false, message: "Unable to upload approval document." }, { status: 500 });
   }
 }, { module: "Pricing Panel", actions: ["create", "edit"] });
+
+export const POST = withBranchAccess(branchHandlerPOST);

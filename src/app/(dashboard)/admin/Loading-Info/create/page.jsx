@@ -8090,7 +8090,9 @@ export default function CreateLoadingInfoPanel() {
                 placeholder="Search branch..."
                 displayField="name"
                 codeField="code"
-                disabled={!!selectedVehicleNegotiation}
+                readOnly={true}
+
+                disabled={true}
               />
             </div>
 

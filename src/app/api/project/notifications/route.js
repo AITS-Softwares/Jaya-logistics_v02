@@ -1,103 +1,33 @@
-import { NextResponse } from "next/server";
-import connectDB from "@/lib/db";
-import Notification from "@/models/project/NotificationModel";
-import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
-import "@/models/project/ProjectModel";
+import mongoose from 'mongoose';
+import { NextResponse } from 'next/server';
+import { withBranchAccess } from '@/lib/branchAccess';
+import { pushIdentity } from '@/lib/pushAuth';
+import { visibleInbox, inboxItem, markInboxRead } from '@/lib/notificationInbox';
+import { canOverview, activitySettings } from '@/lib/notificationActivityPolicy.mjs';
 
-// ✅ GET: fetch notifications for logged-in user
-export async function GET(req) {
+async function getInbox(req) {
   try {
-    await connectDB();
-
-    const token = getTokenFromHeader(req);
-    if (!token) throw new Error("No token provided");
-
-    const user = verifyJWT(token);
-
-    let notifications = [];
-
-    if (user.role === "admin") {
-      // Admin → see all notifications in the company
-      notifications = await Notification.find({ company: user.companyId })
-        .populate("project", "name")
-        .populate("user", "name email")
-        .sort({ createdAt: -1 });
-    } else {
-      // Normal user → only see notifications assigned to them
-      notifications = await Notification.find({
-        assignedTo: user.id,
-        company: user.companyId,
-      })
-        .populate("project", "name")
-        .populate("user", "name email")
-        .sort({ createdAt: -1 });
-    }
-
-    return NextResponse.json(notifications, { status: 200 });
-  } catch (err) {
-    return NextResponse.json({ error: err.message }, { status: 401 });
-  }
+    const user = await pushIdentity(req);
+    const query = new URL(req.url).searchParams;
+    const items = (await visibleInbox(user, {}, query.get('view'))).map(inboxItem);
+    return NextResponse.json(query.get('meta') === '1' ? { items, isAdmin: canOverview(user), canOverview: activitySettings.adminOverview && canOverview(user) } : items, { headers: { 'Cache-Control': 'private, no-store' } });
+  } catch (error) { return NextResponse.json({ message: error.status ? error.message : 'Unable to load notifications.' }, { status: error.status || 500 }); }
 }
 
+async function markRead(req) {
+  try {
+    const user = await pushIdentity(req);
+    const body = await req.json().catch(() => null);
+    const ids = body?.ids || (body?.id ? [body.id] : []);
+    if (!Array.isArray(ids) || ids.length > 200 || ids.some(id => typeof id !== 'string' || !mongoose.isValidObjectId(id))) {
+      return NextResponse.json({ message: 'Invalid notification selection.' }, { status: 400 });
+    }
+    const visible = await visibleInbox(user, body?.all === true || req.method === 'PUT' ? {} : { _id: { $in: ids } }, new URL(req.url).searchParams.get('view'));
+    await markInboxRead(user, visible);
+    return NextResponse.json({ success: true });
+  } catch (error) { return NextResponse.json({ message: error.status ? error.message : 'Unable to update notifications.' }, { status: error.status || 500 }); }
+}
 
-
-
-
-
-
-
-// import { NextResponse } from "next/server";
-// import connectDB from "@/lib/db";
-// import Notification from "@/models/project/NotificationModel";
-// import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
-
-// // Get all notifications for logged-in user
-// export async function GET(req) {
-//   try {
-//     await connectDB();
-//     const token = getTokenFromHeader(req);
-//     const decoded = verifyJWT(token);
-
-//     const notifications = await Notification.find({ user: decoded.userId })
-//       .sort({ createdAt: -1 })
-//       .populate("task", "title status")
-//       .populate("project", "name");
-
-//     return NextResponse.json(notifications, { status: 200 });
-//   } catch (err) {
-//     return NextResponse.json({ error: err.message }, { status: 401 });
-//   }
-// }
-
-// // Mark ALL as read
-// export async function PUT(req) {
-//   try {
-//     await connectDB();
-//     const token = getTokenFromHeader(req);
-//     const decoded = verifyJWT(token);
-
-//     await Notification.updateMany(
-//       { user: decoded.userId, read: false },
-//       { $set: { read: true } }
-//     );
-
-//     return NextResponse.json({ success: true }, { status: 200 });
-//   } catch (err) {
-//     return NextResponse.json({ error: err.message }, { status: 400 });
-//   }
-// }
-
-// // Create new notification
-// export async function POST(req) {
-//   try {
-//     await connectDB();
-//     const body = await req.json();
-
-//     const notification = new Notification(body);
-//     await notification.save();
-
-//     return NextResponse.json(notification, { status: 201 });
-//   } catch (err) {
-//     return NextResponse.json({ error: err.message }, { status: 400 });
-//   }
-// }
+export const GET = withBranchAccess(getInbox);
+export const PATCH = withBranchAccess(markRead);
+export const PUT = withBranchAccess(markRead);

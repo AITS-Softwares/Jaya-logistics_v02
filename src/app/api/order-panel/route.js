@@ -2127,6 +2127,7 @@
 
 
 // app/api/order-panel/route.js
+import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from "next/server";
 import connectDb from "@/lib/db";
 import OrderPanel from "./OrderPanel";
@@ -2138,7 +2139,7 @@ import { getNextOrderPanelNumber } from "./OrderCounter";
 import { recordApprovedRevision } from '@/lib/reapprovalService';
 import { handleModuleDelete } from "@/lib/deletion/handler";
 import { companyScopeFilter } from "@/lib/companyScope";
-import { notifyModuleApprovers, notifyModuleCreateUsers } from "@/lib/workflowNotifications";
+import { notifyModuleApprovers, notifyModuleCreateUsers, notifyModuleDecision } from "@/lib/workflowNotifications";
 
 // Register the referenced model before populating plantRows.plantCode below.
 void Plant;
@@ -2183,7 +2184,7 @@ function calculatePendingDays(orderDate, status) {
 }
 
 // ── GET: Requires 'view' permission ──
-export const GET = withAuth(async (req, context, user) => {
+const branchHandlerGET = withAuth(async (req, context, user) => {
   await connectDb();
 
   try {
@@ -2400,7 +2401,7 @@ export const GET = withAuth(async (req, context, user) => {
 }, { module: 'Order Panel', actions: ['view', 'create', 'edit', 'approve'] });
 
 // ── POST: Requires 'create' permission ──
-export const POST = withAuth(async (req, context, user) => {
+const branchHandlerPOST = withAuth(async (req, context, user) => {
   await connectDb();
 
   try {
@@ -2653,7 +2654,7 @@ export const POST = withAuth(async (req, context, user) => {
 }, { module: 'Order Panel', action: 'create' });
 
 // ── PUT: Requires 'edit' permission ──
-export const PUT = withAuth(async (req, context, user) => {
+const branchHandlerPUT = withAuth(async (req, context, user) => {
   await connectDb();
 
   try {
@@ -2713,6 +2714,7 @@ export const PUT = withAuth(async (req, context, user) => {
     }
 
     // Update other fields
+    if (body.branch) orderPanel.branch = body.branch;
     if (body.branchName) orderPanel.branchName = body.branchName;
     if (body.branchCode) orderPanel.branchCode = body.branchCode;
     if (body.delivery) orderPanel.delivery = body.delivery;
@@ -2917,7 +2919,7 @@ export const PUT = withAuth(async (req, context, user) => {
 }, { module: 'Order Panel', action: 'edit' });
 
 // ── DELETE: Requires 'delete' permission ──
-export const DELETE = withAuth(async (req, context, user) => {
+const branchHandlerDELETE = withAuth(async (req, context, user) => {
   await connectDb();
   return handleModuleDelete(req, 'order', user);
 
@@ -2960,7 +2962,7 @@ export const DELETE = withAuth(async (req, context, user) => {
 }, { module: 'Order Panel', action: 'delete' });
 
 // ── PATCH: Requires 'approve' permission ──
-export const PATCH = withAuth(async (req, context, user) => {
+const branchHandlerPATCH = withAuth(async (req, context, user) => {
   await connectDb();
 
   try {
@@ -3044,6 +3046,8 @@ export const PATCH = withAuth(async (req, context, user) => {
       });
     }
 
+    await notifyModuleDecision({ user, record: orderPanel, module: 'Order Panel', reference: orderPanel.orderPanelNo, action, url: `/admin/order-panel/${orderPanel._id}` });
+
     return NextResponse.json({
       success: true,
       message: `Order ${action}d successfully`,
@@ -3062,3 +3066,9 @@ export const PATCH = withAuth(async (req, context, user) => {
     }, { status: 500 });
   }
 }, { module: 'Order Panel', action: 'approve' });
+
+export const GET = withBranchAccess(branchHandlerGET);
+export const POST = withBranchAccess(branchHandlerPOST);
+export const PUT = withBranchAccess(branchHandlerPUT);
+export const DELETE = withBranchAccess(branchHandlerDELETE);
+export const PATCH = withBranchAccess(branchHandlerPATCH);

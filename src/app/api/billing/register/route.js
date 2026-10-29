@@ -1,3 +1,5 @@
+import { branchContext } from '@/lib/branchContext';
+import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import connectDb from "@/lib/db";
@@ -24,7 +26,7 @@ function getStatus(totalQty, billedQty, hasBill, tracksQuantity) {
   return billedQty + 0.000001 >= totalQty ? "billed" : "partially-billed";
 }
 
-export async function GET(req) {
+async function branchHandlerGET(req) {
   try {
     await connectDb();
     const token = getTokenFromHeader(req);
@@ -63,7 +65,7 @@ export async function GET(req) {
 
     const [notes, reports] = await Promise.all([
       ConsignmentNote.find(companyScopeFilter(user, { companyId: user.companyId }))
-        .select("lrNo createdAt header totalWeight consignee")
+        .select("lrNo createdAt header totalWeight consignee consignor customerId")
         .sort({ createdAt: -1 })
         .lean(),
       mongoose.connection.collection("savedreports").find(reportQuery, {
@@ -72,7 +74,10 @@ export async function GET(req) {
     ]);
 
     const billedByLr = new Map();
+    const visibleLrNumbers = new Set(notes.map(note => String(note.lrNo || "")));
     for (const report of reports) {
+      if (branchContext.getStore()?.access.accessAllBranches === false &&
+          (!report.data?.length || report.data.some(line => !visibleLrNumbers.has(String(line.lrNo || ""))))) continue;
       for (const line of Array.isArray(report.data) ? report.data : []) {
         const lrNo = String(line?.lrNo || "").trim();
         if (!lrNo) continue;
@@ -88,6 +93,7 @@ export async function GET(req) {
     }
 
     const search = (url.searchParams.get("search") || "").trim().toLowerCase();
+    const clientId = url.searchParams.get('clientId') || '';
     const statusFilter = url.searchParams.get("status") || "all";
     const fromDate = url.searchParams.get("fromDate");
     const toDate = url.searchParams.get("toDate");
@@ -101,7 +107,8 @@ export async function GET(req) {
         lrNo,
         date: note.createdAt || null,
         displayDate: note.header?.lrDate || note.createdAt || null,
-        partyName: note.header?.partyName || note.consignee?.name || "",
+        partyName: note.header?.partyName || note.consignor?.name || note.consignee?.name || "",
+        customerId: String(note.customerId || note.consignor?.customerId || ''),
         orderNo: note.header?.orderNo || "",
         from: note.header?.from || "",
         to: note.header?.to || "",
@@ -117,8 +124,11 @@ export async function GET(req) {
         lrStatus: note.header?.status || "",
       };
     }).filter((row) => {
-      if (search && ![row.lrNo, row.partyName, row.orderNo, row.vehicleNo, row.from, row.to].some((value) => String(value).toLowerCase().includes(search))) return false;
-      if (statusFilter !== "all" && row.status !== statusFilter) return false;
+      const normalizedName = value => String(value || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+      if (clientId && (row.customerId ? row.customerId !== clientId : normalizedName(row.partyName) !== normalizedName(search))) return false;
+      if (!clientId && search && ![row.lrNo, row.partyName, row.orderNo, row.vehicleNo, row.from, row.to].some((value) => String(value).toLowerCase().includes(search))) return false;
+      if (statusFilter === 'outstanding' && row.status === 'billed') return false;
+      if (!['all', 'outstanding'].includes(statusFilter) && row.status !== statusFilter) return false;
       const rowDate = row.date ? new Date(row.date) : null;
       if (fromDate && rowDate && rowDate < new Date(`${fromDate}T00:00:00`)) return false;
       if (toDate && rowDate && rowDate > new Date(`${toDate}T23:59:59.999`)) return false;
@@ -148,3 +158,5 @@ export async function GET(req) {
     return NextResponse.json({ success: false, message: "Could not load billing register" }, { status: 500 });
   }
 }
+
+export const GET = withBranchAccess(branchHandlerGET);

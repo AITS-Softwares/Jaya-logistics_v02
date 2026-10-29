@@ -1,3 +1,4 @@
+import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from 'next/server';
 import mongoose from 'mongoose';
 import dbConnect from '@/lib/db';
@@ -33,7 +34,7 @@ function addAudit(record, action, user) {
   record.workflow.audit.push({ action, by: user.id || null, at: new Date() });
 }
 
-export async function GET(req, { params }) {
+async function branchHandlerGET(req, { params }) {
   const auth = authorize(req);
   if (auth.error) return NextResponse.json({ success: false, message: auth.error }, { status: auth.status });
   const { id } = params;
@@ -46,7 +47,7 @@ export async function GET(req, { params }) {
   return NextResponse.json({ success: true, data: record });
 }
 
-export async function PUT(req, { params }) {
+async function branchHandlerPUT(req, { params }) {
   const { id } = params;
   if (!mongoose.Types.ObjectId.isValid(id)) return NextResponse.json({ success: false, message: 'Invalid record id.' }, { status: 400 });
   const body = await req.json();
@@ -84,3 +85,6 @@ export async function PUT(req, { params }) {
   await record.save();
   return NextResponse.json({ success: true, data: record });
 }
+
+export const GET = withBranchAccess(branchHandlerGET);
+export const PUT = withBranchAccess(branchHandlerPUT);

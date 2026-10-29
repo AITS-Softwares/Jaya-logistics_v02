@@ -290,6 +290,7 @@
 // }
 
 // /app/api/reports/order-full-report/route.js
+import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from "next/server";
 import connectDb from "@/lib/db";
 import mongoose from 'mongoose';
@@ -337,7 +338,7 @@ async function validateUser(req) {
   }
 }
 
-export async function GET(req) {
+async function branchHandlerGET(req) {
   await connectDb();
   const { user, error, status } = await validateUser(req);
   if (error) {
@@ -643,3 +644,5 @@ export async function GET(req) {
     }, { status: 500 });
   }
 }
+
+export const GET = withBranchAccess(branchHandlerGET);
