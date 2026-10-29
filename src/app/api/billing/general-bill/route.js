@@ -232,6 +232,7 @@
 //   }
 // }
 
+import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from "next/server";
 import connectDb from "@/lib/db";
 
@@ -284,7 +285,7 @@ async function validateUser(req, requiredAction = null) {
 }
 
 // GET - Fetch saved reports (requires 'view' permission)
-export async function GET(req) {
+async function branchHandlerGET(req) {
   try {
     await connectDb();
     
@@ -312,7 +313,7 @@ export async function GET(req) {
 }
 
 // POST - Save a new report (requires 'create' permission)
-export async function POST(req) {
+async function branchHandlerPOST(req) {
   try {
     await connectDb();
     
@@ -345,3 +346,5 @@ export async function POST(req) {
     }, { status: 500 });
   }
 }
+export const GET = withBranchAccess(branchHandlerGET);
+export const POST = withBranchAccess(branchHandlerPOST);

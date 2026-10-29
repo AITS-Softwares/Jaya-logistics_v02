@@ -1,3 +1,4 @@
+import { withBranchAccess } from '@/lib/branchAccess';
 import mongoose from "mongoose";
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
@@ -14,7 +15,7 @@ import { etaGuard } from "@/lib/driverStopIntelligence.mjs";
 const ACTIVE_TRIP_STATES = ["assigned", "started", "at_pickup", "in_transit", "at_stop", "delivered"];
 // Staff-only view for the existing Tracking Plan screen. It never exposes raw
 // mobile credentials or lets the desktop ERP mutate a driver's tracking data.
-export async function GET(req) {
+async function branchHandlerGET(req) {
   if (!(await isDriverMobileEnabled())) return mobileUnavailableResponse();
   const staff = requireDriverMobileStaff(req);
   if (staff.error) return staff.error;
@@ -62,3 +63,5 @@ export async function GET(req) {
 
   return NextResponse.json({ success: true, data: { generatedAt: now, staleAfterSeconds: LIVE_TRACKING_STALE_AFTER_MS / 1000, trips: result } });
 }
+
+export const GET = withBranchAccess(branchHandlerGET);

@@ -1,3 +1,4 @@
+import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from "next/server";
 import path from "path";
 import { readFile } from "fs/promises";
@@ -44,7 +45,7 @@ async function readStoredUpload(relativePath) {
 
 // Mirrors Loading Info attachments: the browser never needs a directly served
 // /uploads URL, while the record and operating-company scope remain enforced.
-export const GET = withAuth(async (req, context, user) => {
+const branchHandlerGET = withAuth(async (req, context, user) => {
   try {
     const { id } = await context.params;
     const requestedPath = normalizeUploadPath(new URL(req.url).searchParams.get("path"));
@@ -75,3 +76,5 @@ export const GET = withAuth(async (req, context, user) => {
     return NextResponse.json({ success: false, message: "Unable to open attachment." }, { status: 500 });
   }
 }, { module: "Purchase Panel", actions: ["create", "edit", "view"] });
+
+export const GET = withBranchAccess(branchHandlerGET);

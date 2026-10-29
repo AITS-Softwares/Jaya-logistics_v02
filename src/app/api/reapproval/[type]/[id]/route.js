@@ -1,3 +1,4 @@
+import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from 'next/server';
 import mongoose from 'mongoose';
 import connectDb from '@/lib/db';
@@ -78,7 +79,7 @@ function authorized(req) {
   catch (error) { return { error: error.message || 'Authentication required', status: 401 }; }
 }
 
-export async function GET(req, { params }) {
+async function branchHandlerGET(req, { params }) {
   await connectDb();
   const auth = authorized(req);
   if (auth.error) return NextResponse.json({ success: false, message: auth.error }, { status: auth.status });
@@ -200,7 +201,7 @@ export async function GET(req, { params }) {
   return NextResponse.json({ success: true, record: { id: String(root._id), type, no: recordNumber(type, root), status: root.rateApproval?.approvalStatus || root.panelStatus || root.header?.status || root.status || '', reapprovalState: effectiveReapprovalState, approvedRevision: root.approvedRevision || root.rateApproval?.approvedRevision || 0, upstreamPending: root.upstreamPending || [], upstreamDetails, detachedOrderMarkers, canReconcileDetachedOrders, latestVnnSync: latestVnnSync ? { required: latestVnnSync.required, ambiguous: latestVnnSync.ambiguous, vnnNo: latestVnnSync.candidate?.vnnNo || '' } : null, syncError: root.reapprovalSyncError || '', pendingChanges: changesToReview, changeSummary: changesToReview }, impact: affectedGraph.map((item) => ({ type: item.type, id: item.id, no: item.no, label: item.label, depth: item.depth })), blockers: await allBlockers(type, graph, user.companyId, null) });
 }
 
-export async function POST(req, { params }) {
+async function branchHandlerPOST(req, { params }) {
   await connectDb();
   const auth = authorized(req);
   if (auth.error) return NextResponse.json({ success: false, message: auth.error }, { status: auth.status });
@@ -357,3 +358,6 @@ export async function POST(req, { params }) {
   }
   return NextResponse.json(result);
 }
+
+export const GET = withBranchAccess(branchHandlerGET);
+export const POST = withBranchAccess(branchHandlerPOST);

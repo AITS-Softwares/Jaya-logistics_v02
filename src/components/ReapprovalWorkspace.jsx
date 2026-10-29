@@ -10,8 +10,29 @@ const routeTypes = [
   ['/admin/Loading-Info/', 'loading'],
   ['/admin/Consignment-Note/', 'lr'],
 ];
-const labels = { unlocked: 'Edit pending', pendingApproval: 'Approval pending', pendingReapproval: 'Reapproval pending', blockedByUpstream: 'Waiting for upstream review', syncFailed: 'Sync review needed', none: 'Approved' };
+const labels = { unlocked: 'Under correction', pendingApproval: 'Pending approval', pendingReapproval: 'Pending reapproval', blockedByUpstream: 'Waiting for upstream review', syncFailed: 'Sync review needed', none: 'Approved' };
 const badge = 'inline-flex rounded-full px-2.5 py-1 text-xs font-semibold';
+
+function approvalLabel(record) {
+  if (record.reapprovalState && record.reapprovalState !== 'none') return labels[record.reapprovalState] || record.reapprovalState;
+  const status = String(record.status || '').trim();
+  if (/^(cancelled|canceled|hold|on hold)$/i.test(status)) return null;
+  if (/^(submitted|pending|pending approval)$/i.test(status)) return 'Pending approval';
+  if (/^(rejected|returned)$/i.test(status)) return 'Returned for correction';
+  return status || 'Status unavailable';
+}
+
+function ApprovalStatusBadges({ record }) {
+  const label = approvalLabel(record);
+  const approved = /^(approved|completed)$/i.test(label || '');
+  const lifecycle = String(record.status || '').trim();
+  const cancelled = /^(cancelled|canceled)$/i.test(lifecycle);
+  const held = /^(hold|on hold)$/i.test(lifecycle);
+  return <>
+    {label && <span className={`${badge} ${approved ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900'}`}>{label}</span>}
+    {(cancelled || held) && <span className={`${badge} ${cancelled ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-900'}`}>{cancelled ? 'Cancelled' : 'On hold'}</span>}
+  </>;
+}
 
 function queueMessage(record) {
   if (record.latestVnnSyncAmbiguous) return 'More than one approved Vehicle Negotiation matches these order rows. Ask an admin to review the links before syncing.';
@@ -224,7 +245,7 @@ export default function ReapprovalWorkspace({ placement = 'content' }) {
       </>}
     </div>}
     {placement === 'content' && current && <section className="mx-3 mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-      <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><strong className="text-sm text-slate-900">Reapproval · {current.record.no}</strong><span className={`${badge} ${current.record.reapprovalState === 'none' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900'}`}>{labels[current.record.reapprovalState] || current.record.reapprovalState}</span><span className="text-xs text-slate-500">Revision {current.record.approvedRevision}</span></div>
+      <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><strong className="text-sm text-slate-900">Approval status · {current.record.no}</strong><ApprovalStatusBadges record={current.record} /><span className="text-xs text-slate-500">Revision {current.record.approvedRevision}</span></div>
         {current.record.syncError && <p className="mt-1 text-xs text-red-700">{current.record.syncError}</p>}
         {current.record.upstreamPending?.length > 0 && <div className="mt-1 text-xs text-amber-800">{(current.record.upstreamDetails?.length ? current.record.upstreamDetails : current.record.upstreamPending).map((marker, index) => <p key={`${marker.panel}:${marker.recordId}:${index}`}>{marker.message || upstreamBlockMessage(marker, current.record.type)}</p>)}</div>}</div>
       {current.record.type === 'vnn' && current.record.detachedOrderMarkers?.length > 0 && <div className="basis-full rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950"><p>These Order Panel blockers refer to orders no longer linked to this Vehicle Negotiation: {current.record.detachedOrderMarkers.map((marker) => marker.recordNo).filter(Boolean).join(', ')}.</p>{current.record.canReconcileDetachedOrders && <button type="button" disabled={busy} onClick={() => submit('reconcileDetachedOrders')} className="mt-2 rounded-md bg-amber-700 px-3 py-1.5 font-semibold text-white hover:bg-amber-800 disabled:opacity-50">{busy ? 'Clearing outdated link…' : 'Clear removed-order blocker'}</button>}</div>}

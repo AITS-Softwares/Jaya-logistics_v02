@@ -68,6 +68,7 @@
 //   }
 // }
 
+import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from "next/server";
 import connectDb from "@/lib/db";
 import ConsignmentNote from "../../consignment-note/ConsignmentNote";
@@ -122,7 +123,7 @@ async function validateUser(req, requiredAction = null) {
   }
 }
 
-export async function POST(req) {
+async function branchHandlerPOST(req) {
   try {
     await connectDb();
     
@@ -254,3 +255,5 @@ export async function POST(req) {
     }, { status: 500 });
   }
 }
+
+export const POST = withBranchAccess(branchHandlerPOST);

@@ -807,6 +807,7 @@
 
 // export default VehicleNegotiation;
 
+import branchScopePlugin from '@/lib/branchScopePlugin';
 import mongoose from 'mongoose';
 import softDeletePlugin from '@/lib/softDelete';
 import reapprovalPlugin from '@/lib/reapprovalPlugin';
@@ -1080,6 +1081,8 @@ const vehicleNegotiationSchema = new mongoose.Schema({
     placementCompletedAt: { type: Date, default: null },
     placementCompletedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'CompanyUser', default: null },
     amendmentCount: { type: Number, default: 0 },
+    cancelledOrderReplacementOnly: { type: Boolean, default: false },
+    cancelledOrderReplacementRows: { type: [mongoose.Schema.Types.Mixed], default: [] },
     lastAmendmentReason: { type: String, default: '' },
     lastAmendedAt: { type: Date, default: null },
     lastAmendedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'CompanyUser', default: null },
@@ -1207,7 +1210,7 @@ const vehicleNegotiationSchema = new mongoose.Schema({
   // Status
   panelStatus: {
     type: String,
-    enum: ['Draft', 'Submitted', 'Negotiating', 'Approved', 'Completed', 'Cancelled'],
+    enum: ['Draft', 'Submitted', 'Negotiating', 'Approved', 'Completed', 'Cancelled', 'Rejected'],
     default: 'Draft'
   },
   
@@ -1272,6 +1275,7 @@ vehicleNegotiationSchema.pre('save', function(next) {
   next();
 });
 
+vehicleNegotiationSchema.plugin(branchScopePlugin, { model: 'VehicleNegotiation' });
 vehicleNegotiationSchema.plugin(softDeletePlugin);
 vehicleNegotiationSchema.plugin(reapprovalPlugin);
 const VehicleNegotiation = mongoose.models.VehicleNegotiation || 

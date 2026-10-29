@@ -15,6 +15,7 @@ const BILLING_TYPES = [
 
 const STATUS_OPTIONS = [
   ["all", "All billing statuses"],
+  ["outstanding", "Unbilled or partially billed"],
   ["unbilled", "Unbilled"],
   ["partially-billed", "Partially billed"],
   ["billed", "Billed"],
@@ -87,6 +88,13 @@ export default function BillingReportsPage() {
     }
   }, [appliedFilters, hasBillingView, page]);
 
+  useEffect(() => {
+    const query = new URLSearchParams(window.location.search);
+    if (!query.has('billingType') && !query.has('search')) return;
+    const next = { billingType: BILLING_TYPES.some(([type]) => type === query.get('billingType')) ? query.get('billingType') : 'general',
+      status: STATUS_OPTIONS.some(([status]) => status === query.get('status')) ? query.get('status') : 'all', search: query.get('search') || '', clientId: query.get('clientId') || '', fromDate: '', toDate: '' };
+    setFilters(next); setAppliedFilters(next); setPage(1);
+  }, []);
   useEffect(() => { loadRows(); }, [loadRows]);
 
   const billingTypeLabel = useMemo(
@@ -144,7 +152,7 @@ export default function BillingReportsPage() {
             <span className="text-xs text-slate-500">Status is calculated for the selected billing type.</span>
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-6">
-            <input aria-label="Search billing records" value={filters.search} onChange={(event) => setFilters({ ...filters, search: event.target.value })} placeholder="Search LR, party, order, vehicle…" className="rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 sm:col-span-2" />
+            <input aria-label="Search billing records" value={filters.search} onChange={(event) => setFilters({ ...filters, search: event.target.value, clientId: '' })} placeholder="Search LR, party, order, vehicle…" className="rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 sm:col-span-2" />
             <select aria-label="Billing type" value={filters.billingType} onChange={(event) => setFilters({ ...filters, billingType: event.target.value })} className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-emerald-500">
               {BILLING_TYPES.map(([value, label]) => <option key={value} value={value}>{label} billing</option>)}
             </select>

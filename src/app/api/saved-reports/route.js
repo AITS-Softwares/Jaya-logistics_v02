@@ -1,3 +1,5 @@
+import { withBranchAccess } from '@/lib/branchAccess';
+import branchScopePlugin from '@/lib/branchScopePlugin';
 import { NextResponse } from "next/server";
 import connectDb from "@/lib/db";
 import mongoose from "mongoose";
@@ -29,10 +31,12 @@ const savedReportSchema = new mongoose.Schema({
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "CompanyUser" }
 });
 
+savedReportSchema.plugin(branchScopePlugin, { model: 'SavedReport' });
+
 const SavedReport = mongoose.models.SavedReport || mongoose.model("SavedReport", savedReportSchema);
 
 // GET - Fetch saved reports
-export async function GET(req) {
+async function branchHandlerGET(req) {
   try {
     await connectDb();
 
@@ -69,7 +73,7 @@ export async function GET(req) {
 }
 
 // POST - Save a new report
-export async function POST(req) {
+async function branchHandlerPOST(req) {
   try {
     await connectDb();
 
@@ -250,7 +254,7 @@ export async function POST(req) {
 }
 
 // DELETE - Delete a saved report
-export async function DELETE(req) {
+async function branchHandlerDELETE(req) {
   try {
     await connectDb();
 
@@ -282,3 +286,7 @@ export async function DELETE(req) {
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
 }
+
+export const GET = withBranchAccess(branchHandlerGET);
+export const POST = withBranchAccess(branchHandlerPOST);
+export const DELETE = withBranchAccess(branchHandlerDELETE);

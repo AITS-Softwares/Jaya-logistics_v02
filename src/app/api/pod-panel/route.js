@@ -1,3 +1,4 @@
+import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from "next/server";
 import { identifierFormatError } from "@/lib/identifierFormats";
 import path from "path";
@@ -14,7 +15,7 @@ import { handleModuleDelete } from "@/lib/deletion/handler";
 import { getPaidAdvanceForPurchase } from "@/lib/advanceSettlement";
 import PurchasePanel from "../purchase-panel/PurchasePanel";
 import { assertValidAmounts } from "@/lib/paymentRules";
-import { notifyModuleApprovers, notifyModuleCreateUsers } from "@/lib/workflowNotifications";
+import { notifyModuleApprovers, notifyModuleCreateUsers, notifyModuleDecision } from "@/lib/workflowNotifications";
 
 export const runtime = "nodejs";
 
@@ -336,7 +337,7 @@ function unique(values) {
 /* ========================================
    GET /api/pod-panel - Requires 'view' permission
 ======================================== */
-export async function GET(req) {
+async function branchHandlerGET(req) {
   try {
     await connectDb();
     // Opening one POD (edit / approve pages) needs view OR edit OR approve; the list still needs view
@@ -531,7 +532,7 @@ async function getPODEligiblePurchase(user, purchaseNo) {
   ).select("purchaseNo approval.status memoFile.filePath memoFile.fullPath memoFile.filename").lean();
 }
 
-export async function POST(req) {
+async function branchHandlerPOST(req) {
   try {
     await connectDb();
     const { user, error, status } = await validateUser(req, "create");
@@ -700,7 +701,7 @@ export async function POST(req) {
 /* ========================================
    PUT /api/pod-panel - Requires 'edit' or 'approve' permission
 ======================================== */
-export async function PUT(req) {
+async function branchHandlerPUT(req) {
   try {
     await connectDb();
     const { user, error, status } = await validateUser(req);
@@ -953,7 +954,7 @@ export async function PUT(req) {
 /* ========================================
    DELETE /api/pod-panel - Requires 'delete' permission
 ======================================== */
-export async function DELETE(req) {
+async function branchHandlerDELETE(req) {
   try {
     await connectDb();
     const { user, error, status } = await validateUser(req, "delete");
@@ -997,7 +998,7 @@ export async function DELETE(req) {
    PATCH /api/pod-panel?id=...&action=approve|reject|complete|update-status
    Requires 'approve' permission. Body is optional (quick approve sends none).
 ======================================== */
-export async function PATCH(req) {
+async function branchHandlerPATCH(req) {
   try {
     await connectDb();
     const { user, error, status } = await validateUser(req, "approve");
@@ -1087,6 +1088,7 @@ export async function PATCH(req) {
 
     await pod.save();
 
+    await notifyModuleDecision({ user, record: pod, module: 'Proof Of Delivery', reference: pod.podNo, action, url: `/admin/ProofofDelivery/${pod._id}` });
     if (action === 'approve' && pod.approvalStatus === 'Approved') {
       await notifyModuleCreateUsers({
         user,
@@ -1112,3 +1114,9 @@ export async function PATCH(req) {
     return errorResponse(error, "Failed to update POD status");
   }
 }
+
+export const GET = withBranchAccess(branchHandlerGET);
+export const POST = withBranchAccess(branchHandlerPOST);
+export const PUT = withBranchAccess(branchHandlerPUT);
+export const DELETE = withBranchAccess(branchHandlerDELETE);
+export const PATCH = withBranchAccess(branchHandlerPATCH);

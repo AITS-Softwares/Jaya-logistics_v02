@@ -1,3 +1,4 @@
+import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from "next/server";
 import { mkdir, writeFile, readFile } from "fs/promises";
 import path from "path";
@@ -19,7 +20,7 @@ async function readInvoiceFile(name) {
     throw missing;
 }
 
-export const POST = withAuth(async (req) => {
+const branchHandlerPOST = withAuth(async (req) => {
     try {
         const file = (await req.formData()).get("file");
         const ext = TYPES[file?.type];
@@ -42,7 +43,7 @@ export const POST = withAuth(async (req) => {
 
 const MIME = { ".pdf": "application/pdf", ".png": "image/png", ".jpg": "image/jpeg" };
 
-export const GET = withAuth(async (req) => {
+const branchHandlerGET = withAuth(async (req) => {
     const name = path.basename(new URL(req.url).searchParams.get("name") || "");
     if (!/^[0-9a-f-]{36}\.(pdf|png|jpg)$/.test(name))
         return NextResponse.json({ success: false, message: "Invalid file." }, { status: 400 });
@@ -55,3 +56,5 @@ export const GET = withAuth(async (req) => {
         return NextResponse.json({ success: false, message: "File not found." }, { status: 404 });
     }
 }, { module: "Consignment Note", actions: ["view", "create", "edit"] });
+export const POST = withBranchAccess(branchHandlerPOST);
+export const GET = withBranchAccess(branchHandlerGET);

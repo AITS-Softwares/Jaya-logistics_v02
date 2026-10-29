@@ -1,3 +1,4 @@
+import branchScopePlugin from '@/lib/branchScopePlugin';
 import mongoose from "mongoose";
 
 const stopEpisodeSchema = new mongoose.Schema({
@@ -15,5 +16,7 @@ const stopEpisodeSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 stopEpisodeSchema.index({ companyId: 1, tripId: 1, startedAt: -1 });
+
+stopEpisodeSchema.plugin(branchScopePlugin, { model: 'StopEpisode' });
 
 export default mongoose.models.StopEpisode || mongoose.model("StopEpisode", stopEpisodeSchema);

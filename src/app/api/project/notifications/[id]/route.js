@@ -1,94 +1,22 @@
-import { NextResponse } from "next/server";
-import connectDB from "@/lib/db";
-import Notification from "@/models/project/NotificationModel";
-import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
+import mongoose from 'mongoose';
+import { NextResponse } from 'next/server';
+import { withBranchAccess } from '@/lib/branchAccess';
+import { pushIdentity } from '@/lib/pushAuth';
+import { visibleInbox, inboxItem, markInboxRead } from '@/lib/notificationInbox';
 
-export async function PUT(req, { params }) {
+async function handle(req, { params }) {
   try {
-    await connectDB();
-    const token = getTokenFromHeader(req);
-    const decoded = verifyJWT(token);
-
-    const { id } = params;
-
-    const updated = await Notification.findOneAndUpdate(
-      { _id: id, user: decoded.userId },
-      { read: true },
-      { new: true }
-    );
-
-    if (!updated) {
-      return NextResponse.json({ error: "Notification not found" }, { status: 404 });
+    const user = await pushIdentity(req);
+    const { id } = await params;
+    if (!mongoose.isValidObjectId(id)) return NextResponse.json({ message: 'Invalid notification.' }, { status: 400 });
+    const [item] = await visibleInbox(user, { _id: id }, new URL(req.url).searchParams.get('view'));
+    if (!item) return NextResponse.json({ message: 'Notification is unavailable in this workspace.' }, { status: 404 });
+    if (req.method !== 'GET') {
+      await markInboxRead(user, [item]);
+      item.read = true;
     }
-
-    return NextResponse.json(updated, { status: 200 });
-  } catch (err) {
-    return NextResponse.json({ error: err.message }, { status: 400 });
-  }
+    return NextResponse.json(inboxItem(item), { headers: { 'Cache-Control': 'private, no-store' } });
+  } catch (error) { return NextResponse.json({ message: error.status ? error.message : 'Unable to update notification.' }, { status: error.status || 500 }); }
 }
-
-
-
-
-// import { NextResponse } from "next/server";
-// import connectDB from "@/lib/db";
-// import Notification from "@/models/project/NotificationModel";
-// import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
-
-// export async function GET(req, { params }) {
-//   try {
-//     await connectDB();
-//     const token = getTokenFromHeader(req);
-//     const decoded = verifyJWT(token);
-
-//     const notification = await Notification.findOne({
-//       _id: params.id,
-//       user: decoded.userId,
-//     });
-
-//     if (!notification) return NextResponse.json({ error: "Not found" }, { status: 404 });
-
-//     return NextResponse.json(notification);
-//   } catch (err) {
-//     return NextResponse.json({ error: err.message }, { status: 401 });
-//   }
-// }
-
-// export async function PUT(req, { params }) {
-//   try {
-//     await connectDB();
-//     const token = getTokenFromHeader(req);
-//     const decoded = verifyJWT(token);
-
-//     const body = await req.json();
-//     const updated = await Notification.findOneAndUpdate(
-//       { _id: params.id, user: decoded.userId },
-//       body,
-//       { new: true }
-//     );
-
-//     if (!updated) return NextResponse.json({ error: "Not found" }, { status: 404 });
-//     return NextResponse.json(updated);
-//   } catch (err) {
-//     return NextResponse.json({ error: err.message }, { status: 400 });
-//   }
-// }
-
-// export async function DELETE(req, { params }) {
-//   try {
-//     await connectDB();
-//     const token = getTokenFromHeader(req);
-//     const decoded = verifyJWT(token);
-
-//     const deleted = await Notification.findOneAndDelete({
-//       _id: params.id,
-//       user: decoded.userId,
-//     });
-
-//     if (!deleted) return NextResponse.json({ error: "Not found" }, { status: 404 });
-
-//     return NextResponse.json({ message: "Deleted successfully" });
-//   } catch (err) {
-//     return NextResponse.json({ error: err.message }, { status: 400 });
-//   }
-// }
+export const GET = withBranchAccess(handle);
+export const PUT = withBranchAccess(handle);

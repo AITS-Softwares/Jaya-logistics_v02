@@ -276,6 +276,7 @@
 // export default PurchasePanel;
 
 // models/PurchasePanel.js
+import branchScopePlugin from '@/lib/branchScopePlugin';
 import mongoose from 'mongoose';
 import softDeletePlugin from '@/lib/softDelete';
 
@@ -594,6 +595,7 @@ purchasePanelSchema.pre('save', function (next) {
   next();
 });
 
+purchasePanelSchema.plugin(branchScopePlugin, { model: 'PurchasePanel' });
 purchasePanelSchema.plugin(softDeletePlugin);
 const PurchasePanel = mongoose.models.PurchasePanel ||
   mongoose.model('PurchasePanel', purchasePanelSchema);

@@ -122,6 +122,7 @@
 //     }, { status: 500 });
 //   }
 // }
+import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from "next/server";
 import connectDb from "@/lib/db";
 import ConsignmentNote from "../../consignment-note/ConsignmentNote";
@@ -256,7 +257,7 @@ const normName = (v) => String(v || '').trim().replace(/\s+/g, ' ').toLowerCase(
 // LR created date as YYYY-MM-DD in India time
 const istDate = (d) => (d ? new Date(d).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }) : '');
 
-export async function POST(req) {
+async function branchHandlerPOST(req) {
   try {
     await connectDb();
 
@@ -459,3 +460,4 @@ export async function POST(req) {
     }, { status: 500 });
   }
 }
+export const POST = withBranchAccess(branchHandlerPOST);

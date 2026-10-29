@@ -1,3 +1,4 @@
+import branchScopePlugin from '@/lib/branchScopePlugin';
 import mongoose from "mongoose";
 
 const stopSchema = new mongoose.Schema({
@@ -46,5 +47,7 @@ const driverTripSchema = new mongoose.Schema({
 
 driverTripSchema.index({ companyId: 1, driverId: 1, state: 1, updatedAt: -1 });
 driverTripSchema.index({ companyId: 1, "vehicle.vehicleNo": 1, state: 1 });
+
+driverTripSchema.plugin(branchScopePlugin, { model: 'DriverTrip' });
 
 export default mongoose.models.DriverTrip || mongoose.model("DriverTrip", driverTripSchema);

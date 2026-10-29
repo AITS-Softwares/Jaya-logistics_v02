@@ -1,3 +1,4 @@
+import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import DriverDevice from "@/models/DriverDevice";
@@ -11,7 +12,7 @@ const ACTIVE_STATES = ["assigned", "started", "at_pickup", "in_transit", "at_sto
 
 // A staff-only deployment signal for the ERP screen. Values are operational
 // counts/configuration booleans only—never secrets, database URIs, or tokens.
-export async function GET(req) {
+async function branchHandlerGET(req) {
   const staff = requireDriverMobileStaff(req);
   if (staff.error) return staff.error;
   if (!(await isDriverMobileEnabled(staff.user.companyId))) return mobileUnavailableResponse();
@@ -34,3 +35,5 @@ export async function GET(req) {
     activeTrips,
   } });
 }
+
+export const GET = withBranchAccess(branchHandlerGET);

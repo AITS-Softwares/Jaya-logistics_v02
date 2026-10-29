@@ -7266,6 +7266,9 @@ export default function EditVehicleNegotiation() {
   const [vendors, setVendors] = useState([]);
   const [voiceUrl, setVoiceUrl] = useState("");
   const [workflow, setWorkflow] = useState({ part1Locked: false, amendmentCount: 0 });
+  const [vnnReviewState, setVnnReviewState] = useState('none');
+  const [replacementMode, setReplacementMode] = useState(false);
+  const [replacementPanels, setReplacementPanels] = useState([]);
   // const [reapprovalState, setReapprovalState] = useState('none');
 
   const [approval, setApproval] = useState({
@@ -7296,6 +7299,12 @@ export default function EditVehicleNegotiation() {
   const canEditVnn = canEdit('Vehicle Negotiation');
   const canEditPart3 = canEditVnn && !isPart1Locked && !isPart3Finalized;
   const canEditPlacement = canEdit('Vehicle Negotiation Placement') && isPart1Locked && isPart3Finalized;
+  const retryingCancelledReplacement = workflow.cancelledOrderReplacementOnly && approval.part3Status === 'Reject' && vnnReviewState === 'unlocked';
+  const cancelledRows = retryingCancelledReplacement ? workflow.cancelledOrderReplacementRows || [] : orders.filter(row => ['cancelled', 'canceled'].includes(String(row.sourceOrderStatus || '').trim().toLowerCase()));
+  const canReplaceCancelledOrders = canEditVnn && isPart1Locked && cancelledRows.length > 0 && (isPart3Finalized && vnnReviewState === 'none' || retryingCancelledReplacement);
+  const replacementRows = replacementPanels.flatMap(panel => (panel.plantRows || [])
+    .filter(row => (row.status || 'Open') === 'Open' && !row.statusRequest?.action)
+    .map(row => ({ orderPanelId: String(row._sourceOrderPanelId || panel._id), orderRowId: String(row._id) })));
   const affectedOrderStatuses = orders.reduce((grouped, order) => {
     const status = String(order.sourceOrderStatus || '').trim();
     if (!['Hold', 'On Hold', 'Partially on hold', 'Cancelled', 'Canceled'].includes(status)) return grouped;
@@ -7383,6 +7392,7 @@ export default function EditVehicleNegotiation() {
 
       const vn = data.data;
       setWorkflow(vn.workflow || { part1Locked: false, amendmentCount: 0 });
+      setVnnReviewState(vn.reapprovalState || 'none');
       // setReapprovalState(vn.reapprovalState || 'none');
 
       setVnnNumber(vn.vnnNo || "");
@@ -7916,6 +7926,10 @@ export default function EditVehicleNegotiation() {
   };
 
   const handleWorkflowAction = async (action) => {
+    if (action === 'amend-part1' && canReplaceCancelledOrders) {
+      setReplacementMode(true); setReplacementPanels([]); setSaveError(null);
+      return;
+    }
     const reason = action === 'amend-part1' ? window.prompt('Enter the amendment reason:') : '';
     if (action === 'amend-part1' && !reason?.trim()) return;
     if (action === 'lock-part1') {
@@ -7946,6 +7960,25 @@ export default function EditVehicleNegotiation() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const submitCancelledReplacements = async () => {
+    if (!canReplaceCancelledOrders || !replacementRows.length) return;
+    setSaving(true); setSaveError(null);
+    try {
+      const response = await fetch(`/api/vehicle-negotiation/${negotiationId}/workflow`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
+        body: JSON.stringify({ action: 'replace-cancelled-orders', replacementRows }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Could not replace cancelled orders.');
+      setReplacementMode(false); setReplacementPanels([]);
+      await fetchNegotiationData();
+      window.dispatchEvent(new Event('reapproval:refresh'));
+      alert('Cancelled orders replaced. The VNN is submitted for approval. Other orders and commercial terms were preserved.');
+    } catch (error) { setSaveError(error.message); }
+    finally { setSaving(false); }
   };
 
   // const handleUpdate = async ({ redirect = true, submit = false } = {}) => {
@@ -8503,7 +8536,7 @@ export default function EditVehicleNegotiation() {
                 </div>
               )}
               <div className="text-xs text-blue-600 mt-1">
-                ⓘ Edit Parts 1 and 3 together and submit one VNN approval. Amend reopens both parts. Vehicle placement opens after approval.
+                {canReplaceCancelledOrders ? 'Replace cancelled order rows without an admin unlock. Other amendments still require the correction workflow.' : workflow.cancelledOrderReplacementOnly ? 'Cancelled-order replacements are awaiting review. Other VNN fields remain locked.' : 'ⓘ Edit Parts 1 and 3 together and submit one VNN approval. Amend reopens both parts. Vehicle placement opens after approval.'}
                 {/* ⓘ Edit Part 1 and Commercial Part 3 together, then submit one VNN approval. Vehicle placement remains available after approval. */}
               </div>
             </div>
@@ -8511,7 +8544,7 @@ export default function EditVehicleNegotiation() {
             <div className="flex items-center gap-3">
               <button
                 onClick={handleUpdate}
-                disabled={saving || (!canEditVnn && !canEditPlacement) || (isPart1Locked && !canEditPart3 && !canEditPlacement)}
+                disabled={saving || replacementMode || (!canEditVnn && !canEditPlacement) || (isPart1Locked && !canEditPart3 && !canEditPlacement)}
                 className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${saving
                   ? 'bg-gray-400 cursor-not-allowed'
                   : 'bg-yellow-600 hover:bg-yellow-700'
@@ -8532,8 +8565,8 @@ export default function EditVehicleNegotiation() {
                   Submit for Approval
                 </button>
               ) : (isPart1Locked && canEditVnn && (
-                <button onClick={() => handleWorkflowAction('amend-part1')} disabled={saving} className="rounded-xl bg-amber-600 px-5 py-2 text-sm font-bold text-white hover:bg-amber-700 disabled:bg-slate-400">
-                  Amend VNN (Parts 1 &amp; 3)
+                <button onClick={() => handleWorkflowAction('amend-part1')} disabled={saving || (workflow.cancelledOrderReplacementOnly && !retryingCancelledReplacement)} className="rounded-xl bg-amber-600 px-5 py-2 text-sm font-bold text-white hover:bg-amber-700 disabled:bg-slate-400">
+                  {canReplaceCancelledOrders ? 'Replace cancelled orders' : workflow.cancelledOrderReplacementOnly ? 'Awaiting replacement approval' : 'Amend VNN (Parts 1 & 3)'}
                 </button>
               ))}
             </div>
@@ -8541,6 +8574,19 @@ export default function EditVehicleNegotiation() {
         </div>
 
         <div className="mx-auto w-full min-w-0 max-w-full p-4 space-y-4">
+          {replacementMode && canReplaceCancelledOrders && <Card title="Replace cancelled orders only">
+            <p className="mb-3 text-sm text-slate-600">{cancelledRows.length} cancelled row(s) will be removed. Select open replacement orders from the same branch and company. Unaffected orders, rates, vendors and placement details stay unchanged.</p>
+            <div className="mb-4 flex flex-wrap gap-2">{cancelledRows.map(row => <span key={row._id || `${row.orderNo}:${row.orderRowId}`} className="rounded-lg bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700">{row.orderNo} · {row.plantName || row.toName || 'Cancelled row'}</span>)}</div>
+            <MultiSelectOrderPanelDropdown selectedPanels={replacementPanels} currentVnnId={negotiationId}
+              placeholder="Select open replacement orders..."
+              onSelect={(panel, removeId = null) => {
+                if (removeId) { setReplacementPanels(items => items.filter(item => item._id !== removeId)); return; }
+                if (panel) setReplacementPanels(items => items.some(item => item._id === panel._id) ? items : [...items, panel]);
+              }} />
+            <p className="mt-2 text-xs text-slate-500">{replacementRows.length} open replacement row(s) selected. Both VNN approvals will return to Pending when submitted.</p>
+            {saveError && <p role="alert" className="mt-3 rounded-lg bg-rose-50 p-3 text-sm text-rose-700">{saveError}</p>}
+            <div className="mt-4 flex flex-wrap gap-2"><button type="button" disabled={saving || !replacementRows.length} onClick={submitCancelledReplacements} className="rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50">{saving ? 'Submitting...' : 'Submit replacements for approval'}</button><button type="button" disabled={saving} onClick={() => { setReplacementMode(false); setReplacementPanels([]); setSaveError(null); }} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600">Cancel</button></div>
+          </Card>}
           {/* PART 1: VEHICLE NEGOTIATION - PART 1 */}
           <Card title="Vehicle Negotiation - Panel - Part -1">
             <fieldset disabled={isPart1Locked || !canEditVnn} className="w-full min-w-0 disabled:opacity-70">
@@ -8577,7 +8623,9 @@ export default function EditVehicleNegotiation() {
                     required={true}
                     displayField="name"
                     codeField="code"
-                    disabled={selectedOrderPanels.length > 0}
+                    readOnly={true}
+
+                    disabled={true}
                   />
                 </div>
 
@@ -8715,7 +8763,7 @@ export default function EditVehicleNegotiation() {
                           </span>
                         ))}
                       </div>
-                      <p className="mt-2 text-sm text-amber-800">{isPart1Locked ? 'Use Amend Part 1 at the top of this page to unlock the order list. Then remove the affected order and add an open replacement before submitting for approval again.' : 'Remove the affected order and add an open replacement order before submitting for approval again.'}</p>
+                      <p className="mt-2 text-sm text-amber-800">{canReplaceCancelledOrders ? 'Use Replace cancelled orders at the top of this page. Only cancelled rows can be replaced without an admin unlock; all other terms remain locked.' : isPart1Locked ? 'Use Amend VNN at the top of this page to open the correction workflow. Approved records require an admin unlock for general changes.' : 'Remove the affected order and add an open replacement order before submitting for approval again.'}</p>
                     </div>
                   </div>
                 )}

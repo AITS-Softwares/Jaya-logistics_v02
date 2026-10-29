@@ -1,3 +1,4 @@
+import branchScopePlugin from '@/lib/branchScopePlugin';
 import mongoose from "mongoose";
 
 const trackingSessionSchema = new mongoose.Schema({
@@ -13,5 +14,7 @@ const trackingSessionSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 trackingSessionSchema.index({ companyId: 1, tripId: 1, state: 1 });
+
+trackingSessionSchema.plugin(branchScopePlugin, { model: 'TrackingSession' });
 
 export default mongoose.models.TrackingSession || mongoose.model("TrackingSession", trackingSessionSchema);

@@ -1,9 +1,10 @@
+import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from "next/server";
 import connectDb from "@/lib/db";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import { activeOperatingCompanyId } from "@/lib/companyScope";
 
-export async function GET(req) {
+async function branchHandlerGET(req) {
   try {
     await connectDb();
     
@@ -27,3 +28,5 @@ export async function GET(req) {
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
 }
+
+export const GET = withBranchAccess(branchHandlerGET);

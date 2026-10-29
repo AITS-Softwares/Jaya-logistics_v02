@@ -1,3 +1,4 @@
+import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from "next/server";
 import connectDb from "@/lib/db";
 import { withAuth } from "@/lib/auth";
@@ -54,7 +55,7 @@ async function load(user, id) {
 }
 
 // GET -> preview of the exact email that will be sent
-export const GET = withAuth(
+const branchHandlerGET = withAuth(
     async (req, context, user) => {
         try {
             const { id } = await context.params;
@@ -86,7 +87,7 @@ export const GET = withAuth(
 );
 
 // POST -> really send it (server decides recipient + content)
-export const POST = withAuth(
+const branchHandlerPOST = withAuth(
     async (req, context, user) => {
         try {
             const { id } = await context.params;
@@ -122,3 +123,6 @@ export const POST = withAuth(
     },
     { module: "Proof Of Delivery", action: "approve" }
 );
+
+export const GET = withBranchAccess(branchHandlerGET);
+export const POST = withBranchAccess(branchHandlerPOST);

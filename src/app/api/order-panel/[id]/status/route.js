@@ -1,3 +1,4 @@
+import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from 'next/server';
 import mongoose from 'mongoose';
 import connectDb from '@/lib/db';
@@ -15,7 +16,7 @@ import Notification from '@/models/project/NotificationModel';
 
 const idOf = (value) => String(value?._id || value || '');
 
-export const POST = withAuth(async (req, { params }, user) => {
+const branchHandlerPOST = withAuth(async (req, { params }, user) => {
   await connectDb();
   if (!['create', 'edit', 'approve'].some((action) => hasPermission(user, 'Order Panel', action))) {
     return NextResponse.json({ success: false, message: 'Order create, edit, or approve permission is required.' }, { status: 403 });
@@ -26,11 +27,11 @@ export const POST = withAuth(async (req, { params }, user) => {
     if (!mongoose.Types.ObjectId.isValid(id)) return NextResponse.json({ success: false, message: 'Invalid order id.' }, { status: 400 });
     const order = await OrderPanel.findOne(companyScopeFilter(user, { _id: id }));
     if (!order) return NextResponse.json({ success: false, message: 'Order not found.' }, { status: 404 });
-    if (['Approved', 'Completed'].includes(order.panelStatus) && order.reapprovalState !== 'unlocked') {
-      return NextResponse.json({ success: false, message: 'Approved orders are locked. An admin must unlock this order before changing row status.' }, { status: 409 });
-    }
+    // Hold, Resume and Cancel are operational status actions. Approval locks
+    // protect edits to order details, not this separate permission/approval flow.
+    // Do not unlock the record or change its correction state for these actions.
     if (['pendingApproval', 'pendingReapproval', 'blockedByUpstream', 'syncFailed'].includes(order.reapprovalState)) {
-      return NextResponse.json({ success: false, message: 'This order cannot change row status while reapproval work is pending.' }, { status: 409 });
+      return NextResponse.json({ success: false, message: 'A review is already in progress for this order. Finish that review before changing its status; no correction unlock is required for Hold, Cancel or Resume.' }, { status: 409 });
     }
 
     const body = await req.json();
@@ -413,3 +414,5 @@ async function notifyVnnReplacementNeeded(user, negotiations, orderNo, rows, act
       : `Order ${orderNo} row(s) ${missing} were put on hold in VNN ${negotiations.map((negotiation) => negotiation.vnnNo).join(', ')}. Add replacement open order rows and submit Part 1 again.`
   })));
 }
+
+export const POST = withBranchAccess(branchHandlerPOST);

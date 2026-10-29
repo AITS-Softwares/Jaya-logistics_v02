@@ -36,6 +36,7 @@
 
 
 // app/api/company/users/route.js
+import { validateBranchAssignment, currentBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from "next/server";
 import connectDb from "@/lib/db";
 import CompanyUser from "@/models/CompanyUser";
@@ -127,7 +128,7 @@ function withoutDeletePermission(permissions = {}) {
 
 // ── HELPER FUNCTIONS ──
 
-function validateUser(req) {
+async function validateUser(req) {
   const token = getTokenFromHeader(req);
   if (!token) {
     return { error: "Authentication required", status: 401 };
@@ -144,6 +145,9 @@ function validateUser(req) {
       return { error: "Only company admins can manage users", status: 403 };
     }
     
+    if (user.type === 'user' && !(await currentBranchAccess(user)).accessAllBranches) {
+      return { error: 'A company administrator must manage users for branch-restricted accounts.', status: 403 };
+    }
     return { user, error: null, status: 200 };
   } catch (err) {
     console.error("JWT Verification Failed:", err);
@@ -224,7 +228,7 @@ function createDefaultModules(roles = []) {
 export async function GET(req) {
   await connectDb();
   
-  const { user, error, status } = validateUser(req);
+  const { user, error, status } = await validateUser(req);
   if (error) {
     return NextResponse.json({ 
       success: false, 
@@ -245,7 +249,7 @@ export async function GET(req) {
     return NextResponse.json({ 
       success: false, 
       message: "Failed to fetch users" 
-    }, { status: 500 });
+    }, { status: error.status || 500 });
   }
 }
 
@@ -253,7 +257,7 @@ export async function GET(req) {
 export async function POST(req) {
   await connectDb();
   
-  const { user, error, status } = validateUser(req);
+  const { user, error, status } = await validateUser(req);
   if (error) {
     return NextResponse.json({ 
       success: false, 
@@ -336,6 +340,7 @@ export async function POST(req) {
       roles,
       modules: moduleMap,
       isActive,
+      ...await validateBranchAssignment(user.companyId, body),
       type: 'user'
     });
 
@@ -356,7 +361,7 @@ export async function POST(req) {
     return NextResponse.json({ 
       success: false, 
       message: error.message || "Failed to create user" 
-    }, { status: 500 });
+    }, { status: error.status || 500 });
   }
 }
 
@@ -364,7 +369,7 @@ export async function POST(req) {
 export async function PUT(req) {
   await connectDb();
   
-  const { user, error, status } = validateUser(req);
+  const { user, error, status } = await validateUser(req);
   if (error) {
     return NextResponse.json({ 
       success: false, 
@@ -404,6 +409,8 @@ export async function PUT(req) {
         message: "User not found" 
       }, { status: 404 });
     }
+
+    Object.assign(targetUser, await validateBranchAssignment(user.companyId, body, targetUser));
 
     // Update fields
     if (name) targetUser.name = name;
@@ -455,7 +462,7 @@ export async function PUT(req) {
     return NextResponse.json({ 
       success: false, 
       message: error.message || "Failed to update user" 
-    }, { status: 500 });
+    }, { status: error.status || 500 });
   }
 }
 
@@ -463,7 +470,7 @@ export async function PUT(req) {
 export async function DELETE(req) {
   await connectDb();
   
-  const { user, error, status } = validateUser(req);
+  const { user, error, status } = await validateUser(req);
   if (error) {
     return NextResponse.json({ 
       success: false, 
@@ -505,6 +512,6 @@ export async function DELETE(req) {
     return NextResponse.json({ 
       success: false, 
       message: error.message || "Failed to delete user" 
-    }, { status: 500 });
+    }, { status: error.status || 500 });
   }
 }

@@ -1,3 +1,4 @@
+import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import VehicleNegotiation from '@/app/api/vehicle-negotiation/VehicleNegotiation';
@@ -26,7 +27,7 @@ function authorize(req, action = 'view') {
   }
 }
 
-export async function GET(req) {
+async function branchHandlerGET(req) {
   const auth = authorize(req);
   if (auth.error) return NextResponse.json({ success: false, message: auth.error }, { status: auth.status });
 
@@ -40,3 +41,5 @@ export async function GET(req) {
 
   return NextResponse.json({ success: true, data: records.map((record) => ({ ...record, partyName: getVnnPartyName(record) })) });
 }
+
+export const GET = withBranchAccess(branchHandlerGET);

@@ -303,8 +303,9 @@ export default function VehicleNegotiationList() {
                 <option value="">All Status</option>
                 <option value="Draft">Draft</option>
                 <option value="Approved">Approved</option>
-        <option value="Pending">Pending for Approval</option>
+                <option value="Pending">Pending for Approval</option>
                 <option value="Reject">Reject</option>
+                <option value="Cancelled">Cancelled</option>
                 <option value="Pending to Create">Pending to Create</option>
               </select>
             </div>
@@ -370,7 +371,7 @@ export default function VehicleNegotiationList() {
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Vehicle No</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">From → To</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Total Weight</th>
-                  <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Approval</th>
+                  <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Status</th>
                   {/* <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Memo</th> */}
                   <th className="px-4 py-3 text-center text-xs font-extrabold text-slate-900 uppercase tracking-wider">Actions</th>
                 </tr>
@@ -415,11 +416,13 @@ export default function VehicleNegotiationList() {
                       <td className="px-4 py-3 font-medium">{item.totalWeight} MT</td>
                       <td className="px-4 py-3">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${item.approval === 'Approved' ? 'bg-green-100 text-green-800' :
+                          item.approval === 'Cancelled' ? 'bg-rose-100 text-rose-800 ring-1 ring-inset ring-rose-200' :
                             item.approval === 'Reject' ? 'bg-red-100 text-red-800' :
                               'bg-yellow-100 text-yellow-800'
                           }`}>
                           {item.approval || 'Pending'}
                         </span>
+                        {/* {item.approval === 'Cancelled' && <p className="mt-1.5 max-w-40 text-[11px] leading-4 text-rose-700">{item.orders.length > 0 && item.orders.every(order => order.sourceOrderStatus === 'Cancelled') ? 'All linked orders cancelled' : 'No longer active'}</p>} */}
                       </td>
                       {/* <td className="px-4 py-3">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${

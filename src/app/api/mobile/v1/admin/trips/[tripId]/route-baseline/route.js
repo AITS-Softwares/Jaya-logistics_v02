@@ -1,3 +1,4 @@
+import { withBranchAccess } from '@/lib/branchAccess';
 import mongoose from "mongoose";
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
@@ -7,7 +8,7 @@ import { requireDriverMobileStaff } from "@/lib/driverMobileStaff";
 
 // The dispatcher explicitly approves map-derived route data before it becomes
 // visible as an ETA baseline. GPS never silently rewrites the plan.
-export async function POST(req, { params }) {
+async function branchHandlerPOST(req, { params }) {
   if (!(await isDriverMobileEnabled())) return mobileUnavailableResponse();
   const staff = requireDriverMobileStaff(req, "edit");
   if (staff.error) return staff.error;
@@ -32,3 +33,5 @@ export async function POST(req, { params }) {
     return NextResponse.json({ success: false, code: "ROUTE_BASELINE_FAILED", message: "Unable to save the route baseline." }, { status: 500 });
   }
 }
+
+export const POST = withBranchAccess(branchHandlerPOST);

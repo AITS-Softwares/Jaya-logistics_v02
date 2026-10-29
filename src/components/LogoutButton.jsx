@@ -1,11 +1,19 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { disablePushSubscription } from '@/lib/pushClient';
+import { useState } from 'react';
 
 export default function LogoutButton() {
   const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    setBusy(true);
+    try { await disablePushSubscription(); }
+    catch { setError('Unable to turn off device notifications. Please retry logout.'); setBusy(false); return; }
+    sessionStorage.removeItem('erp:notification-id');
     // ✅ Token aur user dono clear karo
     localStorage.removeItem("token");
     localStorage.removeItem("user");
@@ -13,12 +21,13 @@ export default function LogoutButton() {
   };
 
   return (
-    <button
+    <div><button
       onClick={handleLogout}
+      disabled={busy}
       className="w-full py-2.5 px-4 bg-red-600/20 hover:bg-red-600/40 text-red-400 hover:text-red-300 rounded-lg text-sm font-semibold transition-all border border-red-600/20"
     >
-      Logout
-    </button>
+      {busy ? 'Signing out...' : 'Logout'}
+    </button>{error && <p role="alert" className="mt-2 text-xs text-red-300">{error}</p>}</div>
   );
 }
 

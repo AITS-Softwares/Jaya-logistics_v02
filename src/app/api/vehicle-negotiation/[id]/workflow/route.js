@@ -1,3 +1,4 @@
+import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from 'next/server';
 import mongoose from 'mongoose';
 import dbConnect from '@/lib/db';
@@ -5,6 +6,8 @@ import VehicleNegotiation from '@/app/api/vehicle-negotiation/VehicleNegotiation
 import { getTokenFromHeader, verifyJWT } from '@/lib/auth';
 import { activeOperatingCompanyId, companyScopeFilter } from '@/lib/companyScope';
 import { isVnnReadyForDownstream } from '@/lib/vehicleNegotiationWorkflow';
+import { replaceCancelledVnnOrders } from '@/lib/replaceCancelledVnnOrders';
+import { notifyModuleApprovers } from '@/lib/workflowNotifications';
 
 function authorize(req) {
   const token = getTokenFromHeader(req);
@@ -22,17 +25,27 @@ function authorize(req) {
   }
 }
 
-export async function PATCH(req, { params }) {
-  const { id } = params;
+async function branchHandlerPATCH(req, { params }) {
+  const { id } = await params;
   if (!mongoose.Types.ObjectId.isValid(id)) return NextResponse.json({ success: false, message: 'Invalid record id.' }, { status: 400 });
   const auth = authorize(req);
   if (auth.error) return NextResponse.json({ success: false, message: auth.error }, { status: auth.status });
   const body = await req.json();
+  if (body.action === 'replace-cancelled-orders') {
+    await dbConnect();
+    try {
+      const data = await replaceCancelledVnnOrders(auth.user, id, body);
+      return NextResponse.json({ success: true, message: 'Cancelled orders replaced and VNN submitted for approval.', data });
+    } catch (error) {
+      return NextResponse.json({ success: false, message: error.message || 'Could not replace cancelled orders.' }, { status: error.status || 500 });
+    }
+  }
   if (!['lock-part1', 'amend-part1'].includes(body.action)) return NextResponse.json({ success: false, message: 'Unsupported workflow action.' }, { status: 400 });
 
   await dbConnect();
   const record = await VehicleNegotiation.findOne(companyScopeFilter(auth.user, { _id: id }));
   if (!record) return NextResponse.json({ success: false, message: 'Vehicle Negotiation not found.' }, { status: 404 });
+  if (record.workflow?.cancelledOrderReplacementOnly) return NextResponse.json({ success: false, message: 'This amendment is limited to cancelled order replacement. Use Replace cancelled orders to resubmit it; general Parts 1 and 3 amendments still require an admin correction.' }, { status: 409 });
   if (record.upstreamPending?.length || record.reapprovalState === 'blockedByUpstream') return NextResponse.json({ success: false, message: 'This Vehicle Negotiation is blocked by an upstream correction.' }, { status: 409 });
   if (record.reapprovalState === 'syncFailed') return NextResponse.json({ success: false, message: 'This Vehicle Negotiation is waiting for approval or admin sync recovery.' }, { status: 409 });
   if (body.action === 'amend-part1' && record.approval?.part3Status === 'Approved' && !['unlocked', 'pendingReapproval'].includes(record.reapprovalState)) return NextResponse.json({ success: false, message: 'An admin must unlock this approved record before Parts 1 and 3 can be amended.' }, { status: 409 });
@@ -72,5 +85,8 @@ export async function PATCH(req, { params }) {
   }
 
   await record.save();
+  if (body.action === 'lock-part1') await notifyModuleApprovers({ user: auth.user, module: 'Vehicle Negotiation', panelLabel: 'Vehicle Negotiation', reference: record.vnnNo, url: `/admin/vehicle-negotiation/approve/${record._id}` });
   return NextResponse.json({ success: true, data: { workflow: record.workflow, approval: record.approval } });
 }
+
+export const PATCH = withBranchAccess(branchHandlerPATCH);

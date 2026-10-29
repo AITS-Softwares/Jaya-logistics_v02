@@ -252,6 +252,7 @@
 
 // export default AdvancePayment;
 
+import branchScopePlugin from '@/lib/branchScopePlugin';
 import mongoose from 'mongoose';
 import softDeletePlugin from '@/lib/softDelete';
 
@@ -540,6 +541,7 @@ advancePaymentSchema.pre('save', function(next) {
   next();
 });
 
+advancePaymentSchema.plugin(branchScopePlugin, { model: 'AdvancePayment' });
 advancePaymentSchema.plugin(softDeletePlugin);
 const AdvancePayment = mongoose.models.AdvancePayment || 
   mongoose.model('AdvancePayment', advancePaymentSchema);

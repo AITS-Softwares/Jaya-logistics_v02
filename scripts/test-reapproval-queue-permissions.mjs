@@ -1,3 +1,4 @@
+import { unwrapBranchHandlers } from './route-business-source.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
@@ -27,7 +28,7 @@ for (const [type, , model] of panels) {
     return query;
   } };
 }
-const source = fs.readFileSync(new URL('../src/app/api/reapproval/queue/route.js', import.meta.url), 'utf8')
+const source = unwrapBranchHandlers(fs.readFileSync(new URL('../src/app/api/reapproval/queue/route.js', import.meta.url), 'utf8'))
   .replace(/^import .*;\r?\n/gm, '').replace('export async function GET', 'async function GET');
 const getQueue = new Function(...Object.keys(deps), `${source}\nreturn GET;`)(...Object.values(deps));
 const modulePermission = (permissions) => ({ selected: true, permissions });
@@ -39,6 +40,8 @@ asUser({ 'Order Panel': modulePermission({ view: true, edit: true }) });
 let result = await getQueue({});
 assert.deepEqual(activeTasks(result.records).map((record) => record.id), ['order-unlocked']);
 assert(result.records.some((record) => record.id === 'order-blockedByUpstream'));
+assert.equal(result.records.find(record => record.id === 'order-blockedByUpstream').actionable, false);
+assert.equal(result.records.find(record => record.id === 'order-unlocked').actionable, true);
 assert(!result.records.some((record) => record.id === 'order-pendingApproval'));
 asUser({ 'Order Panel': modulePermission({ approve: true }) });
 result = await getQueue({});
@@ -66,6 +69,8 @@ result = await getQueue({});
 assert.equal(result.records.length, 25);
 assert.equal(result.records.filter((record) => record.reapprovalState === 'blockedByUpstream').length, 5);
 assert.equal(result.records.filter((record) => record.reapprovalState === 'syncFailed').length, 5);
+assert(result.records.filter(record => record.reapprovalState === 'syncFailed').every(record => record.actionable));
+assert(result.records.filter(record => record.reapprovalState === 'blockedByUpstream').every(record => !record.actionable));
 
 // Loading sync is a real task for edit/approve users, while ambiguous links need an admin.
 docs.loading[0].reapprovalHistory = [{ action: 'detachedOrderBlockCleared' }];

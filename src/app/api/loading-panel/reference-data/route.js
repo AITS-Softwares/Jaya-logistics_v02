@@ -1,3 +1,4 @@
+import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/auth";
 import connectDb from "@/lib/db";
@@ -232,7 +233,7 @@ async function getAvailableVnnsForLoading(user) {
  * Plant APIs. A user with Loading Info create access receives only eligible
  * VNNs and the minimal reference fields needed to create this transaction.
  */
-export const GET = withAuth(async (req, context, user) => {
+const branchHandlerGET = withAuth(async (req, context, user) => {
   try {
     await connectDb();
     const url = new URL(req.url);
@@ -331,3 +332,5 @@ export const GET = withAuth(async (req, context, user) => {
     );
   }
 }, { module: "Loading Info", actions: ["create", "edit", "view"] });
+
+export const GET = withBranchAccess(branchHandlerGET);

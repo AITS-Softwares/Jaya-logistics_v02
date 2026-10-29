@@ -1,3 +1,4 @@
+import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from 'next/server';
 import path from 'path';
 import { readFile, unlink } from 'fs/promises';
@@ -71,7 +72,7 @@ function contentTypeFor(filename) {
 }
 
 /** Streams a saved Rate Approval document only after record-level permission checks. */
-export async function GET(req, { params }) {
+async function branchHandlerGET(req, { params }) {
   const token = getTokenFromHeader(req);
   const user = token ? verifyJWT(token) : null;
   if (!user) return NextResponse.json({ success: false, message: 'Authentication required.' }, { status: 401 });
@@ -108,7 +109,7 @@ export async function GET(req, { params }) {
 }
 
 /** Removes a Part 1 attachment from both its record and the server disk. */
-export async function DELETE(req, { params }) {
+async function branchHandlerDELETE(req, { params }) {
   const token = getTokenFromHeader(req);
   const user = token ? verifyJWT(token) : null;
   if (!user) return NextResponse.json({ success: false, message: 'Authentication required.' }, { status: 401 });
@@ -167,3 +168,6 @@ export async function DELETE(req, { params }) {
     return NextResponse.json({ success: false, message: 'Unable to remove attachment.' }, { status: 500 });
   }
 }
+
+export const GET = withBranchAccess(branchHandlerGET);
+export const DELETE = withBranchAccess(branchHandlerDELETE);

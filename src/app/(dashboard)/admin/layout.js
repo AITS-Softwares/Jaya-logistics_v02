@@ -1945,6 +1945,7 @@ import { GiStockpiles } from "react-icons/gi";
 import { SiCivicrm } from "react-icons/si";
 import { useRouter, usePathname } from "next/navigation";
 import LogoutButton from "@/components/LogoutButton";
+import NotificationBell from '@/components/NotificationBell';
 
 // ✅ FIXED: Changed from "./hooks/usePermission" to "@/hooks/usePermission"
 import { usePermission } from "./hooks/usePermission";
@@ -2027,6 +2028,8 @@ export default function Layout({ children }) {
   useEffect(() => {
     async function getSession() {
       try {
+        const notificationId = new URL(window.location.href).searchParams.get('notification');
+        if (notificationId && /^[a-f0-9]{24}$/i.test(notificationId)) sessionStorage.setItem('erp:notification-id', notificationId);
         const token = localStorage.getItem("token");
         if (!token) {
           router.push("/signin");
@@ -3310,7 +3313,7 @@ export default function Layout({ children }) {
             </div>
 
             <div className="flex items-center gap-3 shrink-0">
-              <ReapprovalWorkspace placement="header" />
+              <NotificationBell key={session._id || session.id || session.email} />
               <div className="hidden md:flex items-center gap-3 text-sm text-gray-300">
                 <span>{session.name || session.email}</span>
               </div>

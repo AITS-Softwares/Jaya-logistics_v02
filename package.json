@@ -7,6 +7,13 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "push:worker": "node scripts/push-worker.mjs",
+    "push:keys": "web-push generate-vapid-keys",
+    "test:push": "node scripts/test-web-push.mjs",
+    "test:notifications": "node scripts/test-notification-center.mjs && node scripts/test-reapproval-queue-permissions.mjs",
+    "test:vnn-replacement": "node scripts/test-cancelled-vnn-replacement.mjs",
+    "test:billing-notifications": "node scripts/test-billing-reminders.mjs && node scripts/test-workflow-notifications.mjs",
+    "test:panel-notifications": "node scripts/test-panel-work-summary.mjs",
     "mobile:driver:verify": "node scripts/verify-driver-mobile-foundation.mjs",
     "mobile:driver:preflight": "node scripts/verify-driver-mobile-deployment.mjs",
     "mobile:driver:release:verify": "node scripts/verify-driver-android-release.mjs",
@@ -86,6 +93,7 @@
     "tailwindcss-animate": "^1.0.7",
     "tesseract.js": "^6.0.1",
     "twilio": "^5.11.2",
+    "web-push": "^3.6.7",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {

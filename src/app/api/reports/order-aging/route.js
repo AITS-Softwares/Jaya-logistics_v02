@@ -1,3 +1,4 @@
+import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from 'next/server';
 import connectDb from '@/lib/db';
 import OrderPanel from '@/app/api/order-panel/OrderPanel';
@@ -6,7 +7,7 @@ import { companyScopeFilter } from '@/lib/companyScope';
 import { buildAging } from '@/lib/order-aging.mjs';
 import { agingScope } from '@/lib/order-aging-scope.mjs';
 
-export const GET = withAuth(async (req, context, user) => {
+const branchHandlerGET = withAuth(async (req, context, user) => {
   try {
     const {filter,scope} = agingScope(user,companyScopeFilter);
     await connectDb();
@@ -18,3 +19,5 @@ export const GET = withAuth(async (req, context, user) => {
     return NextResponse.json({success:false,message:error.status===400 ? error.message : 'Unable to load order aging report. Please retry or check the server logs.'},{status:error.status || 500});
   }
 }, {module:'Order Panel',action:'view'});
+
+export const GET = withBranchAccess(branchHandlerGET);

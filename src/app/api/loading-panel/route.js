@@ -1154,6 +1154,7 @@
 // }
 
 // app/api/loading-panel/route.js
+import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from "next/server";
 import { identifierFormatError } from "@/lib/identifierFormats";
 import connectDb from "@/lib/db";
@@ -1168,7 +1169,7 @@ import OrderPanel from '@/app/api/order-panel/OrderPanel';
 import { findLRsForPanel, getLRCompletion, LR_COMPLETION_SELECT } from "./findLRs";
 import { validateOpenOrderRows } from '@/lib/orderRowStatus';
 import { handleModuleDelete } from '@/lib/deletion/handler';
-import { notifyModuleCreateUsers, notifyModuleApprovers } from '@/lib/workflowNotifications';
+import { notifyModuleCreateUsers, notifyModuleApprovers, notifyModuleDecision } from '@/lib/workflowNotifications';
 
 // ── PERMISSION FUNCTIONS ──
 
@@ -1309,7 +1310,7 @@ function arrivalFromPanel(panel) {
 /* ========================================
    GET /api/loading-panel - Requires 'view' permission
 ======================================== */
-export async function GET(req) {
+async function branchHandlerGET(req) {
   await connectDb();
   const { user, error, status } = await validateUser(req, 'view');
   if (error) {
@@ -1634,7 +1635,7 @@ export async function GET(req) {
 /* ========================================
    POST /api/loading-panel - Requires 'create' permission
 ======================================== */
-export async function POST(req) {
+async function branchHandlerPOST(req) {
   await connectDb();
   const { user, error, status } = await validateUser(req, 'create');
   if (error) {
@@ -2091,6 +2092,11 @@ export async function POST(req) {
     const newLoadingPanel = new LoadingPanel(loadingPanelData);
     const savedPanel = await newLoadingPanel.save({ validateBeforeSave: !isDraftSave });
     if (!isDraftSave) await captureSourceDependencies('loading', savedPanel, user.companyId);
+    if (!isDraftSave) {
+      await notifyConsignmentNoteTeamLoadingInfoReady(user, savedPanel);
+      await notifyModuleApprovers({ user, module: 'Loading Info', panelLabel: 'Loading Info',
+        reference: savedPanel.vehicleArrivalNo, url: `/admin/Loading-Info/${savedPanel._id}` });
+    }
 
     console.log("✅ Loading panel saved successfully, ID:", savedPanel._id);
 
@@ -2131,7 +2137,7 @@ export async function POST(req) {
 /* ========================================
    PUT /api/loading-panel - Requires 'edit' permission
 ======================================== */
-export async function PUT(req) {
+async function branchHandlerPUT(req) {
   await connectDb();
   const { user, error, status } = await validateUser(req, 'edit');
   if (error) {
@@ -2466,7 +2472,7 @@ export async function PUT(req) {
 /* ========================================
    DELETE /api/loading-panel - Requires 'delete' permission
 ======================================== */
-export async function DELETE(req) {
+async function branchHandlerDELETE(req) {
   await connectDb();
   const { user, error, status } = await validateUser(req, 'delete');
   if (error) {
@@ -2515,7 +2521,7 @@ export async function DELETE(req) {
 /* ========================================
    PATCH /api/loading-panel - Requires 'approve' permission
 ======================================== */
-export async function PATCH(req) {
+async function branchHandlerPATCH(req) {
   await connectDb();
   const { user, error, status } = await validateUser(req, 'approve');
   if (error) {
@@ -2726,6 +2732,7 @@ export async function PATCH(req) {
       catch (syncError) { return NextResponse.json({ success: false, message: `Loading Info approved, but downstream sync failed and is blocked for admin retry: ${syncError.message}` }, { status: 503 }); }
     }
 
+    await notifyModuleDecision({ user, record: loadingPanel, module: 'Loading Info', reference: loadingPanel.vehicleArrivalNo, action, url: `/admin/Loading-Info/${loadingPanel._id}` });
     if (action === 'approve' || action === 'complete') {
       await notifyModuleCreateUsers({
         user,
@@ -2754,3 +2761,9 @@ export async function PATCH(req) {
     }, { status: 500 });
   }
 }
+
+export const GET = withBranchAccess(branchHandlerGET);
+export const POST = withBranchAccess(branchHandlerPOST);
+export const PUT = withBranchAccess(branchHandlerPUT);
+export const DELETE = withBranchAccess(branchHandlerDELETE);
+export const PATCH = withBranchAccess(branchHandlerPATCH);

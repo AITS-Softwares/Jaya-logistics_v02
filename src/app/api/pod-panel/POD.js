@@ -181,6 +181,7 @@
 
 // export default POD;
 
+import branchScopePlugin from '@/lib/branchScopePlugin';
 import mongoose from 'mongoose';
 import softDeletePlugin from '@/lib/softDelete';
 
@@ -419,6 +420,7 @@ podSchema.pre('save', function (next) {
   next();
 });
 
+podSchema.plugin(branchScopePlugin, { model: 'POD' });
 podSchema.plugin(softDeletePlugin);
 const POD = mongoose.models.POD || mongoose.model('POD', podSchema);
 

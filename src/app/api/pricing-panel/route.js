@@ -965,6 +965,7 @@
 // }
 
 // app/api/pricing-panel/route.js
+import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from "next/server";
 import { identifierFormatError } from "@/lib/identifierFormats";
 import { unlink } from 'fs/promises';
@@ -983,7 +984,7 @@ import LoadingPanel from '@/app/api/loading-panel/LoadingPanel';
 import RateMaster from '@/app/api/rate-master/schema';
 import Location from '@/app/api/locations/schema';
 import Branch from '@/app/api/branches/schema';
-import { notifyModuleApprovers } from '@/lib/workflowNotifications';
+import { notifyModuleApprovers, notifyModuleDecision } from '@/lib/workflowNotifications';
 import { assertSourcesCurrent, captureSourceDependencies, recordApprovedRevision } from '@/lib/reapprovalService';
 
 // ── PERMISSION FUNCTIONS ──
@@ -1134,7 +1135,7 @@ function pricingListStatus(panel) {
 /* ========================================
    GET /api/pricing-panel - List requires 'view'; a specific panel supports its section roles
 ======================================== */
-export async function GET(req) {
+async function branchHandlerGET(req) {
   await connectDb();
   const { user, error, status } = await validateUser(req);
   if (error) {
@@ -1428,7 +1429,7 @@ export async function GET(req) {
 /* ========================================
    POST /api/pricing-panel - Requires 'create' permission
 ======================================== */
-export async function POST(req) {
+async function branchHandlerPOST(req) {
   await connectDb();
   const { user, error, status } = await validateUser(req, 'create');
   if (error) {
@@ -1735,7 +1736,7 @@ export async function POST(req) {
 /* ========================================
    PUT /api/pricing-panel - Requires 'edit' permission
 ======================================== */
-export async function PUT(req) {
+async function branchHandlerPUT(req) {
   await connectDb();
   const { user, error, status } = await validateUser(req, 'edit');
   if (error) {
@@ -2035,7 +2036,7 @@ export async function PUT(req) {
 /* ========================================
    DELETE /api/pricing-panel - Requires 'delete' permission
 ======================================== */
-export async function DELETE(req) {
+async function branchHandlerDELETE(req) {
   await connectDb();
   const { user, error, status } = await validateUser(req, 'delete');
   if (error) {
@@ -2112,7 +2113,7 @@ export async function DELETE(req) {
 /* ========================================
    PATCH /api/pricing-panel - Requires 'approve' permission
 ======================================== */
-export async function PATCH(req) {
+async function branchHandlerPATCH(req) {
   await connectDb();
   const { user, error, status } = await validateUser(req);
   if (error) {
@@ -2355,6 +2356,10 @@ export async function PATCH(req) {
       });
     }
 
+    const decisionAction = ['approve', 'reject', 'complete'].includes(action) ? action
+      : ['approve-with-update', 'update-approval'].includes(action)
+        ? (pricingPanel.rateApproval?.approvalStatus === 'Approved' ? 'approve' : pricingPanel.rateApproval?.approvalStatus === 'Rejected' ? 'reject' : '') : '';
+    await notifyModuleDecision({ user, record: pricingPanel, module: 'Pricing Panel', reference: pricingPanel.pricingSerialNo, action: decisionAction, url: `/admin/pricing-panel/${pricingPanel._id}` });
     let successMessage = `Pricing panel ${action}d successfully`;
     if (action === 'update-approval') {
       successMessage = 'Approval details updated successfully';
@@ -2506,3 +2511,9 @@ async function resolvePricingRate(user, order, panelTotalWeight) {
   const basis = rateCalculationMode === 'total_weight' ? 'total panel weight' : 'order weight';
   throw new Error(`${basis} ${lookupWeight} has no active rate slab for ${order.locationRate || 'the selected location'} in ${rateMaster.title}.`);
 }
+
+export const GET = withBranchAccess(branchHandlerGET);
+export const POST = withBranchAccess(branchHandlerPOST);
+export const PUT = withBranchAccess(branchHandlerPUT);
+export const DELETE = withBranchAccess(branchHandlerDELETE);
+export const PATCH = withBranchAccess(branchHandlerPATCH);

@@ -2,6 +2,7 @@
 // Body: { stops: [{ key, text, city?, pin? }] }   (max 25)
 // Returns: { results: { [key]: { status, lat, lng, placeId, formattedAddress, accuracy, cached } } }
 // Server key: GEOCODING_API_KEY, PLACES_API_KEY or GOOGLE_MAPS_SERVER_KEY. Results are cached in TrackingGeocodeCache.
+import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from "next/server";
 import crypto from "crypto";
 import connectDb from "@/lib/db";
@@ -82,7 +83,7 @@ async function geocodeStop(stop, key) {
     return null;
 }
 
-export const POST = withAuth(async (req, context, user) => {
+const branchHandlerPOST = withAuth(async (req, context, user) => {
     // Geocoding API must be enabled on whichever key is used here.
     // Places API (New) must be enabled on whichever key is used here.
     const key = process.env.PLACES_API_KEY || process.env.GEOCODING_API_KEY || process.env.GOOGLE_MAPS_SERVER_KEY;
@@ -162,3 +163,4 @@ export const POST = withAuth(async (req, context, user) => {
         return NextResponse.json({ success: false, message: "Unable to geocode addresses" }, { status: 500 });
     }
 }, { module: "Tracking Plan", action: "view" });
+export const POST = withBranchAccess(branchHandlerPOST);

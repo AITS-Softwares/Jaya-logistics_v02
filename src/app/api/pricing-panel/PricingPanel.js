@@ -297,6 +297,7 @@
 // export default PricingPanel;
 
 // models/PricingPanel.js
+import branchScopePlugin from '@/lib/branchScopePlugin';
 import mongoose from 'mongoose';
 import softDeletePlugin from '@/lib/softDelete';
 import reapprovalPlugin from '@/lib/reapprovalPlugin';
@@ -702,6 +703,7 @@ pricingPanelSchema.pre('save', function(next) {
   next();
 });
 
+pricingPanelSchema.plugin(branchScopePlugin, { model: 'PricingPanel' });
 pricingPanelSchema.plugin(softDeletePlugin);
 pricingPanelSchema.plugin(reapprovalPlugin);
 const PricingPanel = mongoose.models.PricingPanel || 

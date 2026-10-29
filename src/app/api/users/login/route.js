@@ -167,6 +167,8 @@ export async function POST(req) {
       createdAt: user.createdAt,
       operatingCompanyIds: (user.operatingCompanyIds || []).map((id) => id.toString()),
       accessAllOperatingCompanies: user.accessAllOperatingCompanies === true,
+      accessAllBranches: user.accessAllBranches !== false,
+      branchIds: (user.branchIds || []).map(String),
       activeOperatingCompany: {
         _id: selectedOperatingCompany._id,
         name: selectedOperatingCompany.name,

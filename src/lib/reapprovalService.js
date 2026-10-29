@@ -730,6 +730,10 @@ export async function recordApprovedRevision(type, recordId, user) {
         : Math.max(0, Number(doc.approvedRevision) || 0) + (wasReapproval ? 1 : (doc.approvedRevision ? 0 : 1));
       const before = oldSnapshot || null;
       doc.approvedRevision = revision;
+      if (type === 'vnn' && doc.workflow) {
+        doc.workflow.cancelledOrderReplacementOnly = false;
+        doc.workflow.cancelledOrderReplacementRows = [];
+      }
       doc.approvedSnapshot = storedSnapshot(doc);
       doc.reapprovalState = 'none';
       doc.reapprovalSyncError = '';

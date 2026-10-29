@@ -1,3 +1,4 @@
+import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from 'next/server';
 import connectDb from '@/lib/db';
 import { verifyToken } from '@/lib/auth';
@@ -13,7 +14,7 @@ function userFromRequest(req) {
   try { return verifyToken(req); } catch (error) { return { error: error.message }; }
 }
 
-export async function DELETE(req) {
+async function branchHandlerDELETE(req) {
   await connectDb();
   const user = userFromRequest(req);
   if (user.error) return NextResponse.json({ success: false, message: user.error }, { status: 401 });
@@ -24,7 +25,7 @@ export async function DELETE(req) {
   return send(await deleteRecord({ ...args, reason: body.reason }));
 }
 
-export async function POST(req) {
+async function branchHandlerPOST(req) {
   await connectDb();
   const user = userFromRequest(req);
   if (user.error) return NextResponse.json({ success: false, message: user.error }, { status: 401 });
@@ -32,7 +33,7 @@ export async function POST(req) {
   return send(await restoreRecord({ type: body.type, id: body.id, user }));
 }
 
-export async function GET(req) {
+async function branchHandlerGET(req) {
   await connectDb();
   const user = userFromRequest(req);
   if (user.error) return NextResponse.json({ success: false, message: user.error }, { status: 401 });
@@ -49,3 +50,7 @@ export async function GET(req) {
   const data = await entry.Model.find({ companyId: user.companyId, isDeleted: true }).setOptions({ includeDeleted: true }).sort({ deletedAt: -1 }).lean();
   return NextResponse.json({ success: true, data });
 }
+
+export const DELETE = withBranchAccess(branchHandlerDELETE);
+export const POST = withBranchAccess(branchHandlerPOST);
+export const GET = withBranchAccess(branchHandlerGET);

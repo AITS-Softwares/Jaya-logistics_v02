@@ -4,6 +4,7 @@
 // and VL are all Approved and every LR is created, approved and has its invoice.
 // The first print of each LR is stored; when the last LR gets its first print, the
 // Loading Info Out Date/Time is saved from that moment.
+import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import connectDb from "@/lib/db";
@@ -16,7 +17,7 @@ import { recordOutAfterAllPrinted } from "../../lrOut";
 
 export const runtime = "nodejs";
 
-export const POST = withAuth(async (req, context, user) => {
+const branchHandlerPOST = withAuth(async (req, context, user) => {
     const fail = (message, status) => NextResponse.json({ success: false, message }, { status });
     try {
         const { id: panelId } = await context.params;
@@ -70,3 +71,5 @@ export const POST = withAuth(async (req, context, user) => {
         return fail("Unable to record the print.", 500);
     }
 }, { module: "Loading Info", action: "view" });
+
+export const POST = withBranchAccess(branchHandlerPOST);

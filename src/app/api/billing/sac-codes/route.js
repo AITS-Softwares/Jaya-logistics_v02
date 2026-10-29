@@ -1,4 +1,5 @@
 // src/app/api/billing/sac-codes/route.js
+import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from "next/server";
 import connectDb from "@/lib/db";
 import SacCode from "@/models/SacCodeModel";
@@ -50,7 +51,7 @@ async function validateUser(req, requiredAction = null) {
 }
 
 
-export async function GET(req) {
+async function branchHandlerGET(req) {
     try {
         await connectDb();
         const { user, error, status } = await validateUser(req, "view");
@@ -63,7 +64,7 @@ export async function GET(req) {
     }
 }
 
-export async function POST(req) {
+async function branchHandlerPOST(req) {
     try {
         await connectDb();
         const { user, error, status } = await validateUser(req, "create");
@@ -90,7 +91,7 @@ export async function POST(req) {
 }
 
 // Soft delete: bills already generated keep their SAC code text
-export async function DELETE(req) {
+async function branchHandlerDELETE(req) {
     try {
         await connectDb();
         const { user, error, status } = await validateUser(req, "create");
@@ -104,3 +105,6 @@ export async function DELETE(req) {
         return NextResponse.json({ success: false, message: err.message || "Failed to delete SAC code" }, { status: 500 });
     }
 }
+export const GET = withBranchAccess(branchHandlerGET);
+export const POST = withBranchAccess(branchHandlerPOST);
+export const DELETE = withBranchAccess(branchHandlerDELETE);

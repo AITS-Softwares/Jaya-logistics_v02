@@ -113,6 +113,7 @@
 //   origin is the vehicle's position when known (live location); otherwise the first stop is the start.
 // Returns total distance and duration, per-leg distance and duration, and a planning ETA.
 // Google Routes API computeRoutes, field mask limited to distance + duration. Cached for a few minutes.
+import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { withAuth } from "@/lib/auth";
@@ -161,7 +162,7 @@ function plan(totalSeconds) {
     return { drivingHours: Math.round(drivingHours * 10) / 10, expectedDays, expectedDate: date.toISOString().slice(0, 10), assumptions: { TRUCK_TIME_FACTOR, DRIVING_HOURS_PER_DAY } };
 }
 
-export const POST = withAuth(async (req, context, user) => {
+const branchHandlerPOST = withAuth(async (req, context, user) => {
     const key = process.env.ROUTES_API_KEY || process.env.GOOGLE_MAPS_SERVER_KEY;
     if (!key) {
         return NextResponse.json({ success: false, code: "NOT_CONFIGURED", message: "No server Google key is set (ROUTES_API_KEY or GOOGLE_MAPS_SERVER_KEY)" }, { status: 503 });
@@ -236,3 +237,4 @@ export const POST = withAuth(async (req, context, user) => {
         return NextResponse.json({ success: false, message: "Unable to plan the route" }, { status: err?.name === "AbortError" ? 504 : 500 });
     }
 }, { module: "Tracking Plan", action: "view" });
+export const POST = withBranchAccess(branchHandlerPOST);

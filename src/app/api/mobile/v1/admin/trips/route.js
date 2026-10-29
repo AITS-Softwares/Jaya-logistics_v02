@@ -1,3 +1,4 @@
+import { withBranchAccess } from '@/lib/branchAccess';
 import mongoose from "mongoose";
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
@@ -13,7 +14,7 @@ import { createIdempotencyKey, driverSafeTripDto } from "@/lib/driverMobileCore.
 
 const ACTIVE_STATES = ["assigned", "started", "at_pickup", "in_transit", "at_stop", "delivered"];
 
-export async function GET(req) {
+async function branchHandlerGET(req) {
   if (!(await isDriverMobileEnabled())) return mobileUnavailableResponse();
   const staff = requireDriverMobileStaff(req);
   if (staff.error) return staff.error;
@@ -26,7 +27,7 @@ export async function GET(req) {
   return NextResponse.json({ success: true, data: trips.map(driverSafeTripDto) });
 }
 
-export async function POST(req) {
+async function branchHandlerPOST(req) {
   if (!(await isDriverMobileEnabled())) return mobileUnavailableResponse();
   const staff = requireDriverMobileStaff(req, "edit");
   if (staff.error) return staff.error;
@@ -85,3 +86,6 @@ export async function POST(req) {
     return NextResponse.json({ success: false, code: "TRIP_CREATE_FAILED", message: "Unable to create driver trip." }, { status: 500 });
   }
 }
+
+export const GET = withBranchAccess(branchHandlerGET);
+export const POST = withBranchAccess(branchHandlerPOST);

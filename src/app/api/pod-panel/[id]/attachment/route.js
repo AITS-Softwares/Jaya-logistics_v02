@@ -1,3 +1,4 @@
+import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from "next/server";
 import path from "path";
 import { readFile } from "fs/promises";
@@ -44,7 +45,7 @@ async function readStoredUpload(relativePath) {
 
 // Same approach as the Purchase Panel MEMO: the browser never needs a directly
 // served /uploads URL, and the POD record + company scope are enforced.
-export const GET = withAuth(async (req, context, user) => {
+const branchHandlerGET = withAuth(async (req, context, user) => {
     try {
         const { id } = await context.params;
         const requestedPath = normalizeUploadPath(new URL(req.url).searchParams.get("path"));
@@ -79,3 +80,4 @@ export const GET = withAuth(async (req, context, user) => {
         return NextResponse.json({ success: false, message: "Unable to open attachment." }, { status: 500 });
     }
 }, { module: "Proof Of Delivery", actions: ["create", "edit", "view", "approve"] });
+export const GET = withBranchAccess(branchHandlerGET);

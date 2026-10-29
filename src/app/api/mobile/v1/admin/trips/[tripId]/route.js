@@ -1,3 +1,4 @@
+import { withBranchAccess } from '@/lib/branchAccess';
 import mongoose from "mongoose";
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
@@ -12,7 +13,7 @@ const ACTIVE_STATES = ["assigned", "started", "at_pickup", "in_transit", "at_sto
 
 // Cancellation is deliberately separate from Loading Info: a dispatcher can
 // stop mobile delivery access without changing the established ERP record.
-export async function PATCH(req, { params }) {
+async function branchHandlerPATCH(req, { params }) {
   if (!(await isDriverMobileEnabled())) return mobileUnavailableResponse();
   const staff = requireDriverMobileStaff(req, "edit");
   if (staff.error) return staff.error;
@@ -50,3 +51,5 @@ export async function PATCH(req, { params }) {
     return NextResponse.json({ success: false, code: "TRIP_CANCEL_FAILED", message: "Unable to cancel this mobile trip." }, { status: 500 });
   }
 }
+
+export const PATCH = withBranchAccess(branchHandlerPATCH);

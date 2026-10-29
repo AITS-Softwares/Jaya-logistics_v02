@@ -1,3 +1,4 @@
+import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from 'next/server';
 import mongoose from 'mongoose';
 import dbConnect from '@/lib/db';
@@ -24,7 +25,7 @@ function authorize(req) {
   }
 }
 
-export async function PATCH(req, { params }) {
+async function branchHandlerPATCH(req, { params }) {
   const { id } = params;
   if (!mongoose.Types.ObjectId.isValid(id)) return NextResponse.json({ success: false, message: 'Invalid record id.' }, { status: 400 });
   const auth = authorize(req);
@@ -54,3 +55,5 @@ export async function PATCH(req, { params }) {
   await record.save();
   return NextResponse.json({ success: true, data: { memoStatus: record.approval.memoStatus, memoFile: record.approval.memoFile } });
 }
+
+export const PATCH = withBranchAccess(branchHandlerPATCH);

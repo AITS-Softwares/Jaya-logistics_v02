@@ -1,3 +1,4 @@
+import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from "next/server";
 import path from "path";
 import { GoogleAuth } from "google-auth-library";
@@ -30,7 +31,7 @@ async function ocrText(buf, mimeType) {
     return { status: "ok", text: data.document?.text || "" };
 }
 
-export const POST = withAuth(async (req) => {
+const branchHandlerPOST = withAuth(async (req) => {
     try {
         const { filePath } = await req.json();
         const name = path.basename(String(filePath || ""));
@@ -54,3 +55,4 @@ export const POST = withAuth(async (req) => {
         return NextResponse.json({ success: false, message: "Could not read the invoice." }, { status: 500 });
     }
 }, { module: "Consignment Note", actions: ["create", "edit"] });
+export const POST = withBranchAccess(branchHandlerPOST);
