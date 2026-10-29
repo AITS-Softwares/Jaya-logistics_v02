@@ -12,7 +12,8 @@ export default function SubCompanyPage() {
   const [successMessage, setSuccessMessage] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [editingProfileId, setEditingProfileId] = useState('');
-  const [legalProfile, setLegalProfile] = useState({ legalName: '', gstNumber: '', pan: '', address: '', state: '', pinCode: '', phone: '', email: '' });
+  const [legalProfile, setLegalProfile] = useState({ legalName: '', gstNumber: '', pan: '', address: '', country: '', state: '', pinCode: '', phone: '', email: '', currency: '', bankName: '', bankAccountName: '', bankAccountNumber: '', bankIfsc: '' });
+  const [syncingErpNextId, setSyncingErpNextId] = useState('');
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
@@ -138,11 +139,42 @@ export default function SubCompanyPage() {
       gstNumber: subCompany.legalProfile?.gstNumber || '',
       pan: subCompany.legalProfile?.pan || '',
       address: subCompany.legalProfile?.address || '',
+      country: subCompany.legalProfile?.country || '',
       state: subCompany.legalProfile?.state || '',
       pinCode: subCompany.legalProfile?.pinCode || '',
       phone: subCompany.legalProfile?.phone || '',
       email: subCompany.legalProfile?.email || '',
+      currency: subCompany.legalProfile?.currency || '',
+      bankName: subCompany.legalProfile?.bankName || '',
+      bankAccountName: subCompany.legalProfile?.bankAccountName || '',
+      bankAccountNumber: subCompany.legalProfile?.bankAccountNumber || '',
+      bankIfsc: subCompany.legalProfile?.bankIfsc || '',
     });
+  };
+
+  const syncErpNextCompany = async (subCompany) => {
+    setSyncingErpNextId(subCompany._id);
+    setError(null);
+    setSuccessMessage('');
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/erpnext/companies/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ subCompanyId: subCompany._id }),
+      });
+      const result = await res.json();
+      if (!res.ok || !result.success) {
+        const missing = Array.isArray(result.missingFields) && result.missingFields.length ? ` Missing: ${result.missingFields.join(', ')}.` : '';
+        throw new Error(`${result.message || 'ERPNext Company sync failed.'}${missing}`);
+      }
+      setSuccessMessage(result.created ? `ERPNext Company ${result.erpNextCompany.name} created and mapped.` : `ERPNext Company ${result.erpNextCompany.name} is already mapped.`);
+      fetchSubCompanies(pagination.page, searchTerm);
+    } catch (syncError) {
+      setError(syncError.message || 'ERPNext Company sync failed.');
+    } finally {
+      setSyncingErpNextId('');
+    }
   };
 
   const saveBillingDetails = async (e) => {
@@ -159,7 +191,7 @@ export default function SubCompanyPage() {
       const result = await res.json();
       if (!res.ok || !result.success) throw new Error(result.message || 'Failed to save billing details');
       setEditingProfileId('');
-      setSuccessMessage('Billing details updated');
+      setSuccessMessage(result.message || 'Billing details updated');
       fetchSubCompanies(pagination.page, searchTerm);
     } catch (saveError) {
       setError(saveError.message || 'Failed to save billing details');
@@ -266,9 +298,11 @@ export default function SubCompanyPage() {
                       <div>
                         <div className="font-medium text-gray-900">{subCompany.name}</div>
                         <div className="text-sm">Code: <span className="font-mono font-bold text-blue-600">{subCompany.code}</span></div>
+                        {subCompany.isOperatingCompany && <div className="mt-1 text-xs text-slate-500">ERPNext company: <span className="font-medium text-slate-700">{subCompany.erpNextMapping?.companyName || subCompany.name}</span> · {subCompany.erpNextMapping?.status === 'ready_for_erpnext_setup' ? 'Ready for ERPNext setup' : 'Legal details pending'}</div>}
                         <div className="text-xs text-gray-400">Created: {new Date(subCompany.createdAt).toLocaleString()}</div>
                       </div>
                       <div className="flex gap-2">
+                        {subCompany.isOperatingCompany && <button type="button" onClick={() => syncErpNextCompany(subCompany)} className="rounded bg-emerald-600 px-3 py-1 text-sm text-white hover:bg-emerald-700 disabled:opacity-50" disabled={syncingErpNextId === subCompany._id}>{syncingErpNextId === subCompany._id ? 'Syncing…' : 'Sync ERPNext Company'}</button>}
                         <button type="button" onClick={() => editBillingDetails(subCompany)} className="rounded bg-indigo-600 px-3 py-1 text-sm text-white hover:bg-indigo-700">Billing details</button>
                         <button onClick={() => deleteSubCompany(subCompany._id)} className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 disabled:opacity-50 text-sm" disabled={deletingId === subCompany._id}>
                           {deletingId === subCompany._id ? 'Deleting...' : 'Delete'}
@@ -280,11 +314,18 @@ export default function SubCompanyPage() {
                         <label className="text-xs font-semibold">Legal name<input className="mt-1 w-full rounded border px-3 py-2 text-sm" value={legalProfile.legalName} onChange={(e) => setLegalProfile(p => ({ ...p, legalName: e.target.value }))} /></label>
                         <label className="text-xs font-semibold">GSTIN<input className="mt-1 w-full rounded border px-3 py-2 text-sm" value={legalProfile.gstNumber} onChange={(e) => setLegalProfile(p => ({ ...p, gstNumber: e.target.value }))} /></label>
                         <label className="text-xs font-semibold">PAN<input className="mt-1 w-full rounded border px-3 py-2 text-sm" value={legalProfile.pan} onChange={(e) => setLegalProfile(p => ({ ...p, pan: e.target.value }))} /></label>
+                        <label className="text-xs font-semibold">Country<input className="mt-1 w-full rounded border px-3 py-2 text-sm" value={legalProfile.country} onChange={(e) => setLegalProfile(p => ({ ...p, country: e.target.value }))} placeholder="India" /></label>
+                        <label className="text-xs font-semibold">Currency<input className="mt-1 w-full rounded border px-3 py-2 text-sm" value={legalProfile.currency} onChange={(e) => setLegalProfile(p => ({ ...p, currency: e.target.value }))} placeholder="INR" /></label>
                         <label className="text-xs font-semibold">State<input className="mt-1 w-full rounded border px-3 py-2 text-sm" value={legalProfile.state} onChange={(e) => setLegalProfile(p => ({ ...p, state: e.target.value }))} /></label>
                         <label className="text-xs font-semibold">PIN code<input className="mt-1 w-full rounded border px-3 py-2 text-sm" value={legalProfile.pinCode} onChange={(e) => setLegalProfile(p => ({ ...p, pinCode: e.target.value }))} /></label>
                         <label className="text-xs font-semibold">Phone<input className="mt-1 w-full rounded border px-3 py-2 text-sm" value={legalProfile.phone} onChange={(e) => setLegalProfile(p => ({ ...p, phone: e.target.value }))} /></label>
                         <label className="text-xs font-semibold sm:col-span-2">Address<textarea rows={2} className="mt-1 w-full rounded border px-3 py-2 text-sm" value={legalProfile.address} onChange={(e) => setLegalProfile(p => ({ ...p, address: e.target.value }))} /></label>
                         <label className="text-xs font-semibold sm:col-span-2">Email<input type="email" className="mt-1 w-full rounded border px-3 py-2 text-sm" value={legalProfile.email} onChange={(e) => setLegalProfile(p => ({ ...p, email: e.target.value }))} /></label>
+                        <div className="sm:col-span-2 mt-2 border-t pt-3 text-xs font-semibold text-slate-600">Bank details (recommended before payment integration)</div>
+                        <label className="text-xs font-semibold">Bank name<input className="mt-1 w-full rounded border px-3 py-2 text-sm" value={legalProfile.bankName} onChange={(e) => setLegalProfile(p => ({ ...p, bankName: e.target.value }))} /></label>
+                        <label className="text-xs font-semibold">Account name<input className="mt-1 w-full rounded border px-3 py-2 text-sm" value={legalProfile.bankAccountName} onChange={(e) => setLegalProfile(p => ({ ...p, bankAccountName: e.target.value }))} /></label>
+                        <label className="text-xs font-semibold">Account number<input className="mt-1 w-full rounded border px-3 py-2 text-sm" value={legalProfile.bankAccountNumber} onChange={(e) => setLegalProfile(p => ({ ...p, bankAccountNumber: e.target.value }))} /></label>
+                        <label className="text-xs font-semibold">IFSC<input className="mt-1 w-full rounded border px-3 py-2 text-sm" value={legalProfile.bankIfsc} onChange={(e) => setLegalProfile(p => ({ ...p, bankIfsc: e.target.value }))} /></label>
                         <div className="flex gap-2 sm:col-span-2">
                           <button disabled={loading} className="rounded bg-emerald-600 px-4 py-2 text-sm text-white disabled:opacity-50">{loading ? 'Saving…' : 'Save billing details'}</button>
                           <button type="button" onClick={() => setEditingProfileId('')} className="rounded border px-4 py-2 text-sm">Cancel</button>

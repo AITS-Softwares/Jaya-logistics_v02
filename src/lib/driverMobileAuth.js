@@ -32,6 +32,14 @@ export async function isDriverAllowedForMobileRollout(mobile, companyId) {
   return isDriverAllowedInRollout(mobile, config?.rolloutMode || process.env.DRIVER_MOBILE_ROLLOUT_MODE, new Set(config?.pilotMobiles || pilotMobileAllowList(process.env.DRIVER_MOBILE_PILOT_MOBILES)));
 }
 
+// Rollout answers whether the company is accepting mobile users.  The driver
+// master answers whether this individual is authorised.  Keep both checks so
+// production rollout never makes every ERP driver a mobile-app user by
+// accident.
+export function hasDriverMobileAccess(driver) {
+  return driver?.status === "active" && driver?.mobileAccessEnabled === true && driver?.mobileAccessStatus === "enabled";
+}
+
 async function secret(companyId) {
   const config = companyId ? await getDriverMobileConfig(companyId, { includeSecret: true }) : null;
   const value = (config?.encryptedJwtSecret ? decryptDriverMobileSecret(config.encryptedJwtSecret) : "") || process.env.DRIVER_MOBILE_JWT_SECRET || process.env.JWT_SECRET;
@@ -98,7 +106,7 @@ export async function rotateMobileSession(refreshToken) {
     DriverProfile.findOne({ _id: session.driverId, companyId: session.companyId, status: "active" }),
     session.deviceId ? DriverDevice.findOne({ _id: session.deviceId, companyId: session.companyId, status: "approved" }) : null,
   ]);
-  if (!driver || (session.deviceId && !device)) {
+  if (!driver || !hasDriverMobileAccess(driver) || (session.deviceId && !device)) {
     session.revokedAt = new Date();
     session.revokeReason = "identity_or_device_inactive";
     await session.save();
@@ -127,6 +135,7 @@ export async function requireMobileAuth(req, { requireDevice = true } = {}) {
   if (!session || session.revokedAt || session.expiresAt <= new Date()) return { error: mobileError("The driver session is no longer active.") };
   const driver = await DriverProfile.findOne({ _id: payload.sub, companyId: payload.companyId, status: "active" });
   if (!driver) return { error: mobileError("The driver account is not active.", 403, "DRIVER_INACTIVE") };
+  if (!hasDriverMobileAccess(driver)) return { error: mobileError("Mobile access is not enabled for this driver. Contact your dispatcher.", 403, "DRIVER_MOBILE_ACCESS_DISABLED") };
   if (!(await isDriverAllowedForMobileRollout(driver.mobileE164, payload.companyId))) return { error: mobileError("Mobile pilot access is not enabled for this driver.", 403, "PILOT_NOT_ENROLLED") };
   let device = null;
   if (payload.deviceId) {

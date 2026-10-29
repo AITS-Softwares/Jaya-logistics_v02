@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import DriverProfile from "@/models/DriverProfile";
-import { createMobileSession, isDriverAllowedForMobileRollout, isDriverMobileEnabled, mobileUnavailableResponse, validateDriverPin } from "@/lib/driverMobileAuth";
+import { createMobileSession, hasDriverMobileAccess, isDriverAllowedForMobileRollout, isDriverMobileEnabled, mobileUnavailableResponse, validateDriverPin } from "@/lib/driverMobileAuth";
 import { normalizeDriverMobile } from "@/lib/driverMobileCore.mjs";
 
 const attempts = new Map();
@@ -35,6 +35,7 @@ export async function POST(req) {
       return NextResponse.json({ success: false, code: "INVALID_CREDENTIALS", message: "Mobile number or PIN is invalid." }, { status: 401 });
     }
     if (!(await isDriverMobileEnabled(driver.companyId))) return mobileUnavailableResponse();
+    if (!hasDriverMobileAccess(driver)) return NextResponse.json({ success: false, code: "DRIVER_MOBILE_ACCESS_DISABLED", message: "Mobile access is not enabled for this driver. Contact your dispatcher." }, { status: 403 });
     if (!(await isDriverAllowedForMobileRollout(driver.mobileE164, driver.companyId))) return NextResponse.json({ success: false, code: "PILOT_NOT_ENROLLED", message: "Mobile pilot access is not enabled for this driver." }, { status: 403 });
     const session = await createMobileSession({ companyId: driver.companyId, driverId: driver._id });
     return NextResponse.json({
@@ -44,7 +45,7 @@ export async function POST(req) {
         refreshToken: session.refreshToken,
         expiresInSeconds: session.expiresInSeconds,
         requiresDeviceRegistration: true,
-        driver: { id: String(driver._id), displayName: driver.displayName, preferredLanguage: driver.preferredLanguage },
+        driver: { id: String(driver._id), displayName: driver.displayName, preferredLanguage: driver.preferredLanguage, passwordChangeRequired: driver.passwordChangeRequired === true },
       },
     });
   } catch (error) {

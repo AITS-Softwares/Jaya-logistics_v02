@@ -966,6 +966,7 @@ export default function ItemManagement() {
   const [uploading, setUploading] = useState(false);
   const [submitting,setSubmitting]= useState(false);
   const [syncingFrappe, setSyncingFrappe] = useState(false);
+  const [syncingItemId, setSyncingItemId] = useState("");
   const [frappeSyncProgress, setFrappeSyncProgress] = useState(null);
   const [step,      setStep]      = useState(1);
   const [id,        setId]        = useState({ ...INITIAL });
@@ -1286,6 +1287,18 @@ export default function ItemManagement() {
       setSyncingFrappe(false);
       setTimeout(() => setFrappeSyncProgress(null), 1200);
     }
+  };
+
+  const syncItemToFrappe = async (item) => {
+    setSyncingItemId(item._id);
+    try {
+      const token = localStorage.getItem("token");
+      const { data } = await axios.post("/api/items/sync", { itemId: item._id }, { headers: { Authorization: `Bearer ${token}` } });
+      if (data.summary.failed) throw new Error(data.failures?.[0]?.message || "Item sync failed");
+      toast.success(`${item.itemCode} synced to ERPNext.`);
+      fetchItems();
+    } catch (error) { toast.error(error.response?.data?.message || error.message || "Item sync failed"); }
+    finally { setSyncingItemId(""); }
   };
 
   // ── Derived ──
@@ -1935,6 +1948,7 @@ export default function ItemManagement() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex gap-1.5">
+                        <button onClick={() => syncItemToFrappe(it)} disabled={syncingItemId === it._id} title="Sync this item to ERPNext" className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white disabled:opacity-50 flex items-center justify-center transition-all"><FaCloudUploadAlt className="text-xs" /></button>
                         <button onClick={() => handleEdit(it)} className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-500 hover:bg-indigo-500 hover:text-white flex items-center justify-center transition-all">
                           <FaEdit className="text-xs" />
                         </button>

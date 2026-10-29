@@ -19,6 +19,7 @@ export default function SalesInvoiceList() {
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
   const [uploading, setUploading] = useState(false);
+  const [queueingId, setQueueingId] = useState(null);
   const router = useRouter();
 
   const fetchInvoices = async () => {
@@ -70,6 +71,22 @@ export default function SalesInvoiceList() {
       const data = { ...invoice, sourceId: invoice._id, sourceModel: "salesinvoice" };
       sessionStorage.setItem("creditMemoData", JSON.stringify(data));
       router.push("/admin/credit-memo-veiw/new");
+    }
+  };
+
+  const queueForErpNext = async (id) => {
+    setQueueingId(id);
+    try {
+      const token = localStorage.getItem("token");
+      const { data } = await axios.post("/api/erpnext/queue", { sourceType: "sales_invoice", sourceId: id }, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      toast.success(data?.data?.state === "queued" ? "Invoice queued for ERPNext review" : "ERPNext queue updated");
+      await fetchInvoices();
+    } catch (error) {
+      toast.error(error?.response?.data?.message || "Could not queue ERPNext export");
+    } finally {
+      setQueueingId(null);
     }
   };
 
@@ -246,7 +263,7 @@ export default function SalesInvoiceList() {
                     <td className="px-4 py-3"><StatusBadge status={o.status} /></td>
                     <td className="px-4 py-3 font-mono font-bold text-gray-800">₹{Number(o.grandTotal || 0).toLocaleString("en-IN")}</td>
                     <td className="px-4 py-3">
-                      <InvoiceRowMenu invoice={o} onDelete={handleDelete} onCopy={handleCopyTo} />
+                      <InvoiceRowMenu invoice={o} onDelete={handleDelete} onCopy={handleCopyTo} onQueue={queueForErpNext} queueing={queueingId === o._id} />
                     </td>
                   </tr>
                 ))}
@@ -270,7 +287,7 @@ export default function SalesInvoiceList() {
                     <span className="font-mono text-[11px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">{o.invoiceNumber || `#${idx + 1}`}</span>
                     <p className="font-bold text-gray-900 text-sm mt-1.5">{o.customerName}</p>
                   </div>
-                  <InvoiceRowMenu invoice={o} onDelete={handleDelete} onCopy={handleCopyTo} />
+                  <InvoiceRowMenu invoice={o} onDelete={handleDelete} onCopy={handleCopyTo} onQueue={queueForErpNext} queueing={queueingId === o._id} />
                 </div>
                 <div className="flex flex-wrap gap-3 mt-2">
                   <span className="text-xs text-gray-400">{o.invoiceDate ? new Date(o.invoiceDate).toLocaleDateString("en-GB") : "—"}</span>
@@ -287,13 +304,14 @@ export default function SalesInvoiceList() {
   );
 }
 
-function InvoiceRowMenu({ invoice, onDelete, onCopy }) {
+function InvoiceRowMenu({ invoice, onDelete, onCopy, onQueue, queueing }) {
   const router = useRouter();
 
   const actions = [
     { icon: <FaEye />,   label: "View",             onClick: () => router.push(`/admin/sales-invoice-view/view/${invoice._id}`) },
     { icon: <FaEdit />,  label: "Edit",             onClick: () => router.push(`/admin/sales-invoice-view/new?editId=${invoice._id}`) },
     { icon: <FaCopy />,  label: "Copy → Credit Memo", onClick: () => onCopy(invoice, "CreditMemo") },
+    { icon: <FaCloudUploadAlt />, label: queueing ? "Queueing ERPNext..." : "Queue ERPNext", onClick: () => onQueue(invoice._id), disabled: queueing },
     { icon: <FaEnvelope />, label: "Email",         onClick: async () => {
         try {
           const res = await axios.post("/api/email", { type: "invoice", id: invoice._id });

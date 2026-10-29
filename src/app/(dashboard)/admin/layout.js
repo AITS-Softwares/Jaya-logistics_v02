@@ -2510,6 +2510,15 @@ export default function Layout({ children }) {
                     onClick={closeSidebar}
                     isActive={isActive("/admin/Tracking-Plan")}
                   />
+                  {canView("Tracking Plan") && (
+                    <Item
+                      href="/admin/Driver-Mobile"
+                      icon={<HiLocationMarker />}
+                      label="Driver Mobile"
+                      onClick={closeSidebar}
+                      isActive={pathname.startsWith("/admin/Driver-Mobile")}
+                    />
+                  )}
                   <Item
                     href="/admin/Detention-Rule-Master"
                     icon={<HiCog />}

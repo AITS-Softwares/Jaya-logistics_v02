@@ -4,6 +4,7 @@ import Item from "@/models/ItemModels";
 import Customer from "@/models/CustomerModel";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import { validateMasterDataRequest } from '@/lib/masterDataPermission';
+import { syncItem } from '@/lib/frappe-item.mjs';
 
 /* -------------------------------
    ✅ Role-Based Access
@@ -109,7 +110,10 @@ export async function PUT(req, { params }) {
       return NextResponse.json({ success: false, message: "Item not found or unauthorized" }, { status: 404 });
     }
 
-    return NextResponse.json({ success: true, data: updatedItem }, { status: 200 });
+    const frappeSync = await syncItem(updatedItem);
+    updatedItem.frappeSync = { ...frappeSync, attemptedAt: new Date() };
+    await updatedItem.save();
+    return NextResponse.json({ success: true, data: updatedItem, frappeSync }, { status: 200 });
   } catch (err) {
     console.error("PUT /item/:id error:", err);
     return NextResponse.json({ success: false, message: "Failed to update item" }, { status: 500 });

@@ -38,6 +38,16 @@ public class DriverTrackingPlugin extends Plugin {
 
   @PermissionCallback
   public void permissionCallback(PluginCall call) {
+    if (Build.VERSION.SDK_INT >= 29 && getPermissionState("backgroundLocation") != com.getcapacitor.PermissionState.GRANTED) { requestPermissionForAlias("backgroundLocation", call, "backgroundPermissionCallback"); return; }
+    resolveReadyPermissions(call);
+  }
+
+  @PermissionCallback
+  public void backgroundPermissionCallback(PluginCall call) {
+    resolveReadyPermissions(call);
+  }
+
+  private void resolveReadyPermissions(PluginCall call) {
     JSObject result = new JSObject();
     boolean ready = getPermissionState("location") == com.getcapacitor.PermissionState.GRANTED;
     boolean backgroundLocationGranted = Build.VERSION.SDK_INT < 29 || getPermissionState("backgroundLocation") == com.getcapacitor.PermissionState.GRANTED;

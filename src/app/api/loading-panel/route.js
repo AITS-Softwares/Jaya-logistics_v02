@@ -1169,7 +1169,12 @@ import OrderPanel from '@/app/api/order-panel/OrderPanel';
 import { findLRsForPanel, getLRCompletion, LR_COMPLETION_SELECT } from "./findLRs";
 import { validateOpenOrderRows } from '@/lib/orderRowStatus';
 import { handleModuleDelete } from '@/lib/deletion/handler';
+<<<<<<< Updated upstream
 import { notifyModuleCreateUsers, notifyModuleApprovers, notifyModuleDecision } from '@/lib/workflowNotifications';
+=======
+import { notifyModuleCreateUsers, notifyModuleApprovers } from '@/lib/workflowNotifications';
+import { syncOperationalDriverProfile } from '@/lib/driverOperationalSync';
+>>>>>>> Stashed changes
 
 // ── PERMISSION FUNCTIONS ──
 
@@ -2091,6 +2096,15 @@ async function branchHandlerPOST(req) {
     // Create and save
     const newLoadingPanel = new LoadingPanel(loadingPanelData);
     const savedPanel = await newLoadingPanel.save({ validateBeforeSave: !isDraftSave });
+    await syncOperationalDriverProfile({
+      companyId: user.companyId,
+      driverName: savedPanel.vehicleInfo?.driverName,
+      mobile: savedPanel.vehicleInfo?.driverMobileNo,
+      licenceNumber: savedPanel.vehicleInfo?.drivingLicense,
+      source: 'loading',
+      sourceReference: savedPanel.vehicleArrivalNo,
+      createdBy: user.id,
+    });
     if (!isDraftSave) await captureSourceDependencies('loading', savedPanel, user.companyId);
     if (!isDraftSave) {
       await notifyConsignmentNoteTeamLoadingInfoReady(user, savedPanel);
@@ -2430,6 +2444,15 @@ async function branchHandlerPUT(req) {
       { $set: updateData },
       { new: true, runValidators: saveMode !== 'draft' }
     );
+    await syncOperationalDriverProfile({
+      companyId: user.companyId,
+      driverName: updatedPanel.vehicleInfo?.driverName,
+      mobile: updatedPanel.vehicleInfo?.driverMobileNo,
+      licenceNumber: updatedPanel.vehicleInfo?.drivingLicense,
+      source: 'loading',
+      sourceReference: updatedPanel.vehicleArrivalNo,
+      createdBy: user.id,
+    });
 
     if (saveMode === 'submit' && (wasDraft || isReapprovalEdit) && updatedPanel?.panelStatus === 'Submitted') {
       await notifyConsignmentNoteTeamLoadingInfoReady(user, updatedPanel);

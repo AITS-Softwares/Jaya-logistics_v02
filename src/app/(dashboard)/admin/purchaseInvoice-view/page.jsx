@@ -23,6 +23,7 @@ export default function PurchaseInvoiceList() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
+  const [queueingId, setQueueingId] = useState(null);
   const router = useRouter();
 
   const fetchInvoices = async () => {
@@ -89,6 +90,22 @@ export default function PurchaseInvoiceList() {
     if (destination === "debitNote") {
       sessionStorage.setItem("invoiceData", JSON.stringify(invoice));
       router.push("/admin/debit-notes-view/new");
+    }
+  };
+
+  const queueForErpNext = async (id) => {
+    setQueueingId(id);
+    try {
+      const token = localStorage.getItem("token");
+      const { data } = await axios.post("/api/erpnext/queue", { sourceType: "purchase_invoice", sourceId: id }, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      toast.success(data?.data?.state === "queued" ? "Invoice queued for ERPNext review" : "ERPNext queue updated");
+      await fetchInvoices();
+    } catch (error) {
+      toast.error(error?.response?.data?.message || "Could not queue ERPNext export");
+    } finally {
+      setQueueingId(null);
     }
   };
 
@@ -218,7 +235,7 @@ export default function PurchaseInvoiceList() {
                        ₹{Number(invoice.grandTotal || 0).toLocaleString("en-IN")}
                     </td>
                     <td className="px-4 py-4">
-                      <InvoiceRowMenu invoice={invoice} onDelete={handleDelete} onCopyTo={handleCopyTo} />
+                      <InvoiceRowMenu invoice={invoice} onDelete={handleDelete} onCopyTo={handleCopyTo} onQueue={queueForErpNext} queueing={queueingId === invoice._id} />
                     </td>
                   </tr>
                 ))}
@@ -234,7 +251,7 @@ export default function PurchaseInvoiceList() {
                   <span className="font-mono text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">
                     {invoice.documentNumberPurchaseInvoice || `#${idx + 1}`}
                   </span>
-                  <InvoiceRowMenu invoice={invoice} onDelete={handleDelete} onCopyTo={handleCopyTo} />
+                  <InvoiceRowMenu invoice={invoice} onDelete={handleDelete} onCopyTo={handleCopyTo} onQueue={queueForErpNext} queueing={queueingId === invoice._id} />
                 </div>
                 <h3 className="font-bold text-gray-900 text-sm">{invoice.supplierName}</h3>
                 <div className="flex justify-between items-end mt-3">
@@ -258,13 +275,14 @@ export default function PurchaseInvoiceList() {
   );
 }
 
-function InvoiceRowMenu({ invoice, onDelete, onCopyTo }) {
+function InvoiceRowMenu({ invoice, onDelete, onCopyTo, onQueue, queueing }) {
   const router = useRouter();
 
   const actions = [
     { icon: <FaEye />, label: "View Invoice", onClick: () => router.push(`/admin/purchaseInvoice-view/view/${invoice._id}`) },
     { icon: <FaEdit />, label: "Edit Invoice", onClick: () => router.push(`/admin/purchaseInvoice-view/new/?editId=${invoice._id}`) },
     { icon: <FaCopy />, label: "Copy → Debit Note", onClick: () => onCopyTo(invoice, "debitNote") },
+    { icon: <FaFileInvoice />, label: queueing ? "Queueing ERPNext..." : "Queue ERPNext", onClick: () => onQueue(invoice._id), disabled: queueing },
     {
       icon: <FaEnvelope />,
       label: "Email PDF",

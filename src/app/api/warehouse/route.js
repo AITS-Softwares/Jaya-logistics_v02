@@ -5,6 +5,8 @@ import Country from "@/app/api/countries/schema";
 import State from "@/app/api/states/schema";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import { validateMasterDataRequest } from '@/lib/masterDataPermission';
+import { activeOperatingCompanyId } from "@/lib/companyScope";
+import SubCompany from "@/models/SubCompany";
 
 // ✅ Role-based Access Check
 function isAuthorized(user) {
@@ -81,6 +83,12 @@ export async function POST(req) {
 
   try {
     const data = await req.json();
+    let operatingCompanyId;
+    try { operatingCompanyId = activeOperatingCompanyId(user); } catch (scopeError) {
+      return NextResponse.json({ success: false, message: scopeError.message }, { status: 403 });
+    }
+    const operatingCompany = await SubCompany.findOne({ _id: operatingCompanyId, companyId: user.companyId, isOperatingCompany: true, isActive: true }).select("name code").lean();
+    if (!operatingCompany) return NextResponse.json({ success: false, message: "Selected operating company is unavailable." }, { status: 403 });
 
     // ✅ Validate Required Fields
      if (!data.warehouseCode || !data.warehouseName || !data.country || !data.state) {
@@ -99,6 +107,9 @@ export async function POST(req) {
     const newWarehouse = new Warehouse({
       ...data,
       companyId: user.companyId,
+      subCompanyId: operatingCompany._id,
+      subCompanyName: operatingCompany.name,
+      subCompanyCode: operatingCompany.code,
       createdBy: user.id,
     });
 

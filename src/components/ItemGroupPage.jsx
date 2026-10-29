@@ -358,7 +358,7 @@ import axios from "axios";
 import {
   FaEdit, FaTrash, FaPlus, FaSearch, FaCheck,
   FaExclamationCircle, FaArrowLeft, FaTag, FaList,
-  FaFolder, FaFolderOpen, FaPlusCircle, FaMinusCircle
+  FaFolder, FaFolderOpen, FaPlusCircle, FaMinusCircle, FaCloudUploadAlt
 } from "react-icons/fa";
 import { toast } from "react-toastify";
 
@@ -376,6 +376,7 @@ export default function ItemGroupPage() {
   const [newSubgroup, setNewSubgroup] = useState("");
   const [errs, setErrs] = useState({});
   const [expandedGroups, setExpandedGroups] = useState({});
+  const [syncingGroupId, setSyncingGroupId] = useState("");
 
   useEffect(() => { fetchItemGroups(); }, []);
 
@@ -455,6 +456,17 @@ export default function ItemGroupPage() {
         toast.success("Item Group deleted"); 
       }
     } catch { toast.error("Error deleting item group"); }
+  };
+
+  const syncItemGroup = async (group) => {
+    setSyncingGroupId(group._id);
+    try {
+      const token = localStorage.getItem("token");
+      const { data } = await axios.post("/api/itemGroups/sync", { itemGroupId: group._id }, { headers: { Authorization: `Bearer ${token}` } });
+      if (!data.success) throw new Error(data.message || data.frappeSync?.message || "Item Group sync failed");
+      toast.success(`${group.name} synced to ERPNext.`); fetchItemGroups();
+    } catch (error) { toast.error(error.response?.data?.message || error.message || "Item Group sync failed"); }
+    finally { setSyncingGroupId(""); }
   };
 
   const reset = () => { 
@@ -671,6 +683,7 @@ export default function ItemGroupPage() {
                         {/* Actions */}
                         <td className="px-4 py-3">
                           <div className="flex gap-1.5">
+                            <button onClick={() => syncItemGroup(g)} disabled={syncingGroupId === g._id} title="Sync this Item Group to ERPNext" className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white disabled:opacity-50 flex items-center justify-center transition-all"><FaCloudUploadAlt className="text-xs" /></button>
                             <button onClick={() => handleEdit(g)}
                               className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-500 hover:bg-indigo-500 hover:text-white flex items-center justify-center transition-all">
                               <FaEdit className="text-xs" />

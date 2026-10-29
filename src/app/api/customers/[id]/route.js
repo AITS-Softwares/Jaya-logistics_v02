@@ -3,6 +3,7 @@ import dbConnect from "@/lib/db";
 import Customer from "@/models/CustomerModel";
 import { identifierFormatError } from "@/lib/identifierFormats";
 import { validateMasterDataRequest } from "@/lib/masterDataPermission";
+import { syncCustomer } from "@/lib/frappe-customer.mjs";
 
 export async function GET(req, { params }) {
   await dbConnect();
@@ -60,7 +61,10 @@ export async function PUT(req, { params }) {
       return NextResponse.json({ success: false, message: "Customer not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ success: true, data: updated }, { status: 200 });
+    const frappeSync = await syncCustomer(updated);
+    updated.frappeSync = { ...frappeSync, attemptedAt: new Date() };
+    await updated.save();
+    return NextResponse.json({ success: true, data: updated, frappeSync }, { status: 200 });
   } catch (error) {
     console.error("PUT /customers/[id] error:", error);
     return NextResponse.json({ success: false, message: "Failed to update customer" }, { status: 500 });

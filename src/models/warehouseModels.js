@@ -19,6 +19,10 @@ const WarehouseSchema = new mongoose.Schema(
       ref: "Company", 
       required: true 
     },
+    subCompanyId: { type: mongoose.Schema.Types.ObjectId, ref: "SubCompany", default: null },
+    subCompanyCode: { type: String, trim: true, default: "" },
+    subCompanyName: { type: String, trim: true, default: "" },
+    frappeSync: { status: { type: String, enum: ["not_configured", "synced", "failed"] }, name: String, message: String, attemptedAt: Date },
     createdBy: { 
       type: mongoose.Schema.Types.ObjectId, 
       ref: "CompanyUser" 

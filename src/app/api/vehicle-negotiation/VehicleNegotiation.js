@@ -1143,6 +1143,8 @@ const vehicleNegotiationSchema = new mongoose.Schema({
     vehicleNo: { type: String, default: '' },
     vehicleId: { type: String, default: '' },
     vehicleData: { type: mongoose.Schema.Types.Mixed, default: null },
+    driverName: { type: String, default: '', trim: true, maxlength: 120 },
+    drivingLicense: { type: String, default: '', trim: true, maxlength: 80 },
     mobile: { type: String, default: '' },
     purchaseType: { type: String, default: '' },
     paymentTerms: { type: String, default: '' },

@@ -3,6 +3,7 @@ import dbConnect from "@/lib/db.js";
 import Supplier from "@/models/SupplierModels";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import { validateMasterDataRequest } from '@/lib/masterDataPermission';
+import { syncSupplier } from '@/lib/frappe-supplier.mjs';
 
 function isAuthorized(user) {
   return user?.type === "company" || user?.role === "Admin" || user?.permissions?.includes("supplier");
@@ -74,7 +75,10 @@ export async function PUT(req, { params }) {
       return NextResponse.json({ success: false, message: "Supplier not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ success: true, data: updated }, { status: 200 });
+    const frappeSync = await syncSupplier(updated);
+    updated.frappeSync = { ...frappeSync, attemptedAt: new Date() };
+    await updated.save();
+    return NextResponse.json({ success: true, data: updated, frappeSync }, { status: 200 });
   } catch (err) {
     console.error("PUT supplier error:", err);
     return NextResponse.json({ success: false, message: "Failed to update supplier" }, { status: 500 });

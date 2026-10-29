@@ -1,4 +1,5 @@
 import SubCompany from "@/models/SubCompany";
+import { erpNextMappingSnapshot } from "@/lib/erpnext-company-mapping.mjs";
 
 export const OPERATING_COMPANY_SEEDS = [
   { code: "JGL", name: "Jaya Global Logistics", documentPrefix: "JGL" },
@@ -19,12 +20,39 @@ export async function ensureOperatingCompanies(companyId, createdBy = null) {
         isActive: true,
         isOperatingCompany: true,
         legalProfile: { legalName: seed.name, documentPrefix: seed.documentPrefix },
+        erpNextMapping: {
+          companyName: seed.name,
+          status: "pending_legal_profile",
+        },
       });
-    } else if (!operatingCompany.isOperatingCompany) {
-      operatingCompany.isOperatingCompany = true;
-      if (!operatingCompany.legalProfile?.legalName) operatingCompany.legalProfile.legalName = operatingCompany.name;
-      if (!operatingCompany.legalProfile?.documentPrefix) operatingCompany.legalProfile.documentPrefix = seed.documentPrefix;
-      await operatingCompany.save();
+    } else {
+      let changed = false;
+      if (!operatingCompany.isOperatingCompany) {
+        operatingCompany.isOperatingCompany = true;
+        changed = true;
+      }
+      if (!operatingCompany.legalProfile?.legalName) {
+        operatingCompany.legalProfile.legalName = operatingCompany.name;
+        changed = true;
+      }
+      if (!operatingCompany.legalProfile?.documentPrefix) {
+        operatingCompany.legalProfile.documentPrefix = seed.documentPrefix;
+        changed = true;
+      }
+      if (!operatingCompany.erpNextMapping?.companyName) {
+        // Preserve the existing local entity name as the intended ERPNext
+        // name. This is deliberately not an external sync or rename.
+        const mapping = erpNextMappingSnapshot(operatingCompany);
+        operatingCompany.erpNextMapping = {
+          ...(operatingCompany.erpNextMapping?.toObject?.() || operatingCompany.erpNextMapping || {}),
+          companyName: mapping.companyName,
+          status: mapping.status,
+          lastProfileUpdatedAt: mapping.lastProfileUpdatedAt,
+          lastError: mapping.lastError,
+        };
+        changed = true;
+      }
+      if (changed) await operatingCompany.save();
     }
     result.push(operatingCompany);
   }

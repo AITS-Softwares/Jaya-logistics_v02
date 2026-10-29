@@ -12,7 +12,9 @@ export async function POST(req) {
     const { user, error, status } = await validateMasterDataRequest(req, 'edit', 'Customers');
     if (error) return NextResponse.json({ success: false, message: error }, { status });
 
-    const customers = await Customer.find({ companyId: user.companyId }).sort({ createdAt: 1 });
+    const body = await req.json().catch(() => ({}));
+    const customerId = String(body.customerId || "").trim();
+    const customers = await Customer.find({ companyId: user.companyId, ...(customerId ? { _id: customerId } : {}) }).sort({ createdAt: 1 });
     const summary = { total: customers.length, synced: 0, failed: 0, notConfigured: 0 };
     const failures = [];
 

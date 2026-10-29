@@ -8,6 +8,7 @@ import { activeOperatingCompanyId, companyScopeFilter } from '@/lib/companyScope
 import { isVnnReadyForDownstream } from '@/lib/vehicleNegotiationWorkflow';
 import { notifyModuleCreateUsers } from '@/lib/workflowNotifications';
 import { recordApprovedRevision } from '@/lib/reapprovalService';
+import { syncOperationalDriverProfile } from '@/lib/driverOperationalSync';
 
 const MODULE = 'Vehicle Negotiation Placement';
 
@@ -37,9 +38,9 @@ async function branchHandlerPATCH(req, { params }) {
 
   const body = await req.json();
   const data = body.approval || {};
-  const required = ['vehicleNo', 'mobile', 'purchaseType', 'paymentTerms'];
+  const required = ['vehicleNo', 'driverName', 'drivingLicense', 'mobile', 'purchaseType', 'paymentTerms'];
   if (required.some((key) => !String(data[key] || '').trim())) {
-    return NextResponse.json({ success: false, message: 'Vehicle Number, Mobile, Purchase Type, and Payment Terms are required.' }, { status: 422 });
+    return NextResponse.json({ success: false, message: 'Vehicle Number, Driver Name, Licence Number, Mobile, Purchase Type, and Payment Terms are required.' }, { status: 422 });
   }
   if (!/^\d{10}$/.test(String(data.mobile).trim())) {
     return NextResponse.json({ success: false, message: 'Mobile number must contain exactly 10 digits.' }, { status: 422 });
@@ -58,6 +59,8 @@ async function branchHandlerPATCH(req, { params }) {
   // const wasReadyForDownstream = isVnnReadyForDownstream(record);
 
   record.approval.vehicleNo = String(data.vehicleNo).trim();
+  record.approval.driverName = String(data.driverName).trim();
+  record.approval.drivingLicense = String(data.drivingLicense).trim().toUpperCase();
   record.approval.mobile = String(data.mobile).trim();
   record.approval.purchaseType = String(data.purchaseType).trim();
   record.approval.paymentTerms = String(data.paymentTerms).trim();
@@ -73,6 +76,15 @@ async function branchHandlerPATCH(req, { params }) {
     record.reapprovalState = 'pendingApproval';
   }
   await record.save();
+  await syncOperationalDriverProfile({
+    companyId: auth.user.companyId,
+    driverName: record.approval.driverName,
+    mobile: record.approval.mobile,
+    licenceNumber: record.approval.drivingLicense,
+    source: 'vnn',
+    sourceReference: record.vnnNo,
+    createdBy: auth.user.id,
+  });
 
   if (!wasReadyForDownstream && isVnnReadyForDownstream(record)) {
     try { await recordApprovedRevision('vnn', record._id, auth.user); }

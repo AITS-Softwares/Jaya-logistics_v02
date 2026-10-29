@@ -29,6 +29,7 @@ const ItemGroupSchema = new mongoose.Schema({
     default: [] 
   }, // NEW: Array of subgroup names
   modifiedBy: { type: String, default: '' },
+  frappeSync: { status: { type: String, enum: ['not_configured', 'synced', 'failed'] }, name: String, message: String, attemptedAt: Date },
 }, { timestamps: true });
 
 // Create a model for the schema

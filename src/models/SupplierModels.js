@@ -202,6 +202,12 @@ const SupplierSchema = new mongoose.Schema({
     required: [true, "Supplier name is required"],
     trim: true
   },
+  frappeSync: {
+    status: { type: String, enum: ['not_configured', 'synced', 'failed'] },
+    name: String,
+    message: String,
+    attemptedAt: Date,
+  },
   supplierType: {
     type: String,
     trim: true

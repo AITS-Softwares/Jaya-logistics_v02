@@ -9,6 +9,7 @@ export default function UOMPage() {
   const [editingName, setEditingName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [syncingId, setSyncingId] = useState('');
 
   // ✅ Fetch UOMs
   const fetchUOMs = async () => {
@@ -134,6 +135,18 @@ export default function UOMPage() {
     setEditingName('');
   };
 
+  const syncUOM = async (uom) => {
+    setSyncingId(uom._id); setError(null);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/uoms/sync', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ uomId: uom._id }) });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.message || data.frappeSync?.message || 'UOM sync failed');
+      fetchUOMs();
+    } catch (syncError) { setError(syncError.message || 'UOM sync failed'); }
+    finally { setSyncingId(''); }
+  };
+
   useEffect(() => {
     fetchUOMs();
   }, []);
@@ -206,6 +219,7 @@ export default function UOMPage() {
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         {editingId === uom._id ? (
                           <div className="flex justify-end gap-2">
+                            <button onClick={() => syncUOM(uom)} disabled={syncingId === uom._id} className="bg-emerald-600 text-white px-3 py-1 rounded hover:bg-emerald-700 disabled:opacity-50">{syncingId === uom._id ? 'Syncing…' : 'Sync ERPNext'}</button>
                             <button
                               onClick={() => updateUOM(uom._id)}
                               className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
