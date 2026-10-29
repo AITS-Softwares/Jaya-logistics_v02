@@ -5,6 +5,7 @@ import connectDb from "@/lib/db";
 import SubCompany from "./SubCompany";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import { validateMasterDataRequest } from '@/lib/masterDataPermission';
+import { erpNextMappingSnapshot } from "@/lib/erpnext-company-mapping.mjs";
 
 console.log("✅ SubCompanies API route loaded");
 
@@ -211,15 +212,39 @@ export async function PUT(req) {
       pinCode: String(legalProfile.pinCode || "").trim(),
       phone: String(legalProfile.phone || "").trim(),
       email: String(legalProfile.email || "").trim().toLowerCase(),
+      country: String(legalProfile.country || "").trim(),
+      bankName: String(legalProfile.bankName || "").trim(),
+      bankAccountName: String(legalProfile.bankAccountName || "").trim(),
+      bankAccountNumber: String(legalProfile.bankAccountNumber || "").trim(),
+      bankIfsc: String(legalProfile.bankIfsc || "").trim().toUpperCase(),
+      currency: String(legalProfile.currency || "").trim().toUpperCase(),
     };
     const profileSet = Object.fromEntries(Object.entries(editableProfile).map(([key, value]) => [`legalProfile.${key}`, value]));
+    const existing = await SubCompany.findOne({ _id: id, companyId: user.companyId });
+    if (!existing) return NextResponse.json({ success: false, message: "Sub-company not found" }, { status: 404 });
+    const mapping = erpNextMappingSnapshot({
+      ...existing.toObject(),
+      legalProfile: { ...(existing.legalProfile?.toObject?.() || existing.legalProfile || {}), ...editableProfile },
+    });
     const subCompany = await SubCompany.findOneAndUpdate(
       { _id: id, companyId: user.companyId },
-      { $set: profileSet },
+      { $set: {
+        ...profileSet,
+        "erpNextMapping.companyName": mapping.companyName,
+        "erpNextMapping.status": mapping.status,
+        "erpNextMapping.lastProfileUpdatedAt": mapping.lastProfileUpdatedAt,
+        "erpNextMapping.lastError": mapping.lastError,
+      } },
       { new: true, runValidators: true }
     );
-    if (!subCompany) return NextResponse.json({ success: false, message: "Sub-company not found" }, { status: 404 });
-    return NextResponse.json({ success: true, data: subCompany, message: "Billing details updated" });
+    return NextResponse.json({
+      success: true,
+      data: subCompany,
+      erpNextMapping: { ...mapping, missingFields: mapping.missingFields },
+      message: mapping.status === "ready_for_erpnext_setup"
+        ? "Legal details saved. This sub-company is ready for ERPNext Company setup."
+        : "Legal details saved. Complete the required legal details before ERPNext Company setup.",
+    });
   } catch (error) {
     console.error("PUT /subcompanies error:", error);
     return NextResponse.json({ success: false, message: "Failed to update billing details" }, { status: 500 });

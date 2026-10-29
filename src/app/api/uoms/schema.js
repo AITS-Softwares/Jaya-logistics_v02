@@ -20,6 +20,7 @@ const uomSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   }
+  ,frappeSync: { status: { type: String, enum: ['not_configured', 'synced', 'failed'] }, name: String, message: String, attemptedAt: Date }
 }, {
   timestamps: true
 });

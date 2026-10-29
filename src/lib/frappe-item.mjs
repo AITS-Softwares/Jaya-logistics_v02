@@ -1,3 +1,5 @@
+import { createFrappeClient, isFrappeConfigured } from "@/lib/frappe-client.mjs";
+
 const DEFAULT_ITEM_GROUP = 'Products';
 const UOM_MAP = {
   KG: 'Kg',
@@ -59,56 +61,39 @@ export function itemPayload(item, env) {
 }
 
 export async function syncItem(item, { env = process.env, fetchImpl = fetch } = {}) {
-  if (!env.FRAPPE_COMPANY_ID || String(item.companyId) !== env.FRAPPE_COMPANY_ID) {
+  if (!env.FRAPPE_COMPANY_ID || String(item.companyId) !== String(env.FRAPPE_COMPANY_ID)) {
     return { status: 'not_configured' };
   }
-  if (!env.FRAPPE_URL || !env.FRAPPE_API_KEY || !env.FRAPPE_API_SECRET) {
+  if (!isFrappeConfigured(env)) {
     return { status: 'not_configured' };
   }
 
   try {
-    const base = new URL(env.FRAPPE_URL);
-    if (base.protocol !== 'https:' || base.username || base.password) throw new Error('Invalid configuration');
-    const headers = { Authorization: `token ${env.FRAPPE_API_KEY}:${env.FRAPPE_API_SECRET}` };
-    const request = async (url, options = {}) => {
-      const response = await fetchImpl(url, { ...options, headers: { ...headers, ...options.headers }, redirect: 'error', signal: AbortSignal.timeout(12000) });
-      if (!response.ok) {
-        const errorBody = await response.json().catch(() => null);
-        const detail = frappeValidationMessage(errorBody);
-        throw new Error(`Frappe request failed (${response.status})${detail ? `: ${detail}` : ''}`);
-      }
-      return response.json();
-    };
-
-    const endpoint = new URL('/api/resource/Item', base);
+    const client = createFrappeClient({ env, fetchImpl });
     // Item Code is unique in Frappe, so it is a safe retry key without requiring
     // a site-specific custom field.
-    const itemCodeLookup = new URL(endpoint);
-    itemCodeLookup.searchParams.set('filters', JSON.stringify([['item_code', '=', item.itemCode]]));
-    itemCodeLookup.searchParams.set('fields', JSON.stringify(['name']));
-    const sameCode = await request(itemCodeLookup);
-    if (sameCode.data?.length) return { status: 'synced', name: sameCode.data[0].name };
+    const sameCode = await client.list("Item", { fields: ["name", "item_code"], filters: [["item_code", "=", item.itemCode]], limitPageLength: 2 });
+    if (sameCode.length > 1) throw new Error("ERPNext has duplicate Item Codes; manual review is required.");
+    const payload = itemPayload(item, env);
+    if (sameCode[0]) {
+      const updated = await client.update("Item", sameCode[0].name, payload);
+      return { status: "synced", name: updated?.name || sameCode[0].name };
+    }
 
     const idField = env.FRAPPE_ITEM_ID_FIELD;
     if (idField) {
       const externalId = `JAYA-${item.companyId}-${item._id}`;
-      const lookup = new URL(endpoint);
-      lookup.searchParams.set('filters', JSON.stringify([[idField, '=', externalId]]));
-      lookup.searchParams.set('fields', JSON.stringify(['name']));
-      const existing = await request(lookup);
-      if (existing.data?.length) return { status: 'synced', name: existing.data[0].name };
+      const existing = await client.findByExternalId("Item", idField, externalId);
+      if (existing) {
+        const updated = await client.update("Item", existing.name, payload);
+        return { status: "synced", name: updated?.name || existing.name };
+      }
     }
 
-    const result = await request(new URL('/api/method/frappe.client.save', base), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
-      body: new URLSearchParams({
-        doc: JSON.stringify({ ...itemPayload(item, env), ...(idField ? { [idField]: `JAYA-${item.companyId}-${item._id}` } : {}), __islocal: 1 }),
-      }),
-    });
-    if (!result.message?.name) throw new Error('Missing saved item');
-    return { status: 'synced', name: result.message.name };
+    const result = await client.create("Item", { ...payload, ...(idField ? { [idField]: `JAYA-${item.companyId}-${item._id}` } : {}) });
+    if (!result?.name) throw new Error('ERPNext did not return an Item name.');
+    return { status: 'synced', name: result.name };
   } catch (error) {
-    return { status: 'failed', message: /^Frappe request failed \(\d+\)(?:: .+)?$/.test(error.message) ? error.message : 'Frappe connection failed' };
+    return { status: 'failed', message: error?.message || 'ERPNext Item sync failed' };
   }
 }

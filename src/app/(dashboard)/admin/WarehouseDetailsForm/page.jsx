@@ -6,7 +6,7 @@ import CountryStateSearch from "@/components/CountryStateSearch";
 import { toast } from "react-toastify";
 import {
   FaPlus, FaTrash, FaSearch, FaChevronDown, FaChevronRight,
-  FaTimes, FaWarehouse, FaBoxOpen, FaExclamationCircle, FaCheck
+  FaTimes, FaWarehouse, FaBoxOpen, FaExclamationCircle, FaCheck, FaCloudUploadAlt
 } from "react-icons/fa";
 
 const EMPTY_WH = {
@@ -31,6 +31,7 @@ export default function WarehouseDetailsForm() {
   const [expanded,     setExpanded]     = useState({});
   const [formData,     setFormData]     = useState({ ...EMPTY_WH });
   const [errs,         setErrs]         = useState({});
+  const [syncingWarehouseId, setSyncingWarehouseId] = useState('');
 
   useEffect(() => { fetchWarehouses(); }, []);
 
@@ -114,6 +115,7 @@ export default function WarehouseDetailsForm() {
       toast.success("Deleted!"); fetchWarehouses();
     } catch { toast.error("Failed to delete"); }
   };
+  const syncWarehouse = async (warehouse) => { setSyncingWarehouseId(warehouse._id); try { const token = localStorage.getItem("token"); const { data } = await axios.post("/api/warehouse/sync", { warehouseId: warehouse._id }, { headers: { Authorization: `Bearer ${token}` } }); if (!data.success) throw new Error(data.message); toast.success(`${warehouse.warehouseName} synced to ERPNext.`); fetchWarehouses(); } catch (e) { toast.error(e.response?.data?.message || e.message || "Warehouse sync failed"); } finally { setSyncingWarehouseId(''); } };
 
   const openMainModal = () => {
     setFormData({ ...EMPTY_WH }); setIsBinForm(false);
@@ -294,6 +296,7 @@ export default function WarehouseDetailsForm() {
                       {/* Actions */}
                       <td className="px-4 py-3">
                         <div className="flex gap-1.5">
+                          <button onClick={() => syncWarehouse(wh)} disabled={syncingWarehouseId === wh._id} title="Sync this warehouse to ERPNext" className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white disabled:opacity-50 flex items-center justify-center transition-all"><FaCloudUploadAlt className="text-xs" /></button>
                           <button onClick={() => openBinModal(wh)}
                             className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white text-xs font-semibold transition-all">
                             <FaPlus className="text-[9px]" /> Bin

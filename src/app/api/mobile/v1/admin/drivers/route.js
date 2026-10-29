@@ -4,16 +4,30 @@ import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import DriverProfile from "@/models/DriverProfile";
 import { isDriverMobileEnabled, mobileUnavailableResponse } from "@/lib/driverMobileAuth";
-import { requireDriverMobileStaff } from "@/lib/driverMobileStaff";
+import { requireDriverAccessMasterStaff, requireDriverMobileStaff } from "@/lib/driverMobileStaff";
 import { normalizeDriverMobile } from "@/lib/driverMobileCore.mjs";
 
 async function branchHandlerGET(req) {
   if (!(await isDriverMobileEnabled())) return mobileUnavailableResponse();
-  const staff = requireDriverMobileStaff(req);
+  const staff = requireDriverAccessMasterStaff(req);
   if (staff.error) return staff.error;
   await dbConnect();
   const drivers = await DriverProfile.find({ companyId: staff.user.companyId }).select("-pinHash").sort({ displayName: 1 }).lean();
-  return NextResponse.json({ success: true, data: drivers.map((driver) => ({ id: String(driver._id), displayName: driver.displayName, mobileE164: driver.mobileE164, status: driver.status, preferredLanguage: driver.preferredLanguage, createdAt: driver.createdAt })) });
+  return NextResponse.json({ success: true, data: drivers.map((driver) => ({
+    id: String(driver._id),
+    displayName: driver.displayName,
+    mobileE164: driver.mobileE164,
+    licenseNumber: driver.licenseNumber || "",
+    status: driver.status,
+    mobileAccessStatus: driver.mobileAccessStatus || "not_registered",
+    mobileAccessEnabled: driver.mobileAccessEnabled === true,
+    passwordChangeRequired: driver.passwordChangeRequired === true,
+    registrationStatus: driver.registrationStatus || "draft",
+    lastOperationalSource: driver.lastOperationalSource || "",
+    lastOperationalReference: driver.lastOperationalReference || "",
+    preferredLanguage: driver.preferredLanguage,
+    createdAt: driver.createdAt,
+  })) });
 }
 
 async function branchHandlerPOST(req) {
@@ -33,8 +47,11 @@ async function branchHandlerPOST(req) {
       mobileE164,
       pinHash: await bcrypt.hash(pin, 12),
       employeeOrVendorRef: String(body.employeeOrVendorRef || "").slice(0, 120),
+      licenseNumber: String(body.licenseNumber || "").trim().replace(/\s+/g, " ").toUpperCase().slice(0, 80),
+      registrationStatus: "registered",
       preferredLanguage: String(body.preferredLanguage || "en").slice(0, 12),
       consentVersion: String(body.consentVersion || "").slice(0, 60),
+      passwordSetAt: new Date(),
       createdBy: staff.user.id,
     });
     return NextResponse.json({ success: true, data: { id: String(driver._id), displayName: driver.displayName, mobileE164: driver.mobileE164, status: driver.status } }, { status: 201 });

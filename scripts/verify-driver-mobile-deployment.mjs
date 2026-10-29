@@ -1,18 +1,10 @@
 const errors = [];
 const warnings = [];
 const driverUrl = process.env.DRIVER_APP_URL || "";
-const mobileEnabled = process.env.DRIVER_MOBILE_ENABLED;
-const mobileSecret = process.env.DRIVER_MOBILE_JWT_SECRET || "";
-const erpSecret = process.env.JWT_SECRET || "";
-const rolloutMode = String(process.env.DRIVER_MOBILE_ROLLOUT_MODE || "production").toLowerCase();
-const pilotMobiles = String(process.env.DRIVER_MOBILE_PILOT_MOBILES || "").split(",").map((value) => value.replace(/\D/g, "")).filter((value) => value.length >= 10);
+const configEncryptionKey = process.env.DRIVER_MOBILE_CONFIG_ENCRYPTION_KEY || "";
 
-if (mobileEnabled !== "true") errors.push("DRIVER_MOBILE_ENABLED must be exactly true for a staging or production driver rollout.");
-if (mobileSecret.length < 32) errors.push("DRIVER_MOBILE_JWT_SECRET must be a separate random secret of at least 32 characters.");
-if (mobileSecret && erpSecret && mobileSecret === erpSecret) errors.push("DRIVER_MOBILE_JWT_SECRET must not equal the ERP JWT_SECRET.");
 if (!process.env.MONGODB_URI) errors.push("MONGODB_URI is required by the Next.js application.");
-if (!["pilot", "production"].includes(rolloutMode)) errors.push("DRIVER_MOBILE_ROLLOUT_MODE must be pilot or production.");
-if (rolloutMode === "pilot" && pilotMobiles.length === 0) errors.push("DRIVER_MOBILE_PILOT_MOBILES must contain at least one approved pilot-driver mobile number when pilot mode is used.");
+if (configEncryptionKey.length < 32) errors.push("DRIVER_MOBILE_CONFIG_ENCRYPTION_KEY must be a server-only random secret of at least 32 characters. Mobile enablement, rollout, and signing secret are configured in Admin UI after deployment.");
 
 if (!driverUrl) {
   errors.push("DRIVER_APP_URL is required and must be the public HTTPS driver hostname.");

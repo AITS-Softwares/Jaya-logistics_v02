@@ -6,7 +6,7 @@ import {
   getOperatingCompanyFrappeConfig,
   isFrappeAccountingSyncEnabled,
 } from "@/lib/frappe-company-config.mjs";
-import { isFrappeConfigured } from "@/lib/frappe-client.mjs";
+import { createFrappeClient, isFrappeConfigured } from "@/lib/frappe-client.mjs";
 
 export const runtime = "nodejs";
 
@@ -20,12 +20,19 @@ function maskGstin(value) {
 function safeMappingStatus(operatingCompany, purpose) {
   try {
     const config = getOperatingCompanyFrappeConfig(operatingCompany, { purpose });
-    const enabled = Boolean(config.accountingSyncEnabled && config.enabled);
+    const requiredAccountingReferences = [
+      "defaultReceivableAccount", "defaultPayableAccount", "defaultIncomeAccount", "defaultExpenseAccount",
+      "defaultBankAccount", "defaultModeOfPayment", "salesTaxTemplate", "purchaseTaxTemplate",
+    ];
+    const missingAccountingReferences = requiredAccountingReferences.filter((field) => !config[field]);
+    const enabled = Boolean(config.accountingSyncEnabled && config.enabled && missingAccountingReferences.length === 0);
 
     return {
       purpose,
       configured: true,
       ready: enabled,
+      accountingReferencesComplete: missingAccountingReferences.length === 0,
+      missingAccountingReferences,
       globalExportEnabled: config.accountingSyncEnabled,
       operatingCompanyPilotEnabled: config.enabled,
       erpnextCompany: config.erpnextCompany,
@@ -54,7 +61,35 @@ function safeMappingStatus(operatingCompany, purpose) {
  * GSTIN. Financial/statutory export routes will use the same mapping gate
  * before they are introduced.
  */
-export const GET = withAuth(async (_req, _context, user) => {
+async function remoteCompanyStatus(companyName) {
+  if (!isFrappeConfigured()) {
+    return { checked: false, exists: false, message: "ERPNext connection is not configured." };
+  }
+
+  try {
+    const client = createFrappeClient();
+    // Read-only exact-name lookup. This intentionally never creates or edits
+    // an ERPNext Company: finance must approve its legal/accounting setup.
+    const records = await client.list("Company", {
+      // Keep this to fields that are permitted by a standard Company list
+      // permission; status validation happens later during setup.
+      fields: ["name", "abbr", "country", "default_currency"],
+      filters: [["name", "=", companyName]],
+      limitPageLength: 2,
+    });
+    if (records.length > 1) {
+      return { checked: true, exists: false, message: "ERPNext returned duplicate Companies with this name; manual review is required." };
+    }
+    const company = records[0];
+    return company
+      ? { checked: true, exists: true, company: { name: company.name, abbr: company.abbr || "", country: company.country || "", currency: company.default_currency || "" } }
+      : { checked: true, exists: false, message: "No ERPNext Company exists with this exact local sub-company name." };
+  } catch (error) {
+    return { checked: false, exists: false, code: error?.code || "FRAPPE_REMOTE_CHECK_FAILED", message: error?.message || "ERPNext Company check failed." };
+  }
+}
+
+export const GET = withAuth(async (req, _context, user) => {
   if (!user.activeOperatingCompanyId) {
     return NextResponse.json({
       success: false,
@@ -68,7 +103,7 @@ export const GET = withAuth(async (_req, _context, user) => {
     companyId: user.companyId,
     isOperatingCompany: true,
     isActive: true,
-  }).select("name code legalProfile.gstNumber").lean();
+  }).select("name code legalProfile erpNextMapping").lean();
 
   if (!operatingCompany) {
     return NextResponse.json({
@@ -87,6 +122,9 @@ export const GET = withAuth(async (_req, _context, user) => {
 
   const accounting = safeMappingStatus(scopedOperatingCompany, "accounting");
   const statutory = safeMappingStatus(scopedOperatingCompany, "statutory");
+  const verifyRemote = new URL(req.url).searchParams.get("verifyRemote") === "true";
+  const desiredErpNextCompany = operatingCompany.erpNextMapping?.companyName || operatingCompany.name;
+  const remoteCompany = verifyRemote ? await remoteCompanyStatus(desiredErpNextCompany) : { checked: false };
 
   return NextResponse.json({
     success: true,
@@ -99,9 +137,14 @@ export const GET = withAuth(async (_req, _context, user) => {
         name: operatingCompany.name,
         code: operatingCompany.code,
         localGstin: maskGstin(operatingCompany.legalProfile?.gstNumber),
+        // This is always derived from the local SubCompany name. It is not
+        // evidence that the ERPNext Company has been created yet.
+        desiredErpNextCompany: operatingCompany.erpNextMapping?.companyName || operatingCompany.name,
+        localMappingStatus: operatingCompany.erpNextMapping?.status || "pending_legal_profile",
       },
       accounting,
       statutory,
+      remoteCompany,
       nextStep: accounting.ready && statutory.ready
         ? "This legal entity is configuration-ready. Keep submission routes disabled until its controlled pilot is approved."
         : "Complete the explicit ERPNext Company/GSTIN mapping and keep both export flags disabled until a controlled pilot is approved.",

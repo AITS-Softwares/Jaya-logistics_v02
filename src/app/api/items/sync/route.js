@@ -13,11 +13,13 @@ export async function POST(req) {
     if (error) return NextResponse.json({ success: false, message: error }, { status });
 
     const body = await req.json().catch(() => ({}));
+    const itemId = String(body.itemId || "").trim();
     const offset = Math.max(0, Number.parseInt(body.offset, 10) || 0);
     const batchSize = Math.min(25, Math.max(1, Number.parseInt(body.batchSize, 10) || 10));
+    const filter = { companyId: user.companyId, ...(itemId ? { _id: itemId } : {}) };
     const [total, items] = await Promise.all([
-      Item.countDocuments({ companyId: user.companyId }),
-      Item.find({ companyId: user.companyId }).sort({ _id: 1 }).skip(offset).limit(batchSize),
+      Item.countDocuments(filter),
+      Item.find(filter).sort({ _id: 1 }).skip(itemId ? 0 : offset).limit(itemId ? 1 : batchSize),
     ]);
 
     const summary = { processed: items.length, synced: 0, failed: 0, notConfigured: 0 };
@@ -38,7 +40,7 @@ export async function POST(req) {
     }
 
     const nextOffset = offset + items.length;
-    return NextResponse.json({ success: true, total, summary, failures, nextOffset: nextOffset < total ? nextOffset : null });
+    return NextResponse.json({ success: true, total, summary, failures, nextOffset: itemId ? null : (nextOffset < total ? nextOffset : null) });
   } catch (error) {
     console.error('POST /items/sync error:', error);
     return NextResponse.json({ success: false, message: 'Failed to sync items' }, { status: 500 });

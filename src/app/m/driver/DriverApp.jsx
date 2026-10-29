@@ -72,6 +72,7 @@ export default function DriverApp() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [mustChangePin, setMustChangePin] = useState(false);
 
   const signedIn = Boolean(token && driver);
   const approved = device?.status === "approved";
@@ -102,6 +103,16 @@ export default function DriverApp() {
     return data;
   };
 
+  const finishSignIn = async (accessToken) => {
+    const registration = await registerInstallation(accessToken);
+    if (registration.deviceStatus === "approved") {
+      await refreshTrips(registration.accessToken);
+      setMessage("Signed in. Your assigned trips are ready.");
+    } else {
+      setMessage("Your device is waiting for dispatcher approval. Keep this screen open, then tap Refresh after approval.");
+    }
+  };
+
   const signIn = async ({ mobile, pin }) => {
     setLoading(true); setError(""); setMessage("");
     try {
@@ -109,17 +120,21 @@ export default function DriverApp() {
       setDriver(data.driver);
       setToken(data.accessToken);
       setRefreshToken(data.refreshToken);
-      const registration = await registerInstallation(data.accessToken);
-      if (registration.deviceStatus === "approved") {
-        await refreshTrips(registration.accessToken);
-        setMessage("Signed in. Your assigned trips are ready.");
-      } else {
-        setMessage("Your device is waiting for dispatcher approval. Keep this screen open, then tap Refresh after approval.");
-      }
+      if (data.driver.passwordChangeRequired) { setMustChangePin(true); setMessage("Create your own PIN before registering this phone."); return; }
+      await finishSignIn(data.accessToken);
     } catch (requestError) {
       setError(requestError.message);
       setToken(""); setRefreshToken(""); setDriver(null); setDevice(null);
     } finally { setLoading(false); }
+  };
+
+  const changePin = async ({ currentPin, newPin }) => {
+    setLoading(true); setError("");
+    try {
+      await api("/auth/change-pin", { method: "POST", token, body: { currentPin, newPin } });
+      setMustChangePin(false);
+      await finishSignIn(token);
+    } catch (requestError) { setError(requestError.message); } finally { setLoading(false); }
   };
 
   const refreshAccess = async () => {
@@ -153,6 +168,18 @@ export default function DriverApp() {
     if (!selectedTrip) return;
     setLoading(true); setError(""); setMessage("");
     try {
+      let permission = null;
+      if (action === "START_TRIP") {
+        permission = await requestNativeTrackingPermissions();
+        if (!permission.ready && !permission.browserPreview) {
+          setError("Allow precise location before starting this trip.");
+          return;
+        }
+        if (permission.backgroundLocationRequired && !permission.browserPreview) {
+          setError("Allow location ‘all the time’ in Android settings before starting this tracked trip.");
+          return;
+        }
+      }
       const data = await api(`/trips/${selectedTrip.id}/actions`, {
         method: "POST", token,
         body: { action, issueType, idempotencyKey: createKey(), expectedVersion: selectedTrip.version },
@@ -160,7 +187,6 @@ export default function DriverApp() {
       setSelectedTrip(data);
       setTrips((items) => items.map((trip) => trip.id === data.id ? data : trip));
       if (action === "START_TRIP") {
-        const permission = await requestNativeTrackingPermissions();
         if (permission.ready) {
           const tracking = await api("/tracking/start", { method: "POST", token, body: { tripId: data.id } });
           await startNativeTracking({ tripId: data.id, sessionId: tracking.sessionId, apiBaseUrl: window.location.origin, accessToken: token, refreshToken, policy: tracking.policy });
@@ -180,10 +206,11 @@ export default function DriverApp() {
 
   const signOut = async () => {
     try { if (token) await api("/auth/logout", { method: "POST", token }); } catch { /* local reset is still safe */ }
-    setToken(""); setRefreshToken(""); setDriver(null); setDevice(null); setTrips([]); setSelectedTrip(null); setMessage(""); setError("");
+    setToken(""); setRefreshToken(""); setDriver(null); setDevice(null); setTrips([]); setSelectedTrip(null); setMustChangePin(false); setMessage(""); setError("");
   };
 
   if (!signedIn) return <LoginScreen onSubmit={signIn} loading={loading} error={error} />;
+  if (mustChangePin) return <ChangePinScreen onSubmit={changePin} onLogout={signOut} loading={loading} error={error} message={message} />;
   if (!approved) return <AwaitingApproval driver={driver} device={device} onRefresh={refreshDevice} onLogout={signOut} loading={loading} error={error} message={message} />;
   return <TripHome driver={driver} trips={trips} selectedTrip={selectedTrip} onSelect={setSelectedTrip} onAction={act} onRefresh={() => refreshTrips()} onLogout={signOut} loading={loading} error={error} message={message} />;
 }
@@ -195,6 +222,11 @@ function Brand({ compact = false }) {
 function LoginScreen({ onSubmit, loading, error }) {
   const [mobile, setMobile] = useState(""); const [pin, setPin] = useState("");
   return <main className="min-h-screen bg-slate-950 text-white"><div className="mx-auto flex min-h-screen max-w-md flex-col px-5 py-8"><Brand /><div className="my-auto"><p className="mt-12 text-sm font-bold uppercase tracking-[0.16em] text-amber-300">Your work, in one place</p><h1 className="mt-3 text-4xl font-black leading-tight tracking-tight">Every trip, clear and under control.</h1><p className="mt-4 text-base leading-7 text-slate-300">Sign in to see only the trips assigned to you. Your office ERP screens stay private.</p><form className="mt-10 space-y-4 rounded-3xl bg-white p-5 text-slate-900 shadow-2xl shadow-black/30" onSubmit={(event) => { event.preventDefault(); onSubmit({ mobile, pin }); }}><Field label="Mobile number" type="tel" value={mobile} onChange={setMobile} placeholder="98765 43210" autoComplete="tel" /><Field label="Driver PIN" type="password" value={pin} onChange={setPin} placeholder="Your 4-digit or company PIN" autoComplete="current-password" /><p className="text-xs leading-5 text-slate-500"><LockKeyhole size={13} className="mr-1 inline" />Use the PIN given by your dispatcher. Do not share it.</p>{error && <Notice tone="error">{error}</Notice>}<button disabled={loading} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-4 font-bold text-white transition hover:bg-slate-800 disabled:opacity-60">{loading ? <LoaderCircle className="animate-spin" size={19} /> : "Sign in securely"}<ArrowRight size={18} /></button></form></div><p className="text-center text-xs leading-5 text-slate-500">Tracking will be enabled only during an active trip after you approve location permissions.</p></div></main>;
+}
+
+function ChangePinScreen({ onSubmit, onLogout, loading, error, message }) {
+  const [currentPin, setCurrentPin] = useState(""); const [newPin, setNewPin] = useState(""); const [confirmPin, setConfirmPin] = useState(""); const [localError, setLocalError] = useState("");
+  return <main className="min-h-screen bg-slate-950 px-5 py-8 text-white"><div className="mx-auto max-w-md"><Brand /><section className="mt-14 rounded-3xl bg-white p-5 text-slate-900"><h1 className="text-2xl font-black">Set your own PIN</h1><p className="mt-2 text-sm leading-6 text-slate-600">For security, replace the temporary PIN provided by your dispatcher before using this phone.</p><form className="mt-6 space-y-4" onSubmit={(event) => { event.preventDefault(); setLocalError(""); if (newPin !== confirmPin) { setLocalError("New PIN and confirmation do not match."); return; } onSubmit({ currentPin, newPin }); }}><Field label="Temporary PIN" type="password" value={currentPin} onChange={setCurrentPin} /><Field label="New PIN" type="password" value={newPin} onChange={setNewPin} /><Field label="Confirm new PIN" type="password" value={confirmPin} onChange={setConfirmPin} />{message && <Notice>{message}</Notice>}{(localError || error) && <Notice tone="error">{localError || error}</Notice>}<button disabled={loading} className="w-full rounded-2xl bg-slate-950 px-4 py-4 font-bold text-white disabled:opacity-60">{loading ? "Saving…" : "Save PIN and continue"}</button></form><button type="button" onClick={onLogout} className="mt-4 w-full text-sm font-bold text-slate-600 underline">Sign out</button></section></div></main>;
 }
 
 function AwaitingApproval({ driver, device, onRefresh, onLogout, loading, error, message }) {

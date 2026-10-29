@@ -498,6 +498,8 @@ export default function SupplierManagement() {
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [verifying, setVerifying] = useState(false);
+  const [syncingFrappe, setSyncingFrappe] = useState(false);
+  const [syncingSupplierId, setSyncingSupplierId] = useState('');
   const [step, setStep] = useState(1);
   const [sd, setSd] = useState({ ...EMPTY });
   const [errs, setErrs] = useState({});
@@ -514,6 +516,38 @@ export default function SupplierManagement() {
       if (res.data.success) setSuppliers(res.data.data || []);
     } catch { toast.error("Failed to load suppliers"); }
     setLoading(false);
+  };
+
+  const syncAllSuppliersToFrappe = async () => {
+    if (syncingFrappe || !suppliers.length) return;
+    if (!confirm(`Sync ${suppliers.length} supplier(s) to ERPNext in batches of 10? Existing ERPNext suppliers will not be duplicated.`)) return;
+    setSyncingFrappe(true);
+    try {
+      const token = localStorage.getItem("token");
+      let offset = 0, synced = 0, failed = 0, firstFailure;
+      do {
+        const { data } = await axios.post("/api/suppliers/sync", { offset, batchSize: 10 }, { headers: { Authorization: `Bearer ${token}` } });
+        synced += data.summary.synced; failed += data.summary.failed;
+        if (!firstFailure && data.failures?.[0]) firstFailure = data.failures[0];
+        offset = data.nextOffset;
+      } while (offset !== null);
+      if (failed) toast.error(`${synced} supplier(s) synced; ${failed} failed.${firstFailure ? ` First: ${firstFailure.supplierName} - ${firstFailure.message}` : ""}`);
+      else toast.success(`${synced} supplier(s) synced to ERPNext.`);
+      fetchSuppliers();
+    } catch (syncError) { toast.error(syncError.response?.data?.message || "Supplier sync failed"); }
+    finally { setSyncingFrappe(false); }
+  };
+
+  const syncSupplierToFrappe = async (supplier) => {
+    setSyncingSupplierId(supplier._id);
+    try {
+      const token = localStorage.getItem("token");
+      const { data } = await axios.post("/api/suppliers/sync", { supplierId: supplier._id }, { headers: { Authorization: `Bearer ${token}` } });
+      if (data.summary.failed) throw new Error(data.failures?.[0]?.message || "Supplier sync failed");
+      toast.success(`${supplier.supplierName} synced to ERPNext.`);
+      fetchSuppliers();
+    } catch (error) { toast.error(error.response?.data?.message || error.message || "Supplier sync failed"); }
+    finally { setSyncingSupplierId(''); }
   };
 
   const verifyUdyam = async () => {
@@ -1066,6 +1100,10 @@ export default function SupplierManagement() {
               {uploading ? "Uploading…" : <><FaFileUpload className="text-xs" /> Bulk Upload</>}
               <input type="file" hidden accept=".csv" onChange={handleBulk} />
             </label>
+            <button onClick={syncAllSuppliersToFrappe} disabled={syncingFrappe || suppliers.length === 0}
+              className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 disabled:opacity-50 transition-all">
+              {syncingFrappe ? "Syncing…" : <><FaCloudUploadAlt className="text-xs" /> Sync suppliers to ERPNext</>}
+            </button>
             <button onClick={() => { generateCode(); setView("form"); }}
               className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition-all shadow-sm shadow-indigo-200">
               <FaPlus className="text-xs" /> Add Supplier
@@ -1187,6 +1225,7 @@ export default function SupplierManagement() {
                       </td>
                       <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
                         <div className="flex gap-1.5">
+                          <button onClick={() => syncSupplierToFrappe(s)} disabled={syncingSupplierId === s._id} title="Sync this supplier to ERPNext" className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white disabled:opacity-50 flex items-center justify-center transition-all"><FaCloudUploadAlt className="text-xs" /></button>
                           <button onClick={() => handleEdit(s)} className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-500 hover:bg-indigo-500 hover:text-white flex items-center justify-center transition-all">
                             <FaEdit className="text-xs" />
                           </button>

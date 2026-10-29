@@ -5,6 +5,7 @@ import Supplier from "@/models/SupplierModels";
 import BankHead from "@/models/BankHead";
 import { validateMasterDataRequest } from '@/lib/masterDataPermission';
 import { identifierFormatError } from "@/lib/identifierFormats";
+import { syncSupplier } from "@/lib/frappe-supplier.mjs";
 
 async function validateUser(req, action = 'view') {
   return validateMasterDataRequest(req, action, "Suppliers", { allowLookup: action === "view" });
@@ -61,9 +62,13 @@ export async function POST(req) {
 
     const supplier = new Supplier({ ...body, pan, companyId: user.companyId, createdBy: user.id });
     await supplier.save();
+    const frappeSync = await syncSupplier(supplier);
+    await Supplier.updateOne({ _id: supplier._id, companyId: user.companyId }, {
+      $set: { frappeSync: { ...frappeSync, attemptedAt: new Date() } },
+    });
 
     const populated = await Supplier.findById(supplier._id).populate("glAccount", "accountName accountCode");
-    return NextResponse.json({ success: true, data: populated }, { status: 201 });
+    return NextResponse.json({ success: true, data: populated, frappeSync }, { status: 201 });
 
   } catch (err) {
     console.error("POST /suppliers error:", err);

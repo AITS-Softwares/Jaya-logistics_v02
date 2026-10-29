@@ -7283,6 +7283,8 @@ export default function EditVehicleNegotiation() {
     vehicleId: "",
     vehicleData: null,
     mobile: "",
+    driverName: "",
+    drivingLicense: "",
     purchaseType: "",
     paymentTerms: "",
     advance: "",
@@ -7529,6 +7531,8 @@ export default function EditVehicleNegotiation() {
           vehicleId: vn.approval.vehicleId || "",
           vehicleData: vn.approval.vehicleData || null,
           mobile: vn.approval.mobile || "",
+          driverName: vn.approval.driverName || "",
+          drivingLicense: vn.approval.drivingLicense || "",
           purchaseType: vn.approval.purchaseType || "",
           paymentTerms: vn.approval.paymentTerms || "",
           advance: vn.approval.advance?.toString() || "",
@@ -8109,6 +8113,8 @@ export default function EditVehicleNegotiation() {
           vehicleNo: approval.vehicleNo,
           vehicleId: approval.vehicleId,
           vehicleData: approval.vehicleData,
+          driverName: approval.driverName,
+          drivingLicense: approval.drivingLicense,
           mobile: approval.mobile,
           purchaseType: approval.purchaseType,
           paymentTerms: approval.paymentTerms,
@@ -8997,6 +9003,22 @@ export default function EditVehicleNegotiation() {
                   disabled={!canEditPlacement}
                 />
               </div>
+              <Input
+                col="col-span-12 md:col-span-4"
+                label="Driver Name"
+                value={approval.driverName || ""}
+                onChange={(v) => setApproval((p) => ({ ...p, driverName: v }))}
+                readOnly={!canEditPlacement}
+                disabled={!canEditPlacement}
+              />
+              <Input
+                col="col-span-12 md:col-span-4"
+                label="Driving Licence Number"
+                value={approval.drivingLicense || ""}
+                onChange={(v) => setApproval((p) => ({ ...p, drivingLicense: v.toUpperCase() }))}
+                readOnly={!canEditPlacement}
+                disabled={!canEditPlacement}
+              />
               <Input
                 col="col-span-12 md:col-span-4"
                 label="Mobile (10 digits)"

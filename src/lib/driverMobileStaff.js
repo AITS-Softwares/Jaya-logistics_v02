@@ -29,3 +29,20 @@ export function requireDriverMobileSettingsStaff(req, action = "view") {
     return { error: NextResponse.json({ success: false, code: "UNAUTHORIZED", message: "A valid staff token is required." }, { status: 401 }) };
   }
 }
+
+// The access master is visible to either transport operations staff or the
+// delegated mobile-settings administrator. Mutations remain protected by the
+// stricter Driver Mobile Settings edit permission in its dedicated route.
+export function requireDriverAccessMasterStaff(req) {
+  try {
+    const user = verifyToken(req);
+    if (!user) throw new Error("Unauthorized");
+    const permitted = user.type === "company" || user.roles?.includes("Admin")
+      || hasAnyPermission(user, "Tracking Plan", ["view", "edit", "create", "approve"])
+      || hasAnyPermission(user, "Driver Mobile Settings", ["view", "edit"]);
+    if (!permitted) return { error: NextResponse.json({ success: false, code: "FORBIDDEN", message: "Driver Mobile Settings or Tracking Plan permission is required." }, { status: 403 }) };
+    return { user };
+  } catch {
+    return { error: NextResponse.json({ success: false, code: "UNAUTHORIZED", message: "A valid staff token is required." }, { status: 401 }) };
+  }
+}

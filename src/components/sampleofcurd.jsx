@@ -478,6 +478,7 @@ export default function CustomerManagement() {
   const [errs, setErrs] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [syncingFrappe, setSyncingFrappe] = useState(false);
+  const [syncingCustomerId, setSyncingCustomerId] = useState("");
   const [canCreate, setCanCreate] = useState(false);
   const [canEdit, setCanEdit] = useState(false);
   const [canDelete, setCanDelete] = useState(false);
@@ -764,6 +765,19 @@ export default function CustomerManagement() {
     }
   };
 
+  const syncCustomerToFrappe = async (customer) => {
+    if (!canEdit || syncingCustomerId) return;
+    setSyncingCustomerId(customer._id);
+    try {
+      const token = localStorage.getItem("token");
+      const { data } = await axios.post("/api/customers/sync", { customerId: customer._id }, { headers: { Authorization: `Bearer ${token}` } });
+      if (data.summary.failed) throw new Error(data.failures?.[0]?.message || "Customer sync failed");
+      toast.success(`${customer.customerName} synced to ERPNext.`);
+      fetchCustomers();
+    } catch (error) { toast.error(error.response?.data?.message || error.message || "Customer sync failed"); }
+    finally { setSyncingCustomerId(""); }
+  };
+
   const filtered = customers.filter(c => {
     const q = searchTerm.toLowerCase();
     const matchQ = [c.customerCode, c.customerCodeValue, c.customerName, c.emailId, c.customerGroup, c.customerType].some(v => v?.toLowerCase().includes(q));
@@ -1045,6 +1059,7 @@ export default function CustomerManagement() {
                     <td className="px-4 py-3 text-gray-500 text-xs">{c.emailId}</td>
                     <td className="px-4 py-3">
                       <div className="flex gap-1.5">
+                        {canEdit && <button onClick={() => syncCustomerToFrappe(c)} disabled={syncingCustomerId === c._id} title="Sync this customer to ERPNext" className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white disabled:opacity-50"><FaCloudUploadAlt className="text-xs mx-auto" /></button>}
                         {canEdit && <button onClick={() => handleEdit(c)} className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-500 hover:bg-indigo-500 hover:text-white"><FaEdit className="text-xs mx-auto" /></button>}
                         {canDelete && <button onClick={() => handleDelete(c._id)} className="w-7 h-7 rounded-lg bg-red-50 text-red-400 hover:bg-red-500 hover:text-white"><FaTrash className="text-xs mx-auto" /></button>}
                       </div>

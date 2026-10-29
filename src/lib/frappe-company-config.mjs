@@ -14,6 +14,14 @@ const ALLOWED_ENTRY_KEYS = new Set([
   "localSubCompanyId",
   "costCenter",
   "defaultWarehouse",
+  "defaultReceivableAccount",
+  "defaultPayableAccount",
+  "defaultIncomeAccount",
+  "defaultExpenseAccount",
+  "defaultBankAccount",
+  "defaultModeOfPayment",
+  "salesTaxTemplate",
+  "purchaseTaxTemplate",
   "enabled",
 ]);
 
@@ -88,6 +96,14 @@ function normalizeEntry(code, value) {
     localSubCompanyId: optionalText(value.localSubCompanyId, "localSubCompanyId", 128),
     costCenter: optionalText(value.costCenter, "costCenter"),
     defaultWarehouse: optionalText(value.defaultWarehouse, "defaultWarehouse"),
+    defaultReceivableAccount: optionalText(value.defaultReceivableAccount, "defaultReceivableAccount"),
+    defaultPayableAccount: optionalText(value.defaultPayableAccount, "defaultPayableAccount"),
+    defaultIncomeAccount: optionalText(value.defaultIncomeAccount, "defaultIncomeAccount"),
+    defaultExpenseAccount: optionalText(value.defaultExpenseAccount, "defaultExpenseAccount"),
+    defaultBankAccount: optionalText(value.defaultBankAccount, "defaultBankAccount"),
+    defaultModeOfPayment: optionalText(value.defaultModeOfPayment, "defaultModeOfPayment"),
+    salesTaxTemplate: optionalText(value.salesTaxTemplate, "salesTaxTemplate"),
+    purchaseTaxTemplate: optionalText(value.purchaseTaxTemplate, "purchaseTaxTemplate"),
     enabled: value.enabled === true,
   });
 }
