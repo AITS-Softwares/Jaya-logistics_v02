@@ -8,6 +8,7 @@ const driverDeviceSchema = new mongoose.Schema({
   manufacturer: { type: String, default: "", maxlength: 80 },
   model: { type: String, default: "", maxlength: 120 },
   appVersion: { type: String, default: "", maxlength: 40 },
+  installationLabel: { type: String, default: "", maxlength: 40 },
   status: { type: String, enum: ["pending", "approved", "revoked"], default: "pending", index: true },
   lastSeenAt: { type: Date, default: null },
   lastKnownBattery: { type: Number, min: 0, max: 100, default: null },
@@ -16,6 +17,8 @@ const driverDeviceSchema = new mongoose.Schema({
   revokedAt: { type: Date, default: null },
   revokedBy: { type: mongoose.Schema.Types.ObjectId, ref: "CompanyUser", default: null },
   revokeReason: { type: String, default: "", maxlength: 300 },
+  reapprovalRequestedAt: { type: Date, default: null },
+  reapprovalRequestCount: { type: Number, default: 0, min: 0 },
 }, { timestamps: true });
 
 driverDeviceSchema.index({ companyId: 1, installationIdHash: 1 }, { unique: true });

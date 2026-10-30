@@ -1,3 +1,11 @@
+import nextEnv from "@next/env";
+const { loadEnvConfig } = nextEnv;
+
+// Match Next.js runtime environment loading so this command validates the
+// production .env/.env.local values rather than only manually exported shell
+// variables.
+loadEnvConfig(process.cwd());
+
 const errors = [];
 const warnings = [];
 const driverUrl = process.env.DRIVER_APP_URL || "";

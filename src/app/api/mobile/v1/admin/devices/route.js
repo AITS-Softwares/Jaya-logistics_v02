@@ -22,7 +22,7 @@ async function branchHandlerGET(req) {
   const driverById = new Map(drivers.map((driver) => [String(driver._id), driver]));
   return NextResponse.json({ success: true, data: devices.map((device) => ({
     id: String(device._id), status: device.status, platform: device.platform, manufacturer: device.manufacturer,
-    model: device.model, appVersion: device.appVersion, createdAt: device.createdAt, lastSeenAt: device.lastSeenAt,
+    model: device.model, appVersion: device.appVersion, installationLabel: device.installationLabel, createdAt: device.createdAt, lastSeenAt: device.lastSeenAt,
     approvedAt: device.approvedAt, revokedAt: device.revokedAt, revokeReason: device.revokeReason,
     driver: driverById.get(String(device.driverId)) ? {
       id: String(device.driverId), displayName: driverById.get(String(device.driverId)).displayName,

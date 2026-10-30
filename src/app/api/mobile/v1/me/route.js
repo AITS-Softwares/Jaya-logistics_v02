@@ -11,7 +11,7 @@ export async function GET(req) {
     success: true,
     data: {
       driver: { id: String(auth.driver._id), displayName: auth.driver.displayName, preferredLanguage: auth.driver.preferredLanguage, consentVersion: auth.driver.consentVersion || null },
-      device: { id: auth.session.deviceId ? String(auth.session.deviceId) : null, status: deviceStatus },
+      device: { id: auth.session.deviceId ? String(auth.session.deviceId) : null, status: deviceStatus, revokeReason: auth.device?.revokeReason || "" },
     },
   });
 }

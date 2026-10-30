@@ -27,3 +27,23 @@ export async function nativeTrackingHealth() {
   if (!supportsNativeTracking()) return { available: false, state: "browser_preview" };
   return DriverTracking.health();
 }
+
+export async function loadNativeDriverSession() {
+  if (!supportsNativeTracking()) return { refreshToken: "" };
+  return DriverTracking.loadDriverSession();
+}
+
+export async function saveNativeDriverSession(refreshToken) {
+  if (!supportsNativeTracking() || !refreshToken) return;
+  await DriverTracking.saveDriverSession({ refreshToken });
+}
+
+export async function clearNativeDriverSession() {
+  if (!supportsNativeTracking()) return;
+  await DriverTracking.clearDriverSession();
+}
+
+export async function nativeDriverDeviceInfo() {
+  if (!supportsNativeTracking()) return { manufacturer: "Browser preview", model: navigator.platform || "Unknown", androidVersion: "", appVersion: "browser" };
+  return DriverTracking.deviceInfo();
+}

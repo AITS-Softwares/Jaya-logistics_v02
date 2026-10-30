@@ -21,6 +21,52 @@ import androidx.core.content.ContextCompat;
 })
 public class DriverTrackingPlugin extends Plugin {
   @PluginMethod
+  public void deviceInfo(PluginCall call) {
+    JSObject result = new JSObject();
+    result.put("manufacturer", Build.MANUFACTURER == null ? "Android" : Build.MANUFACTURER);
+    result.put("model", Build.MODEL == null ? "Android phone" : Build.MODEL);
+    result.put("androidVersion", Build.VERSION.RELEASE == null ? "Unknown" : Build.VERSION.RELEASE);
+    try {
+      String version = getContext().getPackageManager().getPackageInfo(getContext().getPackageName(), 0).versionName;
+      result.put("appVersion", version == null ? "Unknown" : version);
+    } catch (Exception ignored) { result.put("appVersion", "Unknown"); }
+    call.resolve(result);
+  }
+
+  // The refresh token is the only login credential retained between launches.
+  // It is encrypted at rest by SecureTrackingStore; short-lived access tokens
+  // always come from the server after the app opens.
+  @PluginMethod
+  public void loadDriverSession(PluginCall call) {
+    try {
+      SecureTrackingStore store = new SecureTrackingStore(getContext());
+      JSObject result = new JSObject();
+      result.put("refreshToken", store.get("driverRefreshToken"));
+      call.resolve(result);
+    } catch (Exception error) { call.reject("SESSION_STORE_READ_FAILED", error.getMessage(), error); }
+  }
+
+  @PluginMethod
+  public void saveDriverSession(PluginCall call) {
+    String refreshToken = call.getString("refreshToken", "");
+    if (refreshToken.isEmpty()) { call.reject("REFRESH_TOKEN_REQUIRED", "A refresh token is required."); return; }
+    try {
+      new SecureTrackingStore(getContext()).put("driverRefreshToken", refreshToken);
+      call.resolve();
+    } catch (Exception error) { call.reject("SESSION_STORE_WRITE_FAILED", error.getMessage(), error); }
+  }
+
+  @PluginMethod
+  public void clearDriverSession(PluginCall call) {
+    try {
+      // Do not clear the tracking store: an active foreground tracking service
+      // owns its own credentials until the trip is stopped.
+      new SecureTrackingStore(getContext()).put("driverRefreshToken", "");
+      call.resolve();
+    } catch (Exception error) { call.reject("SESSION_STORE_CLEAR_FAILED", error.getMessage(), error); }
+  }
+
+  @PluginMethod
   public void permissions(PluginCall call) {
     JSObject result = new JSObject();
     result.put("location", getPermissionState("location").toString());
