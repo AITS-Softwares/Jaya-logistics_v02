@@ -17,6 +17,7 @@ export default function LogoutButton() {
     // ✅ Token aur user dono clear karo
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    ['groupToken', 'lastPath', 'lastPathOwner'].forEach(key => localStorage.removeItem(key));
     router.push("/signin");
   };
 

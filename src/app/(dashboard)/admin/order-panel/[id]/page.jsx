@@ -7959,6 +7959,7 @@
 
 import { useMemo, useState, useEffect, useRef, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { validateOrderWeights } from "@/lib/orderWeightValidation.mjs";
 import OrderRowStatusActions from "@/components/OrderRowStatusActions";
 import { usePermission } from "../../hooks/usePermission";
 
@@ -8979,6 +8980,17 @@ export default function EditOrderPanel() {
    ========================= */
   // saveMode: 'update' (normal edit), 'draft' (Save as Draft, in place) or 'submit' (Submit for Approval)
   const handleUpdate = async (saveMode = 'update') => {
+    if (saveMode !== 'draft' && !selectedCustomer?._id) {
+      alert('Select a customer from Customer Master before submitting the order.');
+      return;
+    }
+
+    const weightError = validateOrderWeights({ plantRows, packRows });
+    if (weightError) {
+      alert(weightError);
+      return;
+    }
+
     if (activeOperatingCompanyLoading || !top.subCompanyId) {
       alert(activeOperatingCompanyError || "The active operating company has not loaded yet. Please wait and try again.");
       return;
@@ -10061,6 +10073,8 @@ function PlantGridTable({
                 <td className="border border-yellow-300 px-2 py-2">
                   <input
                     type="number"
+                    min="0"
+                    step="any"
                     value={r.weight || ""}
                     onChange={(e) => onChange(r._id, 'weight', e.target.value)}
                     className="w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"

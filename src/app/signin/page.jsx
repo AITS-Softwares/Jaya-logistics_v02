@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
+import { invalidSessionStatus, sessionDestination } from '@/lib/sessionRestore.mjs';
 import { FiEye, FiEyeOff, FiMail, FiLock, FiChevronRight, FiLoader, FiShield, FiUser, FiBriefcase, FiGlobe, FiBox, FiSettings, FiLayers } from 'react-icons/fi';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -22,6 +23,8 @@ export default function LoginPage() {
   const [operatingCompanies, setOperatingCompanies] = useState([]);
   const [show, setShow] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [checking, setChecking] = useState(true);
+  const [restoreError, setRestoreError] = useState('');
 
   const handle = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
@@ -30,6 +33,35 @@ export default function LoginPage() {
       .then((response) => setOperatingCompanies(response.data?.data || []))
       .catch(() => setOperatingCompanies([]));
   }, []);
+
+  useEffect(() => {
+    let live = true;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 12000);
+    async function restore() {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) { if (live) setChecking(false); return; }
+        const response = await fetch('/api/auth/me', { cache: 'no-store', signal: controller.signal, headers: { Authorization: `Bearer ${token}` } });
+        if (!live) return;
+        if (invalidSessionStatus(response.status)) {
+          ['token', 'user', 'groupToken', 'lastPath', 'lastPathOwner'].forEach(key => localStorage.removeItem(key));
+          setChecking(false); return;
+        }
+        if (!response.ok) throw new Error('Unable to check your session. Check your connection and retry.');
+        const data = await response.json();
+        if (!data.user) throw new Error('Session response was incomplete. Please retry.');
+        localStorage.setItem('user', JSON.stringify(data.user));
+        router.replace(sessionDestination(data.user, localStorage));
+      } catch (error) {
+        if (live) { setRestoreError(error.name === 'AbortError' ? 'The session check timed out. Please check your connection and retry.' : error.message || 'Unable to check your session.'); setChecking(false); }
+      } finally {
+        clearTimeout(timeout);
+      }
+    }
+    restore();
+    return () => { live = false; clearTimeout(timeout); controller.abort(); };
+  }, [router]);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -43,7 +75,7 @@ export default function LoginPage() {
       const urls = {
         Company: "/api/company/login",
         User: "/api/users/login",
-        Customer: "/api/customers/login",
+        Customer: "/api/portal/login",
       };
 
       const payload = mode === 'Customer'
@@ -68,8 +100,7 @@ export default function LoginPage() {
       });
       if (!sessionCheck.ok) {
         const sessionData = await sessionCheck.json().catch(() => ({}));
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+        if (invalidSessionStatus(sessionCheck.status)) { localStorage.removeItem('token'); localStorage.removeItem('user'); }
         throw new Error(sessionData.message || sessionData.msg || 'Unable to start your session. Please try again.');
       }
 
@@ -93,11 +124,13 @@ export default function LoginPage() {
 
       setTimeout(() => router.push(redirect), 500);
     } catch (error) {
-      toast.error(error?.response?.data?.message || "Verification Failed");
+      toast.error(error?.response?.data?.message || error.message || "Verification Failed");
     } finally {
       setLoading(false);
     }
   };
+
+  if (checking || restoreError) return <main className="flex min-h-screen items-center justify-center bg-slate-50 p-6"><div className="text-center"><img src="/jaya-global-icon.png" alt="Jaya Group logo" width={64} height={64} className="mx-auto mb-4 object-contain" /><h1 className="mb-5 text-xl font-bold tracking-wide text-slate-900">JAYA GROUP</h1>{checking ? <><FiLoader className="mx-auto animate-spin text-blue-600" size={28} /><p className="mt-3 text-sm text-slate-600">Checking your session...</p></> : <><p role="alert" className="text-sm text-slate-700">{restoreError}</p><button onClick={() => window.location.reload()} className="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-sm text-white">Retry session check</button></>}</div></main>;
 
   return (
     <main className="signin-landing">

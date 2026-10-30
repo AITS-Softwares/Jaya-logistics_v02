@@ -2,6 +2,8 @@
 
 import React, { useEffect, useState, useMemo } from "react";
 import axios from "axios";
+import CustomerUsersPanel from "@/components/CustomerUsersPanel";
+import { usePermission } from "../hooks/usePermission";
 import EmployeeSearchSelect from "@/components/hr/EmployeeSearchSelect";
 import {
   FiPlus, FiTrash2, FiEdit2, FiSearch, FiShield,
@@ -199,7 +201,7 @@ const emptyForm = () => ({
   accessAllBranches: true, branchIds: [],
 });
 
-export default function UsersPage() {
+function CompanyUsersPage() {
   const [users, setUsers]         = useState([]);
   const [loading, setLoading]     = useState(false);
   const [openModal, setOpenModal] = useState(false);
@@ -847,3 +849,16 @@ export default function UsersPage() {
 }
 
 
+
+
+export default function UsersPage() {
+  const [section, setSection] = useState('company');
+  const { isAdmin, isCompany } = usePermission();
+  return <>
+    <nav aria-label="User account types" className="flex gap-2 border-b border-slate-200 bg-white px-6 py-3">
+      <button onClick={() => setSection('company')} aria-pressed={section === 'company'} className={`rounded-lg px-4 py-2 text-sm font-semibold ${section === 'company' ? 'bg-indigo-600 text-white' : 'text-slate-600'}`}>Company Users</button>
+      {(isAdmin || isCompany) && <button onClick={() => setSection('customer')} aria-pressed={section === 'customer'} className={`rounded-lg px-4 py-2 text-sm font-semibold ${section === 'customer' ? 'bg-indigo-600 text-white' : 'text-slate-600'}`}>Customer Users</button>}
+    </nav>
+    {section === 'customer' && (isAdmin || isCompany) ? <CustomerUsersPanel /> : <CompanyUsersPage />}
+  </>;
+}

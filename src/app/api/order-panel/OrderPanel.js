@@ -936,7 +936,7 @@ const orderPanelSchema = new mongoose.Schema({
   customerId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Customer',
-    required: false
+    required: function () { return this.panelStatus !== 'Draft'; }
   },
   customerCode: String,
   customerName: String,
@@ -1008,6 +1008,7 @@ const orderPanelSchema = new mongoose.Schema({
     countryName: String,
     weight: {
       type: Number,
+      min: [0, "Weight cannot be negative."],
       default: 0
     },
     status: {
@@ -1092,13 +1093,13 @@ const orderPanelSchema = new mongoose.Schema({
       pkgsType: String,
       uom: String,
       skuSize: String,
-      packWeight: Number,
+      packWeight: { type: Number, min: [0, "Weight cannot be negative."] },
       productId: { type: mongoose.Schema.Types.ObjectId, ref: "Item", default: null },
       plantRowId: { type: mongoose.Schema.Types.ObjectId, default: null },
       productName: String,
-      wtLtr: Number,
-      actualWt: Number,
-      chargedWt: Number,
+      wtLtr: { type: Number, min: [0, "Weight cannot be negative."] },
+      actualWt: { type: Number, min: [0, "Weight cannot be negative."] },
+      chargedWt: { type: Number, min: [0, "Weight cannot be negative."] },
       wtUom: String
     }],
     'UNIFORM - BAGS/BOXES': [{
@@ -1110,13 +1111,13 @@ const orderPanelSchema = new mongoose.Schema({
       pkgsType: String,
       uom: String,
       skuSize: String,
-      packWeight: Number,
+      packWeight: { type: Number, min: [0, "Weight cannot be negative."] },
       productId: { type: mongoose.Schema.Types.ObjectId, ref: "Item", default: null },
       plantRowId: { type: mongoose.Schema.Types.ObjectId, default: null },
       productName: String,
-      wtLtr: Number,
-      actualWt: Number,
-      chargedWt: Number,
+      wtLtr: { type: Number, min: [0, "Weight cannot be negative."] },
+      actualWt: { type: Number, min: [0, "Weight cannot be negative."] },
+      chargedWt: { type: Number, min: [0, "Weight cannot be negative."] },
       wtUom: String
     }],
     'LOOSE - CARGO': [{
@@ -1128,8 +1129,8 @@ const orderPanelSchema = new mongoose.Schema({
       productId: { type: mongoose.Schema.Types.ObjectId, ref: "Item", default: null },
       plantRowId: { type: mongoose.Schema.Types.ObjectId, default: null },
       productName: String,
-      actualWt: Number,
-      chargedWt: Number
+      actualWt: { type: Number, min: [0, "Weight cannot be negative."] },
+      chargedWt: { type: Number, min: [0, "Weight cannot be negative."] }
     }],
     'NON-UNIFORM - GENERAL CARGO': [{
       _id: {
@@ -1164,10 +1165,12 @@ const orderPanelSchema = new mongoose.Schema({
       },
       actualWt: {
         type: Number,
+        min: [0, "Weight cannot be negative."],
         default: 0
       },
       chargedWt: {
         type: Number,
+        min: [0, "Weight cannot be negative."],
         default: 0
       }
     }]
@@ -1179,6 +1182,7 @@ const orderPanelSchema = new mongoose.Schema({
   // Calculated fields
   totalWeight: {
     type: Number,
+    min: [0, "Weight cannot be negative."],
     default: 0
   },
   totalAmount: {
@@ -1246,6 +1250,8 @@ orderPanelSchema.pre('save', function (next) {
   this.updatedAt = Date.now();
   next();
 });
+
+orderPanelSchema.index({ companyId: 1, customerId: 1, subCompanyId: 1, date: -1 });
 
 orderPanelSchema.plugin(branchScopePlugin, { model: 'OrderPanel' });
 orderPanelSchema.plugin(softDeletePlugin);

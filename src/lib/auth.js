@@ -200,7 +200,10 @@ export function signToken(user, session = {}) {
 // --------------------------------------------
 export function verifyJWT(token) {
   try {
-    return removeDeletePermissionsForNonAdmin(jwt.verify(token, SECRET));
+    const decoded = jwt.verify(token, SECRET);
+    // Customer sessions have a separate verifier and signing key.
+    if (decoded.type === 'customer') return null;
+    return removeDeletePermissionsForNonAdmin(decoded);
   } catch (error) {
     console.error("JWT verify error:", error.message);
     return null;
@@ -233,7 +236,7 @@ export function verifyToken(req) {
     throw new Error("Unauthorized: Missing companyId");
   }
   // Accept both company and user types
-  if (decoded.type !== "company" && decoded.type !== "user" && decoded.type !== "customer") {
+  if (decoded.type !== "company" && decoded.type !== "user") {
     throw new Error("Forbidden: Invalid user type");
   }
   return decoded;

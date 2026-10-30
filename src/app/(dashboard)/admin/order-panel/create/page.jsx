@@ -9358,6 +9358,7 @@
 
 import React, { useMemo, useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { validateOrderWeights } from "@/lib/orderWeightValidation.mjs";
 import { subscribeToMasterDataChanges } from "@/utils/masterDataEvents";
 
 /** =========================
@@ -10482,6 +10483,17 @@ export default function CreateOrderPanel() {
    * SAVE ORDER FUNCTION
    ========================= */
   const handleSave = async (saveMode = 'submit') => {
+    if (saveMode !== 'draft' && !selectedCustomer?._id) {
+      alert('Select a customer from Customer Master before submitting the order.');
+      return;
+    }
+
+    const weightError = validateOrderWeights({ plantRows, packRows });
+    if (weightError) {
+      alert(weightError);
+      return;
+    }
+
     const isDraftSave = saveMode === 'draft';
 
     if (activeOperatingCompanyLoading || !top.subCompanyId) {
@@ -11925,6 +11937,8 @@ function PlantGridTable({
                     <input
                       ref={(el) => weightRefs.current[r._id] = el}
                       type="number"
+                      min="0"
+                      step="any"
                       value={r.weight || ""}
                       onChange={(e) => onChange(r._id, 'weight', e.target.value)}
                       className="w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
