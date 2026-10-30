@@ -6,7 +6,7 @@ import {
   ClipboardCheck, LoaderCircle, LockKeyhole, LogOut, MapPin, PackageCheck,
   Radio, RefreshCw, ShieldCheck, Truck,
 } from "lucide-react";
-import { requestNativeTrackingPermissions, startNativeTracking, stopNativeTracking, supportsNativeTracking } from "@/lib/driverNativeTracking";
+import { clearNativeDriverSession, loadNativeDriverSession, nativeDriverDeviceInfo, requestNativeTrackingPermissions, saveNativeDriverSession, startNativeTracking, stopNativeTracking, supportsNativeTracking } from "@/lib/driverNativeTracking";
 
 const INSTALLATION_KEY = "jaya_driver_installation_id";
 
@@ -73,33 +73,44 @@ export default function DriverApp() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [mustChangePin, setMustChangePin] = useState(false);
+  const [restoringSession, setRestoringSession] = useState(true);
+  const [sessionNotice, setSessionNotice] = useState("");
 
   const signedIn = Boolean(token && driver);
   const approved = device?.status === "approved";
 
   const refreshTrips = async (activeToken = token) => {
-    const data = await api("/trips?state=active", { token: activeToken });
-    setTrips(data);
-    setSelectedTrip((current) => data.find((trip) => trip.id === current?.id) || data[0] || null);
+    try {
+      const data = await api("/trips?state=active", { token: activeToken });
+      setTrips(data);
+      setSelectedTrip((current) => data.find((trip) => trip.id === current?.id) || data[0] || null);
+    } catch (requestError) {
+      if (requestError.code === "DEVICE_NOT_APPROVED" || requestError.code === "DEVICE_REQUIRED") {
+        const me = await api("/me", { token: activeToken }).catch(() => null);
+        if (me?.device) { setDriver(me.driver); setDevice(me.device); }
+      }
+      throw requestError;
+    }
   };
 
-  // Tokens deliberately remain in memory for this phase. Secure native token
-  // storage is introduced with the Phase 4 Android bridge; never persist them
-  // in localStorage or ship a Phase 3 screen as a tracking release.
+  // The access token stays in memory. On Android only, the refresh token is
+  // encrypted natively so closing the app does not force a new approval.
   const registerInstallation = async (accessToken) => {
+    const deviceInfo = await nativeDriverDeviceInfo();
     const data = await api("/devices/register", {
       method: "POST",
       token: accessToken,
       body: {
         installationId: installationId(),
-        manufacturer: navigator.userAgent.includes("Android") ? "Android" : "Browser preview",
-        model: navigator.platform || "Unknown",
-        appVersion: "phase-3-preview",
+        manufacturer: deviceInfo.manufacturer,
+        model: [deviceInfo.model, deviceInfo.androidVersion ? `Android ${deviceInfo.androidVersion}` : ""].filter(Boolean).join(" • "),
+        appVersion: deviceInfo.appVersion,
       },
     });
     setToken(data.accessToken);
     setRefreshToken(data.refreshToken);
     setDevice({ id: data.deviceId, status: data.deviceStatus });
+    await saveNativeDriverSession(data.refreshToken);
     return data;
   };
 
@@ -142,9 +153,38 @@ export default function DriverApp() {
     try {
       const data = await api("/auth/refresh", { method: "POST", body: { refreshToken } });
       setToken(data.accessToken); setRefreshToken(data.refreshToken);
+      await saveNativeDriverSession(data.refreshToken);
       return data.accessToken;
     } catch { return false; }
   };
+
+  useEffect(() => {
+    let active = true;
+    const restoreSession = async () => {
+      try {
+        const saved = await loadNativeDriverSession();
+        if (!saved?.refreshToken) return;
+        const renewed = await api("/auth/refresh", { method: "POST", body: { refreshToken: saved.refreshToken } });
+        const me = await api("/me", { token: renewed.accessToken });
+        if (!active) return;
+        setToken(renewed.accessToken); setRefreshToken(renewed.refreshToken);
+        setDriver(me.driver); setDevice(me.device);
+        await saveNativeDriverSession(renewed.refreshToken);
+        const deviceInfo = await nativeDriverDeviceInfo();
+        await api("/devices/metadata", { method: "POST", token: renewed.accessToken, body: {
+          manufacturer: deviceInfo.manufacturer,
+          model: [deviceInfo.model, deviceInfo.androidVersion ? `Android ${deviceInfo.androidVersion}` : ""].filter(Boolean).join(" • "),
+          appVersion: deviceInfo.appVersion,
+        } }).catch(() => {});
+        if (me.device?.status === "approved") await refreshTrips(renewed.accessToken);
+      } catch (requestError) {
+        await clearNativeDriverSession().catch(() => {});
+        if (requestError.code === "DEVICE_MOVED") setSessionNotice(requestError.message);
+      } finally { if (active) setRestoringSession(false); }
+    };
+    restoreSession();
+    return () => { active = false; };
+  }, []);
 
   const refreshDevice = async () => {
     setLoading(true); setError("");
@@ -162,6 +202,15 @@ export default function DriverApp() {
         setMessage("Session refreshed. Tap Refresh approval once more.");
       } else setError(requestError.message);
     } finally { setLoading(false); }
+  };
+
+  const requestReapproval = async () => {
+    setLoading(true); setError(""); setMessage("");
+    try {
+      const result = await api("/devices/reapproval", { method: "POST", token, body: { installationId: installationId() } });
+      setDevice({ id: result.deviceId, status: result.deviceStatus });
+      setMessage(result.deviceStatus === "pending" ? "Approval request sent. Ask your dispatcher to approve this phone." : "This phone is already awaiting dispatcher approval.");
+    } catch (requestError) { setError(requestError.message); } finally { setLoading(false); }
   };
 
   const act = async (action, issueType = "") => {
@@ -206,22 +255,26 @@ export default function DriverApp() {
 
   const signOut = async () => {
     try { if (token) await api("/auth/logout", { method: "POST", token }); } catch { /* local reset is still safe */ }
+    await clearNativeDriverSession().catch(() => {});
     setToken(""); setRefreshToken(""); setDriver(null); setDevice(null); setTrips([]); setSelectedTrip(null); setMustChangePin(false); setMessage(""); setError("");
   };
 
-  if (!signedIn) return <LoginScreen onSubmit={signIn} loading={loading} error={error} />;
+  if (restoringSession) return <SessionRestoreScreen />;
+  if (!signedIn) return <LoginScreen onSubmit={signIn} loading={loading} error={error} notice={sessionNotice} />;
   if (mustChangePin) return <ChangePinScreen onSubmit={changePin} onLogout={signOut} loading={loading} error={error} message={message} />;
-  if (!approved) return <AwaitingApproval driver={driver} device={device} onRefresh={refreshDevice} onLogout={signOut} loading={loading} error={error} message={message} />;
+  if (!approved) return <AwaitingApproval driver={driver} device={device} onRefresh={refreshDevice} onRequestReapproval={requestReapproval} onLogout={signOut} loading={loading} error={error} message={message} />;
   return <TripHome driver={driver} trips={trips} selectedTrip={selectedTrip} onSelect={setSelectedTrip} onAction={act} onRefresh={() => refreshTrips()} onLogout={signOut} loading={loading} error={error} message={message} />;
 }
+
+function SessionRestoreScreen() { return <main className="flex min-h-screen items-center justify-center bg-slate-950 px-5 text-white"><div className="text-center"><LoaderCircle className="mx-auto animate-spin text-amber-300" size={30} /><p className="mt-4 text-sm font-bold text-slate-300">Restoring secure sign-in…</p></div></main>; }
 
 function Brand({ compact = false }) {
   return <div className="flex items-center gap-3"><div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-400 text-slate-950 shadow-lg shadow-amber-950/20"><Truck size={compact ? 21 : 24} strokeWidth={2.6} /></div><div><p className="text-[10px] font-bold uppercase tracking-[0.22em] text-amber-300">Jaya Logistics</p><p className="text-base font-extrabold tracking-tight text-white">Driver Connect</p></div></div>;
 }
 
-function LoginScreen({ onSubmit, loading, error }) {
+function LoginScreen({ onSubmit, loading, error, notice }) {
   const [mobile, setMobile] = useState(""); const [pin, setPin] = useState("");
-  return <main className="min-h-screen bg-slate-950 text-white"><div className="mx-auto flex min-h-screen max-w-md flex-col px-5 py-8"><Brand /><div className="my-auto"><p className="mt-12 text-sm font-bold uppercase tracking-[0.16em] text-amber-300">Your work, in one place</p><h1 className="mt-3 text-4xl font-black leading-tight tracking-tight">Every trip, clear and under control.</h1><p className="mt-4 text-base leading-7 text-slate-300">Sign in to see only the trips assigned to you. Your office ERP screens stay private.</p><form className="mt-10 space-y-4 rounded-3xl bg-white p-5 text-slate-900 shadow-2xl shadow-black/30" onSubmit={(event) => { event.preventDefault(); onSubmit({ mobile, pin }); }}><Field label="Mobile number" type="tel" value={mobile} onChange={setMobile} placeholder="98765 43210" autoComplete="tel" /><Field label="Driver PIN" type="password" value={pin} onChange={setPin} placeholder="Your 4-digit or company PIN" autoComplete="current-password" /><p className="text-xs leading-5 text-slate-500"><LockKeyhole size={13} className="mr-1 inline" />Use the PIN given by your dispatcher. Do not share it.</p>{error && <Notice tone="error">{error}</Notice>}<button disabled={loading} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-4 font-bold text-white transition hover:bg-slate-800 disabled:opacity-60">{loading ? <LoaderCircle className="animate-spin" size={19} /> : "Sign in securely"}<ArrowRight size={18} /></button></form></div><p className="text-center text-xs leading-5 text-slate-500">Tracking will be enabled only during an active trip after you approve location permissions.</p></div></main>;
+  return <main className="min-h-screen bg-slate-950 text-white"><div className="mx-auto flex min-h-screen max-w-md flex-col px-5 py-8"><Brand /><div className="my-auto"><p className="mt-12 text-sm font-bold uppercase tracking-[0.16em] text-amber-300">Your work, in one place</p><h1 className="mt-3 text-4xl font-black leading-tight tracking-tight">Every trip, clear and under control.</h1><p className="mt-4 text-base leading-7 text-slate-300">Sign in to see only the trips assigned to you. Your office ERP screens stay private.</p><form className="mt-10 space-y-4 rounded-3xl bg-white p-5 text-slate-900 shadow-2xl shadow-black/30" onSubmit={(event) => { event.preventDefault(); onSubmit({ mobile, pin }); }}><Field label="Mobile number" type="tel" value={mobile} onChange={setMobile} placeholder="98765 43210" autoComplete="tel" /><Field label="Driver PIN" type="password" value={pin} onChange={setPin} placeholder="Your 4-digit or company PIN" autoComplete="current-password" /><p className="text-xs leading-5 text-slate-500"><LockKeyhole size={13} className="mr-1 inline" />Use the PIN given by your dispatcher. Do not share it.</p>{notice && <Notice>{notice}</Notice>}{error && <Notice tone="error">{error}</Notice>}<button disabled={loading} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-4 font-bold text-white transition hover:bg-slate-800 disabled:opacity-60">{loading ? <LoaderCircle className="animate-spin" size={19} /> : "Sign in securely"}<ArrowRight size={18} /></button></form></div><p className="text-center text-xs leading-5 text-slate-500">Tracking will be enabled only during an active trip after you approve location permissions.</p></div></main>;
 }
 
 function ChangePinScreen({ onSubmit, onLogout, loading, error, message }) {
@@ -229,8 +282,10 @@ function ChangePinScreen({ onSubmit, onLogout, loading, error, message }) {
   return <main className="min-h-screen bg-slate-950 px-5 py-8 text-white"><div className="mx-auto max-w-md"><Brand /><section className="mt-14 rounded-3xl bg-white p-5 text-slate-900"><h1 className="text-2xl font-black">Set your own PIN</h1><p className="mt-2 text-sm leading-6 text-slate-600">For security, replace the temporary PIN provided by your dispatcher before using this phone.</p><form className="mt-6 space-y-4" onSubmit={(event) => { event.preventDefault(); setLocalError(""); if (newPin !== confirmPin) { setLocalError("New PIN and confirmation do not match."); return; } onSubmit({ currentPin, newPin }); }}><Field label="Temporary PIN" type="password" value={currentPin} onChange={setCurrentPin} /><Field label="New PIN" type="password" value={newPin} onChange={setNewPin} /><Field label="Confirm new PIN" type="password" value={confirmPin} onChange={setConfirmPin} />{message && <Notice>{message}</Notice>}{(localError || error) && <Notice tone="error">{localError || error}</Notice>}<button disabled={loading} className="w-full rounded-2xl bg-slate-950 px-4 py-4 font-bold text-white disabled:opacity-60">{loading ? "Saving…" : "Save PIN and continue"}</button></form><button type="button" onClick={onLogout} className="mt-4 w-full text-sm font-bold text-slate-600 underline">Sign out</button></section></div></main>;
 }
 
-function AwaitingApproval({ driver, device, onRefresh, onLogout, loading, error, message }) {
-  return <main className="min-h-screen bg-slate-950 px-5 py-8 text-white"><div className="mx-auto max-w-md"><Brand /><section className="mt-16 rounded-3xl bg-slate-900 p-7 ring-1 ring-white/10"><div className="flex h-14 w-14 items-center justify-center rounded-full bg-amber-400/15 text-amber-300"><ShieldCheck size={29} /></div><h1 className="mt-6 text-2xl font-black">Hi, {driver?.displayName}</h1><p className="mt-2 leading-7 text-slate-300">Your device has been registered. It needs a one-time approval from your dispatcher before it can show trip information.</p><div className="mt-6 rounded-2xl border border-amber-400/20 bg-amber-400/10 p-4"><p className="text-sm font-bold text-amber-200">Device status: {device?.status || "not registered"}</p><p className="mt-1 text-xs leading-5 text-amber-100/75">Ask operations to approve this device, then tap refresh.</p></div>{message && <Notice>{message}</Notice>}{error && <Notice tone="error">{error}</Notice>}<button onClick={onRefresh} disabled={loading} className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-amber-400 px-4 py-4 font-bold text-slate-950 disabled:opacity-60">{loading ? <LoaderCircle className="animate-spin" size={19} /> : <RefreshCw size={18} />} Refresh approval</button><button onClick={onLogout} className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-bold text-slate-300 hover:bg-white/5"><LogOut size={16} /> Sign out</button></section></div></main>;
+function AwaitingApproval({ driver, device, onRefresh, onRequestReapproval, onLogout, loading, error, message }) {
+  const revoked = device?.status === "revoked";
+  const moved = revoked && device?.revokeReason === "another_device_approved";
+  return <main className="min-h-screen bg-slate-950 px-5 py-8 text-white"><div className="mx-auto max-w-md"><Brand /><section className="mt-16 rounded-3xl bg-slate-900 p-7 ring-1 ring-white/10"><div className="flex h-14 w-14 items-center justify-center rounded-full bg-amber-400/15 text-amber-300"><ShieldCheck size={29} /></div><h1 className="mt-6 text-2xl font-black">Hi, {driver?.displayName}</h1><p className="mt-2 leading-7 text-slate-300">{moved ? "This account is now active on another phone." : revoked ? "This phone is no longer approved. Request approval from your dispatcher to use it again." : "Your device has been registered. It needs a one-time approval from your dispatcher before it can show trip information."}</p><div className="mt-6 rounded-2xl border border-amber-400/20 bg-amber-400/10 p-4"><p className="text-sm font-bold text-amber-200">Device status: {device?.status || "not registered"}</p><p className="mt-1 text-xs leading-5 text-amber-100/75">{moved ? "Use the assigned phone. If this is the replacement phone, request dispatcher approval." : revoked ? "Request approval, then ask operations to approve this phone." : "Ask operations to approve this device, then tap refresh."}</p></div>{message && <Notice>{message}</Notice>}{error && <Notice tone="error">{error}</Notice>}{revoked && <button onClick={onRequestReapproval} disabled={loading} className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-amber-400 px-4 py-4 font-bold text-slate-950 disabled:opacity-60">{loading ? <LoaderCircle className="animate-spin" size={19} /> : <ShieldCheck size={18} />} Request approval again</button>}<button onClick={onRefresh} disabled={loading} className={`${revoked ? "mt-3" : "mt-6"} flex w-full items-center justify-center gap-2 rounded-2xl ${revoked ? "border border-white/20 text-white" : "bg-amber-400 text-slate-950"} px-4 py-4 font-bold disabled:opacity-60`}>{loading ? <LoaderCircle className="animate-spin" size={19} /> : <RefreshCw size={18} />} Refresh approval</button><button onClick={onLogout} className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-bold text-slate-300 hover:bg-white/5"><LogOut size={16} /> Sign out</button></section></div></main>;
 }
 
 function TripHome({ driver, trips, selectedTrip, onSelect, onAction, onRefresh, onLogout, loading, error, message }) {

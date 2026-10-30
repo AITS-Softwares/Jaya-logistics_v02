@@ -15,6 +15,7 @@ export async function POST(req) {
     }
     await dbConnect();
     const installationIdHash = hashSecret(installationId);
+    const installationLabel = `App ${installationId.slice(-6).toUpperCase()}`;
     let device = await DriverDevice.findOne({ companyId: auth.driver.companyId, installationIdHash }).select("+installationIdHash");
     if (device && String(device.driverId) !== String(auth.driver._id)) {
       return NextResponse.json({ success: false, code: "DEVICE_ASSIGNED", message: "This device is already registered to another driver." }, { status: 409 });
@@ -28,6 +29,7 @@ export async function POST(req) {
         manufacturer: String(body.manufacturer || "").slice(0, 80),
         model: String(body.model || "").slice(0, 120),
         appVersion: String(body.appVersion || "").slice(0, 40),
+        installationLabel,
         status: "pending",
         lastSeenAt: new Date(),
       });
@@ -35,6 +37,7 @@ export async function POST(req) {
       device.manufacturer = String(body.manufacturer || device.manufacturer || "").slice(0, 80);
       device.model = String(body.model || device.model || "").slice(0, 120);
       device.appVersion = String(body.appVersion || device.appVersion || "").slice(0, 40);
+      device.installationLabel ||= installationLabel;
       device.lastSeenAt = new Date();
       await device.save();
     }

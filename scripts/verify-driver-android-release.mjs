@@ -6,6 +6,15 @@ const androidRoot = path.join(root, "mobile", "driver", "android");
 const propertiesPath = path.join(androidRoot, "keystore.properties");
 const errors = [];
 
+const driverUrl = process.env.DRIVER_APP_URL || "";
+if (!driverUrl) errors.push("DRIVER_APP_URL is required for a release build.");
+else {
+  try {
+    if (new URL(driverUrl).protocol !== "https:") errors.push("DRIVER_APP_URL must use HTTPS for a release build.");
+  } catch { errors.push("DRIVER_APP_URL is not a valid URL."); }
+}
+if (process.env.DRIVER_ALLOW_CLEARTEXT_TESTING === "true") errors.push("DRIVER_ALLOW_CLEARTEXT_TESTING must not be enabled for a release build.");
+
 if (!fs.existsSync(propertiesPath)) {
   errors.push("android/keystore.properties is missing. Copy keystore.properties.example only on the controlled release machine.");
 } else {

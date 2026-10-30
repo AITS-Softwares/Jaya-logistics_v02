@@ -119,6 +119,18 @@ export async function rotateMobileSession(refreshToken) {
   return createMobileSession({ companyId: session.companyId, driverId: session.driverId, deviceId: session.deviceId, familyId: session.familyId });
 }
 
+// This exposes only a safe reason after the caller proves possession of the
+// refresh token. It lets the app explain a phone transfer without issuing a
+// new access token to a revoked device.
+export async function mobileRefreshFailureCode(refreshToken) {
+  if (!refreshToken) return null;
+  const session = await DriverMobileSession.findOne({ refreshTokenHash: hashSecret(refreshToken) });
+  if (!session?.deviceId) return null;
+  const device = await DriverDevice.findOne({ _id: session.deviceId, companyId: session.companyId, driverId: session.driverId }).select("status revokeReason");
+  if (device?.status === "revoked" && device.revokeReason === "another_device_approved") return "DEVICE_MOVED";
+  return null;
+}
+
 export async function requireMobileAuth(req, { requireDevice = true } = {}) {
   const token = tokenFromRequest(req);
   if (!token) return { error: mobileError("A driver access token is required.") };

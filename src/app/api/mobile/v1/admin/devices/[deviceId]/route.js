@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import DriverDevice from "@/models/DriverDevice";
+import TrackingSession from "@/models/TrackingSession";
 import { isDriverMobileEnabled, mobileUnavailableResponse, revokeDriverSessions } from "@/lib/driverMobileAuth";
 import { requireDriverMobileStaff } from "@/lib/driverMobileStaff";
 
@@ -19,6 +20,8 @@ async function branchHandlerPATCH(req, { params }) {
     const device = await DriverDevice.findOne({ _id: deviceId, companyId: staff.user.companyId });
     if (!device) return NextResponse.json({ success: false, code: "NOT_FOUND", message: "Device not found." }, { status: 404 });
     if (action === "approve") {
+      const activeTrackingOnOtherPhone = await TrackingSession.exists({ companyId: device.companyId, driverId: device.driverId, deviceId: { $ne: device._id }, state: "active" });
+      if (activeTrackingOnOtherPhone) return NextResponse.json({ success: false, code: "ACTIVE_PHONE_TRACKING", message: "Another approved phone is actively tracking a trip. End that trip before moving this driver to a different phone." }, { status: 409 });
       await DriverDevice.updateMany({ companyId: device.companyId, driverId: device.driverId, _id: { $ne: device._id }, status: "approved" }, { $set: { status: "revoked", revokedAt: new Date(), revokedBy: staff.user.id, revokeReason: "another_device_approved" } });
       device.status = "approved";
       device.approvedAt = new Date();
