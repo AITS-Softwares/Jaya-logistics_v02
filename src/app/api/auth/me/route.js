@@ -1,3 +1,4 @@
+import { requireCustomer, customerApiResponse, customerApiFailure } from "@/lib/customerPortalAuth";
 import { NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 import dbConnect from "@/lib/db";
@@ -21,6 +22,13 @@ export async function GET(req) {
     }
 
     // ✅ Verify karo
+    if (jwt.decode(token)?.type === 'customer') {
+      try {
+        const { session } = await requireCustomer(req);
+        return customerApiResponse({ user: session });
+      } catch (error) { return customerApiFailure(error); }
+    }
+
     let decoded;
     try {
       decoded = jwt.verify(token, SECRET);
@@ -47,7 +55,7 @@ export async function GET(req) {
         user.isGroupAdmin = decoded.isGroupAdmin === true;
         user.groupName = decoded.groupName || "JAYA GROUP";
       }
-    } else {
+    } else if (userType === "user") {
       // ✅ CompanyUser model se uthao — .toObject() use karo lean() nahi
       const rawUser = await CompanyUser.findById(decoded.id).select("-password -__v");
 

@@ -26,21 +26,55 @@ push delivery. No public send endpoint or extra worker API secret is required.
    Private keys stay on the server. Public configuration is returned by an
    authenticated settings endpoint so it also works without rebuilding the
    browser bundle when server environment settings change.
-4. Build and restart the ERP using the existing deployment process. With the
-   existing PM2 deployment, start the additional worker **after configuring keys**:
+4. Production `npm start` now launches Next.js and the push worker together through
+   `scripts/start-production.mjs`. `ecosystem.config.js` uses the same launcher.
+   Run one `importexportsystem` instance: do not also run the standalone push
+   ecosystem or `npm run push:worker`, which would duplicate worker activity.
+
+   **One-time migration:** check `pm2 status`. If `jaya-erp-push` exists, remove
+   that old standalone worker before starting the combined application:
 
    ```sh
-   pm2 start ecosystem.push.config.cjs
-   pm2 save
-   pm2 logs jaya-erp-push
+   pm2 delete jaya-erp-push
    ```
 
-   Configure PM2 startup through your server's normal process so both services
-   return after a reboot. Alternatively supervise `npm run push:worker` with
-   systemd or your current service manager, using the repository as working
-   directory. Restart the worker whenever its environment changes. `node
-   scripts/push-worker.mjs --once` processes at most one queued notification for
-   troubleshooting. Do not run the worker against a different database.
+   Skip that deletion if the process does not exist. Your future deployment
+   routine can remain:
+
+   ```sh
+   pm2 stop ecosystem.config.js
+   git pull backup main
+   npm run build
+   ```
+
+   Continue only if the pull and build succeeded:
+
+   ```sh
+   pm2 delete importexportsystem
+   pm2 start npm --name importexportsystem -- start
+   pm2 save
+   pm2 logs importexportsystem --lines 50
+   ```
+
+   The final syntax is `-- start`, not `--start`. Install dependencies before
+   building when a release changes them (`npm ci --legacy-peer-deps`).
+   Logs for both services now appear under `importexportsystem`; expect
+   `[production] web process started.`, `[production] push process started.` and
+   `Jaya ERP push worker started.` The launcher startup message alone is not a
+   push-delivery health check: verify the worker log and send a test notification.
+
+   If either child exits unexpectedly, the launcher stops its sibling and exits
+   nonzero, allowing PM2 to restart the pair. Stop/restart signals are forwarded
+   to both children, with forced termination after eight seconds if necessary.
+   `ecosystem.config.js` provides a twelve-second PM2 shutdown timeout. The npm
+   command above uses your PM2 default timeout; add `--kill-timeout 12000` before
+   `-- start` if you want the same graceful shutdown allowance.
+
+   Keep PM2's normal startup configuration so the saved process returns after
+   reboot. VAPID settings and `MONGODB_URI` are still required; automatic startup
+   does not configure credentials. Restart the combined app when settings change.
+   Do not regenerate VAPID keys on deployments.
+
 5. Allow outgoing HTTPS to browser push services from the server and tablet.
    Serve `/sw.js` as JavaScript over HTTPS, without authentication redirects or
    proxy caching. The Next.js configuration adds no-cache headers. Do not enable
@@ -109,3 +143,5 @@ ownership and existing reapproval queue regression tests.
 port 3108, compiles the admin page and new routes, verifies anonymous API requests
 receive 401, checks service-worker headers, and stops the temporary server. Run
 this with other local Next.js development servers stopped because it uses `.next`.
+
+Run `npm run test:production-start` for offline launcher lifecycle checks. These do not start Next.js, the real push worker, or a database connection.

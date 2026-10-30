@@ -1926,6 +1926,7 @@
 
 // src/app/(dashboard)/admin/layout.js
 "use client";
+import { invalidSessionStatus, sessionOwner } from '@/lib/sessionRestore.mjs';
 import { AdminShowDeletedRecords } from "@/components/ShowDeletedRecords";
 import { AdminDeleteImpactHost } from "@/components/DeleteImpactModal";
 import ReapprovalWorkspace from "@/components/ReapprovalWorkspace";
@@ -2018,6 +2019,7 @@ export default function Layout({ children }) {
   const [openMenu, setOpenMenu] = useState(null);
   const [openSubmenus, setOpenSubmenus] = useState({});
   const [session, setSession] = useState(null);
+  const [sessionError, setSessionError] = useState('');
   const [operatingCompanies, setOperatingCompanies] = useState([]);
   const [isWorkspaceMenuOpen, setIsWorkspaceMenuOpen] = useState(false);
   const router = useRouter();
@@ -2043,25 +2045,38 @@ export default function Layout({ children }) {
         });
 
         if (!res.ok) {
-          localStorage.removeItem("token");
-          localStorage.removeItem("user");
-          router.push("/signin");
+          if (invalidSessionStatus(res.status)) {
+            ['token', 'user', 'groupToken', 'lastPath', 'lastPathOwner'].forEach(key => localStorage.removeItem(key));
+            router.replace('/signin');
+          } else setSessionError('Unable to verify your session. Check your connection and retry.');
           return;
         }
 
         const data = await res.json();
+        if (data.user?.type === 'customer') {
+          router.replace('/customer-dashboard');
+          return;
+        }
+
         setSession(data.user);
         // Store user in localStorage for permission hook
         localStorage.setItem("user", JSON.stringify(data.user));
         window.dispatchEvent(new Event('erp:user-session-updated'));
       } catch (err) {
         console.error("Session fetch error:", err);
-        router.push("/signin");
+        setSessionError('Unable to verify your session. Check your connection and retry.');
       }
     }
 
     getSession();
   }, [router]);
+
+  useEffect(() => {
+    if (session && (pathname === '/admin' || pathname.startsWith('/admin/'))) {
+      localStorage.setItem('lastPath', pathname);
+      localStorage.setItem('lastPathOwner', sessionOwner(session));
+    }
+  }, [pathname, session]);
 
   useEffect(() => {
     if (!session?.isGroupAdmin) return;
@@ -2114,7 +2129,7 @@ export default function Layout({ children }) {
 
   if (!session) return (
     <div className="flex h-screen items-center justify-center bg-gray-100">
-      <div className="animate-spin rounded-full h-10 w-10 border-4 border-blue-500 border-t-transparent" />
+      {sessionError ? <div className="p-6 text-center"><p role="alert" className="text-sm text-slate-700">{sessionError}</p><button onClick={() => window.location.reload()} className="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-white">Retry session check</button></div> : <div className="animate-spin rounded-full h-10 w-10 border-4 border-blue-500 border-t-transparent" />}
     </div>
   );
 
@@ -2620,7 +2635,7 @@ export default function Layout({ children }) {
                   onClick={closeSidebar}
                   isActive={isActive("/admin/users")}
                 />
-                <Item
+                <Item disabled
                   href="/admin/authorizations"
                   icon={<HiUserGroup />}
                   label="Authorizations"

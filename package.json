@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
-    "start": "next start",
+    "start": "node scripts/start-production.mjs",
+    "test:production-start": "node scripts/test-production-start.mjs",
     "lint": "next lint",
     "push:worker": "node scripts/push-worker.mjs",
     "push:keys": "web-push generate-vapid-keys",

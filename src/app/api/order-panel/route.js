@@ -2131,6 +2131,7 @@ import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from "next/server";
 import connectDb from "@/lib/db";
 import OrderPanel from "./OrderPanel";
+import Customer from "@/models/CustomerModel";
 import Plant from "@/app/api/plants/schema";
 
 import mongoose from 'mongoose';
@@ -2138,6 +2139,7 @@ import { withAuth, hasPermission } from "@/lib/auth";
 import { getNextOrderPanelNumber } from "./OrderCounter";
 import { recordApprovedRevision } from '@/lib/reapprovalService';
 import { handleModuleDelete } from "@/lib/deletion/handler";
+import { validateOrderWeights } from "@/lib/orderWeightValidation.mjs";
 import { companyScopeFilter } from "@/lib/companyScope";
 import { notifyModuleApprovers, notifyModuleCreateUsers, notifyModuleDecision } from "@/lib/workflowNotifications";
 
@@ -2406,10 +2408,28 @@ const branchHandlerPOST = withAuth(async (req, context, user) => {
 
   try {
     const body = await req.json();
+    const weightError = validateOrderWeights(body);
+    if (weightError) {
+      return NextResponse.json({ success: false, message: weightError }, { status: 400 });
+    }
+
     // saveMode: 'draft' = Save as Draft (partial record), 'submit' = Submit for Approval.
     // Callers that send no saveMode keep the old behaviour (plain 'Draft', approvable).
     const isDraftSave = body.saveMode === 'draft';
     const isSubmitSave = body.saveMode === 'submit';
+    const linkedCustomer = body.customerId && mongoose.isValidObjectId(body.customerId)
+      ? await Customer.findOne({ _id: body.customerId, companyId: user.companyId }).select('_id customerName customerCode').lean()
+      : null;
+    if ((!isDraftSave || body.customerId) && !linkedCustomer) {
+      return NextResponse.json({ success: false, message: 'Select a valid customer from Customer Master before submitting the order.' }, { status: 400 });
+    }
+    if (linkedCustomer) {
+      body.customerId = String(linkedCustomer._id);
+      body.customerName = linkedCustomer.customerName;
+      body.customerCode = linkedCustomer.customerCode || '';
+      body.partyName = linkedCustomer.customerName;
+    }
+
     const missingDrops = missingOrderDropRows(body.plantRows || []);
     if (missingDrops.length) {
       return NextResponse.json({ success: false, message: `Select a drop location for every order row. Missing on row(s): ${missingDrops.map((row, index) => row.plantName || `Row ${index + 1}`).join(', ')}.` }, { status: 400 });
@@ -2659,6 +2679,11 @@ const branchHandlerPUT = withAuth(async (req, context, user) => {
 
   try {
     const body = await req.json();
+    const weightError = validateOrderWeights(body);
+    if (weightError) {
+      return NextResponse.json({ success: false, message: weightError }, { status: 400 });
+    }
+
     const { id } = body;
 
     if (!id) {
@@ -2697,6 +2722,21 @@ const branchHandlerPUT = withAuth(async (req, context, user) => {
     orderPanel.subCompanyId = user.activeOperatingCompanyId;
     orderPanel.subCompanyName = user.activeOperatingCompanyName || '';
     orderPanel.subCompanyCode = user.activeOperatingCompanyCode || '';
+
+    const customerId = body.customerId !== undefined ? body.customerId : orderPanel.customerId;
+    const linkedCustomer = customerId && mongoose.isValidObjectId(customerId)
+      ? await Customer.findOne({ _id: customerId, companyId: user.companyId }).select('_id customerName customerCode').lean()
+      : null;
+    if ((body.saveMode !== 'draft' || customerId) && !linkedCustomer) {
+      return NextResponse.json({ success: false, message: 'Select a valid customer from Customer Master before submitting the order.' }, { status: 400 });
+    }
+    if (linkedCustomer) {
+      orderPanel.customerId = linkedCustomer._id;
+      body.customerName = linkedCustomer.customerName;
+      body.customerCode = linkedCustomer.customerCode || '';
+      body.partyName = linkedCustomer.customerName;
+      orderPanel.customerCode = body.customerCode;
+    }
 
     // Draft handling: Save as Draft / Submit for Approval only apply to an order still in Draft
     const saveMode = body.saveMode;
@@ -3006,6 +3046,10 @@ const branchHandlerPATCH = withAuth(async (req, context, user) => {
     const remarks = (body.remarks || '').trim();
 
     if (action === 'approve') {
+      if (!orderPanel.customerId || !await Customer.exists({ _id: orderPanel.customerId, companyId: user.companyId })) {
+        return NextResponse.json({ success: false, message: 'Link a valid customer from Customer Master before approving this order.' }, { status: 400 });
+      }
+
       if (orderPanel.panelStatus !== 'Submitted' && !(orderPanel.reapprovalState === 'pendingReapproval' && ['Approved', 'Completed'].includes(orderPanel.panelStatus))) return NextResponse.json({ success: false, message: 'Only a submitted order or a synced record pending reapproval can be approved.' }, { status: 400 });
       if (orderPanel.allocationEnabled) {
         const dropCheck = validatePackDropLocations(orderPanel.packData, orderPanel.plantRows, true);
