@@ -1169,12 +1169,8 @@ import OrderPanel from '@/app/api/order-panel/OrderPanel';
 import { findLRsForPanel, getLRCompletion, LR_COMPLETION_SELECT } from "./findLRs";
 import { validateOpenOrderRows } from '@/lib/orderRowStatus';
 import { handleModuleDelete } from '@/lib/deletion/handler';
-<<<<<<< Updated upstream
 import { notifyModuleCreateUsers, notifyModuleApprovers, notifyModuleDecision } from '@/lib/workflowNotifications';
-=======
-import { notifyModuleCreateUsers, notifyModuleApprovers } from '@/lib/workflowNotifications';
 import { syncOperationalDriverProfile } from '@/lib/driverOperationalSync';
->>>>>>> Stashed changes
 
 // ── PERMISSION FUNCTIONS ──
 
