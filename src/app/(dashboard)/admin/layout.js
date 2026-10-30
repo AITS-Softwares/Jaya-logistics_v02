@@ -2635,7 +2635,7 @@ export default function Layout({ children }) {
                   onClick={closeSidebar}
                   isActive={isActive("/admin/users")}
                 />
-                <Item
+                <Item disabled
                   href="/admin/authorizations"
                   icon={<HiUserGroup />}
                   label="Authorizations"
