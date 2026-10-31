@@ -1,3 +1,4 @@
+import {findNewRateOverlap,rateOverlapMessage} from './rateSlabValidation.mjs';
 import mongoose from 'mongoose';
 import { approvalError, initialApproval, submissionUpdate, reviewUpdate, legacyApprovalUpdate, STALE_PROPOSAL } from './masterApprovalPolicy.mjs';
 
@@ -20,11 +21,11 @@ export function approvalManagementRecord(record) {
   return data;
 }
 export function requireApprovalMigration(record) {
-  if(record.$isDefault?.('approvalStatus')) throw approvalError('This existing record must be approved in the app first. An administrator should open Existing records, select Review, then click Approve existing record. After approval, you can edit it normally.');
+  if(record.$isDefault?.('approvalStatus')) throw approvalError('This older record is missing approval setup. Ask an administrator to complete the master approval migration before editing it.');
 }
-export async function submitMasterChange({Model,record,input,user,kind}) {
+export async function submitMasterChange({Model,record,input,user,kind,onApprove}) {
   requireApprovalMigration(record);
-  if (!record.approvalStatus || !record.updatedAt) throw approvalError('This record is missing approval details. Ask an administrator to review it under Existing records before submitting changes.');
+  if (!record.approvalStatus || !record.updatedAt) throw approvalError('This record is missing approval details. Ask an administrator to check its approval setup before submitting changes.');
   const castCandidate=new Model(record.toObject());
   const allowedInput=submissionUpdate(record.toObject(),input,user,kind);
   applyApprovalPatch(castCandidate,allowedInput.$set);
@@ -36,7 +37,20 @@ export async function submitMasterChange({Model,record,input,user,kind}) {
   applyApprovalPatch(candidate,update.$set);
   if (update.$set.pendingChange) applyApprovalPatch(candidate,update.$set.pendingChange.data);
   await candidate.validate();
-  if(kind==='rate') validateRateCandidate(candidate);
+  if(kind==='rate') validateRateCandidate(candidate,{baseline:record.approvalStatus==='Approved'?record.locationRates:[]});
+  if(kind==='rate' && update.$set.approvalStatus==='Approved' && update.$set.locationRates) {
+    if(!onApprove)throw approvalError('Rate history handler is required for a direct administrator save.',500);
+    const session=await mongoose.startSession();
+    let saved;
+    try {
+      await session.withTransaction(async()=>{
+        await onApprove({record,candidate,update,session,kind});
+        saved=await Model.findOneAndUpdate(approvalWriteFilter(record),update,{new:true,runValidators:true,session});
+        if(!saved)throw approvalError(STALE_PROPOSAL);
+      });
+      return saved;
+    }finally{await session.endSession();}
+  }
   const saved = await Model.findOneAndUpdate(approvalWriteFilter(record),update,{new:true,runValidators:true});
   if (!saved) throw approvalError(STALE_PROPOSAL);
   return saved;
@@ -61,7 +75,7 @@ export async function reviewMaster({Model,id,companyId,user,kind,action,revision
       const candidate = new Model(record.toObject());
       applyApprovalPatch(candidate,update.$set);
       await candidate.validate();
-      if(kind==='rate') validateRateCandidate(candidate);
+      if(kind==='rate' && action==='approve') validateRateCandidate(candidate,{baseline:record.approvalStatus==='Approved'?record.locationRates:[]});
       if (action === 'approve' && onApprove) await onApprove({record,candidate,update,session,kind});
       saved = await Model.findOneAndUpdate(approvalWriteFilter(record),update,{new:true,runValidators:true,session});
       if (!saved) throw approvalError(STALE_PROPOSAL);
@@ -71,16 +85,13 @@ export async function reviewMaster({Model,id,companyId,user,kind,action,revision
   } finally { await session.endSession(); }
 }
 
-export function validateRateCandidate(record) {
+export function validateRateCandidate(record,{baseline=[]}={}) {
   if(record.usageMode==='manual_rate_default' && record.locationRates.length) throw approvalError('Manual Rate Default cannot have rate slabs.',400);
-  const groups=new Map();
   for(const row of record.locationRates || []) {
     if(![row.fromQty,row.toQty,row.rate].every(Number.isFinite) || row.fromQty<0 || row.rate<0 || row.fromQty>=row.toQty) throw approvalError('Each rate slab needs valid non-negative values and From quantity below To quantity.',400);
-    if(row.isActive===false)continue;
-    const key=String(row.locationId),rows=groups.get(key) || [];
-    if(rows.some(other=>row.fromQty<other.toQty && row.toQty>other.fromQty)) throw approvalError('Active rate slabs overlap for the same location.',400);
-    rows.push(row);groups.set(key,rows);
   }
+  const conflict=findNewRateOverlap(record.locationRates,baseline);
+  if(conflict)throw approvalError(rateOverlapMessage(conflict),400);
   if(record.weightRule==='custom') {
     if(!['above','below','between'].includes(record.customRuleType) || !(record.customRuleLimit>0) || (record.customRuleType==='between' && !(record.customRuleToLimit>record.customRuleLimit))) throw approvalError('Enter valid custom weight limits.',400);
   }

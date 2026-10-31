@@ -1,5 +1,5 @@
 import {submitMasterChange} from '@/lib/masterApprovalService';
-import {notifyMasterSubmission} from '@/lib/masterApprovalRoutes';
+import {notifyMasterSubmission,rateApprovalHistory} from '@/lib/masterApprovalRoutes';
 import { NextResponse } from "next/server";
 import connectDb from "@/lib/db";
 import RateMaster from "../schema";
@@ -64,12 +64,12 @@ export async function POST(req) {
       return rate;
     });
     
-    const submitted=await submitMasterChange({Model:RateMaster,record:rateMaster,input:{locationRates:updatedRates},user,kind:'rate'});
+    const submitted=await submitMasterChange({Model:RateMaster,record:rateMaster,input:{locationRates:updatedRates},user,kind:'rate',onApprove:rateApprovalHistory});
     await notifyMasterSubmission(user,submitted,'rate');
     
     return NextResponse.json({
       success: true,
-      message: `Submitted removal of ${duplicates.length} duplicate rate(s) for approval`,
+      message: submitted.approvalStatus==='Approved' && !submitted.pendingChange?`Removed ${duplicates.length} duplicate rate(s).`:`Submitted removal of ${duplicates.length} duplicate rate(s) for approval`,
       duplicatesCount: duplicates.length
     });
     

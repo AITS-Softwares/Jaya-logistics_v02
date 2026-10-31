@@ -5830,6 +5830,7 @@
 // }
 "use client";
 
+import {vnnPurchaseType} from '@/lib/vnnPart3.mjs';
 import { useMemo, useRef, useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import mongoose from 'mongoose';
@@ -7293,8 +7294,11 @@ export default function EditVehicleNegotiation() {
     part3Status: "Pending",
     part3Remarks: "",
     approvalStatus: "",
+    commercialRemarks: "",
     remarks: ""
   });
+  const resolvedPurchaseType=vnnPurchaseType(vendors,approval);
+
 
   const isPart1Locked = Boolean(workflow.part1Locked);
   const isPart3Finalized = approval.part3Status === 'Approved';
@@ -7541,6 +7545,7 @@ export default function EditVehicleNegotiation() {
           part3Status: vn.approval.part3Status || "Pending",
           part3Remarks: vn.approval.part3Remarks || "",
           approvalStatus: vn.approval.approvalStatus || "",
+          commercialRemarks: vn.approval.commercialRemarks || "",
           remarks: vn.approval.remarks || ""
         });
 
@@ -8116,10 +8121,11 @@ export default function EditVehicleNegotiation() {
           driverName: approval.driverName,
           drivingLicense: approval.drivingLicense,
           mobile: approval.mobile,
-          purchaseType: approval.purchaseType,
+          purchaseType: resolvedPurchaseType,
           paymentTerms: approval.paymentTerms,
           advance: num(approval.advance),
           approvalStatus: approval.approvalStatus,
+          commercialRemarks: approval.commercialRemarks,
           remarks: approval.remarks
         }
       };
@@ -8548,7 +8554,7 @@ export default function EditVehicleNegotiation() {
             </div>
 
             <div className="flex items-center gap-3">
-              <button
+              {isPart1Locked && !isPart3Finalized ? <div role="status" className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2"><p className="text-sm font-semibold text-amber-800">{approval.part3Status==='Reject'?'Returned for correction':'Submitted for approval'}</p><p className="mt-0.5 text-xs text-amber-700">{approval.part3Status==='Reject'?'Use Amend VNN to correct and resubmit.':'Parts 1 & 3 are locked until review or amendment.'}</p></div> : <button
                 onClick={handleUpdate}
                 disabled={saving || replacementMode || (!canEditVnn && !canEditPlacement) || (isPart1Locked && !canEditPart3 && !canEditPlacement)}
                 className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${saving
@@ -8564,8 +8570,8 @@ export default function EditVehicleNegotiation() {
                     </svg>
                     Updating...
                   </span>
-                ) : (isPart1Locked ? (isPart3Finalized ? 'Save Vehicle Placement' : 'Awaiting Approval') : 'Save VNN')}
-              </button>
+                ) : (isPart1Locked ? 'Save Vehicle Placement' : 'Save VNN')}
+              </button>}
               {!isPart1Locked && canEditVnn ? (
                 <button onClick={() => handleWorkflowAction('lock-part1')} disabled={saving} className="rounded-xl bg-indigo-600 px-5 py-2 text-sm font-bold text-white hover:bg-indigo-700 disabled:bg-slate-400">
                   Submit for Approval
@@ -8897,6 +8903,7 @@ export default function EditVehicleNegotiation() {
 
           {/* PART 3: VEHICLE APPROVAL - independent of Part 1 */}
           <Card title="Vehicle - Approval - Part - 3">
+            <div className="mb-4"><label className="text-xs font-bold text-slate-600">Part 3 Remarks</label><textarea value={approval.commercialRemarks || ''} onChange={event=>setApproval(previous=>({...previous,commercialRemarks:event.target.value}))} readOnly={!canEditPart3} rows={3} className="mt-1 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm read-only:bg-slate-50" /></div>
             {!canEditPart3 && !canEditPlacement && (
               <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-700">
                 {isPart3Finalized
@@ -9003,22 +9010,22 @@ export default function EditVehicleNegotiation() {
                   disabled={!canEditPlacement}
                 />
               </div>
-              <Input
+              {/* <Input
                 col="col-span-12 md:col-span-4"
                 label="Driver Name"
                 value={approval.driverName || ""}
                 onChange={(v) => setApproval((p) => ({ ...p, driverName: v }))}
                 readOnly={!canEditPlacement}
                 disabled={!canEditPlacement}
-              />
-              <Input
+              /> */}
+              {/* <Input
                 col="col-span-12 md:col-span-4"
                 label="Driving Licence Number"
                 value={approval.drivingLicense || ""}
                 onChange={(v) => setApproval((p) => ({ ...p, drivingLicense: v.toUpperCase() }))}
                 readOnly={!canEditPlacement}
                 disabled={!canEditPlacement}
-              />
+              /> */}
               <Input
                 col="col-span-12 md:col-span-4"
                 label="Mobile (10 digits)"
@@ -9035,10 +9042,9 @@ export default function EditVehicleNegotiation() {
               <Select
                 col="col-span-12 md:col-span-4"
                 label="Purchase - Type"
-                value={approval.purchaseType}
-                onChange={(v) => setApproval((p) => ({ ...p, purchaseType: v }))}
+                value={resolvedPurchaseType}
                 options={purchaseTypes.length > 0 ? purchaseTypes : PURCHASE_TYPES}
-                readOnly={!canEditPlacement}
+                readOnly={true}
               />
             </div>
           </Card>

@@ -1,3 +1,4 @@
+import {supplierSelectionFilter} from '@/lib/supplierSelection.mjs';
 import {masterApprovalAccess,withMasterSubmitterNames} from '@/lib/masterApprovalAccess';
 import {createPendingMaster,submitMasterChange,approvalManagementRecord} from '@/lib/masterApprovalService';
 import {pickPaths,SUPPLIER_SENSITIVE,SUPPLIER_IMMEDIATE} from '@/lib/masterApprovalPolicy.mjs';
@@ -24,7 +25,7 @@ export async function GET(req) {
   try {
     const management=new URL(req.url).searchParams.get('management')==='true' && access!=='lookup';
     const approvalStatus = new URL(req.url).searchParams.get('approvalStatus');
-    const filter = {companyId:user.companyId,...(!management ? {approvalStatus:'Approved'} : approvalStatus ? {approvalStatus} : {})};
+    const filter = {companyId:user.companyId,...(!management ? supplierSelectionFilter() : approvalStatus ? {approvalStatus} : {})};
     const suppliers = await Supplier.find(filter).setOptions({includeUnapprovedMasters:true})
       .select(!management ? '-pendingChange -lastRejectedProposal -approvalLog -reservedSupplierCode' : '')
       .populate("glAccount", "accountName accountCode")
@@ -75,7 +76,7 @@ export async function POST(req) {
     candidate.pan=pan;
     const supplier = await createPendingMaster({Model:Supplier,data:candidate.toObject(),user});
     await notifyMasterSubmission(user,supplier,'supplier');
-    const frappeSync = {status:'not_configured',message:'Waiting for supplier approval.'};
+    const frappeSync = supplier.frappeSync || {status:'not_configured',message:'Waiting for supplier approval.'};
 
     const populated = await Supplier.findById(supplier._id).setOptions({includeUnapprovedMasters:true}).populate("glAccount", "accountName accountCode");
     return NextResponse.json({ success: true, data: populated, frappeSync }, { status: 201 });

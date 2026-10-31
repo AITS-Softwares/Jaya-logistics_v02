@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {initialApproval,submissionUpdate,reviewUpdate,STALE_PROPOSAL} from '../src/lib/masterApprovalPolicy.mjs';
-const maker={id:'111',type:'company'},checker={id:'222',type:'user'};
+const maker={id:'111',type:'user'},checker={id:'222',type:'user'};
 const initial=initialApproval(maker,new Date(0),'new-1');
 assert.equal(initial.approvalStatus,'Pending');
 assert.throws(()=>reviewUpdate(initial,maker,'approve','new-1'),/own submission/);
@@ -36,3 +36,13 @@ assert.throws(()=>reviewUpdate(normalizedStaff,checker,'approve','new-1'),/own s
 console.log('PASS: maker/checker, forged fields, initial approval, resubmission, protected live values, rejection, replacement and stale reviews.');
 
 assert.throws(()=>reviewUpdate({approvalStatus:'Pending'},checker,'approve',undefined),/no complete approval submission/);
+
+for(const admin of [{id:'admin',type:'user',roles:['Admin']},{id:'company',type:'company'}]) {
+  const created=initialApproval(admin);
+  assert.equal(created.approvalStatus,'Approved');assert.equal(created.approvedBy.accountId,admin.id);
+  const direct=submissionUpdate(live,{bankName:'Admin bank',approvedBy:{accountId:'forged'}},admin,'supplier');
+  assert.equal(direct.$set.approvalStatus,'Approved');assert.equal(direct.$set.bankName,'Admin bank');assert.equal(direct.$set.pendingChange,null);assert.equal(direct.$set.approvedBy.accountId,admin.id);
+  assert.throws(()=>submissionUpdate(pending,{bankName:'Overwrite'},admin,'supplier'),/pending submission/);
+}
+assert.equal(initialApproval({id:'approver',type:'user',modules:{Suppliers:{permissions:{approve:true}}}}).approvalStatus,'Pending');
+console.log('PASS: Admin/Company saves are directly approved; ordinary staff and permission-only approvers still submit; pending work by another maker cannot be overwritten.');

@@ -696,7 +696,7 @@ export default function SupplierManagement() {
       } else {
         const res = await axios.post("/api/suppliers", payload, { headers: { Authorization: `Bearer ${token}` } });
         setSuppliers(p => [...p, res.data.data]);
-        toast.success("Supplier submitted for approval.");
+        toast.success(res.data.data.approvalStatus==='Approved'?"Supplier saved and approved.":"Supplier submitted for approval.");
       }
       reset();
     } catch (err) { toast.error(err.response?.data?.message || "Error saving supplier"); }

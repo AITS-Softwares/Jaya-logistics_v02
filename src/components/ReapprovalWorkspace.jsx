@@ -1,16 +1,10 @@
 "use client";
 
+import { reapprovalRecordForPath } from '@/lib/reapprovalRoute.mjs';
 import { reviewDisplayState, approvalLabelForRecord } from '@/lib/reapprovalPresentation.mjs';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 
-const routeTypes = [
-  ['/admin/order-panel/', 'order'],
-  ['/admin/vehicle-negotiation/', 'vnn'],
-  ['/admin/pricing-panel/', 'pricing'],
-  ['/admin/Loading-Info/', 'loading'],
-  ['/admin/Consignment-Note/', 'lr'],
-];
 const labels = { unlocked: 'Under correction', pendingApproval: 'Pending approval', pendingReapproval: 'Pending reapproval', blockedByUpstream: 'Waiting for upstream review', syncFailed: 'Sync review needed', none: 'Approved' };
 const badge = 'inline-flex rounded-full px-2.5 py-1 text-xs font-semibold';
 
@@ -111,6 +105,14 @@ function decodeToken(token) {
 }
 
 export default function ReapprovalWorkspace({ placement = 'content' }) {
+  const pathname=usePathname();
+  // Content belongs to one record route. Remount on navigation so requests
+  // from the previous page cannot populate the new page's approval banner.
+  if(placement==='content' && !reapprovalRecordForPath(pathname))return null;
+  return <ReapprovalWorkspaceForRoute key={placement==='content'?pathname:'header'} placement={placement} />;
+}
+
+function ReapprovalWorkspaceForRoute({ placement = 'content' }) {
   const pathname = usePathname();
   const router = useRouter();
   const [records, setRecords] = useState([]);
@@ -124,14 +126,9 @@ export default function ReapprovalWorkspace({ placement = 'content' }) {
   const [queueOpen, setQueueOpen] = useState(false);
   const queueRef = useRef(null);
 
-  const currentRef = useMemo(() => {
-    const entry = routeTypes.find(([prefix]) => pathname?.startsWith(prefix));
-    if (!entry) return null;
-    const suffix = pathname.slice(entry[0].length).split('/').filter(Boolean);
-    if (!suffix.length || suffix[0] === 'create') return null;
-    const id = ['approve', 'view'].includes(suffix[0]) ? suffix[1] : suffix[0];
-    return id ? { type: entry[1], id } : null;
-  }, [pathname]);
+  const currentRequest=useRef(null);
+  const currentRef=useMemo(()=>reapprovalRecordForPath(pathname),[pathname]);
+  useEffect(()=>()=>currentRequest.current?.abort(),[]);
 
   const refresh = useCallback(async () => {
     if (!token) return;
@@ -143,13 +140,17 @@ export default function ReapprovalWorkspace({ placement = 'content' }) {
   }, [token]);
 
   const fetchCurrent = useCallback(async () => {
+    currentRequest.current?.abort();
     if (!token || !currentRef) { setCurrent(null); return; }
+    const controller=new AbortController();
+    currentRequest.current=controller;
     try {
-      const response = await fetch(`/api/reapproval/${currentRef.type}/${currentRef.id}`, { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store' });
+      const response = await fetch(`/api/reapproval/${currentRef.type}/${currentRef.id}`, { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store',signal:controller.signal });
       const data = await response.json();
+      if(controller.signal.aborted || currentRequest.current!==controller)return;
       if (response.ok && data.success) setCurrent(data);
       else setCurrent(null);
-    } catch { setCurrent(null); }
+    } catch { if(!controller.signal.aborted && currentRequest.current===controller)setCurrent(null); }
   }, [token, currentRef]);
 
   useEffect(() => {
@@ -249,7 +250,7 @@ export default function ReapprovalWorkspace({ placement = 'content' }) {
       {current.record.hasReviewableChanges === true && <ChangesToReview changes={current.record.pendingChanges?.length ? current.record.pendingChanges : current.record.changeSummary} />}
       {(current.record.canUnlockForCorrection || isAdmin) && <div className="flex gap-2">{current.record.canUnlockForCorrection && ['Approved', 'Completed'].includes(current.record.status) && current.record.reapprovalState === 'none' && <button onClick={openUnlock} className="rounded-lg bg-amber-600 px-3 py-2 text-sm font-semibold text-white">Unlock for correction</button>}{current.record.canUnlockForCorrection && current.record.reapprovalState === 'unlocked' && <button onClick={() => { setModal('cancel'); setError(''); }} className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700">Cancel unlock</button>}{isAdmin && current.record.reapprovalState === 'syncFailed' && <button disabled={busy} onClick={() => submit('retrySync')} className="rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50">Retry downstream sync</button>}</div>}
     </section>}
-    {placement === 'content' && modal && <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/50 p-4"><div className="w-full max-w-2xl rounded-2xl bg-white p-5 shadow-2xl">
+    {placement === 'content' && currentRef && current && modal && <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/50 p-4"><div className="w-full max-w-2xl rounded-2xl bg-white p-5 shadow-2xl">
       <h2 className="text-lg font-bold text-slate-900">{modal === 'unlock' ? `Unlock ${current?.record.no} for correction?` : `Cancel unlock for ${current?.record.no}?`}</h2>
       {modal === 'unlock' && <><p className="mt-1 text-sm text-slate-600">Linked records will be blocked from approval while this record is being corrected.</p><div className="mt-4 max-h-48 overflow-auto rounded-lg border border-slate-200 p-3 text-sm">{current?.impact?.map((item) => <div key={`${item.type}:${item.id}`} className="py-1 pl-4" style={{ marginLeft: Math.min(item.depth, 4) * 12 }}>{item.label}: {item.no}</div>)}</div>{current?.blockers?.length > 0 && <div className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800"><b>Cannot unlock</b><ul className="ml-5 list-disc">{current.blockers.map((item) => <li key={item}>{item}</li>)}</ul></div>}<label className="mt-4 block text-sm font-medium text-slate-700">Reason<input value={reason} onChange={(event) => setReason(event.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2" maxLength={1000} /></label></>}
       {modal === 'cancel' && <p className="mt-2 text-sm text-slate-600">This restores the last approved snapshot and clears the temporary downstream block.</p>}

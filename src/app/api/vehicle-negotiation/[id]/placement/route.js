@@ -1,3 +1,4 @@
+import {vnnPurchaseType} from '@/lib/vnnPart3.mjs';
 import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from 'next/server';
 import mongoose from 'mongoose';
@@ -31,14 +32,14 @@ function authorize(req) {
 }
 
 async function branchHandlerPATCH(req, { params }) {
-  const { id } = params;
+  const { id } = await params;
   if (!mongoose.Types.ObjectId.isValid(id)) return NextResponse.json({ success: false, message: 'Invalid record id.' }, { status: 400 });
   const auth = authorize(req);
   if (auth.error) return NextResponse.json({ success: false, message: auth.error }, { status: auth.status });
 
   const body = await req.json();
   const data = body.approval || {};
-  const required = ['vehicleNo', 'driverName', 'drivingLicense', 'mobile', 'purchaseType', 'paymentTerms'];
+  const required = ['vehicleNo', 'driverName', 'drivingLicense', 'mobile', 'paymentTerms'];
   if (required.some((key) => !String(data[key] || '').trim())) {
     return NextResponse.json({ success: false, message: 'Vehicle Number, Driver Name, Licence Number, Mobile, Purchase Type, and Payment Terms are required.' }, { status: 422 });
   }
@@ -62,7 +63,9 @@ async function branchHandlerPATCH(req, { params }) {
   record.approval.driverName = String(data.driverName).trim();
   record.approval.drivingLicense = String(data.drivingLicense).trim().toUpperCase();
   record.approval.mobile = String(data.mobile).trim();
-  record.approval.purchaseType = String(data.purchaseType).trim();
+  const purchaseType=vnnPurchaseType(record.vendors,record.approval);
+  if(!purchaseType)return NextResponse.json({success:false,message:'Set one Purchase Type for the selected supplier in Supplier Market Rates before saving placement.'},{status:422});
+  record.approval.purchaseType = purchaseType;
   record.approval.paymentTerms = String(data.paymentTerms).trim();
   record.workflow = record.workflow || { audit: [] };
   record.workflow.audit = record.workflow.audit || [];

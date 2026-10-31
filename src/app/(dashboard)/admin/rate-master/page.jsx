@@ -245,7 +245,7 @@ export default function RateMasterPage() {
         throw new Error(data.message || 'Failed to create rate master');
       }
       
-      setSuccess('Rate master submitted for approval.');
+      setSuccess(data.data?.approvalStatus==='Approved' && !data.data?.pendingChange?'Changes saved and approved.':'Changes submitted for approval. Approved values remain in use.');
       resetForm();
       fetchRateMasters();
       

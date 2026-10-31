@@ -2,6 +2,7 @@
 
 "use client";
 
+import VnnOrderView from '@/components/VnnOrderView';
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { usePermission } from "../hooks/usePermission";
@@ -12,6 +13,8 @@ import PendingToCreateTable from "@/components/PendingToCreateTable";
 export default function VehicleNegotiationList() {
   const router = useRouter();
   const { canView, canCreate, canEdit, canDelete, canApprove, loading: permissionLoading } = usePermission();
+  const [orderView,setOrderView]=useState(null);
+  const closeOrderView=useCallback(()=>setOrderView(null),[]);
   const [negotiations, setNegotiations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -239,6 +242,7 @@ export default function VehicleNegotiationList() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white">
+      <VnnOrderView selection={orderView} onClose={closeOrderView} />
       {/* Top Bar */}
       <div className="sticky top-0 z-40 border-b bg-white/80 backdrop-blur">
         <div className="mx-auto max-w-full px-6 py-4 flex flex-wrap items-center justify-between gap-4">
@@ -395,7 +399,13 @@ export default function VehicleNegotiationList() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex max-w-64 flex-wrap gap-1.5">
-                          {item.orders.map((order, orderIndex) => <span key={`${order.order || orderIndex}`} className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-800 ring-1 ring-inset ring-blue-100"><span>{order.order || 'Order'}</span><span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${order.sourceOrderStatus === 'Hold' ? 'bg-amber-100 text-amber-800' : order.sourceOrderStatus === 'Cancelled' ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'}`}>{order.sourceOrderStatus || 'Unknown'}</span></span>)}
+                          {item.orders.map((order, orderIndex) => {
+                            const orderPanelId=String(order.orderPanelId || '');
+                            const hasOrderLink=/^[a-f0-9]{24}$/i.test(orderPanelId);
+                            return <div key={orderPanelId || order.order || orderIndex} className="flex flex-wrap items-center gap-2">
+                              <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-800 ring-1 ring-inset ring-blue-100">{<button type="button" onClick={event=>{event.stopPropagation();setOrderView({vnId:item.vnId,vnn:item.vnn,orderPanelId:hasOrderLink?orderPanelId:null,orderNo:order.order});}} title="View order details" className="font-semibold text-slate-900 hover:text-indigo-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400">{order.order || 'Order'}</button>}<span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${order.sourceOrderStatus === 'Hold' ? 'bg-amber-100 text-amber-800' : order.sourceOrderStatus === 'Cancelled' ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'}`}>{order.sourceOrderStatus || 'Unknown'}</span></span>
+                            </div>;
+                          })}
                         </div>
                       </td>
                       <td className="px-4 py-3">

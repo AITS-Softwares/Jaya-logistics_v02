@@ -1,3 +1,4 @@
+import {supplierSelectionFilter} from '@/lib/supplierSelection.mjs';
 // ✅ File: app/api/suppliers/by-code/[code]/route.js
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/db";
@@ -20,7 +21,7 @@ export async function GET(req, { params }) {
 
     const supplier = await Supplier.findOne({
       companyId: user.companyId,
-      approvalStatus:'Approved',
+      ...supplierSelectionFilter(),
       supplierCode: code.trim(),
     }).select('-pendingChange -lastRejectedProposal -approvalLog -reservedSupplierCode').lean();
 

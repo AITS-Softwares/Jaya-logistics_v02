@@ -1,3 +1,4 @@
+import {supplierSelectionFilter} from '@/lib/supplierSelection.mjs';
 // ✅ File: app/api/suppliers/lookup/route.js
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/db";
@@ -26,7 +27,7 @@ export async function GET(req) {
     if (code) {
       supplier = await Supplier.findOne({
         companyId: user.companyId,
-      approvalStatus:'Approved',
+      ...supplierSelectionFilter(),
         supplierCode: code,
       }).select('-pendingChange -lastRejectedProposal -approvalLog -reservedSupplierCode').lean();
       if (supplier) return NextResponse.json({ success: true, data: supplier });
@@ -35,7 +36,7 @@ export async function GET(req) {
     if (name) {
       supplier = await Supplier.findOne({
         companyId: user.companyId,
-      approvalStatus:'Approved',
+      ...supplierSelectionFilter(),
         supplierName: name,
       }).select('-pendingChange -lastRejectedProposal -approvalLog -reservedSupplierCode').lean();
       if (supplier) return NextResponse.json({ success: true, data: supplier });

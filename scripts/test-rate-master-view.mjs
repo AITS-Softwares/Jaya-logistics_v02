@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import {rateMasterForView} from '../src/lib/rateMasterView.mjs';
+const record={title:'Rates',locationRates:[{_id:'old',locationId:'A',locationName:'Mumbai',rate:100}],pendingChange:{data:{locationRates:[{_id:'old',locationId:'A',rate:100},{locationId:'B',rate:125},{locationId:'missing',rate:150}]}}};
+const view=rateMasterForView(record,[{_id:'B',name:'Pune'}]);
+assert.deepEqual(view.locationRates.map(row=>row.locationName),['Mumbai','Pune','Location unavailable']);
+assert.doesNotThrow(()=>view.locationRates.sort((a,b)=>a.locationName.localeCompare(b.locationName)));
+assert.equal(record.pendingChange.data.locationRates[1].locationName,undefined);
+assert.equal(rateMasterForView(null),null);
+assert.deepEqual(rateMasterForView({locationRates:null}).locationRates,[]);
+assert.equal(rateMasterForView({locationRates:[null,{locationId:'A',locationName:'Mumbai'}]}).locationRates.length,1);
+assert.equal(rateMasterForView({locationRates:[],lastRejectedProposal:{data:{locationRates:[{locationId:'B'}]}}},[{_id:'B',name:'Pune'}]).locationRates[0].locationName,'Pune');
+console.log('PASS: proposed/rejected slabs resolve location names, missing/deleted locations are safe to sort, and view normalization does not mutate saved data.');

@@ -1,5 +1,6 @@
 "use client";
 
+import {vnnPurchaseType} from '@/lib/vnnPart3.mjs';
 import { useMemo, useRef, useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import mongoose from 'mongoose';
@@ -2080,8 +2081,11 @@ export default function VehicleNegotiationPanel() {
     paymentTerms: "",
     advance: "",
     approvalStatus: "",
+    commercialRemarks: "",
     remarks: ""
   });
+  const resolvedPurchaseType=vnnPurchaseType(vendors,approval);
+
 
   const purchaseAmount = useMemo(() => {
     if (approval.rateType === "Per MT") {
@@ -2285,10 +2289,11 @@ export default function VehicleNegotiationPanel() {
           vehicleId: approval.vehicleId,
           vehicleData: approval.vehicleData,
           mobile: approval.mobile,
-          purchaseType: approval.purchaseType,
+          purchaseType: resolvedPurchaseType,
           paymentTerms: approval.paymentTerms,
           advance: num(approval.advance),
           approvalStatus: approval.approvalStatus,
+          commercialRemarks: approval.commercialRemarks,
           remarks: approval.remarks
         },
         reportRows: reportRows.map(row => ({
@@ -2406,7 +2411,8 @@ export default function VehicleNegotiationPanel() {
       purchaseType: "",
       paymentTerms: "",
       approvalStatus: "",
-      remarks: "",
+      commercialRemarks: "",
+    remarks: "",
     });
 
     setSelectedCustomer(null);
@@ -3030,13 +3036,13 @@ export default function VehicleNegotiationPanel() {
             </div>
 
             <div className="mb-4">
-              <label className="text-xs font-bold text-slate-600">Approval Remarks</label>
+              <label className="text-xs font-bold text-slate-600">Part 3 Remarks</label>
               <textarea
-                value={approval.remarks}
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm outline-none cursor-not-allowed"
-                rows={2}
-                placeholder="Approval remarks"
-                readOnly
+                value={approval.commercialRemarks || ""}
+                onChange={event=>setApproval(previous=>({...previous,commercialRemarks:event.target.value}))}
+                className="mt-1 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                rows={3}
+                placeholder="Enter supplier negotiation or commercial remarks..."
               />
             </div>
 
@@ -3052,8 +3058,7 @@ export default function VehicleNegotiationPanel() {
               <Select
                 col="col-span-12 md:col-span-4"
                 label="Purchase - Type"
-                value={approval.purchaseType}
-                onChange={(v) => setApproval((p) => ({ ...p, purchaseType: v }))}
+                value={resolvedPurchaseType}
                 options={purchaseTypes.length > 0 ? purchaseTypes : PURCHASE_TYPES}
                 readOnly={true}
               />

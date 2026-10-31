@@ -459,7 +459,7 @@ import {masterApprovalAccess,withMasterSubmitterNames} from '@/lib/masterApprova
 
 import {submitMasterChange,validateRateCandidate} from '@/lib/masterApprovalService';
 import {initialApproval} from '@/lib/masterApprovalPolicy.mjs';
-import {notifyMasterSubmission} from '@/lib/masterApprovalRoutes';
+import {notifyMasterSubmission,rateApprovalHistory} from '@/lib/masterApprovalRoutes';
 import { NextResponse } from "next/server";
 import connectDb from "@/lib/db";
 import RateMaster from "./schema";
@@ -488,6 +488,7 @@ export async function GET(req) {
     const management=searchParams.get('management')==='true' && access!=='lookup';
     const approvalStatus=!management?'Approved':searchParams.get('approvalStatus');
     const approvalFilter=approvalStatus?{approvalStatus}:{};
+    const namedRecord=async record=>management?(await withMasterSubmitterNames([record]))[0]:record;
     const approvalFields=record=>!management?{}:({approvalStatus:record.$isDefault('approvalStatus')?'Migration required':record.approvalStatus,pendingChange:record.pendingChange,revisionId:record.revisionId,submittedBy:record.submittedBy,submittedAt:record.submittedAt,rejectionReason:record.rejectionReason,lastRejectedProposal:record.lastRejectedProposal});
     
     if(history && id) {
@@ -544,7 +545,7 @@ export async function GET(req) {
       
       return NextResponse.json({ 
         success: true, 
-        data: {
+        data: await namedRecord({
           ...approvalFields(rateMaster),
           _id: rateMaster._id,
           title: rateMaster.title,
@@ -572,7 +573,7 @@ export async function GET(req) {
             uploadedAt: null
           },
           locationRates: locationRatesWithNames
-        }
+        })
       }, { status: 200 });
     }
     
@@ -641,7 +642,7 @@ export async function GET(req) {
       })
     );
 
-    return NextResponse.json({ success: true, data: rateMastersWithNames }, { status: 200 });
+    return NextResponse.json({ success: true, data: management ? await withMasterSubmitterNames(rateMastersWithNames) : rateMastersWithNames }, { status: 200 });
   } catch (err) {
     console.error("GET /rate-master error:", err);
     return NextResponse.json({ success: false, message: "Failed to fetch rate masters" }, { status: 500 });
@@ -753,7 +754,7 @@ export async function POST(req) {
 
     return NextResponse.json({
       success: true,
-      message: "Rate master submitted for approval",
+      message: newRateMaster.approvalStatus==='Approved'?"Rate master saved and approved.":"Rate master submitted for approval",
       data: newRateMaster
     }, { status: 201 });
 
@@ -991,7 +992,7 @@ export async function PUT(req) {
       validatedLocationRates = [];
     }
 
-    const updatedRateMaster = await submitMasterChange({Model:RateMaster,record:existingRateMaster,user,kind:'rate',input:{
+    const updatedRateMaster = await submitMasterChange({Model:RateMaster,record:existingRateMaster,user,kind:'rate',onApprove:rateApprovalHistory,input:{
         title: finalTitle.trim(),
         customerId: finalUsageMode === 'manual_rate_default' ? null : finalCustomerId,
         branchId: finalUsageMode === 'manual_rate_default' ? null : finalBranchId,
@@ -1100,9 +1101,9 @@ export async function DELETE(req) {
       if(editAccess.error) return NextResponse.json({success:false,message:editAccess.error},{status:editAccess.status});
       if (!rateMaster.locationRates.some(row=>String(row._id)===rateId)) return NextResponse.json({success:false,message:'Rate not found'},{status:404});
       const updatedRates=rateMaster.locationRates.map(row=>({...row.toObject(),...(String(row._id)===rateId?{isActive:false}:{})}));
-      const submitted=await submitMasterChange({Model:RateMaster,record:rateMaster,input:{locationRates:updatedRates},user,kind:'rate'});
+      const submitted=await submitMasterChange({Model:RateMaster,record:rateMaster,input:{locationRates:updatedRates},user,kind:'rate',onApprove:rateApprovalHistory});
       await notifyMasterSubmission(user,submitted,'rate');
-      return NextResponse.json({success:true,message:'Rate removal submitted for approval.',data:submitted});
+      return NextResponse.json({success:true,message:submitted.approvalStatus==='Approved' && !submitted.pendingChange?'Rate removed.':'Rate removal submitted for approval.',data:submitted});
     }
 
     for (let rate of rateMaster.locationRates) {

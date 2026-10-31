@@ -1,3 +1,4 @@
+import {vnnPurchaseType} from '@/lib/vnnPart3.mjs';
 import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from 'next/server';
 import mongoose from 'mongoose';
@@ -21,7 +22,7 @@ function authorize(req) {
 }
 
 async function branchHandlerPATCH(req, { params }) {
-  const { id } = params;
+  const { id } = await params;
   if (!mongoose.Types.ObjectId.isValid(id)) return NextResponse.json({ success: false, message: 'Invalid record id.' }, { status: 400 });
   const auth = authorize(req);
   if (auth.error) return NextResponse.json({ success: false, message: auth.error }, { status: auth.status });
@@ -37,12 +38,13 @@ async function branchHandlerPATCH(req, { params }) {
     return NextResponse.json({ success: false, message: 'Commercial Part 3 fields are locked after final VNN approval.' }, { status: 409 });
   }
   const data = body.approval || {};
-  for (const key of ['vendorName', 'vendorId', 'vendorCode', 'vendorStatus', 'rateType', 'paymentTerms']) {
+  for (const key of ['vendorName', 'vendorId', 'vendorCode', 'vendorStatus', 'rateType', 'paymentTerms', 'commercialRemarks']) {
     if (data[key] !== undefined) record.approval[key] = data[key];
   }
   if (data.finalPerMT !== undefined) record.approval.finalPerMT = Number(data.finalPerMT) || 0;
   if (data.finalFix !== undefined) record.approval.finalFix = Number(data.finalFix) || 0;
   if (data.advance !== undefined) record.approval.advance = Number(data.advance) || 0;
+  record.approval.purchaseType=vnnPurchaseType(record.vendors,record.approval);
   record.workflow.audit = record.workflow.audit || [];
   record.workflow.audit.push({ action: 'part3-saved', by: auth.user.id || null, at: new Date() });
   if (isReapprovalEdit) {

@@ -1,5 +1,7 @@
 'use client';
 
+import {rateMasterForView} from '@/lib/rateMasterView.mjs';
+import {findNewRateOverlap,rateOverlapMessage} from '@/lib/rateSlabValidation.mjs';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -35,7 +37,7 @@ export default function UnifiedRateMasterPage() {
       const data = await res.json();
       
       if (data.success && Array.isArray(data.data)) {
-        const sortedData = [...data.data].sort((a, b) => 
+        const sortedData = data.data.map(record=>rateMasterForView(record,locations)).filter(Boolean).sort((a, b) =>
           (a.title || '').toLowerCase().localeCompare((b.title || '').toLowerCase())
         );
         setRateMasters(sortedData);
@@ -115,36 +117,10 @@ export default function UnifiedRateMasterPage() {
     }
   };
 
-  // Function to check for overlaps
-  const checkOverlaps = (existingRates, newRates) => {
-    const allRates = [...existingRates, ...newRates];
-    const ratesByLocation = {};
-    
-    allRates.forEach(rate => {
-      if (!ratesByLocation[rate.locationId]) {
-        ratesByLocation[rate.locationId] = [];
-      }
-      ratesByLocation[rate.locationId].push({
-        fromQty: parseFloat(rate.fromQty),
-        toQty: parseFloat(rate.toQty),
-        locationName: rate.locationName || 'Unknown'
-      });
-    });
-    
-    for (const [locationId, ranges] of Object.entries(ratesByLocation)) {
-      ranges.sort((a, b) => a.fromQty - b.fromQty);
-      
-      for (let i = 0; i < ranges.length - 1; i++) {
-        if (ranges[i].toQty >= ranges[i + 1].fromQty) {
-          return {
-            hasOverlap: true,
-            message: `Weight range ${ranges[i].fromQty}-${ranges[i].toQty} overlaps with ${ranges[i+1].fromQty}-${ranges[i+1].toQty} for this location. Ranges cannot overlap.`
-          };
-        }
-      }
-    }
-    
-    return { hasOverlap: false };
+  // Use the same active-slab overlap rules as the API.
+  const checkOverlaps=(existingRates,newRates,baseline=[])=>{
+    const conflict=findNewRateOverlap([...existingRates,...newRates],baseline);
+    return conflict?{hasOverlap:true,message:rateOverlapMessage(conflict)}:{hasOverlap:false};
   };
 
   const addLocationRow = (masterId) => {
@@ -241,13 +217,15 @@ export default function UnifiedRateMasterPage() {
     }
     
     const existingRates = (master.locationRates || []).map(rate => ({
+      isActive:rate.isActive,
+      rate:rate.rate,
       locationId: rate.locationId,
       fromQty: rate.fromQty,
       toQty: rate.toQty,
       locationName: rate.locationName
     }));
     
-    const overlapCheck = checkOverlaps(existingRates, newRatesForValidation);
+    const overlapCheck = checkOverlaps(existingRates, newRatesForValidation,master.approvalStatus==='Approved'?master.locationRates:[]);
     
     if (overlapCheck.hasOverlap) {
       setError(overlapCheck.message);
@@ -294,7 +272,7 @@ export default function UnifiedRateMasterPage() {
         throw new Error(data.message || 'Failed to add location rates');
       }
       
-      setSuccess('Location rates added successfully!');
+      setSuccess(data.data?.approvalStatus==='Approved' && !data.data?.pendingChange?'Changes saved and approved.':'Changes submitted for approval. Approved values remain in use.');
       setTimeout(() => setSuccess(null), 3000);
       
       // Clear rows for this master
@@ -309,7 +287,6 @@ export default function UnifiedRateMasterPage() {
     } catch (error) {
       console.error('Error adding location rates:', error);
       setError(error.message);
-      setTimeout(() => setError(null), 3000);
     } finally {
       setAddingRates(false);
     }
@@ -328,13 +305,15 @@ export default function UnifiedRateMasterPage() {
       );
       
       const ratesToCheck = updatedRates.map(r => ({
+        rate:r.rate,
+        isActive:r.isActive,
         locationId: r.locationId,
         fromQty: r.fromQty,
         toQty: r.toQty,
         locationName: r.locationName
       }));
       
-      const overlapCheck = checkOverlaps([], ratesToCheck);
+      const overlapCheck = checkOverlaps([], ratesToCheck,master.approvalStatus==='Approved'?master.locationRates:[]);
       if (overlapCheck.hasOverlap) {
         setError(overlapCheck.message);
         setTimeout(() => setError(null), 5000);
@@ -371,7 +350,7 @@ export default function UnifiedRateMasterPage() {
         throw new Error(data.message || 'Failed to update location rate');
       }
       
-      setSuccess('Rate change submitted for approval.');
+      setSuccess(data.data?.approvalStatus==='Approved' && !data.data?.pendingChange?'Changes saved and approved.':'Changes submitted for approval. Approved values remain in use.');
       setTimeout(() => setSuccess(null), 3000);
       
       // Clear editing state for this master

@@ -1,0 +1,37 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {createRequire} from 'node:module';
+import {reapprovalRecordForPath} from '../src/lib/reapprovalRoute.mjs';
+const require=createRequire(import.meta.url);
+const id='69ccc2cc9f6b25fc76dc9e6f';
+for(const [panel,type] of [['order-panel','order'],['vehicle-negotiation','vnn'],['pricing-panel','pricing'],['Loading-Info','loading'],['Consignment-Note','lr']]) {
+  for(const segment of ['', 'approve/','view/','edit/'])assert.deepEqual(reapprovalRecordForPath(`/admin/${panel}/${segment}${id}`),{type,id});
+}
+for(const path of ['/admin/rate-master/create','/admin/rate-master/list','/admin/supplier','/admin/order-panel','/admin/order-panel/create','/admin/order-panel/list','/admin/order-panel/not-an-id','/admin/order-panel-other/'+id])assert.equal(reapprovalRecordForPath(path),null);
+const source=fs.readFileSync('src/components/ReapprovalWorkspace.jsx','utf8');
+const ast=require('@babel/parser').parse(source,{sourceType:'module',plugins:['jsx']});
+const swc=require('next/dist/build/swc');
+const compiled=await swc.transform(source,{filename:'ReapprovalWorkspace.jsx',jsc:{parser:{syntax:'ecmascript',jsx:true},transform:{react:{runtime:'automatic'}}},module:{type:'commonjs'}});
+let pathname='/admin/order-panel/'+id;
+const mod={exports:{}};
+new Function('require','module','exports',compiled.code)(name=>name==='next/navigation'?{usePathname:()=>pathname}:name.includes('reapprovalRoute')?{reapprovalRecordForPath}:name.includes('reapprovalPresentation')?{}:require(name),mod,mod.exports);
+const Workspace=mod.exports.default;
+const order=Workspace({placement:'content'});
+pathname='/admin/rate-master/create';assert.equal(Workspace({placement:'content'}),null);
+pathname='/admin/supplier';assert.equal(Workspace({placement:'content'}),null);
+pathname='/admin/vehicle-negotiation/'+id;
+const vnn=Workspace({placement:'content'});assert.notEqual(order.key,vnn.key);
+assert.equal(Workspace({placement:'header'}).key,'header');
+const inner=ast.program.body.find(node=>node.type==='FunctionDeclaration' && node.id.name==='ReapprovalWorkspaceForRoute');
+const fetchNode=inner.body.body.flatMap(node=>node.declarations || []).find(node=>node.id.name==='fetchCurrent').init.arguments[0];
+const factory=new Function('currentRequest','token','currentRef','fetch','setCurrent',`return ${source.slice(fetchNode.start,fetchNode.end)}`);
+const request={current:null},pending=[],updates=[];
+const fakeFetch=()=>new Promise(resolve=>pending.push(resolve));
+const fetchOld=factory(request,'token',{type:'order',id},fakeFetch,value=>updates.push(value));
+const first=fetchOld();
+const fetchNew=factory(request,'token',{type:'vnn',id},fakeFetch,value=>updates.push(value));
+const second=fetchNew();
+pending[1]({ok:true,json:async()=>({success:true,record:{type:'vnn'}})});await second;
+pending[0]({ok:true,json:async()=>({success:true,record:{type:'order'}})});await first;
+assert.deepEqual(updates,[{success:true,record:{type:'vnn'}}]);
+console.log('PASS: unrelated pages cannot render approval content, navigation remounts record state, and delayed old responses cannot overwrite a newer record.');

@@ -5,6 +5,7 @@ export const SUPPLIER_SENSITIVE = ['supplierName','supplierCode','pan','gstNumbe
 export const SUPPLIER_IMMEDIATE = ['contactPersonName','mobileNumber','emailId','contactNumber','alternateContactNumber','billingAddresses','shippingAddresses','documents.visitingCard','documents.aadhaarCard','leadTime','qualityRating','supplierType','supplierGroup','supplierCategory','status','valid','incorporated','udyamNumber','commissionRate'];
 export const RATE_SENSITIVE = ['locationRates','weightRule','customWeightRule','customRuleType','customRuleLimit','customRuleToLimit','customerId','branchId','usageMode','approvalOption','approvalFile','isActive'];
 export const identity = user => ({ accountType: user.type === 'company' ? 'company' : 'companyUser', accountId: String(user.id || user._id || '') });
+export const savesMasterDirectly=user=>user?.type==='company' || user?.roles?.includes('Admin')===true;
 export const sameActor = (a,b) => Boolean(a && b && a.accountType === b.accountType && String(a.accountId) === String(b.accountId));
 export function approvalError(message, status = 409) { return Object.assign(new Error(message), { status }); }
 export function getPath(data, path) { return path.split('.').reduce((value,key) => value?.[key], data); }
@@ -22,13 +23,26 @@ export function pickPaths(data, paths) {
 export function initialApproval(user, now = new Date(), revisionId = randomUUID()) {
   const by = identity(user);
   if (!by.accountId) throw approvalError('Authenticated maker is required.',401);
-  return { approvalStatus:'Pending', approvalVersion:0, revisionId, submittedBy:by, submittedAt:now,
-    approvalLog:[{ action:'SUBMITTED',revisionId,by,at:now,changedFields:[] }] };
+  const direct=savesMasterDirectly(user);
+  return { approvalStatus:direct?'Approved':'Pending', approvalVersion:direct?1:0, revisionId, submittedBy:by, submittedAt:now,
+    ...(direct?{approvedBy:by,approvedAt:now}:{}),
+    approvalLog:[{ action:direct?'APPROVED':'SUBMITTED',revisionId,by,at:now,changedFields:[],...(direct?{remark:'Saved directly by an administrator.'}:{}) }] };
 }
 export function submissionUpdate(record, input, user, kind, now = new Date(), revisionId = randomUUID()) {
   const by = identity(user);
   const sensitive = kind === 'supplier' ? [...SUPPLIER_SENSITIVE,...SUPPLIER_IMMEDIATE] : RATE_SENSITIVE;
   const immediate = kind === 'supplier' ? [] : ['title'];
+  if(savesMasterDirectly(user)) {
+    const outstandingMaker=record.pendingChange?.requestedBy || (record.approvalStatus==='Pending'?record.submittedBy:null);
+    if(outstandingMaker && !sameActor(outstandingMaker,by)) throw approvalError('Another user has a pending submission. Approve or reject it before saving administrator changes.');
+    const data=pickPaths(input,[...sensitive,...immediate]);
+    const changed=Object.keys(data).filter(path=>!equivalent(data[path],getPath(record,path)));
+    if(!changed.length && record.approvalStatus==='Approved' && !record.pendingChange)return {$set:{}};
+    const logs=[];
+    if(record.pendingChange)logs.push({action:'SUPERSEDED',revisionId:record.pendingChange.revisionId,by,at:now,remark:'Replaced by a direct administrator save.'});
+    logs.push({action:'APPROVED',revisionId,by,at:now,changedFields:changed,remark:'Saved directly by an administrator.'});
+    return {$set:{...data,approvalStatus:'Approved',revisionId,submittedBy:by,submittedAt:now,approvedBy:by,approvedAt:now,pendingChange:null,lastRejectedProposal:null,rejectionReason:''},$inc:{approvalVersion:1},$push:{approvalLog:{$each:logs}}};
+  }
   const proposed = pickPaths(input,sensitive);
   const changed = Object.fromEntries(Object.entries(proposed).filter(([path,value]) => !equivalent(value,getPath(record,path))));
   const set = pickPaths(input,immediate);

@@ -176,7 +176,7 @@ export async function POST(req) {
         results.push({
           row: i + 1,
           success: true,
-          action: "created pending",
+          action: submitted.approvalStatus==='Approved'?'created approved':'created pending',
           warnings: errors,
         });
       }

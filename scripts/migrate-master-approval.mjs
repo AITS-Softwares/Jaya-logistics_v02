@@ -3,14 +3,19 @@ import mongoose from 'mongoose';
 const args=process.argv.slice(2);
 const database=args.find(arg=>arg.startsWith('--db='))?.slice(5);
 const apply=args.includes('--apply');
+const only=args.find(arg=>arg.startsWith('--only='))?.slice(7);
+if(only && !['suppliers','ratemasters'].includes(only)) throw new Error('--only must be suppliers or ratemasters.');
+const collections=only?[only]:['suppliers','ratemasters'];
 if(!database || !process.env.MASTER_APPROVAL_MONGO_URI) throw new Error('Set MASTER_APPROVAL_MONGO_URI and pass --db=EXACT_DATABASE. Omit --apply for dry-run.');
 try {
-  await mongoose.connect(process.env.MASTER_APPROVAL_MONGO_URI,{dbName:database});
+  await mongoose.connect(process.env.MASTER_APPROVAL_MONGO_URI,{dbName:database,serverSelectionTimeoutMS:10000,connectTimeoutMS:10000});
   console.log(`Database: ${mongoose.connection.name}; mode: ${apply?'APPLY':'DRY RUN'}`);
+  if(collections.includes('suppliers')) {
   const suppliers=mongoose.connection.db.collection('suppliers');
   const duplicates=await suppliers.aggregate([{$group:{_id:{companyId:'$companyId',code:'$supplierCode'},count:{$sum:1}}},{$match:{count:{$gt:1}}},{$limit:5}]).toArray();
   if(duplicates.length) throw new Error('Duplicate supplier codes exist within a company. Resolve these before migration; no records have been changed.');
-  for(const name of ['suppliers','ratemasters']) {
+  }
+  for(const name of collections) {
     const collection=mongoose.connection.db.collection(name);
     const total=await collection.countDocuments({});
     const missing=await collection.countDocuments({approvalStatus:{$exists:false}});

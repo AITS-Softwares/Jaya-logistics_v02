@@ -3,14 +3,16 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import mongoose from 'mongoose';
 import * as policy from '../src/lib/masterApprovalPolicy.mjs';
+import * as rateSlabs from '../src/lib/rateSlabValidation.mjs';
 const context=vm.createContext({console,Date,Map,Set,Error,Object,String,Number,Boolean,JSON});
 const synth=(name,exports)=>new vm.SyntheticModule(Object.keys(exports),function(){for(const [key,value] of Object.entries(exports))this.setExport(key,value);},{context,identifier:name});
 const modules=new Map();
 modules.set('mongoose',synth('mongoose',{default:mongoose}));
 modules.set('./masterApprovalPolicy.mjs',synth('policy',policy));
+modules.set('./rateSlabValidation.mjs',synth('slabs',rateSlabs));
 const schemaModule=new vm.SourceTextModule(fs.readFileSync('src/lib/masterApprovalSchema.js','utf8'),{context});
 await schemaModule.link(name=>modules.get(name));await schemaModule.evaluate();
-const schema=new mongoose.Schema({companyId:mongoose.Schema.Types.ObjectId,supplierName:{type:String,required:true},supplierCode:String,reservedSupplierCode:String,bankName:String,dueDays:{type:Number,min:0},emailId:String},{timestamps:true});
+const schema=new mongoose.Schema({companyId:mongoose.Schema.Types.ObjectId,supplierName:{type:String,required:true},supplierCode:String,reservedSupplierCode:String,bankName:String,dueDays:{type:Number,min:0},emailId:String,usageMode:String,locationRates:[{locationId:String,fromQty:Number,toQty:Number,rate:Number,isActive:Boolean,version:Number}]},{timestamps:true});
 schemaModule.namespace.addMasterApprovalFields(schema);
 const Model=mongoose.model('MasterApprovalOfflineTest',schema);
 const id=new mongoose.Types.ObjectId(),companyId=new mongoose.Types.ObjectId();
@@ -36,7 +38,7 @@ const {submitMasterChange,reviewMaster,approvalManagementRecord,requireApprovalM
 const legacy=Model.hydrate({_id:new mongoose.Types.ObjectId(),companyId,supplierName:'Legacy',supplierCode:'OLD',createdAt:new Date(1),updatedAt:new Date(1)});
 assert.equal(legacy.approvalStatus,'Pending');
 assert.equal(approvalManagementRecord(legacy).approvalStatus,'Migration required');
-assert.throws(()=>requireApprovalMigration(legacy),/Existing records/);
+assert.throws(()=>requireApprovalMigration(legacy),/master approval migration/);
 assert.equal(approvalManagementRecord(current).approvalStatus,'Pending');
 try {
   const initialRevision=current.revisionId;
@@ -62,6 +64,17 @@ try {
   assert.equal(managementQuery.getFilter().approvalStatus,undefined);
   await assert.rejects(reviewMaster({Model,id,companyId:new mongoose.Types.ObjectId(),user:checker,kind:'supplier',action:'approve',revisionId:revision}),/not found/);
   assert(ended>=5);
+  const admin={id:String(new mongoose.Types.ObjectId()),type:'user',roles:['Admin']};
+  const direct=await submitMasterChange({Model,record:new Model(current.toObject()),input:{bankName:'Admin direct'},user:admin,kind:'supplier'});
+  assert.equal(direct.bankName,'Admin direct');assert.equal(direct.approvalStatus,'Approved');assert.equal(direct.pendingChange,null);
+  current.locationRates=[{locationId:'A',fromQty:0,toQty:25,rate:100,isActive:true,version:1}];
+  const rates=current.locationRates.map(row=>({...row.toObject(),rate:125}));
+  let callbacks=0;
+  await assert.rejects(submitMasterChange({Model,record:new Model(current.toObject()),input:{locationRates:rates},user:admin,kind:'rate',onApprove:async()=>{callbacks++;throw Error('rate history failure');}}),/rate history failure/);
+  assert.equal(current.locationRates[0].rate,100);
+  const directRate=await submitMasterChange({Model,record:new Model(current.toObject()),input:{locationRates:rates},user:admin,kind:'rate',onApprove:async({session,update})=>{assert(session);callbacks++;assert.equal(update.$set.approvalStatus,'Approved');}});
+  assert.equal(directRate.approvalStatus,'Approved');assert.equal(directRate.locationRates[0].rate,125);assert.equal(directRate.pendingChange,null);assert.equal(callbacks,2);
+  console.log('PASS: direct admin supplier/rate edits save Approved and rate history runs transactionally with rollback on failure.');
   console.log('PASS: actual Mongoose casts/validation, service submissions, tenant isolation, CAS conflicts, double review, transaction failure, rejection retention and approved-only read hooks (offline; no database).');
 }finally{mongoose.startSession=realSession;mongoose.deleteModel(Model.modelName);}
 

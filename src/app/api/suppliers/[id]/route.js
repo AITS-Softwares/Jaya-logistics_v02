@@ -74,7 +74,7 @@ export async function PUT(req, { params }) {
 
     const updated = await submitMasterChange({Model:Supplier,record:existing,input:{...data,dueDays:Number(dueDays)},user,kind:'supplier'});
     await notifyMasterSubmission(user,updated,'supplier');
-    const frappeSync = {status:'not_configured',message:'Only approved values are synced.'};
+    const frappeSync = updated.frappeSync || {status:'not_configured',message:'Only approved values are synced.'};
     return NextResponse.json({ success: true, data: updated, frappeSync }, { status: 200 });
   } catch (err) {
     console.error("PUT supplier error:", err);

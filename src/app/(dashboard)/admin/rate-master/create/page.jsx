@@ -3201,6 +3201,8 @@
 
 'use client';
 
+import {rateMasterForView} from '@/lib/rateMasterView.mjs';
+import {findNewRateOverlap,rateOverlapMessage} from '@/lib/rateSlabValidation.mjs';
 import MasterApprovalReview from '@/components/MasterApprovalReview';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -3453,7 +3455,7 @@ export default function RateMasterManagePage() {
       const data = await res.json();
       
       if (data.success && data.data) {
-        data.data={...data.data,...(data.data.pendingChange?.data || data.data.lastRejectedProposal?.data || {})};
+        data.data=rateMasterForView(data.data,locations);
         setSelectedMaster(data.data);
         // Set approval file data if exists
         if (data.data.approvalFile && data.data.approvalFile.fileName) {
@@ -3680,7 +3682,7 @@ export default function RateMasterManagePage() {
         throw new Error(data.message || 'Failed to create rate master');
       }
       
-      setFormSuccess('Rate master submitted for approval.');
+      setFormSuccess(data.data?.approvalStatus==='Approved'?'Rate master saved and approved.':'Rate master submitted for approval.');
       
       setTitle('');
       setCustomerId('');
@@ -3754,7 +3756,7 @@ export default function RateMasterManagePage() {
         throw new Error(data.message || 'Failed to delete rate');
       }
       
-      setSuccess('Rate removal submitted for approval.');
+      setSuccess(data.data?.approvalStatus==='Approved' && !data.data?.pendingChange?'Changes saved and approved.':'Changes submitted for approval. Approved values remain in use.');
       setTimeout(() => setSuccess(null), 3000);
       await fetchSingleRateMaster(selectedMaster._id);
       await fetchRateMasters();
@@ -3879,7 +3881,7 @@ export default function RateMasterManagePage() {
         throw new Error(data.message || 'Failed to revise rate');
       }
       
-      setSuccess(`Rate revision submitted for approval. Approved rates remain in use.`);
+      setSuccess(data.data?.approvalStatus==='Approved' && !data.data?.pendingChange?'Changes saved and approved.':'Changes submitted for approval. Approved values remain in use.');
       setTimeout(() => setSuccess(null), 3000);
       
       setShowRevisionModal(false);
@@ -3948,7 +3950,7 @@ export default function RateMasterManagePage() {
         throw new Error(data.message || 'Failed to update rate date');
       }
       
-      setSuccess('Rate change submitted for approval.');
+      setSuccess(data.data?.approvalStatus==='Approved' && !data.data?.pendingChange?'Changes saved and approved.':'Changes submitted for approval. Approved values remain in use.');
       setTimeout(() => setSuccess(null), 3000);
       
       await fetchSingleRateMaster(selectedMaster._id);
@@ -4120,6 +4122,9 @@ export default function RateMasterManagePage() {
       const token = localStorage.getItem('token');
       const existingRates = selectedMaster.locationRates || [];
       const allRates = [...existingRates, ...newRates];
+      const baseline=selectedMaster.approvalStatus==='Approved'?(selectedMaster.locationRates || []):[];
+      const overlap=findNewRateOverlap(allRates,baseline);
+      if(overlap)throw new Error(rateOverlapMessage(overlap));
       
       const payload = {
         title: selectedMaster.title,
@@ -4139,6 +4144,7 @@ export default function RateMasterManagePage() {
           uploadedAt: null
         },
         locationRates: allRates.map(r => ({
+          ...(r._id?{_id:r._id}:{}),
           locationId: r.locationId,
           fromQty: r.fromQty,
           toQty: r.toQty,
@@ -4164,7 +4170,7 @@ export default function RateMasterManagePage() {
         throw new Error(data.message || 'Failed to add location rates');
       }
       
-      setSuccess('Location rates added successfully!');
+      setSuccess(data.data?.approvalStatus==='Approved' && !data.data?.pendingChange?'Changes saved and approved.':'Changes submitted for approval. Approved values remain in use.');
       setTimeout(() => setSuccess(null), 3000);
       
       setLocationRows([]);
@@ -4175,7 +4181,6 @@ export default function RateMasterManagePage() {
     } catch (error) {
       console.error('Error adding location rates:', error);
       setError(error.message);
-      setTimeout(() => setError(null), 3000);
     } finally {
       setAddingRates(false);
     }
@@ -5068,7 +5073,7 @@ export default function RateMasterManagePage() {
                   if (!locationsMap.has(rate.locationId)) {
                     locationsMap.set(rate.locationId, {
                       locationId: rate.locationId,
-                      locationName: rate.locationName,
+                      locationName: rate.locationName || locations.find(item=>String(item._id)===String(rate.locationId))?.name || 'Location unavailable',
                       activeRates: [],
                       inactiveRates: []
                     });
@@ -5083,7 +5088,7 @@ export default function RateMasterManagePage() {
                 });
                 
                 let allLocations = Array.from(locationsMap.values())
-                  .sort((a, b) => a.locationName.localeCompare(b.locationName));
+                  .sort((a, b) => String(a.locationName || '').localeCompare(String(b.locationName || '')));
                 
                 if (locationFilterTerm && locationFilterTerm.trim() !== '') {
                   allLocations = allLocations.filter(loc =>
