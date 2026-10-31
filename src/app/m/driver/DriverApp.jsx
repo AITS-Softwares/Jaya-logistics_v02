@@ -120,7 +120,9 @@ export default function DriverApp() {
       await refreshTrips(registration.accessToken);
       setMessage("Signed in. Your assigned trips are ready.");
     } else {
-      setMessage("Your device is waiting for dispatcher approval. Keep this screen open, then tap Refresh after approval.");
+      setMessage(registration.registrationState === "reassigned"
+        ? "This phone was assigned to your account and is waiting for dispatcher approval."
+        : "Your phone is waiting for dispatcher approval. Keep this screen open, then tap Refresh after approval.");
     }
   };
 
@@ -179,7 +181,7 @@ export default function DriverApp() {
         if (me.device?.status === "approved") await refreshTrips(renewed.accessToken);
       } catch (requestError) {
         await clearNativeDriverSession().catch(() => {});
-        if (requestError.code === "DEVICE_MOVED") setSessionNotice(requestError.message);
+        if (["DEVICE_MOVED", "DEVICE_RELEASED", "DEVICE_REASSIGNED"].includes(requestError.code)) setSessionNotice(requestError.message);
       } finally { if (active) setRestoringSession(false); }
     };
     restoreSession();

@@ -26,7 +26,10 @@
     "test:mobile:phase10": "node scripts/test-driver-mobile-phase-10.mjs",
     "test:mobile:phase11": "node scripts/test-driver-mobile-phase-11.mjs",
     "test:mobile:phase13": "node scripts/test-driver-mobile-phase-13.mjs",
-    "test:mobile:phase14": "node scripts/test-driver-mobile-phase-14.mjs"
+    "test:mobile:phase14": "node scripts/test-driver-mobile-phase-14.mjs",
+    "test:mobile:phase15": "node scripts/test-driver-mobile-phase-15.mjs",
+    "test:mobile:phase16": "node scripts/test-driver-mobile-phase-16.mjs",
+    "test:mobile:phase17": "node scripts/test-driver-mobile-phase-17.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^7.6.9",

@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import DriverProfile from "@/models/DriverProfile";
 import DriverDevice from "@/models/DriverDevice";
+import DriverTrip from "@/models/DriverTrip";
 import { isDriverMobileEnabled, mobileUnavailableResponse, revokeDriverSessions } from "@/lib/driverMobileAuth";
 import { requireDriverMobileSettingsStaff } from "@/lib/driverMobileStaff";
 import { normalizeDriverMobile } from "@/lib/driverMobileCore.mjs";
@@ -17,8 +18,8 @@ export async function PATCH(req, { params }) {
 
   try {
     const { action, pin, profile } = await req.json();
-    if (!["enable_mobile_access", "disable_mobile_access", "reset_pin", "update_profile"].includes(action)) {
-      return NextResponse.json({ success: false, code: "INVALID_ACTION", message: "Use enable_mobile_access, disable_mobile_access, reset_pin, or update_profile." }, { status: 400 });
+    if (!["enable_mobile_access", "disable_mobile_access", "reset_pin", "update_profile", "archive_release_mobile", "reactivate_driver"].includes(action)) {
+      return NextResponse.json({ success: false, code: "INVALID_ACTION", message: "Use enable_mobile_access, disable_mobile_access, reset_pin, update_profile, archive_release_mobile, or reactivate_driver." }, { status: 400 });
     }
     if (action === "reset_pin" && (String(pin || "").length < 4 || String(pin || "").length > 32)) {
       return NextResponse.json({ success: false, code: "INVALID_PIN", message: "Temporary PIN must be 4 to 32 characters." }, { status: 400 });
@@ -55,6 +56,7 @@ export async function PATCH(req, { params }) {
     }
 
     if (action === "enable_mobile_access") {
+      if (driver.status !== "active") return NextResponse.json({ success: false, code: "DRIVER_NOT_ACTIVE", message: "Reactivate the archived driver before enabling mobile access." }, { status: 409 });
       if (!driver.pinHash) return NextResponse.json({ success: false, code: "PIN_REQUIRED", message: "Set a temporary PIN before enabling mobile access." }, { status: 409 });
       driver.mobileAccessEnabled = true;
       driver.mobileAccessStatus = "enabled";
@@ -68,11 +70,52 @@ export async function PATCH(req, { params }) {
       driver.passwordSetAt = now;
       driver.passwordChangeRequired = true;
     }
+    if (action === "reactivate_driver") {
+      if (driver.status !== "archived") return NextResponse.json({ success: false, code: "DRIVER_NOT_ARCHIVED", message: "Only an archived driver can be reactivated." }, { status: 409 });
+      driver.status = "active";
+      driver.mobileAccessEnabled = false;
+      driver.mobileAccessStatus = "disabled";
+    }
+    if (action === "archive_release_mobile") {
+      const activeTrip = await DriverTrip.exists({
+        companyId: driver.companyId,
+        driverId: driver._id,
+        state: { $in: ["assigned", "started", "at_pickup", "in_transit", "at_stop", "delivered"] },
+      });
+      if (activeTrip) return NextResponse.json({ success: false, code: "ACTIVE_DRIVER_TRIP", message: "This driver has an assigned or in-progress trip. Complete, cancel, or reassign it before archiving the driver." }, { status: 409 });
+      const releasedMobile = driver.mobileE164;
+      const archiveReason = String(profile?.reason || "driver_archived").slice(0, 300);
+      driver.mobileHistory.push({ mobileE164: releasedMobile, releasedAt: now, releasedBy: staff.user.id, reason: archiveReason });
+      // The original number remains in history; this non-login value frees the
+      // unique mobile-number slot for a verified new driver profile.
+      driver.mobileE164 = `archived-${driver._id}`;
+      driver.status = "archived";
+      driver.mobileAccessEnabled = false;
+      driver.mobileAccessStatus = "disabled";
+      driver.passwordChangeRequired = true;
+      const devices = await DriverDevice.find({ companyId: driver.companyId, driverId: driver._id });
+      for (const device of devices) {
+        let assignment = [...(device.assignmentHistory || [])].reverse().find((entry) => String(entry.driverId) === String(driver._id) && !entry.releasedAt);
+        if (!assignment) { device.assignmentHistory.push({ driverId: driver._id, assignedAt: device.createdAt || now }); assignment = device.assignmentHistory[device.assignmentHistory.length - 1]; }
+        assignment.releasedAt = now; assignment.releasedBy = staff.user.id; assignment.releaseReason = "driver_archived";
+        device.driverId = null;
+        device.status = "unlinked";
+        device.approvedAt = null;
+        device.approvedBy = null;
+        device.revokedAt = now;
+        device.revokedBy = staff.user.id;
+        device.revokeReason = "driver_archived";
+        device.releasedAt = now;
+        device.releasedBy = staff.user.id;
+        device.releaseReason = "driver_archived";
+        await device.save();
+      }
+    }
     driver.mobileAccessUpdatedAt = now;
     driver.mobileAccessUpdatedBy = staff.user.id;
     await driver.save();
 
-    if (action === "disable_mobile_access" || action === "reset_pin" || mobileChanged) {
+    if (action === "disable_mobile_access" || action === "reset_pin" || action === "archive_release_mobile" || mobileChanged) {
       await revokeDriverSessions({ companyId: driver.companyId, driverId: driver._id, reason: action });
     }
     if (mobileChanged) {
@@ -89,6 +132,7 @@ export async function PATCH(req, { params }) {
       registrationStatus: driver.registrationStatus,
       mobileAccessEnabled: driver.mobileAccessEnabled,
       mobileAccessStatus: driver.mobileAccessStatus,
+      status: driver.status,
       passwordSetAt: driver.passwordSetAt,
     } });
   } catch (error) {

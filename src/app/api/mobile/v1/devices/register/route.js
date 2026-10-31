@@ -17,10 +17,12 @@ export async function POST(req) {
     const installationIdHash = hashSecret(installationId);
     const installationLabel = `App ${installationId.slice(-6).toUpperCase()}`;
     let device = await DriverDevice.findOne({ companyId: auth.driver.companyId, installationIdHash }).select("+installationIdHash");
-    if (device && String(device.driverId) !== String(auth.driver._id)) {
-      return NextResponse.json({ success: false, code: "DEVICE_ASSIGNED", message: "This device is already registered to another driver." }, { status: 409 });
+    if (device && device.status !== "unlinked" && String(device.driverId) !== String(auth.driver._id)) {
+      return NextResponse.json({ success: false, code: "DEVICE_ASSIGNED", message: "This phone is linked to another driver. Ask dispatch to release the phone before using it for your account." }, { status: 409 });
     }
+    let registrationState = "existing";
     if (!device) {
+      registrationState = "new";
       device = await DriverDevice.create({
         companyId: auth.driver.companyId,
         driverId: auth.driver._id,
@@ -32,8 +34,23 @@ export async function POST(req) {
         installationLabel,
         status: "pending",
         lastSeenAt: new Date(),
+        assignmentHistory: [{ driverId: auth.driver._id, assignedAt: new Date() }],
       });
     } else {
+      if (device.status === "unlinked") {
+        registrationState = "reassigned";
+        device.driverId = auth.driver._id;
+        device.status = "pending";
+        device.approvedAt = null;
+        device.approvedBy = null;
+        device.revokedAt = null;
+        device.revokedBy = null;
+        device.revokeReason = "";
+        device.releasedAt = null;
+        device.releasedBy = null;
+        device.releaseReason = "";
+        device.assignmentHistory.push({ driverId: auth.driver._id, assignedAt: new Date() });
+      }
       device.manufacturer = String(body.manufacturer || device.manufacturer || "").slice(0, 80);
       device.model = String(body.model || device.model || "").slice(0, 120);
       device.appVersion = String(body.appVersion || device.appVersion || "").slice(0, 40);
@@ -48,6 +65,7 @@ export async function POST(req) {
       data: {
         deviceId: String(device._id),
         deviceStatus: device.status,
+        registrationState,
         accessToken: session.accessToken,
         refreshToken: session.refreshToken,
         expiresInSeconds: session.expiresInSeconds,

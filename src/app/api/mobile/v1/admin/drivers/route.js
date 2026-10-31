@@ -21,6 +21,7 @@ async function branchHandlerGET(req) {
     status: driver.status,
     mobileAccessStatus: driver.mobileAccessStatus || "not_registered",
     mobileAccessEnabled: driver.mobileAccessEnabled === true,
+    lastReleasedMobile: driver.mobileHistory?.length ? driver.mobileHistory[driver.mobileHistory.length - 1].mobileE164 : "",
     passwordChangeRequired: driver.passwordChangeRequired === true,
     registrationStatus: driver.registrationStatus || "draft",
     lastOperationalSource: driver.lastOperationalSource || "",
