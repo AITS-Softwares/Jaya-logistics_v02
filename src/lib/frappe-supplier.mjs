@@ -17,6 +17,7 @@ export function supplierPayload(supplier, env = process.env) {
 
 /** Idempotent master sync. Existing ERPNext party records are never duplicated. */
 export async function syncSupplier(supplier, { env = process.env, fetchImpl = fetch } = {}) {
+  if (supplier.approvalStatus !== 'Approved') return {status:'failed',message:'Supplier approval is required before sync.'};
   if (!env.FRAPPE_COMPANY_ID || String(supplier.companyId) !== String(env.FRAPPE_COMPANY_ID) || !isFrappeConfigured(env)) {
     return { status: "not_configured" };
   }

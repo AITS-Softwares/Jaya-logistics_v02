@@ -1,3 +1,7 @@
+import { hasPriorApproval, panelApprovalStatus, reviewDisplayState, upstreamDisplayState } from '@/lib/reapprovalPresentation.mjs';
+import { loadingWorkflowForReview } from '@/lib/loadingApprovalWorkflow.mjs';
+import { canUnlockForCorrection } from '@/lib/reapprovalPermissions.mjs';
+import { hasReapprovalReview } from '@/lib/reapprovalReviewVisibility.mjs';
 import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from 'next/server';
 import mongoose from 'mongoose';
@@ -88,7 +92,7 @@ async function branchHandlerGET(req, { params }) {
   const entry = TYPES[type];
   if (!MODULES[type] || !entry || !mongoose.isValidObjectId(id)) return NextResponse.json({ success: false, message: 'Invalid panel or record ID' }, { status: 400 });
   const currentPermissions = user.modules?.[MODULES[type]]?.permissions || {};
-  if (!userIsAdmin(user) && !currentPermissions.view && !(type === 'loading' && (currentPermissions.edit || currentPermissions.approve))) return NextResponse.json({ success: false, message: 'View permission required' }, { status: 403 });
+  if (!canUnlockForCorrection(user, type) && !currentPermissions.view && !(type === 'loading' && (currentPermissions.edit || currentPermissions.approve))) return NextResponse.json({ success: false, message: 'View permission required' }, { status: 403 });
 
   const root = await entry.Model.findOne({ _id: id, companyId: user.companyId }).lean();
   if (!root) return NextResponse.json({ success: false, message: `${entry.label} not found` }, { status: 404 });
@@ -128,9 +132,9 @@ async function branchHandlerGET(req, { params }) {
   const upstreamDetails = await Promise.all((root.upstreamPending || []).map(async (marker) => {
     const sourceEntry = TYPES[marker.panel];
     const source = sourceEntry && marker.recordId
-      ? await sourceEntry.Model.findOne({ _id: marker.recordId, companyId: user.companyId }).select('reapprovalState').lean()
+      ? await sourceEntry.Model.findOne({ _id: marker.recordId, companyId: user.companyId }).select('reapprovalState approvedRevision panelStatus status isDraft header.status rateApproval.approvalStatus rateApproval.workflowPhase rateApproval.approvedRevision approval.part3Status').lean()
       : null;
-    let sourceState = source?.reapprovalState || 'none';
+    let sourceState = upstreamDisplayState(marker.panel, source);
     let sourceLabel = MODULES[marker.panel] || marker.panel || 'Upstream panel';
     let sourceNo = marker.recordNo ? ` ${marker.recordNo}` : '';
     let nextLabel = marker.panel === 'order'
@@ -149,12 +153,12 @@ async function branchHandlerGET(req, { params }) {
         root.vnnNo ? { vnnNo: root.vnnNo } : null,
       ].filter(Boolean);
       const linkedVnn = vnnFilter.length
-        ? await TYPES.vnn.Model.findOne({ companyId: user.companyId, $or: vnnFilter }).select('vnnNo reapprovalState').lean()
+        ? await TYPES.vnn.Model.findOne({ companyId: user.companyId, $or: vnnFilter }).select('vnnNo reapprovalState approvedRevision panelStatus approval.part3Status').lean()
         : null;
       if (linkedVnn) {
         sourceLabel = MODULES.vnn;
         sourceNo = linkedVnn.vnnNo ? ` ${linkedVnn.vnnNo}` : '';
-        sourceState = linkedVnn.reapprovalState || 'none';
+        sourceState = upstreamDisplayState('vnn', linkedVnn);
         nextLabel = MODULES.lr;
       }
     }
@@ -171,6 +175,8 @@ async function branchHandlerGET(req, { params }) {
       message = `The ${sourceLabel}${sourceNo} update failed to sync. Contact that panel's approver before continuing to ${nextLabel}.`;
     } else if (sourceState === 'blockedByUpstream') {
       message = `${sourceLabel}${sourceNo} is waiting on an earlier correction. Reapproval continues at ${nextLabel} after it is resolved.`;
+    } else if (sourceState !== 'none') {
+      message = `${sourceLabel}${sourceNo} is ${sourceState === 'unknown' ? 'not available for status verification' : sourceState}. Finish its review before continuing to ${nextLabel}.`;
     } else {
       message = `${sourceLabel}${sourceNo} is approved. Reapproval is pending at ${nextLabel}; contact that panel's approver.`;
     }
@@ -198,7 +204,9 @@ async function branchHandlerGET(req, { params }) {
   const canReconcileDetachedOrders = type === 'vnn'
     ? userIsAdmin(user) || vnnPermissions.edit === true || vnnPermissions.approve === true
     : type === 'loading' && (userIsAdmin(user) || loadingPermissions.edit === true || loadingPermissions.approve === true);
-  return NextResponse.json({ success: true, record: { id: String(root._id), type, no: recordNumber(type, root), status: root.rateApproval?.approvalStatus || root.panelStatus || root.header?.status || root.status || '', reapprovalState: effectiveReapprovalState, approvedRevision: root.approvedRevision || root.rateApproval?.approvedRevision || 0, upstreamPending: root.upstreamPending || [], upstreamDetails, detachedOrderMarkers, canReconcileDetachedOrders, latestVnnSync: latestVnnSync ? { required: latestVnnSync.required, ambiguous: latestVnnSync.ambiguous, vnnNo: latestVnnSync.candidate?.vnnNo || '' } : null, syncError: root.reapprovalSyncError || '', pendingChanges: changesToReview, changeSummary: changesToReview }, impact: affectedGraph.map((item) => ({ type: item.type, id: item.id, no: item.no, label: item.label, depth: item.depth })), blockers: await allBlockers(type, graph, user.companyId, null) });
+  effectiveReapprovalState = reviewDisplayState({ previouslyApproved: hasPriorApproval(root) }, effectiveReapprovalState);
+  const hasReviewableChanges = hasReapprovalReview(root, effectiveReapprovalState);
+  return NextResponse.json({ success: true, record: { id: String(root._id), type, loadingWorkflow: type === 'loading' ? loadingWorkflowForReview(root) : null, canUnlockForCorrection: canUnlockForCorrection(user, type), no: recordNumber(type, root), previouslyApproved: hasPriorApproval(root), status: panelApprovalStatus(type, root), reapprovalState: effectiveReapprovalState, approvedRevision: root.approvedRevision || root.rateApproval?.approvedRevision || 0, upstreamPending: root.upstreamPending || [], upstreamDetails, detachedOrderMarkers, canReconcileDetachedOrders, latestVnnSync: latestVnnSync ? { required: latestVnnSync.required, ambiguous: latestVnnSync.ambiguous, vnnNo: latestVnnSync.candidate?.vnnNo || '' } : null, syncError: root.reapprovalSyncError || '', hasReviewableChanges, pendingChanges: hasReviewableChanges ? changesToReview : [], changeSummary: hasReviewableChanges ? changesToReview : [] }, impact: affectedGraph.map((item) => ({ type: item.type, id: item.id, no: item.no, label: item.label, depth: item.depth })), blockers: await allBlockers(type, graph, user.companyId, null) });
 }
 
 async function branchHandlerPOST(req, { params }) {
@@ -231,7 +239,7 @@ async function branchHandlerPOST(req, { params }) {
       return NextResponse.json({ success: false, message: error.message || 'Could not sync Loading Info from the latest approved VNN.' }, { status: error.status || 500 });
     }
   }
-  if (!userIsAdmin(user)) return NextResponse.json({ success: false, message: 'Only an admin can unlock or cancel an unlock.' }, { status: 403 });
+  if (!canUnlockForCorrection(user, type)) return NextResponse.json({ success: false, message: 'Approve permission for this panel is required to unlock or cancel an unlock.' }, { status: 403 });
   if (!['unlock', 'cancel', 'retrySync'].includes(action)) return NextResponse.json({ success: false, message: 'Action must be unlock, cancel, or retrySync' }, { status: 400 });
   if (action === 'retrySync') {
     if (!userIsAdmin(user)) return NextResponse.json({ success: false, message: 'Only an admin can retry a failed downstream sync.' }, { status: 403 });

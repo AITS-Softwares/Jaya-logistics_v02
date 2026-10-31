@@ -34,6 +34,7 @@ export default function DeleteImpactModal({ type, apiPath, recordId, recordNo, o
       const res = await fetch(`${apiPath}?id=${encodeURIComponent(recordId)}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ reason }) });
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.message || 'Delete failed.');
+      window.dispatchEvent(new Event('logistics:records-changed'));
       onDeleted?.(); onClose();
     } catch (e) { setError(e.message); } finally { setSaving(false); }
   }

@@ -5146,6 +5146,8 @@
 
 "use client";
 
+import { normalizeAmountInput } from '@/lib/amountInput.mjs';
+import { editableLoadingPart, loadingStageLabel } from '@/lib/loadingApprovalWorkflow.mjs';
 import { useMemo, useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
@@ -6142,6 +6144,10 @@ function PackTypeTable({ packType, rows, onChange, onRemove, onDuplicate, onTogg
 }
 
 export default function EditLoadingInfoPanel() {
+  const [stageRecord, setStageRecord] = useState(null);
+  const stagedLoading = stageRecord?.loadingWorkflow?.version === 2;
+  const currentPart = stagedLoading ? (editableLoadingPart(stageRecord) || stageRecord.loadingWorkflow.currentPart) : 0;
+  const stageReady = stagedLoading && stageRecord.loadingWorkflow['part' + currentPart + 'Status'] === 'Submitted';
   const router = useRouter();
   const params = useParams();
   const panelId = params.id;
@@ -6384,6 +6390,8 @@ export default function EditLoadingInfoPanel() {
    * READONLY MODE STATE
    ========================= */
   const [isReadOnly, setIsReadOnly] = useState(false);
+  const part1ReadOnly = isReadOnly || (stagedLoading && currentPart !== 1);
+  const part2ReadOnly = isReadOnly || (stagedLoading && currentPart !== 2);
 
   /** =========================
    * CAMERA PHOTO CAPTURE STATE
@@ -6453,13 +6461,12 @@ export default function EditLoadingInfoPanel() {
       }
 
       const panel = data.data;
+      setStageRecord(panel);
       setLoadingInfoPhotosOptional(!!panel.loadingInfoPhotosOptional);
       setIsDraft(!!panel.isDraft || panel.panelStatus === 'Draft');
       setLinkedLRNo(panel.consignmentNote || "");
 
-      if (panel.panelStatus === 'Approved' || panel.panelStatus === 'Completed') {
-        setIsReadOnly(true);
-      }
+      setIsReadOnly(panel.loadingWorkflow?.version === 2 ? editableLoadingPart(panel) === null : ['Approved', 'Completed'].includes(panel.panelStatus) && panel.reapprovalState !== 'unlocked');
 
       // Set header data
       setHeader({
@@ -8011,7 +8018,7 @@ export default function EditLoadingInfoPanel() {
     }
 
     const totalVlPhotos = getTotalVlPhotosCount();
-    if (!isDraftSave && !loadingInfoPhotosOptional && totalVlPhotos < 5) {
+    if ((!stagedLoading || currentPart === 2) && !isDraftSave && !loadingInfoPhotosOptional && totalVlPhotos < 5) {
       alert(`Please upload at least 5 Vehicle Loading (VL) photos. Currently uploaded: ${totalVlPhotos}/5`);
       return;
     }
@@ -8178,8 +8185,8 @@ export default function EditLoadingInfoPanel() {
       } else {
         setIsDraft(false);
         alert(`✅ Loading Info submitted successfully!\nVehicle Arrival No: ${header.vehicleArrivalNo}`);
-        setTimeout(() => router.push('/admin/Loading-Info'), 2000);
       }
+      router.push('/admin/Loading-Info');
 
     } catch (error) {
       console.error('Error updating loading info:', error);
@@ -8223,7 +8230,7 @@ export default function EditLoadingInfoPanel() {
               </div>
               {isReadOnly && (
                 <span className="ml-3 px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-xs font-bold">
-                  READ ONLY - Approved/Completed
+                  {loadingStageLabel(stageRecord) || 'Record locked'} — Read only
                 </span>
               )}
             </div>
@@ -8259,7 +8266,7 @@ export default function EditLoadingInfoPanel() {
               <>
               {isDraft && <button type="button" onClick={() => handleUpdate('draft')} disabled={saving || uploading} className="rounded-xl border border-amber-300 bg-amber-50 px-5 py-2 text-sm font-bold text-amber-800 hover:bg-amber-100 disabled:opacity-60">Save as Draft</button>}
               <button
-                onClick={() => handleUpdate(isDraft ? 'submit' : 'update')}
+                onClick={() => handleUpdate(stagedLoading || isDraft ? 'submit' : 'update')}
                 disabled={saving || uploading}
                 className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${saving || uploading
                   ? 'bg-gray-400 cursor-not-allowed'
@@ -8274,7 +8281,7 @@ export default function EditLoadingInfoPanel() {
                     </svg>
                     {uploading ? 'Uploading...' : 'Updating...'}
                   </span>
-                ) : isDraft ? 'Submit for Approval' : 'Update Loading Info'}
+                ) : stagedLoading ? 'Submit Part ' + currentPart + ' for Approval' : isDraft ? 'Submit for Approval' : 'Update Loading Info'}
               </button>
               </>
             )}
@@ -8358,12 +8365,14 @@ export default function EditLoadingInfoPanel() {
 
       {/* Main Content */}
       <div className="mx-auto max-w-full p-4">
+{stagedLoading && <div className="mb-3 rounded-xl bg-sky-50 p-3 text-sm font-semibold text-sky-900">Part 1 — Through VFT — {stageRecord?.loadingWorkflow?.part1Status}</div>}
+<fieldset disabled={part1ReadOnly} className="min-w-0 border-0 p-0 m-0">
         {/* Vehicle Slip Upload - Top section */}
         <div className="mb-4">
           <div className="bg-white p-4 rounded-xl border-2 border-dashed border-slate-300">
             <label className="text-xs font-bold text-slate-600">Vehicle Slip</label>
             <p className="text-xs text-slate-400 mb-1">Upload vehicle slip (Image/PDF)</p>
-            {!isReadOnly && (
+            {!part1ReadOnly && (
               <button
                 onClick={handleVehicleSlipSelect}
                 className="w-full rounded-lg bg-slate-100 px-3 py-2 text-xs font-bold text-slate-700 border border-slate-300 hover:bg-slate-200 transition flex items-center justify-center gap-2"
@@ -8383,7 +8392,7 @@ export default function EditLoadingInfoPanel() {
                   onRemove={() => removeVehicleSlip(idx, true)}
                   label="Vehicle Slip"
                   isExisting={true}
-                  readOnly={isReadOnly}
+                  readOnly={part1ReadOnly}
                 />
               ))}
               {vehicleSlipFiles.map((file, idx) => (
@@ -8393,7 +8402,7 @@ export default function EditLoadingInfoPanel() {
                   index={idx}
                   onRemove={() => removeVehicleSlip(idx)}
                   label="Vehicle Slip"
-                  readOnly={isReadOnly}
+                  readOnly={part1ReadOnly}
                 />
               ))}
             </div>
@@ -8422,12 +8431,12 @@ export default function EditLoadingInfoPanel() {
                   onChange={(e) => handleVehicleNegotiationSearch(e.target.value)}
                   onFocus={handleVehicleNegotiationInputFocus}
                   onBlur={handleVehicleNegotiationInputBlur}
-                  className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 pr-8 ${isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+                  className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 pr-8 ${part1ReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
                     }`}
                   placeholder="Search vehicle negotiation..."
-                  readOnly={isReadOnly}
+                  readOnly={part1ReadOnly}
                 />
-                {vehicleNegotiation.loading && !isReadOnly && (
+                {vehicleNegotiation.loading && !part1ReadOnly && (
                   <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                     <svg className="animate-spin h-4 w-4 text-emerald-500" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -8437,7 +8446,7 @@ export default function EditLoadingInfoPanel() {
                 )}
               </div>
 
-              {showVehicleNegotiationDropdown && !isReadOnly && (
+              {showVehicleNegotiationDropdown && !part1ReadOnly && (
                 <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
                   {vehicleNegotiation.loading ? (
                     <div className="p-3 text-center text-sm text-slate-500">
@@ -8486,7 +8495,7 @@ export default function EditLoadingInfoPanel() {
                 placeholder="Type to search vehicle..."
                 selectedVehicleId={selectedVehicle?._id}
                 value={vehicleInfo.vehicleNo}
-                readOnly={isReadOnly}
+                readOnly={part1ReadOnly}
               />
             </div>
 
@@ -8495,9 +8504,9 @@ export default function EditLoadingInfoPanel() {
               <input
                 type="text"
                 value={vehicleInfo.driverMobileNo}
-                onChange={(e) => !isReadOnly && setVehicleInfo({ ...vehicleInfo, driverMobileNo: e.target.value })}
-                readOnly={isReadOnly}
-                className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none ${isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+                onChange={(e) => !part1ReadOnly && setVehicleInfo({ ...vehicleInfo, driverMobileNo: e.target.value })}
+                readOnly={part1ReadOnly}
+                className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none ${part1ReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
                   }`}
                 placeholder="Enter mobile number"
               />
@@ -8508,7 +8517,7 @@ export default function EditLoadingInfoPanel() {
               <SearchableDropdown
                 items={branches}
                 selectedId={header.branch}
-                onSelect={(branch) => !isReadOnly && setHeader({
+                onSelect={(branch) => !part1ReadOnly && setHeader({
                   ...header,
                   branch: branch?._id || '',
                   branchName: branch?.name || '',
@@ -8526,7 +8535,7 @@ export default function EditLoadingInfoPanel() {
             {/* Sub-Company Dropdown */}
             <div className="col-span-12 md:col-span-2">
               <label className="text-xs font-bold text-slate-600">Sub-Company</label>
-              {isReadOnly ? (
+              {part1ReadOnly ? (
                 <div className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-sm text-slate-700 cursor-not-allowed">
                   {header.subCompanyName || '-'}
                   {header.subCompanyCode && (
@@ -8564,7 +8573,7 @@ export default function EditLoadingInfoPanel() {
                   ))}
                 </select>
               )}
-              {header.subCompanyName && !isReadOnly && (
+              {header.subCompanyName && !part1ReadOnly && (
                 <div className="text-xs text-blue-600 mt-0.5">✓ Selected: {header.subCompanyName} ({header.subCompanyCode})</div>
               )}
             </div>
@@ -8574,9 +8583,9 @@ export default function EditLoadingInfoPanel() {
               <input
                 type="date"
                 value={header.date}
-                onChange={(e) => !isReadOnly && setHeader({ ...header, date: e.target.value })}
-                readOnly={isReadOnly}
-                className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none ${isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+                onChange={(e) => !part1ReadOnly && setHeader({ ...header, date: e.target.value })}
+                readOnly={part1ReadOnly}
+                className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none ${part1ReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
                   }`}
               />
             </div>
@@ -8585,9 +8594,9 @@ export default function EditLoadingInfoPanel() {
               <Select
                 label="Delivery"
                 value={header.delivery}
-                onChange={(v) => !isReadOnly && setHeader({ ...header, delivery: v })}
+                onChange={(v) => !part1ReadOnly && setHeader({ ...header, delivery: v })}
                 options={DELIVERY_OPTIONS}
-                readOnly={isReadOnly}
+                readOnly={part1ReadOnly}
               />
             </div>
 
@@ -8597,13 +8606,13 @@ export default function EditLoadingInfoPanel() {
                 <input
                   type="text"
                   value={vehicleInfo.drivingLicense}
-                  onChange={(e) => !isReadOnly && setVehicleInfo({ ...vehicleInfo, drivingLicense: e.target.value })}
-                  readOnly={isReadOnly}
-                  className={`mt-1 flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none ${isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+                  onChange={(e) => !part1ReadOnly && setVehicleInfo({ ...vehicleInfo, drivingLicense: e.target.value })}
+                  readOnly={part1ReadOnly}
+                  className={`mt-1 flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none ${part1ReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
                     }`}
                   placeholder="Enter License Number"
                 />
-                {!isReadOnly && (
+                {!part1ReadOnly && (
                   <button
                     onClick={() => handleFileSelect('vehicle', 'license')}
                     className="mt-1 rounded-lg bg-purple-50 px-3 py-2 text-xs font-bold text-purple-700 border border-purple-200 hover:bg-purple-100 whitespace-nowrap"
@@ -8620,7 +8629,7 @@ export default function EditLoadingInfoPanel() {
                   onRemove={() => removeFile('vehicle', 'license', idx, true)}
                   label="License"
                   isExisting={true}
-                  readOnly={isReadOnly}
+                  readOnly={part1ReadOnly}
                 />
               ))}
               {vehicleFiles.license.map((file, idx) => (
@@ -8630,7 +8639,7 @@ export default function EditLoadingInfoPanel() {
                   index={idx}
                   onRemove={() => removeFile('vehicle', 'license', idx)}
                   label="License"
-                  readOnly={isReadOnly}
+                  readOnly={part1ReadOnly}
                 />
               ))}
               <p className="text-xs text-slate-400 mt-1">Upload Driving License (PDF/Image)</p>
@@ -8808,7 +8817,7 @@ export default function EditLoadingInfoPanel() {
                             placeholder="Type to search vehicle..."
                             selectedVehicleId={selectedVehicle?._id}
                             value={vehicleInfo.vehicleNo}
-                            readOnly={isReadOnly}
+                            readOnly={part1ReadOnly}
                           />
                           <div className="text-xs text-slate-400 mt-1">Search by vehicle number or owner name</div>
                         </div>
@@ -8847,11 +8856,11 @@ export default function EditLoadingInfoPanel() {
                               }
                             }}
                             placeholder="Search by owner name, vehicle number, or RC number..."
-                            readOnly={isReadOnly}
+                            readOnly={part1ReadOnly}
                           />
                         </div>
 
-                        {!isReadOnly && (
+                        {!part1ReadOnly && (
                           <button
                             onClick={handleCreateVehicle}
                             className="w-full rounded-lg bg-green-600 px-3 py-2 text-xs font-bold text-white hover:bg-green-700 transition"
@@ -8872,7 +8881,7 @@ export default function EditLoadingInfoPanel() {
                         <div className="pt-2 border-t border-slate-200">
                           <label className="text-xs font-bold text-slate-600">Vehicle Photos</label>
                           <p className="text-xs text-slate-400 mb-1">Upload vehicle photos (Max 10)</p>
-                          {!isReadOnly && (
+                          {!part1ReadOnly && (
                             <button
                               onClick={handleVehiclePhotoSelect}
                               className="w-full rounded-lg bg-cyan-50 px-3 py-2 text-xs font-bold text-cyan-700 border border-cyan-200 hover:bg-cyan-100 transition flex items-center justify-center gap-2"
@@ -8893,7 +8902,7 @@ export default function EditLoadingInfoPanel() {
                                 onRemove={() => removeVehiclePhoto(idx, true)}
                                 label={`Vehicle Photo`}
                                 isExisting={true}
-                                readOnly={isReadOnly}
+                                readOnly={part1ReadOnly}
                               />
                             ))}
                             {vehiclePhotoFiles.map((file, idx) => (
@@ -8903,7 +8912,7 @@ export default function EditLoadingInfoPanel() {
                                 index={idx}
                                 onRemove={() => removeVehiclePhoto(idx)}
                                 label={`Vehicle Photo ${idx + 1}`}
-                                readOnly={isReadOnly}
+                                readOnly={part1ReadOnly}
                               />
                             ))}
                           </div>
@@ -9029,7 +9038,7 @@ export default function EditLoadingInfoPanel() {
                         <div className="grid grid-cols-2 gap-2">
                           <div>
                             <label className="text-xs font-bold text-slate-600">Owner RC Doc</label>
-                            {!isReadOnly && (
+                            {!part1ReadOnly && (
                               <button
                                 onClick={() => handleFileSelect('vehicle', 'rc')}
                                 className="mt-1 w-full rounded-lg bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700 border border-blue-200 hover:bg-blue-100"
@@ -9045,7 +9054,7 @@ export default function EditLoadingInfoPanel() {
                                 onRemove={() => removeFile('vehicle', 'rc', idx, true)}
                                 label="RC"
                                 isExisting={true}
-                                readOnly={isReadOnly}
+                                readOnly={part1ReadOnly}
                               />
                             ))}
                             {vehicleFiles.rc.map((file, idx) => (
@@ -9055,13 +9064,13 @@ export default function EditLoadingInfoPanel() {
                                 index={idx}
                                 onRemove={() => removeFile('vehicle', 'rc', idx)}
                                 label="RC"
-                                readOnly={isReadOnly}
+                                readOnly={part1ReadOnly}
                               />
                             ))}
                           </div>
                           <div>
                             <label className="text-xs font-bold text-slate-600">Owner Pan Doc</label>
-                            {!isReadOnly && (
+                            {!part1ReadOnly && (
                               <button
                                 onClick={() => handleFileSelect('vehicle', 'pan')}
                                 className="mt-1 w-full rounded-lg bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700 border border-blue-200 hover:bg-blue-100"
@@ -9077,7 +9086,7 @@ export default function EditLoadingInfoPanel() {
                                 onRemove={() => removeFile('vehicle', 'pan', idx, true)}
                                 label="PAN"
                                 isExisting={true}
-                                readOnly={isReadOnly}
+                                readOnly={part1ReadOnly}
                               />
                             ))}
                             {vehicleFiles.pan.map((file, idx) => (
@@ -9087,7 +9096,7 @@ export default function EditLoadingInfoPanel() {
                                 index={idx}
                                 onRemove={() => removeFile('vehicle', 'pan', idx)}
                                 label="PAN"
-                                readOnly={isReadOnly}
+                                readOnly={part1ReadOnly}
                               />
                             ))}
                           </div>
@@ -9115,9 +9124,9 @@ export default function EditLoadingInfoPanel() {
                           <input
                             type="text"
                             value={vehicleInfo.driverName}
-                            onChange={(e) => !isReadOnly && setVehicleInfo({ ...vehicleInfo, driverName: e.target.value })}
-                            readOnly={isReadOnly}
-                            className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none ${isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+                            onChange={(e) => !part1ReadOnly && setVehicleInfo({ ...vehicleInfo, driverName: e.target.value })}
+                            readOnly={part1ReadOnly}
+                            className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none ${part1ReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
                               }`}
                             placeholder="Enter driver name"
                           />
@@ -9128,9 +9137,9 @@ export default function EditLoadingInfoPanel() {
                           <input
                             type="text"
                             value={vehicleInfo.driverMobileNo}
-                            onChange={(e) => !isReadOnly && setVehicleInfo({ ...vehicleInfo, driverMobileNo: e.target.value })}
-                            readOnly={isReadOnly}
-                            className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none ${isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+                            onChange={(e) => !part1ReadOnly && setVehicleInfo({ ...vehicleInfo, driverMobileNo: e.target.value })}
+                            readOnly={part1ReadOnly}
+                            className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none ${part1ReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
                               }`}
                             placeholder="Enter mobile number"
                           />
@@ -9141,9 +9150,9 @@ export default function EditLoadingInfoPanel() {
                           <input
                             type="text"
                             value={vehicleInfo.drivingLicense}
-                            onChange={(e) => !isReadOnly && setVehicleInfo({ ...vehicleInfo, drivingLicense: e.target.value })}
-                            readOnly={isReadOnly}
-                            className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none ${isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+                            onChange={(e) => !part1ReadOnly && setVehicleInfo({ ...vehicleInfo, drivingLicense: e.target.value })}
+                            readOnly={part1ReadOnly}
+                            className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none ${part1ReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
                               }`}
                             placeholder="License No"
                           />
@@ -9151,7 +9160,7 @@ export default function EditLoadingInfoPanel() {
 
                         <div>
                           <label className="text-xs font-bold text-slate-600">Driver Photo</label>
-                          {!isReadOnly && (
+                          {!part1ReadOnly && (
                             <button
                               onClick={() => openImageMediaPicker('vehicle', 'photo', 'Driver Photo')}
                               className="mt-1 w-full rounded-lg bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700 border border-blue-200 hover:bg-blue-100"
@@ -9167,7 +9176,7 @@ export default function EditLoadingInfoPanel() {
                               onRemove={() => removeFile('vehicle', 'photo', idx, true)}
                               label="Photo"
                               isExisting={true}
-                              readOnly={isReadOnly}
+                              readOnly={part1ReadOnly}
                             />
                           ))}
                           {vehicleFiles.photo.map((file, idx) => (
@@ -9177,7 +9186,7 @@ export default function EditLoadingInfoPanel() {
                               index={idx}
                               onRemove={() => removeFile('vehicle', 'photo', idx)}
                               label="Photo"
-                              readOnly={isReadOnly}
+                              readOnly={part1ReadOnly}
                             />
                           ))}
                         </div>
@@ -9188,8 +9197,8 @@ export default function EditLoadingInfoPanel() {
                             <input
                               type="checkbox"
                               checked={hasHelper}
-                              onChange={(e) => !isReadOnly && setHasHelper(e.target.checked)}
-                              disabled={isReadOnly}
+                              onChange={(e) => !part1ReadOnly && setHasHelper(e.target.checked)}
+                              disabled={part1ReadOnly}
                               className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
                             />
                             <span className="text-xs font-bold text-slate-700">Helper / Co-Driver Available?</span>
@@ -9210,9 +9219,9 @@ export default function EditLoadingInfoPanel() {
                               <input
                                 type="text"
                                 value={helperInfo.name}
-                                onChange={(e) => !isReadOnly && setHelperInfo({ ...helperInfo, name: e.target.value })}
-                                readOnly={isReadOnly}
-                                className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none ${isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+                                onChange={(e) => !part1ReadOnly && setHelperInfo({ ...helperInfo, name: e.target.value })}
+                                readOnly={part1ReadOnly}
+                                className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none ${part1ReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
                                   }`}
                                 placeholder="Enter helper name"
                               />
@@ -9223,9 +9232,9 @@ export default function EditLoadingInfoPanel() {
                               <input
                                 type="tel"
                                 value={helperInfo.mobileNo}
-                                onChange={(e) => !isReadOnly && setHelperInfo({ ...helperInfo, mobileNo: e.target.value })}
-                                readOnly={isReadOnly}
-                                className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none ${isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+                                onChange={(e) => !part1ReadOnly && setHelperInfo({ ...helperInfo, mobileNo: e.target.value })}
+                                readOnly={part1ReadOnly}
+                                className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none ${part1ReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
                                   }`}
                                 placeholder="Enter mobile number"
                               />
@@ -9233,7 +9242,7 @@ export default function EditLoadingInfoPanel() {
 
                             <div>
                               <label className="text-xs font-bold text-slate-600">Helper Photo</label>
-                              {!isReadOnly && (
+                              {!part1ReadOnly && (
                                 <button
                                   onClick={() => handleHelperFileSelect('photo')}
                                   className="mt-1 w-full rounded-lg bg-green-50 px-3 py-2 text-xs font-bold text-green-700 border border-green-200 hover:bg-green-100"
@@ -9248,14 +9257,14 @@ export default function EditLoadingInfoPanel() {
                                   index={idx}
                                   onRemove={() => removeFile('helper', 'photo', idx)}
                                   label="Helper Photo"
-                                  readOnly={isReadOnly}
+                                  readOnly={part1ReadOnly}
                                 />
                               ))}
                             </div>
 
                             <div>
                               <label className="text-xs font-bold text-slate-600">Helper Aadhar Photo</label>
-                              {!isReadOnly && (
+                              {!part1ReadOnly && (
                                 <button
                                   onClick={() => handleHelperFileSelect('aadharPhoto')}
                                   className="mt-1 w-full rounded-lg bg-purple-50 px-3 py-2 text-xs font-bold text-purple-700 border border-purple-200 hover:bg-purple-100"
@@ -9270,7 +9279,7 @@ export default function EditLoadingInfoPanel() {
                                   index={idx}
                                   onRemove={() => removeFile('helper', 'aadharPhoto', idx)}
                                   label="Helper Aadhar"
-                                  readOnly={isReadOnly}
+                                  readOnly={part1ReadOnly}
                                 />
                               ))}
                             </div>
@@ -9286,10 +9295,10 @@ export default function EditLoadingInfoPanel() {
                           <label className="text-xs font-bold text-slate-600">Message (Hindi/English)</label>
                           <textarea
                             value={vehicleInfo.message}
-                            onChange={(e) => !isReadOnly && setVehicleInfo({ ...vehicleInfo, message: e.target.value })}
-                            readOnly={isReadOnly}
+                            onChange={(e) => !part1ReadOnly && setVehicleInfo({ ...vehicleInfo, message: e.target.value })}
+                            readOnly={part1ReadOnly}
                             rows={3}
-                            className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none ${isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+                            className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none ${part1ReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
                               }`}
                             placeholder="Enter message"
                           />
@@ -9299,10 +9308,10 @@ export default function EditLoadingInfoPanel() {
                           <label className="text-xs font-bold text-slate-600">Remarks</label>
                           <textarea
                             value={vehicleInfo.remarks}
-                            onChange={(e) => !isReadOnly && setVehicleInfo({ ...vehicleInfo, remarks: e.target.value })}
-                            readOnly={isReadOnly}
+                            onChange={(e) => !part1ReadOnly && setVehicleInfo({ ...vehicleInfo, remarks: e.target.value })}
+                            readOnly={part1ReadOnly}
                             rows={4}
-                            className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none ${isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+                            className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none ${part1ReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
                               }`}
                             placeholder="Enter remarks"
                           />
@@ -9357,7 +9366,7 @@ export default function EditLoadingInfoPanel() {
                 {[1, 2, 3, 4, 5, 6, 7].map((num) => (
                   <div key={num} className="col-span-1">
                     <div className="text-xs font-bold text-slate-600 mb-1">VBP - {num}</div>
-                    {!isReadOnly && (
+                    {!part1ReadOnly && (
                       <button
                         onClick={() => handleFileSelect('vbp', `vbp${num}`)}
                         className={`w-full rounded-lg px-2 py-3 text-xs font-bold border hover:bg-opacity-80 ${vbpFiles[`vbp${num}`].length > 0
@@ -9382,7 +9391,7 @@ export default function EditLoadingInfoPanel() {
                         onRemove={() => removeFile('vbp', `vbp${num}`, idx, true)}
                         label={`VBP-${num}`}
                         isExisting={true}
-                        readOnly={isReadOnly}
+                        readOnly={part1ReadOnly}
                       />
                     ))}
                     {vbpFiles[`vbp${num}`].map((file, idx) => (
@@ -9392,14 +9401,14 @@ export default function EditLoadingInfoPanel() {
                         index={idx}
                         onRemove={() => removeFile('vbp', `vbp${num}`, idx)}
                         label={`VBP-${num}`}
-                        readOnly={isReadOnly}
+                        readOnly={part1ReadOnly}
                       />
                     ))}
                   </div>
                 ))}
                 <div className="col-span-1">
                   <div className="text-xs font-bold text-slate-600 mb-1">Video - VBP</div>
-                  {!isReadOnly && (
+                  {!part1ReadOnly && (
                     <button
                       onClick={() => handleFileSelect('vbp', 'videoVbp', true)}
                       className={`w-full rounded-lg px-2 py-3 text-xs font-bold border hover:bg-opacity-80 ${vbpFiles.videoVbp.length > 0
@@ -9424,7 +9433,7 @@ export default function EditLoadingInfoPanel() {
                       onRemove={() => removeFile('vbp', 'videoVbp', idx, true)}
                       label="Video"
                       isExisting={true}
-                      readOnly={isReadOnly}
+                      readOnly={part1ReadOnly}
                     />
                   ))}
                   {vbpFiles.videoVbp.map((file, idx) => (
@@ -9434,7 +9443,7 @@ export default function EditLoadingInfoPanel() {
                       index={idx}
                       onRemove={() => removeFile('vbp', 'videoVbp', idx)}
                       label="Video"
-                      readOnly={isReadOnly}
+                      readOnly={part1ReadOnly}
                     />
                   ))}
                 </div>
@@ -9470,7 +9479,7 @@ export default function EditLoadingInfoPanel() {
                 {[1, 2, 3, 4, 5, 6, 7].map((num) => (
                   <div key={num} className="col-span-1">
                     <div className="text-xs font-bold text-slate-600 mb-1">VFT - {num}</div>
-                    {!isReadOnly && (
+                    {!part1ReadOnly && (
                       <button
                         onClick={() => handleFileSelect('vft', `vft${num}`)}
                         className={`w-full rounded-lg px-2 py-3 text-xs font-bold border hover:bg-opacity-80 ${vftFiles[`vft${num}`].length > 0
@@ -9495,7 +9504,7 @@ export default function EditLoadingInfoPanel() {
                         onRemove={() => removeFile('vft', `vft${num}`, idx, true)}
                         label={`VFT-${num}`}
                         isExisting={true}
-                        readOnly={isReadOnly}
+                        readOnly={part1ReadOnly}
                       />
                     ))}
                     {vftFiles[`vft${num}`].map((file, idx) => (
@@ -9505,14 +9514,14 @@ export default function EditLoadingInfoPanel() {
                         index={idx}
                         onRemove={() => removeFile('vft', `vft${num}`, idx)}
                         label={`VFT-${num}`}
-                        readOnly={isReadOnly}
+                        readOnly={part1ReadOnly}
                       />
                     ))}
                   </div>
                 ))}
                 <div className="col-span-1">
                   <div className="text-xs font-bold text-slate-600 mb-1">Video - VFT</div>
-                  {!isReadOnly && (
+                  {!part1ReadOnly && (
                     <button
                       onClick={() => handleFileSelect('vft', 'videoVft', true)}
                       className={`w-full rounded-lg px-2 py-3 text-xs font-bold border hover:bg-opacity-80 ${vftFiles.videoVft.length > 0
@@ -9537,7 +9546,7 @@ export default function EditLoadingInfoPanel() {
                       onRemove={() => removeFile('vft', 'videoVft', idx, true)}
                       label="Video"
                       isExisting={true}
-                      readOnly={isReadOnly}
+                      readOnly={part1ReadOnly}
                     />
                   ))}
                   {vftFiles.videoVft.map((file, idx) => (
@@ -9547,7 +9556,7 @@ export default function EditLoadingInfoPanel() {
                       index={idx}
                       onRemove={() => removeFile('vft', 'videoVft', idx)}
                       label="Video"
-                      readOnly={isReadOnly}
+                      readOnly={part1ReadOnly}
                     />
                   ))}
                 </div>
@@ -9564,108 +9573,9 @@ export default function EditLoadingInfoPanel() {
         </div>
 
         {/* VOT Panel */}
-        <div className="mt-4">
-          <Card title="VOT - PANEL (Vehicle Outer Tarpaulin Pictures)">
-            <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-200">
-              <div className="grid grid-cols-8 gap-3">
-                {[1, 2, 3, 4, 5, 6, 7].map((num) => (
-                  <div key={num} className="col-span-1">
-                    <div className="text-xs font-bold text-slate-600 mb-1">VOT - {num}</div>
-                    {!isReadOnly && (
-                      <button
-                        onClick={() => handleFileSelect('vot', `vot${num}`)}
-                        className={`w-full rounded-lg px-2 py-3 text-xs font-bold border hover:bg-opacity-80 ${votFiles[`vot${num}`].length > 0
-                          ? 'bg-green-50 text-green-700 border-green-200'
-                          : existingFiles.vot?.[`vot${num}`]?.length > 0
-                            ? 'bg-blue-50 text-blue-700 border-blue-200'
-                            : 'bg-gray-50 text-gray-700 border-gray-200'
-                          }`}
-                      >
-                        {votFiles[`vot${num}`].length > 0
-                          ? `✓ ${votFiles[`vot${num}`].length} new`
-                          : existingFiles.vot?.[`vot${num}`]?.length > 0
-                            ? '✓ Existing'
-                            : 'Select'}
-                      </button>
-                    )}
-                    {existingFiles.vot?.[`vot${num}`]?.map((file, idx) => (
-                      <FileUploadItem
-                        key={`existing-vot${num}-${idx}`}
-                        file={file}
-                        index={idx}
-                        onRemove={() => removeFile('vot', `vot${num}`, idx, true)}
-                        label={`VOT-${num}`}
-                        isExisting={true}
-                        readOnly={isReadOnly}
-                      />
-                    ))}
-                    {votFiles[`vot${num}`].map((file, idx) => (
-                      <FileUploadItem
-                        key={`new-vot${num}-${idx}`}
-                        file={file}
-                        index={idx}
-                        onRemove={() => removeFile('vot', `vot${num}`, idx)}
-                        label={`VOT-${num}`}
-                        readOnly={isReadOnly}
-                      />
-                    ))}
-                  </div>
-                ))}
-                <div className="col-span-1">
-                  <div className="text-xs font-bold text-slate-600 mb-1">Video - VOT</div>
-                  {!isReadOnly && (
-                    <button
-                      onClick={() => handleFileSelect('vot', 'videoVot', true)}
-                      className={`w-full rounded-lg px-2 py-3 text-xs font-bold border hover:bg-opacity-80 ${votFiles.videoVot.length > 0
-                        ? 'bg-green-50 text-green-700 border-green-200'
-                        : existingFiles.vot?.videoVot?.length > 0
-                          ? 'bg-blue-50 text-blue-700 border-blue-200'
-                          : 'bg-purple-50 text-purple-700 border-purple-200'
-                        }`}
-                    >
-                      {votFiles.videoVot.length > 0
-                        ? `✓ ${votFiles.videoVot.length} new`
-                        : existingFiles.vot?.videoVot?.length > 0
-                          ? '✓ Existing'
-                          : 'Select'}
-                    </button>
-                  )}
-                  {existingFiles.vot?.videoVot?.map((file, idx) => (
-                    <FileUploadItem
-                      key={`existing-videoVot-${idx}`}
-                      file={file}
-                      index={idx}
-                      onRemove={() => removeFile('vot', 'videoVot', idx, true)}
-                      label="Video"
-                      isExisting={true}
-                      readOnly={isReadOnly}
-                    />
-                  ))}
-                  {votFiles.videoVot.map((file, idx) => (
-                    <FileUploadItem
-                      key={`new-videoVot-${idx}`}
-                      file={file}
-                      index={idx}
-                      onRemove={() => removeFile('vot', 'videoVot', idx)}
-                      label="Video"
-                      readOnly={isReadOnly}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              <div className="mt-4 flex items-center gap-3">
-                <span className="text-xs font-bold text-slate-600">Vehicle - Outer Tarpaulin Approval:</span>
-                <span className={`text-sm px-3 py-1 rounded-full ${votUploads.approval === 'Approved' ? 'bg-green-100 text-green-800' : votUploads.approval === 'Rejected' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                  {votUploads.approval || 'Not Set'}
-                </span>
-              </div>
-            </div>
-          </Card>
-        </div>
-
-        {/* VL Panel with Dynamic Fields */}
-        <div className="mt-4">
+        </fieldset>
+{stagedLoading && <div className="my-4 rounded-xl bg-amber-50 p-3 text-sm font-semibold text-amber-900">Part 2 — VL, VOT and remaining details — {stageRecord?.loadingWorkflow?.part2Status}</div>}
+<fieldset disabled={part2ReadOnly} className="min-w-0 border-0 p-0 m-0"><div className="mt-4">
           <Card title="VL - PANEL (Vehicle Loading Pictures)">
             <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
               <div className="mb-3 flex justify-between items-center">
@@ -9679,7 +9589,7 @@ export default function EditLoadingInfoPanel() {
                   </p>
                 </div>
                 <div className="flex gap-2">
-                  {!isReadOnly && vlFields.length < 15 && getTotalVlPhotosCount() < 25 && (
+                  {!part2ReadOnly && vlFields.length < 15 && getTotalVlPhotosCount() < 25 && (
                     <button
                       onClick={handleAddMoreVlField}
                       className="rounded-lg bg-green-600 px-4 py-2 text-xs font-bold text-white hover:bg-green-700 transition flex items-center gap-1"
@@ -9716,7 +9626,7 @@ export default function EditLoadingInfoPanel() {
                             <span className={`text-xs px-2 py-1 rounded-full ${currentCount > 0 ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
                               {currentCount} / 25 photos
                             </span>
-                            {!isReadOnly && fieldNum > 5 && (
+                            {!part2ReadOnly && fieldNum > 5 && (
                               <button
                                 onClick={() => handleRemoveVlField(fieldNum)}
                                 className="text-red-500 hover:text-red-700 p-1"
@@ -9732,12 +9642,12 @@ export default function EditLoadingInfoPanel() {
 
                         <button
                           onClick={() => handleFileSelect('vl', `vl${fieldNum}`)}
-                          disabled={isDisabled || isReadOnly}
+                          disabled={isDisabled || part2ReadOnly}
                           className={`w-full rounded-lg py-2.5 text-sm font-bold border transition-all ${currentCount > 0
                             ? 'bg-green-50 text-green-700 border-green-300 hover:bg-green-100'
                             : isDisabled
                               ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
-                              : isReadOnly
+                              : part2ReadOnly
                                 ? 'bg-slate-100 text-slate-500 border-slate-200 cursor-not-allowed'
                                 : 'bg-blue-50 text-blue-700 border-blue-300 hover:bg-blue-100'
                             }`}
@@ -9777,7 +9687,7 @@ export default function EditLoadingInfoPanel() {
                                 onRemove={() => removeFile('vl', `vl${fieldNum}`, idx, true)}
                                 label={`VL(stack)-${fieldNum}`}
                                 isExisting={true}
-                                readOnly={isReadOnly}
+                                readOnly={part2ReadOnly}
                               />
                               <div className="grid grid-cols-4 gap-2 mt-2">
                                 <div>
@@ -9786,12 +9696,12 @@ export default function EditLoadingInfoPanel() {
                                     type="number"
                                     step="0.01"
                                     value={vlPhotoDetails[`vl${fieldNum}_${idx}_width`] || ""}
-                                    onChange={(e) => !isReadOnly && setVlPhotoDetails(prev => ({
+                                    onChange={(e) => !part2ReadOnly && setVlPhotoDetails(prev => ({
                                       ...prev,
                                       [`vl${fieldNum}_${idx}_width`]: e.target.value
                                     }))}
-                                    readOnly={isReadOnly}
-                                    className={`mt-1 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs outline-none focus:border-emerald-500 ${isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+                                    readOnly={part2ReadOnly}
+                                    className={`mt-1 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs outline-none focus:border-emerald-500 ${part2ReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
                                       }`}
                                     placeholder="Width in ft"
                                   />
@@ -9802,12 +9712,12 @@ export default function EditLoadingInfoPanel() {
                                     type="number"
                                     step="0.01"
                                     value={vlPhotoDetails[`vl${fieldNum}_${idx}_height`] || ""}
-                                    onChange={(e) => !isReadOnly && setVlPhotoDetails(prev => ({
+                                    onChange={(e) => !part2ReadOnly && setVlPhotoDetails(prev => ({
                                       ...prev,
                                       [`vl${fieldNum}_${idx}_height`]: e.target.value
                                     }))}
-                                    readOnly={isReadOnly}
-                                    className={`mt-1 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs outline-none focus:border-emerald-500 ${isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+                                    readOnly={part2ReadOnly}
+                                    className={`mt-1 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs outline-none focus:border-emerald-500 ${part2ReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
                                       }`}
                                     placeholder="Height in ft"
                                   />
@@ -9818,12 +9728,12 @@ export default function EditLoadingInfoPanel() {
                                     type="number"
                                     step="0.01"
                                     value={vlPhotoDetails[`vl${fieldNum}_${idx}_nose`] || ""}
-                                    onChange={(e) => !isReadOnly && setVlPhotoDetails(prev => ({
+                                    onChange={(e) => !part2ReadOnly && setVlPhotoDetails(prev => ({
                                       ...prev,
                                       [`vl${fieldNum}_${idx}_nose`]: e.target.value
                                     }))}
-                                    readOnly={isReadOnly}
-                                    className={`mt-1 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs outline-none focus:border-emerald-500 ${isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+                                    readOnly={part2ReadOnly}
+                                    className={`mt-1 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs outline-none focus:border-emerald-500 ${part2ReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
                                       }`}
                                     placeholder="Nose in ft"
                                   />
@@ -9857,7 +9767,7 @@ export default function EditLoadingInfoPanel() {
                                     index={fileIdx}
                                     onRemove={() => removeFile('vl', `vl${fieldNum}`, fileIdx)}
                                     label={`VL(stack)-${fieldNum}`}
-                                    readOnly={isReadOnly}
+                                    readOnly={part2ReadOnly}
                                   />
 
                                   <div className="grid grid-cols-4 gap-2 mt-2">
@@ -9867,12 +9777,12 @@ export default function EditLoadingInfoPanel() {
                                         type="number"
                                         step="0.01"
                                         value={vlPhotoDetails[`vl${fieldNum}_${fileIdx}_width`] || ""}
-                                        onChange={(e) => !isReadOnly && setVlPhotoDetails(prev => ({
+                                        onChange={(e) => !part2ReadOnly && setVlPhotoDetails(prev => ({
                                           ...prev,
                                           [`vl${fieldNum}_${fileIdx}_width`]: e.target.value
                                         }))}
-                                        readOnly={isReadOnly}
-                                        className={`mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs outline-none focus:border-emerald-500 ${isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+                                        readOnly={part2ReadOnly}
+                                        className={`mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs outline-none focus:border-emerald-500 ${part2ReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
                                           }`}
                                         placeholder="Width in ft"
                                       />
@@ -9883,12 +9793,12 @@ export default function EditLoadingInfoPanel() {
                                         type="number"
                                         step="0.01"
                                         value={vlPhotoDetails[`vl${fieldNum}_${fileIdx}_height`] || ""}
-                                        onChange={(e) => !isReadOnly && setVlPhotoDetails(prev => ({
+                                        onChange={(e) => !part2ReadOnly && setVlPhotoDetails(prev => ({
                                           ...prev,
                                           [`vl${fieldNum}_${fileIdx}_height`]: e.target.value
                                         }))}
-                                        readOnly={isReadOnly}
-                                        className={`mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs outline-none focus:border-emerald-500 ${isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+                                        readOnly={part2ReadOnly}
+                                        className={`mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs outline-none focus:border-emerald-500 ${part2ReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
                                           }`}
                                         placeholder="Height in ft"
                                       />
@@ -9899,12 +9809,12 @@ export default function EditLoadingInfoPanel() {
                                         type="number"
                                         step="0.01"
                                         value={vlPhotoDetails[`vl${fieldNum}_${fileIdx}_nose`] || ""}
-                                        onChange={(e) => !isReadOnly && setVlPhotoDetails(prev => ({
+                                        onChange={(e) => !part2ReadOnly && setVlPhotoDetails(prev => ({
                                           ...prev,
                                           [`vl${fieldNum}_${fileIdx}_nose`]: e.target.value
                                         }))}
-                                        readOnly={isReadOnly}
-                                        className={`mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs outline-none focus:border-emerald-500 ${isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+                                        readOnly={part2ReadOnly}
+                                        className={`mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs outline-none focus:border-emerald-500 ${part2ReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
                                           }`}
                                         placeholder="Nose in ft"
                                       />
@@ -9934,7 +9844,7 @@ export default function EditLoadingInfoPanel() {
                       <div className="text-xs font-bold text-purple-700 mb-1">Video - VL</div>
                       <p className="text-xs text-slate-500">Upload video of vehicle loading (Optional)</p>
                     </div>
-                    {!isReadOnly && (
+                    {!part2ReadOnly && (
                       <button
                         onClick={() => handleFileSelect('vl', 'videoVl', true)}
                         className={`rounded-lg px-4 py-2 text-xs font-bold border hover:bg-opacity-80 ${vlFiles.videoVl && vlFiles.videoVl.length > 0
@@ -9960,7 +9870,7 @@ export default function EditLoadingInfoPanel() {
                       onRemove={() => removeFile('vl', 'videoVl', idx, true)}
                       label="Video"
                       isExisting={true}
-                      readOnly={isReadOnly}
+                      readOnly={part2ReadOnly}
                     />
                   ))}
                   {vlFiles.videoVl && vlFiles.videoVl.map((file, idx) => (
@@ -9970,7 +9880,7 @@ export default function EditLoadingInfoPanel() {
                       index={idx}
                       onRemove={() => removeFile('vl', 'videoVl', idx)}
                       label="Video"
-                      readOnly={isReadOnly}
+                      readOnly={part2ReadOnly}
                     />
                   ))}
                 </div>
@@ -10014,6 +9924,107 @@ export default function EditLoadingInfoPanel() {
           </Card>
         </div>
 
+        {/* VL Panel with Dynamic Fields */}
+        <div className="mt-4">
+          <Card title="VOT - PANEL (Vehicle Outer Tarpaulin Pictures)">
+            <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-200">
+              <div className="grid grid-cols-8 gap-3">
+                {[1, 2, 3, 4, 5, 6, 7].map((num) => (
+                  <div key={num} className="col-span-1">
+                    <div className="text-xs font-bold text-slate-600 mb-1">VOT - {num}</div>
+                    {!part2ReadOnly && (
+                      <button
+                        onClick={() => handleFileSelect('vot', `vot${num}`)}
+                        className={`w-full rounded-lg px-2 py-3 text-xs font-bold border hover:bg-opacity-80 ${votFiles[`vot${num}`].length > 0
+                          ? 'bg-green-50 text-green-700 border-green-200'
+                          : existingFiles.vot?.[`vot${num}`]?.length > 0
+                            ? 'bg-blue-50 text-blue-700 border-blue-200'
+                            : 'bg-gray-50 text-gray-700 border-gray-200'
+                          }`}
+                      >
+                        {votFiles[`vot${num}`].length > 0
+                          ? `✓ ${votFiles[`vot${num}`].length} new`
+                          : existingFiles.vot?.[`vot${num}`]?.length > 0
+                            ? '✓ Existing'
+                            : 'Select'}
+                      </button>
+                    )}
+                    {existingFiles.vot?.[`vot${num}`]?.map((file, idx) => (
+                      <FileUploadItem
+                        key={`existing-vot${num}-${idx}`}
+                        file={file}
+                        index={idx}
+                        onRemove={() => removeFile('vot', `vot${num}`, idx, true)}
+                        label={`VOT-${num}`}
+                        isExisting={true}
+                        readOnly={part2ReadOnly}
+                      />
+                    ))}
+                    {votFiles[`vot${num}`].map((file, idx) => (
+                      <FileUploadItem
+                        key={`new-vot${num}-${idx}`}
+                        file={file}
+                        index={idx}
+                        onRemove={() => removeFile('vot', `vot${num}`, idx)}
+                        label={`VOT-${num}`}
+                        readOnly={part2ReadOnly}
+                      />
+                    ))}
+                  </div>
+                ))}
+                <div className="col-span-1">
+                  <div className="text-xs font-bold text-slate-600 mb-1">Video - VOT</div>
+                  {!part2ReadOnly && (
+                    <button
+                      onClick={() => handleFileSelect('vot', 'videoVot', true)}
+                      className={`w-full rounded-lg px-2 py-3 text-xs font-bold border hover:bg-opacity-80 ${votFiles.videoVot.length > 0
+                        ? 'bg-green-50 text-green-700 border-green-200'
+                        : existingFiles.vot?.videoVot?.length > 0
+                          ? 'bg-blue-50 text-blue-700 border-blue-200'
+                          : 'bg-purple-50 text-purple-700 border-purple-200'
+                        }`}
+                    >
+                      {votFiles.videoVot.length > 0
+                        ? `✓ ${votFiles.videoVot.length} new`
+                        : existingFiles.vot?.videoVot?.length > 0
+                          ? '✓ Existing'
+                          : 'Select'}
+                    </button>
+                  )}
+                  {existingFiles.vot?.videoVot?.map((file, idx) => (
+                    <FileUploadItem
+                      key={`existing-videoVot-${idx}`}
+                      file={file}
+                      index={idx}
+                      onRemove={() => removeFile('vot', 'videoVot', idx, true)}
+                      label="Video"
+                      isExisting={true}
+                      readOnly={part2ReadOnly}
+                    />
+                  ))}
+                  {votFiles.videoVot.map((file, idx) => (
+                    <FileUploadItem
+                      key={`new-videoVot-${idx}`}
+                      file={file}
+                      index={idx}
+                      onRemove={() => removeFile('vot', 'videoVot', idx)}
+                      label="Video"
+                      readOnly={part2ReadOnly}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-4 flex items-center gap-3">
+                <span className="text-xs font-bold text-slate-600">Vehicle - Outer Tarpaulin Approval:</span>
+                <span className={`text-sm px-3 py-1 rounded-full ${votUploads.approval === 'Approved' ? 'bg-green-100 text-green-800' : votUploads.approval === 'Rejected' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                  {votUploads.approval || 'Not Set'}
+                </span>
+              </div>
+            </div>
+          </Card>
+        </div>
+
         {/* Loaded Vehicle Weighment & Charges */}
         <div className="mt-4">
           <Card title="Loaded Vehicle Weighment & Charges">
@@ -10025,7 +10036,7 @@ export default function EditLoadingInfoPanel() {
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-slate-600">Loaded Vehicle - Weigh Slip:</span>
-                      {!isReadOnly && (
+                      {!part2ReadOnly && (
                         <button
                           onClick={() => handleFileSelect('weighment', 'weighSlip')}
                           className={`rounded-lg px-4 py-2 text-xs font-bold border hover:bg-opacity-80 ${weighmentFiles.weighSlip.length > 0
@@ -10051,7 +10062,7 @@ export default function EditLoadingInfoPanel() {
                         onRemove={() => removeFile('weighment', 'weighSlip', idx, true)}
                         label="Weigh Slip"
                         isExisting={true}
-                        readOnly={isReadOnly}
+                        readOnly={part2ReadOnly}
                       />
                     ))}
                     {weighmentFiles.weighSlip.map((file, idx) => (
@@ -10061,7 +10072,7 @@ export default function EditLoadingInfoPanel() {
                         index={idx}
                         onRemove={() => removeFile('weighment', 'weighSlip', idx)}
                         label="Weigh Slip"
-                        readOnly={isReadOnly}
+                        readOnly={part2ReadOnly}
                       />
                     ))}
 
@@ -10080,9 +10091,9 @@ export default function EditLoadingInfoPanel() {
                   <input
                     type="number"
                     value={detentionDays}
-                    onChange={(e) => !isReadOnly && setDetentionDays(e.target.value)}
-                    readOnly={isReadOnly}
-                    className={`mt-1 w-full rounded-lg border border-orange-200 px-3 py-2 text-sm outline-none ${isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+                    onChange={(e) => !part2ReadOnly && setDetentionDays(e.target.value)}
+                    readOnly={part2ReadOnly}
+                    className={`mt-1 w-full rounded-lg border border-orange-200 px-3 py-2 text-sm outline-none ${part2ReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
                       }`}
                     placeholder="Enter number of detention days"
                     min="0"
@@ -10105,10 +10116,10 @@ export default function EditLoadingInfoPanel() {
                       <span className="text-sm text-slate-700">Loading Charges:</span>
                       <input
                         type="number"
-                        value={loadedWeighment.loadingCharges}
-                        onChange={(e) => !isReadOnly && setLoadedWeighment({ ...loadedWeighment, loadingCharges: e.target.value })}
-                        readOnly={isReadOnly}
-                        className={`w-32 rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-right ${isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+                        value={normalizeAmountInput(loadedWeighment.loadingCharges)}
+                        onChange={(e) => !part2ReadOnly && setLoadedWeighment({ ...loadedWeighment, loadingCharges: normalizeAmountInput(e.target.value) })}
+                        readOnly={part2ReadOnly}
+                        className={`w-32 rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-right ${part2ReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
                           }`}
                         placeholder="0"
                       />
@@ -10117,10 +10128,10 @@ export default function EditLoadingInfoPanel() {
                       <span className="text-sm text-slate-700">Loading Staff Munshiyana:</span>
                       <input
                         type="number"
-                        value={loadedWeighment.loadingStaffMunshiyana}
-                        onChange={(e) => !isReadOnly && setLoadedWeighment({ ...loadedWeighment, loadingStaffMunshiyana: e.target.value })}
-                        readOnly={isReadOnly}
-                        className={`w-32 rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-right ${isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+                        value={normalizeAmountInput(loadedWeighment.loadingStaffMunshiyana)}
+                        onChange={(e) => !part2ReadOnly && setLoadedWeighment({ ...loadedWeighment, loadingStaffMunshiyana: normalizeAmountInput(e.target.value) })}
+                        readOnly={part2ReadOnly}
+                        className={`w-32 rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-right ${part2ReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
                           }`}
                         placeholder="0"
                       />
@@ -10129,10 +10140,10 @@ export default function EditLoadingInfoPanel() {
                       <span className="text-sm text-slate-700">Other Expenses:</span>
                       <input
                         type="number"
-                        value={loadedWeighment.otherExpenses}
-                        onChange={(e) => !isReadOnly && setLoadedWeighment({ ...loadedWeighment, otherExpenses: e.target.value })}
-                        readOnly={isReadOnly}
-                        className={`w-32 rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-right ${isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+                        value={normalizeAmountInput(loadedWeighment.otherExpenses)}
+                        onChange={(e) => !part2ReadOnly && setLoadedWeighment({ ...loadedWeighment, otherExpenses: normalizeAmountInput(e.target.value) })}
+                        readOnly={part2ReadOnly}
+                        className={`w-32 rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-right ${part2ReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
                           }`}
                         placeholder="0"
                       />
@@ -10141,10 +10152,10 @@ export default function EditLoadingInfoPanel() {
                       <span className="text-sm text-slate-700">Vehicle - Floor Tarpaulin:</span>
                       <input
                         type="number"
-                        value={loadedWeighment.vehicleFloorTarpaulin}
-                        onChange={(e) => !isReadOnly && setLoadedWeighment({ ...loadedWeighment, vehicleFloorTarpaulin: e.target.value })}
-                        readOnly={isReadOnly}
-                        className={`w-32 rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-right ${isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+                        value={normalizeAmountInput(loadedWeighment.vehicleFloorTarpaulin)}
+                        onChange={(e) => !part2ReadOnly && setLoadedWeighment({ ...loadedWeighment, vehicleFloorTarpaulin: normalizeAmountInput(e.target.value) })}
+                        readOnly={part2ReadOnly}
+                        className={`w-32 rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-right ${part2ReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
                           }`}
                         placeholder="0"
                       />
@@ -10153,10 +10164,10 @@ export default function EditLoadingInfoPanel() {
                       <span className="text-sm text-slate-700">Vehicle - Outer Tarpaulin:</span>
                       <input
                         type="number"
-                        value={loadedWeighment.vehicleOuterTarpaulin}
-                        onChange={(e) => !isReadOnly && setLoadedWeighment({ ...loadedWeighment, vehicleOuterTarpaulin: e.target.value })}
-                        readOnly={isReadOnly}
-                        className={`w-32 rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-right ${isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+                        value={normalizeAmountInput(loadedWeighment.vehicleOuterTarpaulin)}
+                        onChange={(e) => !part2ReadOnly && setLoadedWeighment({ ...loadedWeighment, vehicleOuterTarpaulin: normalizeAmountInput(e.target.value) })}
+                        readOnly={part2ReadOnly}
+                        className={`w-32 rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-right ${part2ReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
                           }`}
                         placeholder="0"
                       />
@@ -10183,9 +10194,9 @@ export default function EditLoadingInfoPanel() {
                       <input
                         type="date"
                         value={arrivalDetails.date}
-                        onChange={(e) => !isReadOnly && setArrivalDetails({ ...arrivalDetails, date: e.target.value })}
-                        readOnly={isReadOnly}
-                        className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none ${isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+                        onChange={(e) => !part2ReadOnly && setArrivalDetails({ ...arrivalDetails, date: e.target.value })}
+                        readOnly={part2ReadOnly}
+                        className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none ${part2ReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
                           }`}
                       />
                       <p className="text-xs text-green-600 mt-1">Auto-filled when the vehicle slip is uploaded</p>
@@ -10197,9 +10208,9 @@ export default function EditLoadingInfoPanel() {
                       <input
                         type="time"
                         value={arrivalDetails.time}
-                        onChange={(e) => !isReadOnly && setArrivalDetails({ ...arrivalDetails, time: e.target.value })}
-                        readOnly={isReadOnly}
-                        className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none ${isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+                        onChange={(e) => !part2ReadOnly && setArrivalDetails({ ...arrivalDetails, time: e.target.value })}
+                        readOnly={part2ReadOnly}
+                        className={`mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none ${part2ReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
                           }`}
                         placeholder="HH:MM"
                       />
@@ -10212,9 +10223,9 @@ export default function EditLoadingInfoPanel() {
                       <input
                         type="date"
                         value={arrivalDetails.outDate || ""}
-                        onChange={(e) => !isReadOnly && setArrivalDetails({ ...arrivalDetails, outDate: e.target.value })}
-                        readOnly={isReadOnly}
-                        className={`mt-1 w-full rounded-lg border border-orange-200 px-3 py-2 text-sm outline-none ${isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+                        onChange={(e) => !part2ReadOnly && setArrivalDetails({ ...arrivalDetails, outDate: e.target.value })}
+                        readOnly={part2ReadOnly}
+                        className={`mt-1 w-full rounded-lg border border-orange-200 px-3 py-2 text-sm outline-none ${part2ReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
                           }`}
                       />
                       <p className="text-xs text-orange-600 mt-1">Auto-filled when the Last LR is Printed </p>
@@ -10226,9 +10237,9 @@ export default function EditLoadingInfoPanel() {
                       <input
                         type="time"
                         value={arrivalDetails.outTime}
-                        onChange={(e) => !isReadOnly && setArrivalDetails({ ...arrivalDetails, outTime: e.target.value })}
-                        readOnly={isReadOnly}
-                        className={`mt-1 w-full rounded-lg border border-orange-200 px-3 py-2 text-sm outline-none ${isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+                        onChange={(e) => !part2ReadOnly && setArrivalDetails({ ...arrivalDetails, outTime: e.target.value })}
+                        readOnly={part2ReadOnly}
+                        className={`mt-1 w-full rounded-lg border border-orange-200 px-3 py-2 text-sm outline-none ${part2ReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
                           }`}
                         placeholder="HH:MM"
                       />
@@ -10265,12 +10276,12 @@ export default function EditLoadingInfoPanel() {
                         type="text"
                         placeholder="Driver Mobile Number"
                         value={gpsTracking.driverMobileNumber}
-                        onChange={(e) => !isReadOnly && setGpsTracking({ ...gpsTracking, driverMobileNumber: e.target.value })}
-                        readOnly={isReadOnly}
-                        className={`rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500 ${isReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
+                        onChange={(e) => !part2ReadOnly && setGpsTracking({ ...gpsTracking, driverMobileNumber: e.target.value })}
+                        readOnly={part2ReadOnly}
+                        className={`rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500 ${part2ReadOnly ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'
                           }`}
                       />
-                      {!isReadOnly && (
+                      {!part2ReadOnly && (
                         <button
                           onClick={handleActivateTracking}
                           className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700"
@@ -10299,7 +10310,7 @@ export default function EditLoadingInfoPanel() {
                       <p className="text-xs text-slate-600 mt-1">Click to open camera and capture driver photo</p>
                       <p className="text-xs text-green-600 mt-1">📸 Photo capture will auto-fill Arrival Date & Time</p>
                     </div>
-                    {!isReadOnly && (
+                    {!part2ReadOnly && (
                       <button
                         onClick={startCamera}
                         className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700 transition flex items-center gap-2"
@@ -10323,7 +10334,7 @@ export default function EditLoadingInfoPanel() {
                           onRemove={() => removeFile('vehicle', 'photo', idx)}
                           label="Driver Photo"
                           isCameraPhoto={true}
-                          readOnly={isReadOnly}
+                          readOnly={part2ReadOnly}
                         />
                       ))}
                     </div>
@@ -10375,7 +10386,7 @@ export default function EditLoadingInfoPanel() {
           <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-200">
             <label className="text-xs font-bold text-indigo-700">Loaded Vehicle Slip</label>
             <p className="text-xs text-slate-400 mb-1">Upload loaded vehicle slip after loading (Image/PDF)</p>
-            {!isReadOnly && (
+            {!part2ReadOnly && (
               <button
                 onClick={handleLoadedVehicleSlipSelect}
                 className="w-full rounded-lg bg-indigo-100 px-3 py-2 text-xs font-bold text-indigo-700 border border-indigo-300 hover:bg-indigo-200 transition flex items-center justify-center gap-2"
@@ -10395,7 +10406,7 @@ export default function EditLoadingInfoPanel() {
                   onRemove={() => removeLoadedVehicleSlip(idx, true)}
                   label="Loaded Vehicle Slip"
                   isExisting={true}
-                  readOnly={isReadOnly}
+                  readOnly={part2ReadOnly}
                 />
               ))}
               {loadedVehicleSlipFiles.map((file, idx) => (
@@ -10405,13 +10416,14 @@ export default function EditLoadingInfoPanel() {
                   index={idx}
                   onRemove={() => removeLoadedVehicleSlip(idx)}
                   label="Loaded Vehicle Slip"
-                  readOnly={isReadOnly}
+                  readOnly={part2ReadOnly}
                 />
               ))}
             </div>
           </div>
         </div>
-      </div>
+      </fieldset>
+</div>
     </div>
   );
 }

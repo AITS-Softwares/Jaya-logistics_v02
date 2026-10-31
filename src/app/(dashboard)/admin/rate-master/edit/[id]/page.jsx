@@ -346,19 +346,22 @@ export default function EditRateMasterPage() {
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [error, setError] = useState(null);
+  const [rejectionReason,setRejectionReason]=useState('');
   const [success, setSuccess] = useState(null);
 
   // Fetch Rate Master Details
   const fetchRateMaster = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`/api/rate-master?id=${params.id}`, {
+      const res = await fetch(`/api/rate-master?management=true&id=${params.id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
       
       if (data.success && data.data) {
+        data.data={...data.data,...(data.data.pendingChange?.data || data.data.lastRejectedProposal?.data || {})};
         const rateMaster = data.data;
+        setRejectionReason(rateMaster.rejectionReason || '');
         setTitle(rateMaster.title);
         setCustomerId(rateMaster.customerId || '');
         setBranchId(rateMaster.branchId || '');
@@ -581,7 +584,7 @@ export default function EditRateMasterPage() {
         throw new Error(data.message || 'Failed to update rate master');
       }
       
-      setSuccess('Rate master updated successfully!');
+      setSuccess('Rate master saved. Sensitive changes require approval.');
       
       setTimeout(() => {
         router.push('/admin/rate-master/list');
@@ -613,6 +616,7 @@ export default function EditRateMasterPage() {
             <div>
               <h1 className="text-2xl font-bold">Edit Rate Master</h1>
               <p className="text-gray-600">Update basic information</p>
+              {rejectionReason && <p role="alert" className="mt-2 text-red-700">Rejected: {rejectionReason}. Correct and submit again.</p>}
             </div>
             <button
               onClick={() => router.push('/admin/rate-master/list')}

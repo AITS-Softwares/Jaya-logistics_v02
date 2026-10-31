@@ -1926,6 +1926,7 @@
 
 // src/app/(dashboard)/admin/layout.js
 "use client";
+import MasterPermissionNotice from '@/components/MasterPermissionNotice';
 import { invalidSessionStatus, sessionOwner } from '@/lib/sessionRestore.mjs';
 import { AdminShowDeletedRecords } from "@/components/ShowDeletedRecords";
 import { AdminDeleteImpactHost } from "@/components/DeleteImpactModal";
@@ -3407,6 +3408,7 @@ export default function Layout({ children }) {
           <ReapprovalWorkspace placement="content" />
           {children}
         </main>
+        <MasterPermissionNotice />
         <AdminDeleteImpactHost />
       </div >
     </div >

@@ -66,7 +66,7 @@ export default function RateMasterPage() {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/rate-master', {
+      const res = await fetch('/api/rate-master?management=true', {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -179,7 +179,7 @@ export default function RateMasterPage() {
         throw new Error(data.message || 'Failed to update rate master');
       }
       
-      setSuccess('Rate master updated successfully!');
+      setSuccess('Rate master saved. Sensitive changes require approval.');
       resetForm();
       fetchRateMasters();
       
@@ -245,7 +245,7 @@ export default function RateMasterPage() {
         throw new Error(data.message || 'Failed to create rate master');
       }
       
-      setSuccess('Rate master created successfully!');
+      setSuccess('Rate master submitted for approval.');
       resetForm();
       fetchRateMasters();
       

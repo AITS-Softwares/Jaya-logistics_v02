@@ -1,3 +1,6 @@
+import {masterApprovalAccess,withMasterSubmitterNames} from '@/lib/masterApprovalAccess';
+import {submitMasterChange,approvalManagementRecord} from '@/lib/masterApprovalService';
+import {notifyMasterSubmission} from '@/lib/masterApprovalRoutes';
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db.js";
 import Supplier from "@/models/SupplierModels";
@@ -10,7 +13,7 @@ function isAuthorized(user) {
 }
 
 async function validateUser(req, action = 'view') {
-  return validateMasterDataRequest(req, action, "Suppliers", { allowLookup: action === "view" });
+  return masterApprovalAccess(req,action,'Suppliers');
   const token = getTokenFromHeader(req);
   if (!token) return { error: "Token missing", status: 401 };
 
@@ -29,18 +32,20 @@ async function validateUser(req, action = 'view') {
 --------------------------- */
 export async function GET(req, { params }) {
   await dbConnect();
-  const { user, error, status } = await validateUser(req, 'view');
+  const { user, error, status, access } = await validateUser(req, 'view');
   if (error) return NextResponse.json({ success: false, message: error }, { status });
 
   try {
-    const supplier = await Supplier.findOne({ _id: params.id, companyId: user.companyId })
+    const {id}=await params;
+    const supplier = await Supplier.findOne({ _id:id, companyId:user.companyId,...(access==='lookup'?{approvalStatus:'Approved'}:{}) }).setOptions({includeUnapprovedMasters:true})
+      .select(access==='lookup'?'-pendingChange -lastRejectedProposal -approvalLog -reservedSupplierCode':'')
       .populate("glAccount", "accountName accountCode");
 
     if (!supplier) {
       return NextResponse.json({ success: false, message: "Supplier not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ success: true, data: supplier }, { status: 200 });
+    return NextResponse.json({ success: true, data: access==='lookup'?supplier:approvalManagementRecord(supplier) }, { status: 200 });
   } catch (err) {
     console.error("GET single supplier error:", err);
     return NextResponse.json({ success: false, message: "Failed to fetch supplier" }, { status: 500 });
@@ -57,31 +62,23 @@ export async function PUT(req, { params }) {
 
   try {
     const data = await req.json();
+    if (data.status !== undefined && !["Active", "Inactive"].includes(data.status)) return NextResponse.json({ success: false, message: "Status must be Active or Inactive" }, { status: 400 });
 
-    const existing = await Supplier.findOne({ _id: params.id, companyId: user.companyId }).select('dueDays');
+    const {id}=await params;
+    const existing = await Supplier.findOne({ _id:id, companyId: user.companyId }).setOptions({includeUnapprovedMasters:true});
     if (!existing) return NextResponse.json({ success: false, message: "Supplier not found" }, { status: 404 });
     const dueDays = data.dueDays ?? existing.dueDays;
     if (dueDays === undefined || dueDays === null || String(dueDays).trim() === "" || !Number.isFinite(Number(dueDays)) || Number(dueDays) < 0) {
       return NextResponse.json({ success: false, message: "Due days are required and must be zero or a positive number" }, { status: 400 });
     }
 
-    const updated = await Supplier.findOneAndUpdate(
-      { _id: params.id, companyId: user.companyId },
-      { ...data, dueDays: Number(dueDays) },
-      { new: true, runValidators: true }
-    ).populate("glAccount", "accountName accountCode");
-
-    if (!updated) {
-      return NextResponse.json({ success: false, message: "Supplier not found" }, { status: 404 });
-    }
-
-    const frappeSync = await syncSupplier(updated);
-    updated.frappeSync = { ...frappeSync, attemptedAt: new Date() };
-    await updated.save();
+    const updated = await submitMasterChange({Model:Supplier,record:existing,input:{...data,dueDays:Number(dueDays)},user,kind:'supplier'});
+    await notifyMasterSubmission(user,updated,'supplier');
+    const frappeSync = {status:'not_configured',message:'Only approved values are synced.'};
     return NextResponse.json({ success: true, data: updated, frappeSync }, { status: 200 });
   } catch (err) {
     console.error("PUT supplier error:", err);
-    return NextResponse.json({ success: false, message: "Failed to update supplier" }, { status: 500 });
+    return NextResponse.json({ success: false, message: err.status ? err.message : "Failed to update supplier" }, { status: err.status || 500 });
   }
 }
 
@@ -94,7 +91,8 @@ export async function DELETE(req, { params }) {
   if (error) return NextResponse.json({ success: false, message: error }, { status });
 
   try {
-    const deleted = await Supplier.findOneAndDelete({ _id: params.id, companyId: user.companyId });
+    const {id}=await params;
+    const deleted = await Supplier.findOneAndDelete({ _id:id, companyId: user.companyId });
 
     if (!deleted) {
       return NextResponse.json({ success: false, message: "Supplier not found" }, { status: 404 });

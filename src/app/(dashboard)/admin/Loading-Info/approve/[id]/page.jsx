@@ -1752,6 +1752,8 @@
 
 "use client";
 
+import { normalizeAmountInput } from '@/lib/amountInput.mjs';
+import { editableLoadingPart } from '@/lib/loadingApprovalWorkflow.mjs';
 import { useMemo, useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { usePermission } from "../../../hooks/usePermission";
@@ -2271,6 +2273,10 @@ function PackTypeTable({ packType, rows }) {
   MAIN APPROVE PAGE
 ========================= */
 export default function ApproveLoadingPanel() {
+  const [stageRecord, setStageRecord] = useState(null);
+  const stagedLoading = stageRecord?.loadingWorkflow?.version === 2;
+  const currentPart = stagedLoading ? (editableLoadingPart(stageRecord) || stageRecord.loadingWorkflow.currentPart) : 0;
+  const stageReady = stagedLoading && stageRecord.loadingWorkflow['part' + currentPart + 'Status'] === 'Submitted';
   const router = useRouter();
   const params = useParams();
   const panelId = params.id;
@@ -2436,6 +2442,7 @@ export default function ApproveLoadingPanel() {
       }
 
       const panel = data.data;
+      setStageRecord(panel);
 
       // Set header data
       setHeader({
@@ -2731,6 +2738,7 @@ export default function ApproveLoadingPanel() {
   };
 
   const handleApprove = async () => {
+    if (stagedLoading && !stageReady) { alert('Submit the current part for approval first.'); return; }
     if (!canApprove) {
       alert("You do not have permission to approve Loading Info.");
       return;
@@ -2815,7 +2823,7 @@ export default function ApproveLoadingPanel() {
       // Approve-only users skip the PUT (it needs 'edit') and go straight to PATCH.
       let putOk = true;
       let putMessage = '';
-      if (canEdit) {
+      if (canEdit && !stagedLoading) {
         const res = await fetch('/api/loading-panel', {
           method: 'PUT',
           headers: {
@@ -2927,7 +2935,7 @@ export default function ApproveLoadingPanel() {
           <div className="flex items-center gap-3">
             <button
               onClick={handleApprove}
-              disabled={saving || permLoading || !canApprove}
+              disabled={saving || permLoading || !canApprove || (stagedLoading && !stageReady)}
               title={!canApprove ? "You need Approve permission" : undefined}
               className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${saving
                 ? 'bg-gray-400 cursor-not-allowed'
@@ -2942,7 +2950,7 @@ export default function ApproveLoadingPanel() {
                   </svg>
                   Saving...
                 </span>
-              ) : 'Submit'}
+              ) : stagedLoading ? 'Submit Part ' + currentPart + ' Decision' : 'Submit'}
             </button>
           </div>
         </div>
@@ -2950,6 +2958,8 @@ export default function ApproveLoadingPanel() {
 
       {/* Main Content */}
       <div className="mx-auto max-w-full p-4">
+{stagedLoading && <div className="mb-3 rounded-xl bg-sky-50 p-3 text-sm font-semibold text-sky-900">Part 1 — Through VFT — {stageRecord?.loadingWorkflow?.part1Status}</div>}
+<fieldset disabled={stagedLoading && (!stageReady || currentPart !== 1)} className="min-w-0 border-0 p-0 m-0">
         {/* Vehicle Slip Upload - Top section */}
         <div className="mb-4">
           <div className="bg-white p-4 rounded-xl border-2 border-dashed border-slate-300">
@@ -3238,29 +3248,9 @@ export default function ApproveLoadingPanel() {
         </div>
 
         {/* VOT Panel - EDITABLE */}
-        <div className="mt-4">
-          <Card title="VOT - PANEL (Vehicle Outer Tarpaulin Pictures) - Editable">
-            <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-200">
-              <div className="flex items-center gap-3 mb-4">
-                <span className="text-xs font-bold text-slate-600">Approval:</span>
-                <EditableSelect
-                  value={votUploads.approval}
-                  onChange={(v) => setVotUploads({ ...votUploads, approval: v })}
-                  options={APPROVAL_STATUS}
-                />
-              </div>
-
-              <FileGridGroup
-                title="Vehicle Outer Tarpaulin Pictures"
-                files={existingFiles.vot}
-                emptyMessage="No VOT images uploaded"
-              />
-            </div>
-          </Card>
-        </div>
-
-        {/* VL Panel - EDITABLE with progress info */}
-        <div className="mt-4">
+        </fieldset>
+{stagedLoading && <div className="my-4 rounded-xl bg-amber-50 p-3 text-sm font-semibold text-amber-900">Part 2 — VL, VOT and remaining details — {stageRecord?.loadingWorkflow?.part2Status}</div>}
+<fieldset disabled={stagedLoading && (!stageReady || currentPart !== 2)} className="min-w-0 border-0 p-0 m-0"><div className="mt-4">
           <Card title="VL - PANEL (Vehicle Loading Pictures) - Editable">
             <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
               <div className="mb-3">
@@ -3364,6 +3354,28 @@ export default function ApproveLoadingPanel() {
           </Card>
         </div>
 
+        {/* VL Panel - EDITABLE with progress info */}
+        <div className="mt-4">
+          <Card title="VOT - PANEL (Vehicle Outer Tarpaulin Pictures) - Editable">
+            <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-200">
+              <div className="flex items-center gap-3 mb-4">
+                <span className="text-xs font-bold text-slate-600">Approval:</span>
+                <EditableSelect
+                  value={votUploads.approval}
+                  onChange={(v) => setVotUploads({ ...votUploads, approval: v })}
+                  options={APPROVAL_STATUS}
+                />
+              </div>
+
+              <FileGridGroup
+                title="Vehicle Outer Tarpaulin Pictures"
+                files={existingFiles.vot}
+                emptyMessage="No VOT images uploaded"
+              />
+            </div>
+          </Card>
+        </div>
+
         {/* Loaded Vehicle Weighment & Charges - EDITABLE */}
         <div className="mt-4">
           <Card title="Loaded Vehicle Weighment & Charges - Editable">
@@ -3408,32 +3420,32 @@ export default function ApproveLoadingPanel() {
                   <div className="space-y-2">
                     <EditableInput
                       label="Loading Charges"
-                      value={loadedWeighment.loadingCharges}
-                      onChange={(v) => setLoadedWeighment({ ...loadedWeighment, loadingCharges: v })}
+                      value={normalizeAmountInput(loadedWeighment.loadingCharges)}
+                      onChange={(v) => setLoadedWeighment({ ...loadedWeighment, loadingCharges: normalizeAmountInput(v) })}
                       type="number"
                     />
                     <EditableInput
                       label="Loading Staff Munshiyana"
-                      value={loadedWeighment.loadingStaffMunshiyana}
-                      onChange={(v) => setLoadedWeighment({ ...loadedWeighment, loadingStaffMunshiyana: v })}
+                      value={normalizeAmountInput(loadedWeighment.loadingStaffMunshiyana)}
+                      onChange={(v) => setLoadedWeighment({ ...loadedWeighment, loadingStaffMunshiyana: normalizeAmountInput(v) })}
                       type="number"
                     />
                     <EditableInput
                       label="Other Expenses"
-                      value={loadedWeighment.otherExpenses}
-                      onChange={(v) => setLoadedWeighment({ ...loadedWeighment, otherExpenses: v })}
+                      value={normalizeAmountInput(loadedWeighment.otherExpenses)}
+                      onChange={(v) => setLoadedWeighment({ ...loadedWeighment, otherExpenses: normalizeAmountInput(v) })}
                       type="number"
                     />
                     <EditableInput
                       label="Vehicle Floor Tarpaulin"
-                      value={loadedWeighment.vehicleFloorTarpaulin}
-                      onChange={(v) => setLoadedWeighment({ ...loadedWeighment, vehicleFloorTarpaulin: v })}
+                      value={normalizeAmountInput(loadedWeighment.vehicleFloorTarpaulin)}
+                      onChange={(v) => setLoadedWeighment({ ...loadedWeighment, vehicleFloorTarpaulin: normalizeAmountInput(v) })}
                       type="number"
                     />
                     <EditableInput
                       label="Vehicle Outer Tarpaulin"
-                      value={loadedWeighment.vehicleOuterTarpaulin}
-                      onChange={(v) => setLoadedWeighment({ ...loadedWeighment, vehicleOuterTarpaulin: v })}
+                      value={normalizeAmountInput(loadedWeighment.vehicleOuterTarpaulin)}
+                      onChange={(v) => setLoadedWeighment({ ...loadedWeighment, vehicleOuterTarpaulin: normalizeAmountInput(v) })}
                       type="number"
                     />
                     <div className="flex justify-between items-center pt-2 border-t border-slate-200 mt-2">
@@ -3551,7 +3563,8 @@ export default function ApproveLoadingPanel() {
             )}
           </div>
         </div>
-      </div>
+      </fieldset>
+</div>
     </div>
   );
 }

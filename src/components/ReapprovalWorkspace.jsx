@@ -1,5 +1,6 @@
 "use client";
 
+import { reviewDisplayState, approvalLabelForRecord } from '@/lib/reapprovalPresentation.mjs';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 
@@ -13,14 +14,7 @@ const routeTypes = [
 const labels = { unlocked: 'Under correction', pendingApproval: 'Pending approval', pendingReapproval: 'Pending reapproval', blockedByUpstream: 'Waiting for upstream review', syncFailed: 'Sync review needed', none: 'Approved' };
 const badge = 'inline-flex rounded-full px-2.5 py-1 text-xs font-semibold';
 
-function approvalLabel(record) {
-  if (record.reapprovalState && record.reapprovalState !== 'none') return labels[record.reapprovalState] || record.reapprovalState;
-  const status = String(record.status || '').trim();
-  if (/^(cancelled|canceled|hold|on hold)$/i.test(status)) return null;
-  if (/^(submitted|pending|pending approval)$/i.test(status)) return 'Pending approval';
-  if (/^(rejected|returned)$/i.test(status)) return 'Returned for correction';
-  return status || 'Status unavailable';
-}
+const approvalLabel = approvalLabelForRecord;
 
 function ApprovalStatusBadges({ record }) {
   const label = approvalLabel(record);
@@ -35,6 +29,7 @@ function ApprovalStatusBadges({ record }) {
 }
 
 function queueMessage(record) {
+  record = { ...record, reapprovalState: reviewDisplayState(record) };
   if (record.latestVnnSyncAmbiguous) return 'More than one approved Vehicle Negotiation matches these order rows. Ask an admin to review the links before syncing.';
   if (record.latestVnnSyncRequired) return `Loading Info needs the latest approved data from Vehicle Negotiation ${record.latestVnnNo || ''} synced before reapproval.`;
   if (record.reapprovalState === 'blockedByUpstream') {
@@ -50,6 +45,7 @@ function queueMessage(record) {
 }
 
 function queueBadge(record) {
+  record = { ...record, reapprovalState: reviewDisplayState(record) };
   if (record.latestVnnSyncAmbiguous) return 'Link review needed';
   if (record.latestVnnSyncRequired) return 'Sync latest VNN data';
   if (record.reapprovalState === 'blockedByUpstream') {
@@ -245,13 +241,13 @@ export default function ReapprovalWorkspace({ placement = 'content' }) {
       </>}
     </div>}
     {placement === 'content' && current && <section className="mx-3 mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-      <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><strong className="text-sm text-slate-900">Approval status · {current.record.no}</strong><ApprovalStatusBadges record={current.record} /><span className="text-xs text-slate-500">Revision {current.record.approvedRevision}</span></div>
+      <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><strong className="text-sm text-slate-900">Approval status · {current.record.no}</strong><ApprovalStatusBadges record={current.record} />{current.record.approvedRevision > 0 && <span className="text-xs text-slate-500">Revision {current.record.approvedRevision}</span>}</div>
         {current.record.syncError && <p className="mt-1 text-xs text-red-700">{current.record.syncError}</p>}
         {current.record.upstreamPending?.length > 0 && <div className="mt-1 text-xs text-amber-800">{(current.record.upstreamDetails?.length ? current.record.upstreamDetails : current.record.upstreamPending).map((marker, index) => <p key={`${marker.panel}:${marker.recordId}:${index}`}>{marker.message || upstreamBlockMessage(marker, current.record.type)}</p>)}</div>}</div>
       {current.record.type === 'vnn' && current.record.detachedOrderMarkers?.length > 0 && <div className="basis-full rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950"><p>These Order Panel blockers refer to orders no longer linked to this Vehicle Negotiation: {current.record.detachedOrderMarkers.map((marker) => marker.recordNo).filter(Boolean).join(', ')}.</p>{current.record.canReconcileDetachedOrders && <button type="button" disabled={busy} onClick={() => submit('reconcileDetachedOrders')} className="mt-2 rounded-md bg-amber-700 px-3 py-1.5 font-semibold text-white hover:bg-amber-800 disabled:opacity-50">{busy ? 'Clearing outdated link…' : 'Clear removed-order blocker'}</button>}</div>}
       {current.record.type === 'loading' && (current.record.latestVnnSync?.required || current.record.latestVnnSync?.ambiguous || current.record.detachedOrderMarkers?.length > 0) && <div className="basis-full rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950"><p>{current.record.latestVnnSync?.ambiguous ? 'More than one approved Vehicle Negotiation matches these order rows. Ask an admin to review the links; the existing blockers have been kept.' : current.record.latestVnnSync?.required ? `This Loading Info is out of date. Sync the latest approved data from Vehicle Negotiation ${current.record.latestVnnSync.vnnNo} to resume reapproval.` : `The old Order Panel link ${current.record.detachedOrderMarkers.map((marker) => marker.recordNo).filter(Boolean).join(', ')} is no longer linked to this Loading Info’s Vehicle Negotiation.`}</p>{current.record.canReconcileDetachedOrders && current.record.latestVnnSync?.required && !current.record.latestVnnSync?.ambiguous && <button type="button" disabled={busy} onClick={() => submit('reconcileDetachedOrders')} className="mt-2 rounded-md bg-amber-700 px-3 py-1.5 font-semibold text-white hover:bg-amber-800 disabled:opacity-50">{busy ? 'Syncing latest VNN data…' : 'Sync latest VNN data and request reapproval'}</button>}</div>}
-      <ChangesToReview changes={current.record.pendingChanges?.length ? current.record.pendingChanges : current.record.changeSummary} />
-      {isAdmin && <div className="flex gap-2">{['Approved', 'Completed'].includes(current.record.status) && current.record.reapprovalState === 'none' && <button onClick={openUnlock} className="rounded-lg bg-amber-600 px-3 py-2 text-sm font-semibold text-white">Unlock for correction</button>}{current.record.reapprovalState === 'unlocked' && <button onClick={() => { setModal('cancel'); setError(''); }} className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700">Cancel unlock</button>}{current.record.reapprovalState === 'syncFailed' && <button disabled={busy} onClick={() => submit('retrySync')} className="rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50">Retry downstream sync</button>}</div>}
+      {current.record.hasReviewableChanges === true && <ChangesToReview changes={current.record.pendingChanges?.length ? current.record.pendingChanges : current.record.changeSummary} />}
+      {(current.record.canUnlockForCorrection || isAdmin) && <div className="flex gap-2">{current.record.canUnlockForCorrection && ['Approved', 'Completed'].includes(current.record.status) && current.record.reapprovalState === 'none' && <button onClick={openUnlock} className="rounded-lg bg-amber-600 px-3 py-2 text-sm font-semibold text-white">Unlock for correction</button>}{current.record.canUnlockForCorrection && current.record.reapprovalState === 'unlocked' && <button onClick={() => { setModal('cancel'); setError(''); }} className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700">Cancel unlock</button>}{isAdmin && current.record.reapprovalState === 'syncFailed' && <button disabled={busy} onClick={() => submit('retrySync')} className="rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50">Retry downstream sync</button>}</div>}
     </section>}
     {placement === 'content' && modal && <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/50 p-4"><div className="w-full max-w-2xl rounded-2xl bg-white p-5 shadow-2xl">
       <h2 className="text-lg font-bold text-slate-900">{modal === 'unlock' ? `Unlock ${current?.record.no} for correction?` : `Cancel unlock for ${current?.record.no}?`}</h2>

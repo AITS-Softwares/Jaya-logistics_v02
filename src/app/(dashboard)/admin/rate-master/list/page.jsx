@@ -224,6 +224,7 @@
 // }
 'use client';
 
+import MasterApprovalReview from '@/components/MasterApprovalReview';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -247,7 +248,7 @@ export default function RateMasterListPage() {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/rate-master', {
+      const res = await fetch('/api/rate-master?management=true', {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -354,6 +355,7 @@ export default function RateMasterListPage() {
 
   return (
     <div className="container mx-auto p-4">
+      <MasterApprovalReview kind="rate" onChanged={fetchRateMasters} />
       {/* Header Section */}
       <div className="bg-white rounded-lg shadow-md p-6 mb-6">
         <div className="flex justify-between items-center">

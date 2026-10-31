@@ -1,5 +1,6 @@
 'use client';
 
+import { hasPriorApproval, panelApprovalStatus, approvalLabelForRecord } from '@/lib/reapprovalPresentation.mjs';
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import OrderRowStatusActions from '@/components/OrderRowStatusActions';
@@ -8,18 +9,9 @@ import { usePermission } from '../../../hooks/usePermission';
 const Field = ({ label, value }) => <div><dt className="text-xs font-bold uppercase tracking-wide text-slate-500">{label}</dt><dd className="mt-1 text-sm text-slate-900">{value || '—'}</dd></div>;
 
 function getVnnStatusBadge(record) {
-  const reapprovalLabels = {
-    blockedByUpstream: 'Waiting for upstream review',
-    pendingReapproval: 'Pending reapproval',
-    pendingApproval: 'Pending approval',
-    unlocked: 'Under correction',
-    syncFailed: 'Sync review needed',
-  };
-  const reapprovalStatus = reapprovalLabels[record?.reapprovalState];
-  if (reapprovalStatus) return { label: reapprovalStatus, className: 'bg-amber-100 text-amber-800' };
-  return record?.approval?.part3Status === 'Approved'
-    ? { label: 'Approved', className: 'bg-emerald-100 text-emerald-800' }
-    : { label: 'Pending', className: 'bg-amber-100 text-amber-800' };
+  const status = panelApprovalStatus('vnn', record);
+  const label = approvalLabelForRecord({ ...record, status, previouslyApproved: hasPriorApproval(record) }) || status;
+  return { label, className: label === 'Approved' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800' };
 }
 
 export default function VehicleNegotiationViewPage() {

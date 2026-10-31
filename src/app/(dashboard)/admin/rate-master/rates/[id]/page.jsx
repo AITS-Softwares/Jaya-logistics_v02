@@ -29,7 +29,7 @@ export default function UnifiedRateMasterPage() {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/rate-master', {
+      const res = await fetch('/api/rate-master?management=true', {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -371,7 +371,7 @@ export default function UnifiedRateMasterPage() {
         throw new Error(data.message || 'Failed to update location rate');
       }
       
-      setSuccess('Location rate updated successfully!');
+      setSuccess('Rate change submitted for approval.');
       setTimeout(() => setSuccess(null), 3000);
       
       // Clear editing state for this master

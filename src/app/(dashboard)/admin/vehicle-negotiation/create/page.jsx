@@ -2939,7 +2939,7 @@ export default function VehicleNegotiationPanel() {
           </Card>
 
           {/* PART 3: VEHICLE APPROVAL - FULL SECTION READONLY */}
-          <Card title="Vehicle-Placement_Rate">
+          <Card title="Vehicle Placement Rate">
             <div className="grid grid-cols-12 gap-3 mb-4">
               <div className="col-span-12 md:col-span-4">
                 <label className="text-xs font-bold text-slate-600">Supplier Name</label>
@@ -3007,6 +3007,26 @@ export default function VehicleNegotiationPanel() {
                 options={APPROVALS}
                 readOnly={true}
               />
+              <div className="col-span-12 md:col-span-4 grid grid-cols-12 gap-3">
+                <Select
+                  col="col-span-12"
+                  label="Payment - Terms"
+                  value={approval.paymentTerms}
+                  onChange={(v) => setApproval((p) => ({ ...p, paymentTerms: v }))}
+                  options={[...new Set([...(paymentTerms.length > 0 ? paymentTerms : PAYMENT_TERMS), "Custom / Manual"])]}
+                  readOnly={false}
+                />
+                {approval.paymentTerms === "Custom / Manual" && (
+                  <Input
+                    col="col-span-12"
+                    label="Manual Advance (₹)"
+                    value={approval.advance}
+                    onChange={(v) => setApproval((p) => ({ ...p, advance: v }))}
+                    type="number"
+                    readOnly={false}
+                  />
+                )}
+              </div>
             </div>
 
             <div className="mb-4">
@@ -3037,24 +3057,6 @@ export default function VehicleNegotiationPanel() {
                 options={purchaseTypes.length > 0 ? purchaseTypes : PURCHASE_TYPES}
                 readOnly={true}
               />
-              <Select
-                col="col-span-12 md:col-span-4"
-                label="Payment - Terms"
-                value={approval.paymentTerms}
-                onChange={(v) => setApproval((p) => ({ ...p, paymentTerms: v }))}
-                options={[...new Set([...(paymentTerms.length > 0 ? paymentTerms : PAYMENT_TERMS), "Custom / Manual"])]}
-                readOnly={false}
-              />
-              {approval.paymentTerms === "Custom / Manual" && (
-                <Input
-                  col="col-span-12 md:col-span-4"
-                  label="Manual Advance (₹)"
-                  value={approval.advance}
-                  onChange={(v) => setApproval((p) => ({ ...p, advance: v }))}
-                  type="number"
-                  readOnly={false}
-                />
-              )}
             </div>
           </Card>
 

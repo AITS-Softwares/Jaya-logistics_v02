@@ -3201,6 +3201,7 @@
 
 'use client';
 
+import MasterApprovalReview from '@/components/MasterApprovalReview';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -3422,7 +3423,7 @@ export default function RateMasterManagePage() {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/rate-master', {
+      const res = await fetch('/api/rate-master?management=true', {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -3446,12 +3447,13 @@ export default function RateMasterManagePage() {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`/api/rate-master?id=${masterId}`, {
+      const res = await fetch(`/api/rate-master?management=true&id=${masterId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
       
       if (data.success && data.data) {
+        data.data={...data.data,...(data.data.pendingChange?.data || data.data.lastRejectedProposal?.data || {})};
         setSelectedMaster(data.data);
         // Set approval file data if exists
         if (data.data.approvalFile && data.data.approvalFile.fileName) {
@@ -3475,7 +3477,7 @@ export default function RateMasterManagePage() {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`/api/rate-master?id=${masterId}&history=true&locationId=${locationId}`, {
+      const res = await fetch(`/api/rate-master?management=true&id=${masterId}&history=true&locationId=${locationId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -3678,7 +3680,7 @@ export default function RateMasterManagePage() {
         throw new Error(data.message || 'Failed to create rate master');
       }
       
-      setFormSuccess('Rate master created successfully!');
+      setFormSuccess('Rate master submitted for approval.');
       
       setTitle('');
       setCustomerId('');
@@ -3752,7 +3754,7 @@ export default function RateMasterManagePage() {
         throw new Error(data.message || 'Failed to delete rate');
       }
       
-      setSuccess('Rate deleted successfully!');
+      setSuccess('Rate removal submitted for approval.');
       setTimeout(() => setSuccess(null), 3000);
       await fetchSingleRateMaster(selectedMaster._id);
       await fetchRateMasters();
@@ -3877,7 +3879,7 @@ export default function RateMasterManagePage() {
         throw new Error(data.message || 'Failed to revise rate');
       }
       
-      setSuccess(`Rate revised successfully! Old rate moved to history.`);
+      setSuccess(`Rate revision submitted for approval. Approved rates remain in use.`);
       setTimeout(() => setSuccess(null), 3000);
       
       setShowRevisionModal(false);
@@ -3946,7 +3948,7 @@ export default function RateMasterManagePage() {
         throw new Error(data.message || 'Failed to update rate date');
       }
       
-      setSuccess('Rate date updated successfully!');
+      setSuccess('Rate change submitted for approval.');
       setTimeout(() => setSuccess(null), 3000);
       
       await fetchSingleRateMaster(selectedMaster._id);
@@ -4238,6 +4240,8 @@ export default function RateMasterManagePage() {
 
   return (
     <div className="container mx-auto p-4">
+      <MasterApprovalReview kind="rate" onChanged={fetchRateMasters} />
+      {selectedMaster?.rejectionReason && <p role="alert" className="mb-3 rounded bg-red-50 p-3 text-red-700">Rejected: {selectedMaster.rejectionReason}. Correct and submit again.</p>}
       <div className="bg-white rounded-lg shadow-md p-6 mb-6">
         <div className="flex justify-between items-center">
           <div>

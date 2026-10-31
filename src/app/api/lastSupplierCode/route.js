@@ -20,7 +20,7 @@ export async function GET(req) {
     await connectDB();
 
     // Step 3: Find the supplier with the highest supplierCode for the company
-    const lastSupplier = await Supplier.findOne({ companyId: decoded.companyId })
+    const lastSupplier = await Supplier.findOne({ companyId: decoded.companyId }).setOptions({includeUnapprovedMasters:true})
       .sort({ supplierCode: -1 })
       .limit(1);
 
