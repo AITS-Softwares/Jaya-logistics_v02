@@ -3385,6 +3385,7 @@
 
 // src/app/api/vehicle-negotiation/route.js
 
+import {vnnPurchaseType} from '@/lib/vnnPart3.mjs';
 import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from "next/server";
 import { identifierFormatError } from "@/lib/identifierFormats";
@@ -3731,6 +3732,7 @@ async function branchHandlerGET(req) {
               memo: vn.approval?.memoStatus || 'Pending',
               vnId: vn._id.toString(),
               orderId: order._id ? order._id.toString() : null,
+              orderPanelId: order.orderPanelId ? String(order.orderPanelId) : null,
               branchName: vn.branchName || '',
               branchCode: vn.branchCode || '',
               subCompanyName: order.subCompanyName || vn.subCompanyName || '',
@@ -3952,7 +3954,8 @@ async function branchHandlerPOST(req) {
         vehicleId: '',
         vehicleData: null,
         mobile: '',
-        purchaseType: '',
+        purchaseType: vnnPurchaseType(processedVendors,body.approval || {}),
+        commercialRemarks: String(body.approval?.commercialRemarks || ''),
         paymentTerms: body.approval?.paymentTerms || '',
         advance: Number(body.approval?.advance) || 0,
         memoStatus: body.approval?.memoStatus || 'Pending',
@@ -4339,6 +4342,10 @@ async function branchHandlerPUT(req) {
       // receives a larger approval payload.
     }
 
+    if(hasEditPermission && (body.vendors || body.approval)) {
+      vehicleNegotiation.approval.purchaseType=vnnPurchaseType(vehicleNegotiation.vendors,vehicleNegotiation.approval);
+      if(body.approval?.commercialRemarks!==undefined)vehicleNegotiation.approval.commercialRemarks=String(body.approval.commercialRemarks);
+    }
     // Saving an amendment keeps both parts open until explicit submission.
     if (isGeneralEdit && ['unlocked', 'pendingReapproval'].includes(vehicleNegotiation.reapprovalState)) {
       vehicleNegotiation.approval.part1Status = 'Pending';

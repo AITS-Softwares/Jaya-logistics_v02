@@ -1,18 +1,8 @@
 'use client';
 
+import OrderPanelDetailsView from '@/components/OrderPanelDetailsView';
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-
-const Value = ({ label, value }) => (
-  <div>
-    <dt className="text-xs font-bold uppercase tracking-wide text-slate-500">
-      {label}
-    </dt>
-    <dd className="mt-1 text-sm text-slate-900">
-      {value === null || value === undefined || value === '' ? '—' : String(value)}
-    </dd>
-  </div>
-);
 
 export default function OrderPanelViewPage() {
   const { id } = useParams();
@@ -46,106 +36,6 @@ export default function OrderPanelViewPage() {
     return <div className="p-8 text-sm text-slate-500">Loading order details…</div>;
   }
 
-  return (
-    <div className="min-h-screen bg-slate-50 p-6">
-      <div className="mx-auto max-w-7xl">
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="mb-4 text-sm font-semibold text-indigo-600"
-        >
-          ← Back to list
-        </button>
-
-        {error && (
-          <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-            {error}
-          </div>
-        )}
-
-        {order && (
-          <>
-            <section className="rounded-xl border border-slate-200 bg-white p-5">
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                  <h1 className="text-xl font-extrabold text-slate-900">
-                    Order: {order.orderPanelNo}
-                  </h1>
-                <p className="mt-1 text-sm text-slate-500">Order and plant row status history</p>
-                </div>
-                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
-                  {order.panelStatus}
-                </span>
-              </div>
-              <dl className="mt-5 grid grid-cols-2 gap-4 md:grid-cols-4">
-                <Value
-                  label="Date"
-                  value={order.date ? new Date(order.date).toLocaleDateString('en-GB') : ''}
-                />
-                <Value label="Branch" value={order.branchName} />
-                <Value label="Sub-company" value={order.subCompanyName} />
-                <Value label="Party" value={order.partyName} />
-                <Value label="Customer code" value={order.customerCode} />
-                <Value label="Contact person" value={order.contactPerson} />
-                <Value label="Delivery" value={order.delivery} />
-                <Value label="Total weight" value={`${order.totalWeight || 0} kg`} />
-              </dl>
-            </section>
-
-            <section className="mt-5 overflow-hidden rounded-xl border border-slate-200 bg-white">
-              <h2 className="border-b border-slate-200 px-5 py-4 font-bold text-slate-900">
-                Plant / Route rows
-              </h2>
-
-              <div className="overflow-x-auto">
-                <table className="min-w-full text-sm">
-                  <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
-                    <tr>
-                      <th className="px-4 py-3">Plant</th>
-                      <th className="px-4 py-3">Order type</th>
-                      <th className="px-4 py-3">From</th>
-                      <th className="px-4 py-3">To</th>
-                      <th className="px-4 py-3">Location remark</th>
-                      <th className="px-4 py-3">Weight</th>
-                      <th className="px-4 py-3">Status</th>
-                      <th className="px-4 py-3">Reason / History</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(order.plantRows || []).map((row) => (
-                      <tr key={row._id} className="border-t border-slate-100">
-                        <td className="px-4 py-3 font-medium">
-                          {row.plantName || '—'}
-                          {row.plantCodeValue ? ` (${row.plantCodeValue})` : ''}
-                        </td>
-                        <td className="px-4 py-3">{row.orderType || '—'}</td>
-                        <td className="px-4 py-3">{row.fromName || row.from || '—'}</td>
-                        <td className="px-4 py-3">{row.toName || row.to || '—'}</td>
-                        <td className="px-4 py-3">{row.locationRemark || '—'}</td>
-                        <td className="px-4 py-3">{row.weight || 0} kg</td>
-                        <td className="px-4 py-3"><span>{row.status || 'Open'}</span>{row.statusRequest?.action && <span title={row.statusRequest.reason} className="ml-2 rounded-full bg-amber-100 px-2 py-1 text-[10px] font-bold text-amber-800">{row.statusRequest.action} pending approval</span>}</td>
-                        <td className="px-4 py-3">
-                          <div>{row.statusReason || '—'}</div>
-                          {(row.statusHistory || []).map((entry, index) => <div key={`${entry.at}-${index}`} className="mt-1 text-xs text-slate-500">{entry.action}: {entry.reason} · {entry.at ? new Date(entry.at).toLocaleString() : ''}</div>)}
-                        </td>
-                      </tr>
-                    ))}
-                    {!(order.plantRows || []).length && (
-                      <tr>
-                        <td colSpan="8" className="px-4 py-8 text-center text-slate-500">
-                          No plant / route rows found.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-
-           
-          </>
-        )}
-      </div>
-    </div>
-  );
+  if(order)return <OrderPanelDetailsView order={order} onBack={()=>router.back()} />;
+  return <div className="min-h-screen bg-slate-50 p-6"><div className="mx-auto max-w-7xl"><button type="button" onClick={()=>router.back()} className="mb-4 text-sm font-semibold text-indigo-600">← Back to list</button><div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div></div></div>;
 }

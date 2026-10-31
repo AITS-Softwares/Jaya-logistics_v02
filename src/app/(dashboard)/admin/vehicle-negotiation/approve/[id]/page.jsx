@@ -3102,6 +3102,7 @@
 
 "use client";
 
+import {vnnPurchaseType} from '@/lib/vnnPart3.mjs';
 import { useMemo, useRef, useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import mongoose from 'mongoose';
@@ -3845,8 +3846,11 @@ export default function ApproveVehicleNegotiation() {
     vehicleData: null,
     mobile: "",
     purchaseType: "",
-    paymentTerms: ""
+    paymentTerms: "",
+    commercialRemarks: ""
   });
+  const resolvedPurchaseType=vnnPurchaseType(vendors,approval);
+
 
   // Separate state for each section's approval
   const [approvalDecision, setApprovalDecision] = useState("Pending");
@@ -4008,7 +4012,8 @@ export default function ApproveVehicleNegotiation() {
           vehicleData: vn.approval.vehicleData || null,
           mobile: vn.approval.mobile || "",
           purchaseType: vn.approval.purchaseType || "",
-          paymentTerms: vn.approval.paymentTerms || ""
+          paymentTerms: vn.approval.paymentTerms || "",
+          commercialRemarks: vn.approval.commercialRemarks || ""
         });
 
         const part1Status = vn.approval.part1Status || "Pending";
@@ -4278,6 +4283,8 @@ export default function ApproveVehicleNegotiation() {
 
           {/* PART 3 - VEHICLE APPROVAL */}
           <Card title="Vehicle - Approval - Part - 3">
+            <div className="mb-4"><label className="text-xs font-bold text-slate-600">Part 3 Remarks</label><div className="mt-1 whitespace-pre-wrap rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">{approval.commercialRemarks || 'No remarks provided'}</div></div>
+            <div className="mb-4"><label className="text-xs font-bold text-slate-600">Approval Remarks</label><textarea value={approvalRemarks} onChange={event=>setApprovalRemarks(event.target.value)} rows={3} placeholder="Enter your approval or rejection remarks..." className="mt-1 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"/><p className="mt-1 text-xs text-slate-500">Saved with the combined VNN approval decision.</p></div>
             <div className="grid grid-cols-12 gap-3 mb-4">
               <div className="col-span-12 md:col-span-4">
                 <label className="text-xs font-bold text-slate-600">Supplier Name</label>
@@ -4313,7 +4320,7 @@ export default function ApproveVehicleNegotiation() {
             </div>
 
             <div className="grid grid-cols-12 gap-3 mb-4">
-              <Select col="col-span-12 md:col-span-4" label="Purchase - Type" value={approval.purchaseType} options={purchaseTypes.length > 0 ? purchaseTypes : PURCHASE_TYPES} readOnly={true} />
+              <Select col="col-span-12 md:col-span-4" label="Purchase - Type" value={resolvedPurchaseType} options={purchaseTypes.length > 0 ? purchaseTypes : PURCHASE_TYPES} readOnly={true} />
               <Select col="col-span-12 md:col-span-4" label="Payment - Terms" value={approval.paymentTerms} options={paymentTerms.length > 0 ? paymentTerms : PAYMENT_TERMS} readOnly={true} />
             </div>
           </Card>

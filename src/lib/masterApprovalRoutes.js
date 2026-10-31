@@ -10,11 +10,18 @@ import {syncSupplier} from './frappe-supplier.mjs';
 import {notifyModuleApprovers,notifyModuleDecision} from './workflowNotifications';
 
 export async function notifyMasterSubmission(user,record,kind) {
-  if(record.approvalStatus==='Approved' && !record.pendingChange) return {recipients:0};
+  if(record.approvalStatus==='Approved' && !record.pendingChange) {
+    if(kind==='supplier') {
+      const result=await syncSupplier(record);
+      record.frappeSync={...result,attemptedAt:new Date()};
+      await Supplier.updateOne({_id:record._id,companyId:record.companyId},{$set:{frappeSync:record.frappeSync}}).catch(error=>console.error('Supplier sync status:',error));
+    }
+    return {recipients:0};
+  }
   return notifyModuleApprovers({user,module:kind === 'supplier'?'Suppliers':'Rate Master',panelLabel:kind === 'supplier'?'Supplier':'Rate Master',reference:record.supplierCode || record.title,url:kind === 'supplier'?'/admin/supplier':'/admin/rate-master/list'});
 }
-async function rateApprovalHistory({record,candidate,update,session}) {
-  if (!record.pendingChange?.data?.locationRates) return;
+export async function rateApprovalHistory({record,candidate,update,session}) {
+  if (!update.$set.locationRates && !record.pendingChange?.data?.locationRates) return;
   const next=candidate.locationRates;
   for (const previous of record.locationRates) {
     const current=next.find(row=>String(row._id)===String(previous._id));

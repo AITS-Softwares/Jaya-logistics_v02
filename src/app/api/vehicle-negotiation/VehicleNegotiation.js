@@ -1127,6 +1127,7 @@ const vehicleNegotiationSchema = new mongoose.Schema({
       enum: ['Approved', 'Reject', 'Pending'], 
       default: 'Pending' 
     },
+    commercialRemarks: {type:String,default:''},
     part3Remarks: { 
       type: String, 
       default: '' 

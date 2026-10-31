@@ -4,8 +4,9 @@ This change covers the two masters only. Location Master has no approval. Paymen
 
 ## Behavior
 
-- New suppliers and rate masters start Pending and are unavailable in operational dropdowns until approved.
-- All supplier edits require approval. Rate Master title edits remain immediate; rate slabs, customer/branch, rules and customer approval evidence require approval.
+- New suppliers and rate masters created by ordinary users start Pending. Admin-role and Company accounts save directly as Approved. Only Approved records appear in operational dropdowns.
+- Supplier selection APIs additionally exclude Inactive suppliers. Older approved suppliers with no stored status retain the schema default of Active. Supplier management still shows inactive records. This selection filter does not modify historical transaction documents or add inactive filtering to historical model reads.
+- Supplier edits by ordinary users require approval. Their Rate Master title edits remain immediate; rate slabs, customer/branch, rules and customer approval evidence require approval. Admin-role and Company edits save directly as Approved.
 - An approved record remains usable with its approved values while proposed changes wait. Proposal fields are never returned by ordinary operational lookups.
 - Company/Admin accounts and users with the master's Approve permission can approve; Reject is separately permission-controlled. Nobody can approve or reject their own submission, including Company/Admin accounts.
 - Open Supplier Management or Rate Master management/list to use the approval register. Filter Pending, Approved, Rejected or All; Pending includes proposed changes to approved records. Review shows the maker and field comparisons.
@@ -75,3 +76,27 @@ These run offline with actual Mongoose validation and simulated persistence/sess
 No database migration, server deployment, external supplier sync or notification delivery was executed during local implementation.
 
 Local result: all three offline suites passed, approval-related JavaScript passed Next SWC compilation, and git diff whitespace checks passed. Full npm run build was blocked by Windows EPERM creating .next/server/app/api; a successful production build and database-backed smoke test are still required before deployment.
+
+## Simple Rate Master-only commands (PowerShell or Linux)
+
+Run from the project root with the intended production environment configured. This wrapper reads MASTER_APPROVAL_MONGO_URI if set, otherwise MONGODB_URI from the project environment files, and prints the target database. It never accesses the supplier collection or its indexes.
+
+Preview:
+
+```sh
+node scripts/approve-existing-rate-masters.mjs
+```
+
+After checking the database/count and taking a backup:
+
+```sh
+node scripts/approve-existing-rate-masters.mjs --apply
+```
+
+Verify by running the preview again; missing should be zero. An explicit database override is available with --db=YOUR_DATABASE. Only records with approvalStatus missing are approved. Genuine Pending/Rejected records remain unchanged.
+
+## Updated administrator behavior
+
+Admin-role users and Company accounts now save their own Supplier/Rate Master creations and edits directly as Approved, with an audit entry. Other users, including users with only Approve permission, still submit for review. An administrator cannot silently overwrite another maker's pending proposal; review it first. Direct rate edits write rate history in the same Mongo transaction. The Existing records tab is removed. No existing database decisions are changed by this code update.
+
+Rate Master pending proposals now resolve location names before rendering; unnamed/deleted locations have a safe fallback. The Rate Master route also has a retry screen for unexpected render failures.
