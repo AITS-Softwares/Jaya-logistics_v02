@@ -1,3 +1,4 @@
+import { isStagedLoading, newLoadingWorkflow, filterLoadingFields, prepareLoadingEdit, loadingApprovalDecision, loadingWorkflowForReview } from '@/lib/loadingApprovalWorkflow.mjs';
 
 
 // import { NextResponse } from "next/server";
@@ -1358,6 +1359,8 @@ async function branchHandlerGET(req) {
         }, { status: 404 });
       }
 
+      loadingPanel.loadingWorkflow = loadingWorkflowForReview(loadingPanel);
+
       // Out Date/Time is the moment the LAST LR of this Loading Info was approved with its
       // invoice. It is saved once at that moment (see the consignment-note route); for
       // records saved before that, derive it from the same event instead of the first LR.
@@ -1431,6 +1434,7 @@ async function branchHandlerGET(req) {
     }
 
     const loadingPanels = await LoadingPanel.find(companyScopeFilter(user, query))
+      .setOptions({ includeDeleted: format === 'table' && new URL(req.url).searchParams.get('includeDeleted') === 'true' })
       .sort({ createdAt: -1 })
       .lean();
 
@@ -1494,6 +1498,9 @@ async function branchHandlerGET(req) {
         return {
           _id: panel._id,
           date: panel.date ? new Date(panel.date).toISOString().split('T')[0] : '',
+          isDeleted: panel.isDeleted === true,
+          deletedAt: panel.deletedAt || null,
+          deleteReason: panel.deleteReason || '',
           vehicleArrivalNo: panel.vehicleArrivalNo || 'N/A',
           vehicleNegotiationNo: panel.vehicleNegotiationNo || 'N/A',
           vnnNo,
@@ -1539,6 +1546,7 @@ async function branchHandlerGET(req) {
           invoice: panel.invoice || '',
           ewaybill: panel.ewaybill || '',
 
+          loadingWorkflow: loadingWorkflowForReview(panel) || null,
           panelStatus: panel.panelStatus || 'Draft',
           isDraft: !!panel.isDraft
         };
@@ -1608,6 +1616,8 @@ async function branchHandlerGET(req) {
           invoice: panel.invoice || '',
           ewaybill: panel.ewaybill || '',
 
+          loadingWorkflow: panel.loadingWorkflow || null,
+          isDraft: !!panel.isDraft,
           panelStatus: panel.panelStatus || 'Draft'
         };
       });
@@ -2085,10 +2095,15 @@ async function branchHandlerPOST(req) {
       // Company & User
       companyId: new mongoose.Types.ObjectId(user.companyId),
       createdBy: new mongoose.Types.ObjectId(user.id),
-      panelStatus: 'Draft',
+      panelStatus: isDraftSave ? 'Draft' : 'Submitted',
+      loadingWorkflow: newLoadingWorkflow(!isDraftSave),
       isDraft: isDraftSave
     };
 
+    // Part 2 opens only after Part 1 approval.
+    for (const key of Object.keys(filterLoadingFields(loadingPanelData, 2))) delete loadingPanelData[key];
+    loadingPanelData.vbpUploads.approval = '';
+    loadingPanelData.vftUploads.approval = '';
     // Create and save
     const newLoadingPanel = new LoadingPanel(loadingPanelData);
     const savedPanel = await newLoadingPanel.save({ validateBeforeSave: !isDraftSave });
@@ -2103,7 +2118,7 @@ async function branchHandlerPOST(req) {
     });
     if (!isDraftSave) await captureSourceDependencies('loading', savedPanel, user.companyId);
     if (!isDraftSave) {
-      await notifyConsignmentNoteTeamLoadingInfoReady(user, savedPanel);
+
       await notifyModuleApprovers({ user, module: 'Loading Info', panelLabel: 'Loading Info',
         reference: savedPanel.vehicleArrivalNo, url: `/admin/Loading-Info/${savedPanel._id}` });
     }
@@ -2162,7 +2177,8 @@ async function branchHandlerPUT(req) {
     const body = await req.json();
     const formatError = identifierFormatError(body);
     if (formatError) return NextResponse.json({ success: false, message: formatError }, { status: 400 });
-    const { id, saveMode, ...updateData } = body;
+    const { id, saveMode, ...incomingData } = body;
+    let updateData = incomingData;
 
     if (!id || !isValidObjectId(id)) {
       return NextResponse.json({
@@ -2181,6 +2197,8 @@ async function branchHandlerPUT(req) {
       }, { status: 404 });
     }
 
+    existingPanel.loadingWorkflow = loadingWorkflowForReview(existingPanel);
+
     if (existingPanel.upstreamPending?.length || existingPanel.reapprovalState === 'blockedByUpstream') {
       return NextResponse.json({ success: false, message: 'This record is waiting for upstream corrections to be reviewed first.' }, { status: 409 });
     }
@@ -2191,7 +2209,24 @@ async function branchHandlerPUT(req) {
       return NextResponse.json({ success: false, message: 'Approved Loading Info is locked. Ask an admin to unlock it before editing.' }, { status: 409 });
     }
 
+    const staged = isStagedLoading(existingPanel);
     const wasDraft = !!existingPanel.isDraft || existingPanel.panelStatus === 'Draft';
+    if (staged) {
+      try { updateData = prepareLoadingEdit(existingPanel, incomingData, saveMode); }
+      catch (error) { return NextResponse.json({ success: false, message: error.message }, { status: error.status || 409 }); }
+      if (updateData.header) {
+        for (const key of ['branch', 'branchName', 'branchCode', 'date', 'delivery', 'billingType', 'noOfLoadingPoints', 'noOfDroppingPoint', 'collectionCharges', 'cancellationCharges', 'loadingCharges', 'otherCharges']) {
+          if (updateData.header[key] !== undefined) updateData[key] = updateData.header[key];
+        }
+        delete updateData.header;
+      }
+      if (saveMode === 'submit' && updateData.loadingWorkflow.currentPart === 2) {
+        const optional = await areLoadingInfoPhotosOptional(user, existingPanel.orderRows || []);
+        const count = Object.entries(updateData.vlUploads || existingPanel.vlUploads?.toObject?.() || {}).filter(([key, value]) => /^vl\d+$/.test(key) && value && value !== 'Not Set').length;
+        if (!optional && count < 5) return NextResponse.json({ success: false, message: 'Upload at least 5 Vehicle Loading photos before submitting Part 2.' }, { status: 400 });
+      }
+      if (isReapprovalEdit && saveMode === 'submit') updateData.reapprovalState = 'pendingApproval';
+    } else {
     if (saveMode && !['draft', 'submit'].includes(saveMode)) {
       return NextResponse.json({ success: false, message: "Invalid saveMode" }, { status: 400 });
     }
@@ -2218,6 +2253,8 @@ async function branchHandlerPUT(req) {
       updateData.isDraft = false;
       updateData.panelStatus = 'Submitted';
       updateData.reapprovalState = 'pendingApproval';
+    }
+
     }
 
     // Merge vehicleInfo instead of replacing it, and never let a save blank the vehicle number.
@@ -2451,7 +2488,7 @@ async function branchHandlerPUT(req) {
     });
 
     if (saveMode === 'submit' && (wasDraft || isReapprovalEdit) && updatedPanel?.panelStatus === 'Submitted') {
-      await notifyConsignmentNoteTeamLoadingInfoReady(user, updatedPanel);
+      if (!staged) await notifyConsignmentNoteTeamLoadingInfoReady(user, updatedPanel);
       await notifyModuleApprovers({
         user,
         module: 'Loading Info',
@@ -2575,6 +2612,8 @@ async function branchHandlerPATCH(req) {
       }, { status: 404 });
     }
 
+    loadingPanel.loadingWorkflow = loadingWorkflowForReview(loadingPanel);
+
     if (action === 'approve') {
       const orderMarkers = (loadingPanel.upstreamPending || []).filter((marker) => marker.panel === 'order');
       if (orderMarkers.length && loadingPanel.vehicleNegotiationNo) {
@@ -2640,6 +2679,25 @@ async function branchHandlerPATCH(req) {
       catch (staleError) { return NextResponse.json({ success: false, message: staleError.message }, { status: staleError.status || 409 }); }
     }
 
+    let stageDecision = null;
+    if (isStagedLoading(loadingPanel)) {
+      try { loadingPanel.loadingWorkflow = loadingWorkflowForReview(loadingPanel); stageDecision = loadingApprovalDecision(loadingPanel, updateFields, action, user); }
+      catch (error) { return NextResponse.json({ success: false, message: error.message }, { status: error.status || 409 }); }
+      loadingPanel.loadingWorkflow = stageDecision.workflow;
+      if (stageDecision.part === 1) {
+        const fallback = action === 'reject' ? 'Rejected' : 'Approved';
+        loadingPanel.vbpUploads.approval = updateFields.vbpApproval || fallback;
+        loadingPanel.vbpUploads.remark = updateFields.vbpRemark ?? loadingPanel.vbpUploads.remark;
+        loadingPanel.vftUploads.approval = updateFields.vftApproval || fallback;
+        loadingPanel.panelStatus = stageDecision.status === 'Submitted' ? 'Submitted' : 'Draft';
+        loadingPanel.isDraft = stageDecision.status !== 'Submitted';
+        if (loadingPanel.approvedSnapshot && stageDecision.status !== 'Submitted') loadingPanel.reapprovalState = 'unlocked';
+        await loadingPanel.save();
+        if (stageDecision.status !== 'Submitted') await notifyModuleDecision({ user, record: loadingPanel, module: 'Loading Info', reference: loadingPanel.vehicleArrivalNo, action: stageDecision.status === 'Approved' ? 'approve' : 'reject', url: '/admin/Loading-Info/' + loadingPanel._id });
+        return NextResponse.json({ success: true, message: stageDecision.status === 'Approved' ? 'Part 1 approved. Part 2 is now open for editing.' : 'Part 1 review saved.', data: loadingPanel });
+      }
+    }
+
     // Update approval statuses
     const statusMap = {
       'approve': 'Approved',
@@ -2650,7 +2708,7 @@ async function branchHandlerPATCH(req) {
     const newStatus = statusMap[action];
 
     // Update VBP approval and remark
-    if (loadingPanel.vbpUploads) {
+    if (loadingPanel.vbpUploads && !stageDecision) {
       loadingPanel.vbpUploads.approval = updateFields.vbpApproval || newStatus;
       if (updateFields.vbpRemark !== undefined) {
         loadingPanel.vbpUploads.remark = updateFields.vbpRemark;
@@ -2658,7 +2716,7 @@ async function branchHandlerPATCH(req) {
     }
 
     // Update VFT approval
-    if (loadingPanel.vftUploads) {
+    if (loadingPanel.vftUploads && !stageDecision) {
       loadingPanel.vftUploads.approval = updateFields.vftApproval || newStatus;
     }
 
@@ -2744,15 +2802,21 @@ async function branchHandlerPATCH(req) {
       action === 'approve' ? 'Approved' :
         'Rejected';
 
+    if (stageDecision) {
+      loadingPanel.panelStatus = stageDecision.final ? 'Approved' : stageDecision.status === 'Submitted' ? 'Submitted' : 'Draft';
+      loadingPanel.isDraft = stageDecision.status === 'Rejected';
+      if (stageDecision.status === 'Rejected' && loadingPanel.approvedSnapshot) loadingPanel.reapprovalState = 'unlocked';
+    }
     if (action === 'reject' && ['pendingApproval', 'pendingReapproval'].includes(loadingPanel.reapprovalState)) loadingPanel.reapprovalState = 'unlocked';
     await loadingPanel.save();
-    if (action === 'approve') {
+    if (action === 'approve' && (!stageDecision || stageDecision.final)) {
       try { await recordApprovedRevision('loading', loadingPanel._id, user); }
       catch (syncError) { return NextResponse.json({ success: false, message: `Loading Info approved, but downstream sync failed and is blocked for admin retry: ${syncError.message}` }, { status: 503 }); }
     }
 
-    await notifyModuleDecision({ user, record: loadingPanel, module: 'Loading Info', reference: loadingPanel.vehicleArrivalNo, action, url: `/admin/Loading-Info/${loadingPanel._id}` });
-    if (action === 'approve' || action === 'complete') {
+    if (!stageDecision || stageDecision.status !== 'Submitted') await notifyModuleDecision({ user, record: loadingPanel, module: 'Loading Info', reference: loadingPanel.vehicleArrivalNo, action: stageDecision?.status === 'Rejected' ? 'reject' : action, url: `/admin/Loading-Info/${loadingPanel._id}` });
+    if ((action === 'approve' || action === 'complete') && (!stageDecision || stageDecision.final)) {
+      await notifyConsignmentNoteTeamLoadingInfoReady(user, loadingPanel);
       await notifyModuleCreateUsers({
         user,
         module: 'Purchase Panel',

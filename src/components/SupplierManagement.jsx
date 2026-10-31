@@ -1,5 +1,6 @@
 "use client";
 
+import MasterApprovalReview from '@/components/MasterApprovalReview';
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import {
@@ -38,6 +39,7 @@ const DOCUMENT_TYPES = [
 ];
 
 const EMPTY = {
+  status: "Active",
   supplierCode: "", supplierName: "", supplierType: "", supplierGroup: "",
   supplierCategory: "", emailId: "", mobileNumber: "", contactPersonName: "",
   contactNumber: "", alternateContactNumber: "",
@@ -512,9 +514,9 @@ export default function SupplierManagement() {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.get("/api/suppliers", { headers: { Authorization: `Bearer ${token}` } });
+      const res = await axios.get("/api/suppliers?management=true", { headers: { Authorization: `Bearer ${token}` } });
       if (res.data.success) setSuppliers(res.data.data || []);
-    } catch { toast.error("Failed to load suppliers"); }
+    } catch (error) { toast.error(error.response?.data?.message || error.response?.data?.error || "Failed to load suppliers"); }
     setLoading(false);
   };
 
@@ -690,11 +692,11 @@ export default function SupplierManagement() {
       if (sd._id) {
         const res = await axios.put(`/api/suppliers/${sd._id}`, payload, { headers: { Authorization: `Bearer ${token}` } });
         setSuppliers(p => p.map(s => s._id === res.data.data._id ? res.data.data : s));
-        toast.success("Supplier updated!");
+        toast.success(res.data.data.pendingChange ? "Changes submitted for approval. Current approved values remain in use." : "Supplier saved.");
       } else {
         const res = await axios.post("/api/suppliers", payload, { headers: { Authorization: `Bearer ${token}` } });
         setSuppliers(p => [...p, res.data.data]);
-        toast.success("Supplier created!");
+        toast.success("Supplier submitted for approval.");
       }
       reset();
     } catch (err) { toast.error(err.response?.data?.message || "Error saving supplier"); }
@@ -704,16 +706,31 @@ export default function SupplierManagement() {
   const reset = () => { setSd({ ...EMPTY }); setStep(1); setErrs({}); setView("list"); };
 
   const handleEdit = (s) => {
-    setSd({ ...s, glAccount: s.glAccount || null, documents: s.documents || EMPTY.documents });
+    if(s.approvalStatus==='Migration required') {
+      window.dispatchEvent(new CustomEvent('master-approval:review-existing',{detail:{kind:'supplier',id:s._id}}));
+      toast.info('Approve this existing record first. An administrator can use Existing records → Review → Approve existing record.');
+      return;
+    }
+    const proposal=s.pendingChange?.data || s.lastRejectedProposal?.data || {};
+    const editable={...s};
+    for(const [path,value] of Object.entries(proposal)) {
+      if(path.startsWith('documents.')) editable.documents={...editable.documents,[path.split('.')[1]]:value};
+      else editable[path]=value;
+    }
+    s=editable;
+    if(s.rejectionReason) toast.info(`Rejected: ${s.rejectionReason}`);
+    setSd({ ...s, status: s.status || "Active", glAccount: s.glAccount || null, documents: s.documents || EMPTY.documents });
     setStep(1); setErrs({}); setView("form");
   };
 
   const handleDelete = async (id) => {
     if (!confirm("Delete this supplier?")) return;
-    const token = localStorage.getItem("token");
-    await axios.delete(`/api/suppliers/${id}`, { headers: { Authorization: `Bearer ${token}` } });
-    setSuppliers(p => p.filter(s => s._id !== id));
-    toast.success("Supplier deleted");
+    try {
+      const token = localStorage.getItem("token");
+      await axios.delete(`/api/suppliers/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+      setSuppliers(p => p.filter(s => s._id !== id));
+      toast.success("Supplier deleted");
+    } catch(error) { toast.error(error.response?.data?.message || error.response?.data?.error || "Unable to delete this supplier."); }
   };
 
   const downloadTemplate = () => {
@@ -739,7 +756,7 @@ export default function SupplierManagement() {
       if (fail === 0) toast.success(`${ok} records uploaded!`);
       else toast.warning(`${ok} uploaded, ${fail} skipped`);
       fetchSuppliers();
-    } catch { toast.error("Bulk upload failed"); }
+    } catch (error) { toast.error(error.response?.data?.message || error.response?.data?.error || "Bulk upload failed"); }
     finally { setUploading(false); e.target.value = ""; }
   };
 
@@ -808,6 +825,8 @@ export default function SupplierManagement() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
+              <Lbl text="Status" />
+              <select className={fi("status")} name="status" value={sd.status || "Active"} onChange={handleChange}><option value="Active">Active</option><option value="Inactive">Inactive</option></select>
               <Lbl text="Supplier Code" />
               <input className={`${fi("")} bg-gray-100 cursor-not-allowed text-gray-400`} value={sd.supplierCode || ""} readOnly />
               <p className="text-[11px] text-gray-400 mt-1">Auto-generated</p>
@@ -1025,6 +1044,7 @@ export default function SupplierManagement() {
             <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3 flex items-center gap-1.5"><FaBarcode className="text-indigo-400" /> Basic & Udyam</p>
             <RRow l="Code" v={sd.supplierCode} />
             <RRow l="Name" v={sd.supplierName} />
+            <RRow l="Status" v={sd.status || "Active"} />
             <RRow l="Type" v={sd.supplierType} />
             <RRow l="Group" v={sd.supplierGroup} />
             <RRow l="Category" v={sd.supplierCategory} />
@@ -1085,7 +1105,7 @@ export default function SupplierManagement() {
 
   if (view === "list") return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-screen-xl mx-auto px-4 sm:px-6 py-6">
+      <div className="mx-auto w-full min-w-0 max-w-[1320px] px-4 py-6 sm:px-6 lg:px-8">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
           <div>
             <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">Supplier Management</h1>
@@ -1130,7 +1150,8 @@ export default function SupplierManagement() {
           ))}
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <MasterApprovalReview kind="supplier" onChanged={fetchSuppliers} />
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="flex flex-wrap items-center gap-3 px-5 py-4 border-b border-gray-100">
             <div className="relative flex-1 min-w-[180px] max-w-xs">
               <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300 text-xs pointer-events-none" />
@@ -1150,11 +1171,14 @@ export default function SupplierManagement() {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-sm border-collapse">
+            <table className="w-full table-fixed text-sm border-collapse">
+              <colgroup>
+                {[8,24,8,9,5,7,5,5,7,10,12].map((width,index)=><col key={index} style={{width:`${width}%`}} />)}
+              </colgroup>
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-100">
-                  {["Code","Supplier","Email","Type","Group","Category","Due Days","Valid","Documents","Actions"].map(h => (
-                    <th key={h} className="px-4 py-3 text-left text-[10.5px] font-bold uppercase tracking-wider text-gray-400 whitespace-nowrap">{h}</th>
+                  {["Code","Supplier","Email","Type","Group","Category","Due Days","Valid","Documents","Approval","Actions"].map(h => (
+                    <th key={h} className="px-1.5 py-3 text-left text-[9.5px] font-bold uppercase tracking-normal text-gray-400 break-words">{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -1162,8 +1186,8 @@ export default function SupplierManagement() {
                 {loading ? (
                   Array(4).fill(0).map((_, i) => (
                     <tr key={i} className="border-b border-gray-50">
-                      {Array(10).fill(0).map((__, j) => (
-                        <td key={j} className="px-4 py-3">
+                      {Array(11).fill(0).map((__, j) => (
+                        <td key={j} className="px-1.5 py-3">
                           <div className="h-3.5 rounded bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 bg-[length:400%_100%] animate-[shimmer_1.4s_infinite]" />
                         </td>
                       ))}
@@ -1171,7 +1195,7 @@ export default function SupplierManagement() {
                   ))
                 ) : filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={10} className="text-center py-16">
+                    <td colSpan={11} className="text-center py-16">
                       <div className="text-4xl mb-2 opacity-20">🏭</div>
                       <p className="text-sm font-medium text-gray-300">No suppliers found</p>
                     </td>
@@ -1179,57 +1203,30 @@ export default function SupplierManagement() {
                 ) : (
                   filtered.map(s => (
                     <tr key={s._id} onClick={() => { setViewSupplier(s); setViewOpen(true); }}
-                      className="border-b border-gray-50 hover:bg-indigo-50/30 transition-colors cursor-pointer">
-                      <td className="px-4 py-3">
-                        <span className="font-mono text-[11px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">{s.supplierCode}</span>
+                      className="border-b border-slate-100 transition-colors hover:bg-slate-50/80 cursor-pointer">
+                      <td className="px-2 py-4 align-top"><span className="rounded bg-indigo-50 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-indigo-600">{s.supplierCode}</span></td>
+                      <td className="px-3 py-4 align-top">
+                        <p className="break-words font-semibold leading-5 text-slate-900">{s.supplierName}</p>
+                        <div className="mt-1.5 flex flex-wrap items-center gap-2"><span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${s.status==='Inactive'?'bg-slate-100 text-slate-500':'bg-emerald-50 text-emerald-700'}`}>{s.status || 'Active'}</span><span className="text-[11px] text-slate-500">PAN: <span className="font-medium text-slate-600">{s.pan || '—'}</span></span></div>
                       </td>
-                      <td className="px-4 py-3">
-                        <p className="font-semibold text-gray-900">{s.supplierName}</p>
-                        <p className="text-xs text-gray-400">{s.supplierCategory}</p>
-                        <span className="mt-1 block text-[11px] text-slate-500">PAN No: <span className="font-medium text-slate-600">{s.pan || "Not provided"}</span></span>
+                      <td className="break-all px-2 py-4 align-top text-xs text-slate-500">{s.emailId || '—'}</td>
+                      <td className="px-2 py-4 align-top"><span className="inline-block rounded bg-purple-50 px-1.5 py-0.5 text-[10px] font-medium text-purple-600">{s.supplierType || '—'}</span></td>
+                      <td className="break-words px-2 py-4 align-top text-xs text-slate-600">{s.supplierGroup || '—'}</td>
+                      <td className="break-words px-2 py-4 align-top">{s.supplierCategory?<span className="inline-block rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-600">{s.supplierCategory}</span>:<span className="text-xs text-slate-400">—</span>}</td>
+                      <td className="px-2 py-4 align-top text-xs text-slate-600">{s.dueDays!==null && s.dueDays!==undefined?`${s.dueDays} days`:'—'}</td>
+                      <td className="px-2 py-4 align-top">{s.valid===true?<span className="inline-block rounded-full bg-emerald-50 px-1.5 py-0.5 text-[10px] font-medium text-emerald-600">Valid</span>:s.valid===false?<span className="inline-block rounded-full bg-red-50 px-1.5 py-0.5 text-[10px] font-medium text-red-500">Invalid</span>:<span className="text-xs text-slate-400">—</span>}</td>
+                      <td className="px-2 py-4 align-top"><span className="inline-block rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-600">{Object.values(s.documents || {}).filter(Boolean).length} files</span></td>
+                      <td className="px-2 py-4 align-top break-words">
+                        <span className={`inline-flex rounded-full px-2 py-1 text-[11px] font-semibold ${s.approvalStatus==='Approved'?'bg-green-100 text-green-800':s.approvalStatus==='Rejected'?'bg-red-100 text-red-800':'bg-amber-100 text-amber-800'}`}>{s.approvalStatus==='Migration required'?'Existing record':s.approvalStatus || 'Existing record'}</span>
+                        {s.pendingChange && <span className="mt-1 block text-[11px] text-amber-700">Change pending</span>}
                       </td>
-                      <td className="px-4 py-3 text-gray-500 text-xs">{s.emailId || <span className="text-gray-200">—</span>}</td>
-                      <td className="px-4 py-3">
-                        <span className={`text-[10.5px] font-semibold px-2 py-0.5 rounded-full
-                          ${s.supplierType === "Manufacturer" ? "bg-blue-50 text-blue-600"
-                            : s.supplierType === "Distributor" ? "bg-amber-50 text-amber-600"
-                            : s.supplierType === "Service Provider" ? "bg-purple-50 text-purple-600"
-                            : "bg-gray-100 text-gray-500"}`}>
-                          {s.supplierType}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-gray-600 text-xs font-medium">{s.supplierGroup || <span className="text-gray-200">—</span>}</td>
-                      <td className="px-4 py-3">
-                        {s.supplierCategory ? (
-                          <span className="inline-flex items-center gap-1 text-[10.5px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600">
-                            {s.supplierCategory}
-                          </span>
-                        ) : (
-                          <span className="text-gray-200 text-xs">—</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-gray-600 text-xs font-medium">{s.dueDays !== null && s.dueDays !== undefined ? `${s.dueDays} days` : <span className="text-gray-200">—</span>}</td>
-                      <td className="px-4 py-3">
-                        {s.valid === true ? <span className="text-[10.5px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600">✓ Valid</span>
-                         : s.valid === false ? <span className="text-[10.5px] font-semibold px-2 py-0.5 rounded-full bg-red-50 text-red-500">✗ Invalid</span>
-                         : <span className="text-gray-200 text-xs">—</span>}
-                      </td>
-                      <td className="px-4 py-3">
-                        {s.documents && Object.values(s.documents).some(doc => doc) ? (
-                          <span className="text-[10.5px] font-semibold px-2 py-0.5 rounded-full bg-green-50 text-green-600">
-                            {Object.values(s.documents).filter(doc => doc).length} files
-                          </span>
-                        ) : (
-                          <span className="text-gray-300 text-xs">—</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
-                        <div className="flex gap-1.5">
-                          <button onClick={() => syncSupplierToFrappe(s)} disabled={syncingSupplierId === s._id} title="Sync this supplier to ERPNext" className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white disabled:opacity-50 flex items-center justify-center transition-all"><FaCloudUploadAlt className="text-xs" /></button>
-                          <button onClick={() => handleEdit(s)} className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-500 hover:bg-indigo-500 hover:text-white flex items-center justify-center transition-all">
+                      <td className="px-2 py-4 align-top" onClick={e => e.stopPropagation()}>
+                        <div className="flex flex-nowrap items-center gap-1">
+                          <button onClick={() => syncSupplierToFrappe(s)} disabled={syncingSupplierId === s._id || s.approvalStatus !== "Approved"} aria-label="Sync supplier to ERPNext" title={s.approvalStatus === "Approved" ? "Sync this supplier to ERPNext" : "Approve this supplier before syncing"} className="h-7 w-7 shrink-0 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white disabled:opacity-50 flex items-center justify-center transition-all"><FaCloudUploadAlt className="text-xs" /></button>
+                          <button onClick={() => handleEdit(s)} title="Edit supplier" aria-label="Edit supplier" className="h-7 w-7 shrink-0 rounded-lg bg-indigo-50 text-indigo-500 hover:bg-indigo-500 hover:text-white flex items-center justify-center transition-all">
                             <FaEdit className="text-xs" />
                           </button>
-                          <button onClick={() => handleDelete(s._id)} className="w-7 h-7 rounded-lg bg-red-50 text-red-400 hover:bg-red-500 hover:text-white flex items-center justify-center transition-all">
+                          <button onClick={() => handleDelete(s._id)} title="Delete supplier" aria-label="Delete supplier" className="h-7 w-7 shrink-0 rounded-lg bg-red-50 text-red-400 hover:bg-red-500 hover:text-white flex items-center justify-center transition-all">
                             <FaTrash className="text-xs" />
                           </button>
                         </div>
@@ -1252,6 +1249,7 @@ export default function SupplierManagement() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6">
+        {sd.rejectionReason && <p role="alert" className="mb-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-800">Rejected: {sd.rejectionReason}. Correct the fields and submit again for approval.</p>}
         <button onClick={reset} className="flex items-center gap-1.5 text-indigo-600 font-semibold text-sm mb-4 hover:text-indigo-800 transition-colors">
           <FaArrowLeft className="text-xs" /> Back to Suppliers
         </button>
@@ -1355,6 +1353,7 @@ function SupplierViewModal({ open, onClose, supplier: s, onEdit }) {
             </div>
             <div>
               <h2 className="text-base font-extrabold text-gray-900">{s.supplierName}</h2>
+              <p className="text-xs text-gray-500">{s.status || "Active"}</p>
               <div className="flex items-center gap-2 mt-0.5">
                 <span className="font-mono text-xs font-bold text-indigo-600 bg-indigo-100 px-1.5 py-0.5 rounded">{s.supplierCode}</span>
                 <span className="font-mono text-[11px] text-slate-500">PAN No: <span className="font-medium text-slate-600">{s.pan || "Not provided"}</span></span>

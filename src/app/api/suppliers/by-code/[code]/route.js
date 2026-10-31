@@ -20,8 +20,9 @@ export async function GET(req, { params }) {
 
     const supplier = await Supplier.findOne({
       companyId: user.companyId,
+      approvalStatus:'Approved',
       supplierCode: code.trim(),
-    }).lean();
+    }).select('-pendingChange -lastRejectedProposal -approvalLog -reservedSupplierCode').lean();
 
     if (!supplier)
       return NextResponse.json(

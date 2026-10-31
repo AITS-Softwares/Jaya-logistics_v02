@@ -1,3 +1,4 @@
+import {masterApprovalAccess,withMasterSubmitterNames} from '@/lib/masterApprovalAccess';
 // import { NextResponse } from "next/server";
 // import connectDb from "@/lib/db";
 // import RateMaster from "./schema";
@@ -160,7 +161,7 @@
 //       })
 //     );
 
-//     return NextResponse.json({ success: true, data: rateMastersWithNames }, { status: 200 });
+//     return NextResponse.json({ success: true, data: management ? await withMasterSubmitterNames(rateMastersWithNames) : rateMastersWithNames }, { status: 200 });
 //   } catch (err) {
 //     console.error("GET /rate-master error:", err);
 //     return NextResponse.json({ success: false, message: "Failed to fetch rate masters" }, { status: 500 });
@@ -456,6 +457,9 @@
 //   }
 // }
 
+import {submitMasterChange,validateRateCandidate} from '@/lib/masterApprovalService';
+import {initialApproval} from '@/lib/masterApprovalPolicy.mjs';
+import {notifyMasterSubmission} from '@/lib/masterApprovalRoutes';
 import { NextResponse } from "next/server";
 import connectDb from "@/lib/db";
 import RateMaster from "./schema";
@@ -468,12 +472,12 @@ import fs from 'fs';
 import path from 'path';
 
 async function validateUser(req, action = 'view') {
-  return validateMasterDataRequest(req, action, 'Rate Master', { allowLookup: action === 'view' });
+  return masterApprovalAccess(req,action,'Rate Master');
 }
 
 export async function GET(req) {
   await connectDb();
-  const { user, error, status } = await validateUser(req);
+  const { user, error, status, access } = await validateUser(req);
   if (error) return NextResponse.json({ success: false, message: error }, { status });
 
   try {
@@ -481,7 +485,15 @@ export async function GET(req) {
     const id = searchParams.get('id');
     const history = searchParams.get('history');
     const locationId = searchParams.get('locationId');
+    const management=searchParams.get('management')==='true' && access!=='lookup';
+    const approvalStatus=!management?'Approved':searchParams.get('approvalStatus');
+    const approvalFilter=approvalStatus?{approvalStatus}:{};
+    const approvalFields=record=>!management?{}:({approvalStatus:record.$isDefault('approvalStatus')?'Migration required':record.approvalStatus,pendingChange:record.pendingChange,revisionId:record.revisionId,submittedBy:record.submittedBy,submittedAt:record.submittedAt,rejectionReason:record.rejectionReason,lastRejectedProposal:record.lastRejectedProposal});
     
+    if(history && id) {
+      const owner=await RateMaster.findOne({_id:id,companyId:user.companyId,...approvalFilter}).setOptions({includeUnapprovedMasters:true}).select('_id');
+      if(!owner)return NextResponse.json({success:false,message:'Rate master not found'},{status:404});
+    }
     if (history && id && locationId) {
       const historyData = await RateHistory.find({
         rateMasterId: id,
@@ -503,7 +515,8 @@ export async function GET(req) {
       const rateMaster = await RateMaster.findOne({
         _id: id,
         companyId: user.companyId,
-      });
+        ...approvalFilter,
+      }).setOptions({includeUnapprovedMasters:true});
       
       if (!rateMaster) {
         return NextResponse.json({ success: false, message: "Rate master not found" }, { status: 404 });
@@ -532,6 +545,7 @@ export async function GET(req) {
       return NextResponse.json({ 
         success: true, 
         data: {
+          ...approvalFields(rateMaster),
           _id: rateMaster._id,
           title: rateMaster.title,
           customerId: rateMaster.customerId,
@@ -564,7 +578,8 @@ export async function GET(req) {
     
     const rateMasters = await RateMaster.find({
       companyId: user.companyId,
-    }).sort({ createdAt: -1 });
+      ...approvalFilter,
+    }).setOptions({includeUnapprovedMasters:true}).sort({ createdAt: -1 });
 
     const rateMastersWithNames = await Promise.all(
       rateMasters.map(async (rm) => {
@@ -593,6 +608,7 @@ export async function GET(req) {
         }
         
         return {
+          ...approvalFields(rm),
           _id: rm._id,
           title: rm.title,
           customerId: rm.customerId,
@@ -683,14 +699,14 @@ export async function POST(req) {
     const existingRateMaster = await RateMaster.findOne({
       title: title.trim(),
       companyId: user.companyId,
-    });
+    }).setOptions({includeUnapprovedMasters:true});
 
     if (existingRateMaster) {
       return NextResponse.json({ success: false, message: "Rate master with this title already exists" }, { status: 400 });
     }
 
     if (usageMode === 'manual_rate_default') {
-      const existingDefault = await RateMaster.findOne({ companyId: user.companyId, usageMode: 'manual_rate_default', isActive: { $ne: false } });
+      const existingDefault = await RateMaster.findOne({ companyId: user.companyId, usageMode: 'manual_rate_default', isActive: { $ne: false } }).setOptions({includeUnapprovedMasters:true});
       if (existingDefault) {
         return NextResponse.json({ success: false, message: 'Only one active Manual Rate Default Price List is allowed per company.' }, { status: 409 });
       }
@@ -708,6 +724,7 @@ export async function POST(req) {
     }
 
     const newRateMaster = new RateMaster({
+      ...initialApproval(user),
       title: title.trim(),
       customerId: usageMode === 'manual_rate_default' ? null : customerId,
       branchId: usageMode === 'manual_rate_default' ? null : branchId,
@@ -730,11 +747,13 @@ export async function POST(req) {
       createdBy: user.id,
     });
 
+    validateRateCandidate(newRateMaster);
     await newRateMaster.save();
+    await notifyMasterSubmission(user,newRateMaster,'rate');
 
     return NextResponse.json({
       success: true,
-      message: "Rate master created successfully",
+      message: "Rate master submitted for approval",
       data: newRateMaster
     }, { status: 201 });
 
@@ -775,7 +794,7 @@ export async function PUT(req) {
     const existingRateMaster = await RateMaster.findOne({ 
       _id: rateMasterId, 
       companyId: user.companyId 
-    });
+    }).setOptions({includeUnapprovedMasters:true});
     
     if (!existingRateMaster) {
       return NextResponse.json({ success: false, message: "Rate master not found" }, { status: 404 });
@@ -799,7 +818,7 @@ export async function PUT(req) {
         usageMode: 'manual_rate_default',
         isActive: { $ne: false },
         _id: { $ne: existingRateMaster._id }
-      });
+      }).setOptions({includeUnapprovedMasters:true});
       if (anotherDefault) {
         return NextResponse.json({ success: false, message: 'Only one active Manual Rate Default Price List is allowed per company' }, { status: 409 });
       }
@@ -919,27 +938,7 @@ export async function PUT(req) {
       }
       
       const location = await Location.findById(oldRate.locationId);
-      await RateHistory.create({
-        rateMasterId: existingRateMaster._id,
-        rateMasterTitle: existingRateMaster.title,
-        locationId: oldRate.locationId,
-        locationName: location?.name || 'Unknown',
-        fromQty: oldRate.fromQty,
-        toQty: oldRate.toQty,
-        rate: oldRate.rate,
-        version: (oldRate.version || 1),
-        revisedBy: user.id,
-        action: 'REVISED',
-        changes: {
-          oldFromQty: oldRate.fromQty,
-          oldToQty: oldRate.toQty,
-          oldRate: oldRate.rate,
-          newFromQty: fromQty,
-          newToQty: toQty,
-          newRate: rate,
-          newCreatedAt: newRate.createdAt || null
-        }
-      });
+
       
       let updatedRates = existingRateMaster.locationRates.map(r => {
         if (r._id.toString() === rateId) {
@@ -992,9 +991,7 @@ export async function PUT(req) {
       validatedLocationRates = [];
     }
 
-    const updatedRateMaster = await RateMaster.findOneAndUpdate(
-      { _id: rateMasterId, companyId: user.companyId },
-      {
+    const updatedRateMaster = await submitMasterChange({Model:RateMaster,record:existingRateMaster,user,kind:'rate',input:{
         title: finalTitle.trim(),
         customerId: finalUsageMode === 'manual_rate_default' ? null : finalCustomerId,
         branchId: finalUsageMode === 'manual_rate_default' ? null : finalBranchId,
@@ -1007,9 +1004,8 @@ export async function PUT(req) {
         customRuleToLimit: finalCustomRuleToLimit,
         approvalOption: finalApprovalOption,
         approvalFile: finalApprovalFile
-      },
-      { new: true }
-    );
+      }});
+    await notifyMasterSubmission(user,updatedRateMaster,'rate');
 
     const branch = await Branch.findById(updatedRateMaster.branchId);
     const customer = await Customer.findById(updatedRateMaster.customerId);
@@ -1034,6 +1030,7 @@ export async function PUT(req) {
     return NextResponse.json({ 
       success: true, 
       data: {
+        approvalStatus:updatedRateMaster.approvalStatus,pendingChange:updatedRateMaster.pendingChange,
         _id: updatedRateMaster._id,
         title: updatedRateMaster.title,
         customerId: updatedRateMaster.customerId,
@@ -1064,7 +1061,7 @@ export async function PUT(req) {
     }, { status: 200 });
   } catch (error) {
     console.error("PUT /rate-master error:", error);
-    return NextResponse.json({ success: false, message: "Failed to update rate master: " + error.message }, { status: 500 });
+    return NextResponse.json({ success: false, message: error.message }, { status: error.status || 500 });
   }
 }
 
@@ -1092,38 +1089,22 @@ export async function DELETE(req) {
     const rateMaster = await RateMaster.findOne({
       _id: rateMasterId,
       companyId: user.companyId,
-    });
+    }).setOptions({includeUnapprovedMasters:true});
     
     if (!rateMaster) {
       return NextResponse.json({ success: false, message: "Rate master not found" }, { status: 404 });
     }
 
     if (rateId) {
-      const rateToDelete = rateMaster.locationRates.find(r => r._id.toString() === rateId);
-      
-      if (rateToDelete) {
-        const location = await Location.findById(rateToDelete.locationId);
-        await RateHistory.create({
-          rateMasterId: rateMaster._id,
-          rateMasterTitle: rateMaster.title,
-          locationId: rateToDelete.locationId,
-          locationName: location?.name || 'Unknown',
-          fromQty: rateToDelete.fromQty,
-          toQty: rateToDelete.toQty,
-          rate: rateToDelete.rate,
-          version: rateToDelete.version || 1,
-          revisedBy: user.id,
-          action: 'DELETED'
-        });
-      }
-      
-      const updatedRates = rateMaster.locationRates.filter(r => r._id.toString() !== rateId);
-      rateMaster.locationRates = updatedRates;
-      await rateMaster.save();
-      
-      return NextResponse.json({ success: true, message: "Rate deleted successfully" }, { status: 200 });
+      const editAccess=await validateUser(req,'edit');
+      if(editAccess.error) return NextResponse.json({success:false,message:editAccess.error},{status:editAccess.status});
+      if (!rateMaster.locationRates.some(row=>String(row._id)===rateId)) return NextResponse.json({success:false,message:'Rate not found'},{status:404});
+      const updatedRates=rateMaster.locationRates.map(row=>({...row.toObject(),...(String(row._id)===rateId?{isActive:false}:{})}));
+      const submitted=await submitMasterChange({Model:RateMaster,record:rateMaster,input:{locationRates:updatedRates},user,kind:'rate'});
+      await notifyMasterSubmission(user,submitted,'rate');
+      return NextResponse.json({success:true,message:'Rate removal submitted for approval.',data:submitted});
     }
-    
+
     for (let rate of rateMaster.locationRates) {
       const location = await Location.findById(rate.locationId);
       await RateHistory.create({
@@ -1152,6 +1133,6 @@ export async function DELETE(req) {
     return NextResponse.json({ success: true, message: "Rate master deleted successfully" }, { status: 200 });
   } catch (error) {
     console.error("DELETE /rate-master error:", error);
-    return NextResponse.json({ success: false, message: "Failed to delete rate master" }, { status: 500 });
+    return NextResponse.json({ success: false, message: error.status?error.message:"Failed to delete rate master" }, { status:error.status || 500 });
   }
 }

@@ -1,3 +1,4 @@
+import { hasPriorApproval, panelApprovalStatus, reviewDisplayState, upstreamDisplayState } from '@/lib/reapprovalPresentation.mjs';
 import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from 'next/server';
 import connectDb from '@/lib/db';
@@ -38,12 +39,22 @@ async function branchHandlerGET(req) {
       ? { companyId: user.companyId, $or: [
         { reapprovalState: { $in: ['unlocked', 'pendingApproval', 'pendingReapproval', 'blockedByUpstream', 'syncFailed'] } },
         { reapprovalState: 'none', 'reapprovalHistory.action': 'detachedOrderBlockCleared' },
+        { 'loadingWorkflow.version': 2, 'loadingWorkflow.part1Status': 'Submitted' },
+        { 'loadingWorkflow.version': 2, 'loadingWorkflow.currentPart': 2, 'loadingWorkflow.part2Status': { $in: ['Draft', 'Submitted', 'Rejected'] } },
+        { 'loadingWorkflow.version': 2, 'loadingWorkflow.part1Status': 'Rejected' },
       ] }
       : { companyId: user.companyId, reapprovalState: { $in: ['unlocked', 'pendingApproval', 'pendingReapproval', 'blockedByUpstream', 'syncFailed'] } };
     const docs = await entry.Model.find(filter)
-      .select(`${entry.no} vnnNo vehicleNegotiationNo vehicleNegotiationRef orders orderRows pendingStateBeforeBlock panelStatus header.status rateApproval.approvalStatus reapprovalState approvedRevision reapprovalSyncError upstreamPending reapprovalHistory.action updatedAt`)
+      .select(`${entry.no} vnnNo vehicleNegotiationNo vehicleNegotiationRef orders orderRows pendingStateBeforeBlock panelStatus status isDraft header.status approval.part3Status rateApproval.approvalStatus rateApproval.workflowPhase rateApproval.approvedRevision reapprovalState loadingWorkflow sourceDependencies approvedSnapshot approvedRevision reapprovalSyncError upstreamPending reapprovalHistory.action updatedAt`)
       .sort({ updatedAt: -1 }).limit(50).lean();
-    for (const doc of docs) pendingDocs.push({ entry, doc, canView, canEdit, canApprove, admin });
+    for (const doc of docs) {
+      if (entry.type === 'loading' && doc.loadingWorkflow?.version === 2 && (!doc.reapprovalState || doc.reapprovalState === 'none')) {
+        const status = doc.loadingWorkflow['part' + doc.loadingWorkflow.currentPart + 'Status'];
+        if (status === 'Submitted') doc.reapprovalState = 'pendingApproval';
+        else if (['Draft', 'Rejected'].includes(status)) doc.reapprovalState = 'unlocked';
+      }
+      pendingDocs.push({ entry, doc, canView, canEdit, canApprove, admin });
+    }
   }
 
   const sourceStates = new Map();
@@ -55,7 +66,7 @@ async function branchHandlerGET(req) {
     const sources = await entry.Model.find({ _id: { $in: ids }, companyId: user.companyId })
       .select(`${entry.no} reapprovalState panelStatus header.status rateApproval.approvalStatus`)
       .lean();
-    for (const source of sources) sourceStates.set(`${entry.type}:${String(source._id)}`, source.reapprovalState || 'none');
+    for (const source of sources) sourceStates.set(`${entry.type}:${String(source._id)}`, upstreamDisplayState(entry.type, source));
   }
 
   const panelLabels = Object.fromEntries(entries.map((entry) => [entry.type, entry.module]));
@@ -68,7 +79,7 @@ async function branchHandlerGET(req) {
   ].filter(Boolean));
   if (linkedVnnFilters.length) {
     const linkedVnns = await VehicleNegotiation.find({ companyId: user.companyId, $or: linkedVnnFilters })
-      .select('_id vnnNo orders reapprovalState').lean();
+      .select('_id vnnNo orders reapprovalState approvedRevision panelStatus approval.part3Status').lean();
     for (const vnn of linkedVnns) {
       downstreamVnnLinks.set(`id:${String(vnn._id)}`, vnn);
       if (vnn.vnnNo) downstreamVnnLinks.set(`no:${vnn.vnnNo}`, vnn);
@@ -103,7 +114,7 @@ async function branchHandlerGET(req) {
         if (linkedVnn) {
           panelLabel = panelLabels.vnn;
           nextPanelType = entry.type;
-          sourceState = linkedVnn.reapprovalState || 'none';
+          sourceState = upstreamDisplayState('vnn', linkedVnn);
           recordNo = linkedVnn.vnnNo || recordNo;
           if (entry.type === 'loading') {
             const stillLinked = (linkedVnn.orders || []).some((row) =>
@@ -129,7 +140,7 @@ async function branchHandlerGET(req) {
         message = `${sourceName} is open for correction. Its edits must be submitted and approved before reapproval can continue at ${nextPanelLabel}.`;
       } else if (sourceState === 'pendingApproval') {
         badge = `Approval pending at ${panelLabel}`;
-        message = `${sourceName} has been resubmitted and is waiting for approval. Reapproval at ${nextPanelLabel} can continue after it is approved.`;
+        message = `${sourceName} is waiting for approval. Reapproval at ${nextPanelLabel} can continue after it is approved.`;
       } else if (sourceState === 'pendingReapproval') {
         badge = `Reapproval pending at ${panelLabel}`;
         message = `Reapproval is pending at ${panelLabel}. Please contact that panel's approver before continuing to ${nextPanelLabel}.`;
@@ -195,8 +206,9 @@ async function branchHandlerGET(req) {
     records.push({
       type: entry.type, module: entry.module, id: String(doc._id), no: doc[entry.no] || '',
       path,
+      loadingWorkflow: doc.loadingWorkflow || null,
       actionable,
-      status: doc.rateApproval?.approvalStatus || doc.panelStatus || doc.header?.status || '', reapprovalState: displayReapprovalState, updatedAt: doc.updatedAt,
+      previouslyApproved: hasPriorApproval(doc), status: panelApprovalStatus(entry.type, doc), reapprovalState: reviewDisplayState({ previouslyApproved: hasPriorApproval(doc) }, displayReapprovalState), updatedAt: doc.updatedAt,
       revision: doc.approvedRevision || 0, syncError: doc.reapprovalSyncError || '', upstreamPending: doc.upstreamPending || [], upstreamDetails,
       latestVnnSyncRequired: isLatestVnnSyncRequired,
       latestVnnNo: loadingSyncPlan?.candidate?.vnnNo || '',

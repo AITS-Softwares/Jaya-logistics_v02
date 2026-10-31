@@ -26,16 +26,18 @@ export async function GET(req) {
     if (code) {
       supplier = await Supplier.findOne({
         companyId: user.companyId,
+      approvalStatus:'Approved',
         supplierCode: code,
-      }).lean();
+      }).select('-pendingChange -lastRejectedProposal -approvalLog -reservedSupplierCode').lean();
       if (supplier) return NextResponse.json({ success: true, data: supplier });
     }
 
     if (name) {
       supplier = await Supplier.findOne({
         companyId: user.companyId,
+      approvalStatus:'Approved',
         supplierName: name,
-      }).lean();
+      }).select('-pendingChange -lastRejectedProposal -approvalLog -reservedSupplierCode').lean();
       if (supplier) return NextResponse.json({ success: true, data: supplier });
     }
 

@@ -18,8 +18,10 @@ export async function GET(req) {
 
     const data = await Supplier.find({
       companyId: user.companyId,
+      approvalStatus:'Approved',
       $or: [{ supplierCode: rx }, { supplierName: rx }, { pan: rx }, { contactPersonName: rx }],
     })
+      .select('-pendingChange -lastRejectedProposal -approvalLog -reservedSupplierCode')
       .limit(20)
       .lean();
 

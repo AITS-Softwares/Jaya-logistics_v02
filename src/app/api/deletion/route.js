@@ -1,7 +1,7 @@
-import { withBranchAccess } from '@/lib/branchAccess';
+import { currentBranchAccess, withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from 'next/server';
 import connectDb from '@/lib/db';
-import { verifyToken } from '@/lib/auth';
+import { hasPermission, verifyToken } from '@/lib/auth';
 import { TYPES } from '@/lib/deletion/linkGraph';
 import { deleteRecord, previewDeletion, restoreRecord } from '@/lib/deletion/handler';
 import { isDeletionAdmin } from '@/lib/deletion/rules';
@@ -37,7 +37,6 @@ async function branchHandlerGET(req) {
   await connectDb();
   const user = userFromRequest(req);
   if (user.error) return NextResponse.json({ success: false, message: user.error }, { status: 401 });
-  if (!isDeletionAdmin(user)) return NextResponse.json({ success: false, message: 'Admin access required' }, { status: 403 });
   const url = new URL(req.url);
   const type = url.searchParams.get('type');
   const id = url.searchParams.get('id');
@@ -47,8 +46,20 @@ async function branchHandlerGET(req) {
   if (url.searchParams.get('includeDeleted') !== 'true') return NextResponse.json({ success: false, message: 'includeDeleted=true is required' }, { status: 400 });
   const entry = TYPES[type];
   if (!entry) return NextResponse.json({ success: false, message: 'Invalid record type' }, { status: 400 });
-  const data = await entry.Model.find({ companyId: user.companyId, isDeleted: true }).setOptions({ includeDeleted: true }).sort({ deletedAt: -1 }).lean();
-  return NextResponse.json({ success: true, data });
+  const modules = { order: 'Order Panel', purchase: 'Purchase Panel', advance: 'Advance Payment', vnn: 'Vehicle Negotiation', pricing: 'Pricing Panel', loading: 'Loading Info', lr: 'Consignment Note', pod: 'Proof Of Delivery', balance: 'Balance-Payment' };
+  if (!hasPermission(user, modules[type], 'view')) return NextResponse.json({ success: false, message: 'View permission required' }, { status: 403 });
+  const access = await currentBranchAccess(user);
+  const filter = { companyId: entry.Model.db.base.Types.ObjectId.createFromHexString(String(user.companyId)), isDeleted: true };
+  if (user.activeOperatingCompanyId) {
+    filter.subCompanyId = entry.Model.db.base.Types.ObjectId.createFromHexString(String(user.activeOperatingCompanyId));
+  } else if (!(user.type === 'company' && user.isGroupAdmin)) {
+    return NextResponse.json({ success: false, message: 'Select an operating company first.' }, { status: 403 });
+  }
+  if (!access.accessAllBranches) filter.owningBranchIds = { $in: access.branchIds };
+  // Read metadata only. Deleted records must never enter transaction lookups or actions.
+  const projection = { _id: 1, [entry.no]: 1, deletedAt: 1, deleteReason: 1, deleteRootType: 1, deleteRootNo: 1 };
+  const data = await entry.Model.collection.find(filter, { projection }).sort({ deletedAt: -1 }).limit(500).toArray();
+  return NextResponse.json({ success: true, data, canRestore: isDeletionAdmin(user) }, { headers: { 'Cache-Control': 'private, no-store' } });
 }
 
 export const DELETE = withBranchAccess(branchHandlerDELETE);

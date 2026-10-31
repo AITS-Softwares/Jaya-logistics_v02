@@ -837,7 +837,17 @@ const loadingPanelSchema = new mongoose.Schema({
     enum: ['Draft', 'Submitted', 'Approved', 'Completed', 'Cancelled'],
     default: 'Draft'
   },
-  isDraft: { type: Boolean, default: false }
+  isDraft: { type: Boolean, default: false },
+  loadingWorkflow: {
+    version: Number,
+    currentPart: { type: Number, enum: [1, 2] },
+    part1Status: String,
+    part2Status: String,
+    part1ApprovedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'CompanyUser' },
+    part1ApprovedAt: Date,
+    part2ApprovedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'CompanyUser' },
+    part2ApprovedAt: Date,
+  }
 }, {
   timestamps: true
 });

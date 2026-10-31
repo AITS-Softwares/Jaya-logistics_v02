@@ -1,3 +1,4 @@
+import {addMasterApprovalFields} from '@/lib/masterApprovalSchema';
 //import mongoose from "mongoose";
 //
 //// Reusable address schema
@@ -189,6 +190,7 @@ const documentSchema = new mongoose.Schema({
 }, { _id: false });
 
 const SupplierSchema = new mongoose.Schema({
+  status: { type: String, enum: ["Active", "Inactive"], default: "Active" },
     companyId:  { type: mongoose.Schema.Types.ObjectId, ref: 'Company', required: true },
     createdBy:  { type: mongoose.Schema.Types.ObjectId, ref: 'CompanyUser' },
   supplierCode: {
@@ -348,6 +350,11 @@ SupplierSchema.post("save", function (error, doc, next) {
     next(error);
   }
 });
+
+addMasterApprovalFields(SupplierSchema);
+SupplierSchema.add({reservedSupplierCode:{type:String,trim:true,uppercase:true}});
+SupplierSchema.index({companyId:1,supplierCode:1},{unique:true});
+SupplierSchema.index({companyId:1,reservedSupplierCode:1},{unique:true,partialFilterExpression:{reservedSupplierCode:{$type:'string'}}});
 
 const Supplier = mongoose.models.Supplier || mongoose.model("Supplier", SupplierSchema);
 export default Supplier;

@@ -1,3 +1,4 @@
+import {addMasterApprovalFields} from '@/lib/masterApprovalSchema';
 // import mongoose from 'mongoose';
 
 // const locationRateSchema = new mongoose.Schema({
@@ -216,6 +217,8 @@ const rateMasterSchema = new mongoose.Schema({
 });
 
 rateMasterSchema.index({ companyId: 1, title: 1 }, { unique: true });
+
+addMasterApprovalFields(rateMasterSchema);
 
 const RateMaster = mongoose.models.RateMaster || mongoose.model('RateMaster', rateMasterSchema);
 

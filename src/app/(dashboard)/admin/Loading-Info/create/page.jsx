@@ -5164,6 +5164,7 @@
 
 "use client";
 
+import { normalizeAmountInput } from '@/lib/amountInput.mjs';
 import { useMemo, useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -7362,11 +7363,6 @@ export default function CreateLoadingInfoPanel() {
       return;
     }
 
-    const totalVlPhotos = getTotalVlPhotosCount();
-    if (!isDraftSave && !loadingInfoPhotosOptional && totalVlPhotos < 5) {
-      alert(`Please upload at least 5 Vehicle Loading (VL) photos. Currently uploaded: ${totalVlPhotos}/5`);
-      return;
-    }
 
     setSaving(true);
 
@@ -7580,7 +7576,7 @@ export default function CreateLoadingInfoPanel() {
         router.push('/admin/Loading-Info');
       } else {
         alert(`✅ Loading Info saved successfully!\nVehicle Arrival No: ${data.data?.vehicleArrivalNo || 'Generated'}`);
-        resetForm();
+        router.push('/admin/Loading-Info');
       }
 
     } catch (error) {
@@ -7935,6 +7931,8 @@ export default function CreateLoadingInfoPanel() {
 
       {/* Main Content */}
       <div className="mx-auto max-w-full p-4">
+{true && <div className="mb-3 rounded-xl bg-sky-50 p-3 text-sm font-semibold text-sky-900">Part 1 — Through VFT — submit this part first</div>}
+<fieldset disabled={false} className="min-w-0 border-0 p-0 m-0">
         {/* Vehicle Slip Upload - Top section */}
         <div className="mb-4">
           <div className="bg-white p-4 rounded-xl border-2 border-dashed border-slate-300">
@@ -8194,86 +8192,7 @@ export default function CreateLoadingInfoPanel() {
         </Card>
 
         {/* Vehicle GPS Tracking Card */}
-        <div className="mt-4">
-          <Card title="Vehicle GPS Tracking & Driver Photo">
-            <div className="grid grid-cols-12 gap-4">
-              <div className="col-span-12 md:col-span-6">
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-200 h-full">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
-                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                    </div>
-                    <h3 className="text-sm font-bold text-slate-800">Live Vehicle Tracking</h3>
-                  </div>
-                  <p className="text-xs text-slate-600 mb-3">Track vehicle location in real-time via API integration</p>
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="text"
-                      placeholder="Driver Mobile Number"
-                      value={gpsTracking.driverMobileNumber}
-                      onChange={(e) => setGpsTracking({ ...gpsTracking, driverMobileNumber: e.target.value })}
-                      className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500"
-                    />
-                    <button
-                      onClick={handleActivateTracking}
-                      className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700 whitespace-nowrap"
-                    >
-                      {gpsTracking.isTrackingActive ? 'Tracking Active' : 'Activate Tracking'}
-                    </button>
-                  </div>
-                  <div className="mt-3 text-xs text-slate-500">
-                    <span className="font-bold">API Status:</span> {gpsTracking.isTrackingActive ? 'Active' : 'Ready'}
-                    {gpsTracking.isTrackingActive && (
-                      <span className="ml-3 text-green-600">
-                        ✓ Tracking active for: {gpsTracking.driverMobileNumber}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
 
-              <div className="col-span-12 md:col-span-6">
-                <div className="bg-blue-50 p-4 rounded-xl border border-blue-200 h-full">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-sm font-bold text-slate-800">Driver Photo Capture</h3>
-                      <p className="text-xs text-slate-600 mt-1">Click to open camera and capture driver photo</p>
-                      <p className="text-xs text-green-600 mt-1">📸 Photo capture will auto-fill Arrival Date & Time</p>
-                    </div>
-                    <button
-                      onClick={startCamera}
-                      className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700 transition flex items-center gap-2"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                      Open Camera
-                    </button>
-                  </div>
-                  {vehicleFiles.photo.length > 0 && (
-                    <div className="mt-3">
-                      <p className="text-xs font-bold text-slate-600 mb-2">Captured Photos:</p>
-                      {vehicleFiles.photo.map((file, idx) => (
-                        <FileUploadItem
-                          key={idx}
-                          file={file}
-                          index={idx}
-                          onRemove={() => removeFile('vehicle', 'photo', idx)}
-                          label="Driver Photo"
-                          isCameraPhoto={true}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </Card>
-        </div>
 
         {/* Billing Type / Charges Card */}
         <div className="mt-4">
@@ -9330,7 +9249,9 @@ export default function CreateLoadingInfoPanel() {
         </div>
 
         {/* VL Panel Card */}
-        <div className="mt-4">
+        </fieldset>
+{true && <div className="my-4 rounded-xl bg-amber-50 p-3 text-sm font-semibold text-amber-900">Part 2 — VL, VOT and remaining details — opens after Part 1 approval</div>}
+<fieldset disabled={true} className="min-w-0 border-0 p-0 m-0"><div className="mt-4">
           <Card title="VL - PANEL (Vehicle Loading Pictures)">
             <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
               <div className="mb-3 flex justify-between items-center">
@@ -9667,6 +9588,86 @@ export default function CreateLoadingInfoPanel() {
 
         {/* Loaded Vehicle Weighment & Charges Card */}
         <div className="mt-4">
+          <Card title="Vehicle GPS Tracking & Driver Photo">
+            <div className="grid grid-cols-12 gap-4">
+              <div className="col-span-12 md:col-span-6">
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-200 h-full">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
+                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-sm font-bold text-slate-800">Live Vehicle Tracking</h3>
+                  </div>
+                  <p className="text-xs text-slate-600 mb-3">Track vehicle location in real-time via API integration</p>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="text"
+                      placeholder="Driver Mobile Number"
+                      value={gpsTracking.driverMobileNumber}
+                      onChange={(e) => setGpsTracking({ ...gpsTracking, driverMobileNumber: e.target.value })}
+                      className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500"
+                    />
+                    <button
+                      onClick={handleActivateTracking}
+                      className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700 whitespace-nowrap"
+                    >
+                      {gpsTracking.isTrackingActive ? 'Tracking Active' : 'Activate Tracking'}
+                    </button>
+                  </div>
+                  <div className="mt-3 text-xs text-slate-500">
+                    <span className="font-bold">API Status:</span> {gpsTracking.isTrackingActive ? 'Active' : 'Ready'}
+                    {gpsTracking.isTrackingActive && (
+                      <span className="ml-3 text-green-600">
+                        ✓ Tracking active for: {gpsTracking.driverMobileNumber}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="col-span-12 md:col-span-6">
+                <div className="bg-blue-50 p-4 rounded-xl border border-blue-200 h-full">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-800">Driver Photo Capture</h3>
+                      <p className="text-xs text-slate-600 mt-1">Click to open camera and capture driver photo</p>
+                      <p className="text-xs text-green-600 mt-1">📸 Photo capture will auto-fill Arrival Date & Time</p>
+                    </div>
+                    <button
+                      onClick={startCamera}
+                      className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700 transition flex items-center gap-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      Open Camera
+                    </button>
+                  </div>
+                  {vehicleFiles.photo.length > 0 && (
+                    <div className="mt-3">
+                      <p className="text-xs font-bold text-slate-600 mb-2">Captured Photos:</p>
+                      {vehicleFiles.photo.map((file, idx) => (
+                        <FileUploadItem
+                          key={idx}
+                          file={file}
+                          index={idx}
+                          onRemove={() => removeFile('vehicle', 'photo', idx)}
+                          label="Driver Photo"
+                          isCameraPhoto={true}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </Card>
+        </div>
+<div className="mt-4">
           <Card title="Loaded Vehicle Weighment & Charges">
             <div className="grid grid-cols-12 gap-4">
               <div className="col-span-12 md:col-span-6">
@@ -9724,8 +9725,8 @@ export default function CreateLoadingInfoPanel() {
                       <span className="text-sm text-slate-700">Loading Charges:</span>
                       <input
                         type="number"
-                        value={loadedWeighment.loadingCharges}
-                        onChange={(e) => setLoadedWeighment({ ...loadedWeighment, loadingCharges: e.target.value })}
+                        value={normalizeAmountInput(loadedWeighment.loadingCharges)}
+                        onChange={(e) => setLoadedWeighment({ ...loadedWeighment, loadingCharges: normalizeAmountInput(e.target.value) })}
                         className="w-32 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-right focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
                         placeholder="0"
                       />
@@ -9734,8 +9735,8 @@ export default function CreateLoadingInfoPanel() {
                       <span className="text-sm text-slate-700">Loading Staff Munshiyana:</span>
                       <input
                         type="number"
-                        value={loadedWeighment.loadingStaffMunshiyana}
-                        onChange={(e) => setLoadedWeighment({ ...loadedWeighment, loadingStaffMunshiyana: e.target.value })}
+                        value={normalizeAmountInput(loadedWeighment.loadingStaffMunshiyana)}
+                        onChange={(e) => setLoadedWeighment({ ...loadedWeighment, loadingStaffMunshiyana: normalizeAmountInput(e.target.value) })}
                         className="w-32 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-right focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
                         placeholder="0"
                       />
@@ -9744,8 +9745,8 @@ export default function CreateLoadingInfoPanel() {
                       <span className="text-sm text-slate-700">Other Expenses:</span>
                       <input
                         type="number"
-                        value={loadedWeighment.otherExpenses}
-                        onChange={(e) => setLoadedWeighment({ ...loadedWeighment, otherExpenses: e.target.value })}
+                        value={normalizeAmountInput(loadedWeighment.otherExpenses)}
+                        onChange={(e) => setLoadedWeighment({ ...loadedWeighment, otherExpenses: normalizeAmountInput(e.target.value) })}
                         className="w-32 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-right focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
                         placeholder="0"
                       />
@@ -9754,8 +9755,8 @@ export default function CreateLoadingInfoPanel() {
                       <span className="text-sm text-slate-700">Vehicle - Floor Tarpaulin:</span>
                       <input
                         type="number"
-                        value={loadedWeighment.vehicleFloorTarpaulin}
-                        onChange={(e) => setLoadedWeighment({ ...loadedWeighment, vehicleFloorTarpaulin: e.target.value })}
+                        value={normalizeAmountInput(loadedWeighment.vehicleFloorTarpaulin)}
+                        onChange={(e) => setLoadedWeighment({ ...loadedWeighment, vehicleFloorTarpaulin: normalizeAmountInput(e.target.value) })}
                         className="w-32 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-right focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
                         placeholder="0"
                       />
@@ -9764,8 +9765,8 @@ export default function CreateLoadingInfoPanel() {
                       <span className="text-sm text-slate-700">Vehicle - Outer Tarpaulin:</span>
                       <input
                         type="number"
-                        value={loadedWeighment.vehicleOuterTarpaulin}
-                        onChange={(e) => setLoadedWeighment({ ...loadedWeighment, vehicleOuterTarpaulin: e.target.value })}
+                        value={normalizeAmountInput(loadedWeighment.vehicleOuterTarpaulin)}
+                        onChange={(e) => setLoadedWeighment({ ...loadedWeighment, vehicleOuterTarpaulin: normalizeAmountInput(e.target.value) })}
                         className="w-32 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-right focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
                         placeholder="0"
                       />
@@ -9917,7 +9918,8 @@ export default function CreateLoadingInfoPanel() {
             </div>
           </div>
         </div>
-      </div>
+      </fieldset>
+</div>
     </div>
   );
 }

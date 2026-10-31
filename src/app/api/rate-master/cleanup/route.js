@@ -1,3 +1,5 @@
+import {submitMasterChange} from '@/lib/masterApprovalService';
+import {notifyMasterSubmission} from '@/lib/masterApprovalRoutes';
 import { NextResponse } from "next/server";
 import connectDb from "@/lib/db";
 import RateMaster from "../schema";
@@ -17,7 +19,7 @@ export async function POST(req) {
     const rateMaster = await RateMaster.findOne({
       _id: masterId,
       companyId: user.companyId,
-    });
+    }).setOptions({includeUnapprovedMasters:true});
 
     if (!rateMaster) {
       return NextResponse.json({ success: false, message: "Rate master not found" }, { status: 404 });
@@ -49,24 +51,6 @@ export async function POST(req) {
       });
     }
     
-    // Save duplicates to history before removing
-    for (let dup of duplicates) {
-      const location = await Location.findById(dup.locationId);
-      await RateHistory.create({
-        rateMasterId: rateMaster._id,
-        rateMasterTitle: rateMaster.title,
-        locationId: dup.locationId,
-        locationName: location?.name || 'Unknown',
-        fromQty: dup.fromQty,
-        toQty: dup.toQty,
-        rate: dup.rate,
-        version: dup.version || 1,
-        revisedBy: user.id,
-        action: 'DELETED',
-        changes: { reason: 'Duplicate rate removed' }
-      });
-    }
-    
     // Mark duplicates as inactive
     const updatedRates = rateMaster.locationRates.map(rate => {
       const isDuplicate = duplicates.some(d => d._id.toString() === rate._id.toString());
@@ -80,17 +64,17 @@ export async function POST(req) {
       return rate;
     });
     
-    rateMaster.locationRates = updatedRates;
-    await rateMaster.save();
+    const submitted=await submitMasterChange({Model:RateMaster,record:rateMaster,input:{locationRates:updatedRates},user,kind:'rate'});
+    await notifyMasterSubmission(user,submitted,'rate');
     
     return NextResponse.json({
       success: true,
-      message: `Found and removed ${duplicates.length} duplicate rate(s)`,
+      message: `Submitted removal of ${duplicates.length} duplicate rate(s) for approval`,
       duplicatesCount: duplicates.length
     });
     
   } catch (error) {
     console.error("Cleanup error:", error);
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, message: error.message }, { status: error.status || 500 });
   }
 }

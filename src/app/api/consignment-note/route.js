@@ -1,3 +1,4 @@
+import { loadingWorkflowForReview } from '@/lib/loadingApprovalWorkflow.mjs';
 
 // // import { NextResponse } from "next/server";
 // // import connectDb from "@/lib/db";
@@ -1661,7 +1662,7 @@ async function branchHandlerGET(req) {
       const [orders, notes, loadingInfos] = await Promise.all([
         OrderPanel.find(companyScopeFilter(user)).select("orderPanelNo plantRows panelStatus isDraft partyName customerName customerId").lean(),
         ConsignmentNote.find(companyScopeFilter(user)).select("orderRowId isDraft header.orderNo header.to header.status").lean(),
-        LoadingPanel.find(companyScopeFilter(user, { isDraft: { $ne: true }, panelStatus: { $ne: 'Draft' } }))
+        LoadingPanel.find(companyScopeFilter(user, { isDraft: { $ne: true }, panelStatus: { $in: ['Approved', 'Completed'] }, $or: [{ 'loadingWorkflow.version': { $ne: 2 } }, { 'loadingWorkflow.part2Status': 'Approved' }] }))
           .select("vehicleArrivalNo orderRows.orderNo orderRows.orderRowId orderRows.partyName orderRows.toName")
           .lean(),
       ]);
@@ -2051,6 +2052,8 @@ async function branchHandlerPOST(req) {
           message: `Loading Info ${body.loadingInfoNo} was not found.`
         }, { status: 404 });
       }
+      const loadingReviewWorkflow = loadingWorkflowForReview(linkedLoadingInfo);
+      if (loadingReviewWorkflow?.version === 2 && loadingReviewWorkflow.part2Status !== 'Approved') return NextResponse.json({ success: false, message: 'Loading Info Part 2 must be approved before creating a Consignment Note.' }, { status: 409 });
       if (!isDraftSave && (linkedLoadingInfo.isDraft || linkedLoadingInfo.panelStatus === 'Draft')) {
         return NextResponse.json({ success: false, message: `Loading Info ${body.loadingInfoNo} is still a draft. Submit it before creating a Consignment Note.` }, { status: 409 });
       }

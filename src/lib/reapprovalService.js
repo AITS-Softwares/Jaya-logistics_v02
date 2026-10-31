@@ -1,3 +1,4 @@
+import { hasLoadingCorrectionContext, needsLoadingVnnComparison } from '@/lib/loadingVnnSync.mjs';
 import mongoose from 'mongoose';
 import OrderPanel from '@/app/api/order-panel/OrderPanel';
 import VehicleNegotiation from '@/app/api/vehicle-negotiation/VehicleNegotiation';
@@ -313,13 +314,17 @@ export async function findLatestApprovedVnnForLoading(record, companyId) {
   const candidates = await VehicleNegotiation.find({ companyId, $or: filters })
     .select('_id vnnNo orders approval panelStatus reapprovalState approvedRevision')
     .setOptions({ includeDeleted: false }).lean();
-  const matched = candidates.filter((vnn) => {
+  let matched = candidates.filter((vnn) => {
     if (vnn.reapprovalState && vnn.reapprovalState !== 'none') return false;
     if (!['Approved', 'Completed'].includes(vnn.panelStatus || vnn.status)) return false;
     return loadingRows.every((loadingRow) => (vnn.orders || []).filter((vnnRow) => loadingOrderRowMatches(loadingRow, vnnRow)).length === 1);
   });
-  if (matched.length !== 1) return { required: false, candidate: null, ambiguous: matched.length > 1 };
+  if (!hasLoadingCorrectionContext(record) && record.vehicleNegotiationNo) {
+    matched = matched.filter(vnn => vnn.vnnNo === record.vehicleNegotiationNo);
+  }
+  if (matched.length !== 1) return { required: false, candidate: null, ambiguous: matched.length > 1 && (hasLoadingCorrectionContext(record) || matched.some(vnn => needsLoadingVnnComparison(record, vnn))) };
   const candidate = matched[0];
+  if (!needsLoadingVnnComparison(record, candidate)) return { required: false, candidate, ambiguous: false };
   const preview = structuredClone(toPlain(record));
   const sync = applyMirroredFields('vnn', candidate, preview);
   if (sync.ambiguous) return { required: false, candidate: null, ambiguous: true };

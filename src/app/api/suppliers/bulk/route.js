@@ -1,3 +1,5 @@
+import {submitMasterChange,createPendingMaster} from '@/lib/masterApprovalService';
+import {notifyMasterSubmission} from '@/lib/masterApprovalRoutes';
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import Supplier from "@/models/SupplierModels";
@@ -30,7 +32,7 @@ export async function POST(req) {
     let skippedCount = 0;
 
     // ✅ 3️⃣ Get latest supplier code
-    const lastSupplier = await Supplier.findOne({ companyId }).sort({
+    const lastSupplier = await Supplier.findOne({ companyId }).setOptions({includeUnapprovedMasters:true}).sort({
       createdAt: -1,
     });
     let nextCodeNumber = lastSupplier
@@ -49,6 +51,7 @@ export async function POST(req) {
     // ✅ 5️⃣ Process each supplier row
     for (let i = 0; i < suppliers.length; i++) {
       const row = suppliers[i];
+      try {
       const errors = [];
       errors.push(...validateIdentifierFormats(row));
 
@@ -106,9 +109,10 @@ export async function POST(req) {
       const existing = await Supplier.findOne({
         companyId,
         pan: pan.toUpperCase(),
-      });
+      }).setOptions({includeUnapprovedMasters:true});
 
       if (existing) {
+        const original = new Supplier(existing.toObject());
         // Update existing supplier
         existing.supplierGroup = row.supplierGroup || existing.supplierGroup;
         existing.supplierType = row.supplierType || existing.supplierType;
@@ -129,12 +133,13 @@ export async function POST(req) {
         // Optional GL Account link
         if (glAccountId) existing.glAccount = glAccountId;
 
-        await existing.save();
+        const submitted=await submitMasterChange({Model:Supplier,record:original,input:existing.toObject(),user,kind:'supplier'});
+        await notifyMasterSubmission(user,submitted,'supplier');
         updatedCount++;
         results.push({
           row: i + 1,
           success: true,
-          action: "updated",
+          action: submitted.pendingChange ? 'change pending approval' : 'updated',
           warnings: errors,
         });
       } else {
@@ -165,14 +170,19 @@ export async function POST(req) {
           glAccount: glAccountId, // optional
         };
 
-        await Supplier.create(supplierData);
+        const submitted=await createPendingMaster({Model:Supplier,data:supplierData,user});
+        await notifyMasterSubmission(user,submitted,'supplier');
         createdCount++;
         results.push({
           row: i + 1,
           success: true,
-          action: "created",
+          action: "created pending",
           warnings: errors,
         });
+      }
+      } catch(error) {
+        skippedCount++;
+        results.push({row:i+1,success:false,errors:[error.status?error.message:error.code===11000?'Supplier code is already reserved.':'This row could not be saved. Check its values and retry.']});
       }
     }
 

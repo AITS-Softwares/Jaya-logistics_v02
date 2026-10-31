@@ -71,7 +71,7 @@ export async function GET(request) {
     }
 
     // Query database
-    const existingSupplier = await Supplier.findOne({ supplierCode: code });
+    const existingSupplier = await Supplier.findOne({ supplierCode: code }).setOptions({includeUnapprovedMasters:true});
 
     return NextResponse.json(
       { success: true, exists: !!existingSupplier },

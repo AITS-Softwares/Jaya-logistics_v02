@@ -60,5 +60,5 @@ export function canUseMasterPermission(user, key, action = "view") {
 
 export function hasMasterManagementAccess(user, key) {
   return MASTER_PERMISSION_REGISTRY.some((resource) => resource.key === key) &&
-    ["view", "create", "edit", "delete"].some((action) => canUseMasterPermission(user, key, action));
+    ["view", "create", "edit", "delete", "approve", "reject"].some((action) => canUseMasterPermission(user, key, action));
 }

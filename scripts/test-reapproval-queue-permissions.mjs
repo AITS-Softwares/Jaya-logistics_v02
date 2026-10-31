@@ -1,3 +1,4 @@
+import { hasPriorApproval, panelApprovalStatus, reviewDisplayState, upstreamDisplayState } from '../src/lib/reapprovalPresentation.mjs';
 import { unwrapBranchHandlers } from './route-business-source.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -17,6 +18,7 @@ const docs = Object.fromEntries(panels.map(([type, , , number]) => [type, states
   upstreamPending: state === 'blockedByUpstream' ? [{ panel: 'vnn', recordId: 'vnn-pendingApproval' }] : [],
 }))]));
 const deps = {
+  hasPriorApproval, panelApprovalStatus, reviewDisplayState, upstreamDisplayState,
   NextResponse: { json: (body) => body }, connectDb: async () => {}, verifyToken: () => user,
   findLatestApprovedVnnForLoading: async () => syncPlan,
 };
@@ -80,3 +82,22 @@ assert((await getQueue({})).records.some((record) => record.latestVnnSyncRequire
 syncPlan = { required: false, ambiguous: true };
 assert((await getQueue({})).records.some((record) => record.latestVnnSyncAmbiguous));
 console.log('PASS: active task ownership, downstream status visibility, all workflow stages, dedicated Pricing approval, admin sync recovery, and Loading sync tasks.');
+
+// Each Loading Info stage hands work to the appropriate permission owner.
+syncPlan = { required: false, ambiguous: false };
+for (const [id, currentPart, part1Status, part2Status] of [
+  ['loading-stage1-review', 1, 'Submitted', 'Locked'],
+  ['loading-stage2-edit', 2, 'Approved', 'Draft'],
+  ['loading-stage2-review', 2, 'Approved', 'Submitted'],
+]) docs.loading.push({ _id: id, vehicleArrivalNo: id, reapprovalState: 'none', loadingWorkflow: { version: 2, currentPart, part1Status, part2Status } });
+asUser({ 'Loading Info': modulePermission({ approve: true }) });
+let stageTasks = (await getQueue({})).records;
+assert(stageTasks.some(record => record.id === 'loading-stage1-review' && record.path.includes('/approve/')));
+assert(stageTasks.some(record => record.id === 'loading-stage2-review' && record.path.includes('/approve/')));
+assert(!stageTasks.some(record => record.id === 'loading-stage2-edit'));
+asUser({ 'Loading Info': modulePermission({ edit: true }) });
+stageTasks = (await getQueue({})).records;
+assert(stageTasks.some(record => record.id === 'loading-stage2-edit' && record.actionable));
+assert(!stageTasks.some(record => record.id === 'loading-stage1-review'));
+assert(!stageTasks.some(record => record.id === 'loading-stage2-review'));
+console.log('PASS: Loading Info Part 1 and Part 2 approval tasks and Part 2 edit handoff.');
