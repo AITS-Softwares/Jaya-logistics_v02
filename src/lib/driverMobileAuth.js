@@ -126,7 +126,9 @@ export async function mobileRefreshFailureCode(refreshToken) {
   if (!refreshToken) return null;
   const session = await DriverMobileSession.findOne({ refreshTokenHash: hashSecret(refreshToken) });
   if (!session?.deviceId) return null;
-  const device = await DriverDevice.findOne({ _id: session.deviceId, companyId: session.companyId, driverId: session.driverId }).select("status revokeReason");
+  const device = await DriverDevice.findOne({ _id: session.deviceId, companyId: session.companyId }).select("driverId status revokeReason");
+  if (device?.status === "unlinked") return "DEVICE_RELEASED";
+  if (device?.driverId && String(device.driverId) !== String(session.driverId)) return "DEVICE_REASSIGNED";
   if (device?.status === "revoked" && device.revokeReason === "another_device_approved") return "DEVICE_MOVED";
   return null;
 }

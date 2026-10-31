@@ -15,7 +15,7 @@ async function branchHandlerGET(req) {
   await dbConnect();
   const status = new URL(req.url).searchParams.get("status");
   const query = { companyId: staff.user.companyId };
-  if (["pending", "approved", "revoked"].includes(status)) query.status = status;
+  if (["pending", "approved", "revoked", "unlinked"].includes(status)) query.status = status;
   const devices = await DriverDevice.find(query).sort({ updatedAt: -1 }).limit(100).lean();
   const drivers = await DriverProfile.find({ companyId: staff.user.companyId, _id: { $in: devices.map((device) => device.driverId) } })
     .select("displayName mobileE164").lean();
@@ -24,6 +24,7 @@ async function branchHandlerGET(req) {
     id: String(device._id), status: device.status, platform: device.platform, manufacturer: device.manufacturer,
     model: device.model, appVersion: device.appVersion, installationLabel: device.installationLabel, createdAt: device.createdAt, lastSeenAt: device.lastSeenAt,
     approvedAt: device.approvedAt, revokedAt: device.revokedAt, revokeReason: device.revokeReason,
+    releasedAt: device.releasedAt, releaseReason: device.releaseReason,
     driver: driverById.get(String(device.driverId)) ? {
       id: String(device.driverId), displayName: driverById.get(String(device.driverId)).displayName,
       mobileE164: driverById.get(String(device.driverId)).mobileE164,

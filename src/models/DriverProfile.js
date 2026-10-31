@@ -4,6 +4,12 @@ const driverProfileSchema = new mongoose.Schema({
   companyId: { type: mongoose.Schema.Types.ObjectId, ref: "Company", required: true, index: true },
   displayName: { type: String, required: true, trim: true, maxlength: 120 },
   mobileE164: { type: String, required: true, trim: true },
+  mobileHistory: [{
+    mobileE164: { type: String, required: true, trim: true },
+    releasedAt: { type: Date, required: true },
+    releasedBy: { type: mongoose.Schema.Types.ObjectId, ref: "CompanyUser", required: true },
+    reason: { type: String, default: "", maxlength: 300 },
+  }],
   pinHash: { type: String, default: null, select: false },
   employeeOrVendorRef: { type: String, default: "", trim: true },
   // These fields are deliberately kept on the existing driver profile.  A
