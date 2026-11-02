@@ -38,7 +38,7 @@ function useLRStatus(panelId) {
     return { ...st, load };
 }
 
-/** LR / invoice can be opened only when every LR is ready AND VBP, VFT, VOT, VL are all Approved. */
+/** LR / invoice opens when every LR is ready and Loading + Pricing are approved. */
 const canOpen = (d) => Boolean(d?.complete && d?.approvals?.allApproved);
 
 const GREEN = "bg-green-100 text-green-700";
@@ -143,7 +143,7 @@ function RowCard({ row, index, mode, locked, approvalsBlocked, children }) {
                 <div className="mt-1.5 text-[11px] font-semibold text-amber-700">Pending: {row.reason}</div>
             )}
             {ready && locked && (
-                <div className="mt-1.5 text-[11px] font-semibold text-green-700">{approvalsBlocked ? "This LR is ready. Not Approved: VBP, VFT, VOT and VL must all be Approved." : "This LR is ready. Waiting for the other LRs."}</div>
+                <div className="mt-1.5 text-[11px] font-semibold text-green-700">{approvalsBlocked ? "This LR is ready. Loading Info and linked Pricing must be approved. See the approval status above." : "This LR is ready. Waiting for the other LRs."}</div>
             )}
         </div>
     );
@@ -158,7 +158,7 @@ function DisabledBtn({ children, reason }) {
     );
 }
 
-const LOCK_REASON = "Available once VBP, VFT, VOT and VL are Approved, and all LRs are created, approved and have their invoice uploaded";
+const LOCK_REASON = "Available once linked Pricing and VBP, VFT, VOT and VL are Approved, and all LRs are created, approved and have their invoice uploaded";
 
 const STATUS_HINT = {
     unsaved: "Save this Loading Info first. The LR is created by the Consignment Note team and will appear here.",

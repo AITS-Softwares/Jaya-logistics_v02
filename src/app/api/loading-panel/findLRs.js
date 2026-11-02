@@ -1,5 +1,6 @@
 import ConsignmentNote from "@/app/api/consignment-note/ConsignmentNote";
 import { companyScopeFilter } from "@/lib/companyScope";
+import { loadingPricingApproval } from '@/lib/lrPricingEligibility';
 
 const norm = (v) => String(v || "").replace(/[\s-]/g, "").toUpperCase();
 
@@ -229,12 +230,18 @@ export function getLoadingApprovals(panel) {
     };
 }
 
-/** LR and Invoice viewing requires the four Loading Info approvals. */
-export async function getLoadingGate(_user, panel) {
+/** LR and Invoice release requires Loading approvals and approved Pricing. */
+export async function getLoadingGate(user, panel) {
     const base = getLoadingApprovals(panel);
+    const pricing = await loadingPricingApproval(user, panel);
+    const pricingMessage = pricing.approved ? '' : `Pricing must be approved and free of corrections for every linked order before viewing or printing LR and Invoice.${pricing.pendingOrders.length ? ` Pending: ${pricing.pendingOrders.join(', ')}.` : ''}`;
     return {
         ...base,
         loadingApproved: base.allApproved,
-        allApproved: base.allApproved,
+        pricingApproved: pricing.approved,
+        allApproved: base.allApproved && pricing.approved,
+        items: [...base.items, { key: 'Pricing', value: pricing.approved ? 'Approved' : 'Pending approval', approved: pricing.approved }],
+        pending: [...base.pending, ...(!pricing.approved ? ['Pricing'] : [])],
+        message: [base.message, pricingMessage].filter(Boolean).join(' '),
     };
 }

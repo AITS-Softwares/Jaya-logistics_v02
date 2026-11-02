@@ -1192,7 +1192,7 @@ export default function PODPanelList() {
           </div>
         </div>
 
-        <PendingToCreateTable canCreate={canCreate(MODULE_NAME)} enabled={showPendingToCreate || !appliedFilters.podStatus} endpoint="/api/purchase-panel?for=pod&format=table" createHref="/admin/ProofofDelivery/create" title="Purchases Pending to Create POD" displayMode="pod" />
+        <PendingToCreateTable canCreate={canCreate(MODULE_NAME)} enabled={showPendingToCreate || !appliedFilters.podStatus} endpoint="/api/purchase-panel?for=pod&format=table" createHref="/admin/ProofofDelivery/create" createParam="purchaseId" createNoField="purchaseNo" title="Purchases Pending to Create POD" displayMode="pod" />
 
         {/* PODs Table - Excel Format */}
         <div className={`bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden ${showPendingToCreate ? 'hidden' : ''}`}>

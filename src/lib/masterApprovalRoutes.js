@@ -27,7 +27,10 @@ export async function rateApprovalHistory({record,candidate,update,session}) {
     const current=next.find(row=>String(row._id)===String(previous._id));
     const changed=!current || current.rate!==previous.rate || current.fromQty!==previous.fromQty || current.toQty!==previous.toQty || current.isActive!==previous.isActive;
     if (!changed) continue;
-    const replacement=next.find(row=>String(row.locationId)===String(previous.locationId) && row.isActive!==false && !record.locationRates.some(old=>String(old._id)===String(row._id)));
+    const replacements=next.filter(row=>String(row.locationId)===String(previous.locationId) && row.isActive!==false && !record.locationRates.some(old=>String(old._id)===String(row._id)));
+    const replacement=replacements.find(row=>String(row.replacesRateId)===String(previous._id)) ||
+      replacements.find(row=>!row.replacesRateId && row.fromQty===previous.fromQty && row.toQty===previous.toQty) ||
+      (replacements.length===1 && !replacements[0].replacesRateId?replacements[0]:null);
     const revised=current && current.isActive!==false?current:replacement;
     const location=await Location.findById(previous.locationId).session(session).lean();
     await RateHistory.create([{rateMasterId:record._id,rateMasterTitle:record.title,locationId:previous.locationId,locationName:location?.name || 'Unknown',fromQty:previous.fromQty,toQty:previous.toQty,rate:previous.rate,version:previous.version || 1,revisedBy:update.$set.approvedBy.accountId,action:!revised?'DELETED':'REVISED',changes:{newRate:revised?.rate,newFromQty:revised?.fromQty,newToQty:revised?.toQty}}],{session});

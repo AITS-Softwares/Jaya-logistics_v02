@@ -3201,9 +3201,10 @@
 
 'use client';
 
-import {rateMasterForView} from '@/lib/rateMasterView.mjs';
+import {rateMasterForView,rateMasterCustomerLabel} from '@/lib/rateMasterView.mjs';
 import {findNewRateOverlap,rateOverlapMessage} from '@/lib/rateSlabValidation.mjs';
 import MasterApprovalReview from '@/components/MasterApprovalReview';
+import {canUseMasterPermission} from '@/lib/masterPermissionRegistry';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -3316,6 +3317,8 @@ function AddLocationModal({ isOpen, onClose, onSave, loading }) {
 
 export default function RateMasterManagePage() {
   const router = useRouter();
+  const [user,setUser] = useState(null);
+  const canDelete = canUseMasterPermission(user,'Rate Master','delete');
   
   const [title, setTitle] = useState('');
   const [customerId, setCustomerId] = useState('');
@@ -3769,6 +3772,7 @@ export default function RateMasterManagePage() {
   };
 
   const openRevisionModal = (rate) => {
+    setError(null);
     setRevisionRate(rate);
     setRevisionFromQty(rate.fromQty);
     setRevisionToQty(rate.toQty);
@@ -4211,13 +4215,7 @@ export default function RateMasterManagePage() {
   };
 
   const handleBackToList = () => {
-    setSelectedMasterId(null);
-    setSelectedMaster(null);
-    setShowAddForm(false);
-    setLocationRows([]);
-    setLocationFilterTerm('');
-    setShowHistory(false);
-    setApprovalFileData(null);
+    router.push('/admin/rate-master/list');
   };
 
   useEffect(() => {
@@ -4241,6 +4239,11 @@ export default function RateMasterManagePage() {
     fetchBranches();
     fetchLocations();
     fetchRateMasters();
+    const controller = new AbortController();
+    fetch('/api/auth/me', {headers:{Authorization:`Bearer ${localStorage.getItem('token')}`},cache:'no-store',signal:controller.signal})
+      .then(async response => {if(response.ok){const data=await response.json();setUser(data.user || null);}})
+      .catch(error => {if(error.name!=='AbortError')console.error('Unable to load Rate Master permissions:',error);});
+    return () => controller.abort();
   }, []);
 
   return (
@@ -4256,20 +4259,19 @@ export default function RateMasterManagePage() {
             </p>
           </div>
           <div className="flex gap-2">
-            {selectedMasterId && (
-              <button
-                onClick={handleBackToList}
-                className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
-              >
-                ← Back to List
-              </button>
-            )}
             <button
-              onClick={() => router.push('/admin/rate-master/create')}
+              type="button"
+              onClick={handleBackToList}
+              className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+            >
+              ← Back to List
+            </button>
+            {selectedMasterId && <button
+              onClick={() => {setSelectedMasterId(null);setSelectedMaster(null);setShowAddForm(false);setShowHistory(false);setLocationRows([]);setError(null);}}
               className="bg-black text-white px-4 py-2 rounded hover:bg-gray-800"
             >
               + Create New Rate Master
-            </button>
+            </button>}
           </div>
         </div>
       </div>
@@ -4610,7 +4612,7 @@ export default function RateMasterManagePage() {
                     <tr key={master._id} className="hover:bg-gray-50">
                       <td className="px-4 py-2 border text-sm">{index + 1}</td>
                       <td className="px-4 py-2 border text-sm font-medium">{master.title}</td>
-                      <td className="px-4 py-2 border text-sm">{master.customerName}</td>
+                      <td className="px-4 py-2 border text-sm">{rateMasterCustomerLabel(master)}</td>
                       <td className="px-4 py-2 border text-sm">{master.branchName}</td>
                       <td className="px-4 py-2 border text-sm">
                         <span className={`px-2 py-1 rounded text-xs ${
@@ -4656,6 +4658,12 @@ export default function RateMasterManagePage() {
                           >
                             Edit
                           </button>
+                          {canDelete && <button
+                            onClick={() => deleteRateMaster(master._id)}
+                            className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-xs"
+                          >
+                            Delete
+                          </button>}
                         </div>
                       </td>
                     </tr>
@@ -4877,11 +4885,12 @@ export default function RateMasterManagePage() {
                   </button>
                 </div>
                 <div className="p-6">
+                  {error && <p role="alert" className="mb-3 rounded border border-red-200 bg-red-50 p-2 text-sm text-red-700">{error}</p>}
                   <p className="text-sm text-gray-600 mb-4">
                     Current Rate: {revisionRate.fromQty} - {revisionRate.toQty} kg → ₹{revisionRate.rate}
                   </p>
                   <p className="text-sm text-red-500 mb-4">
-                    ⚠️ Old rate will be moved to HISTORY under this location
+                    The previous rate moves to history when this revision is approved. Until then, the approved rate remains in use.
                   </p>
                   
                   <div className="space-y-4">

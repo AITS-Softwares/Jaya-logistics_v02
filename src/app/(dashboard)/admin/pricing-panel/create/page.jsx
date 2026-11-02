@@ -1999,6 +1999,7 @@
   // }
   "use client";
 
+import PriceListDropdown from '@/components/PriceListDropdown';
 import { useMemo, useState, useEffect, useRef, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -2601,192 +2602,7 @@ function LocationRateDropdown({
 /* =========================
   PRICE LIST DROPDOWN COMPONENT
 ========================= */
-function PriceListDropdown({
-  rateMasters,
-  selectedValue,
-  onSelect,
-  locationName,
-  branchId,
-  customerId,
-  placeholder = "Select Price List...",
-  readOnly = false,
-  rateCalculationMode = 'order_weight'
-}) {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [selectedItem, setSelectedItem] = useState(null);
-  const dropdownRef = useRef(null);
-  const inputRef = useRef(null);
-  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
 
-  const filteredRateMasters = useMemo(() => {
-    let filtered = rateMasters || [];
-    if (rateCalculationMode === 'manual_rate') {
-      return filtered.filter((rm) => rm.usageMode === 'manual_rate_default');
-    }
-    filtered = filtered.filter((rm) => (rm.usageMode || 'standard') === 'standard');
-
-    if (branchId) {
-      filtered = filtered.filter(rm => {
-        const rmBranchId = rm.branchId?._id || rm.branchId;
-        return String(rmBranchId) === String(branchId);
-      });
-    } else {
-      return [];
-    }
-
-    if (customerId) {
-      filtered = filtered.filter(rm => {
-        const rmCustomerId = rm.customerId?._id || rm.customerId;
-        return String(rmCustomerId) === String(customerId);
-      });
-    } else {
-      return [];
-    }
-
-    if (locationName) {
-      filtered = filtered.filter(rm => {
-        return rm.locationRates && Array.isArray(rm.locationRates) &&
-          rm.locationRates.some(lr => lr.locationName === locationName);
-      });
-    }
-
-    return filtered;
-  }, [rateMasters, locationName, branchId, customerId, rateCalculationMode]);
-
-  useEffect(() => {
-    if (selectedValue) {
-      const item = filteredRateMasters.find(rm => rm.title === selectedValue);
-      setSelectedItem(item);
-      if (item) {
-        setSearchQuery(item.title);
-      }
-    } else {
-      setSelectedItem(null);
-      setSearchQuery("");
-    }
-  }, [filteredRateMasters, selectedValue]);
-
-  const handleSelectItem = (item) => {
-    if (readOnly) return;
-    setSelectedItem(item);
-    setSearchQuery(item.title);
-    setShowDropdown(false);
-    onSelect?.(item);
-  };
-
-  const handleInputFocus = () => {
-    if (!readOnly && inputRef.current && filteredRateMasters.length > 0) {
-      const rect = inputRef.current.getBoundingClientRect();
-      setDropdownPosition({
-        top: rect.bottom,
-        left: rect.left,
-        width: rect.width
-      });
-      setShowDropdown(true);
-    }
-  };
-
-  const handleInputBlur = () => {
-    setTimeout(() => {
-      if (dropdownRef.current && !dropdownRef.current.contains(document.activeElement)) {
-        setShowDropdown(false);
-      }
-    }, 200);
-  };
-
-  useEffect(() => {
-    const closeOnScroll = () => setShowDropdown(false);
-    window.addEventListener('scroll', closeOnScroll, true);
-    window.addEventListener('resize', closeOnScroll);
-    return () => {
-      window.removeEventListener('scroll', closeOnScroll, true);
-      window.removeEventListener('resize', closeOnScroll);
-    };
-  }, []);
-
-  const searchedItems = useMemo(() => {
-    if (!searchQuery.trim()) return filteredRateMasters;
-    return filteredRateMasters.filter(rm =>
-      rm.title.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [filteredRateMasters, searchQuery]);
-
-  return (
-    <div className="relative w-full" ref={dropdownRef}>
-      <input
-        ref={inputRef}
-        type="text"
-        value={searchQuery}
-        onChange={(e) => {
-          if (!selectedItem) setSearchQuery(e.target.value);
-        }}
-        onFocus={handleInputFocus}
-        onBlur={handleInputBlur}
-        className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${readOnly ? 'bg-slate-50 cursor-not-allowed' : 'bg-white cursor-pointer'
-          }`}
-        placeholder={placeholder}
-        readOnly={readOnly || !!selectedItem}
-        autoComplete="off"
-      />
-      {selectedItem && !readOnly && (
-        <button
-          type="button"
-          onMouseDown={(event) => event.preventDefault()}
-          onClick={() => { setSelectedItem(null); setSearchQuery(""); onSelect?.(null); setShowDropdown(true); }}
-          className="absolute right-7 top-1.5 text-slate-500 hover:text-red-600"
-          aria-label="Clear selected price list"
-        >×</button>
-      )}
-      <div className="absolute right-2 top-2 text-gray-400 pointer-events-none">
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-      </div>
-
-      {showDropdown && !readOnly && filteredRateMasters.length > 0 && (
-        <div
-          className="fixed z-[9999] bg-white border border-slate-200 rounded-lg shadow-xl overflow-y-auto"
-          style={{
-            position: 'fixed',
-            top: dropdownPosition.top,
-            left: dropdownPosition.left,
-            width: dropdownPosition.width,
-            maxHeight: '300px'
-          }}
-        >
-          <div className="sticky top-0 bg-gray-50 px-3 py-2 text-xs font-semibold text-slate-600 border-b">
-            Select Price List
-          </div>
-          {searchedItems.length > 0 ? (
-            searchedItems.map((rm) => (
-              <div
-                key={rm._id}
-                onMouseDown={() => handleSelectItem(rm)}
-                className={`px-3 py-2 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-b-0 transition-colors ${selectedItem?._id === rm._id ? 'bg-sky-50' : ''
-                  }`}
-              >
-                <div className="font-medium text-slate-800 text-sm">
-                  {rm.title}
-                </div>
-                <div className="text-xs text-slate-500 mt-0.5">
-                  Branch: {rm.branchName || 'N/A'} | Customer: {rm.customerName || 'N/A'} | Locations: {rm.locationRates?.length || 0}
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="p-3 text-center text-sm text-slate-500">
-              {searchQuery.trim() ?
-                `No price lists found for "${searchQuery}"` :
-                `No price lists available for this branch, customer, and location`
-              }
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
 
 /* =========================
   VEHICLE NEGOTIATION DROPDOWN FOR HEADER
@@ -3271,6 +3087,7 @@ function OrdersTable({
 
                 <td className="border border-yellow-300 px-1 py-1">
                   <PriceListDropdown
+                    filterByLocation
                     rateMasters={rateMasters}
                     selectedValue={row.priceList}
                     onSelect={(rateMaster) => handlePriceListSelect(row._id, rateMaster)}

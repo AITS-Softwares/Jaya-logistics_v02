@@ -12,6 +12,9 @@ export function getPath(data, path) { return path.split('.').reduce((value,key) 
 function canonical(value) {
   if (value?.toHexString) return value.toHexString();
   if (value instanceof Date) return value.toISOString();
+  // Hydrated Mongoose subdocuments contain parent links back to their owner.
+  // Compare the stored fields rather than recursively traversing that graph.
+  if (typeof value?.toObject === 'function') return canonical(value.toObject({ depopulate: true, transform: false, flattenMaps: true }));
   if (Array.isArray(value)) return value.map(canonical);
   if (value && typeof value === 'object') return Object.fromEntries(Object.keys(value).sort().filter(k => value[k] !== undefined).map(k => [k, canonical(value[k])]));
   return value;
@@ -70,7 +73,7 @@ export function reviewUpdate(record, user, action, revisionId, reason, now = new
   const maker = change?.requestedBy || record.submittedBy;
   const by = identity(user);
   if (!maker) throw approvalError('This submission has no maker identity and requires administrator investigation.');
-  if (sameActor(maker,by)) throw approvalError('You cannot approve or reject your own submission.',403);
+  if (sameActor(maker,by) && user.type !== 'company') throw approvalError('You cannot approve or reject your own submission.',403);
   if (action === 'reject' && !String(reason || '').trim()) throw approvalError('A rejection reason is required.',400);
   const data = change?.data || {};
   const set = action === 'approve'

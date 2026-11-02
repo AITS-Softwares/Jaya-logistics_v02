@@ -2,7 +2,7 @@
 
 Date: 2 November 2026
 
-`npm run test:workflow-controls` runs 22 offline suites. The three added role
+`npm run test:workflow-controls` runs 23 offline suites. The three added role
 suites exercise real application handlers and permission checks with simulated
 identity selection and in-memory persistence. They do not create accounts,
 change company records, test live login sessions or replace MongoDB/browser

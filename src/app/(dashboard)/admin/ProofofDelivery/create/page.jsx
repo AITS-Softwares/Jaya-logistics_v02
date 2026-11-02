@@ -1462,6 +1462,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import {podAdvanceMessage} from '@/lib/podAdvancePresentation.mjs';
 
 function uid() {
   return Math.random().toString(36).slice(2, 10);
@@ -1652,6 +1653,9 @@ export default function CreatePOD() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const pendingPurchaseNo = searchParams.get("purchaseNo") || searchParams.get("sourceNo");
+  const pendingPurchaseId = searchParams.get('purchaseId') || searchParams.get('sourceId');
+  const purchaseRequest = useRef(0);
+  const advanceRequest = useRef(0);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [purchases, setPurchases] = useState([]);
@@ -1714,6 +1718,7 @@ export default function CreatePOD() {
   const [advanceInfo, setAdvanceInfo] = useState({ loaded: false, found: false, advance: 0, payments: [] });
   const loadAdvance = async (purchaseNo) => {
     if (!purchaseNo) return;
+    const requestId=++advanceRequest.current;
     setAdvanceInfo({ loaded: false, found: false, advance: 0, payments: [] });
     try {
       const token = localStorage.getItem('token');
@@ -1721,11 +1726,14 @@ export default function CreatePOD() {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json().catch(() => ({}));
+      if(requestId!==advanceRequest.current)return;
       if (res.ok && data.success && data.data) {
         setVendorFinancial(prev => ({ ...prev, advance: Number(data.data.advance) || 0 }));
         setAdvanceInfo({ loaded: true, found: !!data.data.found, advance: Number(data.data.advance) || 0, payments: data.data.payments || [] });
-      }
+      } else throw new Error(data.message || 'Unable to load advance payment');
     } catch (err) {
+      if(requestId!==advanceRequest.current)return;
+      setAdvanceInfo({loaded:true,found:false,advance:0,payments:[],error:true});
       console.error('Error loading advance payment:', err);
     }
   };
@@ -2036,16 +2044,27 @@ export default function CreatePOD() {
   };
 
   // ==================== UPDATED: Handle Purchase Selection ====================
-  const handlePurchaseSelect = async (purchaseNo) => {
-    setHeader({ ...header, purchaseNo });
+  const handlePurchaseSelect = async (purchaseNo, purchaseId = '') => {
+    const requestId=++purchaseRequest.current;
+    ++advanceRequest.current;
+    setAdvanceInfo({loaded:false,found:false,advance:0,payments:[]});
+    setProducts([]);
+    setLrEntries([]);
+    setFilteredLRs([]);
+    setSelectedPurchase(null);
+    setHeader(prev=>({ ...prev, purchaseNo:'' }));
+    setVendorFinancial(prev=>({...prev,advance:0,balance:0,total:0,vendorName:'',vendorCode:'',dueDays:0}));
     setLoading(true);
 
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`/api/purchase-panel?purchaseNo=${purchaseNo}&for=pod`, {
+      const query = new URLSearchParams(purchaseId?{id:purchaseId,for:'pod'}:{purchaseNo,for:'pod'});
+      const res = await fetch(`/api/purchase-panel?${query}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
+      if(requestId!==purchaseRequest.current)return;
+      if(!res.ok || !data.success || !data.data)throw new Error(data.message || 'Unable to load this purchase. Return to the list and select it again.');
 
       if (data.success && data.data) {
         const purchase = data.data;
@@ -2188,6 +2207,7 @@ export default function CreatePOD() {
           filterLRsByPurchaseOrders(orderNumbers);
         }
 
+        if(requestId!==purchaseRequest.current)return;
         const vehicleMsg = vehicleNo ? `\n🚛 Vehicle: ${vehicleNo}` : '';
         const routeMsg = (fromLocation && toLocation) ? `\n📍 Route: ${fromLocation} → ${toLocation}` : '';
         const lrMsg = lrCode ? `\n📋 LR Code: ${lrCode}` : '';
@@ -2202,16 +2222,17 @@ ${companyMsg}${subCompanyMsg}${vehicleMsg}${routeMsg}${lrMsg}
 🏷️ Vendor Code: ${vendorCode || 'N/A'}`);
       }
     } catch (error) {
+      if(requestId!==purchaseRequest.current)return;
       console.error('Error loading purchase:', error);
-      alert('Failed to load purchase details');
+      alert(error.message || 'Failed to load purchase details');
     } finally {
-      setLoading(false);
+      if(requestId===purchaseRequest.current)setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (pendingPurchaseNo) handlePurchaseSelect(pendingPurchaseNo);
-  }, [pendingPurchaseNo]);
+    if (pendingPurchaseId || pendingPurchaseNo) handlePurchaseSelect(pendingPurchaseNo || '', pendingPurchaseId || '');
+  }, [pendingPurchaseId, pendingPurchaseNo]);
 
   useEffect(() => {
     if (allConsignmentNotes.length > 0 && purchaseOrders.length > 0) {
@@ -2953,11 +2974,7 @@ ${companyMsg}${subCompanyMsg}${vehicleMsg}${routeMsg}${lrMsg}
               <label className="text-xs font-bold text-slate-600">Advance</label>
               <input type="text" value={`₹${num(vendorFinancial.advance).toLocaleString()}`} readOnly className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm cursor-not-allowed" />
               <p className={`text-xs mt-1 ${advanceInfo.loaded && !advanceInfo.found ? 'text-red-500' : 'text-slate-400'}`}>
-                {!advanceInfo.loaded
-                  ? 'Loading advance payment...'
-                  : advanceInfo.found
-                    ? `From Advance Payment ${advanceInfo.payments.map(p => p.paymentNo).join(', ')}`
-                    : 'No Advance Payment created for this purchase'}
+                {podAdvanceMessage(advanceInfo)}
               </p>
             </div>
             <div className="col-span-12 md:col-span-2">

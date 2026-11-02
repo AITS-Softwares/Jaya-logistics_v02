@@ -1,5 +1,10 @@
 import assert from 'node:assert/strict';
-import {rateMasterForView} from '../src/lib/rateMasterView.mjs';
+import {rateMasterForView,rateMasterCustomerLabel} from '../src/lib/rateMasterView.mjs';
+assert.equal(rateMasterCustomerLabel({usageMode:'manual_rate_default'}),'All customers');
+assert.equal(rateMasterCustomerLabel({customerName:'Saved customer'}),'Saved customer');
+assert.equal(rateMasterCustomerLabel({customerId:{_id:'customer',customerName:'Populated customer'}}),'Populated customer');
+assert.match(rateMasterCustomerLabel({customerId:'missing'}),/unavailable/);
+assert.match(rateMasterCustomerLabel({customerId:null}),/No customer linked/);
 const record={title:'Rates',locationRates:[{_id:'old',locationId:'A',locationName:'Mumbai',rate:100}],pendingChange:{data:{locationRates:[{_id:'old',locationId:'A',rate:100},{locationId:'B',rate:125},{locationId:'missing',rate:150}]}}};
 const view=rateMasterForView(record,[{_id:'B',name:'Pune'}]);
 assert.deepEqual(view.locationRates.map(row=>row.locationName),['Mumbai','Pune','Location unavailable']);

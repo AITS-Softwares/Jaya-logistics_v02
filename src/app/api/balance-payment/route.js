@@ -1135,7 +1135,7 @@ async function branchHandlerPOST(req) {
     const subCompanyName = user.activeOperatingCompanyName || '';
     const subCompanyCode = user.activeOperatingCompanyCode || '';
 
-    // Money is derived on the server from the POD + PAID advances. Amounts typed in the browser are ignored.
+    // Money is derived on the server from POD + queued/settled advances. Browser amounts are ignored.
     // (Uses only this user's company scope, so no POD / Advance Payment permission is required.)
     const derived = await deriveBalanceForPod(user, body.podNo);
     if (derived.error) return NextResponse.json({ success: false, message: derived.error }, { status: derived.status });

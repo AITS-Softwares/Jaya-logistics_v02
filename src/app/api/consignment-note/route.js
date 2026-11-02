@@ -1,6 +1,6 @@
 import { reconcileOrderCancellations } from '@/lib/reconcileOrderCancellations';
 import { panelApprovalStatus } from '@/lib/reapprovalPresentation.mjs';
-import { approvedPricingForLr, filterLrEligibleLoading } from '@/lib/lrPricingEligibility';
+import { filterLrEligibleLoading } from '@/lib/lrPricingEligibility';
 import { saveNumberedDocument } from '@/lib/saveNumberedDocument';
 import { loadingWorkflowForReview } from '@/lib/loadingApprovalWorkflow.mjs';
 
@@ -206,7 +206,6 @@ import { loadingWorkflowForReview } from '@/lib/loadingApprovalWorkflow.mjs';
 
 // //     const body = await req.json();
 
-// //     if (!isDraftSave && !await approvedPricingForLr(user, body.header?.orderNo, body.orderRowId)) return NextResponse.json({ success: false, message: 'The linked Pricing Panel must be approved and free of corrections before creating an LR.' }, { status: 409 });
 
     console.log("📝 Creating new consignment note");
 
@@ -891,7 +890,6 @@ import { loadingWorkflowForReview } from '@/lib/loadingApprovalWorkflow.mjs';
 
 //     const body = await req.json();
 
-//     if (!isDraftSave && !await approvedPricingForLr(user, body.header?.orderNo, body.orderRowId)) return NextResponse.json({ success: false, message: 'The linked Pricing Panel must be approved and free of corrections before creating an LR.' }, { status: 409 });
 
     console.log("📝 Creating new consignment note");
 
@@ -2020,7 +2018,6 @@ async function branchHandlerPOST(req) {
     }]);
     if (blockedRow) return NextResponse.json({ success: false, message: blockedRow }, { status: 409 });
 
-    if (!isDraftSave && !await approvedPricingForLr(user, body.header?.orderNo, body.orderRowId)) return NextResponse.json({ success: false, message: 'The linked Pricing Panel must be approved and free of corrections before creating an LR.' }, { status: 409 });
 
     console.log("📝 Creating new consignment note");
 
@@ -2357,7 +2354,6 @@ async function branchHandlerPUT(req) {
     if (isApprovedLocked && !isReapprovalEdit) return NextResponse.json({ success: false, message: 'Approved LRs are locked. Ask an admin to unlock this LR before editing.' }, { status: 409 });
 
     const saveMode = body.saveMode;
-    if (saveMode === 'submit' && !await approvedPricingForLr(user, body.header?.orderNo || note.header?.orderNo, body.orderRowId || note.orderRowId)) return NextResponse.json({ success: false, message: 'The linked Pricing Panel must be approved and free of corrections before submitting an LR.' }, { status: 409 });
     const wasDraft = !!note.isDraft || note.header?.status === 'Draft';
     if (saveMode && !['draft', 'submit'].includes(saveMode)) {
       return NextResponse.json({ success: false, message: "Invalid saveMode" }, { status: 400 });

@@ -95,12 +95,12 @@ export function summarizeAdvances(payments = []) {
     for (const p of payments) {
         const status = effectiveAdvanceStatus(p);
         if (status === "Rejected") continue;
-        // The cash actually paid out is the NET advance (advance + additions - deductions - warehouse deduction),
+        // The queued/settled amount is the NET advance (advance + additions - deductions - warehouse deduction),
         // stored as paymentDetails.finalAmount. vendorDetails.advance is only the gross planned advance, so it is
         // used purely as a fallback for old records that have no final amount.
         const finalAmt = n(p?.paymentDetails?.finalAmount);
         const amount = Math.max(finalAmt > 0 ? finalAmt : n(p?.vendorDetails?.advance), 0);
-        const counted = PAID_ADVANCE_STATUSES.includes(status);
+        const counted = !!p?.queueGenerated || PAID_ADVANCE_STATUSES.includes(status);
         if (counted) paid += amount; else pending += amount;
         rows.push({ paymentNo: p?.paymentNo, status, advance: amount, counted, viaQueue: !!p?.queueGenerated });
     }

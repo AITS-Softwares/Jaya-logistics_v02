@@ -2670,6 +2670,7 @@ async function branchHandlerPATCH(req) {
         try { data = generateLocalPaymentQueue('advance', payment, user); }
         catch (error) { return NextResponse.json({ success: false, message: error.message }, { status: error.status || 400 }); }
         await payment.save();
+        await syncPodAdvanceForPurchase(user, payment.purchaseNo);
         return NextResponse.json({ success: true, message: 'Payment queue generated successfully.', data });
       }
       if (payment.bankIntegration?.provider === 'ERP_QUEUE') return NextResponse.json({ success: false, message: 'This payment already has a generated queue. It will not be submitted again when bank API calling resumes.' }, { status: 409 });
@@ -2705,6 +2706,7 @@ async function branchHandlerPATCH(req) {
         payment.paymentDetails.paymentStatus = 'Pending';
         payment.status = 'Pending';
         await payment.save();
+        await syncPodAdvanceForPurchase(user, payment.purchaseNo);
         return NextResponse.json({ success: false, uncertain: true, message: 'ICICI response was not conclusive. Check bank status before any retry.', data: { uniqueId, bankStatus: 'UNCERTAIN' } }, { status: 502 });
       }
 
@@ -2731,6 +2733,7 @@ async function branchHandlerPATCH(req) {
       }
       await payment.save();
 
+      await syncPodAdvanceForPurchase(user, payment.purchaseNo);
       return NextResponse.json({
         success: result.accepted,
         uncertain: bankStatus === 'UNCERTAIN',
@@ -2794,6 +2797,7 @@ async function branchHandlerPATCH(req) {
         payment.status = 'Pending';
       }
       await payment.save();
+      await syncPodAdvanceForPurchase(user, payment.purchaseNo);
       return NextResponse.json({ success: true, data: { paymentNo: payment.paymentNo, bankStatus, retryAllowed: !!retryAllowed, queueGenerated: payment.queueGenerated, uniqueId, requestId: payment.bankIntegration.requestId, utrNumber: payment.bankIntegration.utrNumber, checkedAt: payment.bankIntegration.checkedAt } });
     }
 

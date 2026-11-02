@@ -58,9 +58,10 @@ export default function MasterApprovalReview({kind,onChanged}) {
   const rows=records.filter(record=>filter==='All' || (filter==='Pending'?record.approvalStatus==='Pending' || record.pendingChange:record.approvalStatus===filter));
   const maker=selected?.pendingChange?.requestedBy || selected?.submittedBy;
   const own=maker && String(maker.accountId)===String(user._id || user.id) && maker.accountType===(user.type==='company'?'company':'companyUser');
+  const ownReviewBlocked=own && user.type!=='company';
   const proposal=selected?.pendingChange?.data;
   const fields=kind==='supplier'?supplierFields:rateFields;
-  const changes=proposal?Object.entries(proposal):fields.map(path=>[path,atPath(selected,path)]).filter(([,value])=>!empty(value));
+  const changes=proposal?Object.entries(proposal):fields.map(path=>[path,atPath(selected,path)]).filter(([path,value])=>!empty(value) || (kind==='supplier' && path==='dueDays'));
   const migrationCount=records.filter(record=>record.approvalStatus==='Migration required').length;
   const pendingCount=records.filter(record=>record.approvalStatus==='Pending' || record.pendingChange).length;
   const statusCount=status=>status==='All'?records.length:status==='Pending'?pendingCount:records.filter(record=>record.approvalStatus===status).length;
@@ -78,7 +79,7 @@ export default function MasterApprovalReview({kind,onChanged}) {
         <header className="shrink-0 border-b border-slate-200 px-5 py-4 sm:px-6">
           <div className="flex items-start justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-wide text-indigo-700">{proposal?'Change approval':'New record approval'}</p><h3 id="master-review-title" className="mt-1 text-xl font-bold text-slate-900">{selected.supplierName || selected.title}</h3></div><button type="button" aria-label="Close review" disabled={busy} onClick={()=>setSelected(null)} className="rounded-lg border px-3 py-1 text-xl text-slate-500 hover:bg-slate-50">×</button></div>
           <p className="mt-2 text-sm text-slate-500">{<>Submitted by <span className="font-medium text-slate-700">{submitterLabel(selected)}</span></>}</p>
-          {own && <p className="mt-2 text-sm text-amber-800">Another authorized user must review your submission.</p>}
+          {ownReviewBlocked && <p className="mt-2 text-sm text-amber-800">Another authorized user must review your submission.</p>}
         </header>
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
           <p className="border-b bg-indigo-50 px-5 py-3 text-sm text-indigo-900 sm:px-6">{proposal?'Compare the proposed changes below. Current approved values remain in use until approval.':'Review the submitted details below. This record becomes available for selection after approval.'}</p>
@@ -87,9 +88,9 @@ export default function MasterApprovalReview({kind,onChanged}) {
           </table>
         </div>
         <footer className="shrink-0 border-t border-slate-200 bg-slate-50 px-5 py-4 sm:px-6">
-          {canReject && !own && <label className="block text-xs font-medium text-slate-600">Reason (required to reject)<textarea rows={2} value={reason} onChange={e=>setReason(e.target.value)} placeholder="Explain what needs to be corrected" className="mt-1 w-full resize-none rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm" /></label>}
+          {canReject && !ownReviewBlocked && <label className="block text-xs font-medium text-slate-600">Reason (required to reject)<textarea rows={2} value={reason} onChange={e=>setReason(e.target.value)} placeholder="Explain what needs to be corrected" className="mt-1 w-full resize-none rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm" /></label>}
           {error && <p role="alert" className="mt-2 text-sm text-red-700">{error}</p>}
-          <div className="mt-3 flex justify-end gap-2"><button type="button" disabled={busy} onClick={()=>setSelected(null)} className="rounded-lg border bg-white px-4 py-2 text-sm font-medium">Close</button>{canReject && <button type="button" disabled={busy || own || !reason.trim()} onClick={()=>review('reject')} className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40">Reject</button>}{canApprove && <button type="button" disabled={busy || own} onClick={()=>review('approve')} className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40">{busy?'Saving…':'Approve'}</button>}</div>
+          <div className="mt-3 flex justify-end gap-2"><button type="button" disabled={busy} onClick={()=>setSelected(null)} className="rounded-lg border bg-white px-4 py-2 text-sm font-medium">Close</button>{canReject && <button type="button" disabled={busy || ownReviewBlocked || !reason.trim()} onClick={()=>review('reject')} className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40">Reject</button>}{canApprove && <button type="button" disabled={busy || ownReviewBlocked} onClick={()=>review('approve')} className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40">{busy?'Saving…':'Approve'}</button>}</div>
         </footer>
       </div>
     </div>}

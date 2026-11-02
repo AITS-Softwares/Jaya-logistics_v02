@@ -458,7 +458,7 @@ import {masterApprovalAccess,withMasterSubmitterNames} from '@/lib/masterApprova
 // }
 
 import {submitMasterChange,validateRateCandidate} from '@/lib/masterApprovalService';
-import {initialApproval} from '@/lib/masterApprovalPolicy.mjs';
+import {initialApproval,identity,sameActor} from '@/lib/masterApprovalPolicy.mjs';
 import {notifyMasterSubmission,rateApprovalHistory} from '@/lib/masterApprovalRoutes';
 import { NextResponse } from "next/server";
 import connectDb from "@/lib/db";
@@ -538,7 +538,8 @@ export async function GET(req) {
             locationName: location?.name || 'Unknown Location',
             isActive: locRate.isActive,
             createdAt: locRate.createdAt,
-            version: locRate.version
+            version: locRate.version,
+            replacesRateId: locRate.replacesRateId
           };
         })
       );
@@ -602,7 +603,8 @@ export async function GET(req) {
                 locationName: location?.name || 'Unknown Location',
                 isActive: locRate.isActive,
                 createdAt: locRate.createdAt,
-                version: locRate.version
+                version: locRate.version,
+                replacesRateId: locRate.replacesRateId
               };
             })
           );
@@ -831,7 +833,7 @@ export async function PUT(req) {
     let finalCustomRuleToLimit = customRuleToLimit !== undefined ? customRuleToLimit : existingRateMaster.customRuleToLimit || null;
     
     // Handle approval file
-    let finalApprovalFile = existingRateMaster.approvalFile || {
+    let finalApprovalFile = existingRateMaster.approvalFile?.toObject?.() || existingRateMaster.approvalFile || {
       fileName: '',
       filePath: '',
       fileType: '',
@@ -877,12 +879,18 @@ export async function PUT(req) {
     let validatedLocationRates = [];
     
     if (rateId && locationRates && locationRates.length === 1) {
-      const oldRate = existingRateMaster.locationRates.find(r => r._id.toString() === rateId);
+      const proposal = existingRateMaster.pendingChange;
+      if (proposal && !sameActor(proposal.requestedBy,identity(user))) {
+        return NextResponse.json({success:false,message:'Another maker has a pending proposal. Review it before revising rates.'},{status:409});
+      }
+      const revisionRates = (proposal?.data?.locationRates || existingRateMaster.locationRates).map(row=>row.toObject?.() || {...row});
+      const oldRate = revisionRates.find(r => String(r._id) === rateId);
       
       if (!oldRate) {
         return NextResponse.json({ success: false, message: "Rate not found" }, { status: 404 });
       }
       
+      if (oldRate.isActive === false) return NextResponse.json({success:false,message:'Historical rates cannot be revised. Select the active slab.'},{status:409});
       const newRate = locationRates[0];
       const fromQty = parseFloat(newRate.fromQty);
       const toQty = parseFloat(newRate.toQty);
@@ -920,7 +928,7 @@ export async function PUT(req) {
         }
       }
       
-      const otherRates = existingRateMaster.locationRates.filter(
+      const otherRates = revisionRates.filter(
         r => r.locationId.toString() === oldRate.locationId.toString() && 
         r._id.toString() !== rateId && 
         r.isActive === true
@@ -941,17 +949,17 @@ export async function PUT(req) {
       const location = await Location.findById(oldRate.locationId);
 
       
-      let updatedRates = existingRateMaster.locationRates.map(r => {
+      const updatedRates = revisionRates.map(r => {
         if (r._id.toString() === rateId) {
           return {
-            ...r.toObject(),
+            ...r,
             isActive: false
           };
         }
         return r;
       });
       
-      const maxVersion = Math.max(...existingRateMaster.locationRates
+      const maxVersion = Math.max(...revisionRates
         .filter(r => r.locationId.toString() === oldRate.locationId.toString())
         .map(r => r.version || 1), 0) + 1;
       
@@ -967,7 +975,8 @@ export async function PUT(req) {
         rate: rate,
         isActive: true,
         createdAt: newCreatedAt,
-        version: maxVersion
+        version: maxVersion,
+        replacesRateId: existingRateMaster.locationRates.some(row=>String(row._id)===String(oldRate._id)) ? oldRate._id : (oldRate.replacesRateId || oldRate._id)
       };
       
       validatedLocationRates = [...updatedRates, newRateObj];
@@ -983,7 +992,7 @@ export async function PUT(req) {
         return rate;
       });
     } else {
-      validatedLocationRates = existingRateMaster.locationRates;
+      validatedLocationRates = existingRateMaster.locationRates.map(row => row.toObject({ depopulate: true }));
     }
 
     // A global Manual Rate Default intentionally has no slabs. It supplies
@@ -1023,7 +1032,8 @@ export async function PUT(req) {
           locationName: location?.name || 'Unknown Location',
           isActive: locRate.isActive,
           createdAt: locRate.createdAt,
-          version: locRate.version
+          version: locRate.version,
+          replacesRateId: locRate.replacesRateId
         };
       })
     );
@@ -1080,12 +1090,8 @@ export async function DELETE(req) {
       return NextResponse.json({ success: false, message: "Rate master ID is required" }, { status: 400 });
     }
 
-    // A master record itself is not deletable by normal users. Rate-slab
-    // history remains separately manageable through its existing workflow.
-    const isCompanyAdmin = user.type === 'company' || user.roles?.includes('Admin');
-    if (!rateId && !isCompanyAdmin) {
-      return NextResponse.json({ success: false, message: 'Rate Master records cannot be deleted by users' }, { status: 403 });
-    }
+    // validateUser above enforces Rate Master delete permission, including
+    // Company/Admin access and staff explicitly granted delete permission.
 
     const rateMaster = await RateMaster.findOne({
       _id: rateMasterId,

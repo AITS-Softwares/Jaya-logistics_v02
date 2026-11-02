@@ -74,7 +74,16 @@ export async function reviewMaster({Model,id,companyId,user,kind,action,revision
       if(kind==='supplier') update.$set.reservedSupplierCode=update.$set.supplierCode || record.supplierCode;
       const candidate = new Model(record.toObject());
       applyApprovalPatch(candidate,update.$set);
-      await candidate.validate();
+      // Rejecting changes only review metadata; incomplete legacy business
+      // fields must not prevent returning the submission for correction.
+      if(action==='approve') {
+        try { await candidate.validate(); }
+        catch(error) {
+          if(error.name!=='ValidationError')throw error;
+          const details=Object.values(error.errors || {}).map(issue=>issue.message).join('; ');
+          throw approvalError(`Cannot approve this ${kind==='supplier'?'supplier':'Rate Master'}: ${details || 'required details are missing or invalid'}. Edit the record, correct these fields and submit it again.`,400);
+        }
+      }
       if(kind==='rate' && action==='approve') validateRateCandidate(candidate,{baseline:record.approvalStatus==='Approved'?record.locationRates:[]});
       if (action === 'approve' && onApprove) await onApprove({record,candidate,update,session,kind});
       saved = await Model.findOneAndUpdate(approvalWriteFilter(record),update,{new:true,runValidators:true,session});

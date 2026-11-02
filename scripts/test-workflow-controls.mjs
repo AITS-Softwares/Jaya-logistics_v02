@@ -11,6 +11,7 @@ const suites = [
   'test-correction-request-flow.mjs',
   'test-cancellation-charge-review.mjs',
   'test-lr-pricing-eligibility.mjs',
+  'test-loading-pricing-release.mjs',
   'test-loading-approval-stages.mjs',
   'test-loading-initial-approval-status.mjs',
   'test-reapproval-unlock-permissions.mjs',

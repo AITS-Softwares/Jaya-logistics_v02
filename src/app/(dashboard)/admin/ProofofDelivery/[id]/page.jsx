@@ -1461,6 +1461,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
+import {podAdvanceMessage} from '@/lib/podAdvancePresentation.mjs';
 
 function uid() {
   return Math.random().toString(36).slice(2, 10);
@@ -3084,11 +3085,7 @@ export default function EditPOD() {
               <label className="text-xs font-bold text-slate-600">Advance</label>
               <input type="text" value={`₹${num(vendorFinancial.advance).toLocaleString()}`} readOnly className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm cursor-not-allowed" />
               <p className={`text-xs mt-1 ${advanceInfo.loaded && !advanceInfo.found ? 'text-red-500' : 'text-slate-400'}`}>
-                {!advanceInfo.loaded
-                  ? 'Loading advance payment...'
-                  : advanceInfo.found
-                    ? `From Advance Payment ${advanceInfo.payments.map(p => p.paymentNo).join(', ')}`
-                    : 'No Advance Payment created for this purchase'}
+                {podAdvanceMessage(advanceInfo)}
               </p>
             </div>
             <div className="col-span-12 md:col-span-2">
