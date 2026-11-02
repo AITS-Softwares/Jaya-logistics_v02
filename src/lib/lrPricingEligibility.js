@@ -15,14 +15,24 @@ export async function approvedPricingForLr(user, orderNo, orderRowId) {
 }
 
 export async function filterLrEligibleLoading(user, loadingInfos) {
-  const panels = await PricingPanel.find(companyScopeFilter(user)).lean();
+  // LR creation depends on Loading readiness. Pricing approval gates document
+  // release in Loading Info, not creation or the LR order dropdown.
   return loadingInfos.filter(info => !['cancelled', 'review'].includes(info.cancellation?.state) && !info.upstreamPending?.length &&
     (!info.reapprovalState || info.reapprovalState === 'none') && !info.isDraft &&
     ['Approved', 'Completed'].includes(info.panelStatus) &&
     (info.loadingWorkflow?.version !== 2 || info.loadingWorkflow.part2Status === 'Approved'))
-    .map(info => ({ ...info, orderRows: (info.orderRows || []).filter(row => {
-      const linked = panels.filter(panel => (panel.orders || []).some(source => source.orderNo === row.orderNo &&
-        (!row.orderRowId || !source.orderRowId || String(source.orderRowId) === String(row.orderRowId))));
-      return linked.length > 0 && linked.every(pricingReadyForLr);
-    }) })).filter(info => info.orderRows.length > 0);
+    .filter(info => info.orderRows?.length > 0);
+}
+
+export async function loadingPricingApproval(user, loading) {
+  const rows = loading.orderRows || [];
+  const orderNos = [...new Set(rows.map(row => row.orderNo).filter(Boolean))];
+  const panels = orderNos.length ? await PricingPanel.find(companyScopeFilter(user, { 'orders.orderNo': { $in: orderNos } })).lean() : [];
+  const pending = rows.filter(row => {
+    if (!row.orderNo) return true;
+    const linked = panels.filter(panel => (panel.orders || []).some(source => source.orderNo === row.orderNo &&
+      (!row.orderRowId || !source.orderRowId || String(source.orderRowId) === String(row.orderRowId))));
+    return !linked.length || !linked.every(pricingReadyForLr);
+  });
+  return { approved: rows.length > 0 && !pending.length, pendingOrders: [...new Set(pending.map(row => row.orderNo || 'Unknown order'))] };
 }

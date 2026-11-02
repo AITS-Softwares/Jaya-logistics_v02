@@ -24,10 +24,11 @@ Editors enter explicit non-negative amounts (including zero) and submit;
 Pricing Part 2 approvers/admins approve or return them. Outstanding flags clear
 only after approval. Freight/commercial fields remain protected.
 
-LR creation and LR draft submission require approved linked Pricing, without
-draft, cancellation, correction or upstream-review state. The create dropdown
-and pending-creation lookup use the same eligibility policy. Loading Part 2
-approval remains required.
+LR creation, draft submission and the order dropdown do not require Pricing
+approval. Loading Part 2 approval remains required. In Loading Info, LR and
+invoice View/Print require approved linked Pricing for every order, without
+draft, cancellation, correction or upstream-review state. The shared server
+gate protects LR content, invoice files and print requests as well as the UI.
 
 Editors can request unlocks on Order, VNN, Pricing, Loading Info and LR records.
 Approvers/admins review requests; granting one retains the approved snapshot,
@@ -49,7 +50,7 @@ search filters before these limits to find older matching records.
 
 ## Validation
 
-Run `npm run test:workflow-controls` for 22 offline suites, including actual
+Run `npm run test:workflow-controls` for 23 offline suites, including actual
 cancellation and correction handlers with mocked database dependencies,
 financial/POD blockers, shared loads, failure handling, charge review, LR
 eligibility, photo policies, reapproval propagation and notification regression

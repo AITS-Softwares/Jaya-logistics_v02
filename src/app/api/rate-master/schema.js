@@ -91,6 +91,7 @@ import {addMasterApprovalFields} from '@/lib/masterApprovalSchema';
 import mongoose from 'mongoose';
 
 const locationRateSchema = new mongoose.Schema({
+  replacesRateId: { type: mongoose.Schema.Types.ObjectId, default: null },
   locationId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Location',

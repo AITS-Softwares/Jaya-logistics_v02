@@ -1078,11 +1078,11 @@ function MemoImage({ filePath, alt, purchaseId, paymentId }) {
 /* =======================
   ADDITIONS/DEDUCTIONS TABLE (READ-ONLY)
 ========================= */
-function ChargesTable({ rows, type }) {
+function ChargesTable({ rows, type, totalAmount }) {
   const isAddition = type === 'addition';
   const bgColor = isAddition ? 'green' : 'red';
 
-  const total = rows.reduce((sum, row) => sum + num(row.amount), 0);
+  const total = totalAmount == null ? rows.reduce((sum, row) => sum + num(row.amount), 0) : num(totalAmount);
 
   return (
     <div className={`overflow-auto rounded-xl border border-${bgColor}-300`}>
@@ -1104,7 +1104,7 @@ function ChargesTable({ rows, type }) {
           ) : (
             <tr>
               <td colSpan="2" className={`border border-${bgColor}-300 px-4 py-4 text-center text-slate-400`}>
-                No {type}s added.
+                {total ? `No ${type} item details recorded.` : `No ${type}s added.`}
               </td>
             </tr>
           )}
@@ -1152,6 +1152,7 @@ export default function ApproveAdvancePayment() {
   // EDITABLE: Payment Status and Remarks only
   const [paymentStatus, setPaymentStatus] = useState("Pending");
   const [remarks, setRemarks] = useState("");
+  const [warehouseDeduction, setWarehouseDeduction] = useState(0);
 
   // Fetch payment data
   useEffect(() => {
@@ -1180,6 +1181,7 @@ export default function ApproveAdvancePayment() {
       }
 
       const payment = data.data;
+      setWarehouseDeduction(num(payment.warehouseDeduction));
       setApprovalLockReason(payment.bankIntegration?.provider === 'ICICI_CIB' && payment.queueGenerated
         ? 'This payment has been submitted to the bank. Its status must be updated through bank status inquiry.'
         : payment.isDraft ? 'Submit this draft before approving it.'
@@ -1376,7 +1378,12 @@ export default function ApproveAdvancePayment() {
     return (amount - advance).toFixed(2);
   };
 
-  // Calculate total order amount with all charges
+  // Match the adjustment breakdown shown on the edit page.
+  const calculateAdvanceWithAdjustment = () => (
+    num(vendorDetails.advance) + num(additions.totalAddition) - num(deductions.totalDeduction) - num(warehouseDeduction)
+  ).toFixed(2);
+
+  // Calculate total order amount with all charges.
   const calculateTotalOrderAmount = () => {
     return orderRows.reduce((sum, row) => {
       const totalAmount = num(row.totalAmount);
@@ -1393,7 +1400,7 @@ export default function ApproveAdvancePayment() {
       style: 'currency',
       currency: 'INR',
       minimumFractionDigits: 0,
-      maximumFractionDigits: 0
+      maximumFractionDigits: 2
     }).format(value || 0);
   };
 
@@ -1636,13 +1643,13 @@ export default function ApproveAdvancePayment() {
         <div className="grid grid-cols-12 gap-4">
           <div className="col-span-12 md:col-span-6">
             <Card title="Additions (+) - Extra Charges (Read Only)">
-              <ChargesTable rows={additions.items} type="addition" />
+              <ChargesTable rows={additions.items} type="addition" totalAmount={additions.totalAddition} />
             </Card>
           </div>
 
           <div className="col-span-12 md:col-span-6">
             <Card title="Deductions (-) - Adjustments (Read Only)">
-              <ChargesTable rows={deductions.items} type="deduction" />
+              <ChargesTable rows={deductions.items} type="deduction" totalAmount={deductions.totalDeduction} />
             </Card>
           </div>
         </div>
@@ -1669,6 +1676,19 @@ export default function ApproveAdvancePayment() {
                       <span className="text-xl text-purple-700">₹{calculateBalance().toLocaleString()}</span>
                     </div>
                   </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="col-span-12 md:col-span-6">
+              <div className="bg-amber-50 p-6 rounded-xl border border-amber-200 h-full">
+                <h3 className="text-sm font-bold text-amber-800 mb-3">Advance Amount with Adjustment</h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between"><span className="text-slate-600">Advance Amount:</span><span className="font-bold">{formatCurrency(vendorDetails.advance)}</span></div>
+                  <div className="flex justify-between"><span className="text-slate-600">Additions:</span><span className="font-bold text-green-600">+ {formatCurrency(additions.totalAddition)}</span></div>
+                  <div className="flex justify-between"><span className="text-slate-600">Deductions:</span><span className="font-bold text-red-600">- {formatCurrency(deductions.totalDeduction)}</span></div>
+                  <div className="flex justify-between"><span className="text-slate-600">Deduct at Warehouse:</span><span className="font-bold text-red-600">- {formatCurrency(warehouseDeduction)}</span></div>
+                  <div className="border-t border-amber-200 pt-2 mt-2 flex justify-between font-bold"><span className="text-amber-800">Advance (Generate Queue):</span><span className="text-xl text-amber-700">{formatCurrency(calculateAdvanceWithAdjustment())}</span></div>
                 </div>
               </div>
             </div>

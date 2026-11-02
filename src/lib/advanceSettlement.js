@@ -76,6 +76,7 @@ import { summarizeAdvances, deriveBalanceFields, buildAdjustments } from "@/lib/
 
 const ADV_SELECT = "paymentNo purchaseNo status queueGenerated isDraft paymentDetails.paymentStatus paymentDetails.finalAmount vendorDetails.advance";
 
+// Legacy name retained: the shared rule includes generated queues and settled advances.
 export async function getPaidAdvanceForPurchase(user, purchaseNo) {
     const no = String(purchaseNo ?? "").trim();
     if (!no) return summarizeAdvances([]);
@@ -97,7 +98,7 @@ export async function getAdvanceSummaryMap(user, purchaseNos) {
     return map;
 }
 
-// Re-apply the paid advance to every POD of a purchase (POD pre-save recalculates balances). Never throws.
+// Re-apply the eligible advance to every POD of a purchase (pre-save recalculates balances).
 export async function syncPodAdvanceForPurchase(user, purchaseNo) {
     try {
         const no = String(purchaseNo ?? "").trim();

@@ -33,7 +33,7 @@ const branchHandlerGET = withAuth(async (req, context, user) => {
 
     await connectDb();
     const panel = await LoadingPanel.findOne(companyScopeFilter(user, { _id: id }))
-        .select("vehicleArrivalNo consignmentNote orderRows._id orderRows.orderNo orderRows.to orderRows.toName orderRows.weight " + LOADING_APPROVAL_SELECT).lean();
+        .select("vehicleArrivalNo consignmentNote orderRows._id orderRows.orderRowId orderRows.orderNo orderRows.to orderRows.toName orderRows.weight " + LOADING_APPROVAL_SELECT).lean();
     if (!panel) return fail("Loading Info not found.", 404);
 
     // Block unless VBP, VFT, VOT and VL are all Approved.

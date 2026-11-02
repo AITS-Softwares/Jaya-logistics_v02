@@ -28,7 +28,7 @@ const branchHandlerGET = withAuth(async (req, context, user) => {
         await connectDb();
 
         const panel = await LoadingPanel.findOne(companyScopeFilter(user, { _id: panelId }))
-            .select("vehicleArrivalNo consignmentNote orderRows._id orderRows.orderNo orderRows.to orderRows.toName orderRows.weight " + LOADING_APPROVAL_SELECT)
+            .select("vehicleArrivalNo consignmentNote orderRows._id orderRows.orderRowId orderRows.orderNo orderRows.to orderRows.toName orderRows.weight " + LOADING_APPROVAL_SELECT)
             .lean();
         if (!panel) {
             return NextResponse.json({ success: false, message: "Loading Info not found." }, { status: 404 });

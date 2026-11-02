@@ -27,7 +27,7 @@ const branchHandlerPOST = withAuth(async (req, context, user) => {
 
         await connectDb();
         const panel = await LoadingPanel.findOne(companyScopeFilter(user, { _id: panelId }))
-            .select("vehicleArrivalNo consignmentNote createdAt reapprovalState upstreamPending orderRows._id orderRows.orderNo orderRows.to orderRows.toName orderRows.weight " + LOADING_APPROVAL_SELECT)
+            .select("vehicleArrivalNo consignmentNote createdAt reapprovalState upstreamPending orderRows._id orderRows.orderRowId orderRows.orderNo orderRows.to orderRows.toName orderRows.weight " + LOADING_APPROVAL_SELECT)
             .lean();
         if (!panel) return fail("Loading Info not found.", 404);
         if (panel.reapprovalState && panel.reapprovalState !== "none" || panel.upstreamPending?.length) {

@@ -1,4 +1,10 @@
 const key=value=>String(value?._id || value || '');
+export function rateMasterCustomerLabel(record) {
+  if(record?.usageMode==='manual_rate_default')return 'All customers';
+  const name=record?.customerName || record?.customerId?.customerName;
+  if(typeof name==='string' && name.trim())return name.trim();
+  return key(record?.customerId)?'Customer unavailable — edit to relink':'No customer linked — edit to select';
+}
 export function rateMasterForView(record,locations=[]) {
   if(!record || typeof record!=='object')return null;
   const liveRates=Array.isArray(record.locationRates)?record.locationRates.filter(Boolean):[];

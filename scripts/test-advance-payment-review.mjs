@@ -114,7 +114,7 @@ let hookIndex = 0;
 let lockReason = '';
 const values = [false, false, '', null, 'ADV-1', 'Company', {}, {}, [], {}, 35000, null,
   { advance: 25000 }, { items: [], totalAddition: 200 }, { items: [], totalDeduction: 500 },
-  { finalAmount: 23850, paymentStatus: 'Pending' }, 'Pending', 'Review'];
+  { finalAmount: 23850, paymentStatus: 'Pending' }, 'Pending', 'Review', 850];
 const Screen = new Function('React', 'useState', 'useEffect', 'useRouter', 'useParams', 'usePermission', `${screenCompiled.code}\nreturn ApproveAdvancePayment;`)(
   React, (initial) => { const index = hookIndex++; return [index === 2 ? lockReason : index < values.length ? values[index] : initial, () => {}]; },
   () => {}, () => ({ push() {} }), () => ({ id: 'payment' }), () => ({ hasPermission: () => true, loading: false }),
@@ -122,9 +122,29 @@ const Screen = new Function('React', 'useState', 'useEffect', 'useRouter', 'useP
 let screenHtml = require('react-dom/server').renderToStaticMarkup(React.createElement(Screen));
 assert(screenHtml.includes('₹23,850'));
 assert(screenHtml.includes('Final Advance Amount'));
+for(const label of ['Advance Amount with Adjustment','Deduct at Warehouse:','Advance (Generate Queue):','No deduction item details recorded.'])assert(screenHtml.includes(label));
+assert(screenHtml.includes('₹850'));
+assert(/Total Deductions:[\s\S]*?₹500/.test(screenHtml),'Saved deductions show even without item details');
+values[14].items=[{description:'Shortage adjustment',amount:500}];hookIndex=0;
+screenHtml=require('react-dom/server').renderToStaticMarkup(React.createElement(Screen));
+assert(screenHtml.includes('Shortage adjustment'));
+values[18]=850.75;values[15].finalAmount=23849.25;hookIndex=0;
+screenHtml=require('react-dom/server').renderToStaticMarkup(React.createElement(Screen));
+assert(screenHtml.includes('₹850.75'));assert(screenHtml.includes('₹23,849.25'),'Display preserves paise');
 lockReason = 'This payment has been submitted to the bank.';
 hookIndex = 0;
 screenHtml = require('react-dom/server').renderToStaticMarkup(React.createElement(Screen));
 assert(screenHtml.includes(lockReason));
 assert(/<button[^>]*disabled=""[^>]*>Update Status<\/button>/.test(screenHtml), 'Bank-submitted payments must disable Update Status');
-console.log('PASS: reviewed amount preservation, stale approval rejection, permissions, material-edit reapproval, unchanged saves, bank/settled/draft locks, zero amounts, and aligned charge columns.');
+// Execute the actual loader to ensure warehouse deduction reaches approval state.
+const parser=require('@babel/parser');
+const ast=parser.parse(page,{sourceType:'module',plugins:['jsx']});
+const component=ast.program.body.find(node=>node.type==='ExportDefaultDeclaration').declaration;
+const loader=component.body.body.flatMap(node=>node.declarations || []).find(node=>node.id.name==='fetchPaymentData').init;
+const loaderCode=page.slice(loader.start,loader.end),loaded={};
+const loaderDeps={paymentId:'payment',localStorage:{getItem:()=>''},fetch:async()=>({ok:true,json:async()=>({success:true,data:{warehouseDeduction:850.75,deductions:{totalDeduction:500,items:[{description:'Shortage adjustment',amount:500}]}}})}),num:value=>Number(value)||0,console:{log(){},error(){}},alert:message=>assert.fail(message)};
+for(const name of new Set([...loaderCode.matchAll(/\b(set[A-Z]\w*)\(/g)].map(match=>match[1])))loaderDeps[name]=value=>loaded[name]=value;
+await new Function(...Object.keys(loaderDeps),'return '+loaderCode)(...Object.values(loaderDeps))();
+assert.equal(loaded.setWarehouseDeduction,850.75);assert.equal(loaded.setDeductions.totalDeduction,'500');
+assert.equal(loaded.setDeductions.items[0].description,'Shortage adjustment');
+console.log('PASS: actual approval loader/render shows deduction details, saved totals, warehouse deduction, adjustment summary and paise; reviewed amounts, stale review, permissions and bank/settled/draft locks remain protected.');

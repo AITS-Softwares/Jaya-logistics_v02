@@ -327,12 +327,7 @@ export default function UnifiedRateMasterPage() {
         branchId: master.branchId,
         weightRule: master.weightRule,
         approvalOption: master.approvalOption,
-        locationRates: updatedRates.map(r => ({
-          locationId: r.locationId,
-          fromQty: r.fromQty,
-          toQty: r.toQty,
-          rate: r.rate
-        }))
+        locationRates: updatedRates
       };
       
       const res = await fetch(`/api/rate-master?id=${masterId}`, {
@@ -456,12 +451,15 @@ export default function UnifiedRateMasterPage() {
             <h1 className="text-2xl font-bold">Rate Master Management</h1>
             <p className="text-gray-600">Manage location rates for all rate masters</p>
           </div>
+          <div className="flex gap-2">
+          <button type="button" onClick={() => router.push('/admin/rate-master/list')} className="rounded bg-gray-500 px-4 py-2 text-white hover:bg-gray-600">← Back to List</button>
           <button
             onClick={() => router.push('/admin/rate-master/create')}
             className="bg-black text-white px-4 py-2 rounded hover:bg-gray-800"
           >
             + Create New Rate Master
           </button>
+          </div>
         </div>
       </div>
 

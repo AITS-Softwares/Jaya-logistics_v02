@@ -18,6 +18,7 @@ const deps = {
   BALANCE_STATUSES: ['Pending', 'Approved', 'Queued', 'Rejected', 'Paid', 'Completed'],
   stableIciciUniqueId: () => 'REFERENCE',
   isIciciQueueApiSkipped, generateLocalPaymentQueue,
+  syncPodAdvanceForPurchase: async () => {},
   submitCibPayment: async () => { bankCalls++; throw new Error('ICICI CIB sandbox configuration is incomplete'); },
 };
 function load(path) {
@@ -104,3 +105,22 @@ try {
   if (previousSkip === undefined) delete process.env.ICICI_CIB_SKIP_QUEUE_API;
   else process.env.ICICI_CIB_SKIP_QUEUE_API = previousSkip;
 }
+
+// Bank outcomes must refresh advances on existing PODs, just like manual status updates.
+let bankOutcome='SUCCESS',podSyncs=0,savedBeforeSync=false;
+Object.assign(deps,{
+  inquireCibPayment:async()=>({status:bankOutcome,message:'Bank result',utr:'TEST-UTR'}),
+  normalizeCibStatus:status=>status,
+  syncPodAdvanceForPurchase:async(_user,purchaseNo)=>{assert.equal(purchaseNo,'PUR-0013');assert(savedBeforeSync);podSyncs++;},
+});
+const bankPatch=load('src/app/api/Advance-Payment/route.js');
+for(const outcome of ['SUCCESS','PENDING FOR PROCESSING','REVERSED']){
+  seed('Pending');payment.purchaseNo='PUR-0013';payment.bankIntegration={provider:'ICICI_CIB',uniqueId:'TEST-9',transactionType:'NEF'};
+  savedBeforeSync=false;payment.save=async()=>{savedBeforeSync=true;};bankOutcome=outcome;
+  assert.equal((await bankPatch(request('check-status'))).httpStatus,200);
+  assert.equal(payment.paymentDetails.paymentStatus,outcome==='SUCCESS'?'Completed':outcome==='REVERSED'?'Rejected':'Pending');
+}
+assert.equal(podSyncs,3);
+seed('Approved');payment.bankIntegration={provider:'ERP_QUEUE'};
+assert.equal((await bankPatch(request('check-status'))).httpStatus,409);assert.equal(podSyncs,3,'A local queue cannot become paid through bank inquiry');
+console.log('PASS: actual bank inquiry saves success/pending/reversal before syncing existing POD advances; generated local queues remain unpaid. Mocked bank responses; no bank or database calls.');

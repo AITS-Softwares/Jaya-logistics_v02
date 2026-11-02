@@ -41,6 +41,21 @@ assert.equal(approvalManagementRecord(legacy).approvalStatus,'Migration required
 assert.throws(()=>requireApprovalMigration(legacy),/master approval migration/);
 assert.equal(approvalManagementRecord(current).approvalStatus,'Pending');
 try {
+  const staffSubmission=current.toObject();
+  current.submittedBy=policy.identity(checker);
+  const companySubmission=current.toObject();
+  await reviewMaster({Model,id,companyId,user:checker,kind:'supplier',action:'reject',revisionId:current.revisionId,reason:'Correct company submission'});
+  assert.equal(current.approvalStatus,'Rejected');
+  assert.equal(String(current.rejectedBy.accountId),checker.id);
+  assert.equal(current.approvalLog.at(-1).action,'REJECTED');
+  current=new Model(companySubmission);
+  const selfRevision=current.revisionId;
+  await reviewMaster({Model,id,companyId,user:checker,kind:'supplier',action:'approve',revisionId:selfRevision});
+  assert.equal(current.approvalStatus,'Approved');
+  assert.equal(String(current.approvedBy.accountId),checker.id);
+  assert.equal(current.approvalLog.at(-1).by.accountType,'company');
+  await assert.rejects(reviewMaster({Model,id,companyId,user:checker,kind:'supplier',action:'approve',revisionId:selfRevision}),/Refresh/);
+  current=new Model(staffSubmission);writes=0;
   const initialRevision=current.revisionId;
   await assert.rejects(reviewMaster({Model,id,companyId,user:maker,kind:'supplier',action:'approve',revisionId:initialRevision}),/own submission/);
   assert.equal(writes,0);

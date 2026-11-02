@@ -224,6 +224,7 @@
 // }
 'use client';
 
+import {rateMasterCustomerLabel} from '@/lib/rateMasterView.mjs';
 import MasterApprovalReview from '@/components/MasterApprovalReview';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -427,7 +428,7 @@ export default function RateMasterListPage() {
                   <tr key={master._id} className="hover:bg-gray-50">
                     <td className="px-4 py-2 border text-sm">{index + 1}</td>
                     <td className="px-4 py-2 border text-sm font-medium">{master.title}</td>
-                    <td className="px-4 py-2 border text-sm">{master.customerName}</td>
+                    <td className="px-4 py-2 border text-sm">{rateMasterCustomerLabel(master)}</td>
                     <td className="px-4 py-2 border text-sm">{master.branchName}</td>
                     <td className="px-4 py-2 border text-sm">
                       <span className={`px-2 py-1 rounded text-xs ${

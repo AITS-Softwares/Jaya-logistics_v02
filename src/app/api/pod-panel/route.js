@@ -158,9 +158,8 @@ async function resolveCompany(user, existing = {}) {
 }
 
 // The advance is NEVER taken from the browser or from the Purchase Panel's planned figure.
-// It is the sum of the Advance Payment record(s) of this purchase that are actually PAID
-// (status Paid/Completed, see lib/paymentRules.js). Draft/Pending/Approved are reported as
-// pendingAdvance but never counted; Rejected is ignored. No paid payment => 0.
+// Include a submitted advance once its queue is generated (and retain settled
+// advances). Unqueued advances remain pending; drafts/rejections do not count.
 async function getAdvanceForPurchase(user, purchaseNo) {
   return getPaidAdvanceForPurchase(user, purchaseNo);
 }
