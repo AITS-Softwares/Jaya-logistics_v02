@@ -2482,7 +2482,7 @@ async function resolvePricingRate(user, order, panelTotalWeight) {
   const matchingSlab = (rateMaster.locationRates || []).find((item) =>
     item.isActive !== false &&
     String(item.locationId) === String(locationRate.locationId) &&
-    lookupWeight >= Number(item.fromQty) && lookupWeight <= Number(item.toQty),
+    lookupWeight >= Number(item.fromQty) && lookupWeight < Number(item.toQty),
   );
 
   if (matchingSlab) {

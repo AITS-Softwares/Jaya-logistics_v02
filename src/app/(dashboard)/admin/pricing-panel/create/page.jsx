@@ -2990,7 +2990,7 @@ function OrdersTable({
     return (row.selectedRateMaster.locationRates || []).find((locationRate) =>
       locationRate.isActive !== false &&
       locationRate.locationName === row.locationRate &&
-      weight >= Number(locationRate.fromQty) && weight <= Number(locationRate.toQty),
+      weight >= Number(locationRate.fromQty) && weight < Number(locationRate.toQty),
     ) || null;
   };
 
