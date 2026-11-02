@@ -17,8 +17,8 @@ const PricingCounter = mongoose.models.PricingCounter ||
   mongoose.model('PricingCounter', pricingCounterSchema);
 
 // Function to get next pricing serial number
-export async function getNextPricingSerialNumber(companyId, subCompanyId, subCompanyCode) {
-  return nextPeriodDocumentNumber({ companyId, subCompanyId, subCompanyCode, documentType: 'PRC', width: 4 });
+export async function getNextPricingSerialNumber(companyId, subCompanyId, subCompanyCode, session = null) {
+  return nextPeriodDocumentNumber({ companyId, subCompanyId, subCompanyCode, documentType: 'PRC', width: 4, session });
 }
 
 export default PricingCounter;

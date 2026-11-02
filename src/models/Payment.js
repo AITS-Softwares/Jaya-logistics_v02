@@ -81,12 +81,15 @@ PaymentSchema.index({ companyId: 1, subCompanyId: 1, paymentDate: -1 });
 // Auto-generate payment number (like PAY-001)
 PaymentSchema.pre("save", async function (next) {
   if (!this.paymentNumber) {
+    if (!this.$session()?.inTransaction()) {
+      return next(new Error("Payment number allocation requires a transaction."));
+    }
     const Counter = await import("./Counter.js");
     try {
       const counter = await Counter.default.findOneAndUpdate(
         { id: "payment" },
         { $inc: { seq: 1 } },
-        { new: true, upsert: true }
+        { new: true, upsert: true, session: this.$session() }
       );
       this.paymentNumber = `PAY-${String(counter.seq).padStart(3, "0")}`;
     } catch (err) {

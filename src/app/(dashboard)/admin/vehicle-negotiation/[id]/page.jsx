@@ -7993,6 +7993,7 @@ export default function EditVehicleNegotiation() {
   // const handleUpdate = async ({ redirect = true, submit = false } = {}) => {
   //   const submitForApproval = submit || reapprovalState === 'unlocked';
   const handleUpdate = async ({ redirect = true, submit = false } = {}) => {
+    const isPlacementSave = isPart1Locked && isPart3Finalized;
     if (!canEditVnn && !canEditPlacement) {
       alert('You do not have permission to edit this Vehicle Negotiation stage.');
       return false;
@@ -8001,23 +8002,27 @@ export default function EditVehicleNegotiation() {
       alert('Parts 1 and 3 are locked. Use Amend to edit both parts. Vehicle placement opens after VNN approval.');
       return false;
     }
-    if (!header.branch) {
+    if (!isPlacementSave && !header.branch) {
       alert("Please select a branch");
       return false;
     }
 
-    if (orders.length === 0) {
+    if (!isPlacementSave && orders.length === 0) {
       alert("Please add at least one order");
       return false;
     }
 
     const hasInvalidOrders = orders.some(order => !order.plantCode);
-    if (hasInvalidOrders) {
+    if (!isPlacementSave && hasInvalidOrders) {
       const invalidCount = orders.filter(order => !order.plantCode).length;
       alert(`Please select plant for all order rows. ${invalidCount} row(s) missing plant code.`);
       return false;
     }
 
+    if (isPlacementSave && !String(approval.vehicleNo || '').trim()) {
+      alert("Vehicle Number is required.");
+      return false;
+    }
     if (canEditPlacement && isPart1Locked && isPart3Finalized && !/^\d{10}$/.test(String(approval.mobile || ""))) {
       alert("Mobile number must contain exactly 10 digits.");
       return false;
@@ -8130,7 +8135,6 @@ export default function EditVehicleNegotiation() {
         }
       };
 
-      const isPlacementSave = isPart1Locked && isPart3Finalized;
       const endpoint = isPlacementSave
         ? `/api/vehicle-negotiation/${negotiationId}/placement`
         : isPart1Locked
@@ -8142,7 +8146,9 @@ export default function EditVehicleNegotiation() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(isPlacementSave ? {
+          approval: { vehicleNo: approval.vehicleNo, mobile: approval.mobile }
+        } : payload),
       });
 
       const data = await res.json();

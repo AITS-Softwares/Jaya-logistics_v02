@@ -1,3 +1,4 @@
+import { saveNumberedDocument } from '@/lib/saveNumberedDocument';
 // app/api/purchase-panel/route.js
 import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from "next/server";
@@ -597,7 +598,8 @@ async function branchHandlerPOST(req) {
     if (existingPurchase) {
       return NextResponse.json({ success: false, message: `Loading Info ${body.loadingInfoNo} is already used in purchase ${existingPurchase.purchaseNo}.` }, { status: 409 });
     }
-    let purchaseNo = await getNextPurchaseNumber(user.companyId, user.activeOperatingCompanyId, user.activeOperatingCompanyCode);
+    // Assigned only inside the document-save transaction below.
+    const purchaseNo = undefined;
 
     const subCompanyId = user.activeOperatingCompanyId;
     const subCompanyName = user.activeOperatingCompanyName || '';
@@ -701,7 +703,7 @@ async function branchHandlerPOST(req) {
       detentionAmount: num(body.arrivalDetails?.detentionAmount)
     };
 
-    const purchase = new PurchasePanel({
+    let purchase = new PurchasePanel({
       purchaseNo,
       vehicleNegotiationId: body.vehicleNegotiationId || null,
       vnnNo: body.vnnNo || body.selectedVNNNo || '',
@@ -813,7 +815,7 @@ async function branchHandlerPOST(req) {
       if (result) Object.assign(purchase.arrivalDetails, result);
     }
 
-    await purchase.save({ validateBeforeSave: !isDraftSave });
+    purchase = await saveNumberedDocument(purchase, session => getNextPurchaseNumber(user.companyId, user.activeOperatingCompanyId, user.activeOperatingCompanyCode, session), ["purchaseNo", "header.purchaseNo"], { validateBeforeSave: !isDraftSave });
     if (!isDraftSave && purchase.approval?.status === 'Pending') {
       await notifyModuleApprovers({ user, module: 'Purchase Panel', panelLabel: 'Purchase Panel',
         reference: purchase.purchaseNo, url: `/admin/Purchase-Panel/${purchase._id}` });

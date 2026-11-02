@@ -1,3 +1,4 @@
+import { saveNumberedDocument } from '@/lib/saveNumberedDocument';
 
 
 // // import { NextResponse } from "next/server";
@@ -3826,7 +3827,8 @@ async function branchHandlerPOST(req) {
 
     console.log("📝 Creating new vehicle negotiation");
 
-    const vnnNo = await getNextVehicleNegotiationNumber(user.companyId, user.activeOperatingCompanyId, user.activeOperatingCompanyCode);
+    // Assigned only inside the document-save transaction below.
+    const vnnNo = undefined;
 
     // Process orders with proper null handling for ObjectId fields and sub-company
     const processedOrders = (body.orders || []).map(order => ({
@@ -3900,7 +3902,7 @@ async function branchHandlerPOST(req) {
     }));
 
     // Create new vehicle negotiation with separate approval fields
-    const newVehicleNegotiation = new VehicleNegotiation({
+    let newVehicleNegotiation = new VehicleNegotiation({
       vnnNo,
       branch: body.header?.branch && isValidObjectId(body.header?.branch) ? body.header?.branch : null,
       branchName: body.header?.branchName || '',
@@ -3972,7 +3974,7 @@ async function branchHandlerPOST(req) {
       panelStatus: body.lockPart1 === true ? 'Submitted' : 'Draft'
     });
 
-    await newVehicleNegotiation.save();
+    newVehicleNegotiation = await saveNumberedDocument(newVehicleNegotiation, session => getNextVehicleNegotiationNumber(user.companyId, user.activeOperatingCompanyId, user.activeOperatingCompanyCode, session), ["vnnNo"]);
     await captureSourceDependencies('vnn', newVehicleNegotiation, user.companyId);
 
     if (body.lockPart1 === true) {

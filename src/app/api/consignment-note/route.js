@@ -1,3 +1,4 @@
+import { saveNumberedDocument } from '@/lib/saveNumberedDocument';
 import { loadingWorkflowForReview } from '@/lib/loadingApprovalWorkflow.mjs';
 
 // // import { NextResponse } from "next/server";
@@ -2146,8 +2147,8 @@ async function branchHandlerPOST(req) {
       .filter((row) => row.orderNo || row.from || row.to || row.weight);
 
     // Create consignment note with sub-company
-    lrNo = await getNextLRNumber(user.companyId, user.activeOperatingCompanyId, user.activeOperatingCompanyCode);
-    const consignmentNote = new ConsignmentNote({
+    // Assigned only inside the document-save transaction below.
+    let consignmentNote = new ConsignmentNote({
       lrNo,
       vnnNo: body.vnnNo || '',
       vehicleNegotiationRef: body.vehicleNegotiationRef || null,
@@ -2231,7 +2232,7 @@ async function branchHandlerPOST(req) {
       createdBy: user.id
     });
 
-    await consignmentNote.save({ validateBeforeSave: !isDraftSave });
+    consignmentNote = await saveNumberedDocument(consignmentNote, session => getNextLRNumber(user.companyId, user.activeOperatingCompanyId, user.activeOperatingCompanyCode, session), ["lrNo", "header.lrNo"], { validateBeforeSave: !isDraftSave });
     if (!isDraftSave) await captureSourceDependencies('lr', consignmentNote, user.companyId);
     if (!isDraftSave && consignmentNote.header?.status === 'Pending') {
       await notifyModuleApprovers({

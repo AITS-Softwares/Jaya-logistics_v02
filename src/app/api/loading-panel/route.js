@@ -1,3 +1,4 @@
+import { saveNumberedDocument } from '@/lib/saveNumberedDocument';
 import { isStagedLoading, newLoadingWorkflow, filterLoadingFields, prepareLoadingEdit, loadingApprovalDecision, loadingWorkflowForReview } from '@/lib/loadingApprovalWorkflow.mjs';
 
 
@@ -1692,14 +1693,8 @@ async function branchHandlerPOST(req) {
     console.log("📝 Creating new loading panel");
 
     // Generate vehicle arrival number
-    let vehicleArrivalNo = await getNextLoadingNumber(user.companyId, user.activeOperatingCompanyId, user.activeOperatingCompanyCode);
-
-    // Check if vehicle arrival number already exists
-    const existing = await LoadingPanel.findOne(companyScopeFilter(user, { vehicleArrivalNo }));
-
-    if (existing) {
-      vehicleArrivalNo = `${String(user.activeOperatingCompanyCode || "").trim().toUpperCase()}-LD-${Date.now().toString().slice(-8)}`;
-    }
+    // Assigned only inside the document-save transaction below.
+    const vehicleArrivalNo = undefined;
 
     const subCompanyId = user.activeOperatingCompanyId;
     const subCompanyName = user.activeOperatingCompanyName || '';
@@ -2105,8 +2100,8 @@ async function branchHandlerPOST(req) {
     loadingPanelData.vbpUploads.approval = '';
     loadingPanelData.vftUploads.approval = '';
     // Create and save
-    const newLoadingPanel = new LoadingPanel(loadingPanelData);
-    const savedPanel = await newLoadingPanel.save({ validateBeforeSave: !isDraftSave });
+    let newLoadingPanel = new LoadingPanel(loadingPanelData);
+    const savedPanel = await saveNumberedDocument(newLoadingPanel, session => getNextLoadingNumber(user.companyId, user.activeOperatingCompanyId, user.activeOperatingCompanyCode, session), ["vehicleArrivalNo"], { validateBeforeSave: !isDraftSave });
     await syncOperationalDriverProfile({
       companyId: user.companyId,
       driverName: savedPanel.vehicleInfo?.driverName,

@@ -2435,8 +2435,6 @@ const branchHandlerPOST = withAuth(async (req, context, user) => {
       return NextResponse.json({ success: false, message: `Select a drop location for every order row. Missing on row(s): ${missingDrops.map((row, index) => row.plantName || `Row ${index + 1}`).join(', ')}.` }, { status: 400 });
     }
 
-    const orderPanelNo = await getNextOrderPanelNumber(user.companyId, user.activeOperatingCompanyId, user.activeOperatingCompanyCode);
-
     let branchName = '';
     let branchCode = '';
     if (body.branchName) {
@@ -2598,7 +2596,6 @@ const branchHandlerPOST = withAuth(async (req, context, user) => {
     if (!dropCheck.ok) return NextResponse.json({ success: false, message: dropCheck.errors.join(' ') }, { status: 400 });
 
     const orderPanelData = {
-      orderPanelNo,
       branch: body.branch || null,
       branchName: branchName || body.branchName || '',
       branchCode: branchCode || body.branchCode || '',
@@ -2629,8 +2626,21 @@ const branchHandlerPOST = withAuth(async (req, context, user) => {
       isDraft: isDraftSave
     };
 
-    const newOrderPanel = new OrderPanel(orderPanelData);
-    const savedOrderPanel = await newOrderPanel.save();
+    // Allocate and save together: validation/write failures roll back the number.
+    const session = await mongoose.startSession();
+    let savedOrderPanel;
+    try {
+      await session.withTransaction(async () => {
+        const orderPanelNo = await getNextOrderPanelNumber(
+          user.companyId, user.activeOperatingCompanyId, user.activeOperatingCompanyCode, session
+        );
+        // Automatic transaction retries must start with a fresh document.
+        const newOrderPanel = new OrderPanel({ ...orderPanelData, orderPanelNo });
+        savedOrderPanel = await newOrderPanel.save({ session });
+      });
+    } finally {
+      await session.endSession();
+    }
 
     if (isSubmitSave) {
       await notifyModuleApprovers({

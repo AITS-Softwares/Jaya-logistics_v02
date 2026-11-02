@@ -25,8 +25,8 @@ const loadingCounterSchema = new mongoose.Schema({
 });
 
 // The period in the label changes over time; the underlying sequence does not reset.
-export async function getNextLoadingNumber(companyId, subCompanyId, subCompanyCode) {
-  return nextPeriodDocumentNumber({ companyId, subCompanyId, subCompanyCode, documentType: 'LD', width: 4 });
+export async function getNextLoadingNumber(companyId, subCompanyId, subCompanyCode, session = null) {
+  return nextPeriodDocumentNumber({ companyId, subCompanyId, subCompanyCode, documentType: 'LD', width: 4, session });
 }
 
 const LoadingCounter = mongoose.models.LoadingCounter ||

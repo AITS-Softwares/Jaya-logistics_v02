@@ -25,8 +25,8 @@ const advancePaymentCounterSchema = new mongoose.Schema({
 const AdvancePaymentCounter = mongoose.models.AdvancePaymentCounter || 
   mongoose.model('AdvancePaymentCounter', advancePaymentCounterSchema);
 
-export async function getNextAdvancePaymentNumber(companyId, subCompanyId, subCompanyCode) {
-  return nextPeriodDocumentNumber({ companyId, subCompanyId, subCompanyCode, documentType: 'ADV', width: 4 });
+export async function getNextAdvancePaymentNumber(companyId, subCompanyId, subCompanyCode, session = null) {
+  return nextPeriodDocumentNumber({ companyId, subCompanyId, subCompanyCode, documentType: 'ADV', width: 4, session });
 }
 
 export default AdvancePaymentCounter;

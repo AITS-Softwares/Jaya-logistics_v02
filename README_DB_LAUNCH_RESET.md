@@ -1,4 +1,4 @@
-# Jaya: back up the main database and reset Order-to-Billing for launch
+# Jaya: back up the main database and reset logistics and selected masters for launch
 
 Run these commands yourself. Creating this README does not connect to or change any database.
 
@@ -6,14 +6,21 @@ Run these commands yourself. Creating this README does not connect to or change 
 
 | Item | Result |
 | --- | --- |
-| Main database | `jaya`; logistics workflow reset across **all companies** |
+| Main database | `jaya`; logistics workflow and selected masters reset across **all companies** |
+| Masters included | Rate masters, rate history, locations, vehicles and vehicle owners |
+| Driver data included | All driver profiles, device registrations and mobile login sessions |
+| Notifications included | Notices identified as belonging to the deleted workflow/masters; unrelated notices remain |
 | Local backup | Full compressed archive in `Documents\Jaya-DB-Backups` |
 | Retained MongoDB backup | Full restored database named `jaya_prelaunch_backup_TIMESTAMP` |
 | Optional test database | `jaya_reset_test_TIMESTAMP`; disposable, separate from the retained backup |
 | First panel number | Ends in `0001`, per operating company and document type |
 | First sequential bill | Ends in `001`, for general/product-wise/mosaic bills |
 
-The reset preserves master data, users, driver profiles/devices, unrelated ERP transactions, collection indexes, notification history, uploaded files and `_bak_` collections. Logistics bills are stored in `savedreports` and are included in the reset. Inventory credit notes belong to a different workflow and are excluded.
+The reset deletes **all rate masters (including embedded location rates and pending changes), rate history, location masters, vehicles and vehicle owners**, as well as the Order-to-Billing workflow. The affected master collections are `ratemasters`, `ratehistories`, `locations`, `vehicles` and `owners`.
+
+The reset also deletes `driverprofiles`, `driverdevices` and `drivermobilesessions`, including registered/draft drivers, released devices and mobile refresh sessions. Drivers must be registered again and devices approved again. Employee/user login accounts remain.
+
+The reset preserves other master data, users, unrelated ERP transactions, collection indexes, unrelated notification history, uploaded files and `_bak_` collections. Logistics bills are stored in `savedreports` and are included in the reset. Inventory credit notes belong to a different workflow and are excluded.
 
 A backup database on the same cluster is a recovery copy, not an independent disaster backup. Keep the local archive too. Restored TTL indexes can expire old tracking documents; the archive retains the exported data. This database dump does not include externally stored files or MongoDB user accounts/roles.
 
@@ -48,9 +55,9 @@ $manifest = Join-Path $backupFolder "${dbName}-before-launch-${stamp}.json"
 $env:JAYA_BACKUP_DB = $mongoBackupDb
 $env:JAYA_RESET_TEST_DB = $testDb
 
-Write-Host "Main database: $dbName"
-Write-Host "Local archive: $archive"
-Write-Host "Retained MongoDB backup: $mongoBackupDb"
+  Write-Host "Main database: $dbName"
+  Write-Host "Local archive: $archive"
+  Write-Host "Retained MongoDB backup: $mongoBackupDb"
 ```
 
 Keep this PowerShell window open; later steps reuse its variables. If the URI includes a database path, it must specify `jaya`. Never paste credentials into this file or chat. Use the current password; rotate the previously shared password if it is still active.
@@ -103,7 +110,9 @@ if (db.getMongo().getDBNames().includes(name)) {
 print("New backup destination: " + name);
 '@
 
-mongosh "$dbUri" --quiet --eval $destinationCheck
+$destinationCheckFile = Join-Path $backupFolder "check-backup-destination.js"
+$destinationCheck | Set-Content -LiteralPath $destinationCheckFile -Encoding UTF8
+mongosh "$dbUri" --quiet --file "$destinationCheckFile"
 if ($LASTEXITCODE -ne 0) { throw "Destination check failed. Stop here." }
 
 .\mongorestore.exe --uri="$dbUri" --archive="$archive" --gzip --stopOnError `
@@ -158,7 +167,9 @@ for (const name of names) {
 print("BACKUP STRUCTURE AND COUNTS VERIFIED: " + backupName);
 '@
 
-mongosh "$dbUri" --quiet --eval $verifyBackup
+$verifyBackupFile = Join-Path $backupFolder "verify-backup.js"
+$verifyBackup | Set-Content -LiteralPath $verifyBackupFile -Encoding UTF8
+mongosh "$dbUri" --quiet --file "$verifyBackupFile"
 if ($LASTEXITCODE -ne 0) { throw "Backup verification failed. Do not reset jaya." }
 
 if ((Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash -ne $archiveHash) {
@@ -170,7 +181,7 @@ $runDetails.Verification = "Structure/count/index comparison passed"
 $runDetails | ConvertTo-Json | Set-Content -LiteralPath $manifest -Encoding UTF8
 ```
 
-Open the retained MongoDB backup in Compass and inspect several orders, LRs and saved bills. If the automated check reports a mismatch, investigate before proceeding. Views, TTL expiry or index-version differences can require specific handling; do not simply ignore a failure.
+Open the retained MongoDB backup in Compass and inspect several orders, LRs, saved bills, rate masters, locations, vehicles and owners. If the automated check reports a mismatch, investigate before proceeding. Views, TTL expiry or index-version differences can require specific handling; do not simply ignore a failure.
 
 ## 5. Optional rehearsal: create a separate disposable test copy
 
@@ -204,7 +215,7 @@ $env:MONGODB_URI = Read-Host "Enter the full URI pointing to the rehearsal datab
 npm run dev
 ```
 
-Change the URI database path to the rehearsal name while preserving connection options. This temporary process variable takes precedence over `.env.local`. Verify logins/master data, first order `0001`, the full logistics workflow and first sequential bill `001`. Use test integration settings when exercising email, payments or accounting exports.
+Change the URI database path to the rehearsal name while preserving connection options. This temporary process variable takes precedence over `.env.local`. Verify logins and preserved master data. Confirm rate masters, rate history, locations, vehicles, owners, driver profiles, devices and mobile sessions are empty; confirm relevant notifications are gone and unrelated notices remain; then re-create the required locations, approved rates, owners and vehicles in the rehearsal copy. Verify first order `0001`, the full logistics workflow and first sequential bill `001`. Use test integration settings when exercising email, payments or accounting exports.
 
 Stop the test app with Ctrl+C, then clear the override:
 
@@ -265,6 +276,18 @@ function runReset(databaseName, execute = false, confirmName = "") {
     "balancepayments",
     "savedreports",
 
+    // Selected masters and dependent rate history (all companies)
+    "ratehistories",
+    "ratemasters",
+    "locations",
+    "vehicles",
+    "owners",
+
+    // Driver identities, registrations and mobile login sessions
+    "drivermobilesessions",
+    "driverdevices",
+    "driverprofiles",
+
     // Linked trip and tracking history
     "drivertrips",
     "trackingsessions",
@@ -290,7 +313,30 @@ function runReset(databaseName, execute = false, confirmName = "") {
     filter: {}
   }));
 
+  // The inbox is shared with projects, helpdesk and other ERP modules.
+  // Match explicit source/module metadata or known logistics URLs/types only.
+  const notificationFilter = {
+    $or: [
+      { sourceModel: { $in: [
+        "OrderPanel", "PurchasePanel", "VehicleNegotiation", "AdvancePayment",
+        "PricingPanel", "LoadingPanel", "ConsignmentNote", "POD", "BalancePayment",
+        "SavedReport", "RateMaster", "RateHistory", "Location", "Vehicle", "Owner",
+        "DriverProfile", "DriverDevice", "DriverMobileSession", "DriverTrip",
+        "TrackingSession", "LocationPoint", "TripEvent", "StopEpisode", "MobileOperationalAlert"
+      ] } },
+      { moduleName: { $in: [
+        "Order Panel", "Purchase Panel", "Vehicle Negotiation", "Advance Payment",
+        "Pricing Panel", "Pricing Panel - Part 2 Approval", "Loading Info",
+        "Consignment Note", "Proof Of Delivery", "Balance-Payment", "Billing",
+        "Rate Master"
+      ] } },
+      { type: /^(?:order-|pricing-|vnn-replacement-needed$|billing-reminder$)/ },
+      { url: /^\/admin\/(?:order-panel|purchase-panel|vehicle-negotiation|advance-payment|pricing-panel|loading-info|consignment-note|proofofdelivery|balance-payment|billing|rate-master|locations|vehicles|owners|driver-mobile)(?:[/?#]|$)/i }
+    ]
+  };
+
   targets.push(
+    { name: "notifications", filter: notificationFilter },
     {
       name: "reapprovalaudits",
       filter: {
@@ -383,7 +429,9 @@ function runReset(databaseName, execute = false, confirmName = "") {
 }
 ```
 
-If you exit mongosh and reconnect, paste the definition again. Variables and functions do not persist between sessions.
+The same definition is available in `scripts/db-launch-reset.mongosh.js`. You can load it inside mongosh with `load("C:/Users/ANURAJ/OneDrive/Desktop/CODING/Work/Jaya-logistics_v02/scripts/db-launch-reset.mongosh.js")`; loading only defines the function and sets `backupsVerified = false`.
+
+If you exit mongosh and reconnect, paste or load the definition again. Variables and functions do not persist between sessions.
 
 ## 7. Preview the MAIN database reset
 
@@ -395,11 +443,11 @@ runReset("jaya", false);
 
 Review the collection list and selected counts. An absent collection is expected only if that module never created its collection. If a module has data but its expected collection is absent, stop and investigate. There are no assumed record counts.
 
-Current panel numbering uses `documentsequences.documentType`. Billing uses `counters.id` beginning with `Billing-`. The function also clears nine legacy workflow counter collections and historical matching document sequences, preventing old values from reseeding the series.
+Current panel numbering uses `documentsequences.documentType`. Billing uses `counters.id` beginning with `Billing-`. The function also clears nine legacy workflow counter collections and historical matching document sequences, preventing old values from reseeding the series. The added masters use names/vehicle numbers rather than these workflow counters; no additional counter reset is required.
 
 ## 8. Reset the MAIN database
 
-Proceed only after both backups are verified, the preview shows the intended scope, and every app/worker remains stopped. This permanently deletes selected workflow records across all companies in `jaya`.
+Proceed only after both backups are verified, the preview shows the intended scope, and every app/worker remains stopped. This permanently deletes selected workflow records, rate masters, rate history, locations, vehicles, vehicle owners, driver profiles, registered devices, mobile sessions and matching notifications across all companies in `jaya`.
 
 Inside the same mongosh session:
 
@@ -428,13 +476,17 @@ exit
 
 - Confirm every app/worker points to `jaya`, not the backup or rehearsal database.
 - Restart the app and workers.
+- Re-create/import the required locations, rate masters, vehicle owners and vehicles before entering live logistics transactions. Complete rate-master approval where required.
+- Register the required drivers again and approve their devices. Previous mobile login sessions cannot be reused.
 - Avoid creating test entries in the main database if the client must receive the first numbers. Saves can consume numbers.
 - The first panel entries should end in `0001`, per operating company and document type. The first generated general/product-wise/mosaic bill should end in `001`. Other bill types may use supplied numbers or timestamp defaults.
 - Keep the local archive, manifest and retained MongoDB backup. Only the disposable rehearsal database can be removed after testing.
 
 ## What remains after the reset
 
-Master data, users, driver profiles/devices, unrelated inventory/purchase-order/GRN/invoice/credit-note transactions, notification history, uploaded files, external accounting records and `_bak_` collections remain. Old notifications can therefore still appear.
+Other master data (excluding rate/location, vehicle, vehicle-owner and driver masters), users, unrelated inventory/purchase-order/GRN/invoice/credit-note transactions, unrelated notifications, uploaded files, external accounting records and `_bak_` collections remain. Driver mobile configuration, notification preferences/read markers and employee browser push subscriptions remain. Read markers alone do not display a notification.
+
+Notification cleanup uses `sourceModel`, `moduleName`, known workflow types and bounded admin URL paths. Older notices with none of these identifiers may remain; inspect the inbox after rehearsal. It does not delete notices by free-text message matching.
 
 Do not add unverified collection names such as `paneldrafts`, `driver_trips` or `driver_pings`, or empty the shared `notifications` collection without identifying their contents and scope.
 

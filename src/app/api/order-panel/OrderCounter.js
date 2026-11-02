@@ -19,8 +19,8 @@ const OrderPanelCounter = mongoose.models.OrderPanelCounter || mongoose.model('O
 //   return nextCompanyDocumentNumber({ companyId, subCompanyId, subCompanyCode, documentType: 'ORD', width: 5 });
 // }
 
-export async function getNextOrderPanelNumber(companyId, subCompanyId, subCompanyCode) {
-  return nextPeriodDocumentNumber({ companyId, subCompanyId, subCompanyCode, documentType: 'OP', width: 4 });
+export async function getNextOrderPanelNumber(companyId, subCompanyId, subCompanyCode, session = null) {
+  return nextPeriodDocumentNumber({ companyId, subCompanyId, subCompanyCode, documentType: 'OP', width: 4, session });
 }
 
 export default OrderPanelCounter;

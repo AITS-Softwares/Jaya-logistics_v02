@@ -26,8 +26,8 @@ const purchaseCounterSchema = new mongoose.Schema({
 const PurchaseCounter = mongoose.models.PurchaseCounter || 
   mongoose.model('PurchaseCounter', purchaseCounterSchema);
 
-export async function getNextPurchaseNumber(companyId, subCompanyId, subCompanyCode) {
-  return nextPeriodDocumentNumber({ companyId, subCompanyId, subCompanyCode, documentType: 'PUR', width: 4 });
+export async function getNextPurchaseNumber(companyId, subCompanyId, subCompanyCode, session = null) {
+  return nextPeriodDocumentNumber({ companyId, subCompanyId, subCompanyCode, documentType: 'PUR', width: 4, session });
 }
 
 export default PurchaseCounter;

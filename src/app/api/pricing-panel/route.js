@@ -1,3 +1,4 @@
+import { saveNumberedDocument } from '@/lib/saveNumberedDocument';
 
 
 
@@ -1470,12 +1471,8 @@ async function branchHandlerPOST(req) {
 
     console.log("📝 Creating new pricing panel");
 
-    let pricingSerialNo = await getNextPricingSerialNumber(user.companyId, user.activeOperatingCompanyId, user.activeOperatingCompanyCode);
-
-    const existing = await PricingPanel.findOne(companyScopeFilter(user, { pricingSerialNo }));
-    if (existing) {
-      pricingSerialNo = await getNextPricingSerialNumber(user.companyId, user.activeOperatingCompanyId, user.activeOperatingCompanyCode);
-    }
+    // Assigned only inside the document-save transaction below.
+    const pricingSerialNo = undefined;
 
     // Resolve the branch on the server instead of relying on the browser's
     // reference-data array. This guarantees that the saved ID, name and code
@@ -1645,7 +1642,7 @@ async function branchHandlerPOST(req) {
       ? body.billing.otherCharges.toString()
       : (body.billing?.otherCharges || 'Nil');
 
-    const newPricingPanel = new PricingPanel({
+    let newPricingPanel = new PricingPanel({
       pricingSerialNo,
       branch: branchId,
       branchName: branchName || body.header?.branchName || '',
@@ -1696,7 +1693,7 @@ async function branchHandlerPOST(req) {
       status: 'Active'
     });
 
-    await newPricingPanel.save({ validateBeforeSave: !isDraftSave });
+    newPricingPanel = await saveNumberedDocument(newPricingPanel, session => getNextPricingSerialNumber(user.companyId, user.activeOperatingCompanyId, user.activeOperatingCompanyCode, session), ["pricingSerialNo", "header.pricingSerialNo"], { validateBeforeSave: !isDraftSave });
     await captureSourceDependencies('pricing', newPricingPanel, user.companyId);
 
     return NextResponse.json({
