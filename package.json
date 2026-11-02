@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "test:workflow-controls": "node scripts/test-workflow-controls.mjs",
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "node scripts/start-production.mjs",

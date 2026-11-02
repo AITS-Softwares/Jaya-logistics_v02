@@ -18,7 +18,13 @@ export function describeActivity(item) {
   let title = 'ERP update';
   let module = item.moduleName || '';
   let tone = 'info';
-  if (type === 'billing-reminder') { title = 'Billing reminder'; tone = 'review'; }
+  if (type === 'correction-unlock-request') { title = 'Correction unlock request'; tone = 'review'; }
+  else if (type === 'correction-unlock-rejected') { title = 'Unlock request returned'; tone = 'warning'; }
+  else if (type === 'order-cancellation-rejected') { title = 'Cancellation request rejected'; tone = 'warning'; }
+  else if (type === 'loading-part2-edit-required') { title = 'Loading Part 2 ready for editing'; tone = 'review'; }
+  else if (type.startsWith('cancellation-charges:')) { title = 'Cancellation charge review'; tone = 'review'; }
+  else if (type === 'cancelled-invoice-adjustment-required') { title = 'Invoice adjustment review'; tone = 'review'; }
+  else if (type === 'billing-reminder') { title = 'Billing reminder'; tone = 'review'; }
   else if (type.startsWith('workflow-decision:')) { title = type.includes(':reject:') ? 'Returned for correction' : type.includes(':complete:') ? 'Work completed' : 'Record approved'; tone = type.includes(':reject:') ? 'warning' : 'info'; }
   else if (type.startsWith('approval-request:')) { title = 'Approval requested'; tone = 'review'; }
   else if (type.startsWith('pending-create:')) { title = 'Ready for the next step'; tone = 'review'; }
@@ -73,6 +79,9 @@ export function describeWork(record, { overview = false } = {}) {
       ...(record.latestVnnSyncRequired || record.latestVnnSyncAmbiguous ? { title: 'Record sync pending', message: 'The responsible team needs to review negotiation links and synchronise this record.' } : {}),
       action: record.type === 'billing' ? 'Open billing' : 'View pending' };
   }
+  if (record.reapprovalState === 'cancellationReview') return { title: 'Shared cancellation review', message: 'This record includes a cancelled order. Request or approve correction, remove the cancelled rows and resubmit the remaining work.', action: 'Review cancellation', tone: 'review' };
+  if (record.reapprovalState === 'unlockRequested') return { title: 'Unlock approval required', message: 'An editor requested permission to correct this approved record.', action: 'Review unlock request', tone: 'review' };
+  if (record.reapprovalState === 'cancellationCharges') return { title: 'Cancellation charges required', message: 'Enter or review the charges for cancelled order rows.', action: 'Review charges', tone: 'review' };
   if (record.type === 'billing') return { title: 'Billing due', message: `${record.lrCount} LR${record.lrCount === 1 ? '' : 's'} awaiting full billing. Reminders continue daily until billed.`, action: 'Open billing', tone: 'review' };
   if (record.latestVnnSyncAmbiguous) return { title: 'Review record links', message: 'Multiple approved negotiations match this record. An administrator needs to review the links.', action: 'Review links', tone: 'warning' };
   if (record.latestVnnSyncRequired) return { title: 'Sync before reapproval', message: `Bring in the latest approved data from ${record.latestVnnNo || 'Vehicle Negotiation'}, then review this record.`, action: 'Review sync', tone: 'review' };
@@ -81,4 +90,18 @@ export function describeWork(record, { overview = false } = {}) {
   if (record.reapprovalState === 'pendingReapproval') return { title: 'Reapproval required', message: 'Review the updated record and approve it to continue.', action: 'Review reapproval', tone: 'review' };
   if (record.reapprovalState === 'syncFailed') return { title: 'Downstream update failed', message: 'Approval was saved, but the next stage did not update. Coordinate a sync retry.', action: 'Review sync', tone: 'warning' };
   return { title: 'Waiting on another stage', message: record.upstreamDetails?.map(item => item.message).filter(Boolean).join(' ') || 'Upstream review must finish before this record can continue.', action: 'View status', tone: 'waiting' };
+}
+
+export function groupWork(records) {
+  const groups = new Map();
+  for (const record of records) {
+    const key = `${record.module}:${record.reapprovalState}:${record.type === 'panel-summary' ? 'summary' : 'records'}`;
+    if (!groups.has(key)) groups.set(key, { key, module: record.module, state: record.reapprovalState, items: [] });
+    groups.get(key).items.push(record);
+  }
+  return [...groups.values()];
+}
+export function notificationMatches(value, query, module = '') {
+  if (module && (value.module || value.moduleName || '') !== module) return false;
+  return !query || JSON.stringify(value).toLowerCase().includes(query.trim().toLowerCase());
 }

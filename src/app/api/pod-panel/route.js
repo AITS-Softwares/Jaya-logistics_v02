@@ -530,7 +530,7 @@ async function branchHandlerGET(req) {
 async function getPODEligiblePurchase(user, purchaseNo) {
   return PurchasePanel.findOne(
     companyScopeFilter(user, { purchaseNo, isDraft: { $ne: true }, panelStatus: { $ne: 'Draft' } })
-  ).select("purchaseNo approval.status memoFile.filePath memoFile.fullPath memoFile.filename").lean();
+  ).select("purchaseNo cancellation approval.status memoFile.filePath memoFile.fullPath memoFile.filename").lean();
 }
 
 async function branchHandlerPOST(req) {
@@ -552,6 +552,7 @@ async function branchHandlerPOST(req) {
     if (!purchase) {
       return fail(`Purchase ${purchaseNo} was not found in the active company.`, 404);
     }
+    if (purchase.cancellation?.state) return fail('This purchase contains cancelled orders and cannot progress to POD.', 409);
     if (purchase.approval?.status !== "Approved") {
       return fail(`Purchase ${purchaseNo} must be Approved before a POD can be created.`, 400);
     }

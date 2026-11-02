@@ -1,0 +1,33 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import { unwrapBranchHandlers } from './route-business-source.mjs';
+import { canUnlockForCorrection } from '../src/lib/reapprovalPermissions.mjs';
+import { panelApprovalStatus } from '../src/lib/reapprovalPresentation.mjs';
+let user, root, notices, child, snapshots;
+const query = value => ({ session() { return this; }, select() { return this; }, setOptions() { return this; }, lean() { return Promise.resolve(value); }, then(resolve, reject) { return Promise.resolve(value).then(resolve, reject); } });
+function reset() {
+  notices = []; snapshots = [];
+  root = { $locals: {}, _id: 'record', panelStatus: 'Approved', companyId: 'tenant', orderPanelNo: 'OP-1', reapprovalState: 'none', reapprovalHistory: [], toObject() { const { save, set, toObject, $locals, ...value } = this; return structuredClone(value); }, set(key, value) { this[key] = value; }, async save() {} };
+  child = { _id: 'vnn', upstreamPending: [], reapprovalState: 'none', async save() {} };
+}
+const models = Object.fromEntries(['order', 'vnn', 'pricing', 'loading', 'lr'].map(type => [type, { no: type === 'order' ? 'orderPanelNo' : 'number', label: type, Model: { findOne: () => query(root), find: () => query(type === 'vnn' && child.upstreamPending.length ? [child] : []), updateOne: async (filter, update) => { child.reapprovalState = update.$set.reapprovalState; child.upstreamPending.push(update.$addToSet.upstreamPending); } } }]));
+const deps = { canUnlockForCorrection, panelApprovalStatus, connectDb: async () => {}, verifyToken: () => user, TYPES: models, NextResponse: { json: (value, options = {}) => ({ ...value, status: options.status || 200 }) }, mongoose: { isValidObjectId: () => true, Types: { ObjectId: class { toString() { return 'batch'; } } }, startSession: async () => ({ withTransaction: work => work(), endSession: async () => {} }) }, resolveDeleteGraph: async () => [{ type: 'order', id: 'record', record: root.toObject(), depth: 0 }, { type: 'vnn', id: 'vnn', no: 'VNN-1', record: child, depth: 1 }], deletionBlockers: async () => [], ReapprovalAudit: { create: async audit => snapshots.push(audit) }, notifyModulePermissionUsers: async value => notices.push(value) };
+const source = unwrapBranchHandlers(fs.readFileSync('src/app/api/reapproval/[type]/[id]/route.js', 'utf8')).replace(/^import .*;\r?\n/gm, '').replace(/export async function /g, 'async function ');
+const post = new Function(...Object.keys(deps), `${source}\nreturn POST;`)(...Object.values(deps));
+const call = (action, reason = 'Correct destination') => post({ json: async () => ({ action, reason }) }, { params: Promise.resolve({ type: 'order', id: 'record' }) });
+reset(); user = { id: 'editor', modules: { 'Order Panel': { selected: true, permissions: { edit: true } } } };
+assert.equal((await call('unlock')).status, 403);
+assert.equal((await call('requestUnlock')).status, 200); assert.equal(root.unlockRequest.status, 'pending'); assert.equal(root.panelStatus, 'Approved'); assert.equal(child.upstreamPending.length, 0); assert.equal(notices[0].action, 'approve');
+assert.equal((await call('requestUnlock')).status, 409);
+user = { id: 'reviewer', roles: ['Admin'] };
+assert.equal((await call('rejectUnlock', '')).status, 400); assert.equal((await call('rejectUnlock', 'Not required')).status, 200); assert.equal(root.unlockRequest.status, 'rejected');
+user = { id: 'editor', modules: { 'Order Panel': { selected: true, permissions: { edit: true } } } };
+assert.equal((await call('requestUnlock')).status, 200);
+user = { id: 'reviewer', roles: ['Admin'] };
+assert.equal((await call('unlock')).status, 200); assert.equal(root.unlockRequest.status, 'approved'); assert.equal(root.reapprovalState, 'unlocked'); assert.equal(panelApprovalStatus('order', root), 'Correction draft'); assert.equal(root.approvedSnapshot.panelStatus, 'Approved'); assert.equal(child.reapprovalState, 'blockedByUpstream'); assert.equal(child.upstreamPending.length, 1);
+assert.equal((await call('cancel')).status, 200); assert.equal(root.reapprovalState, 'none'); assert.equal(root.panelStatus, 'Approved'); assert.equal(child.reapprovalState, 'none'); assert.equal(child.upstreamPending.length, 0);
+reset(); root.cancellation = { state: 'review', orders: [{ orderNo: 'CANCELLED' }] };
+assert.equal((await call('unlock')).status, 200); assert.equal(root.cancellation.state, 'resolved'); assert.equal(root.reapprovalState, 'unlocked');
+assert.equal((await call('cancel')).status, 200); assert.equal(root.cancellation.state, 'review');
+reset(); root.cancellation = { state: 'cancelled' }; assert.equal((await call('unlock')).status, 409);
+console.log('PASS: editor request, duplicate denial, reason/permission checks, admin rejection and unlock, correction display, retained snapshot, downstream block and restore. No database records changed.');

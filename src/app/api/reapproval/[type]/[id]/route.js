@@ -1,4 +1,5 @@
 import { hasPriorApproval, panelApprovalStatus, reviewDisplayState, upstreamDisplayState } from '@/lib/reapprovalPresentation.mjs';
+import { cancelOrder } from '@/lib/cancelOrder';
 import { loadingWorkflowForReview } from '@/lib/loadingApprovalWorkflow.mjs';
 import { canUnlockForCorrection } from '@/lib/reapprovalPermissions.mjs';
 import { hasReapprovalReview } from '@/lib/reapprovalReviewVisibility.mjs';
@@ -92,7 +93,7 @@ async function branchHandlerGET(req, { params }) {
   const entry = TYPES[type];
   if (!MODULES[type] || !entry || !mongoose.isValidObjectId(id)) return NextResponse.json({ success: false, message: 'Invalid panel or record ID' }, { status: 400 });
   const currentPermissions = user.modules?.[MODULES[type]]?.permissions || {};
-  if (!canUnlockForCorrection(user, type) && !currentPermissions.view && !(type === 'loading' && (currentPermissions.edit || currentPermissions.approve))) return NextResponse.json({ success: false, message: 'View permission required' }, { status: 403 });
+  if (!canUnlockForCorrection(user, type) && !currentPermissions.view && !currentPermissions.edit && !currentPermissions.approve) return NextResponse.json({ success: false, message: 'View permission required' }, { status: 403 });
 
   const root = await entry.Model.findOne({ _id: id, companyId: user.companyId }).lean();
   if (!root) return NextResponse.json({ success: false, message: `${entry.label} not found` }, { status: 404 });
@@ -206,7 +207,7 @@ async function branchHandlerGET(req, { params }) {
     : type === 'loading' && (userIsAdmin(user) || loadingPermissions.edit === true || loadingPermissions.approve === true);
   effectiveReapprovalState = reviewDisplayState({ previouslyApproved: hasPriorApproval(root) }, effectiveReapprovalState);
   const hasReviewableChanges = hasReapprovalReview(root, effectiveReapprovalState);
-  return NextResponse.json({ success: true, record: { id: String(root._id), type, loadingWorkflow: type === 'loading' ? loadingWorkflowForReview(root) : null, canUnlockForCorrection: canUnlockForCorrection(user, type), no: recordNumber(type, root), previouslyApproved: hasPriorApproval(root), status: panelApprovalStatus(type, root), reapprovalState: effectiveReapprovalState, approvedRevision: root.approvedRevision || root.rateApproval?.approvedRevision || 0, upstreamPending: root.upstreamPending || [], upstreamDetails, detachedOrderMarkers, canReconcileDetachedOrders, latestVnnSync: latestVnnSync ? { required: latestVnnSync.required, ambiguous: latestVnnSync.ambiguous, vnnNo: latestVnnSync.candidate?.vnnNo || '' } : null, syncError: root.reapprovalSyncError || '', hasReviewableChanges, pendingChanges: hasReviewableChanges ? changesToReview : [], changeSummary: hasReviewableChanges ? changesToReview : [] }, impact: affectedGraph.map((item) => ({ type: item.type, id: item.id, no: item.no, label: item.label, depth: item.depth })), blockers: await allBlockers(type, graph, user.companyId, null) });
+  return NextResponse.json({ success: true, record: { id: String(root._id), type, loadingWorkflow: type === 'loading' ? loadingWorkflowForReview(root) : null, canRequestUnlock: userIsAdmin(user) || user.modules?.[MODULES[type]]?.selected === true && currentPermissions.edit === true, unlockRequest: root.unlockRequest || null, cancellation: root.cancellation || null, cancellationRepair: root.cancellationRepair || null, canUnlockForCorrection: canUnlockForCorrection(user, type), no: recordNumber(type, root), previouslyApproved: hasPriorApproval(root), status: panelApprovalStatus(type, root), reapprovalState: effectiveReapprovalState, approvedRevision: root.approvedRevision || root.rateApproval?.approvedRevision || 0, upstreamPending: root.upstreamPending || [], upstreamDetails, detachedOrderMarkers, canReconcileDetachedOrders, latestVnnSync: latestVnnSync ? { required: latestVnnSync.required, ambiguous: latestVnnSync.ambiguous, vnnNo: latestVnnSync.candidate?.vnnNo || '' } : null, syncError: root.reapprovalSyncError || '', hasReviewableChanges, pendingChanges: hasReviewableChanges ? changesToReview : [], changeSummary: hasReviewableChanges ? changesToReview : [] }, impact: affectedGraph.map((item) => ({ type: item.type, id: item.id, no: item.no, label: item.label, depth: item.depth })), blockers: await allBlockers(type, graph, user.companyId, null) });
 }
 
 async function branchHandlerPOST(req, { params }) {
@@ -219,6 +220,11 @@ async function branchHandlerPOST(req, { params }) {
   if (!MODULES[type] || !entry || !mongoose.isValidObjectId(id)) return NextResponse.json({ success: false, message: 'Invalid panel or record ID' }, { status: 400 });
   const body = await req.json().catch(() => ({}));
   const action = String(body.action || '');
+  if (action === 'reconcileCancellation') {
+    if (type !== 'order' || !canUnlockForCorrection(user, type)) return NextResponse.json({ success: false, message: 'Order approval permission required.' }, { status: 403 });
+    try { return NextResponse.json(await cancelOrder(user, id, { reason: String(body.reason || 'Reconcile previously cancelled order links'), reconcile: true })); }
+    catch (error) { return NextResponse.json({ success: false, message: error.message, blockers: error.blockers || [] }, { status: error.status || 500 }); }
+  }
   if (action === 'reconcileDetachedOrders') {
     const vnnPermission = user.modules?.[MODULES.vnn]?.permissions || {};
     const loadingPermission = user.modules?.[MODULES.loading]?.permissions || {};
@@ -238,6 +244,24 @@ async function branchHandlerPOST(req, { params }) {
     } catch (error) {
       return NextResponse.json({ success: false, message: error.message || 'Could not sync Loading Info from the latest approved VNN.' }, { status: error.status || 500 });
     }
+  }
+  if (['requestUnlock', 'rejectUnlock'].includes(action)) {
+    const module = user.modules?.[MODULES[type]];
+    const reviewer = canUnlockForCorrection(user, type);
+    if (action === 'requestUnlock' ? !(userIsAdmin(user) || module?.selected && module.permissions?.edit) : !reviewer) return NextResponse.json({ success: false, message: 'Panel edit permission is required to request an unlock; approval permission is required to review it.' }, { status: 403 });
+    const reason = String(body.reason || '').trim();
+    if (!reason) return NextResponse.json({ success: false, message: 'A reason is required.' }, { status: 400 });
+    const root = await entry.Model.findOne({ _id: id, companyId: user.companyId });
+    if (!root) return NextResponse.json({ success: false, message: 'Record not found.' }, { status: 404 });
+    if (root.cancellation?.state === 'cancelled' || !['Approved', 'Completed', 'Cancellation review'].includes(panelApprovalStatus(type, root)) || root.reapprovalState && root.reapprovalState !== 'none') return NextResponse.json({ success: false, message: 'Only an approved record without an active correction or cancellation can receive an unlock request.' }, { status: 409 });
+    if (action === 'requestUnlock' && root.unlockRequest?.status === 'pending') return NextResponse.json({ success: false, message: 'An unlock request is already pending.' }, { status: 409 });
+    if (action === 'rejectUnlock' && root.unlockRequest?.status !== 'pending') return NextResponse.json({ success: false, message: 'No unlock request is pending.' }, { status: 409 });
+    const at = new Date();
+    root.unlockRequest = action === 'requestUnlock' ? { status: 'pending', reason, by: user.id, name: user.name || '', at } : { ...root.unlockRequest, status: 'rejected', decisionReason: reason, reviewedBy: user.id, reviewedAt: at };
+    root.reapprovalHistory.push({ action, reason, actorId: user.id, actorName: user.name || '', at });
+    await root.save();
+    await notifyModulePermissionUsers({ user, module: type === 'pricing' && action === 'requestUnlock' ? 'Pricing Panel - Part 2 Approval' : MODULES[type], action: action === 'requestUnlock' ? 'approve' : 'edit', type: action === 'requestUnlock' ? 'correction-unlock-request' : 'correction-unlock-rejected', reference: recordNumber(type, root), url: `/admin/${type === 'vnn' ? 'vehicle-negotiation' : type === 'pricing' ? 'pricing-panel' : type === 'loading' ? 'Loading-Info' : type === 'lr' ? 'Consignment-Note' : 'order-panel'}/${id}/view`, message: `${action === 'requestUnlock' ? 'Unlock requested' : 'Unlock request rejected'} for ${entry.label} ${recordNumber(type, root)}. Reason: ${reason}` });
+    return NextResponse.json({ success: true, action, message: action === 'requestUnlock' ? 'Unlock request sent to approvers and admins.' : 'Unlock request rejected.' });
   }
   if (!canUnlockForCorrection(user, type)) return NextResponse.json({ success: false, message: 'Approve permission for this panel is required to unlock or cancel an unlock.' }, { status: 403 });
   if (!['unlock', 'cancel', 'retrySync'].includes(action)) return NextResponse.json({ success: false, message: 'Action must be unlock, cancel, or retrySync' }, { status: 400 });
@@ -260,10 +284,12 @@ async function branchHandlerPOST(req, { params }) {
       const root = await entry.Model.findOne({ _id: id, companyId: user.companyId }).session(session);
       if (!root) throw Object.assign(new Error(`${entry.label} not found`), { status: 404 });
       const number = recordNumber(type, root);
+      if (root.cancellation?.state === 'cancelled') throw Object.assign(new Error('This record contains cancelled orders. Normal corrections are blocked pending cancellation review.'), { status: 409 });
       const status = root.panelStatus || root.header?.status || root.status;
       if (!['Approved', 'Completed'].includes(status)) throw Object.assign(new Error(`Only an approved or completed ${entry.label} can be unlocked.`), { status: 409 });
 
       if (action === 'unlock') {
+        if (root.upstreamPending?.length || ['pendingReapproval', 'blockedByUpstream', 'syncFailed'].includes(root.reapprovalState)) throw Object.assign(new Error('Finish the existing upstream review before unlocking this record.'), { status: 409 });
         if (root.reapprovalState === 'unlocked' || root.reapprovalState === 'pendingApproval') throw Object.assign(new Error('This record is already open for correction.'), { status: 409 });
         const graph = await resolveReapprovalGraph(type, plain(root), user.companyId, session);
         const blockers = await allBlockers(type, graph, user.companyId, session);
@@ -272,16 +298,21 @@ async function branchHandlerPOST(req, { params }) {
         const batchId = new mongoose.Types.ObjectId().toString();
         const snapshot = plain(root);
         root.approvedSnapshot = snapshot;
+        if (root.cancellation?.state === 'review') {
+          root.cancellation = { ...root.cancellation, state: 'resolved', reviewedBy: user.id, reviewedAt: new Date() };
+          root.reapprovalHistory.push({ action: 'cancellationReviewOpened', actorId: user.id, at: new Date(), cancellation: snapshot.cancellation });
+        }
         root.reapprovalState = 'unlocked';
-      // if (type === 'vnn') {
-      //   root.workflow = root.workflow || {};
-      //   root.workflow.part1Locked = false;
-      //   root.workflow.part1LockedAt = null;
-      //   root.workflow.part1LockedBy = null;
-      //   root.approval = root.approval || {};
-      //   root.approval.part1Status = 'Pending';
-      //   root.approval.part3Status = 'Pending';
-      // }
+        if (type === 'vnn') {
+          root.workflow = root.workflow || {};
+          root.workflow.part1Locked = false;
+          root.workflow.part1LockedAt = null;
+          root.workflow.part1LockedBy = null;
+          root.approval.part1Status = 'Pending';
+          root.approval.part3Status = 'Pending';
+        }
+        if (root.unlockRequest?.status === 'pending') root.unlockRequest = { ...root.unlockRequest, status: 'approved', reviewedBy: user.id, reviewedAt: new Date() };
+        if (type === 'loading') root.loadingWorkflow = { version: 2, currentPart: 1, part1Status: 'Draft', part2Status: 'Locked' };
         root.unlockedBy = mongoose.isValidObjectId(user.id) ? user.id : null;
         root.unlockedAt = new Date();
         root.unlockReason = String(body.reason).trim();
@@ -312,11 +343,13 @@ async function branchHandlerPOST(req, { params }) {
         const excluded = new Set(['_id', '__v', 'isDeleted', 'deletedAt', 'deletedBy', 'deleteReason', 'deleteBatchId', 'deleteRootType', 'deleteRootNo', 'statusBeforeDelete']);
         for (const [key, value] of Object.entries(snapshot)) if (!excluded.has(key)) root.set(key, value);
         root.reapprovalState = 'none';
+        if (root.unlockRequest?.status === 'pending') root.unlockRequest = { ...root.unlockRequest, status: 'cancelled', reviewedBy: user.id, reviewedAt: new Date(), decisionReason: 'Correction cancelled; approved version restored.' };
         root.approvedSnapshot = null;
         root.unlockedBy = null;
         root.unlockedAt = null;
         root.unlockReason = '';
         root.reapprovalHistory.push({ action: 'unlockCancelled', actorId: user.id, actorName: user.name || '', at: new Date(), batchId });
+        root.$locals.allowCancellationWrite = true;
         await root.save({ session });
 
         if (batchId) {

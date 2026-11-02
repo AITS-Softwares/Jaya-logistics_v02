@@ -1752,6 +1752,7 @@
 
 "use client";
 
+import LoadingStageGuide from '@/components/LoadingStageGuide';
 import { normalizeAmountInput } from '@/lib/amountInput.mjs';
 import { editableLoadingPart } from '@/lib/loadingApprovalWorkflow.mjs';
 import { useMemo, useState, useEffect, useRef } from "react";
@@ -3249,6 +3250,7 @@ export default function ApproveLoadingPanel() {
 
         {/* VOT Panel - EDITABLE */}
         </fieldset>
+<LoadingStageGuide workflow={stageRecord?.loadingWorkflow} />
 {stagedLoading && <div className="my-4 rounded-xl bg-amber-50 p-3 text-sm font-semibold text-amber-900">Part 2 — VL, VOT and remaining details — {stageRecord?.loadingWorkflow?.part2Status}</div>}
 <fieldset disabled={stagedLoading && (!stageReady || currentPart !== 2)} className="min-w-0 border-0 p-0 m-0"><div className="mt-4">
           <Card title="VL - PANEL (Vehicle Loading Pictures) - Editable">

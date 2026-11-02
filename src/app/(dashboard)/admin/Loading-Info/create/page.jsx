@@ -4248,7 +4248,7 @@
 
 //         {/* VFT Panel Card */}
 //         <div className="mt-4">
-//           <Card title="VFT - PANEL (Vehicle Floor Tarpaulin Pictures)">
+//           <Card title="VFT - PANEL (Vehicle Floor Tarpaulin Pictures)"><p className="mb-3 text-sm text-amber-800">{loadingInfoPhotosOptional ? 'Photos optional' : 'Minimum 3 photos required before Part 1 submission'}</p>
 //             <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
 //               <div className="grid grid-cols-8 gap-3">
 //                 {[1,2,3,4,5,6,7].map((num) => (
@@ -4842,7 +4842,7 @@
 // </div>
 //         {/* VOT Panel Card */}
 //         <div className="mt-4">
-//           <Card title="VOT - PANEL (Vehicle Outer Tarpaulin Pictures)">
+//           <Card title="VOT - PANEL (Vehicle Outer Tarpaulin Pictures)"><p className="mb-3 text-sm text-amber-800">{loadingInfoPhotosOptional ? 'Photos optional' : 'Minimum 3 photos required before Part 2 submission'}</p>
 //             <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-200">
 //               <div className="grid grid-cols-8 gap-3">
 //                 {[1,2,3,4,5,6,7].map((num) => (
@@ -5164,6 +5164,7 @@
 
 "use client";
 
+import LoadingStageGuide from '@/components/LoadingStageGuide';
 import { normalizeAmountInput } from '@/lib/amountInput.mjs';
 import { useMemo, useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -7364,6 +7365,14 @@ export default function CreateLoadingInfoPanel() {
     }
 
 
+    if (!isDraftSave && !loadingInfoPhotosOptional) {
+      const required = [['vbp', 3, vbpFiles], ['vft', 3, vftFiles]];
+      for (const [prefix, minimum, files] of required) {
+        const count = Object.entries(files).filter(([key, values]) => new RegExp(`^${prefix}\\d+$`).test(key) && (values?.length || false)).length;
+        if (count < minimum) { alert(`Please upload at least ${minimum} ${prefix.toUpperCase()} photos in separate photo slots. Currently ${count}/${minimum}.`); return; }
+      }
+    }
+
     setSaving(true);
 
     try {
@@ -7733,6 +7742,7 @@ export default function CreateLoadingInfoPanel() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white">
+      <LoadingStageGuide optional={loadingInfoPhotosOptional} />
       {/* Sticky Header */}
       <div className="sticky top-0 z-40 border-b bg-white/80 backdrop-blur">
         <div className="mx-auto max-w-full px-4 py-3 flex items-center justify-between">
@@ -9189,7 +9199,7 @@ export default function CreateLoadingInfoPanel() {
 
         {/* VFT Panel Card */}
         <div className="mt-4">
-          <Card title="VFT - PANEL (Vehicle Floor Tarpaulin Pictures)">
+          <Card title="VFT - PANEL (Vehicle Floor Tarpaulin Pictures)"><p className="mb-3 text-sm text-amber-800">{loadingInfoPhotosOptional ? 'Photos optional' : 'Minimum 3 photos required before Part 1 submission'}</p>
             <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
               <div className="grid grid-cols-8 gap-3">
                 {[1, 2, 3, 4, 5, 6, 7].map((num) => (
@@ -9527,7 +9537,7 @@ export default function CreateLoadingInfoPanel() {
 
         {/* VOT Panel Card */}
         <div className="mt-4">
-          <Card title="VOT - PANEL (Vehicle Outer Tarpaulin Pictures)">
+          <Card title="VOT - PANEL (Vehicle Outer Tarpaulin Pictures)"><p className="mb-3 text-sm text-amber-800">{loadingInfoPhotosOptional ? 'Photos optional' : 'Minimum 3 photos required before Part 2 submission'}</p>
             <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-200">
               <div className="grid grid-cols-8 gap-3">
                 {[1, 2, 3, 4, 5, 6, 7].map((num) => (

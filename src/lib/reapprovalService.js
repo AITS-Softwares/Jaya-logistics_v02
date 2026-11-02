@@ -1,4 +1,5 @@
 import { hasLoadingCorrectionContext, needsLoadingVnnComparison } from '@/lib/loadingVnnSync.mjs';
+import { newLoadingWorkflow } from '@/lib/loadingApprovalWorkflow.mjs';
 import mongoose from 'mongoose';
 import OrderPanel from '@/app/api/order-panel/OrderPanel';
 import VehicleNegotiation from '@/app/api/vehicle-negotiation/VehicleNegotiation';
@@ -167,7 +168,9 @@ function findPricingSourceRow(vnn, target) {
 function syncPricingFromVnn(vnn, priorVnn, pricing) {
   const beforeProjection = pricingRelevantVnnProjection(priorVnn || {});
   const afterProjection = pricingRelevantVnnProjection(vnn);
-  let affected = normalizedObject(beforeProjection) !== normalizedObject(afterProjection);
+  let affected = normalizedObject(beforeProjection) !== normalizedObject(afterProjection) ||
+    normalizedObject((priorVnn?.orders || []).map(pricingRelevantVnnRowProjection)) !==
+    normalizedObject((vnn.orders || []).map(pricingRelevantVnnRowProjection));
   const dependencies = (pricing.sourceDependencies || []).filter((dependency) => !(dependency.panel === 'vnn' && String(dependency.recordId) === String(vnn._id)));
   dependencies.push({ panel: 'vnn', recordId: String(vnn._id), recordNo: vnn.vnnNo, rowId: '', revision: Number(vnn.approvedRevision) || 0 });
   pricing.sourceDependencies = dependencies;
@@ -324,6 +327,9 @@ export async function findLatestApprovedVnnForLoading(record, companyId) {
   }
   if (matched.length !== 1) return { required: false, candidate: null, ambiguous: matched.length > 1 && (hasLoadingCorrectionContext(record) || matched.some(vnn => needsLoadingVnnComparison(record, vnn))) };
   const candidate = matched[0];
+  const savedDependency = (record.sourceDependencies || []).find(source => source.panel === 'vnn' &&
+    (String(source.recordId || '') === String(candidate._id) || source.recordNo === candidate.vnnNo));
+  const revisionChanged = Boolean(savedDependency) && Number(savedDependency.revision || 0) !== Number(candidate.approvedRevision || 0);
   if (!needsLoadingVnnComparison(record, candidate)) return { required: false, candidate, ambiguous: false };
   const preview = structuredClone(toPlain(record));
   const sync = applyMirroredFields('vnn', candidate, preview);
@@ -332,7 +338,8 @@ export async function findLatestApprovedVnnForLoading(record, companyId) {
   const dataChanged = normalizedObject(mirroredProjection('loading', preview)) !== normalizedObject(mirroredProjection('loading', record));
   const linkChanged = String(record.vehicleNegotiationNo || '') !== String(candidate.vnnNo || '');
   const detachedBlock = (await findDetachedLoadingOrderMarkers(record, companyId)).length > 0;
-  return { required: dataChanged || linkChanged || detachedBlock, candidate, ambiguous: false };
+  return { required: dataChanged || linkChanged || detachedBlock || revisionChanged, candidate, ambiguous: false,
+    savedVnnRevision: savedDependency ? Number(savedDependency.revision || 0) : null };
 }
 
 /** Sync an outdated Loading Info record from its unique, currently approved VNN and queue its reapproval. */
@@ -361,6 +368,9 @@ export async function reconcileDetachedLoadingOrderMarkers(record, companyId, us
     return true;
   });
   record.reapprovalState = record.upstreamPending.length ? 'blockedByUpstream' : 'pendingReapproval';
+  record.loadingWorkflow = newLoadingWorkflow(true);
+  record.panelStatus = 'Submitted';
+  record.isDraft = false;
   record.pendingStateBeforeBlock = '';
   record.reapprovalSyncError = '';
   record.pendingChanges = summarizeApprovedChanges('loading', before, record);
@@ -802,6 +812,8 @@ export async function recordApprovedRevision(type, recordId, user) {
           child.pendingChanges = summarizeApprovedChanges(childType, beforeChild, child);
           if (childType === 'pricing' && mapResult.needsRateReview) child.pendingChanges.push({ field: 'Rate review required', oldValue: 'Current saved rate', newValue: 'Review rate and total after route or weight change' });
           if (childType === 'pricing') {
+            child.approvedSnapshot ||= beforeChild;
+            if (!remainingBlocks.length) child.reapprovalState = 'unlocked';
             child.rateApproval = child.rateApproval || {};
             child.isDraft = false;
             child.panelStatus = 'Submitted';
@@ -822,7 +834,7 @@ export async function recordApprovedRevision(type, recordId, user) {
             action: mapResult.ambiguous ? 'syncNeedsReview' : 'downstreamSynced', actorId: user.id, actorName: user.name || '', revision,
             before: beforeChild, after: storedSnapshot(child), details: { sourcePanel: type, sourceRecordId: String(doc._id), sourceRevision: revision, matchedRows: mapResult.matched },
           }], { session });
-          noticeList.push({ childType, id: String(child._id), no: String(child.vnnNo || child.pricingSerialNo || child.vehicleArrivalNo || child.lrNo || '') });
+          noticeList.push({ childType, action: childType === 'pricing' ? 'edit' : 'approve', id: String(child._id), no: String(child.vnnNo || child.pricingSerialNo || child.vehicleArrivalNo || child.lrNo || '') });
         }
       } else if (wasReapproval && !changed) {
         const unlockBatch = [...(doc.reapprovalHistory || [])].reverse().find((entry) => entry.action === 'unlocked')?.batchId;
@@ -862,11 +874,10 @@ export async function recordApprovedRevision(type, recordId, user) {
   for (const item of noticeList) {
     const target = TARGETS[item.childType];
     const msg = `${target.module} ${item.no} has saved upstream changes and needs review before approval.`;
-    const url = `/admin/${target.path}/${item.id}`;
-    await Promise.all([
-      notifyModulePermissionUsers({ user, module: target.module, action: 'edit', type: 'pending-reapproval', message: msg, pushTitle: 'Downstream update needs review', pushBody: msg, url }),
-      notifyModulePermissionUsers({ user, module: item.childType === 'pricing' ? 'Pricing Panel - Part 2 Approval' : target.module, action: 'approve', type: 'pending-reapproval-approval', message: msg, pushTitle: 'Record pending reapproval', pushBody: msg, url }),
-    ]);
+    const action = item.action || 'approve';
+    const url = `/admin/${target.path}/${action === 'approve' ? 'approve/' : ''}${item.id}`;
+    await notifyModulePermissionUsers({ user, module: item.childType === 'pricing' && action === 'approve' ? 'Pricing Panel - Part 2 Approval' : target.module,
+      action, reference: item.no, type: action === 'edit' ? 'pending-reapproval' : 'pending-reapproval-approval', message: msg, url });
   }
   return result;
 }

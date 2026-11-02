@@ -1,3 +1,4 @@
+import { filterLrEligibleLoading } from '@/lib/lrPricingEligibility';
 import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/auth";
@@ -16,13 +17,15 @@ const branchHandlerGET = withAuth(async (req, context, user) => {
     await connectDb();
     const url = new URL(req.url);
     if (url.searchParams.get("lookup") === "loadingInfoOrders") {
-      const loadingInfos = await LoadingPanel.find(companyScopeFilter(user, { isDraft: { $ne: true }, panelStatus: { $ne: 'Draft' } }))
-        .select("vehicleArrivalNo orderRows.orderNo")
+      const rawLoadingInfos = await LoadingPanel.find(companyScopeFilter(user, { isDraft: { $ne: true }, panelStatus: { $ne: 'Draft' } }))
+        .select("vehicleArrivalNo orderRows panelStatus isDraft loadingWorkflow cancellation reapprovalState upstreamPending")
         .lean();
+      const loadingInfos = await filterLrEligibleLoading(user, rawLoadingInfos);
       const orderNumbers = [...new Set(loadingInfos.flatMap((loadingInfo) =>
         (loadingInfo.orderRows || []).map((row) => row.orderNo?.trim()).filter(Boolean),
       ))];
-      return NextResponse.json({ success: true, data: { orderNumbers } });
+      const eligibleRows = loadingInfos.flatMap(info => (info.orderRows || []).map(row => ({ orderNo: row.orderNo, orderRowId: row.orderRowId || '', loadingInfoNo: info.vehicleArrivalNo })));
+      return NextResponse.json({ success: true, data: { orderNumbers, eligibleRows } });
     }
 
     const orderNo = url.searchParams.get("orderNo")?.trim();

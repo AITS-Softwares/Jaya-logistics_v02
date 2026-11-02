@@ -7941,6 +7941,13 @@ export default function EditVehicleNegotiation() {
     }
     const reason = action === 'amend-part1' ? window.prompt('Enter the amendment reason:') : '';
     if (action === 'amend-part1' && !reason?.trim()) return;
+    if (action === 'amend-part1' && approval.part3Status === 'Approved' && vnnReviewState !== 'unlocked') {
+      const response = await fetch(`/api/reapproval/vnn/${negotiationId}`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` }, body: JSON.stringify({ action: 'requestUnlock', reason }) });
+      const result = await response.json();
+      alert(result.message || (response.ok ? 'Unlock request sent to approvers and admins.' : 'Could not request unlock.'));
+      window.dispatchEvent(new Event('reapproval:refresh'));
+      return;
+    }
     if (action === 'lock-part1') {
       if (!window.confirm('Save and submit Parts 1 and 3 together for VNN approval? Both parts will be locked until an amendment is opened.')) return;
       await handleUpdate({ redirect: false, submit: true });

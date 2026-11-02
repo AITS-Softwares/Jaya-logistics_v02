@@ -10,12 +10,17 @@ export function getFinalVnnStatus(record) {
 
 // List status includes lifecycle changes without rewriting historical approvals.
 export function getVnnListStatus(record) {
+  if (['cancelled', 'review'].includes(record?.cancellation?.state)) return record.cancellation.state === 'cancelled' ? 'Cancelled' : 'Cancellation review';
+  if (record?.reapprovalState === 'unlocked') return 'Correction draft';
+  if (['pendingApproval', 'pendingReapproval'].includes(record?.reapprovalState)) return 'Pending reapproval';
+  if (record?.unlockRequest?.status === 'pending') return 'Unlock requested';
   if (record?.panelStatus === 'Cancelled') return 'Cancelled';
   if (record?.panelStatus === 'Draft') return 'Draft';
   return getFinalVnnStatus(record);
 }
 
 export function isVnnReadyForDownstream(record) {
+  if (['cancelled', 'review'].includes(record?.cancellation?.state) || record?.panelStatus === 'Cancelled' || record?.reapprovalState && record.reapprovalState !== 'none' || record?.upstreamPending?.length) return false;
   const placement = record?.approval || {};
   const placementComplete = Boolean(record?.workflow?.placementCompletedAt) || [
     placement.vehicleNo,

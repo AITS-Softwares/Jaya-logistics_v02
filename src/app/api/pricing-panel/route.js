@@ -1,3 +1,5 @@
+import { reconcileOrderCancellations } from '@/lib/reconcileOrderCancellations';
+import { panelApprovalStatus } from '@/lib/reapprovalPresentation.mjs';
 import { saveNumberedDocument } from '@/lib/saveNumberedDocument';
 
 
@@ -264,7 +266,7 @@ import { saveNumberedDocument } from '@/lib/saveNumberedDocument';
 //       companyId: user.companyId,
 //       status: 'Active'
 //     })
-//     .select('pricingSerialNo date branchName partyName totalWeight totalAmount rateApproval.approvalStatus orders')
+//     .select('pricingSerialNo date branchName partyName totalWeight totalAmount rateApproval panelStatus isDraft reapprovalState unlockRequest cancellation upstreamPending orders')
 //     .sort({ createdAt: -1 })
 //     .lean();
 
@@ -286,7 +288,7 @@ import { saveNumberedDocument } from '@/lib/saveNumberedDocument';
 //         partyName: panel.partyName || 'N/A',
 //         totalWeight: panel.totalWeight || 0,
 //         totalAmount: panel.totalAmount || 0,
-//         approvalStatus: panel.rateApproval?.approvalStatus || 'Pending',
+//         approvalStatus: panel.unlockRequest?.status === 'pending' ? 'Unlock requested' : panelApprovalStatus('pricing', panel),
 //         vnnCount: vnns.size,
 //         vnnList: Array.from(vnns)
 //       };
@@ -1148,6 +1150,7 @@ async function branchHandlerGET(req) {
   }
 
   try {
+    await reconcileOrderCancellations(user);
     const url = new URL(req.url);
     const id = url.searchParams.get("id");
     const format = url.searchParams.get("format");
@@ -1381,7 +1384,7 @@ async function branchHandlerGET(req) {
     const listQuery = { status: 'Active' };
     if (!hasPricingView) listQuery['rateApproval.workflowPhase'] = 'part2';
     const pricingPanels = await PricingPanel.find(companyScopeFilter(user, listQuery))
-      .select('pricingSerialNo date branchName partyName subCompanyName subCompanyCode totalWeight totalAmount rateApproval.approvalStatus orders')
+      .select('pricingSerialNo date branchName partyName subCompanyName subCompanyCode totalWeight totalAmount rateApproval panelStatus isDraft reapprovalState unlockRequest cancellation upstreamPending orders')
       .sort({ createdAt: -1 })
       .lean();
 
@@ -1405,7 +1408,7 @@ async function branchHandlerGET(req) {
         subCompanyCode: panel.subCompanyCode || '',
         totalWeight: panel.totalWeight || 0,
         totalAmount: panel.totalAmount || 0,
-        approvalStatus: panel.rateApproval?.approvalStatus || 'Pending',
+        approvalStatus: panel.unlockRequest?.status === 'pending' ? 'Unlock requested' : panelApprovalStatus('pricing', panel),
         vnnCount: vnns.size,
         vnnList: Array.from(vnns)
       };
@@ -1786,15 +1789,13 @@ async function branchHandlerPUT(req) {
     }
 
     const saveMode = body.saveMode;
+    const isReapprovalEdit = ['unlocked', 'pendingReapproval'].includes(pricingPanel.reapprovalState);
     const wasDraft = !!pricingPanel.isDraft || pricingPanel.panelStatus === 'Draft';
-    if ((saveMode === 'draft' || saveMode === 'submit') && !wasDraft) {
+    if ((saveMode === 'draft' || saveMode === 'submit') && !wasDraft && !isReapprovalEdit) {
       return NextResponse.json({ success: false, message: "Only a draft can be saved as draft or submitted" }, { status: 400 });
     }
     if (!saveMode && wasDraft) {
       return NextResponse.json({ success: false, message: "Submit this draft for approval first" }, { status: 400 });
-    }
-    if (saveMode === 'submit' && !hasPermission(user, 'create')) {
-      return NextResponse.json({ success: false, message: "Permission denied: create action required to submit a Pricing Panel draft." }, { status: 403 });
     }
 
     // Part 1 is editable whenever the caller has Pricing Panel edit
@@ -1980,7 +1981,7 @@ async function branchHandlerPUT(req) {
       try { await assertSourcesCurrent(pricingPanel, user.companyId); }
       catch (staleError) { return NextResponse.json({ success: false, message: staleError.message }, { status: staleError.status || 409 }); }
     }
-    if (pricingPanel.reapprovalState === 'unlocked' && saveMode !== 'draft') pricingPanel.reapprovalState = 'pendingApproval';
+    if (isReapprovalEdit) pricingPanel.reapprovalState = saveMode === 'submit' ? 'pendingApproval' : 'unlocked';
     await pricingPanel.save({ validateBeforeSave: saveMode !== 'draft' });
     await captureSourceDependencies('pricing', pricingPanel, user.companyId);
     if (saveMode === 'submit') {
@@ -2169,6 +2170,12 @@ async function branchHandlerPATCH(req) {
     if (part2Actions.includes(action) && !hasPart2ApprovalPermission(user, 'approve')) {
       return NextResponse.json({ success: false, message: 'Permission denied: Pricing Panel Part 2 Approval permission is required.' }, { status: 403 });
     }
+    if (pricingPanel.reapprovalState === 'unlocked' && ['approve', 'reject', 'update-approval', 'approve-with-update', 'amend-part2', 'complete'].includes(action)) {
+      return NextResponse.json({ success: false, message: 'A Pricing editor must submit the correction before Part 2 approval can continue.' }, { status: 409 });
+    }
+    if (action === 'submit-part1' && (pricingPanel.approvedSnapshot || Number(pricingPanel.approvedRevision || pricingPanel.rateApproval?.approvedRevision) > 0) && !hasPermission(user, 'edit')) {
+      return NextResponse.json({ success: false, message: 'Pricing edit permission is required to resubmit a correction.' }, { status: 403 });
+    }
     if (action === 'complete' && !hasPermission(user, 'approve')) {
       return NextResponse.json({ success: false, message: 'Permission denied: approve action not allowed for Pricing Panel.' }, { status: 403 });
     }
@@ -2215,7 +2222,7 @@ async function branchHandlerPATCH(req) {
         pricingPanel.rateApproval.approvalStatus = 'Rejected';
         pricingPanel.rateApproval.workflowPhase = 'part1';
         pricingPanel.panelStatus = 'Draft';
-        if (pricingPanel.reapprovalState === 'pendingApproval') pricingPanel.reapprovalState = 'pendingReapproval';
+        if (['pendingApproval', 'pendingReapproval'].includes(pricingPanel.reapprovalState)) pricingPanel.reapprovalState = 'unlocked';
         addApprovalHistory(pricingPanel, {
           revision: pricingPanel.rateApproval.submittedRevision || approvalRevision(pricingPanel),
           action: 'rejected',
@@ -2278,6 +2285,7 @@ async function branchHandlerPATCH(req) {
             if (approvalData.approvalStatus === 'Rejected') {
               pricingPanel.rateApproval.workflowPhase = 'part1';
               pricingPanel.panelStatus = 'Draft';
+              if (['pendingApproval', 'pendingReapproval'].includes(pricingPanel.reapprovalState)) pricingPanel.reapprovalState = 'unlocked';
               addApprovalHistory(pricingPanel, {
                 revision: pricingPanel.rateApproval.submittedRevision || approvalRevision(pricingPanel),
                 action: 'rejected',

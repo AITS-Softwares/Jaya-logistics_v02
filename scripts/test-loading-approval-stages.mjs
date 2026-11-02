@@ -42,6 +42,7 @@ const source = fs.readFileSync(new URL('../src/app/api/loading-panel/route.js', 
 const ast = parser.parse(source, { sourceType: 'module' });
 const handlerNode = ast.program.body.find(n => n.type === 'FunctionDeclaration' && n.id.name === 'branchHandlerPATCH');
 let current, revisions = 0, ready = 0, purchase = 0;
+let part2Handoffs = 0;
 const deps = {
   connectDb: async () => {}, validateUser: async () => ({ user: { id: 'approver', companyId: 'company' } }),
   identifierFormatError: () => null, isValidObjectId: () => true,
@@ -49,6 +50,7 @@ const deps = {
   NextResponse: { json: (body, options = {}) => ({ ...body, status: options.status || 200 }) },
   assertSourcesCurrent: async () => {}, isStagedLoading, loadingApprovalDecision, loadingWorkflowForReview,
   recordApprovedRevision: async () => { revisions++; }, notifyModuleDecision: async () => {},
+  notifyModulePermissionUsers: async notice => { assert.equal(notice.module, 'Loading Info'); assert.equal(notice.action, 'edit'); part2Handoffs++; },
   notifyConsignmentNoteTeamLoadingInfoReady: async () => { ready++; },
   notifyModuleCreateUsers: async () => { purchase++; }, num: value => Number(value) || 0,
 };
@@ -59,6 +61,7 @@ let response = await patch(req({ vbpApproval: 'Approved', vftApproval: 'Approved
 assert.equal(response.success, true);
 assert.equal(current.panelStatus, 'Draft');
 assert.equal(current.loadingWorkflow.currentPart, 2);
+assert.equal(part2Handoffs, 1, 'Part 1 approval hands Part 2 to edit users');
 assert.equal(current.vlUploads, undefined);
 assert.equal(revisions, 0); assert.equal(ready, 0); assert.equal(purchase, 0);
 response = await patch(req({}));

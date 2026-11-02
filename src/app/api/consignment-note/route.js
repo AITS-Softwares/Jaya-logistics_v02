@@ -1,3 +1,6 @@
+import { reconcileOrderCancellations } from '@/lib/reconcileOrderCancellations';
+import { panelApprovalStatus } from '@/lib/reapprovalPresentation.mjs';
+import { approvedPricingForLr, filterLrEligibleLoading } from '@/lib/lrPricingEligibility';
 import { saveNumberedDocument } from '@/lib/saveNumberedDocument';
 import { loadingWorkflowForReview } from '@/lib/loadingApprovalWorkflow.mjs';
 
@@ -158,7 +161,7 @@ import { loadingWorkflowForReview } from '@/lib/loadingApprovalWorkflow.mjs';
 // //         vehicleNo: note.header?.vehicleNo || 'N/A',
 // //         totalWeight: note.totalWeight || 0,
 // //         unit: note.header?.unit || 'MT',
-// //         status: note.header?.status || 'Pending'
+// //         status: note.unlockRequest?.status === 'pending' ? 'Unlock requested' : panelApprovalStatus('lr', note)
 // //       }));
 
 // //       return NextResponse.json({
@@ -203,7 +206,9 @@ import { loadingWorkflowForReview } from '@/lib/loadingApprovalWorkflow.mjs';
 
 // //     const body = await req.json();
 
-// //     console.log("📝 Creating new consignment note");
+// //     if (!isDraftSave && !await approvedPricingForLr(user, body.header?.orderNo, body.orderRowId)) return NextResponse.json({ success: false, message: 'The linked Pricing Panel must be approved and free of corrections before creating an LR.' }, { status: 409 });
+
+    console.log("📝 Creating new consignment note");
 
 // //     // Generate LR number if not provided
 // //     let lrNo = body.header?.lrNo || await getNextLRNumber(user.companyId);
@@ -837,7 +842,7 @@ import { loadingWorkflowForReview } from '@/lib/loadingApprovalWorkflow.mjs';
 //         vehicleNo: note.header?.vehicleNo || 'N/A',
 //         totalWeight: note.totalWeight || 0,
 //         unit: note.header?.unit || 'MT',
-//         status: note.header?.status || 'Pending'
+//         status: note.unlockRequest?.status === 'pending' ? 'Unlock requested' : panelApprovalStatus('lr', note)
 //       }));
 
 //       return NextResponse.json({
@@ -886,7 +891,9 @@ import { loadingWorkflowForReview } from '@/lib/loadingApprovalWorkflow.mjs';
 
 //     const body = await req.json();
 
-//     console.log("📝 Creating new consignment note");
+//     if (!isDraftSave && !await approvedPricingForLr(user, body.header?.orderNo, body.orderRowId)) return NextResponse.json({ success: false, message: 'The linked Pricing Panel must be approved and free of corrections before creating an LR.' }, { status: 409 });
+
+    console.log("📝 Creating new consignment note");
 
 //     // Generate LR number if not provided
 //     let lrNo = body.header?.lrNo || await getNextLRNumber(user.companyId);
@@ -1648,6 +1655,7 @@ async function branchHandlerGET(req) {
       }, { status });
     }
 
+    await reconcileOrderCancellations(user);
     const url = new URL(req.url);
     const id = url.searchParams.get("id");
     const lrNo = url.searchParams.get("lrNo");
@@ -1660,13 +1668,14 @@ async function branchHandlerGET(req) {
     const pendingLookup = url.searchParams.get("lookup");
     if (pendingLookup === "pendingCount" || pendingLookup === "pendingList") {
       const normalize = (value) => String(value || "").trim().toLowerCase();
-      const [orders, notes, loadingInfos] = await Promise.all([
+      const [orders, notes, rawLoadingInfos] = await Promise.all([
         OrderPanel.find(companyScopeFilter(user)).select("orderPanelNo plantRows panelStatus isDraft partyName customerName customerId").lean(),
         ConsignmentNote.find(companyScopeFilter(user)).select("orderRowId isDraft header.orderNo header.to header.status").lean(),
         LoadingPanel.find(companyScopeFilter(user, { isDraft: { $ne: true }, panelStatus: { $in: ['Approved', 'Completed'] }, $or: [{ 'loadingWorkflow.version': { $ne: 2 } }, { 'loadingWorkflow.part2Status': 'Approved' }] }))
-          .select("vehicleArrivalNo orderRows.orderNo orderRows.orderRowId orderRows.partyName orderRows.toName")
+          .select("vehicleArrivalNo orderRows panelStatus isDraft loadingWorkflow cancellation reapprovalState upstreamPending")
           .lean(),
       ]);
+      const loadingInfos = await filterLrEligibleLoading(user, rawLoadingInfos);
       const partyName = (...names) => names.map((name) => String(name || '').trim())
         .find((name) => name && !['n/a', 'na', '-', '—', 'null', 'undefined'].includes(name.toLowerCase())) || '';
       const customerIds = [...new Set(orders.flatMap((order) => [order.customerId, ...(order.plantRows || []).map((row) => row.customerId)])
@@ -1911,7 +1920,7 @@ async function branchHandlerGET(req) {
           orderTotalWeight,
           unit: note.header?.unit || 'MT',
           consignmentBreakdown,
-          status: note.header?.status || 'Pending'
+          status: note.unlockRequest?.status === 'pending' ? 'Unlock requested' : panelApprovalStatus('lr', note)
         };
       });
 
@@ -2010,6 +2019,8 @@ async function branchHandlerPOST(req) {
       to: body.header?.to,
     }]);
     if (blockedRow) return NextResponse.json({ success: false, message: blockedRow }, { status: 409 });
+
+    if (!isDraftSave && !await approvedPricingForLr(user, body.header?.orderNo, body.orderRowId)) return NextResponse.json({ success: false, message: 'The linked Pricing Panel must be approved and free of corrections before creating an LR.' }, { status: 409 });
 
     console.log("📝 Creating new consignment note");
 
@@ -2188,7 +2199,7 @@ async function branchHandlerPOST(req) {
         lrNo,
         lrDate: body.header?.lrDate || '',
         unit: body.header?.unit || 'MT',
-        status: isDraftSave ? 'Draft' : (body.header?.status || 'Pending'),
+        status: isDraftSave ? 'Draft' : 'Pending',
         lcStatus: body.lcStatus || body.header?.lcStatus || 'Not LC',
         lrType: body.lrType || body.header?.lrType || 'Normal',
         vehicleReach: body.vehicleReach || body.header?.vehicleReach || 'Not Reach',
@@ -2346,14 +2357,12 @@ async function branchHandlerPUT(req) {
     if (isApprovedLocked && !isReapprovalEdit) return NextResponse.json({ success: false, message: 'Approved LRs are locked. Ask an admin to unlock this LR before editing.' }, { status: 409 });
 
     const saveMode = body.saveMode;
+    if (saveMode === 'submit' && !await approvedPricingForLr(user, body.header?.orderNo || note.header?.orderNo, body.orderRowId || note.orderRowId)) return NextResponse.json({ success: false, message: 'The linked Pricing Panel must be approved and free of corrections before submitting an LR.' }, { status: 409 });
     const wasDraft = !!note.isDraft || note.header?.status === 'Draft';
     if (saveMode && !['draft', 'submit'].includes(saveMode)) {
       return NextResponse.json({ success: false, message: "Invalid saveMode" }, { status: 400 });
     }
-    if (saveMode === 'submit' && wasDraft && !hasPermission(user, 'create')) {
-      return NextResponse.json({ success: false, message: "Permission denied: create action required to submit a Consignment Note draft." }, { status: 403 });
-    }
-    if ((saveMode === 'draft' || saveMode === 'submit') && !wasDraft && !(isReapprovalEdit && saveMode === 'submit')) {
+    if ((saveMode === 'draft' || saveMode === 'submit') && !wasDraft && !isReapprovalEdit) {
       return NextResponse.json({ success: false, message: "Only a draft can be saved as draft or submitted" }, { status: 400 });
     }
     if (!saveMode && wasDraft) {
@@ -2692,6 +2701,8 @@ async function branchHandlerPATCH(req) {
       return NextResponse.json({ success: false, message: "Open and save this draft before changing its approval status." }, { status: 400 });
     }
 
+    if (note.reapprovalState === 'unlocked') return NextResponse.json({ success: false, message: 'This LR must be edited and resubmitted before approval.' }, { status: 409 });
+
     const allowedActions = ['approve', 'reject', 'complete'];
     if (!allowedActions.includes(action)) {
       return NextResponse.json({
@@ -2778,7 +2789,7 @@ async function branchHandlerPATCH(req) {
     }
     note.updatedAt = Date.now();
 
-    if (action === 'reject' && note.reapprovalState === 'pendingApproval') note.reapprovalState = 'unlocked';
+    if (action === 'reject' && ['pendingApproval', 'pendingReapproval'].includes(note.reapprovalState)) note.reapprovalState = 'unlocked';
     await note.save();
     if (action === 'approve') {
       try { await recordApprovedRevision('lr', note._id, user); }
