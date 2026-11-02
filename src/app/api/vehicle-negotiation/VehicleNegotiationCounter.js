@@ -16,8 +16,8 @@ const VehicleNegotiationCounter = mongoose.models.VehicleNegotiationCounter ||
   mongoose.model('VehicleNegotiationCounter', vehicleNegotiationCounterSchema);
 
 // Function to get next vehicle negotiation number
-export async function getNextVehicleNegotiationNumber(companyId, subCompanyId, subCompanyCode) {
-  return nextPeriodDocumentNumber({ companyId, subCompanyId, subCompanyCode, documentType: 'VNN', width: 4 });
+export async function getNextVehicleNegotiationNumber(companyId, subCompanyId, subCompanyCode, session = null) {
+  return nextPeriodDocumentNumber({ companyId, subCompanyId, subCompanyCode, documentType: 'VNN', width: 4, session });
 }
 
 export default VehicleNegotiationCounter;

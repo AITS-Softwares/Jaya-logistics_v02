@@ -1,3 +1,4 @@
+import { saveNumberedDocument } from '@/lib/saveNumberedDocument';
 import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from "next/server";
 import { identifierFormatError } from "@/lib/identifierFormats";
@@ -575,11 +576,10 @@ async function branchHandlerPOST(req) {
     const canApprove = hasPermission(user, "approve");
 
     // Generate the number only after all cheap validation has passed
-    const podNo = await getNextPODNumber(
-      user.companyId,
-      user.activeOperatingCompanyId,
-      user.activeOperatingCompanyCode
-    );
+    // Assigned only inside the document-save transaction below.
+    const podNo = undefined;
+
+
 
     const { companyName, companyCode } = await resolveCompany(user);
     const subCompanyId = user.activeOperatingCompanyId;
@@ -612,7 +612,7 @@ async function branchHandlerPOST(req) {
         ? body.paymentStatus
         : "Pending";
 
-    const pod = new POD({
+    let pod = new POD({
       podNo,
       purchaseNo,
       pricingSerialNo: str(body.pricingSerialNo || body.header?.pricingSerialNo),
@@ -666,7 +666,7 @@ async function branchHandlerPOST(req) {
       createdBy: user.id,
     });
 
-    await pod.save({ validateBeforeSave: !isDraftSave }); // totals + final balance are computed in the pre-save hook
+    pod = await saveNumberedDocument(pod, session => getNextPODNumber(user.companyId, user.activeOperatingCompanyId, user.activeOperatingCompanyCode, session), ["podNo", "header.podNo"], { validateBeforeSave: !isDraftSave }); // totals + final balance are computed in the pre-save hook
 
     if (!isDraftSave && pod.podStatus === 'Pending') {
       await notifyModuleApprovers({

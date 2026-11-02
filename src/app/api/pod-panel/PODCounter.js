@@ -25,8 +25,8 @@ const podCounterSchema = new mongoose.Schema({
 const PODCounter = mongoose.models.PODCounter || 
   mongoose.model('PODCounter', podCounterSchema);
 
-export async function getNextPODNumber(companyId, subCompanyId, subCompanyCode) {
-  return nextPeriodDocumentNumber({ companyId, subCompanyId, subCompanyCode, documentType: 'POD', width: 4 });
+export async function getNextPODNumber(companyId, subCompanyId, subCompanyCode, session = null) {
+  return nextPeriodDocumentNumber({ companyId, subCompanyId, subCompanyCode, documentType: 'POD', width: 4, session });
 }
 
 export default PODCounter;

@@ -1,3 +1,4 @@
+import { saveNumberedDocument } from '@/lib/saveNumberedDocument';
 // // import { NextResponse } from "next/server";
 // // import connectDb from "@/lib/db";
 // // import AdvancePayment from "./AdvancePayment";
@@ -1943,7 +1944,8 @@ async function branchHandlerPOST(req) {
       return NextResponse.json({ success: false, message: "A Purchase Panel is required." }, { status: 400 });
     }
 
-    let paymentNo = await getNextAdvancePaymentNumber(user.companyId, user.activeOperatingCompanyId, user.activeOperatingCompanyCode);
+    // Assigned only inside the document-save transaction below.
+    const paymentNo = undefined;
 
     if (body.purchaseNo) {
       const existing = await AdvancePayment.findOne(companyScopeFilter(user, { purchaseNo: body.purchaseNo }));
@@ -2049,7 +2051,7 @@ async function branchHandlerPOST(req) {
       }
     }
 
-    const advancePayment = new AdvancePayment({
+    let advancePayment = new AdvancePayment({
       paymentNo,
       purchaseNo: sourcePurchase.purchaseNo || body.purchaseNo || body.header?.purchaseNo || '',
       purchaseId: sourcePurchase._id,
@@ -2144,7 +2146,7 @@ async function branchHandlerPOST(req) {
       createdBy: user.id
     });
 
-    await advancePayment.save({ validateBeforeSave: !isDraftSave });
+    advancePayment = await saveNumberedDocument(advancePayment, session => getNextAdvancePaymentNumber(user.companyId, user.activeOperatingCompanyId, user.activeOperatingCompanyCode, session), ["paymentNo"], { validateBeforeSave: !isDraftSave });
     if (!isDraftSave && advancePayment.paymentDetails?.paymentStatus === 'Pending') {
       await notifyModuleApprovers({ user, module: 'Advance Payment', panelLabel: 'Advance Payment',
         reference: advancePayment.paymentNo, url: `/admin/Advance-Payment/${advancePayment._id}` });

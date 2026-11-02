@@ -1,4 +1,3 @@
-import {vnnPurchaseType} from '@/lib/vnnPart3.mjs';
 import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from 'next/server';
 import mongoose from 'mongoose';
@@ -39,9 +38,9 @@ async function branchHandlerPATCH(req, { params }) {
 
   const body = await req.json();
   const data = body.approval || {};
-  const required = ['vehicleNo', 'driverName', 'drivingLicense', 'mobile', 'paymentTerms'];
+  const required = ['vehicleNo', 'mobile'];
   if (required.some((key) => !String(data[key] || '').trim())) {
-    return NextResponse.json({ success: false, message: 'Vehicle Number, Driver Name, Licence Number, Mobile, Purchase Type, and Payment Terms are required.' }, { status: 422 });
+    return NextResponse.json({ success: false, message: 'Vehicle Number and Mobile are required.' }, { status: 422 });
   }
   if (!/^\d{10}$/.test(String(data.mobile).trim())) {
     return NextResponse.json({ success: false, message: 'Mobile number must contain exactly 10 digits.' }, { status: 422 });
@@ -60,13 +59,12 @@ async function branchHandlerPATCH(req, { params }) {
   // const wasReadyForDownstream = isVnnReadyForDownstream(record);
 
   record.approval.vehicleNo = String(data.vehicleNo).trim();
-  record.approval.driverName = String(data.driverName).trim();
-  record.approval.drivingLicense = String(data.drivingLicense).trim().toUpperCase();
+  // Optional driver details must not erase existing values when omitted.
+  if (data.driverName !== undefined) record.approval.driverName = String(data.driverName || '').trim();
+  if (data.drivingLicense !== undefined) record.approval.drivingLicense = String(data.drivingLicense || '').trim().toUpperCase();
   record.approval.mobile = String(data.mobile).trim();
-  const purchaseType=vnnPurchaseType(record.vendors,record.approval);
-  if(!purchaseType)return NextResponse.json({success:false,message:'Set one Purchase Type for the selected supplier in Supplier Market Rates before saving placement.'},{status:422});
-  record.approval.purchaseType = purchaseType;
-  record.approval.paymentTerms = String(data.paymentTerms).trim();
+  // Purchase type and payment terms belong to approved Commercial Part 3.
+  // Placement must neither require resubmitting them nor overwrite them.
   record.workflow = record.workflow || { audit: [] };
   record.workflow.audit = record.workflow.audit || [];
   record.workflow.placementCompletedAt = new Date();

@@ -22,7 +22,7 @@ export function financialYearFor(date = new Date()) {
   return `${start}-${String(start + 1).slice(-2)}`;
 }
 
-export async function nextCompanyDocumentNumber({ companyId, subCompanyId, subCompanyCode, documentType, width = 5, financialYear = financialYearFor() }) {
+export async function nextCompanyDocumentNumber({ companyId, subCompanyId, subCompanyCode, documentType, width = 5, financialYear = financialYearFor(), session = null }) {
   if (!companyId || !subCompanyId || !subCompanyCode || !documentType) {
     throw new Error("Company-specific document sequence requires company and operating-company details.");
   }
@@ -34,13 +34,13 @@ export async function nextCompanyDocumentNumber({ companyId, subCompanyId, subCo
       $inc: { sequence: 1 },
       $setOnInsert: { companyId, subCompanyId, documentType, financialYear },
     },
-    { new: true, upsert: true, setDefaultsOnInsert: true }
+    { new: true, upsert: true, setDefaultsOnInsert: true, session }
   );
   return `${safeCode}-${documentType}-${financialYear}-${String(counter.sequence).padStart(width, "0")}`;
 }
 
 // Simple per-company running number, no year, never resets:  JGL-ORD-0001
-export async function nextSimpleDocumentNumber({ companyId, subCompanyId, subCompanyCode, documentType, width = 4 }) {
+export async function nextSimpleDocumentNumber({ companyId, subCompanyId, subCompanyCode, documentType, width = 4, session = null }) {
   if (!companyId || !subCompanyId || !subCompanyCode || !documentType) {
     throw new Error("Company-specific document sequence requires company and operating-company details.");
   }
@@ -50,7 +50,7 @@ export async function nextSimpleDocumentNumber({ companyId, subCompanyId, subCom
   const counter = await DocumentSequence.findOneAndUpdate(
     { _id: key },
     { $inc: { sequence: 1 }, $setOnInsert: { companyId, subCompanyId, documentType, financialYear } },
-    { new: true, upsert: true, setDefaultsOnInsert: true }
+    { new: true, upsert: true, setDefaultsOnInsert: true, session }
   );
   return `${code}-${documentType}-${String(counter.sequence).padStart(width, "0")}`;
 }
@@ -81,7 +81,8 @@ export async function nextPeriodDocumentNumber({ companyId, subCompanyId, subCom
         { upsert: true, session }
       );
     } catch (error) {
-      if (error?.code !== 11000) throw error;
+      // A duplicate-key error aborts a transaction; never continue using it.
+      if (session || error?.code !== 11000) throw error;
     }
   }
 
@@ -99,7 +100,7 @@ export async function nextPeriodDocumentNumber({ companyId, subCompanyId, subCom
  * `seed()` is called only when the counter for that year does not exist yet, so an existing
  * series carries on after its highest number instead of restarting at 1.
  */
-export async function nextYearlyDocumentNumber({ companyId, subCompanyId, subCompanyCode, documentType, width = 4, year = new Date().getFullYear(), seed }) {
+export async function nextYearlyDocumentNumber({ companyId, subCompanyId, subCompanyCode, documentType, width = 4, year = new Date().getFullYear(), seed, session = null }) {
   if (!companyId || !subCompanyId || !subCompanyCode || !documentType) {
     throw new Error("Company-specific document sequence requires company and operating-company details.");
   }
@@ -107,23 +108,23 @@ export async function nextYearlyDocumentNumber({ companyId, subCompanyId, subCom
   const financialYear = String(year); // the existing field holds the calendar year here
   const key = `${companyId}:${subCompanyId}:${documentType}:${financialYear}`;
 
-  if (typeof seed === "function" && !(await DocumentSequence.exists({ _id: key }))) {
-    const start = Number(await seed()) || 0;
+  if (typeof seed === "function" && !(await DocumentSequence.exists({ _id: key }).session(session))) {
+    const start = Number(await seed(session)) || 0;
     try {
       await DocumentSequence.updateOne(
         { _id: key },
         { $setOnInsert: { companyId, subCompanyId, documentType, financialYear, sequence: start } },
-        { upsert: true }
+        { upsert: true, session }
       );
     } catch (e) {
-      if (e?.code !== 11000) throw e; // another request created it first
+      if (session || e?.code !== 11000) throw e; // another request created it first
     }
   }
 
   const counter = await DocumentSequence.findOneAndUpdate(
     { _id: key },
     { $inc: { sequence: 1 }, $setOnInsert: { companyId, subCompanyId, documentType, financialYear } },
-    { new: true, upsert: true, setDefaultsOnInsert: true }
+    { new: true, upsert: true, setDefaultsOnInsert: true, session }
   );
   return `${code}-${documentType}-${financialYear}-${String(counter.sequence).padStart(width, "0")}`;
 }

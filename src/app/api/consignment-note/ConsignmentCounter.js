@@ -26,8 +26,8 @@ const consignmentCounterSchema = new mongoose.Schema({
 const ConsignmentCounter = mongoose.models.ConsignmentCounter || 
   mongoose.model('ConsignmentCounter', consignmentCounterSchema);
 
-export async function getNextLRNumber(companyId, subCompanyId, subCompanyCode) {
-  return nextPeriodDocumentNumber({ companyId, subCompanyId, subCompanyCode, documentType: 'LR', width: 4 });
+export async function getNextLRNumber(companyId, subCompanyId, subCompanyCode, session = null) {
+  return nextPeriodDocumentNumber({ companyId, subCompanyId, subCompanyCode, documentType: 'LR', width: 4, session });
 }
 
 export default ConsignmentCounter;

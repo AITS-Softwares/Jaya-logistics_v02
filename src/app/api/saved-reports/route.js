@@ -1,3 +1,4 @@
+import { saveNumberedDocument } from '@/lib/saveNumberedDocument';
 import { withBranchAccess } from '@/lib/branchAccess';
 import branchScopePlugin from '@/lib/branchScopePlugin';
 import { NextResponse } from "next/server";
@@ -127,28 +128,8 @@ async function branchHandlerPOST(req) {
     const year = part("year");
     const fyStart = part("month") >= 4 ? year : year - 1;
     const financialYear = `${String(fyStart).slice(-2)}${String(fyStart + 1).slice(-2)}`;
-    let generatedBillNumber = billNumber || `BILL/${Date.now()}`;
-    if (type === "product-wise" || type === "general" || type === "mosaic") {
-      const counterId = `Billing-${subCompanyId}-${financialYear}`;
-      let counter;
-      try {
-        counter = await Counter.findOneAndUpdate(
-          { companyId: user.companyId, id: counterId },
-          { $inc: { seq: 1 } },
-          { new: true, upsert: true, setDefaultsOnInsert: true }
-        );
-      } catch (error) {
-        if (error.code !== 11000) throw error;
-        counter = await Counter.findOneAndUpdate(
-          { companyId: user.companyId, id: counterId },
-          { $inc: { seq: 1 } },
-          { new: true }
-        );
-      }
-      const branchCode = branch?.code || filters?.branchCode || "BRANCH";
-      const partyCode = customer?.customerCodeValue || customer?.customerCode || "PARTY";
-      generatedBillNumber = `${branchCode}/${partyCode}/${financialYear}/${String(counter.seq).padStart(3, "0")}`;
-    }
+    // Assigned only inside the document-save transaction below.
+    const generatedBillNumber = undefined;
 
     const knownProfiles = {
       JGL: {
@@ -208,7 +189,7 @@ async function branchHandlerPOST(req) {
       plantCode: filters?.plantCode || "",
     };
 
-    const savedReport = new SavedReport({
+    let savedReport = new SavedReport({
       reportId: reportId || `RPT_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       type,
       billNumber: generatedBillNumber,
@@ -226,18 +207,25 @@ async function branchHandlerPOST(req) {
       createdBy: user.id
     });
 
-    await savedReport.save();
-    // Keep metadata fields available if this development process had compiled
-    // the SavedReport model before the billing schema was extended.
-    await SavedReport.collection.updateOne({ _id: savedReport._id }, {
-      $set: {
-        billNumber: savedReport.billNumber,
-        subCompanyId,
-        subCompanyCode: subCompany.code,
-        issuer,
-        clientSnapshot,
-        filters: savedFilters,
+    savedReport = await saveNumberedDocument(savedReport, async session => {
+      if (!["product-wise", "general", "mosaic"].includes(type)) {
+        return billNumber || `BILL/${Date.now()}`;
       }
+      const counterId = `Billing-${subCompanyId}-${financialYear}`;
+      const counter = await Counter.findOneAndUpdate(
+        { companyId: user.companyId, id: counterId },
+        { $inc: { seq: 1 } },
+        { new: true, upsert: true, setDefaultsOnInsert: true, session }
+      );
+      const branchCode = branch?.code || filters?.branchCode || "BRANCH";
+      const partyCode = customer?.customerCodeValue || customer?.customerCode || "PARTY";
+      return `${branchCode}/${partyCode}/${financialYear}/${String(counter.seq).padStart(3, "0")}`;
+    }, ['billNumber'], {}, async (candidate, session) => {
+      // Persist snapshot metadata in the same transaction on hot-reloaded models.
+      await SavedReport.collection.updateOne({ _id: candidate._id }, {
+        $set: { billNumber: candidate.billNumber, subCompanyId, subCompanyCode: subCompany.code,
+          issuer, clientSnapshot, filters: savedFilters }
+      }, { session });
     });
     const persistedReport = await SavedReport.findById(savedReport._id).lean();
 
