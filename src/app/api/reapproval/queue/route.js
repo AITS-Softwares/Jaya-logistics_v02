@@ -24,9 +24,13 @@ async function branchHandlerGET(req) {
   try { user = verifyToken(req); }
   catch (error) { return NextResponse.json({ success: false, message: error.message || 'Authentication required' }, { status: 401 }); }
   const admin = user.type === 'company' || user.roles?.includes('Admin');
+  const searchParams = new URL(req.url || 'http://localhost').searchParams;
+  const search = String(searchParams.get('search') || '').trim().slice(0, 120);
+  const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const records = [];
   const pendingDocs = [];
   for (const entry of entries) {
+    if (searchParams.get('module') && searchParams.get('module') !== entry.module) continue;
     const moduleData = user.modules?.[entry.module];
     const permission = moduleData?.selected ? (moduleData.permissions || {}) : {};
     const approvalModule = entry.type === 'pricing' ? user.modules?.['Pricing Panel - Part 2 Approval'] : moduleData;
@@ -44,10 +48,16 @@ async function branchHandlerGET(req) {
         { 'loadingWorkflow.version': 2, 'loadingWorkflow.part1Status': 'Rejected' },
       ] }
       : { companyId: user.companyId, reapprovalState: { $in: ['unlocked', 'pendingApproval', 'pendingReapproval', 'blockedByUpstream', 'syncFailed'] } };
-    const docs = await entry.Model.find(filter)
-      .select(`${entry.no} vnnNo vehicleNegotiationNo vehicleNegotiationRef orders orderRows pendingStateBeforeBlock panelStatus status isDraft header.status approval.part3Status rateApproval.approvalStatus rateApproval.workflowPhase rateApproval.approvedRevision reapprovalState loadingWorkflow sourceDependencies approvedSnapshot approvedRevision reapprovalSyncError upstreamPending reapprovalHistory.action updatedAt`)
+    const taskFilter = { companyId: user.companyId, $or: [filter, { 'unlockRequest.status': 'pending' }, { 'cancellation.state': 'review' }, ...(entry.type === 'pricing' ? [{ 'orders.cancellationChargeRequired': true }] : [])] };
+    const searchedFilter = search ? { $and: [taskFilter, { $or: [entry.no, 'branchName', 'partyName'].map(field => ({ [field]: { $regex: escapedSearch, $options: 'i' } })) }] } : taskFilter;
+    const docs = await entry.Model.find(searchedFilter)
+      .select(`${entry.no} vnnNo vehicleNegotiationNo vehicleNegotiationRef orders orderRows unlockRequest cancellation pendingStateBeforeBlock panelStatus status isDraft header.status approval.part3Status rateApproval.approvalStatus rateApproval.workflowPhase rateApproval.approvedRevision reapprovalState loadingWorkflow sourceDependencies approvedSnapshot approvedRevision reapprovalSyncError upstreamPending reapprovalHistory.action updatedAt`)
       .sort({ updatedAt: -1 }).limit(50).lean();
     for (const doc of docs) {
+      if (doc.unlockRequest?.status === 'pending') doc.reapprovalState = 'unlockRequested';
+      else if (entry.type === 'pricing' && doc.orders?.some(row => row.cancellationChargeRequired)) doc.reapprovalState = 'cancellationCharges';
+      else if (doc.cancellation?.state === 'review') doc.reapprovalState = 'cancellationReview';
+      else if (doc.cancellation?.state === 'cancelled') continue;
       if (entry.type === 'loading' && doc.loadingWorkflow?.version === 2 && (!doc.reapprovalState || doc.reapprovalState === 'none')) {
         const status = doc.loadingWorkflow['part' + doc.loadingWorkflow.currentPart + 'Status'];
         if (status === 'Submitted') doc.reapprovalState = 'pendingApproval';
@@ -189,7 +199,10 @@ async function branchHandlerGET(req) {
     // Active tasks belong to their edit/approval users. Keep downstream waiting
     // and sync-status entries visible so the rest of the workflow stays in view.
     let path = null;
-    if (isLatestVnnSyncRequired && canApprove) path = `/admin/${entry.path}/approve/${doc._id}`;
+    if (displayReapprovalState === 'unlockRequested' && canApprove) path = `/admin/${entry.path}/${doc._id}/view`;
+    else if (displayReapprovalState === 'cancellationReview' && (canEdit || canApprove)) path = `/admin/${entry.path}/${doc._id}/view`;
+    else if (displayReapprovalState === 'cancellationCharges' && (doc.cancellation?.chargeReview?.status === 'pending' ? canApprove : canEdit)) path = `/admin/${entry.path}/${doc._id}`;
+    else if (isLatestVnnSyncRequired && canApprove) path = `/admin/${entry.path}/approve/${doc._id}`;
     else if (isLatestVnnSyncRequired && canEdit) path = `/admin/${entry.path}/${doc._id}/view`;
     else if (isLatestVnnSyncAmbiguous && isAdmin) path = `/admin/${entry.path}/${doc._id}/view`;
     else if (!isLatestVnnSyncAmbiguous && isApprovalPending && canApprove) path = `/admin/${entry.path}/approve/${doc._id}`;

@@ -108,6 +108,9 @@ export async function notifyModuleApprovers({ user, module, panelLabel, referenc
 /** Tell the record's creator the outcome; this never grants approval rights. */
 export async function notifyModuleDecision({ user, record, module, reference, action, url }) {
   const decisions = { approve: 'approved', reject: 'returned for correction', complete: 'completed' };
+  if (action === 'reject') return notifyModulePermissionUsers({ user, module, action: 'edit',
+    type: `workflow-decision:reject:${module.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+    reference, url, message: `${module} ${reference || ''} was returned for correction. An editor must correct and resubmit it.` });
   const creatorId = record.createdBy?._id || record.createdBy;
   if (!decisions[action]) return;
   const recipientIds = creatorId && String(creatorId) !== String(user.id) ? [creatorId] : [];

@@ -1,6 +1,7 @@
 /** Adds reapproval metadata without changing any panel's existing status fields. */
 export default function reapprovalPlugin(schema) {
   schema.add({
+    unlockRequest: { type: schema.base.Schema.Types.Mixed, default: null },
     reapprovalState: {
       type: String,
       enum: ['none', 'unlocked', 'pendingApproval', 'pendingReapproval', 'blockedByUpstream', 'syncFailed'],

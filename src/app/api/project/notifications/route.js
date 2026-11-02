@@ -9,7 +9,20 @@ async function getInbox(req) {
   try {
     const user = await pushIdentity(req);
     const query = new URL(req.url).searchParams;
-    const items = (await visibleInbox(user, {}, query.get('view'))).map(inboxItem);
+    const filter = {};
+    const search = String(query.get('search') || '').trim().slice(0, 120);
+    if (search) {
+      const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      filter.$or = ['message', 'reference', 'moduleName'].map(field => ({ [field]: { $regex: escaped, $options: 'i' } }));
+    }
+    if (query.get('module')) filter.moduleName = String(query.get('module')).slice(0, 100);
+    if (query.get('from') || query.get('to')) {
+      filter.createdAt = {};
+      if (/^\d{4}-\d{2}-\d{2}$/.test(query.get('from') || '')) filter.createdAt.$gte = new Date(`${query.get('from')}T00:00:00+05:30`);
+      if (/^\d{4}-\d{2}-\d{2}$/.test(query.get('to') || '')) filter.createdAt.$lte = new Date(`${query.get('to')}T23:59:59.999+05:30`);
+      if (!Object.keys(filter.createdAt).length) delete filter.createdAt;
+    }
+    const items = (await visibleInbox(user, filter, query.get('view'))).map(inboxItem);
     return NextResponse.json(query.get('meta') === '1' ? { items, isAdmin: canOverview(user), canOverview: activitySettings.adminOverview && canOverview(user) } : items, { headers: { 'Cache-Control': 'private, no-store' } });
   } catch (error) { return NextResponse.json({ message: error.status ? error.message : 'Unable to load notifications.' }, { status: error.status || 500 }); }
 }

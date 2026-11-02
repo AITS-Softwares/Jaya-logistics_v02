@@ -1,0 +1,7 @@
+export default function LoadingStageGuide({ workflow, optional = false }) {
+  const current = workflow?.currentPart || 1;
+  return <nav aria-label="Loading Info stages" className="mx-4 my-4 grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 sm:grid-cols-2">{[
+    { part: 1, title: 'Vehicle inspection', sections: 'VBP · Vehicle Body and VFT · Floor Tarpaulin', photos: '3 VBP + 3 VFT photos', status: workflow?.part1Status || 'Draft' },
+    { part: 2, title: 'Loading completion', sections: 'VL · Vehicle Loading, VOT · Outer Tarpaulin and remaining details', photos: '5 VL + 3 VOT photos', status: workflow?.part2Status || 'Locked' },
+  ].map(stage => <div key={stage.part} aria-current={stage.part === current ? 'step' : undefined} className={`rounded-xl border p-4 ${stage.part === current ? 'border-amber-400 bg-amber-50' : 'border-slate-200 bg-slate-50'}`}><div className="flex justify-between gap-2"><strong>Part {stage.part} · {stage.title}</strong><span className="text-xs font-semibold">{stage.status}</span></div><p className="mt-2 text-sm text-slate-600">{stage.sections}</p><p className="mt-1 text-xs text-slate-500">{optional ? 'Photos optional for this Loading Info' : stage.photos}{stage.status === 'Locked' ? ' · Opens after Part 1 approval' : stage.part === current ? ' · Current stage' : ''}</p></div>)}<p className="text-xs text-slate-500 sm:col-span-2">Save each part as a draft or submit it separately for approval. LR creation requires approved Part 2 and approved Pricing.</p></nav>;
+}

@@ -81,8 +81,12 @@ async function childrenOf(type, doc, companyId, session) {
       return [['purchase', relatedPurchases], ['vnn', relatedVnns], ['loading', relatedLoadings], ['lr', relatedLrs]];
     }
     case 'purchase': {
-      const [advances] = await Promise.all([query(AdvancePayment, { purchaseNo: no(doc.purchaseNo) })]);
-      return [['advance', advances]];
+      const [advances, pods, balances] = await Promise.all([
+        query(AdvancePayment, { purchaseNo: no(doc.purchaseNo) }),
+        query(POD, { purchaseNo: no(doc.purchaseNo) }),
+        query(BalancePayment, { purchaseNo: no(doc.purchaseNo) }),
+      ]);
+      return [['advance', advances], ['pod', pods], ['balance', balances]];
     }
     case 'vnn': {
       const [pricings, loadings] = await Promise.all([
@@ -96,8 +100,11 @@ async function childrenOf(type, doc, companyId, session) {
       return [['pricing', pricings], ['loading', loadings]];
     }
     case 'loading': {
-      const [lrs] = await Promise.all([query(ConsignmentNote, { loadingInfoNo: no(doc.vehicleArrivalNo) })]);
-      return [['lr', lrs]];
+      const [lrs, purchases] = await Promise.all([
+        query(ConsignmentNote, { loadingInfoNo: no(doc.vehicleArrivalNo) }),
+        query(PurchasePanel, { loadingInfoNo: no(doc.vehicleArrivalNo) }),
+      ]);
+      return [['lr', lrs], ['purchase', purchases]];
     }
     case 'lr': {
       const lrNo = no(doc.lrNo);

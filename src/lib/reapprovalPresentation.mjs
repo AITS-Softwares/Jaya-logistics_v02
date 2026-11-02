@@ -4,6 +4,9 @@ export function hasPriorApproval(record) {
 }
 
 export function panelApprovalStatus(type, record) {
+  if (['cancelled', 'review'].includes(record?.cancellation?.state)) return record.cancellation.state === 'cancelled' ? 'Cancelled' : 'Cancellation review';
+  if (record?.reapprovalState === 'unlocked') return 'Correction draft';
+  if (record?.reapprovalState === 'pendingApproval') return hasPriorApproval(record) ? 'Pending reapproval' : 'Pending approval';
   const lifecycle = record?.panelStatus || record?.status || '';
   if (['Cancelled', 'Canceled', 'Hold', 'On Hold'].includes(lifecycle)) return lifecycle;
   if (record?.isDraft || lifecycle === 'Draft') return 'Draft';
@@ -28,12 +31,13 @@ export function reviewDisplayState(record, state = record?.reapprovalState) {
 }
 
 export function approvalLabelForRecord(record) {
+  if (record?.unlockRequest?.status === 'pending') return 'Unlock requested';
   const state = reviewDisplayState(record);
   if (!['blockedByUpstream', 'syncFailed'].includes(state)) {
     const stageLabel = loadingStageLabel(record);
     if (stageLabel) return stageLabel;
   }
-  const labels = { unlocked: 'Under correction', pendingApproval: 'Pending approval', pendingReapproval: 'Pending reapproval', blockedByUpstream: 'Waiting for upstream review', syncFailed: 'Sync review needed' };
+  const labels = { unlocked: 'Correction draft', pendingApproval: 'Pending approval', pendingReapproval: 'Pending reapproval', blockedByUpstream: 'Waiting for upstream review', syncFailed: 'Sync review needed' };
   if (state !== 'none') return labels[state] || state;
   const status = String(record.status || '').trim();
   if (/^(cancelled|canceled|hold|on hold)$/i.test(status)) return null;

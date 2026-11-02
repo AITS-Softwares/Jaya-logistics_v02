@@ -1,3 +1,5 @@
+import { reconcileOrderCancellations } from '@/lib/reconcileOrderCancellations';
+import { panelApprovalStatus } from '@/lib/reapprovalPresentation.mjs';
 // // app/api/order-panel/route.js
 // import { NextResponse } from "next/server";
 // import connectDb from "@/lib/db";
@@ -2188,6 +2190,7 @@ function calculatePendingDays(orderDate, status) {
 // ── GET: Requires 'view' permission ──
 const branchHandlerGET = withAuth(async (req, context, user) => {
   await connectDb();
+    await reconcileOrderCancellations(user);
 
   try {
     const url = new URL(req.url);
@@ -2269,7 +2272,7 @@ const branchHandlerGET = withAuth(async (req, context, user) => {
 
       let orderPanels = await OrderPanel.find(query)
         .sort({ createdAt: -1 })
-        .select('orderPanelNo date branchName branchCode subCompanyName subCompanyCode customerName partyName totalWeight panelStatus isDraft createdAt plantRows delivery collectionCharges cancellationCharges loadingCharges otherCharges')
+        .select('orderPanelNo date branchName branchCode subCompanyName subCompanyCode customerName partyName totalWeight panelStatus isDraft reapprovalState unlockRequest cancellation createdAt plantRows delivery collectionCharges cancellationCharges loadingCharges otherCharges')
         .lean();
       if (openOnly) orderPanels = orderPanels
         .filter((order) => !order.isDraft && (order.panelStatus || 'Draft') !== 'Draft')
@@ -2308,6 +2311,7 @@ const branchHandlerGET = withAuth(async (req, context, user) => {
               statusRequest: row.statusRequest?.action ? { action: row.statusRequest.action, reason: row.statusRequest.reason || '', by: row.statusRequest.by || null, at: row.statusRequest.at || null } : null,
               delivery: order.delivery || 'Normal',
               panelStatus: order.panelStatus || 'Draft',
+              approverStatus: order.unlockRequest?.status === 'pending' ? 'Unlock requested' : panelApprovalStatus('order', order),
               isDraft: !!order.isDraft,
               collectionCharges: order.collectionCharges || 0,
               cancellationCharges: order.cancellationCharges || 'Nil',
@@ -2343,6 +2347,7 @@ const branchHandlerGET = withAuth(async (req, context, user) => {
             status: order.panelStatus || 'Draft',
             delivery: order.delivery || 'Normal',
             panelStatus: order.panelStatus || 'Draft',
+              approverStatus: order.unlockRequest?.status === 'pending' ? 'Unlock requested' : panelApprovalStatus('order', order),
             isDraft: !!order.isDraft,
             collectionCharges: order.collectionCharges || 0,
             cancellationCharges: order.cancellationCharges || 'Nil',
@@ -2365,7 +2370,7 @@ const branchHandlerGET = withAuth(async (req, context, user) => {
 
     let orderPanels = await OrderPanel.find(query)
       .sort({ createdAt: -1 })
-      .select('orderPanelNo date branchName branchCode subCompanyName subCompanyCode customerName partyName totalWeight panelStatus isDraft createdAt plantRows delivery')
+      .select('orderPanelNo date branchName branchCode subCompanyName subCompanyCode customerName partyName totalWeight panelStatus isDraft reapprovalState unlockRequest cancellation createdAt plantRows delivery')
       .lean();
     if (openOnly) orderPanels = orderPanels.filter((order) =>
       !order.isDraft && (order.panelStatus || 'Draft') !== 'Draft'
@@ -2383,6 +2388,7 @@ const branchHandlerGET = withAuth(async (req, context, user) => {
       partyName: order.partyName || order.customerName || 'N/A',
       totalWeight: order.totalWeight || 0,
       panelStatus: order.panelStatus || 'Draft',
+              approverStatus: order.unlockRequest?.status === 'pending' ? 'Unlock requested' : panelApprovalStatus('order', order),
       isDraft: !!order.isDraft,
       createdAt: order.createdAt ? new Date(order.createdAt).toISOString().split('T')[0] : ''
     }));
@@ -2756,7 +2762,7 @@ const branchHandlerPUT = withAuth(async (req, context, user) => {
         return NextResponse.json({ success: false, message: `Select a drop location for every order row. Missing on row(s): ${missingDrops.map((row, index) => row.plantName || `Row ${index + 1}`).join(', ')}.` }, { status: 400 });
       }
     }
-    if ((saveMode === 'draft' || saveMode === 'submit') && orderPanel.panelStatus !== 'Draft' && !(isReapprovalEdit && saveMode === 'submit')) {
+    if ((saveMode === 'draft' || saveMode === 'submit') && orderPanel.panelStatus !== 'Draft' && !isReapprovalEdit) {
       return NextResponse.json({
         success: false,
         message: `Only a draft can be saved as draft or submitted. This order is already ${orderPanel.panelStatus}.`
@@ -2943,7 +2949,7 @@ const branchHandlerPUT = withAuth(async (req, context, user) => {
 
     await orderPanel.save();
 
-    if (saveMode === 'submit') {
+    if (saveMode === 'submit' || isReapprovalEdit && saveMode !== 'draft') {
       await notifyModuleApprovers({
         user, module: 'Order Panel', panelLabel: 'Order Panel',
         reference: orderPanel.orderPanelNo, url: `/admin/order-panel/${orderPanel._id}`,

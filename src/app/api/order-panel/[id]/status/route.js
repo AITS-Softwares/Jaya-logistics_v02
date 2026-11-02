@@ -1,4 +1,6 @@
 import { withBranchAccess } from '@/lib/branchAccess';
+import { cancelOrder } from '@/lib/cancelOrder';
+import { notifyModulePermissionUsers } from '@/lib/workflowNotifications';
 import { NextResponse } from 'next/server';
 import mongoose from 'mongoose';
 import connectDb from '@/lib/db';
@@ -54,6 +56,8 @@ const branchHandlerPOST = withAuth(async (req, { params }, user) => {
       if (statusDecision === 'reject') {
         if (!reason) return NextResponse.json({ success: false, message: 'A rejection reason is required.' }, { status: 400 });
         const now = new Date();
+        const requesterIds = [...new Set(requestRows.map(row => String(row.statusRequest.by || '')).filter(Boolean))];
+        const cancellationRejected = requestRows.some(row => row.statusRequest.action === 'Cancel');
         for (const row of requestRows) {
           const requestedAction = row.statusRequest.action;
           const current = row.status || 'Open';
@@ -61,6 +65,9 @@ const branchHandlerPOST = withAuth(async (req, { params }, user) => {
           row.statusRequest = undefined;
         }
         await order.save();
+        await notifyModulePermissionUsers({ user, module: 'Order Panel', action: 'view', recipientIds: requesterIds,
+          type: cancellationRejected ? 'order-cancellation-rejected' : 'order-status-request-rejected', reference: order.orderPanelNo,
+          url: `/admin/order-panel/${order._id}/view`, message: `${cancellationRejected ? 'Cancellation' : 'Status change'} request for order ${order.orderPanelNo} was rejected. Reason: ${reason}` });
         return NextResponse.json({ success: true, message: 'Status request rejected.', data: order });
       }
       const requestedActions = [...new Set(requestRows.map((row) => row.statusRequest.action))];
@@ -85,6 +92,7 @@ const branchHandlerPOST = withAuth(async (req, { params }, user) => {
       return NextResponse.json({ success: false, message: 'A status request is already pending approval for one or more selected rows.' }, { status: 409 });
     }
 
+    if (action === 'Cancel') return NextResponse.json(await cancelOrder(user, id, { reason, dryRun: body.dryRun === true, approvingStatusRequest }));
     const orderNo = order.orderPanelNo;
     const targetIds = new Set(requested.map(idOf));
     const requestedRowIds = [...targetIds];
@@ -219,90 +227,6 @@ const branchHandlerPOST = withAuth(async (req, { params }, user) => {
       row.statusHistory.push({ action, from, to, reason, by: user.id, at: now });
     }
 
-    if (action === 'Cancel') {
-      const linkedVnnIds = [...new Set(negotiations.map((item) => idOf(item)).filter((value) => mongoose.Types.ObjectId.isValid(value)))];
-      const pricingPanels = affectedLoadingPanels.length
-        ? await PricingPanel.find(companyScopeFilter(user, { $or: [
-          { 'orders.orderNo': orderNo },
-          ...(linkedVnnIds.length ? [{ 'orders.vehicleNegotiationId': { $in: linkedVnnIds } }] : [])
-        ] }))
-        : [];
-      const rowsNeedingCharge = [];
-      for (const panel of pricingPanels) {
-        let changed = false;
-        for (const pricingOrder of panel.orders || []) {
-          const matchesCancelledRow = pricingOrder.orderNo === orderNo &&
-            (targetIds.has(String(pricingOrder.orderRowId || '')) || requested.length === 1 || linkedVnnIds.includes(idOf(pricingOrder.vehicleNegotiationId)));
-          if (!matchesCancelledRow) continue;
-          pricingOrder.cancellationChargeRequired = true;
-          rowsNeedingCharge.push({ pricingSerialNo: panel.pricingSerialNo, orderNo: pricingOrder.orderNo });
-          changed = true;
-        }
-        if (changed) await panel.save();
-      }
-      for (const { purchase } of relevantPurchases) {
-        purchase.panelStatus = 'Cancelled';
-        await purchase.save();
-      }
-      for (const negotiation of negotiationsToCancel) {
-        negotiation.panelStatus = 'Cancelled';
-        // Vehicle master records are not reserved directly in this app; clearing
-        // the negotiation assignment releases the selected vehicle for reuse.
-        if (negotiation.approval) {
-          negotiation.approval.vehicleId = '';
-          negotiation.approval.vehicleNo = '';
-          negotiation.approval.vehicleData = null;
-        }
-        await negotiation.save();
-      }
-      for (const negotiation of negotiationsNeedingReplacement) {
-        // Cancellation invalidates the approval basis for a still-active VNN.
-        // Stage it as an editable draft so the user can replace the cancelled
-        // order row and submit Part 1 again.
-        if (negotiation.pricingPanelId) continue;
-        const amendmentReason = `Linked order ${orderNo} row(s) cancelled: ${reason}`;
-        const amendedAt = new Date();
-        negotiation.workflow = negotiation.workflow || {};
-        negotiation.workflow.audit = negotiation.workflow.audit || [];
-        negotiation.workflow.part1Locked = false;
-        negotiation.workflow.part1LockedAt = null;
-        negotiation.workflow.part1LockedBy = null;
-        negotiation.workflow.amendmentCount = (negotiation.workflow.amendmentCount || 0) + 1;
-        negotiation.workflow.lastAmendmentReason = amendmentReason;
-        negotiation.workflow.lastAmendedAt = amendedAt;
-        negotiation.workflow.lastAmendedBy = user.id || null;
-        negotiation.workflow.rateTargetCompletedAt = null;
-        negotiation.workflow.rateTargetCompletedBy = null;
-        negotiation.workflow.rateTargetLastSavedAt = null;
-        negotiation.workflow.placementCompletedAt = null;
-        negotiation.workflow.placementCompletedBy = null;
-        negotiation.workflow.audit.push({ action: 'part1-amended', reason: amendmentReason, by: user.id || null, at: amendedAt });
-        negotiation.workflow.audit.push({ action: 'reapproval-required', reason: amendmentReason, by: user.id || null, at: amendedAt });
-        negotiation.negotiation.maxRate = 0;
-        negotiation.negotiation.targetRate = 0;
-        negotiation.negotiation.oldRatePercent = '';
-        negotiation.negotiation.remarks1 = '';
-        negotiation.voiceNote = '';
-        negotiation.voiceNoteFile = null;
-        negotiation.approval.part1Status = 'Pending';
-        negotiation.approval.part1Remarks = '';
-        negotiation.approval.part3Status = 'Pending';
-        negotiation.approval.part3Remarks = '';
-        negotiation.approval.vehicleNo = '';
-        negotiation.approval.vehicleId = '';
-        negotiation.approval.vehicleData = null;
-        negotiation.approval.mobile = '';
-        negotiation.approval.purchaseType = '';
-        negotiation.approval.paymentTerms = '';
-        negotiation.panelStatus = 'Draft';
-        await negotiation.save();
-      }
-      if (rowsNeedingCharge.length) {
-        try { await notifyPricingChargeRequired(user, rowsNeedingCharge); }
-        catch (notificationError) { console.error('Could not notify Pricing Panel users about cancellation charges:', notificationError); }
-      }
-      await ConsignmentNote.updateMany(companyScopeFilter(user, { _id: { $in: relevantLrs.filter((lr) => !lockedLrs.includes(lr)).map((lr) => lr._id) } }), { $set: { 'header.status': 'Cancelled' } });
-    }
 
     const remaining = order.plantRows.filter((row) => !targetIds.has(idOf(row)));
     const finalRows = [...remaining, ...requested];
@@ -321,7 +245,7 @@ const branchHandlerPOST = withAuth(async (req, { params }, user) => {
     return NextResponse.json({ success: true, message: `Order row status updated: ${action}.`, data: order, impact });
   } catch (error) {
     console.error('Order status update failed:', error);
-    return NextResponse.json({ success: false, message: error.message || 'Failed to update order status.' }, { status: 500 });
+    return NextResponse.json({ success: false, message: error.message || 'Failed to update order status.', ...(error.blockers ? { blockers: error.blockers } : {}) }, { status: error.status || 500 });
   }
 });
 

@@ -1,3 +1,4 @@
+import { reconcileOrderCancellations } from '@/lib/reconcileOrderCancellations';
 import { saveNumberedDocument } from '@/lib/saveNumberedDocument';
 
 
@@ -3543,6 +3544,7 @@ async function branchHandlerGET(req) {
       return NextResponse.json({ success: false, message: error, code: status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN' }, { status });
     }
 
+    await reconcileOrderCancellations(user);
     const url = new URL(req.url);
     const id = url.searchParams.get("id");
     const vnnNo = url.searchParams.get("vnnNo");

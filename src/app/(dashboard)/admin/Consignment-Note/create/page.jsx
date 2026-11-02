@@ -3946,7 +3946,8 @@ export default function CreateConsignmentNote() {
   const autoLoadingInfoOrderRef = useRef(false);
   const [orderRows, setOrderRows] = useState([]);        // rows of the selected order
   const [selectedRowId, setSelectedRowId] = useState('');
-  const [existingLrs, setExistingLrs] = useState([]);    // to know which rows already have an LR
+  const [existingLrs, setExistingLrs] = useState([]);
+  const [lrEligibleRows, setLrEligibleRows] = useState([]);    // to know which rows already have an LR
   const [orderPlantRows, setOrderPlantRows] = useState({}); // normalised order no -> its plantRows
   const requestedOrdersRef = useRef(new Set());
 
@@ -4186,6 +4187,8 @@ export default function CreateConsignmentNote() {
       if (!loadingInfoRes.ok) throw new Error(`Loading Info lookup returned ${loadingInfoRes.status}`);
       const loadingInfoData = await loadingInfoRes.json();
       if (!loadingInfoData.success) throw new Error(loadingInfoData.message || 'Failed to load Loading Info orders');
+      const eligibleRows = loadingInfoData.data?.eligibleRows || [];
+      setLrEligibleRows(eligibleRows);
       const loadingInfoOrderNos = new Set((loadingInfoData.data?.orderNumbers || []).map(normText));
 
       // Collect order numbers that already have an approved/completed LR
@@ -4239,7 +4242,7 @@ export default function CreateConsignmentNote() {
         const availableOrders = data.data
           .filter((o) => {
             const no = normText(o.orderNo || o.orderPanelNo);
-            if (!loadingInfoOrderNos.has(no)) return false;
+            if (!loadingInfoOrderNos.has(no) || !eligibleRows.some(row => normText(row.orderNo) === no && (!row.orderRowId || String(row.orderRowId) === String(o.originalRowId)))) return false;
             const covered = (o.originalRowId && approvedRowIds.has(String(o.originalRowId)))
               || legacyKeys.has(`${no}|${normText(o.to)}`);
             if (covered || seen.has(no)) return false;
@@ -4505,7 +4508,7 @@ export default function CreateConsignmentNote() {
       const orderNo = fullOrder.orderPanelNo || fullOrder.orderNo || order.orderNo || '';
       const partyName = fullOrder.partyName || fullOrder.customerName || order.partyName || '';
 
-      const planRows = Array.isArray(fullOrder.plantRows) ? fullOrder.plantRows : [];
+      const planRows = (Array.isArray(fullOrder.plantRows) ? fullOrder.plantRows : []).filter(row => lrEligibleRows.some(eligible => normText(eligible.orderNo) === normText(orderNo) && (!eligible.orderRowId || String(eligible.orderRowId) === String(row._id))));
       setOrderRows(planRows);
       const isTaken = (r) => existingLrs.some((l) =>
         (l.orderRowId && String(l.orderRowId) === String(r._id)) ||

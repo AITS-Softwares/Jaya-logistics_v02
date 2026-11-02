@@ -1179,9 +1179,9 @@ export default function BalancePaymentList() {
 
         {/* Payments Table */}
         <div className={`bg-white rounded-2xl border border-yellow-400 shadow-sm overflow-hidden ${showPendingToCreate ? 'hidden' : ''}`}>
-          <div className="overflow-x-auto">
+          <div className="max-h-[calc(100dvh-280px)] min-h-[240px] overflow-auto overscroll-contain">
             <table className="w-full text-sm compact-list-table">
-              <thead className="bg-yellow-400 border-b-2 border-yellow-500">
+              <thead className="sticky top-0 z-10 bg-yellow-400 border-b-2 border-yellow-500">
                 <tr>
                   <th className="px-3 py-3 text-left text-xs font-extrabold text-slate-900">S.No</th>
                   <th className="px-3 py-3 text-left text-xs font-extrabold text-slate-900">Payment No</th>

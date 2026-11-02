@@ -1191,9 +1191,9 @@ export default function LoadingPanelList() {
 
         {/* Loading Panels Table */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
+          <div className="max-h-[calc(100dvh-280px)] min-h-[240px] overflow-auto overscroll-contain">
             <table className="w-full text-sm compact-list-table">
-              <thead className="bg-yellow-400 border-b border-yellow-500">
+              <thead className="sticky top-0 z-10 bg-yellow-400 border-b border-yellow-500">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">S.No</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Date</th>
@@ -1247,7 +1247,7 @@ export default function LoadingPanelList() {
                     <tr key={item._id} className={item.isDeleted ? "bg-red-50/50 text-slate-500 [&_button]:hidden [&_a]:pointer-events-none [&_input]:hidden" : "hover:bg-yellow-50 transition"}>
                       <td className="px-4 py-3 text-slate-600">{index + 1}</td>
                       <td className="px-4 py-3 text-slate-600">{item.date}</td>
-                      <td className="px-4 py-3 font-medium text-slate-900">{item.isDeleted ? <span title={`${item.deleteReason || 'Deleted record'}${item.deletedAt ? ' ? ' + new Date(item.deletedAt).toLocaleString('en-IN') : ''}`}>{item.vehicleArrivalNo}<span className="ml-2 inline-flex rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-700">Deleted</span></span> : <button onClick={() => router.push(`/admin/Loading-Info/${item._id}/view`)} className="hover:text-indigo-600 hover:underline">{item.vehicleArrivalNo}</button>}{item.loadingWorkflow?.version === 2 && <span className="ml-2 rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-bold text-sky-800">Part {item.loadingWorkflow.currentPart}: {item.loadingWorkflow["part" + item.loadingWorkflow.currentPart + "Status"]}</span>}{item.isDraft && <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">Draft</span>}</td>
+                      <td className="px-4 py-3 font-medium text-slate-900">{item.isDeleted ? <span title={`${item.deleteReason || 'Deleted record'}${item.deletedAt ? ' ? ' + new Date(item.deletedAt).toLocaleString('en-IN') : ''}`}>{item.vehicleArrivalNo}<span className="ml-2 inline-flex rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-700">Deleted</span></span> : <button onClick={() => router.push(`/admin/Loading-Info/${item._id}/view`)} className="hover:text-indigo-600 hover:underline">{item.vehicleArrivalNo}</button>}{item.displayStatus && !['Approved', 'Completed', 'Submitted', 'Draft'].includes(item.displayStatus) && <span className="ml-2 rounded-full bg-amber-100 px-2 py-1 text-xs font-bold text-amber-900">{item.displayStatus}</span>}{item.loadingWorkflow?.version === 2 && <span className="ml-2 rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-bold text-sky-800">Part {item.loadingWorkflow.currentPart}: {item.loadingWorkflow["part" + item.loadingWorkflow.currentPart + "Status"]}</span>}{item.isDraft && <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">Draft</span>}</td>
                       <td className="px-4 py-3">
                         {item.vnnNo ? (
                           <span className="rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800">{item.vnnNo}</span>

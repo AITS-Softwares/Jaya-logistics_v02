@@ -1,3 +1,4 @@
+import { panelApprovalStatus } from '../src/lib/reapprovalPresentation.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { getLrCargoWeight, withLrCargoWeight } from '../src/lib/lrWeight.mjs';
@@ -6,7 +7,7 @@ const source = fs.readFileSync(new URL('../src/app/api/consignment-note/route.js
 const start = source.indexOf('      // Fetch whole-order totals alongside the LR list');
 const end = source.indexOf('      return NextResponse.json({', start);
 const tableCode = source.slice(start, end);
-const buildList = new Function('notes', 'OrderPanel', 'LoadingPanel', 'companyScopeFilter', 'user', 'getLrCargoWeight', 'withLrCargoWeight', `return (async () => { ${tableCode}\nreturn tableData; })();`);
+const buildList = new Function('notes', 'OrderPanel', 'LoadingPanel', 'companyScopeFilter', 'user', 'getLrCargoWeight', 'withLrCargoWeight', 'panelApprovalStatus', `return (async () => { ${tableCode}\nreturn tableData; })();`);
 const model = (rows) => ({ find: () => ({ select: () => ({ lean: async () => rows }) }) });
 const orders = [{ orderPanelNo: 'OP-1', plantRows: [{ weight: 25 }, { weight: 10 }], reapprovalState: 'none' }];
 const loading = [{ vehicleArrivalNo: 'LOAD-1', orderRows: [
@@ -17,7 +18,7 @@ const notes = [
   { _id: 'lr-1', orderRowId: 'drop-1', loadingInfoNo: 'LOAD-1', header: { orderNo: 'OP-1', from: 'A', to: 'B', status: 'Approved' }, totalWeight: 23.75, consignmentBreakdown: [{ orderNo: 'OP-1', from: 'A', to: 'B', weight: 25, unit: 'MT' }] },
   { _id: 'lr-2', orderRowId: 'drop-2', loadingInfoNo: 'LOAD-1', header: { orderNo: 'OP-1', from: 'A', to: 'C', status: 'Approved' }, totalWeight: 9.5 },
 ];
-const run = () => buildList(notes, model(orders), model(loading), (_user, query) => query, {}, getLrCargoWeight, withLrCargoWeight);
+const run = () => buildList(notes, model(orders), model(loading), (_user, query) => query, {}, getLrCargoWeight, withLrCargoWeight, panelApprovalStatus);
 let rows = await run();
 assert.deepEqual(rows.map((row) => row.orderTotalWeight), [35, 35], 'Total Weight remains the entire Order total on both LRs');
 assert.deepEqual(rows.map((row) => row.totalWeight), [23.75, 9.5], 'Keep each LR cargo weight separate in the API');

@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { Bell, X, Check, CheckCheck, RefreshCw, Settings2, ArrowLeft, ArrowUpRight, ChevronDown, ClipboardCheck, Clock3, AlertCircle, MessageSquare, CheckCircle2 } from 'lucide-react';
 import { notificationRequest, pushSupported, syncPushSubscription, disablePushSubscription } from '@/lib/pushClient';
 import { safeNotificationUrl } from '@/lib/pushPolicy.mjs';
-import { describeActivity, describeWork, groupActivity, splitWork, workListPath } from '@/lib/notificationCenter.mjs';
+import { describeActivity, describeWork, groupActivity, groupWork, notificationMatches, splitWork, workListPath } from '@/lib/notificationCenter.mjs';
 import { adminPushDefaults, adminPushCategories } from '@/lib/adminNotificationPolicy.mjs';
 import { mergePanelWork } from '@/lib/panelWorkPolicy.mjs';
 
@@ -42,6 +42,12 @@ export default function NotificationBell() {
   const [settings, setSettings] = useState(false);
   const [unreadOnly, setUnreadOnly] = useState(false);
   const [expanded, setExpanded] = useState({});
+  const [search, setSearch] = useState('');
+  const [moduleFilter, setModuleFilter] = useState('');
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
+  const [serverSearch, setServerSearch] = useState('');
+  useEffect(() => { const timer = setTimeout(() => setServerSearch(search), 350); return () => clearTimeout(timer); }, [search]);
   const [showWaiting, setShowWaiting] = useState(false);
   const [openedNotification, setOpenedNotification] = useState(null);
   const [enabled, setEnabled] = useState(false);
@@ -57,7 +63,7 @@ export default function NotificationBell() {
     const version = ++requestVersion.current;
     setLoading(true);
     const results = await Promise.allSettled([
-      notificationRequest(`/api/project/notifications?meta=1&view=${activityView}`), notificationRequest('/api/reapproval/queue'), notificationRequest('/api/billing/reminders'), notificationRequest('/api/notifications/panel-work'),
+      notificationRequest(`/api/project/notifications?meta=1&view=${activityView}&search=${encodeURIComponent(serverSearch)}&module=${encodeURIComponent(moduleFilter)}&from=${fromDate}&to=${toDate}`), notificationRequest(`/api/reapproval/queue?search=${encodeURIComponent(serverSearch)}&module=${encodeURIComponent(moduleFilter)}`), notificationRequest('/api/billing/reminders'), notificationRequest('/api/notifications/panel-work'),
     ]);
     if (version !== requestVersion.current) return;
     const [activity, work, billing, panels] = results;
@@ -72,7 +78,7 @@ export default function NotificationBell() {
     if (panels.status === 'fulfilled' && panels.value.success) { setPanelRecords(panels.value.records || []); setPanelWarning((panels.value.warnings || []).join(' ')); }
     else { setPanelRecords([]); setPanelWarning(panels.reason?.message || panels.value?.message || 'Unable to load panel counts.'); }
     setLoading(false);
-  }, [activityView]);
+  }, [activityView, serverSearch, moduleFilter, fromDate, toDate]);
 
   useEffect(() => { refresh(); }, [pathname, refresh]);
   useEffect(() => {
@@ -195,7 +201,9 @@ export default function NotificationBell() {
   const activityItems = openedNotification && !notifications.some(item => item._id === openedNotification._id)
     ? [openedNotification, ...notifications] : notifications;
   const unread = activityItems.filter(item => !item.read);
-  const groups = groupActivity(activityItems).filter(group => !unreadOnly || group.unread > 0);
+  const groups = groupActivity(activityItems).filter(group => (!unreadOnly || group.unread > 0) && notificationMatches({ ...group, module: group.display.module }, search, moduleFilter));
+  const actionGroups = groupWork(actions.filter(record => notificationMatches(record, search, moduleFilter)));
+  const modules = [...new Set([...actions.map(record => record.module), ...activityItems.map(item => describeActivity(item).module)].filter(Boolean))].sort();
   // A device alert may refer to an older update outside the latest inbox page.
   if (openedNotification) groups.sort((a, b) => Number(b.items.some(item => item._id === openedNotification._id)) - Number(a.items.some(item => item._id === openedNotification._id)));
   const badgeCount = actions.length || unread.length;
@@ -228,6 +236,8 @@ export default function NotificationBell() {
             <div className="flex min-w-0 gap-3">{settings && <button type="button" onClick={() => setSettings(false)} aria-label="Back to notifications" className={iconButton}><ArrowLeft size={18} /></button>}<div><h2 id="notification-center-title" className="text-lg font-bold tracking-tight">{settings ? 'Notification settings' : 'Notifications'}</h2><p className="mt-1 text-xs text-slate-500">{settings ? 'Manage your notification preferences' : isAdmin ? 'Team progress and company activity' : 'Your work and recent updates'}</p></div></div>
             <div className="flex gap-0.5">{!settings && <><button type="button" onClick={refresh} disabled={loading} aria-label="Refresh notifications" className={iconButton}><RefreshCw size={16} className={loading ? 'animate-spin' : ''} /></button><button type="button" onClick={() => { setSettings(true); setError(''); setNotice(''); }} aria-label="Notification settings" className={iconButton}><Settings2 size={17} /></button></>}<button ref={closeRef} type="button" onClick={() => setOpen(false)} aria-label="Close notifications" className={iconButton}><X size={20} /></button></div>
           </div>
+          {!settings && <div className="mb-3 flex gap-2"><input aria-label="Search notifications and pending work" value={search} onChange={event => setSearch(event.target.value)} placeholder="Search order, VNN, LR, branch or message…" className="min-w-0 flex-1 rounded-lg border px-3 py-2 text-xs" /><select aria-label="Filter by module" value={moduleFilter} onChange={event => setModuleFilter(event.target.value)} className="max-w-[150px] rounded-lg border text-xs"><option value="">All panels</option>{modules.map(module => <option key={module}>{module}</option>)}</select></div>}
+          {!settings && tab === 'activity' && <div className="mb-3 flex items-center gap-2 text-xs text-slate-500"><label>From <input type="date" value={fromDate} onChange={event => setFromDate(event.target.value)} className="rounded border p-1" /></label><label>To <input type="date" value={toDate} onChange={event => setToDate(event.target.value)} className="rounded border p-1" /></label></div>}
           {!settings && <div role="tablist" aria-label="Notification sections" className="flex gap-5">{[['actions', isAdmin ? 'Work overview' : 'Action required', actions.length], ['activity', 'Activity', unread.length]].map(([value, label, count], index) => <button key={value} ref={element => { tabRefs.current[index] = element; }} id={`notification-tab-${value}`} type="button" role="tab" aria-selected={tab === value} aria-controls={`notification-panel-${value}`} tabIndex={tab === value ? 0 : -1} onClick={() => setTab(value)} onKeyDown={event => { if (['ArrowRight', 'ArrowLeft', 'Home', 'End'].includes(event.key)) { event.preventDefault(); const next = event.key === 'Home' ? 0 : event.key === 'End' ? 1 : 1 - index; setTab(next ? 'activity' : 'actions'); tabRefs.current[next]?.focus(); } }} className={`flex items-center gap-2 border-b-2 pb-3 text-[13px] font-semibold transition ${tab === value ? 'border-amber-500 text-slate-950' : 'border-transparent text-slate-500 hover:text-slate-800'}`}>{label}<span className={`rounded-md px-1.5 py-0.5 text-[10px] ${tab === value ? 'bg-amber-100 text-amber-900' : 'bg-slate-100 text-slate-500'}`}>{count}</span></button>)}</div>}
         </header>
         {(error || notice) && <div role={error ? 'alert' : 'status'} className={`shrink-0 border-b px-5 py-3 text-xs leading-5 ${error ? 'border-rose-100 bg-rose-50 text-rose-700' : 'border-blue-100 bg-blue-50 text-blue-700'}`}>{error || notice}</div>}
@@ -243,13 +253,13 @@ export default function NotificationBell() {
             {panelWarning && <p role="alert" className="rounded-xl bg-amber-50 p-3 text-xs leading-5 text-amber-800">{panelWarning}</p>}
             {actions.length > 0 && <p className="pb-1 text-xs text-slate-500">{actions.length} {isAdmin ? 'work groups with pending team work' : actions.length === 1 ? 'work group needs your attention' : 'work groups need your attention'}</p>}
             {!actions.length && !workError && !billingError && !panelWarning && <div className="px-4 py-12 text-center"><span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600"><CheckCircle2 size={26} strokeWidth={1.5} /></span><h3 className="mt-4 text-sm font-semibold">{loading ? 'Checking pending work...' : isAdmin ? 'No pending team work' : 'You are all caught up'}</h3><p className="mx-auto mt-2 max-w-[260px] text-xs leading-5 text-slate-500">{loading ? 'Loading the latest pending tasks.' : isAdmin ? 'No pending work was found within your company and branch access.' : 'No creation, approval, correction or billing work is waiting on you.'}</p></div>}
-            {actions.map(record => workCard(record))}
-            {waiting.length > 0 && <div className="border-t border-slate-100 pt-4"><button type="button" aria-expanded={showWaiting} onClick={() => setShowWaiting(value => !value)} className="flex w-full items-center justify-between text-xs font-medium text-slate-500"><span className="flex items-center gap-2"><Clock3 size={14} />Following other stages <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px]">{waiting.length}</span></span><ChevronDown size={15} className={showWaiting ? 'rotate-180' : ''} /></button>{showWaiting && <div className="mt-3 space-y-3">{waiting.map(record => workCard(record, true))}</div>}</div>}
+            {actionGroups.map(group => <details key={group.key} open={!!search || undefined} className="rounded-xl border border-slate-200 bg-slate-50 p-3"><summary className="cursor-pointer text-sm font-semibold">{group.module} · {group.state === 'none' ? 'Pending work' : group.state === 'unlockRequested' ? 'Unlock requests' : group.state === 'cancellationCharges' ? 'Cancellation charges' : describeWork(group.items[0]).title} <span className="ml-2 rounded bg-amber-100 px-2 py-1 text-xs">{group.items.length}</span></summary><div className="mt-3 space-y-3">{group.items.map(record => workCard(record))}</div></details>)}
+            {waiting.length > 0 && <div className="border-t border-slate-100 pt-4"><button type="button" aria-expanded={showWaiting} onClick={() => setShowWaiting(value => !value)} className="flex w-full items-center justify-between text-xs font-medium text-slate-500"><span className="flex items-center gap-2"><Clock3 size={14} />Following other stages <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px]">{waiting.length}</span></span><ChevronDown size={15} className={showWaiting ? 'rotate-180' : ''} /></button>{showWaiting && <div className="mt-3 space-y-3">{groupWork(waiting.filter(record => notificationMatches(record, search, moduleFilter))).map(group => <details key={group.key}><summary className="cursor-pointer text-sm font-semibold">{group.module} · {group.items.length} waiting</summary><div className="mt-2 space-y-3">{group.items.map(record => workCard(record, true))}</div></details>)}</div>}</div>}
           </div> : <div id="notification-panel-activity" role="tabpanel" aria-labelledby="notification-tab-activity">
             <div className="flex items-center justify-between gap-2 px-5 py-4"><label className="flex cursor-pointer items-center gap-2 text-xs text-slate-500"><input type="checkbox" checked={unreadOnly} onChange={event => setUnreadOnly(event.target.checked)} className="h-3.5 w-3.5 rounded border-slate-300 accent-amber-600" />Unread only</label><button type="button" disabled={!unread.length || busy} onClick={() => markRead(unread.map(item => item._id))} className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-slate-900 disabled:opacity-40"><CheckCheck size={14} />Mark all read</button></div>
             {activityError && <p role="alert" className="mx-5 rounded-xl bg-rose-50 p-3 text-xs text-rose-700">{activityError}</p>}
             {!groups.length && !activityError && <div className="px-5 py-12 text-center"><MessageSquare size={25} strokeWidth={1.5} className="mx-auto text-slate-300" /><h3 className="mt-4 text-sm font-semibold">{loading ? 'Loading activity...' : unreadOnly ? 'No unread updates' : 'No updates yet'}</h3><p className="mt-2 text-xs text-slate-500">Updates and workflow history will appear here.</p></div>}
-            {groups.map(group => <article key={group.key} className={`border-t border-slate-100 px-5 py-4 ${group.unread ? 'bg-amber-50/30' : ''}`}>
+            {[...new Set(groups.map(group => `${group.display.module} · ${group.display.title}`))].map(category => <details key={category} open={!!search || undefined} className="border-t border-slate-200"><summary className="cursor-pointer bg-slate-50 px-5 py-3 text-sm font-semibold">{category} <span className="ml-2 text-xs text-slate-500">{groups.filter(group => `${group.display.module} · ${group.display.title}` === category).length} records</span></summary>{groups.filter(group => `${group.display.module} · ${group.display.title}` === category).map(group => <article key={group.key} className={`border-t border-slate-100 px-5 py-4 ${group.unread ? 'bg-amber-50/30' : ''}`}>
               <div className="flex gap-3"><EventIcon tone={group.display.tone} /><div className="min-w-0 flex-1"><div className="flex items-start justify-between gap-2"><h3 className="text-[13px] font-semibold leading-5 text-slate-900">{group.display.title}</h3>{group.unread > 0 && <span aria-label="Unread" className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />}</div>
                 {group.display.reference && <p className="mt-1 break-words font-mono text-[11px] leading-5 text-slate-500">{group.display.reference}</p>}
                 <p className={`mt-1.5 text-xs leading-5 text-slate-500 ${expanded[group.key] ? '' : 'line-clamp-2'}`}>{group.latest.message}</p>
@@ -257,10 +267,10 @@ export default function NotificationBell() {
                 <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">{group.display.url && <button type="button" disabled={busy} onClick={() => openRecord(group.latest)} className="inline-flex items-center gap-1 text-xs font-semibold text-slate-800 hover:text-amber-700 disabled:opacity-40">{group.display.openLabel}<ArrowUpRight size={12} /></button>}<button type="button" aria-expanded={Boolean(expanded[group.key])} onClick={() => setExpanded(value => ({ ...value, [group.key]: !value[group.key] }))} className="inline-flex items-center gap-1 text-[11px] text-slate-500 hover:text-slate-800">{group.items.length > 1 ? `${group.items.length} updates` : expanded[group.key] ? 'Less' : 'Details'}<ChevronDown size={12} className={expanded[group.key] ? 'rotate-180' : ''} /></button>{group.unread > 0 && <button type="button" disabled={busy} onClick={() => markRead(group.items.filter(item => !item.read).map(item => item._id))} className="ml-auto inline-flex items-center gap-1 text-[11px] text-slate-400 hover:text-slate-700 disabled:opacity-40"><Check size={12} />Mark read</button>}</div>
                 {expanded[group.key] && group.items.length > 1 && <ol className="mt-4 space-y-3 border-l border-slate-200 pl-3">{group.items.slice(1).map(item => <li key={item._id}><p className="text-xs leading-5 text-slate-500">{item.message}</p><time dateTime={item.createdAt} className="mt-1 block text-[10px] text-slate-400">{shortTime(item.createdAt)}</time></li>)}</ol>}
               </div></div>
-            </article>)}
+            </article>)}</details>)}
           </div>}
         </div>
-        {!settings && <footer className="shrink-0 border-t border-slate-100 px-5 py-3"><p className="text-[11px] leading-4 text-slate-400">{tab === 'actions' ? 'Tasks clear automatically when the work is completed.' : 'Recent updates · Read status does not change pending work.'}</p></footer>}
+        {!settings && <footer className="shrink-0 border-t border-slate-100 px-5 py-3"><p className="text-[11px] leading-4 text-slate-400">{tab === 'actions' ? 'Tasks clear automatically when the work is completed.' : 'Search covers older activity within your access. Read status does not change pending work.'}</p></footer>}
       </section>
     </div>, document.body,
   ) : null;
