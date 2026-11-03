@@ -1,3 +1,4 @@
+"use client";
 
 
 
@@ -834,8 +835,7 @@
 // //           'NON-UNIFORM - GENERAL CARGO': nonUniformRows
 // //         },
 // //         totalWeight: calculateTotalActualWt(),
-// //         vehicleNegotiationRef: vehicleNegotiationData?._id || null,
-        vnnNo: vehicleNegotiationData?.vnnNo || ""
+// //         vehicleNegotiationRef: vehicleNegotiationData?._id || null
 // //       };
 
 // //       console.log("Saving consignment note:", payload);
@@ -2698,8 +2698,7 @@
 //           'NON-UNIFORM - GENERAL CARGO': nonUniformRows
 //         },
 //         totalWeight: calculateTotalActualWt(),
-//         vehicleNegotiationRef: vehicleNegotiationData?._id || null,
-        vnnNo: vehicleNegotiationData?.vnnNo || ""
+//         vehicleNegotiationRef: vehicleNegotiationData?._id || null
 //       };
 
 //       console.log("Saving consignment note:", payload);
@@ -3799,7 +3798,6 @@
 //   );
 // }
 
-"use client";
 
 import { useMemo, useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
