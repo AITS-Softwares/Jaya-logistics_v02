@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { buildLRHtml, getBusinessInfo, recordAndPrintLR } from "@/lib/lrPrintTemplate";
 
 /**
@@ -49,8 +49,14 @@ function Badge({ tone, children }) {
     return <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${tone}`}>{children}</span>;
 }
 
+function printApprovalMessage(part) {
+    return part
+        ? `Printing is unavailable. Loading Info Part ${part} still needs approval.`
+        : "Printing is unavailable at the current Loading Info stage.";
+}
+
 /** "3 LRs expected · 2 created · 2 approved · 1 invoice uploaded" + progress bar. */
-function SummaryBar({ data, onRefresh, showPrint }) {
+function SummaryBar({ data, onRefresh, showPrint, printDisabled, pendingApprovalPart }) {
     const c = data.counts || { expected: 0, created: 0, approved: 0, invoiceUploaded: 0 };
     const ready = data.ready || 0;
     const pct = c.expected ? Math.round((ready / c.expected) * 100) : 0;
@@ -76,6 +82,11 @@ function SummaryBar({ data, onRefresh, showPrint }) {
             <div className="mt-2 h-1.5 w-full overflow-hidden rounded bg-white/70">
                 <div className={`h-full ${data.complete ? "bg-green-500" : "bg-amber-500"}`} style={{ width: `${pct}%` }} />
             </div>
+            {printDisabled && canOpen(data) && (
+                <p className="mt-2 rounded-md bg-amber-50 px-2 py-1.5 text-[11px] font-semibold text-amber-800">
+                    View is available. {printApprovalMessage(pendingApprovalPart)}
+                </p>
+            )}
             {showPrint && canOpen(data) && (
                 <div className="mt-2 rounded-md bg-white/70 px-2 py-1 text-[11px] font-semibold text-slate-700">
                     🖨️ {c.printed || 0} of {c.expected} LR printed. Out Date and Out Time are recorded when the last LR is printed.
@@ -166,7 +177,7 @@ const STATUS_HINT = {
     none: "No LR yet. Each order row of this Loading Info gets its own LR.",
 };
 
-export default function LoadingInfoLRViewer({ panelId }) {
+export default function LoadingInfoLRViewer({ panelId, printDisabled = false, pendingApprovalPart }) {
     const { status, data, error, load } = useLRStatus(panelId);
     const [openId, setOpenId] = useState(null); // _id of the LR shown in the popup
     const [viewHtml, setViewHtml] = useState("");
@@ -226,7 +237,7 @@ export default function LoadingInfoLRViewer({ panelId }) {
     return (
         <>
             <div className="space-y-2">
-                <SummaryBar data={data} onRefresh={load} showPrint />
+                <SummaryBar data={data} onRefresh={load} showPrint printDisabled={printDisabled} pendingApprovalPart={pendingApprovalPart} />
                 {rows.map((row, i) => {
                     const note = noteOf(row);
                     const busy = note && busyId === String(note._id);
@@ -236,7 +247,7 @@ export default function LoadingInfoLRViewer({ panelId }) {
                                 <>
                                     <button type="button" onClick={() => setOpenId(String(note._id))}
                                         className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-blue-700">View</button>
-                                    <button type="button" disabled={busyId !== null} onClick={() => printOne(note)}
+                                    <button type="button" disabled={printDisabled || busyId !== null} onClick={() => printOne(note)}
                                         className="rounded-lg bg-slate-700 px-3 py-1.5 text-xs font-bold text-white hover:bg-slate-800 disabled:opacity-60">{busy ? "Printing…" : "Print"}</button>
                                 </>
                             ) : (
@@ -250,7 +261,7 @@ export default function LoadingInfoLRViewer({ panelId }) {
                 })}
             </div>
             <p className="mt-2 text-[11px] text-slate-500">
-                View-only. LRs open together once every LR is created, approved and has its invoice, and VBP, VFT, VOT and VL are Approved. Out Date and Out Time are recorded once, when the last LR is printed (any order).
+                View-only. LRs open together once every LR is created, approved and has its invoice, and linked Pricing, VBP, VFT, VOT and VL approvals are complete. Out Date and Out Time are recorded once, when the last LR is printed (any order).
             </p>
 
             {activeNote && (
@@ -266,7 +277,7 @@ export default function LoadingInfoLRViewer({ panelId }) {
                                 <span className="mt-1 inline-block rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-600">View only</span>
                             </div>
                             <div className="flex gap-2">
-                                <button type="button" disabled={busyId !== null} onClick={() => printOne(activeNote)}
+                                <button type="button" disabled={printDisabled || busyId !== null} onClick={() => printOne(activeNote)}
                                     className="rounded-lg bg-slate-700 px-3 py-1.5 text-sm font-bold text-white hover:bg-slate-800 disabled:opacity-60">
                                     {busyId === String(activeNote._id) ? "Printing…" : "Print"}
                                 </button>
@@ -301,20 +312,44 @@ export default function LoadingInfoLRViewer({ panelId }) {
 async function invoiceBlob(panelId, lrId) {
     const res = await fetch(`/api/loading-panel/${encodeURIComponent(panelId)}/lr-invoice?lrId=${lrId}`,
         { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } });
-    if (!res.ok) throw new Error();
+    if (!res.ok) {
+        const error = await res.json().catch(() => ({}));
+        throw new Error(error.message || `Invoice request failed (HTTP ${res.status}). Refresh and check the approval status.`);
+    }
     return URL.createObjectURL(await res.blob());
 }
 
-export function LoadingInfoInvoiceViewer({ panelId }) {
+export function LoadingInfoInvoiceViewer({ panelId, printDisabled = false, pendingApprovalPart }) {
     const { status, data, error, load } = useLRStatus(panelId);
 
-    const show = async (lrId) => {
-        const w = window.open("", "_blank"); // open first so pop-up blockers allow it
-        try {
-            const u = await invoiceBlob(panelId, lrId);
-            w ? w.location.replace(u) : window.open(u);
-            setTimeout(() => URL.revokeObjectURL(u), 300000);
-        } catch { w?.close(); alert("Invoice could not be opened."); }
+    const dialogRef = useRef(null);
+    const [selectedInvoice, setSelectedInvoice] = useState(null);
+    const [preview, setPreview] = useState(null);
+
+    useEffect(() => {
+        if (!selectedInvoice) return;
+        let active = true;
+        let url;
+        invoiceBlob(panelId, selectedInvoice._id).then((result) => {
+            if (!active) {
+                URL.revokeObjectURL(result);
+                return;
+            }
+            url = result;
+            setPreview({ url });
+        }).catch((error) => {
+            if (active) setPreview({ error: error.message || "Invoice could not be opened." });
+        });
+        return () => {
+            active = false;
+            if (url) URL.revokeObjectURL(url);
+        };
+    }, [panelId, selectedInvoice]);
+
+    const show = (invoice) => {
+        setPreview(null);
+        setSelectedInvoice(invoice);
+        dialogRef.current.showModal();
     };
 
     const print = async (lrId) => {
@@ -326,7 +361,7 @@ export function LoadingInfoInvoiceViewer({ panelId }) {
             f.onload = () => { try { f.contentWindow.print(); } catch { window.open(u); } };
             document.body.appendChild(f);
             setTimeout(() => { f.remove(); URL.revokeObjectURL(u); }, 300000);
-        } catch { alert("Invoice could not be printed."); }
+        } catch (error) { alert(error.message || "Invoice could not be printed."); await load(); }
     };
 
     if (status !== "loaded") {
@@ -350,15 +385,15 @@ export function LoadingInfoInvoiceViewer({ panelId }) {
     return (
         <>
             <div className="space-y-2">
-                <SummaryBar data={data} onRefresh={load} />
+                <SummaryBar data={data} onRefresh={load} printDisabled={printDisabled} pendingApprovalPart={pendingApprovalPart} />
                 {rows.map((row, i) => (
                     <RowCard key={row.rowId} row={row} index={i} mode="invoice" locked={!canOpen(data)} approvalsBlocked={!data.approvals?.allApproved}>
                         {row.state === "ready" && canOpen(data) ? (
                             <>
-                                <button type="button" onClick={() => show(row.lr._id)}
+                                <button type="button" onClick={() => show(row.lr)}
                                     className="rounded-lg bg-purple-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-purple-700">View</button>
-                                <button type="button" onClick={() => print(row.lr._id)}
-                                    className="rounded-lg bg-slate-700 px-3 py-1.5 text-xs font-bold text-white hover:bg-slate-800">Print</button>
+                                <button type="button" disabled={printDisabled} onClick={() => print(row.lr._id)}
+                                    className="rounded-lg bg-slate-700 px-3 py-1.5 text-xs font-bold text-white hover:bg-slate-800 disabled:opacity-60">Print</button>
                             </>
                         ) : (
                             <>
@@ -369,7 +404,33 @@ export function LoadingInfoInvoiceViewer({ panelId }) {
                     </RowCard>
                 ))}
             </div>
-            <p className="mt-2 text-[11px] text-slate-500">View-only. Each invoice is uploaded on its LR page. Invoices open together once every LR is created and approved.</p>
+            <p className="mt-2 text-[11px] text-slate-500">View-only. Each invoice is uploaded on its LR page. Invoices open together once every LR is created, approved and has its invoice, and linked Pricing, VBP, VFT, VOT and VL approvals are complete.</p>
+            <dialog ref={dialogRef} onClose={() => setSelectedInvoice(null)}
+                aria-labelledby="loading-invoice-preview-title"
+                className="m-auto w-[calc(100%-2rem)] max-w-4xl rounded-2xl bg-white p-5 shadow-xl backdrop:bg-black/50">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                    <h3 id="loading-invoice-preview-title" className="text-lg font-extrabold text-slate-900">
+                        Invoice {selectedInvoice?.lrNo && `· ${selectedInvoice.lrNo}`}
+                    </h3>
+                    <div className="flex gap-2">
+                        <button type="button" disabled={printDisabled || !canOpen(data) || !preview?.url}
+                            onClick={() => print(selectedInvoice._id)}
+                            className="rounded-lg bg-slate-700 px-3 py-1.5 text-sm font-bold text-white hover:bg-slate-800 disabled:opacity-60">Print</button>
+                        <button type="button" onClick={() => dialogRef.current.close()}
+                            className="rounded-lg px-3 py-1.5 text-sm font-semibold text-slate-600 hover:bg-slate-100">Close</button>
+                    </div>
+                </div>
+                {printDisabled && canOpen(data) && (
+                    <p className="mb-3 text-sm text-amber-800">{printApprovalMessage(pendingApprovalPart)}</p>
+                )}
+                {preview?.url ? (
+                    <iframe src={preview.url} title="Invoice preview" className="h-[70vh] w-full rounded-lg border border-slate-200" />
+                ) : preview?.error ? (
+                    <p role="alert" className="text-sm text-red-700">{preview.error}</p>
+                ) : (
+                    <p role="status" className="text-sm text-slate-600">Loading invoice…</p>
+                )}
+            </dialog>
         </>
     );
 }

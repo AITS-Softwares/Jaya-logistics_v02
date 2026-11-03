@@ -3508,6 +3508,8 @@ export default function ApproveLoadingPanel() {
           </Card>
         </div>
 
+        </fieldset>
+
         {/* Documents & Consignment Note Card */}
         <div className="mt-4">
           <Card title="Documents & Consignment Note (LR)">
@@ -3515,13 +3517,14 @@ export default function ApproveLoadingPanel() {
               <div className="col-span-12 md:col-span-4">
                 <div className="bg-white p-4 rounded-xl border border-slate-200">
                   <h3 className="text-sm font-bold text-slate-800 mb-2">Consignment Note (LR)</h3>
-                  <LoadingInfoLRViewer panelId={panelId} />
+                  <LoadingInfoLRViewer panelId={panelId} printDisabled={(stagedLoading && (!stageReady || currentPart !== 2)) && stageRecord?.loadingWorkflow?.part2Status !== 'Approved'} pendingApprovalPart={stagedLoading ? (stageRecord.loadingWorkflow.part1Status === 'Approved' ? 2 : 1) : undefined} />
                 </div>
               </div>
               <div className="col-span-12 md:col-span-4">
                 <div className="bg-white p-4 rounded-xl border border-slate-200">
                   <h3 className="text-sm font-bold text-slate-800 mb-2">E-waybill</h3>
                   <button
+                    disabled={stagedLoading && (!stageReady || currentPart !== 2)}
                     onClick={() => window.open(`/api/loading-panel/${panelId}/generate-ewaybill`, '_blank')}
                     className="w-full rounded-lg bg-green-600 px-4 py-2 text-xs font-bold text-white hover:bg-green-700"
                   >
@@ -3539,7 +3542,7 @@ export default function ApproveLoadingPanel() {
                   >
                     View Invoice
                   </button> */}
-                  <LoadingInfoInvoiceViewer panelId={panelId} />
+                  <LoadingInfoInvoiceViewer panelId={panelId} printDisabled={(stagedLoading && (!stageReady || currentPart !== 2)) && stageRecord?.loadingWorkflow?.part2Status !== 'Approved'} pendingApprovalPart={stagedLoading ? (stageRecord.loadingWorkflow.part1Status === 'Approved' ? 2 : 1) : undefined} />
                   <p className="text-xs text-slate-500 mt-2">View and download invoice</p>
                 </div>
               </div>
@@ -3547,6 +3550,7 @@ export default function ApproveLoadingPanel() {
           </Card>
         </div>
 
+        <fieldset disabled={stagedLoading && (!stageReady || currentPart !== 2)} className="min-w-0 border-0 p-0 m-0">
         {/* Loaded Vehicle Slip - Bottom section */}
         <div className="mt-4">
           <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-200">
