@@ -3302,7 +3302,7 @@ export default function EditConsignmentNote() {
 
     try {
       const token = localStorage.getItem('token');
-      const orderId = order._id || order.originalOrderId;
+      const orderId = order.originalOrderId || order._id;
 
       let fullOrder = order;
 
@@ -3312,9 +3312,10 @@ export default function EditConsignmentNote() {
         });
 
         const data = await res.json();
-        if (data.success && data.data) {
-          fullOrder = data.data;
+        if (!res.ok || !data.success || !data.data) {
+          throw new Error(data.message || 'Unable to load the selected order details.');
         }
+        fullOrder = data.data;
       }
 
       const orderNo = fullOrder.orderPanelNo || fullOrder.orderNo || order.orderNo || '';

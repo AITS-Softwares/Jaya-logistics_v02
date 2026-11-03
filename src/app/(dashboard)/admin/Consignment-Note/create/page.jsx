@@ -4480,14 +4480,10 @@ export default function CreateConsignmentNote() {
 
   const handleSelectOrder = async (order, { silent = false, selectedRowId: requestedRowId = '', selectedRow: requestedRow = null } = {}) => {
     setFetchingOrder(true);
-    setPalletizationRows([]);
-    setUniformRows([]);
-    setLooseCargoRows([]);
-    setNonUniformRows([]);
 
     try {
       const token = localStorage.getItem('token');
-      const orderId = order._id || order.originalOrderId;
+      const orderId = order.originalOrderId || order._id;
 
       let fullOrder = order;
 
@@ -4497,9 +4493,10 @@ export default function CreateConsignmentNote() {
         });
 
         const data = await res.json();
-        if (data.success && data.data) {
-          fullOrder = data.data;
+        if (!res.ok || !data.success || !data.data) {
+          throw new Error(data.message || 'Unable to load the selected order details.');
         }
+        fullOrder = data.data;
       }
 
       console.log('Selected Order Details:', fullOrder);
@@ -4615,6 +4612,11 @@ export default function CreateConsignmentNote() {
       }));
 
       setIsReadOnly(true);
+
+      setPalletizationRows([]);
+      setUniformRows([]);
+      setLooseCargoRows([]);
+      setNonUniformRows([]);
 
       if (fullOrder.packData) {
         if (fullOrder.packData.PALLETIZATION && fullOrder.packData.PALLETIZATION.length > 0) {
@@ -5129,12 +5131,13 @@ export default function CreateConsignmentNote() {
             <button onClick={() => handleSave('draft')} disabled={saving} className="rounded-xl border border-amber-300 bg-amber-50 px-5 py-2 text-sm font-bold text-amber-800 hover:bg-amber-100 disabled:opacity-60">Save as Draft</button>
             <button
               type="button"
+              disabled={fetchingOrder}
               onClick={() => setPreviewNote(makePreviewNote({
                 header, consignor, consignee, invoice, ewaybill,
                 palletizationRows, uniformRows, looseCargoRows, nonUniformRows,
                 loadingInfoNo: new URLSearchParams(window.location.search).get("loadingInfoNo") || "",
               }))}
-              className="rounded-xl border border-blue-300 bg-white px-5 py-2 text-sm font-bold text-blue-700 hover:bg-blue-50"
+              className="rounded-xl border border-blue-300 bg-white px-5 py-2 text-sm font-bold text-blue-700 hover:bg-blue-50 disabled:opacity-60"
             >
               👁 Preview LR
             </button>
