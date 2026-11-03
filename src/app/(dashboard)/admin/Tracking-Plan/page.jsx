@@ -737,6 +737,9 @@ export default function TrackingPlanPage() {
     lat: primaryLiveTrip.latestLocation.latitude, lng: primaryLiveTrip.latestLocation.longitude,
     label: `${primaryLiveTrip.vehicleNo || "Vehicle"} · ${primaryLiveTrip.driver?.displayName || "Driver"}`,
   } : null;
+  const driverStart = primaryLiveTrip?.driverStart ? {
+    lat: primaryLiveTrip.driverStart.latitude, lng: primaryLiveTrip.driverStart.longitude,
+  } : null;
   const liveMapStatus = primaryLiveTrip?.session ? `GPS ${formatLiveStatus(primaryLiveTrip.session.status)}${primaryLiveTrip.session.lastRecordedAt ? ` · ${relativeTime(primaryLiveTrip.session.lastRecordedAt)}` : ""}` : "No active driver tracking";
 
   if (permissionLoading) return <LoadingState text="Loading permissions…" />;
@@ -813,7 +816,7 @@ export default function TrackingPlanPage() {
             </section>
             <StopsTable stops={stops} />
             <LiveTrackingPanel data={liveTracking} loading={liveLoading} error={liveError} routeInfo={routeInfo} onApproveBaseline={approveRouteBaseline} onRefresh={() => loadLiveTracking(selectedId, { Authorization: `Bearer ${localStorage.getItem("token") || ""}` })} />
-            <TrackingMap stops={mapStops} vehicle={liveVehicle} status={liveMapStatus} route={routeInfo} fallback={<MapPlaceholder />} />
+            <TrackingMap stops={mapStops} vehicle={liveVehicle} driverStart={driverStart} status={liveMapStatus} route={routeInfo} fallback={<MapPlaceholder />} />
             {mapNote && <div role="status" className="rounded-xl border border-yellow-300 bg-yellow-50 px-4 py-2.5 text-sm text-yellow-800">{mapNote}</div>}
             <TrackingTable tracking={tracking} />
           </>
@@ -1048,6 +1051,11 @@ function LiveTrackingPanel({ data, loading, error, routeInfo, onApproveBaseline,
         return <div key={trip.tripId} className="grid gap-3 px-4 py-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           <div><div className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Driver / vehicle</div><div className="mt-1 font-bold text-slate-900">{trip.driver?.displayName || "Driver unavailable"}</div><div className="text-sm text-slate-600">{trip.vehicleNo || "Vehicle pending"}</div></div>
           <div><div className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Trip status</div><div className="mt-1"><Chip tone={tone}>{formatLiveStatus(trip.session?.status)}</Chip></div><div className="mt-1 text-sm text-slate-600">{trip.tripState?.replaceAll("_", " ") || "—"}</div></div>
+          <div>
+            <div className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Driver Start</div>
+            <div className="mt-1 font-bold text-slate-900">{trip.driverStart ? `${trip.driverStart.latitude.toFixed(5)}, ${trip.driverStart.longitude.toFixed(5)}` : "Waiting for GPS"}</div>
+            {trip.driverStart && <div className="text-sm text-slate-600">{new Date(trip.driverStart.recordedAt).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })} IST</div>}
+          </div>
           <div><div className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Last GPS update</div><div className="mt-1 font-bold text-slate-900">{trip.session?.lastRecordedAt ? relativeTime(trip.session.lastRecordedAt) : "No point received"}</div><div className="text-sm text-slate-600">{trip.latestLocation ? `Accuracy ${Math.round(trip.latestLocation.accuracyM)} m` : "Tracking starts after trip start"}</div></div>
           <div><div className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Coordinates</div><div className="mt-1 font-mono text-sm font-bold text-slate-900">{trip.latestLocation ? `${trip.latestLocation.latitude.toFixed(5)}, ${trip.latestLocation.longitude.toFixed(5)}` : "—"}</div><div className="text-sm text-slate-600">{trip.latestLocation?.isMocked ? "Mock location flagged" : trip.latestLocation?.speedMps != null ? `${Math.round(trip.latestLocation.speedMps * 3.6)} km/h` : ""}</div></div>
           <div><div className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Operational stop</div><div className="mt-1 text-sm font-semibold text-slate-800">{trip.operationalStop ? `${Math.max(1, Math.floor(trip.operationalStop.durationSec / 60))} min stationary` : "No sustained stop"}</div><div className="text-sm text-slate-600">{trip.operationalStop ? `${trip.operationalStop.classification} · ${Math.round(trip.operationalStop.confidence * 100)}% confidence` : "Driver action confirms actual delivery"}</div></div>
@@ -1200,7 +1208,7 @@ function StopsTable({ stops }) {
             {stops.map((s) => (
               <tr key={s.sequence} className="align-top text-slate-700 hover:bg-yellow-50">
                 <td className="px-3 py-2.5">{s.type === "pickup" ? "P" : s.dropNo ?? s.sequence}</td>
-                <td className="px-3 py-2.5 font-semibold">{s.type === "pickup" ? "Pickup" : "Drop"}</td>
+                <td className="px-3 py-2.5 font-semibold">{s.type === "pickup" ? "Planned Pickup" : "Drop"}</td>
                 <td className="whitespace-nowrap px-3 py-2.5">{valueOf(s.orderNo)}</td>
                 <td className="min-w-[10rem] px-3 py-2.5">
                   {valueOf(s.partyName || s.label)}

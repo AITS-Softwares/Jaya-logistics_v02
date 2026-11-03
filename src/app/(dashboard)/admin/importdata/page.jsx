@@ -110,7 +110,7 @@ export default function ImportTemplate({ modelName, csvHeaders = [], sampleRow =
         onDragOver={(e) => e.preventDefault()}
         className="border-2 border-dashed rounded p-6 text-center cursor-pointer mb-4"
       >
-        <input type="file" hidden onChange={(e) => handleFile(e.target.files[0])} />
+        <input type="file" data-native-upload hidden onChange={(e) => handleFile(e.target.files[0])} />
         {file ? <p className="text-green-600">{file.name} selected</p> : <p>Drag & drop CSV/JSON or click to browse</p>}
       </div>
 

@@ -2143,6 +2143,7 @@ import { recordApprovedRevision } from '@/lib/reapprovalService';
 import { handleModuleDelete } from "@/lib/deletion/handler";
 import { validateOrderWeights } from "@/lib/orderWeightValidation.mjs";
 import { companyScopeFilter } from "@/lib/companyScope";
+import VehicleNegotiation from "@/app/api/vehicle-negotiation/VehicleNegotiation";
 import { notifyModuleApprovers, notifyModuleCreateUsers, notifyModuleDecision } from "@/lib/workflowNotifications";
 
 // Register the referenced model before populating plantRows.plantCode below.
@@ -2278,14 +2279,50 @@ const branchHandlerGET = withAuth(async (req, context, user) => {
         .filter((order) => !order.isDraft && (order.panelStatus || 'Draft') !== 'Draft')
         .map((order) => ({ ...order, plantRows: (order.plantRows || []).filter((row) => (row.status || 'Open') === 'Open' && !row.statusRequest?.action) }));
 
+      const vnnByOrderId = new Map();
+      if (url.searchParams.get("includeVnn") === "true" && orderPanels.length) {
+        const orderById = new Map(orderPanels.map(order => [String(order._id), order]));
+        const orderByNumber = new Map(orderPanels.filter(order => order.orderPanelNo).map(order => [order.orderPanelNo, order]));
+        const ids = [...orderById.keys()];
+        const numbers = [...orderByNumber.keys()];
+        const negotiations = await VehicleNegotiation.find(companyScopeFilter(user, {
+          panelStatus: { $ne: "Cancelled" },
+          isDeleted: { $ne: true },
+          $or: [
+            { "orders.orderPanelId": { $in: ids } },
+            { "orders.orderNo": { $in: numbers } },
+            { "selectedOrderPanels._id": { $in: ids } },
+            { "selectedOrderPanels.orderPanelNo": { $in: numbers } },
+          ],
+        })).select("vnnNo orders.orderPanelId orders.orderNo selectedOrderPanels._id selectedOrderPanels.orderPanelNo").sort({ createdAt: -1 }).lean();
+        const addLink = (negotiation, id, number) => {
+          const order = orderById.get(String(id || "")) || orderByNumber.get(number);
+          if (!order) return;
+          const orderId = String(order._id);
+          const links = vnnByOrderId.get(orderId) || new Set();
+          if (negotiation.vnnNo) links.add(negotiation.vnnNo);
+          vnnByOrderId.set(orderId, links);
+        };
+        for (const negotiation of negotiations) {
+          for (const row of negotiation.orders || []) addLink(negotiation, row.orderPanelId, row.orderNo);
+          for (const panel of negotiation.selectedOrderPanels || []) addLink(negotiation, panel._id, panel.orderPanelNo);
+        }
+      }
+
       const flattenedRows = [];
 
       orderPanels.forEach(order => {
+        const vnnNumbers = vnnByOrderId.get(String(order._id));
+        const negotiationFields = {
+          usedInVehicleNegotiation: Boolean(vnnNumbers),
+          vnnNumber: vnnNumbers ? [...vnnNumbers].join(", ") || "Used" : "",
+        };
         if (order.plantRows && order.plantRows.length > 0) {
           order.plantRows.forEach((row, index) => {
             flattenedRows.push({
               _id: `${order._id}-${index}`,
               originalOrderId: order._id,
+              ...negotiationFields,
               originalRowId: row._id,
               date: order.date ? new Date(order.date).toISOString().split('T')[0] : '',
               orderNo: order.orderPanelNo || 'N/A',
@@ -2325,6 +2362,7 @@ const branchHandlerGET = withAuth(async (req, context, user) => {
           flattenedRows.push({
             _id: order._id,
             originalOrderId: order._id,
+            ...negotiationFields,
             date: order.date ? new Date(order.date).toISOString().split('T')[0] : '',
             orderNo: order.orderPanelNo || 'N/A',
             branchName: order.branchName || 'N/A',

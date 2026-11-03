@@ -2958,7 +2958,7 @@ export default function EditConsignmentNote() {
         return;
       }
 
-      const res = await fetch('/api/order-panel?format=table', {
+      const res = await fetch('/api/order-panel?table=true&openOnly=true', {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -3092,33 +3092,13 @@ export default function EditConsignmentNote() {
       const token = localStorage.getItem('token');
       if (!token) return null;
 
-      const res = await fetch('/api/vehicle-negotiation?format=table', {
+      const res = await fetch(`/api/consignment-note/reference-data?orderNo=${encodeURIComponent(orderNo)}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
-      if (!res.ok) return null;
-
       const data = await res.json();
-
-      if (data.success && Array.isArray(data.data)) {
-        const matchingRecord = data.data.find(record => record.order === orderNo);
-
-        if (matchingRecord && matchingRecord.vnId) {
-          const detailRes = await fetch(`/api/vehicle-negotiation?id=${matchingRecord.vnId}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-
-          const detailData = await detailRes.json();
-
-          if (detailData.success && detailData.data) {
-            setVehicleNegotiationData(detailData.data);
-            return detailData.data;
-          }
-        }
-      }
-
-      setVehicleNegotiationData(null);
-      return null;
+      const negotiation = res.ok && data.success ? data.data?.vehicleNegotiation || null : null;
+      setVehicleNegotiationData(negotiation);
+      return negotiation;
     } catch (error) {
       console.error('Error fetching vehicle negotiation:', error);
       setVehicleNegotiationData(null);

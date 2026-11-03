@@ -1,5 +1,6 @@
 import localFont from "next/font/local";
 import "./globals.css";
+import UploadSourceChooser from "@/components/UploadSourceChooser";
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css'
 
@@ -34,6 +35,7 @@ export default function RootLayout({ children }) {
         <div className="flex-1 overflow-y-auto  bg-gray-50 dark:bg-gray-900">
           {children}
         </div>
+        <UploadSourceChooser />
         <ToastContainer />
       </body>
 

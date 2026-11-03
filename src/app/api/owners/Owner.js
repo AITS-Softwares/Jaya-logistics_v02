@@ -51,7 +51,15 @@ const ownerSchema = new mongoose.Schema({
     type: String,
     default: []
   }],
+  adharCardBackDocuments: [{
+    type: String,
+    default: []
+  }],
   rcDocuments: [{
+    type: String,
+    default: []
+  }],
+  rcBackDocuments: [{
     type: String,
     default: []
   }],

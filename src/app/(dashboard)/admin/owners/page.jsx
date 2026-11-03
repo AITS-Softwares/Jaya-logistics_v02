@@ -35,8 +35,13 @@ function DocumentUploadSection({
   existingDocuments, 
   onRemoveExistingDocument,
   documentType, 
+  backFiles,
+  backDocuments,
+  uploadRequired = false,
   required = false 
 }) {
+  const sides = [{ type: documentType, label: backFiles ? 'Choose Front Upload' : 'Upload Documents (PDF/Images)', files, documents: existingDocuments, required: uploadRequired }];
+  if (backFiles) sides.push({ type: documentType + 'Back', label: 'Choose Back Upload', files: backFiles, documents: backDocuments });
   return (
     <div className="border rounded-lg p-3 bg-white shadow-sm">
       <label className="text-xs font-bold text-slate-600 block mb-1">
@@ -50,24 +55,28 @@ function DocumentUploadSection({
         className="border border-slate-200 rounded-lg px-3 py-2 w-full text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none uppercase"
         required={required}
       />
-      <div className="mt-2">
-        <label className="text-xs text-slate-500 block mb-1">Upload Documents (PDF/Images)</label>
-        <input 
-          type="file" 
-          accept=".pdf,.jpg,.jpeg,.png,.webp" 
-          onChange={(e) => onFileSelect(e, documentType)}
-          className="text-xs w-full border border-slate-200 rounded-lg p-1.5 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100"
-          multiple
-        />
+      <div className={backFiles ? "grid grid-cols-2 gap-2" : undefined}>
+      {sides.map(side => (
+      <div key={side.type} className="mt-2">
+        <label className={backFiles ? "inline-flex cursor-pointer rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 focus-within:ring-2 focus-within:ring-emerald-500" : "block text-xs text-slate-500"}>
+          {side.label}{side.required && <span className="ml-1 text-red-500">*</span>}
+          <input
+            type="file"
+            accept=".pdf,.jpg,.jpeg,.png,.webp"
+            onChange={event => onFileSelect(event, side.type)}
+            className={backFiles ? "sr-only" : "mt-1 block w-full rounded-lg border border-slate-200 p-1.5 text-xs file:mr-2 file:rounded-lg file:border-0 file:bg-emerald-50 file:px-3 file:py-1 file:font-semibold file:text-emerald-700"}
+            multiple
+          />
+        </label>
         <div className="mt-2 max-h-40 overflow-y-auto space-y-1">
           {/* New files to upload */}
-          {files.map((file, idx) => (
-            <FileItem key={`new-${idx}`} file={file} index={idx} onRemove={() => onRemoveFile(idx, documentType)} label={label} />
+          {side.files.map((file, idx) => (
+            <FileItem key={`new-${idx}`} file={file} index={idx} onRemove={() => onRemoveFile(idx, side.type)} label={label} />
           ))}
           
           {/* Existing documents with delete option */}
-          {existingDocuments?.map((doc, idx) => (
-            <div key={`existing-${documentType}-${idx}`} className="flex items-center gap-2 p-2 bg-green-50 rounded-lg border border-green-200">
+          {side.documents?.map((doc, idx) => (
+            <div key={`existing-${side.type}-${idx}`} className="flex items-center gap-2 p-2 bg-green-50 rounded-lg border border-green-200">
               <div className="flex-1">
                 <p className="text-xs font-medium text-green-800">Existing Document</p>
                 <a href={doc} target="_blank" rel="noopener noreferrer" className="text-xs text-sky-600 hover:underline">
@@ -76,7 +85,7 @@ function DocumentUploadSection({
               </div>
               <button
                 type="button"
-                onClick={() => onRemoveExistingDocument(documentType, idx)}
+                onClick={() => onRemoveExistingDocument(side.type, idx)}
                 className="text-red-500 hover:text-red-700 p-1"
                 title="Remove this document"
               >
@@ -87,6 +96,8 @@ function DocumentUploadSection({
             </div>
           ))}
         </div>
+      </div>
+      ))}
       </div>
     </div>
   );
@@ -108,7 +119,9 @@ export default function OwnerPage() {
   // File states
   const [panCardFiles, setPanCardFiles] = useState([]);
   const [adharCardFiles, setAdharCardFiles] = useState([]);
+  const [adharCardBackFiles, setAdharCardBackFiles] = useState([]);
   const [rcFiles, setRcFiles] = useState([]);
+  const [rcBackFiles, setRcBackFiles] = useState([]);
   
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -118,11 +131,6 @@ export default function OwnerPage() {
   const [existingDocuments, setExistingDocuments] = useState({});
   
   // State for documents to delete
-  const [documentsToDelete, setDocumentsToDelete] = useState({
-    panCard: [],
-    adharCard: [],
-    rc: [],
-  });
 
   // ✅ Fetch Owners
   const fetchOwners = async (search = '') => {
@@ -183,8 +191,14 @@ export default function OwnerPage() {
       case 'adharCard':
         setAdharCardFiles(prev => [...prev, ...files]);
         break;
+      case 'adharCardBack':
+        setAdharCardBackFiles(prev => [...prev, ...files]);
+        break;
       case 'rc':
         setRcFiles(prev => [...prev, ...files]);
+        break;
+      case 'rcBack':
+        setRcBackFiles(prev => [...prev, ...files]);
         break;
       default:
         break;
@@ -201,8 +215,14 @@ export default function OwnerPage() {
       case 'adharCard':
         setAdharCardFiles(prev => prev.filter((_, i) => i !== index));
         break;
+      case 'adharCardBack':
+        setAdharCardBackFiles(prev => prev.filter((_, i) => i !== index));
+        break;
       case 'rc':
         setRcFiles(prev => prev.filter((_, i) => i !== index));
+        break;
+      case 'rcBack':
+        setRcBackFiles(prev => prev.filter((_, i) => i !== index));
         break;
       default:
         break;
@@ -211,11 +231,6 @@ export default function OwnerPage() {
 
   // ✅ Handle removing existing document
   const handleRemoveExistingDocument = (docType, index) => {
-    setDocumentsToDelete(prev => ({
-      ...prev,
-      [docType]: [...(prev[docType] || []), index]
-    }));
-    
     setExistingDocuments(prev => ({
       ...prev,
       [docType + 'Documents']: prev[docType + 'Documents']?.filter((_, i) => i !== index)
@@ -244,10 +259,11 @@ export default function OwnerPage() {
       }
 
       const data = await res.json();
-      return data.success ? data.filePath : null;
+      if (!data.success || !data.filePath) throw new Error(data.message || 'Upload failed.');
+      return data.filePath;
     } catch (error) {
       console.error(`Error uploading ${docType}:`, error);
-      return null;
+      throw new Error(`Could not upload ${file.name}. Try again.`);
     }
   };
 
@@ -256,7 +272,9 @@ export default function OwnerPage() {
     const uploadedPaths = {
       panCard: [],
       adharCard: [],
+      adharCardBack: [],
       rc: [],
+      rcBack: [],
     };
 
     for (const file of panCardFiles) {
@@ -268,10 +286,18 @@ export default function OwnerPage() {
       const path = await uploadFile(file, 'adharCard');
       if (path) uploadedPaths.adharCard.push(path);
     }
+    for (const file of adharCardBackFiles) {
+      const path = await uploadFile(file, 'adharCardBack');
+      if (path) uploadedPaths.adharCardBack.push(path);
+    }
 
     for (const file of rcFiles) {
       const path = await uploadFile(file, 'rc');
       if (path) uploadedPaths.rc.push(path);
+    }
+    for (const file of rcBackFiles) {
+      const path = await uploadFile(file, 'rcBack');
+      if (path) uploadedPaths.rcBack.push(path);
     }
 
     return uploadedPaths;
@@ -291,13 +317,10 @@ export default function OwnerPage() {
     });
     setPanCardFiles([]);
     setAdharCardFiles([]);
+    setAdharCardBackFiles([]);
     setRcFiles([]);
+    setRcBackFiles([]);
     setExistingDocuments({});
-    setDocumentsToDelete({
-      panCard: [],
-      adharCard: [],
-      rc: [],
-    });
     setEditingId(null);
     setError(null);
   };
@@ -315,17 +338,23 @@ export default function OwnerPage() {
     }
 
     try {
+      const requiredUploads = [
+      ['RC front', rcFiles, existingDocuments.rcDocuments],
+      ['Aadhaar front', adharCardFiles, existingDocuments.adharCardDocuments],
+      ['PAN Card', panCardFiles, existingDocuments.panCardDocuments],
+      ];
+      const missingUploads = requiredUploads.filter(([, files, saved]) => !files.length && !saved?.length).map(([label]) => label);
+      if (missingUploads.length) {
+        setError(`Upload the required documents: ${missingUploads.join(', ')}.`);
+        return;
+      }
       const uploadedPaths = await uploadAllFiles();
       
       const token = localStorage.getItem('token');
       const url = editingId ? `/api/owners?id=${editingId}` : '/api/owners';
       const method = editingId ? 'PUT' : 'POST';
 
-      const getExistingDocuments = (docType) => {
-        const existing = existingDocuments[docType + 'Documents'] || [];
-        const toDelete = documentsToDelete[docType] || [];
-        return existing.filter((_, index) => !toDelete.includes(index));
-      };
+      const getExistingDocuments = (docType) => existingDocuments[docType === 'photo' ? 'vehiclePhotos' : docType + 'Documents'] || [];
 
       const payload = {
         ownerName: formData.ownerName,
@@ -337,7 +366,9 @@ export default function OwnerPage() {
         rcNumber: formData.rcNumber.toUpperCase(),
         panCardDocuments: [...getExistingDocuments('panCard'), ...uploadedPaths.panCard],
         adharCardDocuments: [...getExistingDocuments('adharCard'), ...uploadedPaths.adharCard],
+        adharCardBackDocuments: [...getExistingDocuments('adharCardBack'), ...uploadedPaths.adharCardBack],
         rcDocuments: [...getExistingDocuments('rc'), ...uploadedPaths.rc],
+        rcBackDocuments: [...getExistingDocuments('rcBack'), ...uploadedPaths.rcBack],
         isActive: formData.isActive,
       };
 
@@ -363,7 +394,7 @@ export default function OwnerPage() {
       alert(`✅ Owner ${editingId ? 'updated' : 'added'} successfully!`);
     } catch (error) {
       console.error(`Error ${editingId ? 'updating' : 'adding'} owner:`, error.message);
-      setError(`Failed to ${editingId ? 'update' : 'add'} owner.`);
+      setError(error.message || `Failed to ${editingId ? 'update' : 'add'} owner.`);
     } finally {
       setSubmitting(false);
     }
@@ -385,18 +416,17 @@ export default function OwnerPage() {
     setExistingDocuments({
       panCardDocuments: owner.panCardDocuments || [],
       adharCardDocuments: owner.adharCardDocuments || [],
+      adharCardBackDocuments: owner.adharCardBackDocuments || [],
       rcDocuments: owner.rcDocuments || [],
+      rcBackDocuments: owner.rcBackDocuments || [],
     });
     
-    setDocumentsToDelete({
-      panCard: [],
-      adharCard: [],
-      rc: [],
-    });
     
     setPanCardFiles([]);
     setAdharCardFiles([]);
+    setAdharCardBackFiles([]);
     setRcFiles([]);
+    setRcBackFiles([]);
     setEditingId(owner._id);
     setError(null);
   };
@@ -571,6 +601,7 @@ export default function OwnerPage() {
             onRemoveFile={removeFile}
             onRemoveExistingDocument={handleRemoveExistingDocument}
             existingDocuments={existingDocuments.panCardDocuments}
+            uploadRequired
             documentType="panCard"
           />
 
@@ -585,6 +616,9 @@ export default function OwnerPage() {
             onRemoveFile={removeFile}
             onRemoveExistingDocument={handleRemoveExistingDocument}
             existingDocuments={existingDocuments.adharCardDocuments}
+            backFiles={adharCardBackFiles}
+            backDocuments={existingDocuments.adharCardBackDocuments}
+            uploadRequired
             documentType="adharCard"
           />
 
@@ -599,6 +633,9 @@ export default function OwnerPage() {
             onRemoveFile={removeFile}
             onRemoveExistingDocument={handleRemoveExistingDocument}
             existingDocuments={existingDocuments.rcDocuments}
+            backFiles={rcBackFiles}
+            backDocuments={existingDocuments.rcBackDocuments}
+            uploadRequired
             documentType="rc"
           />
 

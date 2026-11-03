@@ -834,7 +834,8 @@
 // //           'NON-UNIFORM - GENERAL CARGO': nonUniformRows
 // //         },
 // //         totalWeight: calculateTotalActualWt(),
-// //         vehicleNegotiationRef: vehicleNegotiationData?._id || null
+// //         vehicleNegotiationRef: vehicleNegotiationData?._id || null,
+        vnnNo: vehicleNegotiationData?.vnnNo || ""
 // //       };
 
 // //       console.log("Saving consignment note:", payload);
@@ -2697,7 +2698,8 @@
 //           'NON-UNIFORM - GENERAL CARGO': nonUniformRows
 //         },
 //         totalWeight: calculateTotalActualWt(),
-//         vehicleNegotiationRef: vehicleNegotiationData?._id || null
+//         vehicleNegotiationRef: vehicleNegotiationData?._id || null,
+        vnnNo: vehicleNegotiationData?.vnnNo || ""
 //       };
 
 //       console.log("Saving consignment note:", payload);
@@ -4170,7 +4172,7 @@ export default function CreateConsignmentNote() {
         return;
       }
 
-      const res = await fetch('/api/order-panel?format=table&openOnly=true', {
+      const res = await fetch('/api/order-panel?table=true&openOnly=true', {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -4181,15 +4183,14 @@ export default function CreateConsignmentNote() {
       const data = await res.json();
       console.log('Orders API response:', data);
 
-      const loadingInfoRes = await fetch('/api/consignment-note/reference-data?lookup=loadingInfoOrders', {
+      const vnnOrdersRes = await fetch('/api/consignment-note/reference-data?lookup=vnnOrders', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!loadingInfoRes.ok) throw new Error(`Loading Info lookup returned ${loadingInfoRes.status}`);
-      const loadingInfoData = await loadingInfoRes.json();
-      if (!loadingInfoData.success) throw new Error(loadingInfoData.message || 'Failed to load Loading Info orders');
-      const eligibleRows = loadingInfoData.data?.eligibleRows || [];
+      if (!vnnOrdersRes.ok) throw new Error(`Vehicle Negotiation lookup returned ${vnnOrdersRes.status}`);
+      const vnnOrdersData = await vnnOrdersRes.json();
+      if (!vnnOrdersData.success) throw new Error(vnnOrdersData.message || 'Failed to load approved and placed Vehicle Negotiation orders');
+      const eligibleRows = vnnOrdersData.data?.eligibleRows || [];
       setLrEligibleRows(eligibleRows);
-      const loadingInfoOrderNos = new Set((loadingInfoData.data?.orderNumbers || []).map(normText));
 
       // Collect order numbers that already have an approved/completed LR
       const approvedRowIds = new Set();
@@ -4242,7 +4243,7 @@ export default function CreateConsignmentNote() {
         const availableOrders = data.data
           .filter((o) => {
             const no = normText(o.orderNo || o.orderPanelNo);
-            if (!loadingInfoOrderNos.has(no) || !eligibleRows.some(row => normText(row.orderNo) === no && (!row.orderRowId || String(row.orderRowId) === String(o.originalRowId)))) return false;
+            if (!eligibleRows.some(row => normText(row.orderNo) === no && (!row.orderRowId || String(row.orderRowId) === String(o.originalRowId)))) return false;
             const covered = (o.originalRowId && approvedRowIds.has(String(o.originalRowId)))
               || legacyKeys.has(`${no}|${normText(o.to)}`);
             if (covered || seen.has(no)) return false;
@@ -5025,7 +5026,8 @@ export default function CreateConsignmentNote() {
           'NON-UNIFORM - GENERAL CARGO': nonUniformRows
         },
         totalWeight: calculateTotalActualWt(),
-        vehicleNegotiationRef: vehicleNegotiationData?._id || null
+        vehicleNegotiationRef: vehicleNegotiationData?._id || null,
+        vnnNo: vehicleNegotiationData?.vnnNo || ""
       };
 
       console.log("Saving consignment note with sub-company:", payload);

@@ -2387,7 +2387,7 @@ export default function OrderPanelList() {
     try {
       const token = localStorage.getItem('token');
 
-      const res = await fetch('/api/order-panel?table=true', {
+      const res = await fetch('/api/order-panel?table=true&includeVnn=true', {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -2714,7 +2714,7 @@ export default function OrderPanelList() {
 
   // Count selectable orders (approved and not used in Vehicle Negotiation)
   const selectableOrdersCount = filteredOrders.filter(o =>
-    o.panelStatus === 'Approved' && !o.usedInVehicleNegotiation
+    ['Approved', 'Partially on hold'].includes(o.panelStatus) && o.status === 'Open' && !o.statusRequest?.action && !o.usedInVehicleNegotiation
   ).length;
 
   // Show loading while permissions are being loaded
@@ -3006,7 +3006,7 @@ export default function OrderPanelList() {
                             <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-medium">
                               ✓ Used
                             </span>
-                          ) : isApproved ? (
+                          ) : isSelectable ? (
                             <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
                               Available
                             </span>

@@ -8965,7 +8965,8 @@ export default function EditVehicleNegotiation() {
                 label="Final - Per MT (A)"
                 value={approval.finalPerMT}
                 onChange={(v) => setApproval((p) => ({ ...p, finalPerMT: v }))}
-                readOnly={!canEditPart3 || approval.rateType === "Fixed"}
+                disabled={approval.rateType === "Fixed"}
+                readOnly={!canEditPart3}
               />
               <div className="col-span-12 md:col-span-4 mt-2">
                 <div className="flex flex-col">
@@ -8987,7 +8988,8 @@ export default function EditVehicleNegotiation() {
                 label="Final - Fix"
                 value={approval.finalFix}
                 onChange={(v) => setApproval((p) => ({ ...p, finalFix: v }))}
-                readOnly={!canEditPart3 || approval.rateType === "Per MT"}
+                disabled={approval.rateType === "Per MT"}
+                readOnly={!canEditPart3}
               />
               <Select
                 col="col-span-12 md:col-span-4"

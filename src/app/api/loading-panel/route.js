@@ -1,6 +1,6 @@
 import { reconcileOrderCancellations } from '@/lib/reconcileOrderCancellations';
 import { panelApprovalStatus } from '@/lib/reapprovalPresentation.mjs';
-import { loadingPhotoError } from '@/lib/loadingPhotoPolicy.mjs';
+import { loadingSubmissionError } from '@/lib/loadingPhotoPolicy.mjs';
 import { saveNumberedDocument } from '@/lib/saveNumberedDocument';
 import { isStagedLoading, newLoadingWorkflow, filterLoadingFields, prepareLoadingEdit, loadingApprovalDecision, loadingWorkflowForReview } from '@/lib/loadingApprovalWorkflow.mjs';
 
@@ -1672,8 +1672,8 @@ async function branchHandlerPOST(req) {
     if (formatError) return NextResponse.json({ success: false, message: formatError }, { status: 400 });
     const isDraftSave = body.saveMode === 'draft';
     const loadingInfoPhotosOptional = await areLoadingInfoPhotosOptional(user, body.orderRows || []);
-    const photoError = isDraftSave ? null : loadingPhotoError(body, 1, loadingInfoPhotosOptional);
-    if (photoError) return NextResponse.json({ success: false, message: photoError }, { status: 400 });
+    const submissionError = isDraftSave ? null : loadingSubmissionError(body, 1, loadingInfoPhotosOptional);
+    if (submissionError) return NextResponse.json({ success: false, message: submissionError }, { status: 400 });
     const blockedRow = isDraftSave ? null : await validateOpenOrderRows(user, body.orderRows || []);
     if (blockedRow) return NextResponse.json({ success: false, message: blockedRow }, { status: 409 });
 
@@ -2217,8 +2217,8 @@ async function branchHandlerPUT(req) {
     const staged = isStagedLoading(existingPanel);
     if (!staged && saveMode !== 'draft') {
       const optional = await areLoadingInfoPhotosOptional(user, updateData.orderRows || existingPanel.orderRows || []);
-      const photoError = loadingPhotoError({ ...existingPanel.toObject(), ...updateData }, 0, optional);
-      if (photoError) return NextResponse.json({ success: false, message: photoError }, { status: 400 });
+      const submissionError = loadingSubmissionError({ ...existingPanel.toObject(), ...updateData }, 0, optional);
+      if (submissionError) return NextResponse.json({ success: false, message: submissionError }, { status: 400 });
     }
     const wasDraft = !!existingPanel.isDraft || existingPanel.panelStatus === 'Draft';
     if (staged) {
@@ -2232,8 +2232,8 @@ async function branchHandlerPUT(req) {
       }
       if (saveMode === 'submit') {
         const optional = await areLoadingInfoPhotosOptional(user, updateData.orderRows || existingPanel.orderRows || []);
-        const photoError = loadingPhotoError({ ...existingPanel.toObject(), ...updateData }, updateData.loadingWorkflow.currentPart, optional);
-        if (photoError) return NextResponse.json({ success: false, message: photoError }, { status: 400 });
+        const submissionError = loadingSubmissionError({ ...existingPanel.toObject(), ...updateData }, updateData.loadingWorkflow.currentPart, optional);
+        if (submissionError) return NextResponse.json({ success: false, message: submissionError }, { status: 400 });
       }
       if (isReapprovalEdit && saveMode === 'submit') updateData.reapprovalState = 'pendingApproval';
     } else {

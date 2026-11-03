@@ -519,7 +519,7 @@ export default function CampaignPage() {
                   <div className="border-4 border-dashed border-slate-100 rounded-[2rem] p-12 text-center hover:border-indigo-200 hover:bg-indigo-50/30 transition-all relative">
                     <UploadCloud className="mx-auto text-slate-300 mb-4" size={48} />
                     <p className="text-slate-500 font-bold">Drop your Excel/CSV or click to browse</p>
-                    <input type="file" ref={excelInputRef} onChange={handleExcelChange} className="absolute inset-0 opacity-0 cursor-pointer" />
+                    <input type="file" data-native-upload ref={excelInputRef} onChange={handleExcelChange} className="absolute inset-0 opacity-0 cursor-pointer" />
                   </div>
                   {excelFile && (
                     <div className="flex justify-between items-center bg-slate-900 p-4 rounded-2xl text-white">
