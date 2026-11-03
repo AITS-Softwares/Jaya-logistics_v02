@@ -3045,7 +3045,7 @@ export default function OrderPanelList() {
                             )}
 
                             {/* Edit Button */}
-                            {canEdit(MODULE_NAME) && !isUsedInVN && order.status !== 'Cancelled' && order.panelStatus !== 'Cancelled' && (
+                            {canEdit(MODULE_NAME) && order.status !== 'Cancelled' && order.panelStatus !== 'Cancelled' && (
                               <button
                                 onClick={() => handleEdit(order.originalOrderId)}
                                 className="p-2 bg-sky-100 text-sky-700 rounded-lg hover:bg-sky-200 transition"
@@ -3058,7 +3058,7 @@ export default function OrderPanelList() {
                             )}
 
                             {/* Quick Approve Button */}
-                            {canApprove(MODULE_NAME) && !isUsedInVN && !order.isDraft && order.status !== 'Cancelled' && order.panelStatus !== 'Cancelled' && order.panelStatus !== 'Approved' && order.panelStatus !== 'Completed' && order.panelStatus !== 'Rejected' && (
+                            {canApprove(MODULE_NAME) && !order.isDraft && order.status !== 'Cancelled' && order.panelStatus !== 'Cancelled' && order.panelStatus !== 'Approved' && order.panelStatus !== 'Completed' && order.panelStatus !== 'Rejected' && (
                               <button
                                 onClick={() => handleQuickApprove(order.originalOrderId, order.orderNo)}
                                 disabled={approveLoading === order.originalOrderId}
@@ -3076,7 +3076,7 @@ export default function OrderPanelList() {
                             )}
 
                             {/* Full Approve Button */}
-                            {canApprove(MODULE_NAME) && !isUsedInVN && !order.isDraft && order.status !== 'Cancelled' && order.panelStatus !== 'Cancelled' && order.panelStatus !== 'Approved' && order.panelStatus !== 'Completed' && order.panelStatus !== 'Rejected' && (
+                            {canApprove(MODULE_NAME) && !order.isDraft && order.status !== 'Cancelled' && order.panelStatus !== 'Cancelled' && order.panelStatus !== 'Approved' && order.panelStatus !== 'Completed' && order.panelStatus !== 'Rejected' && (
                               <button
                                 onClick={() => handleApprove(order.originalOrderId)}
                                 className="p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition"

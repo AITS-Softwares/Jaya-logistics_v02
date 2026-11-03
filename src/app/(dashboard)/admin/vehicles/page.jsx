@@ -1651,11 +1651,16 @@ export default function VehiclePage() {
               else clearSelectedOwner();
             }} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
               <option value="">Select from Vehicle Owners</option>
-              {owners.filter(owner => owner._id === selectedOwner?._id
-                || (owner.isActive !== false && (!formData.vehicleNumber || owner.vehicleNumber?.includes(formData.vehicleNumber))
-                  && !vehicles.some(vehicle => vehicle._id !== editingId
-                    && (String(vehicle.ownerId) === owner._id || vehicle.vehicleNumber === owner.vehicleNumber))))
-                .map(owner => <option key={owner._id} value={owner._id}>{owner.ownerName} · {owner.vehicleNumber}</option>)}
+              {owners.filter(owner => owner.isActive !== false || owner._id === selectedOwner?._id)
+                .map(owner => {
+                  const linked = vehicles.some(vehicle => vehicle._id !== editingId
+                    && (String(vehicle.ownerId) === owner._id || vehicle.vehicleNumber === owner.vehicleNumber));
+                  return (
+                    <option key={owner._id} value={owner._id} disabled={linked && owner._id !== selectedOwner?._id}>
+                      {owner.ownerName} · {owner.vehicleNumber}{linked ? ' (already registered)' : ''}
+                    </option>
+                  );
+                })}
             </select>
             <p className="mt-1 text-xs text-slate-500">Create or update the owner and RC in Vehicle Owners.</p>
           </div>
