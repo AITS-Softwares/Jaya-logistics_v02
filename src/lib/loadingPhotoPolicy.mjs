@@ -11,3 +11,15 @@ export function loadingPhotoError(record, part, optional = false) {
   }
   return null;
 }
+
+export function loadingSubmissionError(record, part, photosOptional = false) {
+  const hasSlip = files => Array.isArray(files) && files.some(path =>
+    typeof path === 'string' && path.trim() && path.trim() !== 'Not Set');
+  if (part !== 2 && !hasSlip(record.vehicleSlips)) {
+    return 'Upload an Empty Vehicle Slip before submitting Part 1.';
+  }
+  if (part !== 1 && !hasSlip(record.loadedVehicleSlips)) {
+    return 'Upload a Loaded Vehicle Slip before submitting Part 2.';
+  }
+  return loadingPhotoError(record, part, photosOptional);
+}

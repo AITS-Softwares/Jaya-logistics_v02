@@ -321,7 +321,7 @@ const dateText = (iso) => { const [y, m, d] = String(iso || "").split("-"); retu
 // vehicle: { lat, lng, label? } | null (live location, added later)
 // route: the answer from /api/tracking/route ({ distanceKm, durationMinutes, polyline, plan }) | null
 // fallback: shown when there is no browser key
-export default function TrackingMap({ stops = [], vehicle = null, route = null, status = "", fallback = null }) {
+export default function TrackingMap({ stops = [], vehicle = null, driverStart = null, route = null, status = "", fallback = null }) {
     const boxRef = useRef(null);
     const mapRef = useRef(null);
     const overlaysRef = useRef([]);
@@ -434,6 +434,14 @@ export default function TrackingMap({ stops = [], vehicle = null, route = null, 
             overlaysRef.current.push(line);
         }
 
+        if (driverStart) {
+            const marker = new maps.Marker({
+                map, position: driverStart, title: "Driver Start", label: "S", zIndex: 998,
+            });
+            overlaysRef.current.push(marker);
+            bounds.extend(driverStart);
+        }
+
         if (vehicle && typeof vehicle.lat === "number") {
             const position = { lat: vehicle.lat, lng: vehicle.lng };
             overlaysRef.current.push(new maps.Marker({
@@ -445,7 +453,7 @@ export default function TrackingMap({ stops = [], vehicle = null, route = null, 
 
         // Zoom so the whole route (pins + road line) fills the map box, with a small margin for the pins.
         // Single place: city-level zoom. Very short routes: never zoom closer than street level.
-        const single = uniquePlaces + (vehicle ? 1 : 0) === 1;
+        const single = uniquePlaces + (vehicle ? 1 : 0) + (driverStart ? 1 : 0) === 1;
         const fit = () => {
             if (bounds.isEmpty()) { map.setCenter(INDIA_CENTER); map.setZoom(5); return; }
             map.fitBounds(bounds, { top: 48, right: 36, bottom: 24, left: 36 });
@@ -453,7 +461,7 @@ export default function TrackingMap({ stops = [], vehicle = null, route = null, 
         };
         fitRef.current = fit;
         fit();
-    }, [ready, stops, vehicle, route]);
+    }, [ready, stops, vehicle, driverStart, route]);
 
     if (!BROWSER_KEY) return fallback;
 
@@ -476,6 +484,7 @@ export default function TrackingMap({ stops = [], vehicle = null, route = null, 
                 <span><b className="text-red-600">●</b> Drop (1, 2, 3… in delivery order)</span>
                 <span><b className="text-slate-700">●</b> Several stops at one place (all numbers shown)</span>
                 <span>Dashed ring = approximate (town level)</span>
+                {driverStart && <span><b>S</b> Driver Start</span>}
                 {vehicle && <span><b className="text-blue-600">●</b> Vehicle</span>}
                 <span>{route?.polyline ? "Blue line = driving route in stop order." : "Dashed line joins stops in order; it is not the road route."}</span>
             </div>

@@ -1643,6 +1643,7 @@ export default function ApproveConsignmentNote() {
   const [consignee, setConsignee] = useState({
     name: "",
     address: "",
+    gstNumber: "",
     customerId: "",
     selectedAddressTitle: ""
   });
@@ -1757,6 +1758,7 @@ export default function ApproveConsignmentNote() {
       setConsignee({
         name: note.consignee?.name || "",
         address: note.consignee?.address || "",
+        gstNumber: note.consignee?.gstNumber || "",
         customerId: note.consignee?.customerId || "",
         selectedAddressTitle: note.consignee?.selectedAddressTitle || ""
       });
@@ -2129,7 +2131,7 @@ export default function ApproveConsignmentNote() {
             </div>
             <div class="info-row">
               <span class="info-label">Consignee GST:</span>
-              <span class="info-value">${note.consignee?.gstNumber || ''}</span>
+              <span class="info-value">${consignee.gstNumber || ''}</span>
               <span class="info-label">E-Way Bill No:</span>
               <span class="info-value">${ewaybill.ewaybillNo || (ewaybill.status ? ewaybill.status : '')}</span>
             </div>
@@ -2304,12 +2306,12 @@ export default function ApproveConsignmentNote() {
         win.document.close();
         win.print();
       } else {
-        throw new Error("Please allow popups to generate LR");
+        alert("The LR print window was blocked. Allow pop-ups for this site and click Generate LR again.");
       }
 
     } catch (error) {
       console.error("Error generating LR:", error);
-      alert(`❌ Failed to generate LR: ${error.message}`);
+      alert(`Could not prepare LR ${header.lrNo || ""} for printing. Refresh this page and try again.`);
     } finally {
       setGeneratingLR(false);
     }

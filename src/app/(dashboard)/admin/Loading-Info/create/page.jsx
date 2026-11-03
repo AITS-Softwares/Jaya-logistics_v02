@@ -6123,17 +6123,14 @@ export default function CreateLoadingInfoPanel() {
   });
 
   const handleVehicleSlipSelect = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*,.pdf';
-    input.multiple = true;
-
-    input.onchange = async (e) => {
-      const files = Array.from(e.target.files);
-      setVehicleSlipFiles(prev => [...prev, ...files]);
-    };
-
-    input.click();
+    setMediaPickerTarget({
+      label: "Empty Vehicle Slip",
+      accept: "image/*,.pdf",
+      multiple: true,
+      addFiles: files => {
+        setVehicleSlipFiles(prev => [...prev, ...files]);
+      },
+    });
   };
 
   const removeVehicleSlip = (index) => {
@@ -6182,22 +6179,18 @@ export default function CreateLoadingInfoPanel() {
   });
 
   const handleVehiclePhotoSelect = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.multiple = true;
-
-    input.onchange = async (e) => {
-      const files = Array.from(e.target.files);
-      const newTotalPhotos = vehiclePhotoFiles.length + files.length;
-      if (newTotalPhotos > 10) {
-        alert("Maximum 10 vehicle photos allowed!");
-        return;
-      }
-      setVehiclePhotoFiles(prev => [...prev, ...files]);
-    };
-
-    input.click();
+    setMediaPickerTarget({
+      label: "Vehicle Photo",
+      accept: "image/*",
+      multiple: true,
+      addFiles: files => {
+        if (vehiclePhotoFiles.length + files.length > 10) {
+          alert("Maximum 10 vehicle photos allowed!");
+          return;
+        }
+        setVehiclePhotoFiles(prev => [...prev, ...files]);
+      },
+    });
   };
 
   const removeVehiclePhoto = (index) => {
@@ -6205,17 +6198,14 @@ export default function CreateLoadingInfoPanel() {
   };
 
   const handleLoadedVehicleSlipSelect = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*,.pdf';
-    input.multiple = true;
-
-    input.onchange = async (e) => {
-      const files = Array.from(e.target.files);
-      setLoadedVehicleSlipFiles(prev => [...prev, ...files]);
-    };
-
-    input.click();
+    setMediaPickerTarget({
+      label: "Loaded Vehicle Slip",
+      accept: "image/*,.pdf",
+      multiple: true,
+      addFiles: files => {
+        setLoadedVehicleSlipFiles(prev => [...prev, ...files]);
+      },
+    });
   };
 
   const removeLoadedVehicleSlip = (index) => {
@@ -6359,7 +6349,6 @@ export default function CreateLoadingInfoPanel() {
   const [stream, setStream] = useState(null);
   const [cameraTarget, setCameraTarget] = useState(null);
   const [mediaPickerTarget, setMediaPickerTarget] = useState(null);
-  const [cameraFallback, setCameraFallback] = useState(null);
 
   useEffect(() => {
     if (showCamera && stream && videoRef.current) {
@@ -6475,6 +6464,7 @@ export default function CreateLoadingInfoPanel() {
       [field]: [...(prev[field] || []), file],
     }));
 
+    if (section === 'helper') append(setHelperInfo);
     if (section === 'vehicle') append(setVehicleFiles);
     if (section === 'vbp') append(setVbpFiles);
     if (section === 'vft') append(setVftFiles);
@@ -6483,40 +6473,67 @@ export default function CreateLoadingInfoPanel() {
     if (section === 'weighment') append(setWeighmentFiles);
   };
 
-  const openNativeCameraPicker = (target) => {
+  const addMediaFiles = (target, files) => {
+    if (target.addFiles) {
+      target.addFiles(files);
+    } else {
+      for (const file of files) appendUploadFile(target.section, target.field, file);
+    }
+  };
+
+  const pickMediaFile = (target, facingMode = null) => {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = 'image/*';
-    // On mobile browsers this asks the native picker for the device camera.
-    // It remains a safe fallback on HTTP where live webcam APIs are blocked.
-    input.setAttribute('capture', 'environment');
-    input.onchange = (event) => {
-      const file = event.target.files?.[0];
-      if (file) appendUploadFile(target.section, target.field, file);
+    input.accept = target.isVideo ? 'video/*' : facingMode ? 'image/*' : target.accept || 'image/*';
+    input.multiple = !facingMode && Boolean(target.multiple);
+    if (facingMode) input.setAttribute('capture', facingMode);
+    input.onchange = () => {
+      const files = Array.from(input.files || []);
+      if (!files.length) return;
+      addMediaFiles(target, files);
+      if (facingMode && target.section === 'vehicle' && target.field === 'photo') {
+        setArrivalDetails(prev => ({ ...prev, ...istStamp(new Date()) }));
+      }
     };
     input.click();
   };
 
-  const openCamera = async (target) => {
-    try {
-      if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
-        openNativeCameraPicker(target);
-        return;
-      }
+  const [cameraFacing, setCameraFacing] = useState('environment');
+  const cameraRequestPending = useRef(false);
 
-      const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
+  useEffect(() => () => {
+    stream?.getTracks().forEach(track => track.stop());
+  }, [stream]);
+
+  const openCamera = async (target, facingMode = 'environment') => {
+    if (!target || cameraRequestPending.current) return;
+    if (target.isVideo) {
+      pickMediaFile(target, facingMode);
+      return;
+    }
+    const switching = Boolean(stream);
+    if (switching) stopCamera();
+    if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+      setMediaPickerTarget({ ...target, nativeCamera: true });
+      return;
+    }
+    cameraRequestPending.current = true;
+    try {
+      const constraint = switching ? { exact: facingMode } : { ideal: facingMode };
+      const mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: constraint } });
       setCameraTarget(target);
+      setCameraFacing(mediaStream.getVideoTracks()[0]?.getSettings().facingMode || facingMode);
       setStream(mediaStream);
       setShowCamera(true);
-    } catch (err) {
-      console.error("Error accessing camera:", err);
-      // input.click() after an await is blocked by browsers (no user gesture),
-      // so ask the user to tap a real button/label to open the native camera.
-      setCameraFallback(target);
+    } catch (error) {
+      console.warn('Live camera unavailable:', error);
+      setMediaPickerTarget({ ...target, nativeCamera: true });
+    } finally {
+      cameraRequestPending.current = false;
     }
   };
 
-  const startCamera = () => openCamera({ section: "vehicle", field: "photo", label: "Driver Photo" });
+  const startCamera = () => openImageMediaPicker('vehicle', 'photo', 'Driver Photo');
   const openImageMediaPicker = (section, field, label) => setMediaPickerTarget({ section, field, label });
 
   const stopCamera = () => {
@@ -6529,7 +6546,7 @@ export default function CreateLoadingInfoPanel() {
   };
 
   const capturePhoto = () => {
-    if (videoRef.current && canvasRef.current) {
+    if (cameraTarget && videoRef.current?.videoWidth && canvasRef.current) {
       const video = videoRef.current;
       const canvas = canvasRef.current;
       const context = canvas.getContext('2d');
@@ -6540,13 +6557,14 @@ export default function CreateLoadingInfoPanel() {
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
       canvas.toBlob((blob) => {
+        if (!blob) return;
         const now = new Date();
         const filename = `${cameraTarget?.field || "driver_photo"}_${now.getTime()}.jpg`;
         const file = new File([blob], filename, { type: 'image/jpeg' });
 
-        appendUploadFile(cameraTarget?.section || 'vehicle', cameraTarget?.field || 'photo', file);
+        addMediaFiles(cameraTarget, [file]);
 
-        if (cameraTarget?.section === "vehicle") {
+        if (cameraTarget.section === "vehicle" && cameraTarget.field === "photo") {
           setArrivalDetails(prev => ({
             ...prev,
             ...istStamp(now),
@@ -7033,39 +7051,19 @@ export default function CreateLoadingInfoPanel() {
     { key: "noOfDroppingPoint", label: "No. of Droping Point", type: "number" },
   ];
 
-  const handleFileSelect = (section, field, isVideo = false) => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = isVideo ? 'video/*' : 'image/*';
-    input.multiple = false;
-
-    input.onchange = async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-
-      appendUploadFile(section, field, file);
-    };
-
-    input.click();
+  const handleFileSelect = (section, field, isVideo = false, label = null) => {
+    const labels = { aadhar: 'Driver Aadhaar', rc: 'Vehicle RC', pan: 'PAN Card', license: 'Driving Licence', weighSlip: 'Weigh Slip' };
+    const acceptsPdf = (section === 'vehicle' && ['aadhar', 'rc', 'pan', 'license'].includes(field))
+      || section === 'weighment' || (section === 'helper' && field === 'aadharPhoto');
+    setMediaPickerTarget({
+      section, field, isVideo,
+      label: label || labels[field] || (isVideo ? `${section.toUpperCase()} Video` : field.toUpperCase()),
+      accept: acceptsPdf ? 'image/*,.pdf' : undefined,
+    });
   };
 
-  const handleHelperFileSelect = (field, isVideo = false) => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = isVideo ? 'video/*' : 'image/*';
-    input.multiple = false;
-
-    input.onchange = async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-
-      setHelperInfo(prev => ({
-        ...prev,
-        [field]: [...prev[field], file]
-      }));
-    };
-
-    input.click();
+  const handleHelperFileSelect = (field) => {
+    handleFileSelect('helper', field, false, field === 'photo' ? 'Helper Photo' : 'Helper Aadhaar');
   };
 
   const removeFile = (section, field, index, isExisting = false) => {
@@ -7830,14 +7828,14 @@ export default function CreateLoadingInfoPanel() {
             <div className="mb-4 flex items-center justify-between gap-3">
               <div>
                 <h3 className="text-base font-extrabold text-slate-900">Add {mediaPickerTarget.label}</h3>
-                <p className="mt-1 text-xs text-slate-500">Choose an existing image or take one now.</p>
+                <p className="mt-1 text-xs text-slate-500">{mediaPickerTarget.isVideo ? 'Upload a video or record one using your device.' : 'Upload a file or take a photo.'}</p>
               </div>
               <button type="button" onClick={() => setMediaPickerTarget(null)} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-800" aria-label="Close">×</button>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
-                onClick={() => { const target = mediaPickerTarget; setMediaPickerTarget(null); handleFileSelect(target.section, target.field); }}
+                onClick={() => { const target = mediaPickerTarget; setMediaPickerTarget(null); pickMediaFile(target); }}
                 className="rounded-xl border border-sky-200 bg-sky-50 px-3 py-4 text-sm font-bold text-sky-700 hover:bg-sky-100"
               >
                 Upload file
@@ -7847,52 +7845,21 @@ export default function CreateLoadingInfoPanel() {
                 onClick={() => { const target = mediaPickerTarget; setMediaPickerTarget(null); openCamera(target); }}
                 className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-4 text-sm font-bold text-emerald-700 hover:bg-emerald-100"
               >
-                Take photo
+                {mediaPickerTarget.isVideo ? "Record video" : "Take photo"}
               </button>
             </div>
-            {typeof window !== 'undefined' && !window.isSecureContext && <p className="mt-3 text-xs text-amber-700">On this HTTP server, Take photo opens your device’s native image picker. Live webcam preview requires HTTPS.</p>}
-          </div>
-        </div>
-      )}
-
-      {/* Fallback when live camera is blocked/unavailable: a real tap opens the device camera */}
-      {cameraFallback && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl">
-            <h3 className="text-base font-extrabold text-slate-900">Camera not available</h3>
-            <p className="mt-1 text-xs text-slate-500">
-              Live camera preview is blocked (check browser camera permission, or use HTTPS). You can still take or choose a photo below.
-            </p>
-            <div className="mt-4 grid grid-cols-2 gap-3">
-              <label className="cursor-pointer rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-4 text-center text-sm font-bold text-emerald-700 hover:bg-emerald-100">
-                Take photo
-                <input
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    const target = cameraFallback;
-                    setCameraFallback(null);
-                    if (file && target) {
-                      appendUploadFile(target.section, target.field, file);
-                      if (target.section === 'vehicle') {
-                        const now = new Date();
-                        setArrivalDetails(prev => ({ ...prev, ...istStamp(now) }));
-                      }
-                    }
-                  }}
-                />
-              </label>
-              <button
-                type="button"
-                onClick={() => setCameraFallback(null)}
-                className="rounded-xl border border-slate-300 bg-white px-3 py-4 text-sm font-bold text-slate-700 hover:bg-slate-50"
-              >
-                Cancel
-              </button>
-            </div>
+            {mediaPickerTarget.nativeCamera && (
+              <div className="mt-3 flex flex-wrap gap-3 text-sm">
+                {['environment', 'user'].map(facing => (
+                  <button key={facing} type="button" className="rounded-lg border px-3 py-2" onClick={() => {
+                    pickMediaFile(mediaPickerTarget, facing);
+                    setMediaPickerTarget(null);
+                  }}>
+                    {facing === 'environment' ? 'Use back camera' : 'Use front camera'}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -7922,6 +7889,9 @@ export default function CreateLoadingInfoPanel() {
               <canvas ref={canvasRef} className="hidden" />
             </div>
             <div className="flex justify-center gap-4 mt-4">
+              <button type="button" onClick={() => openCamera(cameraTarget, cameraFacing === 'environment' ? 'user' : 'environment')} className="rounded-lg border px-3 py-2 text-sm font-semibold">
+                Switch to {cameraFacing === 'environment' ? 'front' : 'back'} camera
+              </button>
               <button
                 onClick={capturePhoto}
                 className="rounded-full bg-blue-600 px-6 py-3 text-white font-bold hover:bg-blue-700"
@@ -7946,7 +7916,7 @@ export default function CreateLoadingInfoPanel() {
         {/* Vehicle Slip Upload - Top section */}
         <div className="mb-4">
           <div className="bg-white p-4 rounded-xl border-2 border-dashed border-slate-300">
-            <label className="text-xs font-bold text-slate-600">Empty Vehicle Slip</label>
+            <label className="text-xs font-bold text-slate-600">Empty Vehicle Slip (required for Part 1 submission)</label>
             <p className="text-xs text-slate-400 mb-1">Upload vehicle slip (Image/PDF)</p>
             <button
               onClick={handleVehicleSlipSelect}
@@ -8179,20 +8149,20 @@ export default function CreateLoadingInfoPanel() {
             <div className="col-span-12 md:col-span-2">
               <label className="text-xs font-bold text-slate-600">Driving licence </label>
               <button
-                onClick={() => handleFileSelect('vehicle', 'aadhar')}
+                onClick={() => handleFileSelect('vehicle', 'license')}
                 className="mt-1 w-full rounded-lg bg-purple-50 px-3 py-2 text-xs font-bold text-purple-700 border border-purple-200 hover:bg-purple-100 transition flex items-center justify-center gap-2"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                 </svg>
-                {vehicleFiles.aadhar.length > 0 ? `✓ ${vehicleFiles.aadhar.length} file(s)` : 'Upload Driving License'}
+                {vehicleFiles.license.length > 0 ? `✓ ${vehicleFiles.license.length} file(s)` : 'Upload Driving License'}
               </button>
-              {vehicleFiles.aadhar.map((file, idx) => (
+              {vehicleFiles.license.map((file, idx) => (
                 <FileUploadItem
                   key={idx}
                   file={file}
                   index={idx}
-                  onRemove={() => removeFile('vehicle', 'aadhar', idx)}
+                  onRemove={() => removeFile('vehicle', 'license', idx)}
                   label="Driving License"
                 />
               ))}
@@ -9904,7 +9874,7 @@ export default function CreateLoadingInfoPanel() {
         {/* Loaded Vehicle Slip Upload - Bottom section */}
         <div className="mt-4">
           <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-200">
-            <label className="text-xs font-bold text-indigo-700">Loaded Vehicle Slip</label>
+            <label className="text-xs font-bold text-indigo-700">Loaded Vehicle Slip (required for Part 2 submission)</label>
             <p className="text-xs text-slate-400 mb-1">Upload loaded vehicle slip after loading (Image/PDF)</p>
             <button
               onClick={handleLoadedVehicleSlipSelect}

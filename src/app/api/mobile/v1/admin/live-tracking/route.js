@@ -37,10 +37,11 @@ async function branchHandlerGET(req) {
   const result = await Promise.all(trips.map(async (trip) => {
     const session = await TrackingSession.findOne({ companyId: staff.user.companyId, tripId: trip._id })
       .sort({ startedAt: -1 }).lean();
-    const [point, stopEpisode] = session ? await Promise.all([
+    const [point, stopEpisode, firstPoint] = session ? await Promise.all([
       LocationPoint.findOne({ companyId: staff.user.companyId, sessionId: session._id }).sort({ recordedAt: -1 }).lean(),
       StopEpisode.findOne({ companyId: staff.user.companyId, sessionId: session._id, endedAt: null }).sort({ startedAt: -1 }).lean(),
-    ]) : [null, null];
+      LocationPoint.findOne({ companyId: staff.user.companyId, tripId: trip._id }).sort({ recordedAt: 1 }).lean(),
+    ]) : [null, null, null];
     const driver = driverById.get(String(trip.driverId));
     const status = liveTrackingStatus(session, point, now);
     const lastAt = point?.recordedAt || session?.lastRecordedAt || null;
@@ -51,6 +52,7 @@ async function branchHandlerGET(req) {
       tripState: trip.state,
       driver: driver ? { displayName: driver.displayName, mobile: driver.mobileE164 } : null,
       session: session ? { id: String(session._id), status, startedAt: session.startedAt, lastRecordedAt: lastAt, lastSequence: session.lastSequence } : null,
+      driverStart: firstPoint ? { latitude: firstPoint.latitude, longitude: firstPoint.longitude, recordedAt: firstPoint.recordedAt } : null,
       latestLocation: point ? {
         latitude: point.latitude, longitude: point.longitude, accuracyM: point.accuracyM,
         speedMps: point.speedMps, bearingDeg: point.bearingDeg, recordedAt: point.recordedAt,

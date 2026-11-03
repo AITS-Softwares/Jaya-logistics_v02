@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import connectDb from "@/lib/db";
 import Vehicle from "./Vehicle";
+import Owner from "@/app/api/owners/Owner";
+import mongoose from "mongoose";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import { validateMasterDataRequest } from '@/lib/masterDataPermission';
 
@@ -65,11 +67,20 @@ async function validateUser(req, action = 'view') {
 ======================================== */
 export async function GET(req) {
   await connectDb();
-  const { user, error, status } = await validateUser(req, 'view');
+  const { user, error, status, access } = await validateUser(req, 'view');
   if (error) return NextResponse.json({ success: false, message: error }, { status });
 
   try {
     const { searchParams } = new URL(req.url);
+    if (searchParams.get("ownerOptions") === "1") {
+      if (access === "lookup") {
+        return NextResponse.json({ success: false, message: "Vehicle Master view access is required." }, { status: 403 });
+      }
+      const owners = await Owner.find({ companyId: user.companyId })
+        .select("ownerName vehicleNumber rcNumber rcDocuments rcBackDocuments isActive")
+        .sort({ ownerName: 1, vehicleNumber: 1 }).lean();
+      return NextResponse.json({ success: true, data: owners });
+    }
     const search = searchParams.get("search");
     const isActive = searchParams.get("isActive");
 
@@ -101,6 +112,49 @@ export async function GET(req) {
 /* ========================================
    POST /api/vehicles
 ======================================== */
+async function resolveVehicleOwner(companyId, ownerId, vehicleNumber, currentVehicle = null) {
+  if (!mongoose.isValidObjectId(ownerId)) return { error: "Select an owner from Vehicle Owners." };
+  const owner = await Owner.findOne({ _id: ownerId, companyId })
+    .select("ownerName vehicleNumber rcNumber rcDocuments rcBackDocuments isActive").lean();
+  if (!owner || (owner.isActive === false && String(currentVehicle?.ownerId) !== String(ownerId))) {
+    return { error: "Select an active owner from Vehicle Owners." };
+  }
+  if (owner.vehicleNumber !== String(vehicleNumber || "").trim().toUpperCase()) {
+    return { error: "The selected owner belongs to a different vehicle number." };
+  }
+  const duplicate = await Vehicle.exists({
+    companyId, ownerId,
+    ...(currentVehicle ? { _id: { $ne: currentVehicle._id } } : {}),
+  });
+  if (duplicate) return { error: "This owner is already linked to a vehicle." };
+  if (!owner.rcNumber?.trim()) return { error: "Enter the RC number in Vehicle Owners first." };
+  return {
+    fields: {
+      ownerId: owner._id,
+      ownerName: owner.ownerName,
+      vehicleNumber: owner.vehicleNumber,
+      rcNumber: owner.rcNumber,
+      rcDocuments: owner.rcDocuments || [],
+      rcBackDocuments: owner.rcBackDocuments || [],
+    },
+  };
+}
+
+const requiredUploads = {
+  rcDocuments: "RC front",
+  fitnessDocuments: "Fitness",
+  weightSlipDocuments: "National Permit",
+  chasisDocuments: "State Permit",
+  vehiclePhotos: "Vehicle Photo",
+};
+
+function missingUploadMessage(record) {
+  const missing = Object.entries(requiredUploads)
+    .filter(([field]) => !Array.isArray(record[field]) || !record[field].some(path => typeof path === "string" && path.trim()))
+    .map(([, label]) => label);
+  return missing.length ? `Upload the required documents: ${missing.join(", ")}.` : "";
+}
+
 export async function POST(req) {
   await connectDb();
   const { user, error, status } = await validateUser(req, 'create');
@@ -108,25 +162,20 @@ export async function POST(req) {
 
   try {
     const {
-      vehicleNumber, rcNumber, pucNumber, fitnessNumber, ownerName,
+      vehicleNumber, pucNumber, fitnessNumber,
       chasisNumber, insuranceNumber,
       weightSlipNumber,                       // NEW
       vehicleType, vehicleWeight, vehiclePhoto, isActive,
-      ownerId, rcDocuments, pucDocuments, fitnessDocuments,   // NEW
+      ownerId, pucDocuments, fitnessDocuments,   // NEW
       weightSlipDocuments, insuranceDocuments, chasisDocuments, vehiclePhotos, // NEW
     } = await req.json();
 
-    // Validation
-    if (!vehicleNumber || !rcNumber || !ownerName) {
-      return NextResponse.json({
-        success: false,
-        message: "Vehicle number, RC number, and owner name are required"
-      }, { status: 400 });
-    }
+    const owner = await resolveVehicleOwner(user.companyId, ownerId, vehicleNumber);
+    if (owner.error) return NextResponse.json({ success: false, message: owner.error }, { status: 400 });
 
     // ✅ Prevent duplicate vehicle number in the same company
     const existingVehicle = await Vehicle.findOne({
-      vehicleNumber: vehicleNumber.toUpperCase(),
+      vehicleNumber: owner.fields.vehicleNumber,
       companyId: user.companyId,
     });
 
@@ -139,16 +188,12 @@ export async function POST(req) {
 
     // ✅ Create new vehicle
     const newVehicle = new Vehicle({
-      vehicleNumber: vehicleNumber.toUpperCase(),
-      rcNumber: rcNumber.toUpperCase(),
+      ...owner.fields,
       pucNumber: pucNumber?.toUpperCase(),
       fitnessNumber: fitnessNumber?.toUpperCase(),
-      ownerName,
       chasisNumber: chasisNumber?.toUpperCase(),
       insuranceNumber: insuranceNumber?.toUpperCase(),
       weightSlipNumber: weightSlipNumber?.toUpperCase() || '',   // NEW
-      ownerId: ownerId || null,                                  // NEW
-      rcDocuments: rcDocuments || [],                            // NEW
       pucDocuments: pucDocuments || [],                          // NEW
       fitnessDocuments: fitnessDocuments || [],                  // NEW
       weightSlipDocuments: weightSlipDocuments || [],            // NEW
@@ -163,9 +208,13 @@ export async function POST(req) {
       createdBy: user.id,
     });
 
+    const uploadError = missingUploadMessage({ ...owner.fields, fitnessDocuments, weightSlipDocuments, chasisDocuments, vehiclePhotos });
+    if (uploadError) return NextResponse.json({ success: false, message: uploadError }, { status: 400 });
+
     await newVehicle.save();
     return NextResponse.json({ success: true, data: newVehicle }, { status: 201 });
   } catch (error) {
+    if (error.code === 11000) return NextResponse.json({ success: false, message: "This vehicle number is already registered." }, { status: 409 });
     console.error("POST /vehicles error:", error);
     return NextResponse.json({ success: false, message: "Failed to create vehicle" }, { status: 500 });
   }
@@ -220,6 +269,15 @@ export async function PUT(req) {
       return NextResponse.json({ success: false, message: "Vehicle ID is required" }, { status: 400 });
     }
 
+    if (["ownerId", "vehicleNumber", "ownerName", "rcNumber", "rcDocuments", "rcBackDocuments"].some(field => Object.hasOwn(updates, field))) {
+      const current = await Vehicle.findOne({ _id: vehicleId, companyId: user.companyId })
+        .select("ownerId vehicleNumber").lean();
+      if (!current) return NextResponse.json({ success: false, message: "Vehicle not found" }, { status: 404 });
+      const owner = await resolveVehicleOwner(user.companyId, updates.ownerId ?? current.ownerId, updates.vehicleNumber ?? current.vehicleNumber, current);
+      if (owner.error) return NextResponse.json({ success: false, message: owner.error }, { status: 400 });
+      Object.assign(updates, owner.fields);
+    }
+
     // Check for duplicate vehicle number if it's being updated
     if (updates.vehicleNumber) {
       const existingVehicle = await Vehicle.findOne({
@@ -250,6 +308,14 @@ export async function PUT(req) {
     // Handle vehicle weight as number
     if (updates.vehicleWeight) updates.vehicleWeight = parseFloat(updates.vehicleWeight) || 0;
 
+    if (Object.keys(requiredUploads).some(field => Object.hasOwn(updates, field))) {
+      const current = await Vehicle.findOne({ _id: vehicleId, companyId: user.companyId })
+        .select(Object.keys(requiredUploads).join(" ")).lean();
+      if (!current) return NextResponse.json({ success: false, message: "Vehicle not found" }, { status: 404 });
+      const uploadError = missingUploadMessage({ ...current, ...updates });
+      if (uploadError) return NextResponse.json({ success: false, message: uploadError }, { status: 400 });
+    }
+
     const updatedVehicle = await Vehicle.findOneAndUpdate(
       { _id: vehicleId, companyId: user.companyId },
       { $set: updates },
@@ -262,6 +328,7 @@ export async function PUT(req) {
 
     return NextResponse.json({ success: true, data: updatedVehicle }, { status: 200 });
   } catch (error) {
+    if (error.code === 11000) return NextResponse.json({ success: false, message: "This vehicle number is already registered." }, { status: 409 });
     console.error("PUT /vehicles error:", error);
     return NextResponse.json({ success: false, message: "Failed to update vehicle" }, { status: 500 });
   }

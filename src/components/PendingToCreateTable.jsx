@@ -49,7 +49,7 @@ export default function PendingToCreateTable({ enabled, canCreate = false, endpo
     "loading-info": ["S.No", "Date", "Arrival No", "VNN", "Orders", "Branch", "Vehicle No", "Driver", "Weight", "VBP", "VFT", "VOT", "VL", "Actions"],
     purchase: ["S.No", "Date", "Loading Info", "VNN", "Orders", "Branch", "Vehicle No", "Driver", "Weight", "Actions"],
     "advance-payment": ["S.No", "Date", "Purchase No", "Order No", "Vendor", "Vehicle", "Amount", "Balance", "Actions"],
-    lr: ["S.No", "Loading Info", "Order No", "Party", "Destination", "Weight", "Actions"],
+    lr: ["S.No", "VNN No", "Order No", "Party", "Destination", "Weight", "Actions"],
     balance: ["S.No", "POD No", "Purchase No", "Order No", "Vendor", "Total", "Balance", "Status", "Actions"],
     pod: ["S.No", "Date", "Purchase No", "Order No", "Party", "Vendor", "Vehicle", "Amount", "Actions"],
   };
@@ -83,7 +83,7 @@ export default function PendingToCreateTable({ enabled, canCreate = false, endpo
       case "loading-info": return [index + 1, date, "Pending", value(row, "vnnNo"), chips, value(row, "branchName", "branch"), value(row, "vehicleNo"), value(row, "driverMobileNo", "driverNo", "driverName"), weight ? `${weight} MT` : "—", "—", "—", "—", "—", button];
       case "purchase": return [index + 1, date, value(row, "vehicleArrivalNo"), value(row, "vehicleNegotiationNo", "vnnNo"), <div className="flex max-w-72 flex-wrap gap-1">{(row.orderRows || []).map((item, orderIndex) => <span key={`${item.orderNo}-${orderIndex}`} className="rounded-lg bg-purple-50 px-2 py-1 text-xs font-semibold text-purple-800">{item.orderNo || "—"}</span>)}</div>, value(row, "branchName", "branch"), value(row, "vehicleNo", "vehicleInfo.vehicleNo"), value(row, "driverNo", "vehicleInfo.driverMobileNo"), weight ? `${weight} MT` : "—", button];
       case "advance-payment": return [index + 1, date, value(row, "purchaseNo"), (row.orderRows || []).map((item) => item.orderNo).filter(Boolean).join(", ") || value(row, "orderNo"), value(row, "vendorName"), value(row, "vehicleNo"), value(row, "amount"), value(row, "balance"), button];
-      case "lr": return [index + 1, value(row, "loadingInfoNo"), value(row, "orderNo"), value(row, "partyName", "customerName"), value(row, "to"), value(row, "weight"), button];
+      case "lr": return [index + 1, value(row, "vnnNo"), value(row, "orderNo"), value(row, "partyName", "customerName"), value(row, "to"), value(row, "weight"), button];
       case "balance": return [index + 1, value(row, "podNo"), value(row, "purchaseNo"), value(row, "orderNo"), value(row, "vendorName"), value(row, "totalAmount"), value(row, "finalBalance"), value(row, "podStatus"), button];
       case "pod": return [index + 1, date, value(row, "purchaseNo"), (row.orderRows || []).map((item) => item.orderNo).filter(Boolean).join(", ") || orderText, value(row, "companyName", "customerName"), value(row, "vendorName"), value(row, "vehicleNo"), value(row, "amount"), button];
       default: return null;
@@ -99,7 +99,11 @@ export default function PendingToCreateTable({ enabled, canCreate = false, endpo
           </div>
           <div>
             <p className="text-sm font-bold text-slate-800">You’re all caught up</p>
-            <p className="mt-0.5 text-xs text-slate-500">No records are waiting to be created. New items will appear here when they’re ready.</p>
+            <p className="mt-0.5 text-xs text-slate-500">
+              {displayMode === "lr"
+                ? "Orders appear here after Vehicle Negotiation is approved and vehicle placement is complete, if an LR still needs to be created."
+                : "No records are waiting to be created. New items will appear here when they’re ready."}
+            </p>
           </div>
         </div>
       ) : (

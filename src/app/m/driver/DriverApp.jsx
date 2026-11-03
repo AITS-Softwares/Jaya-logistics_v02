@@ -45,7 +45,7 @@ const api = async (path, { token, body, method = "GET" } = {}) => {
 
 const stateCopy = {
   assigned: "Ready to start",
-  started: "At pickup",
+  started: "Trip started",
   at_pickup: "Ready to depart",
   in_transit: "On the road",
   at_stop: "At stop",
@@ -55,11 +55,11 @@ const stateCopy = {
 const actionCopy = {
   ACKNOWLEDGE: "Acknowledge trip",
   START_TRIP: "Start trip",
-  AT_PICKUP: "At pickup",
-  DEPART: "Start delivery",
-  ARRIVE_STOP: "Arrived at stop",
+  AT_PICKUP: "Confirm arrival at pickup",
+  DEPART: "Depart for next stop",
+  ARRIVE_STOP: "Confirm arrival at stop",
   DELIVER: "Confirm delivery",
-  COMPLETE: "Complete trip",
+  COMPLETE: "Finish trip and stop tracking",
 };
 
 export default function DriverApp() {
@@ -295,9 +295,18 @@ function TripHome({ driver, trips, selectedTrip, onSelect, onAction, onRefresh, 
 }
 
 function TripDetail({ trip, onAction, loading }) {
-  const primary = trip.allowedActions?.find((action) => action !== "ACKNOWLEDGE" && action !== "REPORT_ISSUE");
+  const actions = (trip.allowedActions || []).filter((action) => actionCopy[action] && action !== "ACKNOWLEDGE");
+  const preferred = { in_transit: "ARRIVE_STOP", at_stop: "DELIVER" }[trip.state];
+  const primary = actions.includes(preferred) ? preferred : actions[0];
+  const otherActions = actions.filter((action) => action !== primary);
   const [issuesOpen, setIssuesOpen] = useState(false);
-  return <section className="mt-7 overflow-hidden rounded-3xl bg-white shadow-xl shadow-slate-900/10"><div className="bg-slate-950 p-5 text-white"><div className="flex items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-wider text-amber-300">Current trip</p><h2 className="mt-1 text-xl font-black">{trip.loadingReference}</h2></div><StatePill state={trip.state} dark /></div><div className="mt-4 flex items-center gap-2 text-sm text-slate-300"><Truck size={16} className="text-amber-300" />{trip.vehicle?.vehicleNo}</div></div><div className="p-5"><div className="space-y-0">{trip.stops?.map((stop, index) => <div key={`${stop.sequence}-${stop.type}`} className="flex gap-3"><div className="flex flex-col items-center"><span className={`mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${stop.type === "pickup" ? "bg-amber-400 text-slate-950" : "bg-slate-900 text-white"}`}>{stop.type === "pickup" ? <PackageCheck size={15} /> : <MapPin size={15} />}</span>{index < trip.stops.length - 1 && <span className="my-1 h-10 w-px bg-slate-200" />}</div><div className="pb-4"><p className="text-xs font-bold uppercase tracking-wide text-slate-500">{stop.type === "pickup" ? "Pickup" : `Drop ${stop.sequence - 1}`}</p><p className="mt-0.5 font-bold">{stop.label || stop.city || "Stop"}</p><p className="mt-0.5 text-sm leading-5 text-slate-600">{stop.address || "Address will be confirmed by operations"}</p></div></div>)}</div>{primary && <button disabled={loading} onClick={() => onAction(primary)} className="mt-2 flex w-full items-center justify-center gap-2 rounded-2xl bg-amber-400 px-4 py-4 font-extrabold text-slate-950 transition hover:bg-amber-300 disabled:opacity-60">{loading ? <LoaderCircle className="animate-spin" size={19} /> : <ClipboardCheck size={19} />}{actionCopy[primary]}</button>}<button onClick={() => setIssuesOpen((open) => !open)} className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 px-4 py-3 font-bold text-slate-700"><AlertTriangle size={17} className="text-amber-600" /> Report an issue</button>{issuesOpen && <div className="mt-3 grid grid-cols-2 gap-2">{["breakdown", "traffic", "fuel", "waiting"].map((issue) => <button key={issue} disabled={loading} onClick={() => { onAction("REPORT_ISSUE", issue); setIssuesOpen(false); }} className="rounded-xl bg-slate-100 px-3 py-3 text-sm font-bold capitalize text-slate-700 hover:bg-slate-200">{issue}</button>)}</div>}</div></section>;
+  return <section className="mt-7 overflow-hidden rounded-3xl bg-white shadow-xl shadow-slate-900/10"><div className="bg-slate-950 p-5 text-white"><div className="flex items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-wider text-amber-300">Current trip</p><h2 className="mt-1 text-xl font-black">{trip.loadingReference}</h2></div><StatePill state={trip.state} dark /></div><div className="mt-4 flex items-center gap-2 text-sm text-slate-300"><Truck size={16} className="text-amber-300" />{trip.vehicle?.vehicleNo}</div></div><div className="p-5"><div className="space-y-0">{trip.stops?.map((stop, index) => <div key={`${stop.sequence}-${stop.type}`} className="flex gap-3"><div className="flex flex-col items-center"><span className={`mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${stop.type === "pickup" ? "bg-amber-400 text-slate-950" : "bg-slate-900 text-white"}`}>{stop.type === "pickup" ? <PackageCheck size={15} /> : <MapPin size={15} />}</span>{index < trip.stops.length - 1 && <span className="my-1 h-10 w-px bg-slate-200" />}</div><div className="pb-4"><p className="text-xs font-bold uppercase tracking-wide text-slate-500">{stop.type === "pickup" ? "Planned pickup" : `Drop ${stop.sequence - 1}`}</p><p className="mt-0.5 font-bold">{stop.label || stop.city || "Stop"}</p><p className="mt-0.5 text-sm leading-5 text-slate-600">{stop.address || "Address will be confirmed by operations"}</p></div></div>)}</div>{primary && <button disabled={loading} onClick={() => onAction(primary)} className="mt-2 flex w-full items-center justify-center gap-2 rounded-2xl bg-amber-400 px-4 py-4 font-extrabold text-slate-950 transition hover:bg-amber-300 disabled:opacity-60">{loading ? <LoaderCircle className="animate-spin" size={19} /> : <ClipboardCheck size={19} />}{actionCopy[primary]}</button>}
+    {otherActions.map((action) => (
+      <button key={action} type="button" disabled={loading} onClick={() => onAction(action)} className="mt-3 w-full rounded-2xl border border-slate-200 px-4 py-3 font-bold text-slate-700 disabled:opacity-60">
+        {actionCopy[action]}
+      </button>
+    ))}
+    <button onClick={() => setIssuesOpen((open) => !open)} className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 px-4 py-3 font-bold text-slate-700"><AlertTriangle size={17} className="text-amber-600" /> Report an issue</button>{issuesOpen && <div className="mt-3 grid grid-cols-2 gap-2">{["breakdown", "traffic", "fuel", "waiting"].map((issue) => <button key={issue} disabled={loading} onClick={() => { onAction("REPORT_ISSUE", issue); setIssuesOpen(false); }} className="rounded-xl bg-slate-100 px-3 py-3 text-sm font-bold capitalize text-slate-700 hover:bg-slate-200">{issue}</button>)}</div>}</div></section>;
 }
 
 function Field({ label, value, onChange, ...props }) { return <label className="block"><span className="mb-1.5 block text-sm font-bold text-slate-700">{label}</span><input value={value} onChange={(event) => onChange(event.target.value)} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-base outline-none transition focus:border-amber-500 focus:ring-4 focus:ring-amber-100" required {...props} /></label>; }

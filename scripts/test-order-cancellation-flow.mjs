@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { planOrderCancellation } from '../src/lib/orderCancellationPolicy.mjs';
-import { loadingPhotoError } from '../src/lib/loadingPhotoPolicy.mjs';
+import { loadingPhotoError, loadingSubmissionError } from '../src/lib/loadingPhotoPolicy.mjs';
 const sourceOrder = () => ({ _id: 'order', companyId: 'tenant', orderPanelNo: 'OP-1', panelStatus: 'Approved', reapprovalState: 'none', plantRows: [{ _id: 'row-1', status: 'Open', statusHistory: [] }] });
 const row = { orderNo: 'OP-1', orderRowId: 'row-1' };
 const other = { orderNo: 'OP-2', orderRowId: 'row-2' };
@@ -27,6 +27,10 @@ assert.match(loadingPhotoError({ ...complete, vftUploads: {} }, 1), /3 VFT/);
 assert.match(loadingPhotoError({ ...complete, votUploads: {} }, 2), /3 VOT/);
 assert.match(loadingPhotoError({ ...complete, vlUploads: {} }, 2), /5 VL/);
 assert.equal(loadingPhotoError({}, 1, true), null);
+assert.match(loadingSubmissionError({}, 1, true), /Empty Vehicle Slip/);
+assert.match(loadingSubmissionError({ loadedVehicleSlips: [' '] }, 2, true), /Loaded Vehicle Slip/);
+assert.equal(loadingSubmissionError({ ...complete, vehicleSlips: ['/empty.pdf'] }, 1), null);
+assert.equal(loadingSubmissionError({ ...complete, loadedVehicleSlips: ['/loaded.pdf'] }, 2), null);
 
 // Exercise the actual transactional service without touching a database.
 let saved, notifications, paid, failSave, transactionRolledBack;

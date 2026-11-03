@@ -940,18 +940,9 @@
 import { useState, useEffect } from 'react';
 
 // Vehicle Type Options
-const VEHICLE_TYPE_OPTIONS = [
-  "Truck - 6 Wheels",
-  "Truck - 10 Wheels", 
-  "Truck - 14 Wheels",
-  "Container",
-  "Trailer",
-  "Pickup",
-  "Van",
-  "Bus",
-  "Car",
-  "Other"
-];
+import { VEHICLE_TYPE_OPTIONS, vehicleTypeKey } from "@/lib/vehicleTypes";
+
+const CREATE_VEHICLE_TYPE = "__create_vehicle_type__";
 
 // File Upload Item Component
 function FileItem({ file, onRemove, index, label }) {
@@ -986,8 +977,14 @@ function DocumentUploadSection({
   existingDocuments, 
   onRemoveExistingDocument,
   documentType, 
+  backFiles,
+  backDocuments,
+  uploadRequired = false,
+  readOnly = false,
   required = false 
 }) {
+  const sides = [{ type: documentType, label: backFiles ? 'Choose Front Upload' : 'Upload Documents (PDF/Images)', files, documents: existingDocuments, required: uploadRequired }];
+  if (backFiles) sides.push({ type: documentType + 'Back', label: 'Choose Back Upload', files: backFiles, documents: backDocuments });
   return (
     <div className="border rounded-lg p-3 bg-white shadow-sm">
       <label className="text-xs font-bold text-slate-600 block mb-1">
@@ -1000,121 +997,106 @@ function DocumentUploadSection({
         placeholder={placeholder}
         className="border border-slate-200 rounded-lg px-3 py-2 w-full text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none uppercase"
         required={required}
+        readOnly={readOnly}
       />
-      <div className="mt-2">
-        <label className="text-xs text-slate-500 block mb-1">Upload Documents (PDF/Images)</label>
-        <input 
-          type="file" 
-          accept=".pdf,.jpg,.jpeg,.png,.webp" 
-          onChange={(e) => onFileSelect(e, documentType)}
-          className="text-xs w-full border border-slate-200 rounded-lg p-1.5 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100"
-          multiple
-        />
+      <div className={backFiles ? "grid grid-cols-2 gap-2" : undefined}>
+      {sides.map(side => (
+      <div key={side.type} className="mt-2">
+        {!readOnly && <label className={backFiles ? "inline-flex cursor-pointer rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 focus-within:ring-2 focus-within:ring-emerald-500" : "block text-xs text-slate-500"}>
+          {side.label}{side.required && <span className="ml-1 text-red-500">*</span>}
+          <input
+            type="file"
+            accept=".pdf,.jpg,.jpeg,.png,.webp"
+            onChange={event => onFileSelect(event, side.type)}
+            className={backFiles ? "sr-only" : "mt-1 block w-full rounded-lg border border-slate-200 p-1.5 text-xs file:mr-2 file:rounded-lg file:border-0 file:bg-emerald-50 file:px-3 file:py-1 file:font-semibold file:text-emerald-700"}
+            multiple
+          />
+        </label>}
+        {readOnly && <p className="text-xs font-semibold text-slate-600">{side.type.endsWith("Back") ? "Back" : "Front"}</p>}
         <div className="mt-2 max-h-40 overflow-y-auto space-y-1">
-          {files.map((file, idx) => (
-            <FileItem key={`new-${idx}`} file={file} index={idx} onRemove={() => onRemoveFile(idx, documentType)} label={label} />
+          {side.files.map((file, idx) => (
+            <FileItem key={`new-${idx}`} file={file} index={idx} onRemove={() => onRemoveFile(idx, side.type)} label={label} />
           ))}
           
-          {existingDocuments?.map((doc, idx) => (
-            <div key={`existing-${documentType}-${idx}`} className="flex items-center gap-2 p-2 bg-green-50 rounded-lg border border-green-200">
+          {side.documents?.map((doc, idx) => (
+            <div key={`existing-${side.type}-${idx}`} className="flex items-center gap-2 p-2 bg-green-50 rounded-lg border border-green-200">
               <div className="flex-1">
                 <p className="text-xs font-medium text-green-800">Existing Document</p>
                 <a href={doc} target="_blank" rel="noopener noreferrer" className="text-xs text-sky-600 hover:underline">
                   View {label} {idx + 1}
                 </a>
               </div>
-              <button
+              {!readOnly && <button
                 type="button"
-                onClick={() => onRemoveExistingDocument(documentType, idx)}
+                onClick={() => onRemoveExistingDocument(side.type, idx)}
                 className="text-red-500 hover:text-red-700 p-1"
                 title="Remove this document"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
-              </button>
+              </button>}
             </div>
           ))}
         </div>
       </div>
-    </div>
-  );
-}
-
-// Owner Details Box Component
-function OwnerDetailsBox({ owner, onClear }) {
-  if (!owner) return null;
-  
-  return (
-    <div className="border-2 border-emerald-500 rounded-lg p-4 bg-emerald-50 shadow-md mb-4">
-      <div className="flex justify-between items-start mb-3">
-        <h3 className="text-md font-bold text-emerald-800">👤 Selected Owner Details</h3>
-        <button
-          type="button"
-          onClick={onClear}
-          className="text-red-500 hover:text-red-700 text-sm"
-          title="Clear selected owner"
-        >
-          ✕ Clear
-        </button>
-      </div>
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
-        <div>
-          <span className="font-semibold text-slate-600">Owner Name:</span>
-          <p className="text-slate-800">{owner.ownerName}</p>
-        </div>
-        <div>
-          <span className="font-semibold text-slate-600">Vehicle Number:</span>
-          <p className="text-slate-800 uppercase">{owner.vehicleNumber}</p>
-        </div>
-        <div>
-          <span className="font-semibold text-slate-600">RC Number:</span>
-          <p className="text-slate-800 uppercase">{owner.rcNumber || '-'}</p>
-        </div>
-        <div>
-          <span className="font-semibold text-slate-600">Mobile 1:</span>
-          <p className="text-slate-800">{owner.mobileNumber1 || '-'}</p>
-        </div>
-        <div>
-          <span className="font-semibold text-slate-600">Mobile 2:</span>
-          <p className="text-slate-800">{owner.mobileNumber2 || '-'}</p>
-        </div>
-        <div>
-          <span className="font-semibold text-slate-600">Pan Card:</span>
-          <p className="text-slate-800 uppercase">{owner.ownerPanCard || '-'}</p>
-        </div>
-        <div>
-          <span className="font-semibold text-slate-600">Adhar Card:</span>
-          <p className="text-slate-800">{owner.adharCardNumber || '-'}</p>
-        </div>
-        <div>
-          <span className="font-semibold text-slate-600">Status:</span>
-          <p className={`${owner.isActive ? 'text-green-600' : 'text-red-600'} font-medium`}>
-            {owner.isActive ? 'Active' : 'Inactive'}
-          </p>
-        </div>
-        {(owner.panCardDocuments?.length > 0 || owner.adharCardDocuments?.length > 0 || owner.rcDocuments?.length > 0) && (
-          <div>
-            <span className="font-semibold text-slate-600">Documents:</span>
-            <p className="text-slate-800 text-xs">
-              {owner.panCardDocuments?.length > 0 && `📄 Pan: ${owner.panCardDocuments.length} `}
-              {owner.adharCardDocuments?.length > 0 && `📄 Adhar: ${owner.adharCardDocuments.length} `}
-              {owner.rcDocuments?.length > 0 && `📄 RC: ${owner.rcDocuments.length}`}
-            </p>
-          </div>
-        )}
+      ))}
       </div>
     </div>
   );
 }
 
 export default function VehiclePage() {
+  const [customVehicleTypes, setCustomVehicleTypes] = useState([]);
+  const [newVehicleType, setNewVehicleType] = useState(null);
+  const [vehicleTypeError, setVehicleTypeError] = useState('');
+  const [savingVehicleType, setSavingVehicleType] = useState(false);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch('/api/vehicles/types', {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      signal: controller.signal,
+    }).then(response => response.json()).then(result => {
+      if (result.success) setCustomVehicleTypes(types => [...new Set([...result.data, ...types])]);
+      else setVehicleTypeError(result.message || 'Could not load saved vehicle types.');
+    }).catch(error => {
+      if (error.name !== 'AbortError') setVehicleTypeError('Could not load saved vehicle types.');
+    });
+    return () => controller.abort();
+  }, []);
+
+  const createVehicleType = async (event) => {
+    event.preventDefault();
+    const name = newVehicleType.trim();
+    if (!name || savingVehicleType) return;
+    setSavingVehicleType(true);
+    setVehicleTypeError('');
+    try {
+      const response = await fetch('/api/vehicles/types', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify({ name }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.message || 'Could not save vehicle type.');
+      setCustomVehicleTypes(types => types.some(type => vehicleTypeKey(type) === vehicleTypeKey(result.data))
+        ? types : [...types, result.data]);
+      setFormData(previous => ({ ...previous, vehicleType: result.data }));
+      setNewVehicleType(null);
+    } catch (error) {
+      setVehicleTypeError(error.message);
+    } finally {
+      setSavingVehicleType(false);
+    }
+  };
+
   const [vehicles, setVehicles] = useState([]);
   const [owners, setOwners] = useState([]); // For owner dropdown
   const [selectedOwner, setSelectedOwner] = useState(null); // Selected owner object
-  const [ownerSearchResults, setOwnerSearchResults] = useState([]); // Search results for vehicle number
-  const [showOwnerDropdown, setShowOwnerDropdown] = useState(false);
-  const [vehicleNumberSearch, setVehicleNumberSearch] = useState(''); // For checking existing vehicle number
   
   const [formData, setFormData] = useState({
     vehicleNumber: '',
@@ -1131,7 +1113,6 @@ export default function VehiclePage() {
   });
   
   // File states
-  const [rcFiles, setRcFiles] = useState([]);
   const [pucFiles, setPucFiles] = useState([]);
   const [fitnessFiles, setFitnessFiles] = useState([]);
   const [weightSlipFiles, setWeightSlipFiles] = useState([]);
@@ -1147,15 +1128,6 @@ export default function VehiclePage() {
   const [existingDocuments, setExistingDocuments] = useState({});
   
   // State for documents to delete
-  const [documentsToDelete, setDocumentsToDelete] = useState({
-    rc: [],
-    puc: [],
-    fitness: [],
-    weightSlip: [],
-    insurance: [],
-    chasis: [],
-    photo: [],
-  });
 
   // ✅ Fetch Vehicles
   const fetchVehicles = async (search = '') => {
@@ -1189,80 +1161,37 @@ export default function VehiclePage() {
   const fetchOwners = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/owners', {
+      const res = await fetch('/api/vehicles?ownerOptions=1', {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
       if (data.success && Array.isArray(data.data)) {
         setOwners(data.data);
+      } else {
+        setError(data.message || "Could not load Vehicle Owners.");
       }
     } catch (error) {
-      console.error('Error fetching owners:', error);
+      setError('Could not load Vehicle Owners. Refresh the page and try again.');
     }
   };
 
-  // ✅ Check vehicle number in owner data
-  const checkVehicleNumberInOwners = async (vehicleNumber) => {
-    if (!vehicleNumber || vehicleNumber.length < 3) {
-      setOwnerSearchResults([]);
-      setShowOwnerDropdown(false);
-      return;
-    }
-
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`/api/owners?search=${encodeURIComponent(vehicleNumber)}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      
-      if (data.success && Array.isArray(data.data)) {
-        // Filter exact match or partial match for vehicle number
-        const matches = data.data.filter(owner => 
-          owner.vehicleNumber?.toLowerCase().includes(vehicleNumber.toLowerCase())
-        );
-        setOwnerSearchResults(matches);
-        setShowOwnerDropdown(matches.length > 0);
-      }
-    } catch (error) {
-      console.error('Error checking vehicle number:', error);
-    }
-  };
-
-  // ✅ Select owner from dropdown
   const selectOwner = (owner) => {
     setSelectedOwner(owner);
-    setFormData(prev => ({
-      ...prev,
+    setFormData(previous => ({
+      ...previous,
+      vehicleNumber: owner.vehicleNumber,
       ownerName: owner.ownerName,
-      rcNumber: owner.rcNumber || prev.rcNumber,
+      rcNumber: owner.rcNumber || '',
     }));
-    setShowOwnerDropdown(false);
-    setOwnerSearchResults([]);
   };
 
-  // ✅ Clear selected owner
   const clearSelectedOwner = () => {
     setSelectedOwner(null);
-    setFormData(prev => ({
-      ...prev,
-      ownerName: '',
-    }));
+    setFormData(previous => ({ ...previous, ownerName: '', rcNumber: '' }));
   };
 
-  // ✅ Handle Vehicle Number Change (check in owner data)
-  const handleVehicleNumberChange = async (e) => {
-    const value = e.target.value.toUpperCase();
-    setFormData(prev => ({ ...prev, vehicleNumber: value }));
-    setVehicleNumberSearch(value);
-    
-    // Check if this vehicle number exists in owner data
-    if (value) {
-      await checkVehicleNumberInOwners(value);
-    } else {
-      setShowOwnerDropdown(false);
-      setOwnerSearchResults([]);
-    }
+  const handleVehicleNumberChange = (event) => {
+    setFormData(previous => ({ ...previous, vehicleNumber: event.target.value.toUpperCase() }));
   };
 
   // ✅ Handle Input Change
@@ -1285,6 +1214,11 @@ export default function VehiclePage() {
 
   // ✅ Handle Vehicle Type Change
   const handleVehicleTypeChange = (e) => {
+    if (e.target.value === CREATE_VEHICLE_TYPE) {
+      setVehicleTypeError('');
+      setNewVehicleType('');
+      return;
+    }
     setFormData(prev => ({
       ...prev,
       vehicleType: e.target.value
@@ -1297,9 +1231,6 @@ export default function VehiclePage() {
     if (files.length === 0) return;
 
     switch(docType) {
-      case 'rc':
-        setRcFiles(prev => [...prev, ...files]);
-        break;
       case 'puc':
         setPucFiles(prev => [...prev, ...files]);
         break;
@@ -1327,9 +1258,6 @@ export default function VehiclePage() {
   // ✅ Remove File from local state
   const removeFile = (index, docType) => {
     switch(docType) {
-      case 'rc':
-        setRcFiles(prev => prev.filter((_, i) => i !== index));
-        break;
       case 'puc':
         setPucFiles(prev => prev.filter((_, i) => i !== index));
         break;
@@ -1355,11 +1283,6 @@ export default function VehiclePage() {
 
   // ✅ Handle removing existing document
   const handleRemoveExistingDocument = (docType, index) => {
-    setDocumentsToDelete(prev => ({
-      ...prev,
-      [docType]: [...(prev[docType] || []), index]
-    }));
-    
     setExistingDocuments(prev => ({
       ...prev,
       [docType + 'Documents']: prev[docType + 'Documents']?.filter((_, i) => i !== index)
@@ -1388,17 +1311,17 @@ export default function VehiclePage() {
       }
 
       const data = await res.json();
-      return data.success ? data.filePath : null;
+      if (!data.success || !data.filePath) throw new Error(data.message || 'Upload failed.');
+      return data.filePath;
     } catch (error) {
       console.error(`Error uploading ${docType}:`, error);
-      return null;
+      throw new Error(`Could not upload ${file.name}. Try again.`);
     }
   };
 
   // ✅ Upload all files
   const uploadAllFiles = async () => {
     const uploadedPaths = {
-      rc: [],
       puc: [],
       fitness: [],
       weightSlip: [],
@@ -1407,10 +1330,6 @@ export default function VehiclePage() {
       photo: [],
     };
 
-    for (const file of rcFiles) {
-      const path = await uploadFile(file, 'rc');
-      if (path) uploadedPaths.rc.push(path);
-    }
 
     for (const file of pucFiles) {
       const path = await uploadFile(file, 'puc');
@@ -1461,10 +1380,6 @@ export default function VehiclePage() {
       isActive: true,
     });
     setSelectedOwner(null);
-    setOwnerSearchResults([]);
-    setShowOwnerDropdown(false);
-    setVehicleNumberSearch('');
-    setRcFiles([]);
     setPucFiles([]);
     setFitnessFiles([]);
     setWeightSlipFiles([]);
@@ -1472,15 +1387,6 @@ export default function VehiclePage() {
     setChasisFiles([]);
     setVehiclePhotoFiles([]);
     setExistingDocuments({});
-    setDocumentsToDelete({
-      rc: [],
-      puc: [],
-      fitness: [],
-      weightSlip: [],
-      insurance: [],
-      chasis: [],
-      photo: [],
-    });
     setEditingId(null);
     setError(null);
   };
@@ -1491,36 +1397,43 @@ export default function VehiclePage() {
     setError(null);
     setSubmitting(true);
 
-    if (!formData.vehicleNumber || !formData.rcNumber || !formData.ownerName) {
-      setError('Vehicle Number, RC Number, and Owner Name are required');
+    if (!selectedOwner || !formData.rcNumber) {
+      setError("Select a Vehicle Owner with an RC number.");
       setSubmitting(false);
       return;
     }
 
     try {
+      const requiredUploads = [
+      ['RC front in Vehicle Owners', [], selectedOwner?.rcDocuments],
+      ['Fitness', fitnessFiles, existingDocuments.fitnessDocuments],
+      ['National Permit', weightSlipFiles, existingDocuments.weightSlipDocuments],
+      ['State Permit', chasisFiles, existingDocuments.chasisDocuments],
+      ['Vehicle Photo', vehiclePhotoFiles, existingDocuments.vehiclePhotos],
+      ];
+      const missingUploads = requiredUploads.filter(([, files, saved]) => !files.length && !saved?.length).map(([label]) => label);
+      if (missingUploads.length) {
+        setError(`Upload the required documents: ${missingUploads.join(', ')}.`);
+        return;
+      }
       const uploadedPaths = await uploadAllFiles();
       
       const token = localStorage.getItem('token');
       const url = editingId ? `/api/vehicles?id=${editingId}` : '/api/vehicles';
       const method = editingId ? 'PUT' : 'POST';
 
-      const getExistingDocuments = (docType) => {
-        const existing = existingDocuments[docType + 'Documents'] || [];
-        const toDelete = documentsToDelete[docType] || [];
-        return existing.filter((_, index) => !toDelete.includes(index));
-      };
+      const getExistingDocuments = (docType) => existingDocuments[docType === 'photo' ? 'vehiclePhotos' : docType + 'Documents'] || [];
 
       const payload = {
         ...formData,
         vehicleWeight: formData.vehicleWeight ? parseFloat(formData.vehicleWeight) : 0,
-        rcDocuments: [...getExistingDocuments('rc'), ...uploadedPaths.rc],
         pucDocuments: [...getExistingDocuments('puc'), ...uploadedPaths.puc],
         fitnessDocuments: [...getExistingDocuments('fitness'), ...uploadedPaths.fitness],
         weightSlipDocuments: [...getExistingDocuments('weightSlip'), ...uploadedPaths.weightSlip],
         insuranceDocuments: [...getExistingDocuments('insurance'), ...uploadedPaths.insurance],
         chasisDocuments: [...getExistingDocuments('chasis'), ...uploadedPaths.chasis],
         vehiclePhotos: [...getExistingDocuments('photo'), ...uploadedPaths.photo],
-        ownerId: selectedOwner?._id || null, // Link to owner
+        ownerId: selectedOwner._id,
       };
 
       const res = await fetch(url, {
@@ -1545,7 +1458,7 @@ export default function VehiclePage() {
       alert(`✅ Vehicle ${editingId ? 'updated' : 'added'} successfully!`);
     } catch (error) {
       console.error(`Error ${editingId ? 'updating' : 'adding'} vehicle:`, error.message);
-      setError(`Failed to ${editingId ? 'update' : 'add'} vehicle.`);
+      setError(error.message || `Failed to ${editingId ? 'update' : 'add'} vehicle.`);
     } finally {
       setSubmitting(false);
     }
@@ -1567,14 +1480,11 @@ export default function VehiclePage() {
       isActive: vehicle.isActive,
     });
     
-    // If vehicle has ownerId, fetch and set owner details
-    if (vehicle.ownerId) {
-      const owner = owners.find(o => o._id === vehicle.ownerId);
-      if (owner) setSelectedOwner(owner);
-    }
-    
+    const linkedOwner = owners.find(owner => owner._id === String(vehicle.ownerId));
+    setSelectedOwner(null);
+    if (linkedOwner?.vehicleNumber === vehicle.vehicleNumber) selectOwner(linkedOwner);
+
     setExistingDocuments({
-      rcDocuments: vehicle.rcDocuments || [],
       pucDocuments: vehicle.pucDocuments || [],
       fitnessDocuments: vehicle.fitnessDocuments || [],
       weightSlipDocuments: vehicle.weightSlipDocuments || [],
@@ -1583,17 +1493,7 @@ export default function VehiclePage() {
       vehiclePhotos: vehicle.vehiclePhotos || [],
     });
     
-    setDocumentsToDelete({
-      rc: [],
-      puc: [],
-      fitness: [],
-      weightSlip: [],
-      insurance: [],
-      chasis: [],
-      photo: [],
-    });
     
-    setRcFiles([]);
     setPucFiles([]);
     setFitnessFiles([]);
     setWeightSlipFiles([]);
@@ -1706,6 +1606,20 @@ export default function VehiclePage() {
       </form>
 
       {/* Add/Edit Form */}
+      {newVehicleType !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <form role="dialog" aria-modal="true" aria-labelledby="vehicle-type-title" onKeyDown={event => { if (event.key === "Escape" && !savingVehicleType) setNewVehicleType(null); }} onSubmit={createVehicleType} className="w-full max-w-sm rounded-xl bg-white p-5 shadow-xl">
+            <h2 id="vehicle-type-title" className="text-lg font-bold">Create Vehicle Type</h2>
+            <label htmlFor="new-vehicle-type" className="mt-4 block text-sm font-medium">Vehicle type name</label>
+            <input id="new-vehicle-type" autoFocus required maxLength={80} value={newVehicleType} onChange={event => setNewVehicleType(event.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2" />
+            {vehicleTypeError && <p role="alert" className="mt-2 text-sm text-red-700">{vehicleTypeError}</p>}
+            <div className="mt-4 flex justify-end gap-2">
+              <button type="button" disabled={savingVehicleType} onClick={() => setNewVehicleType(null)} className="rounded-lg border px-4 py-2">Cancel</button>
+              <button disabled={savingVehicleType || !newVehicleType.trim()} className="rounded-lg bg-emerald-700 px-4 py-2 text-white disabled:opacity-50">{savingVehicleType ? 'Saving…' : 'Add to list'}</button>
+            </div>
+          </form>
+        </div>
+      )}
       <form onSubmit={handleSubmit} className="mb-6 bg-slate-50 p-4 rounded-xl border border-slate-200">
         <h2 className="text-lg font-bold text-slate-800 mb-4">{editingId ? 'Edit Vehicle' : 'Add New Vehicle'}</h2>
         
@@ -1723,54 +1637,27 @@ export default function VehiclePage() {
               placeholder="Enter Vehicle Number"
               value={formData.vehicleNumber}
               onChange={handleVehicleNumberChange}
+              readOnly={Boolean(selectedOwner)}
               className="border border-slate-200 rounded-lg px-3 py-2 w-full text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none uppercase"
               required
             />
-            {/* Owner Search Dropdown */}
-            {showOwnerDropdown && ownerSearchResults.length > 0 && (
-              <div className="absolute z-50 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                <div className="p-2 bg-slate-100 border-b text-xs font-semibold text-slate-600">
-                  Select Owner for this vehicle:
-                </div>
-                {ownerSearchResults.map((owner) => (
-                  <button
-                    key={owner._id}
-                    type="button"
-                    onClick={() => selectOwner(owner)}
-                    className="w-full text-left p-3 hover:bg-emerald-50 border-b border-slate-100 transition"
-                  >
-                    <div className="font-medium text-slate-800">{owner.ownerName}</div>
-                    <div className="text-xs text-slate-500">
-                      Vehicle: {owner.vehicleNumber} | RC: {owner.rcNumber || 'N/A'} | Mobile: {owner.mobileNumber1 || 'N/A'}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-            {showOwnerDropdown && ownerSearchResults.length === 0 && (
-              <div className="absolute z-50 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-lg p-2">
-                <div className="text-xs text-amber-600">
-                  ⚠️ No owner found for vehicle number "{formData.vehicleNumber}". You can add owner details below.
-                </div>
-              </div>
-            )}
           </div>
 
           <div className="border rounded-lg p-3 bg-white shadow-sm">
-            <label className="text-xs font-bold text-slate-600 block mb-1">Owner Name <span className="text-red-500">*</span></label>
-            <input
-              type="text"
-              name="ownerName"
-              placeholder="Owner Name"
-              value={formData.ownerName}
-              onChange={handleInputChange}
-              className="border border-slate-200 rounded-lg px-3 py-2 w-full text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none"
-              required
-              readOnly={!!selectedOwner}
-            />
-            {selectedOwner && (
-              <p className="text-xs text-green-600 mt-1">✓ Owner linked from master</p>
-            )}
+            <label htmlFor="vehicle-owner" className="text-xs font-bold text-slate-600 block mb-1">Owner Name <span className="text-red-500">*</span></label>
+            <select id="vehicle-owner" required value={selectedOwner?._id || ''} onChange={event => {
+              const owner = owners.find(item => item._id === event.target.value);
+              if (owner) selectOwner(owner);
+              else clearSelectedOwner();
+            }} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+              <option value="">Select from Vehicle Owners</option>
+              {owners.filter(owner => owner._id === selectedOwner?._id
+                || (owner.isActive !== false && (!formData.vehicleNumber || owner.vehicleNumber?.includes(formData.vehicleNumber))
+                  && !vehicles.some(vehicle => vehicle._id !== editingId
+                    && (String(vehicle.ownerId) === owner._id || vehicle.vehicleNumber === owner.vehicleNumber))))
+                .map(owner => <option key={owner._id} value={owner._id}>{owner.ownerName} · {owner.vehicleNumber}</option>)}
+            </select>
+            <p className="mt-1 text-xs text-slate-500">Create or update the owner and RC in Vehicle Owners.</p>
           </div>
 
           <div className="border rounded-lg p-3 bg-white shadow-sm">
@@ -1782,10 +1669,12 @@ export default function VehiclePage() {
               className="border border-slate-200 rounded-lg px-3 py-2 w-full text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none"
             >
               <option value="">Select Vehicle Type</option>
-              {VEHICLE_TYPE_OPTIONS.map((type) => (
+              {[...new Set([...VEHICLE_TYPE_OPTIONS, ...customVehicleTypes, formData.vehicleType].filter(Boolean))].map(type => (
                 <option key={type} value={type}>{type}</option>
               ))}
+              <option value={CREATE_VEHICLE_TYPE}>+ Create Vehicle Type</option>
             </select>
+            {newVehicleType === null && vehicleTypeError && <p role="alert" className="mt-1 text-xs text-red-700">{vehicleTypeError}</p>}
           </div>
 
           <div className="border rounded-lg p-3 bg-white shadow-sm">
@@ -1806,12 +1695,14 @@ export default function VehiclePage() {
             label="RC Number"
             value={formData.rcNumber}
             placeholder="Enter RC Number"
-            onChange={(e) => setFormData(prev => ({ ...prev, rcNumber: e.target.value.toUpperCase() }))}
-            files={rcFiles}
+            readOnly
+            files={[]}
             onFileSelect={handleFileSelect}
             onRemoveFile={removeFile}
             onRemoveExistingDocument={handleRemoveExistingDocument}
-            existingDocuments={existingDocuments.rcDocuments}
+            existingDocuments={selectedOwner?.rcDocuments}
+            backFiles={[]}
+            backDocuments={selectedOwner?.rcBackDocuments}
             documentType="rc"
             required={true}
           />
@@ -1841,20 +1732,22 @@ export default function VehiclePage() {
             onRemoveFile={removeFile}
             onRemoveExistingDocument={handleRemoveExistingDocument}
             existingDocuments={existingDocuments.fitnessDocuments}
+            uploadRequired
             documentType="fitness"
           />
 
           {/* Weight Slip Section */}
           <DocumentUploadSection
-            label="Weight Slip Number"
+            label="National Permit Number"
             value={formData.weightSlipNumber}
-            placeholder="Enter Weight Slip Number"
+            placeholder="Enter National Permit Number"
             onChange={(e) => setFormData(prev => ({ ...prev, weightSlipNumber: e.target.value.toUpperCase() }))}
             files={weightSlipFiles}
             onFileSelect={handleFileSelect}
             onRemoveFile={removeFile}
             onRemoveExistingDocument={handleRemoveExistingDocument}
             existingDocuments={existingDocuments.weightSlipDocuments}
+            uploadRequired
             documentType="weightSlip"
           />
 
@@ -1874,21 +1767,22 @@ export default function VehiclePage() {
 
           {/* Chasis Document Section */}
           <DocumentUploadSection
-            label="Chasis Number"
+            label="State Permit Number"
             value={formData.chasisNumber}
-            placeholder="Enter Chasis Number"
+            placeholder="Enter State Permit Number"
             onChange={(e) => setFormData(prev => ({ ...prev, chasisNumber: e.target.value.toUpperCase() }))}
             files={chasisFiles}
             onFileSelect={handleFileSelect}
             onRemoveFile={removeFile}
             onRemoveExistingDocument={handleRemoveExistingDocument}
             existingDocuments={existingDocuments.chasisDocuments}
+            uploadRequired
             documentType="chasis"
           />
 
           {/* Vehicle Photo Section */}
           <div className="border rounded-lg p-3 bg-white shadow-sm">
-            <label className="text-xs font-bold text-slate-600 block mb-1">Vehicle Photo</label>
+            <label className="text-xs font-bold text-slate-600 block mb-1">Vehicle Photo <span className="text-red-500">*</span></label>
             <div className="mt-1">
               <input 
                 type="file" 
@@ -1973,7 +1867,6 @@ export default function VehiclePage() {
 		
       </form>
   {/* Owner Details Box - Shows when owner is selected */}
-        <OwnerDetailsBox owner={selectedOwner} onClear={clearSelectedOwner} />
       {/* Vehicles List */}
       {loading ? (
         <div className="text-center py-8">Loading vehicles...</div>
@@ -2006,9 +1899,9 @@ export default function VehiclePage() {
                         {vehicle.rcDocuments?.length > 0 && <div className="text-xs text-slate-600">📄 RC: {vehicle.rcDocuments.length} file(s)</div>}
                         {vehicle.pucDocuments?.length > 0 && <div className="text-xs text-slate-600">📄 PUC: {vehicle.pucDocuments.length} file(s)</div>}
                         {vehicle.fitnessDocuments?.length > 0 && <div className="text-xs text-slate-600">📄 Fitness: {vehicle.fitnessDocuments.length} file(s)</div>}
-                        {vehicle.weightSlipDocuments?.length > 0 && <div className="text-xs text-slate-600">📄 Weight Slip: {vehicle.weightSlipDocuments.length} file(s)</div>}
+                        {vehicle.weightSlipDocuments?.length > 0 && <div className="text-xs text-slate-600">📄 National Permit: {vehicle.weightSlipDocuments.length} file(s)</div>}
                         {vehicle.insuranceDocuments?.length > 0 && <div className="text-xs text-slate-600">📄 Insurance: {vehicle.insuranceDocuments.length} file(s)</div>}
-                        {vehicle.chasisDocuments?.length > 0 && <div className="text-xs text-slate-600">📄 Chasis: {vehicle.chasisDocuments.length} file(s)</div>}
+                        {vehicle.chasisDocuments?.length > 0 && <div className="text-xs text-slate-600">📄 State Permit: {vehicle.chasisDocuments.length} file(s)</div>}
                         {vehicle.vehiclePhotos?.length > 0 && <div className="text-xs text-slate-600">📷 Photo: {vehicle.vehiclePhotos.length} file(s)</div>}
                       </div>
                     </td>

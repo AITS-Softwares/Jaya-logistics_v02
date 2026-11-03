@@ -72,6 +72,10 @@ const vehicleSchema = new mongoose.Schema({
     type: String,
     default: []
   }],
+  rcBackDocuments: [{
+    type: String,
+    default: []
+  }],
   pucDocuments: [{
     type: String,
     default: []

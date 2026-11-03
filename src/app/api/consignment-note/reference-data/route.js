@@ -1,11 +1,10 @@
-import { filterLrEligibleLoading } from '@/lib/lrPricingEligibility';
+import { isVnnReadyForDownstream } from '@/lib/vehicleNegotiationWorkflow';
 import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/auth";
 import connectDb from "@/lib/db";
 import { companyScopeFilter } from "@/lib/companyScope";
 import VehicleNegotiation from "@/app/api/vehicle-negotiation/VehicleNegotiation";
-import LoadingPanel from "@/app/api/loading-panel/LoadingPanel";
 
 /**
  * Downstream VNN lookup for Consignment Note.  Consignment users need the
@@ -16,16 +15,12 @@ const branchHandlerGET = withAuth(async (req, context, user) => {
   try {
     await connectDb();
     const url = new URL(req.url);
-    if (url.searchParams.get("lookup") === "loadingInfoOrders") {
-      const rawLoadingInfos = await LoadingPanel.find(companyScopeFilter(user, { isDraft: { $ne: true }, panelStatus: { $ne: 'Draft' } }))
-        .select("vehicleArrivalNo orderRows panelStatus isDraft loadingWorkflow cancellation reapprovalState upstreamPending")
-        .lean();
-      const loadingInfos = await filterLrEligibleLoading(user, rawLoadingInfos);
-      const orderNumbers = [...new Set(loadingInfos.flatMap((loadingInfo) =>
-        (loadingInfo.orderRows || []).map((row) => row.orderNo?.trim()).filter(Boolean),
-      ))];
-      const eligibleRows = loadingInfos.flatMap(info => (info.orderRows || []).map(row => ({ orderNo: row.orderNo, orderRowId: row.orderRowId || '', loadingInfoNo: info.vehicleArrivalNo })));
-      return NextResponse.json({ success: true, data: { orderNumbers, eligibleRows } });
+    const eligibleFilter = { isDraft: { $ne: true }, panelStatus: { $nin: ['Draft', 'Cancelled'] }, 'approval.part3Status': 'Approved' };
+    if (url.searchParams.get("lookup") === "vnnOrders") {
+      const negotiations = await VehicleNegotiation.find(companyScopeFilter(user, eligibleFilter)).lean();
+      const eligibleRows = negotiations.filter(isVnnReadyForDownstream).flatMap(vnn =>
+        (vnn.orders || []).map(row => ({ orderNo: row.orderNo, orderRowId: row.orderRowId || '' })));
+      return NextResponse.json({ success: true, data: { eligibleRows } });
     }
 
     const orderNo = url.searchParams.get("orderNo")?.trim();
@@ -37,11 +32,10 @@ const branchHandlerGET = withAuth(async (req, context, user) => {
       );
     }
 
-    const vehicleNegotiation = await VehicleNegotiation.findOne(
-      companyScopeFilter(user, { "orders.orderNo": orderNo, panelStatus: { $ne: 'Draft' } }),
-    )
-      .sort({ updatedAt: -1 })
-      .lean();
+    const candidates = await VehicleNegotiation.find(
+      companyScopeFilter(user, { ...eligibleFilter, "orders.orderNo": orderNo }),
+    ).sort({ updatedAt: -1 }).lean();
+    const vehicleNegotiation = candidates.find(isVnnReadyForDownstream) || null;
 
     return NextResponse.json({
       success: true,

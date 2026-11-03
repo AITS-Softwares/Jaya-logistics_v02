@@ -245,7 +245,7 @@ function CompanyUsersPage() {
     finally { setLoading(false); }
   };
 
-  const resetForm = () => { setForm(emptyForm()); setEditingUser(null); setErr(""); setActiveTab("info"); setExpandedMods({}); };
+  const resetForm = () => { setShowPw(false); setForm(emptyForm()); setEditingUser(null); setErr(""); setActiveTab("info"); setExpandedMods({}); };
 
   // ── Modules derived from selected roles ──
   const modulesList = useMemo(() => {
@@ -369,6 +369,7 @@ function CompanyUsersPage() {
         if (!restoredModules[mod]) restoredModules[mod] = { selected: false, permissions: permissionsForModule(mod).reduce((a, p) => ({ ...a, [p]: false }), {}) };
       });
     });
+    setShowPw(false);
     setEditingUser(user);
     setForm({
       employeeId: user?.employeeId?._id || "", name: user?.name || "", email: user?.email || "", password: "", roles, modules: restoredModules,
@@ -600,7 +601,7 @@ function CompanyUsersPage() {
                           placeholder={editingUser ? "Leave blank to keep unchanged" : "Min. 8 characters"}
                           value={form.password} onChange={e => setForm({ ...form, password: e.target.value })}
                           required={!editingUser} />
-                        <button type="button" onClick={() => setShowPw(p => !p)}
+                        <button type="button" onClick={() => setShowPw(p => !p)} aria-label={showPw ? "Hide password" : "Show password"}
                           className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500 transition-colors">
                           {showPw ? <FiEyeOff className="text-sm" /> : <FiEye className="text-sm" />}
                         </button>

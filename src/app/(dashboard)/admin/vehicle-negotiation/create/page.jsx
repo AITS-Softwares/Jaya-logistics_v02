@@ -364,7 +364,7 @@ function Card({ title, right, children }) {
   );
 }
 
-function Input({ label, value, onChange, col = "", type = "text", readOnly = false }) {
+function Input({ label, value, onChange, col = "", type = "text", readOnly = false, disabled = false }) {
   return (
     <div className={col}>
       <label className="text-xs font-bold text-slate-600">{label}</label>
@@ -373,7 +373,8 @@ function Input({ label, value, onChange, col = "", type = "text", readOnly = fal
         value={value || ""}
         onChange={(e) => onChange?.(e.target.value)}
         readOnly={readOnly}
-        className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${readOnly ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
+        disabled={disabled}
+        className={`mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 ${readOnly || disabled ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
           }`}
       />
     </div>
@@ -2982,7 +2983,7 @@ export default function VehicleNegotiationPanel() {
                 label="Final - Per MT (A)"
                 value={approval.finalPerMT}
                 onChange={(v) => setApproval((p) => ({ ...p, finalPerMT: v }))}
-                readOnly={false}
+                disabled={approval.rateType === "Fixed"}
               />
               <div className="col-span-12 md:col-span-4 mt-2">
                 <div className="flex flex-col">
@@ -3004,7 +3005,7 @@ export default function VehicleNegotiationPanel() {
                 label="Final - Fix"
                 value={approval.finalFix}
                 onChange={(v) => setApproval((p) => ({ ...p, finalFix: v }))}
-                readOnly={false}
+                disabled={approval.rateType === "Per MT"}
               />
               <Select
                 col="col-span-12 md:col-span-4"

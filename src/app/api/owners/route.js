@@ -1,3 +1,4 @@
+import Vehicle from "@/app/api/vehicles/Vehicle";
 import { NextResponse } from "next/server";
 import connectDb from "@/lib/db";
 import Owner from "./Owner";
@@ -101,6 +102,19 @@ export async function GET(req) {
 /* ========================================
    POST /api/owners
 ======================================== */
+const requiredUploads = {
+  rcDocuments: "RC front",
+  adharCardDocuments: "Aadhaar front",
+  panCardDocuments: "PAN Card",
+};
+
+function missingUploadMessage(record) {
+  const missing = Object.entries(requiredUploads)
+    .filter(([field]) => !Array.isArray(record[field]) || !record[field].some(path => typeof path === "string" && path.trim()))
+    .map(([, label]) => label);
+  return missing.length ? `Upload the required documents: ${missing.join(", ")}.` : "";
+}
+
 export async function POST(req) {
   await connectDb();
   const { user, error, status } = await validateUser(req, 'create');
@@ -117,7 +131,9 @@ export async function POST(req) {
       rcNumber,
       panCardDocuments,
       adharCardDocuments,
+      adharCardBackDocuments,
       rcDocuments,
+      rcBackDocuments,
       isActive 
     } = await req.json();
 
@@ -152,11 +168,16 @@ export async function POST(req) {
       rcNumber: rcNumber?.toUpperCase(),
       panCardDocuments: panCardDocuments || [],
       adharCardDocuments: adharCardDocuments || [],
+      adharCardBackDocuments: adharCardBackDocuments || [],
       rcDocuments: rcDocuments || [],
+      rcBackDocuments: rcBackDocuments || [],
       isActive: isActive !== undefined ? isActive : true,
       companyId: user.companyId,
       createdBy: user.id,
     });
+
+    const uploadError = missingUploadMessage({ rcDocuments, adharCardDocuments, panCardDocuments });
+    if (uploadError) return NextResponse.json({ success: false, message: uploadError }, { status: 400 });
 
     await newOwner.save();
     return NextResponse.json({ success: true, data: newOwner }, { status: 201 });
@@ -180,6 +201,10 @@ export async function DELETE(req) {
 
     if (!ownerId) {
       return NextResponse.json({ success: false, message: "Owner ID is required" }, { status: 400 });
+    }
+
+    if (await Vehicle.exists({ companyId: user.companyId, ownerId })) {
+      return NextResponse.json({ success: false, message: "This owner is linked to a vehicle. Change the owner on that vehicle before deleting this record." }, { status: 409 });
     }
 
     const deletedOwner = await Owner.findOneAndDelete({
@@ -219,6 +244,21 @@ export async function PUT(req) {
     if (updates.vehicleNumber) updates.vehicleNumber = updates.vehicleNumber.toUpperCase();
     if (updates.ownerPanCard) updates.ownerPanCard = updates.ownerPanCard.toUpperCase();
     if (updates.rcNumber) updates.rcNumber = updates.rcNumber.toUpperCase();
+
+    if (Object.keys(requiredUploads).some(field => Object.hasOwn(updates, field))) {
+      const current = await Owner.findOne({ _id: ownerId, companyId: user.companyId })
+        .select(Object.keys(requiredUploads).join(" ")).lean();
+      if (!current) return NextResponse.json({ success: false, message: "Owner not found" }, { status: 404 });
+      const uploadError = missingUploadMessage({ ...current, ...updates });
+      if (uploadError) return NextResponse.json({ success: false, message: uploadError }, { status: 400 });
+    }
+
+    if (updates.vehicleNumber) {
+      const linkedVehicle = await Vehicle.findOne({ companyId: user.companyId, ownerId }).select("vehicleNumber").lean();
+      if (linkedVehicle && updates.vehicleNumber.trim() !== linkedVehicle.vehicleNumber) {
+        return NextResponse.json({ success: false, message: "The vehicle number cannot change while this owner is linked to a vehicle." }, { status: 409 });
+      }
+    }
 
     const updatedOwner = await Owner.findOneAndUpdate(
       { _id: ownerId, companyId: user.companyId },

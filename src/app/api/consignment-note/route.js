@@ -1,8 +1,7 @@
 import { reconcileOrderCancellations } from '@/lib/reconcileOrderCancellations';
 import { panelApprovalStatus } from '@/lib/reapprovalPresentation.mjs';
-import { filterLrEligibleLoading } from '@/lib/lrPricingEligibility';
+import { isVnnReadyForDownstream } from '@/lib/vehicleNegotiationWorkflow';
 import { saveNumberedDocument } from '@/lib/saveNumberedDocument';
-import { loadingWorkflowForReview } from '@/lib/loadingApprovalWorkflow.mjs';
 
 // // import { NextResponse } from "next/server";
 // // import connectDb from "@/lib/db";
@@ -1666,14 +1665,13 @@ async function branchHandlerGET(req) {
     const pendingLookup = url.searchParams.get("lookup");
     if (pendingLookup === "pendingCount" || pendingLookup === "pendingList") {
       const normalize = (value) => String(value || "").trim().toLowerCase();
-      const [orders, notes, rawLoadingInfos] = await Promise.all([
+      const [orders, notes, negotiations] = await Promise.all([
         OrderPanel.find(companyScopeFilter(user)).select("orderPanelNo plantRows panelStatus isDraft partyName customerName customerId").lean(),
         ConsignmentNote.find(companyScopeFilter(user)).select("orderRowId isDraft header.orderNo header.to header.status").lean(),
-        LoadingPanel.find(companyScopeFilter(user, { isDraft: { $ne: true }, panelStatus: { $in: ['Approved', 'Completed'] }, $or: [{ 'loadingWorkflow.version': { $ne: 2 } }, { 'loadingWorkflow.part2Status': 'Approved' }] }))
-          .select("vehicleArrivalNo orderRows panelStatus isDraft loadingWorkflow cancellation reapprovalState upstreamPending")
-          .lean(),
+        VehicleNegotiation.find(companyScopeFilter(user, { isDraft: { $ne: true }, panelStatus: { $nin: ['Draft', 'Cancelled'] }, 'approval.part3Status': 'Approved' })).lean(),
       ]);
-      const loadingInfos = await filterLrEligibleLoading(user, rawLoadingInfos);
+      const eligibleRows = negotiations.filter(isVnnReadyForDownstream).flatMap(vnn =>
+        (vnn.orders || []).map(row => ({ ...row, vnnNo: vnn.vnnNo })));
       const partyName = (...names) => names.map((name) => String(name || '').trim())
         .find((name) => name && !['n/a', 'na', '-', '—', 'null', 'undefined'].includes(name.toLowerCase())) || '';
       const customerIds = [...new Set(orders.flatMap((order) => [order.customerId, ...(order.plantRows || []).map((row) => row.customerId)])
@@ -1682,7 +1680,7 @@ async function branchHandlerGET(req) {
         .select('customerName').lean() : [];
       const customerNames = new Map(customers.map((customer) => [String(customer._id), customer.customerName]));
       const resolvePartyName = (order, row = {}) => {
-        const linkedRows = loadingInfos.flatMap((info) => info.orderRows || []).filter((entry) =>
+        const linkedRows = eligibleRows.filter((entry) =>
           normalize(entry.orderNo) === normalize(order.orderPanelNo)
           && (!entry.orderRowId || !row._id || String(entry.orderRowId) === String(row._id)));
         const loadingParties = [...new Set(linkedRows.map((entry) => partyName(entry.partyName)).filter(Boolean))];
@@ -1690,13 +1688,7 @@ async function branchHandlerGET(req) {
           customerNames.get(String(row.customerId || order.customerId || '')),
           loadingParties.length === 1 ? loadingParties[0] : '');
       };
-      const loadingInfoOrderNos = new Set(loadingInfos.flatMap((loadingInfo) =>
-        (loadingInfo.orderRows || []).map((row) => normalize(row.orderNo)).filter(Boolean),
-      ));
-      // Count only order rows exposed by the create picker: non-draft order
-      // panels with open rows, linked to a submitted Loading Info, and without
-      // an existing LR document. A draft LR already exists and is reopened
-      // from the list, so it must not be counted as waiting to be created.
+      // A saved draft LR already has a record and can be reopened from the list.
       const existingRows = new Set(notes.filter((note) => note.orderRowId).map((note) => String(note.orderRowId)));
       const legacyKeys = new Set(notes.filter((note) => !note.orderRowId).map((note) => `${normalize(note.header?.orderNo)}|${normalize(note.header?.to)}`));
       const sourceRows = orders.flatMap((order) => {
@@ -1710,7 +1702,9 @@ async function branchHandlerGET(req) {
       const pendingRows = [];
       sourceRows.forEach((row) => {
         const no = normalize(row.orderNo);
-        if (!no || !loadingInfoOrderNos.has(no)) return;
+        const source = eligibleRows.find(entry => normalize(entry.orderNo) === no
+          && (!entry.orderRowId || String(entry.orderRowId) === String(row.originalRowId)));
+        if (!no || !source) return;
         const covered = (row.originalRowId && existingRows.has(String(row.originalRowId)))
           || legacyKeys.has(`${no}|${normalize(row.to)}`);
         if (covered || seen.has(no)) return;
@@ -1720,7 +1714,7 @@ async function branchHandlerGET(req) {
           to: row.to,
           date: "",
           weight: row.weight || "",
-          loadingInfoNo: loadingInfos.find((info) => (info.orderRows || []).some((entry) => normalize(entry.orderNo) === no))?.vehicleArrivalNo || "",
+          vnnNo: source.vnnNo || "",
           partyName: row.partyName || "",
         });
       });
@@ -2060,11 +2054,6 @@ async function branchHandlerPOST(req) {
           success: false,
           message: `Loading Info ${body.loadingInfoNo} was not found.`
         }, { status: 404 });
-      }
-      const loadingReviewWorkflow = loadingWorkflowForReview(linkedLoadingInfo);
-      if (loadingReviewWorkflow?.version === 2 && loadingReviewWorkflow.part2Status !== 'Approved') return NextResponse.json({ success: false, message: 'Loading Info Part 2 must be approved before creating a Consignment Note.' }, { status: 409 });
-      if (!isDraftSave && (linkedLoadingInfo.isDraft || linkedLoadingInfo.panelStatus === 'Draft')) {
-        return NextResponse.json({ success: false, message: `Loading Info ${body.loadingInfoNo} is still a draft. Submit it before creating a Consignment Note.` }, { status: 409 });
       }
       if (orderRowId) {
         const wanted = String(body.header?.orderNo || '').trim().toLowerCase();

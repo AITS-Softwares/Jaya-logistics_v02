@@ -28,6 +28,7 @@ export default function CustomerUsersPanel() {
   const [message, setMessage] = useState('');
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(null);
+  const [showPassword, setShowPassword] = useState(false);
   const [saving, setSaving] = useState(false);
   const [optionsError, setOptionsError] = useState('');
 
@@ -59,6 +60,7 @@ export default function CustomerUsersPanel() {
   function open(user) {
     setEditing(user || null); setMessage(''); setError(''); setOptionsError(''); setCustomerSearch('');
     setChosenCustomer(user?.customerId || null);
+    setShowPassword(false);
     setForm(user ? { name: user.name, email: user.email, customerId: user.customerId?._id || '', password: '', allowedOperatingCompanyIds: user.allowedOperatingCompanyIds.map(String), isActive: user.isActive } : emptyForm());
   }
   async function save(event) {
@@ -121,7 +123,8 @@ export default function CustomerUsersPanel() {
               noOptionsMessage={() => 'No customers found. Try another name.'}
             />
           </div>
-          <label className="block text-sm font-medium">{editing ? 'New password (leave blank to keep current)' : 'Password'}<input type="password" required={!editing} minLength={8} maxLength={72} className={input} autoComplete="new-password" value={form.password} onChange={event => setForm({ ...form, password: event.target.value })} /><span className="mt-1 block text-xs text-slate-500">At least 8 characters. Share this password with the customer; they can sign in directly.</span></label>
+          <div className="text-sm font-medium"><label htmlFor="customer-user-password">{editing ? 'New password (leave blank to keep current)' : 'Password'}</label><div className="flex items-center gap-2"><input id="customer-user-password" type={showPassword ? 'text' : 'password'} required={!editing} minLength={8} maxLength={72} className={input} autoComplete="new-password" value={form.password} onChange={event => setForm({ ...form, password: event.target.value })} />
+          <button type="button" className="rounded border px-3 py-2" aria-controls="customer-user-password" aria-label={showPassword ? 'Hide password' : 'Show password'} onClick={() => setShowPassword(value => !value)}>{showPassword ? 'Hide' : 'Show'}</button></div><span className="mt-1 block text-xs text-slate-500">At least 8 characters. Share this password with the customer; they can sign in directly.</span></div>
           <fieldset><legend className="text-sm font-semibold">Allowed operating companies</legend><div className="mt-2 flex flex-wrap gap-4">{companies.map(company => <label key={company._id} className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.allowedOperatingCompanyIds.includes(String(company._id))} onChange={event => setForm({ ...form, allowedOperatingCompanyIds: event.target.checked ? [...form.allowedOperatingCompanyIds, String(company._id)] : form.allowedOperatingCompanyIds.filter(id => id !== String(company._id)) })} />{company.name}</label>)}</div>{!companies.length && <p className="text-sm text-slate-500">No assignable companies loaded.</p>}</fieldset>
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.isActive} onChange={event => setForm({ ...form, isActive: event.target.checked })} />Account active</label>
         </div>

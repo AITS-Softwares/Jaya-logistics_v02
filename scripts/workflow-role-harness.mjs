@@ -132,6 +132,8 @@ export function makeHarness() {
     const row = { orderNo: fixtures.order.orderPanelNo, orderPanelId: fixtures.order._id, orderRowId: fixtures.order.plantRows[0]._id, plantName: 'Plant', fromName: 'A', toName: 'B', weight: 5, locationRate: 'B', priceList: 'Rates', rate: 100 };
     fixtures.vnn.orders = [{ ...row }]; fixtures.pricing.orders = [{ ...row, _id: oid(), vehicleNegotiationId: fixtures.vnn._id }]; fixtures.loading.orderRows = [{ ...row }]; fixtures.loading.vehicleNegotiationNo = fixtures.vnn.vnnNo; fixtures.lr.orderRowId = row.orderRowId; fixtures.lr.header.orderNo = row.orderNo; fixtures.lr.loadingInfoNo = fixtures.loading.vehicleArrivalNo;
     delete fixtures.lr.orderRows;
+    fixtures.loading.vehicleSlips = ['/saved-empty-slip.pdf'];
+    fixtures.loading.loadedVehicleSlips = ['/saved-loaded-slip.pdf'];
     for (const prefix of ['vbp', 'vft', 'vot', 'vl']) fixtures.loading[`${prefix}Uploads`] = Object.fromEntries(Array.from({ length: prefix === 'vl' ? 5 : 3 }, (_, index) => [`${prefix}${index + 1}`, `/saved-${prefix}-${index + 1}.jpg`]));
     for (const doc of Object.values(fixtures)) doc.approvedSnapshot = doc.toObject();
   }
