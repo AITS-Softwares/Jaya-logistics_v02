@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import TrackingSession from "@/models/TrackingSession";
+import DriverTrip from "@/models/DriverTrip";
 import TripEvent from "@/models/TripEvent";
 import { requireMobileAuth } from "@/lib/driverMobileAuth";
 import { createIdempotencyKey } from "@/lib/driverMobileCore.mjs";
@@ -13,6 +14,8 @@ export async function POST(req) {
     if (!isObjectId(sessionId)) return NextResponse.json({ success: false, code: "NOT_FOUND", message: "Tracking session not found." }, { status: 404 });
     const session = await TrackingSession.findOne({ _id: sessionId, companyId: auth.driver.companyId, driverId: auth.driver._id, state: { $in: ["active", "paused", "stale"] } });
     if (!session || !sameObjectId(session.deviceId, auth.device._id)) return NextResponse.json({ success: false, code: "NOT_FOUND", message: "Tracking session not found." }, { status: 404 });
+    const closedTrip = await DriverTrip.exists({ _id: session.tripId, companyId: session.companyId, state: { $in: ["completed", "cancelled"] } });
+    if (!closedTrip) return NextResponse.json({ success: false, code: "TRIP_ACTIVE", message: "Tracking continues until the trip is closed." }, { status: 409 });
     session.state = "ended"; session.endedAt = new Date(); await session.save();
     await TripEvent.create({ companyId: session.companyId, tripId: session.tripId, type: "tracking_stopped", source: "driver", idempotencyKey: createIdempotencyKey(), createdByDriverId: auth.driver._id, payload: { sessionId: String(session._id), reason: String(reason || "driver_stop").slice(0, 100) } });
     return NextResponse.json({ success: true });

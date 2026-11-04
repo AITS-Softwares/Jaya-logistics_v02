@@ -70,6 +70,24 @@ async function signAccess(session) {
   }, await secret(session.companyId), { expiresIn: ACCESS_TTL_SECONDS, issuer: "jaya-logistics" });
 }
 
+export async function signTrackingAccess(session) {
+  return jwt.sign({
+    companyId: String(session.companyId),
+    sessionId: String(session._id),
+  }, await secret(session.companyId), { audience: "driver-tracking", expiresIn: "30d", issuer: "jaya-logistics" });
+}
+
+export async function verifyTrackingAccess(req, sessionId) {
+  const token = req.headers.get("x-driver-tracking-token");
+  const decoded = jwt.decode(token || "");
+  if (!decoded?.companyId || decoded.sessionId !== sessionId) return null;
+  try {
+    return jwt.verify(token, await secret(decoded.companyId), { audience: "driver-tracking", issuer: "jaya-logistics" });
+  } catch {
+    return null;
+  }
+}
+
 export async function createMobileSession({ companyId, driverId, deviceId = null, familyId = createOpaqueToken() }) {
   const refreshToken = createOpaqueToken();
   const session = await DriverMobileSession.create({
@@ -113,9 +131,8 @@ export async function rotateMobileSession(refreshToken) {
     return null;
   }
   if (!(await isDriverAllowedForMobileRollout(driver.mobileE164, session.companyId))) return null;
-  session.revokedAt = new Date();
-  session.revokeReason = "rotated";
-  await session.save();
+  const claimed = await DriverMobileSession.updateOne({ _id: session._id, revokedAt: null }, { $set: { revokedAt: new Date(), revokeReason: "rotated" } });
+  if (!claimed.modifiedCount) return null;
   return createMobileSession({ companyId: session.companyId, driverId: session.driverId, deviceId: session.deviceId, familyId: session.familyId });
 }
 

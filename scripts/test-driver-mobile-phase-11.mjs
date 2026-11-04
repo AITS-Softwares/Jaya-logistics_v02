@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { deriveStopEpisode, etaGuard } from "../src/lib/driverStopIntelligence.mjs";
+import { deriveStopEpisode, etaGuard, gpsConfirmsDropArrival } from "../src/lib/driverStopIntelligence.mjs";
 
 const origin = { latitude: 19.076, longitude: 72.8777, accuracyM: 20, speedMps: 0 };
 const points = [0, 5, 11].map((minutes) => ({ ...origin, recordedAt: new Date(`2026-10-07T12:${String(minutes).padStart(2, "0")}:00.000Z`) }));
@@ -10,4 +10,13 @@ assert.equal(episode.classification, "unknown");
 assert.equal(deriveStopEpisode([{ ...origin, speedMps: 5, recordedAt: new Date() }, { ...origin, speedMps: 5, recordedAt: new Date(Date.now() + 660000) }]), null);
 assert.equal(etaGuard(null).status, "baseline_required");
 assert.equal(etaGuard({ distanceKm: 100, durationMinutes: 180 }).status, "available");
+const now = Date.parse("2026-10-07T12:00:00Z");
+const geofence = { ...origin, radiusM: 100 };
+const latest = { ...origin, recordedAt: new Date(now - 1000) };
+const previous = { ...origin, recordedAt: new Date(now - 30000) };
+assert.equal(gpsConfirmsDropArrival([latest, previous], geofence, null, now), true);
+assert.equal(gpsConfirmsDropArrival([latest], geofence, null, now), false);
+assert.equal(gpsConfirmsDropArrival([latest, previous], geofence, new Date(now - 20000), now), false);
+assert.equal(gpsConfirmsDropArrival([latest, { ...previous, longitude: 73 }], geofence, null, now), false);
+assert.equal(gpsConfirmsDropArrival([latest, { ...previous, recordedAt: new Date(now - 121000) }], geofence, null, now), false);
 console.log("Driver mobile Phase 11 stop and ETA guard tests passed.");

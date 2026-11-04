@@ -6,13 +6,18 @@ import DriverProfile from "@/models/DriverProfile";
 import { isDriverMobileEnabled, mobileUnavailableResponse } from "@/lib/driverMobileAuth";
 import { requireDriverAccessMasterStaff, requireDriverMobileStaff } from "@/lib/driverMobileStaff";
 import { normalizeDriverMobile } from "@/lib/driverMobileCore.mjs";
+import { getDriverMobileConfig } from "@/lib/driverMobileConfig";
 
 async function branchHandlerGET(req) {
   if (!(await isDriverMobileEnabled())) return mobileUnavailableResponse();
   const staff = requireDriverAccessMasterStaff(req);
   if (staff.error) return staff.error;
   await dbConnect();
-  const drivers = await DriverProfile.find({ companyId: staff.user.companyId }).select("-pinHash").sort({ displayName: 1 }).lean();
+  const [drivers, config] = await Promise.all([
+    DriverProfile.find({ companyId: staff.user.companyId }).select("-pinHash").sort({ displayName: 1 }).lean(),
+    getDriverMobileConfig(staff.user.companyId),
+  ]);
+  const pilotMobiles = config?.enabled && config.rolloutMode === "pilot" ? new Set(config.pilotMobiles) : null;
   return NextResponse.json({ success: true, data: drivers.map((driver) => ({
     id: String(driver._id),
     displayName: driver.displayName,
@@ -21,6 +26,7 @@ async function branchHandlerGET(req) {
     status: driver.status,
     mobileAccessStatus: driver.mobileAccessStatus || "not_registered",
     mobileAccessEnabled: driver.mobileAccessEnabled === true,
+    pilotEnrolled: pilotMobiles ? pilotMobiles.has(driver.mobileE164) : null,
     lastReleasedMobile: driver.mobileHistory?.length ? driver.mobileHistory[driver.mobileHistory.length - 1].mobileE164 : "",
     passwordChangeRequired: driver.passwordChangeRequired === true,
     registrationStatus: driver.registrationStatus || "draft",

@@ -5830,12 +5830,13 @@
 // }
 "use client";
 
-import {vnnPurchaseType} from '@/lib/vnnPart3.mjs';
+import {INVALID_VNN_FIXED_RATE, parseVnnFixedRate, vnnPurchaseType} from '@/lib/vnnPart3.mjs';
 import { useMemo, useRef, useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import mongoose from 'mongoose';
 import TransactionFormKeyboardNavigation, { TransactionKeyboardTable, useKeyboardDropdown } from "@/components/TransactionFormKeyboardNavigation";
 import { usePermission } from "../../hooks/usePermission";
+import { LPT_1000_BALANCE_ONLY } from "@/lib/purchasePaymentTerms.mjs";
 
 /* =======================
   HELPERS / CONSTANTS
@@ -5915,7 +5916,7 @@ function useCustomerSearch() {
     setError(null);
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/customers', {
+      const res = await fetch('/api/customers?lookup=options', {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -6425,10 +6426,13 @@ function SearchableDropdown({
   useEffect(() => {
     setFilteredItems(items);
     if (selectedId) {
-      const item = items.find(i => i._id === selectedId || i.code === selectedId);
+      const item = items.find(i => i._id === selectedId || i.code === selectedId
+        || (displayField === 'supplierName' && i.supplierName === selectedId));
       setSelectedItem(item);
       if (item) {
         setSearchQuery(getDisplayValue(item));
+      } else if (displayField === 'supplierName') {
+        setSearchQuery(selectedId);
       }
     } else {
       setSelectedItem(null);
@@ -7102,6 +7106,7 @@ function VendorsTable({ rows, onChange, onRemove, onAdd, vendorColumns, supplier
                   className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
                 >
                   <option value="">Select Purchase Type</option>
+                  {row.purchaseType && !purchaseTypes.includes(row.purchaseType) && <option value={row.purchaseType}>{row.purchaseType}</option>}
                   {purchaseTypes.length > 0 ? (
                     purchaseTypes.map((opt) => (
                       <option key={opt} value={opt}>{opt}</option>
@@ -7179,7 +7184,7 @@ export default function EditVehicleNegotiation() {
   const fetchPurchaseTypes = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/purchase-type', {
+      const res = await fetch('/api/purchase-type?lookup=options', {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -8001,6 +8006,11 @@ export default function EditVehicleNegotiation() {
   //   const submitForApproval = submit || reapprovalState === 'unlocked';
   const handleUpdate = async ({ redirect = true, submit = false } = {}) => {
     const isPlacementSave = isPart1Locked && isPart3Finalized;
+    const finalFix = parseVnnFixedRate(approval.finalFix);
+    if (!isPlacementSave && finalFix === null) {
+      setSaveError(INVALID_VNN_FIXED_RATE);
+      return false;
+    }
     if (!canEditVnn && !canEditPlacement) {
       alert('You do not have permission to edit this Vehicle Negotiation stage.');
       return false;
@@ -8126,7 +8136,7 @@ export default function EditVehicleNegotiation() {
           vendorStatus: approval.vendorStatus,
           rateType: approval.rateType,
           finalPerMT: num(approval.finalPerMT),
-          finalFix: num(approval.finalFix),
+          finalFix,
           vehicleNo: approval.vehicleNo,
           vehicleId: approval.vehicleId,
           vehicleData: approval.vehicleData,
@@ -8189,7 +8199,7 @@ export default function EditVehicleNegotiation() {
     if (approval.rateType === "Per MT") {
       return num(approval.finalPerMT) * totalWeight;
     }
-    return num(approval.finalFix);
+    return parseVnnFixedRate(approval.finalFix) ?? 0;
   }, [approval.rateType, approval.finalPerMT, approval.finalFix, totalWeight]);
 
   const reportRows = useMemo(() => {
@@ -8976,7 +8986,7 @@ export default function EditVehicleNegotiation() {
               </div>
               <div className="col-span-12 md:col-span-4 mt-2">
                 <div className="flex flex-col">
-                  <label className="text-xs font-bold text-slate-600">Purchase Amount (A x B)</label>
+                  <label className="text-xs font-bold text-slate-600">{approval.rateType === "Fixed" ? "Purchase Amount (Fixed)" : "Purchase Amount (A x B)"}</label>
                   <div className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-extrabold text-emerald-700">{purchaseAmount}</div>
                 </div>
               </div>
@@ -8996,7 +9006,7 @@ export default function EditVehicleNegotiation() {
                 label="Payment - Terms"
                 value={approval.paymentTerms}
                 onChange={(v) => setApproval((p) => ({ ...p, paymentTerms: v }))}
-                options={[...new Set([...(paymentTerms.length > 0 ? paymentTerms : PAYMENT_TERMS), "Custom / Manual"])]}
+                options={[...new Set([...(paymentTerms.length > 0 ? paymentTerms : PAYMENT_TERMS), LPT_1000_BALANCE_ONLY, "Custom / Manual"])]}
                 readOnly={!canEditPart3}
               />
               {approval.paymentTerms === "Custom / Manual" && (
@@ -9054,11 +9064,10 @@ export default function EditVehicleNegotiation() {
             </div>
 
             <div className="grid grid-cols-12 gap-3 mb-4">
-              <Select
+              <Input
                 col="col-span-12 md:col-span-4"
                 label="Purchase - Type"
-                value={resolvedPurchaseType}
-                options={purchaseTypes.length > 0 ? purchaseTypes : PURCHASE_TYPES}
+                value={resolvedPurchaseType || (!canEditPart3 ? approval.purchaseType : "")}
                 readOnly={true}
               />
             </div>

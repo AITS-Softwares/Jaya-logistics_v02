@@ -87,7 +87,7 @@ const VALIDATORS = {
     else if (!/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(d.pan.trim())) e.pan = "Invalid PAN (e.g. ABCDE1234F)";
     if (d.gstNumber && !/^\d{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(d.gstNumber))
       e.gstNumber = "Invalid GST (e.g. 22ABCDE1234F1Z5)";
-    if (!d.glAccount?._id) e.glAccount = "GL Account is required";
+    if (!(d.glAccount?._id || typeof d.glAccount === "string" && d.glAccount)) e.glAccount = "GL Account is required";
     if (d.dueDays === "" || d.dueDays === null || d.dueDays === undefined) e.dueDays = "Due days are required";
     else if (isNaN(d.dueDays) || Number(d.dueDays) < 0) e.dueDays = "Due days must be zero or a positive number";
     return e;
@@ -687,7 +687,7 @@ export default function SupplierManagement() {
     
     setSubmitting(true);
     const token = localStorage.getItem("token");
-    const payload = { ...sd, glAccount: sd.glAccount?._id || null };
+    const payload = { ...sd, glAccount: sd.glAccount?._id || sd.glAccount || null };
     try {
       if (sd._id) {
         const res = await axios.put(`/api/suppliers/${sd._id}`, payload, { headers: { Authorization: `Bearer ${token}` } });

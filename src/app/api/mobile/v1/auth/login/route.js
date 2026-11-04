@@ -30,12 +30,19 @@ export async function POST(req) {
     }
     if (!allowedAttempt(req, mobileE164)) return NextResponse.json({ success: false, code: "RATE_LIMITED", message: "Too many sign-in attempts. Please wait and try again." }, { status: 429 });
     await dbConnect();
-    const driver = await DriverProfile.findOne({ mobileE164, status: "active" }).select("+pinHash");
-    if (!driver || !(await validateDriverPin(driver, pin))) {
+    // A mobile number is unique within a company, but can exist in several companies.
+    const profiles = await DriverProfile.find({ mobileE164, status: "active" }).select("+pinHash");
+    const pinMatches = await Promise.all(profiles.map((profile) => validateDriverPin(profile, pin)));
+    const matching = profiles.filter((_, index) => pinMatches[index]);
+    if (!matching.length) {
       return NextResponse.json({ success: false, code: "INVALID_CREDENTIALS", message: "Mobile number or PIN is invalid." }, { status: 401 });
     }
-    if (!(await isDriverMobileEnabled(driver.companyId))) return mobileUnavailableResponse();
-    if (!hasDriverMobileAccess(driver)) return NextResponse.json({ success: false, code: "DRIVER_MOBILE_ACCESS_DISABLED", message: "Mobile access is not enabled for this driver. Contact your dispatcher." }, { status: 403 });
+    const enabled = await Promise.all(matching.map((profile) => isDriverMobileEnabled(profile.companyId)));
+    if (!enabled.some(Boolean)) return mobileUnavailableResponse();
+    const eligible = matching.filter((profile, index) => enabled[index] && hasDriverMobileAccess(profile));
+    if (!eligible.length) return NextResponse.json({ success: false, code: "DRIVER_MOBILE_ACCESS_DISABLED", message: "Mobile access is not enabled for this driver. Contact your dispatcher." }, { status: 403 });
+    if (eligible.length > 1) return NextResponse.json({ success: false, code: "AMBIGUOUS_DRIVER", message: "This mobile number and PIN match multiple driver accounts. Ask your dispatcher for a different PIN." }, { status: 409 });
+    const [driver] = eligible;
     if (!(await isDriverAllowedForMobileRollout(driver.mobileE164, driver.companyId))) return NextResponse.json({ success: false, code: "PILOT_NOT_ENROLLED", message: "Mobile pilot access is not enabled for this driver." }, { status: 403 });
     const session = await createMobileSession({ companyId: driver.companyId, driverId: driver._id });
     return NextResponse.json({
@@ -45,7 +52,7 @@ export async function POST(req) {
         refreshToken: session.refreshToken,
         expiresInSeconds: session.expiresInSeconds,
         requiresDeviceRegistration: true,
-        driver: { id: String(driver._id), displayName: driver.displayName, preferredLanguage: driver.preferredLanguage, passwordChangeRequired: driver.passwordChangeRequired === true },
+        driver: { id: String(driver._id), displayName: driver.displayName, preferredLanguage: driver.preferredLanguage, passwordChangeRequired: false },
       },
     });
   } catch (error) {

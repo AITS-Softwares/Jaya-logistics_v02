@@ -11,4 +11,9 @@ assert.equal(exceptionsForTrip({ state: "started" }, { state: "active", lastReco
 const issue = exceptionsForTrip({ state: "at_stop", issueStatus: "breakdown" }, { state: "active", lastRecordedAt: new Date(now - 30_000) }, now);
 assert.equal(issue.length, 1);
 assert.equal(issue[0].kind, "driver_issue");
+const parkedSession = { state: "active", lastRecordedAt: now };
+const unconfirmed = { durationSec: 45 * 60, confirmedByDriver: false, linkedStopIndex: null };
+assert.equal(exceptionsForTrip({ state: "in_transit" }, parkedSession, now, unconfirmed)[0].severity, "high");
+assert.deepEqual(exceptionsForTrip({ state: "in_transit" }, parkedSession, now, { ...unconfirmed, linkedStopIndex: 0 }), []);
+assert.deepEqual(exceptionsForTrip({ state: "in_transit" }, parkedSession, now, { ...unconfirmed, confirmedByDriver: true }), []);
 console.log("Driver mobile Phase 10 operational-alert tests passed.");

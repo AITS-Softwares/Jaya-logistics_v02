@@ -8,9 +8,9 @@ export function supportsNativeTracking() {
   return Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android";
 }
 
-export async function startNativeTracking({ tripId, sessionId, apiBaseUrl, accessToken, refreshToken, policy }) {
+export async function startNativeTracking({ tripId, sessionId, apiBaseUrl, trackingToken, policy }) {
   if (!supportsNativeTracking()) return { available: false };
-  return DriverTracking.start({ tripId, sessionId, apiBaseUrl, accessToken, refreshToken, policy });
+  return DriverTracking.start({ tripId, sessionId, apiBaseUrl, trackingToken, policy });
 }
 
 export async function requestNativeTrackingPermissions() {
@@ -26,6 +26,20 @@ export async function stopNativeTracking({ sessionId, reason }) {
 export async function nativeTrackingHealth() {
   if (!supportsNativeTracking()) return { available: false, state: "browser_preview" };
   return DriverTracking.health();
+}
+
+export async function resumeSavedTracking() {
+  if (supportsNativeTracking()) await DriverTracking.resumeSavedTracking();
+}
+
+export async function loadPendingTripActions(driverId) {
+  if (!supportsNativeTracking()) return [];
+  const result = await DriverTracking.loadPendingTripActions({ driverId });
+  return JSON.parse(result.payload || "[]");
+}
+
+export async function savePendingTripActions(driverId, actions) {
+  await DriverTracking.savePendingTripActions({ driverId, payload: JSON.stringify(actions) });
 }
 
 export async function loadNativeDriverSession() {

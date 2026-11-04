@@ -5,13 +5,21 @@ export const STOP_INTELLIGENCE_POLICY = {
   overnightSeconds: 6 * 60 * 60,
 };
 
-function distanceM(left, right) {
+export function distanceM(left, right) {
   const rad = (value) => value * Math.PI / 180;
   const earthM = 6371000;
   const dLat = rad(right.latitude - left.latitude);
   const dLng = rad(right.longitude - left.longitude);
   const a = Math.sin(dLat / 2) ** 2 + Math.cos(rad(left.latitude)) * Math.cos(rad(right.latitude)) * Math.sin(dLng / 2) ** 2;
   return 2 * earthM * Math.asin(Math.sqrt(a));
+}
+
+export function gpsConfirmsDropArrival([latest, previous], geofence, legStartedAt, now = Date.now()) {
+  const earliest = Math.max(now - 120000, legStartedAt?.getTime() || 0);
+  const inside = (point) => point && !point.isMocked && point.accuracyM <= 100
+    && point.recordedAt.getTime() >= earliest && point.recordedAt.getTime() <= now
+    && distanceM(point, geofence) + point.accuracyM <= geofence.radiusM;
+  return Boolean(inside(latest) && inside(previous) && latest.recordedAt - previous.recordedAt >= 10000);
 }
 
 // Points must be chronological. This intentionally detects only a stationary

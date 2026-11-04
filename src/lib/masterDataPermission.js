@@ -10,7 +10,7 @@ const MASTER_DATA_MODULE = 'Master Data';
  * action checks are keyed by master resource; transactional modules can request
  * read-only lookup access without receiving permission to manage the master.
  */
-export async function validateMasterDataRequest(req, action = 'view', resourceKey = 'Master Data', { allowLookup = false } = {}) {
+export async function validateMasterDataRequest(req, action = 'view', resourceKey = 'Master Data', { allowLookup = false, optionsOnly = false } = {}) {
   const token = getTokenFromHeader(req);
   if (!token) return { user: null, error: 'Authentication required. Please login.', status: 401 };
 
@@ -48,7 +48,11 @@ export async function validateMasterDataRequest(req, action = 'view', resourceKe
   }
 
   const resource = MASTER_PERMISSION_REGISTRY.find((item) => item.key === resourceKey);
-  if (allowLookup && action === 'view' && resource?.lookupModules?.some((moduleName) => {
+  const lookupModules = [
+    ...(resource?.lookupModules || []),
+    ...(optionsOnly ? resource?.optionModules || [] : []),
+  ];
+  if (allowLookup && action === 'view' && lookupModules.some((moduleName) => {
     const module = user.modules?.[moduleName];
     return module?.selected === true && ['view', 'create', 'edit', 'approve'].some((permission) => module.permissions?.[permission] === true);
   })) {

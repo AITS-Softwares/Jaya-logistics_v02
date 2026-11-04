@@ -1,10 +1,12 @@
 "use client";
 
-import {vnnPurchaseType} from '@/lib/vnnPart3.mjs';
+import {INVALID_VNN_FIXED_RATE, parseVnnFixedRate, vnnPurchaseType} from '@/lib/vnnPart3.mjs';
 import { useMemo, useRef, useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import mongoose from 'mongoose';
 import TransactionFormKeyboardNavigation, { TransactionKeyboardTable, useKeyboardDropdown } from "@/components/TransactionFormKeyboardNavigation";
+import BackToList from "@/components/BackToList";
+import { LPT_1000_BALANCE_ONLY } from "@/lib/purchasePaymentTerms.mjs";
 
 /* =======================
   HELPERS / CONSTANTS
@@ -95,7 +97,7 @@ function useCustomerSearch() {
     setError(null);
     try {
       const token = localStorage.getItem('token');
-      const url = '/api/customers';
+      const url = '/api/customers?lookup=options';
 
       const res = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
@@ -434,7 +436,7 @@ function TableSearchableDropdown({
         setSearchQuery(getDisplayValue(item));
       } else {
         setSelectedItem(null);
-        setSearchQuery("");
+        setSearchQuery(displayField === 'supplierName' ? selectedId : "");
       }
     } else {
       setSelectedItem(null);
@@ -1788,7 +1790,7 @@ export default function VehicleNegotiationPanel() {
   const fetchPurchaseTypes = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/purchase-type', {
+      const res = await fetch('/api/purchase-type?lookup=options', {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -2092,7 +2094,7 @@ export default function VehicleNegotiationPanel() {
     if (approval.rateType === "Per MT") {
       return num(approval.finalPerMT) * totalWeight;
     }
-    return num(approval.finalFix);
+    return parseVnnFixedRate(approval.finalFix) ?? 0;
   }, [approval.rateType, approval.finalPerMT, approval.finalFix, totalWeight]);
 
   const reportRows = useMemo(() => {
@@ -2181,6 +2183,11 @@ export default function VehicleNegotiationPanel() {
   };
 
   const handleSaveAll = async (lockPart1 = false) => {
+    const finalFix = parseVnnFixedRate(approval.finalFix);
+    if (finalFix === null) {
+      setSaveError(INVALID_VNN_FIXED_RATE);
+      return;
+    }
     if (!header.branch) {
       alert("Please select a branch");
       return;
@@ -2285,7 +2292,7 @@ export default function VehicleNegotiationPanel() {
           vendorStatus: approval.vendorStatus,
           rateType: approval.rateType,
           finalPerMT: num(approval.finalPerMT),
-          finalFix: num(approval.finalFix),
+          finalFix,
           vehicleNo: approval.vehicleNo,
           vehicleId: approval.vehicleId,
           vehicleData: approval.vehicleData,
@@ -2752,6 +2759,7 @@ export default function VehicleNegotiationPanel() {
         <div className="sticky top-0 z-40 border-b bg-white/80 backdrop-blur">
           <div className="mx-auto max-w-full px-4 py-3 flex items-center justify-between">
             <div>
+              <div className="mb-3 print:hidden"><BackToList href="/admin/vehicle-negotiation" /></div>
               <div className="text-lg font-extrabold text-slate-900">Vehicle Negotiation Panel</div>
               {saveSuccess && (
                 <div className="text-sm text-green-600 font-medium">
@@ -2993,7 +3001,7 @@ export default function VehicleNegotiationPanel() {
               </div>
               <div className="col-span-12 md:col-span-4 mt-2">
                 <div className="flex flex-col">
-                  <label className="text-xs font-bold text-slate-600">Purchase Amount (A x B)</label>
+                  <label className="text-xs font-bold text-slate-600">{approval.rateType === "Fixed" ? "Purchase Amount (Fixed)" : "Purchase Amount (A x B)"}</label>
                   <div className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-extrabold text-emerald-700">{purchaseAmount}</div>
                 </div>
               </div>
@@ -3020,7 +3028,7 @@ export default function VehicleNegotiationPanel() {
                   label="Payment - Terms"
                   value={approval.paymentTerms}
                   onChange={(v) => setApproval((p) => ({ ...p, paymentTerms: v }))}
-                  options={[...new Set([...(paymentTerms.length > 0 ? paymentTerms : PAYMENT_TERMS), "Custom / Manual"])]}
+                  options={[...new Set([...(paymentTerms.length > 0 ? paymentTerms : PAYMENT_TERMS), LPT_1000_BALANCE_ONLY, "Custom / Manual"])]}
                   readOnly={false}
                 />
                 {approval.paymentTerms === "Custom / Manual" && (
@@ -3056,11 +3064,10 @@ export default function VehicleNegotiationPanel() {
             </div>
 
             <div className="grid grid-cols-12 gap-3 mb-4">
-              <Select
+              <Input
                 col="col-span-12 md:col-span-4"
                 label="Purchase - Type"
                 value={resolvedPurchaseType}
-                options={purchaseTypes.length > 0 ? purchaseTypes : PURCHASE_TYPES}
                 readOnly={true}
               />
             </div>

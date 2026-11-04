@@ -19,6 +19,7 @@ import AdvancePayment from "../Advance-Payment/AdvancePayment";
 import POD from "../pod-panel/POD";
 import { filterOpenOrderRows, validateOpenOrderRows } from '@/lib/orderRowStatus';
 import { notifyModuleApprovers, notifyModuleCreateUsers, notifyModuleDecision } from '@/lib/workflowNotifications';
+import { advanceForFixedBalance } from "@/lib/purchasePaymentTerms.mjs";
 
 // ── PERMISSION FUNCTIONS ──
 
@@ -139,9 +140,7 @@ function num(value) {
 
 function advanceFromPaymentTerms(paymentTerms, purchaseAmount, fallbackAdvance = 0) {
   const amount = num(purchaseAmount);
-  if (paymentTerms === 'Rs.10,000/- Balance Only') return Math.max(0, amount - 10000);
-  if (paymentTerms === 'Rs. 5000/- Balance Only') return Math.max(0, amount - 5000);
-  return num(fallbackAdvance);
+  return advanceForFixedBalance(paymentTerms, amount) ?? num(fallbackAdvance);
 }
 
 function isValidObjectId(id) {

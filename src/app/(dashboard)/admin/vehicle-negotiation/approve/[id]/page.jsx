@@ -3107,6 +3107,7 @@ import { useMemo, useRef, useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import mongoose from 'mongoose';
 import TransactionFormKeyboardNavigation, { useKeyboardDropdown } from "@/components/TransactionFormKeyboardNavigation";
+import { LPT_1000_BALANCE_ONLY } from "@/lib/purchasePaymentTerms.mjs";
 
 /* =======================
   HELPERS / CONSTANTS
@@ -3114,7 +3115,6 @@ import TransactionFormKeyboardNavigation, { useKeyboardDropdown } from "@/compon
 const ORDER_TYPES = ["Sales", "STO Order", "Export", "Import"];
 const STATUSES = ["Open", "Hold", "Cancelled"];
 const BILLING_TYPES = ["Multi - Order", "Single Order"];
-const PURCHASE_TYPES = ["Loading & Unloading", "Unloading Only", "Safi Vehicle"];
 const VENDOR_STATUS = ["Active", "Blacklisted"];
 const RATE_TYPES = ["Per MT", "Fixed"];
 const PAYMENT_TERMS = [
@@ -3178,7 +3178,7 @@ function useCustomerSearch() {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/customers', {
+      const res = await fetch('/api/customers?lookup=options', {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -3791,7 +3791,6 @@ export default function ApproveVehicleNegotiation() {
 
   const [loading, setLoading] = useState(true);
   const [savingApproval, setSavingApproval] = useState(false);
-  const [purchaseTypes, setPurchaseTypes] = useState([]);
   const [paymentTerms, setPaymentTerms] = useState([]);
   const [branches, setBranches] = useState([]);
   const [plants, setPlants] = useState([]);
@@ -3864,7 +3863,6 @@ export default function ApproveVehicleNegotiation() {
         await fetchPlants();
         await supplierSearch.searchSuppliers();
         await customerSearch.searchCustomers();
-        await fetchPurchaseTypes();
         await fetchPaymentTerms();
         await fetchNegotiationData();
       } catch (error) {
@@ -3890,15 +3888,6 @@ export default function ApproveVehicleNegotiation() {
       const data = await res.json();
       if (data.success && Array.isArray(data.data)) setPlants(data.data);
     } catch (error) { console.error('Error fetching plants:', error); }
-  };
-
-  const fetchPurchaseTypes = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('/api/purchase-type', { headers: { Authorization: `Bearer ${token}` } });
-      const data = await res.json();
-      if (data.success && Array.isArray(data.data)) setPurchaseTypes(data.data.map(item => item.name));
-    } catch (error) { console.error('Error fetching purchase types:', error); }
   };
 
   const fetchPaymentTerms = async () => {
@@ -4306,7 +4295,7 @@ export default function ApproveVehicleNegotiation() {
                 <div className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-extrabold text-slate-900">{totalWeight}</div>
               </div>
               <div className="col-span-12 md:col-span-4">
-                <label className="text-xs font-bold text-slate-600">Purchase Amount (A x B)</label>
+                <label className="text-xs font-bold text-slate-600">{approval.rateType === "Fixed" ? "Purchase Amount (Fixed)" : "Purchase Amount (A x B)"}</label>
                 <div className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-extrabold text-emerald-700">₹{purchaseAmount.toLocaleString('en-IN')}</div>
               </div>
             </div>
@@ -4320,8 +4309,8 @@ export default function ApproveVehicleNegotiation() {
             </div>
 
             <div className="grid grid-cols-12 gap-3 mb-4">
-              <Select col="col-span-12 md:col-span-4" label="Purchase - Type" value={resolvedPurchaseType} options={purchaseTypes.length > 0 ? purchaseTypes : PURCHASE_TYPES} readOnly={true} />
-              <Select col="col-span-12 md:col-span-4" label="Payment - Terms" value={approval.paymentTerms} options={paymentTerms.length > 0 ? paymentTerms : PAYMENT_TERMS} readOnly={true} />
+              <Input col="col-span-12 md:col-span-4" label="Purchase - Type" value={resolvedPurchaseType || approval.purchaseType} readOnly={true} />
+              <Select col="col-span-12 md:col-span-4" label="Payment - Terms" value={approval.paymentTerms} options={[...new Set([...(paymentTerms.length > 0 ? paymentTerms : PAYMENT_TERMS), LPT_1000_BALANCE_ONLY])]} readOnly={true} />
             </div>
           </Card>
 

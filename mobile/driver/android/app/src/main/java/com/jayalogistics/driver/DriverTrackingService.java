@@ -7,13 +7,17 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.location.Location;
+import android.location.LocationManager;
+import android.os.BatteryManager;
 import android.os.Build;
 import android.os.IBinder;
 import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
+import androidx.core.location.LocationManagerCompat;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
@@ -23,64 +27,261 @@ import com.google.android.gms.location.Priority;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.UUID;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Locale;
 import java.util.TimeZone;
-import java.util.concurrent.ExecutorService;
+import java.util.UUID;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public class DriverTrackingService extends Service {
   static final String ACTION_START = "com.jayalogistics.driver.START_TRACKING";
-  static final String ACTION_STOP = "com.jayalogistics.driver.STOP_TRACKING";
+  static final String ACTION_RESUME = "com.jayalogistics.driver.RESUME_TRACKING";
   private static final int NOTIFICATION_ID = 701;
-  private FusedLocationProviderClient locationClient; private LocationCallback callback; private ExecutorService executor;
-  private SecureTrackingStore store; private EncryptedOutboxDb queue;
+  private static final String CHANNEL = "driver_tracking";
+  private FusedLocationProviderClient locationClient;
+  private LocationCallback callback;
+  private ScheduledExecutorService executor;
+  private SecureTrackingStore store;
+  private EncryptedOutboxDb queue;
+  private volatile String sessionId = "";
+  private boolean sampling;
+  private long stationarySince;
+  private long lastSampleAt;
+  private Location lastSample;
+  private volatile String samplingMode = "unknown";
+  private int movingInterval = 30;
+  private int slowInterval = 60;
+  private int stationaryInterval = 300;
+  private int overnightInterval = 900;
+  private int minDistance = 100;
 
   @Override public void onCreate() {
-    super.onCreate(); executor = Executors.newSingleThreadExecutor(); locationClient = LocationServices.getFusedLocationProviderClient(this);
-    try { store = new SecureTrackingStore(this); queue = new EncryptedOutboxDb(this); } catch (Exception error) { stopSelf(); }
-    callback = new LocationCallback() { @Override public void onLocationResult(LocationResult result) { for (Location location : result.getLocations()) persist(location); } };
-    createChannel();
+    super.onCreate();
+    executor = Executors.newSingleThreadScheduledExecutor();
+    locationClient = LocationServices.getFusedLocationProviderClient(this);
+    try {
+      store = new SecureTrackingStore(this);
+      queue = new EncryptedOutboxDb(this);
+    } catch (Exception error) {
+      stopSelf();
+      return;
+    }
+    callback = new LocationCallback() {
+      @Override public void onLocationResult(LocationResult result) {
+        for (Location location : result.getLocations()) persist(location);
+      }
+    };
+    if (Build.VERSION.SDK_INT >= 26) {
+      NotificationChannel channel = new NotificationChannel(CHANNEL, "Driver trip tracking", NotificationManager.IMPORTANCE_LOW);
+      getSystemService(NotificationManager.class).createNotificationChannel(channel);
+    }
+    executor.scheduleWithFixedDelay(this::flush, 0, 30, TimeUnit.SECONDS);
   }
 
   @Override public int onStartCommand(Intent intent, int flags, int startId) {
-    if (intent == null) return START_NOT_STICKY;
-    if (ACTION_STOP.equals(intent.getAction())) { stopTracking(intent.getStringExtra("reason")); return START_NOT_STICKY; }
-    if (ACTION_START.equals(intent.getAction())) {
-      try {
-        store.put("tripId", intent.getStringExtra("tripId")); store.put("sessionId", intent.getStringExtra("sessionId")); store.put("apiBaseUrl", intent.getStringExtra("apiBaseUrl").replaceAll("/$", ""));
-        store.put("accessToken", intent.getStringExtra("accessToken")); store.put("refreshToken", intent.getStringExtra("refreshToken")); store.put("state", "active");
-        startForeground(NOTIFICATION_ID, notification()); requestLocations(intent.getIntExtra("intervalSec", 30), intent.getIntExtra("minDistanceM", 100)); flush();
-      } catch (Exception error) { stopSelf(); }
+    if (store == null) return START_NOT_STICKY;
+    if (intent != null && ACTION_START.equals(intent.getAction())) {
+      String nextSession = intent.getStringExtra("sessionId");
+      if (!sessionId.isEmpty() && !sessionId.equals(nextSession)) return START_STICKY;
+      store.put("tripId", intent.getStringExtra("tripId"));
+      store.put("apiBaseUrl", intent.getStringExtra("apiBaseUrl").replaceAll("/$", ""));
+      store.put("trackingToken", intent.getStringExtra("trackingToken"));
+      store.put("sessionId", nextSession);
+      store.put("state", "waiting");
+      store.put("lastUploadAt", "");
+      movingInterval = intent.getIntExtra("intervalSec", 30);
+      slowInterval = intent.getIntExtra("slowIntervalSec", 60);
+      stationaryInterval = intent.getIntExtra("stationaryIntervalSec", 300);
+      overnightInterval = intent.getIntExtra("overnightIntervalSec", 900);
+      minDistance = intent.getIntExtra("minDistanceM", 100);
+      store.put("policy", movingInterval + "," + slowInterval + "," + stationaryInterval + "," + overnightInterval + "," + minDistance);
+      sessionId = nextSession;
+      startForeground(NOTIFICATION_ID, notification("Waiting for GPS"));
+      requestLocations();
+    } else if (sessionId.isEmpty() && (intent == null || ACTION_RESUME.equals(intent.getAction())) && !store.get("trackingToken").isEmpty()) {
+      String[] policy = store.get("policy").split(",");
+      if (policy.length == 5) {
+        movingInterval = Integer.parseInt(policy[0]);
+        slowInterval = Integer.parseInt(policy[1]);
+        stationaryInterval = Integer.parseInt(policy[2]);
+        overnightInterval = Integer.parseInt(policy[3]);
+        minDistance = Integer.parseInt(policy[4]);
+      }
+      sessionId = store.get("sessionId");
+      store.put("state", "waiting");
+      startForeground(NOTIFICATION_ID, notification("Checking trip status"));
     }
+    if (sessionId.isEmpty()) {
+      stopSelf();
+      return START_NOT_STICKY;
+    }
+    executor.execute(this::flush);
     return START_STICKY;
   }
 
-  private void requestLocations(int intervalSec, int minDistanceM) {
-    if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) { stopSelf(); return; }
-    LocationRequest request = new LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, Math.max(15000L, intervalSec * 1000L)).setMinUpdateDistanceMeters(Math.max(25, minDistanceM)).setWaitForAccurateLocation(false).build();
-    locationClient.requestLocationUpdates(request, callback, getMainLooper());
+  private void requestLocations() {
+    if (sampling || ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) return;
+    sampling = true;
+    LocationRequest request = new LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 30_000L)
+      .setMaxUpdateAgeMillis(0).build();
+    locationClient.requestLocationUpdates(request, callback, getMainLooper())
+      .addOnFailureListener(error -> { sampling = false; store.put("state", "gps_unavailable"); });
   }
+
   private void persist(Location location) {
+    long now = System.currentTimeMillis();
+    float speed = location.hasSpeed() ? location.getSpeed() : 0;
+    boolean moving = speed > 1 || (lastSample != null && lastSample.distanceTo(location) >= minDistance);
+    if (moving || stationarySince == 0) stationarySince = now;
+    long stationaryMs = now - stationarySince;
+    samplingMode = stationaryMs >= 6 * 60 * 60_000L ? "overnight"
+      : stationaryMs >= 10 * 60_000L ? "stationary" : speed >= 8f / 3.6f ? "moving" : "slow";
+    int interval = stationaryMs >= 6 * 60 * 60_000L ? overnightInterval
+      : stationaryMs >= 10 * 60_000L ? stationaryInterval
+      : speed >= 8f / 3.6f ? movingInterval : slowInterval;
+    if (lastSample != null && now - lastSampleAt < interval * 1000L && lastSample.distanceTo(location) < minDistance) return;
+
     try {
-      JSONObject point = new JSONObject(); point.put("sequence", store.nextSequence()); point.put("idempotencyKey", UUID.randomUUID().toString()); point.put("latitude", location.getLatitude()); point.put("longitude", location.getLongitude()); point.put("accuracyM", location.getAccuracy());
-      if (location.hasSpeed()) point.put("speedMps", location.getSpeed()); if (location.hasBearing()) point.put("bearingDeg", location.getBearing()); if (location.hasAltitude()) point.put("altitudeM", location.getAltitude());
-      SimpleDateFormat iso = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US); iso.setTimeZone(TimeZone.getTimeZone("UTC")); point.put("recordedAt", iso.format(new java.util.Date(location.getTime()))); point.put("provider", location.getProvider() == null ? "fused" : location.getProvider());
-      if (Build.VERSION.SDK_INT >= 31) point.put("isMocked", location.isMock());
-      queue.enqueue(point.getString("idempotencyKey"), point.toString()); flush();
-    } catch (Exception ignored) { }
+      JSONObject point = new JSONObject();
+      point.put("sequence", store.nextSequence());
+      point.put("idempotencyKey", UUID.randomUUID().toString());
+      point.put("latitude", location.getLatitude());
+      point.put("longitude", location.getLongitude());
+      point.put("accuracyM", location.getAccuracy());
+      if (location.hasSpeed()) point.put("speedMps", location.getSpeed());
+      if (location.hasBearing()) point.put("bearingDeg", location.getBearing());
+      if (location.hasAltitude()) point.put("altitudeM", location.getAltitude());
+      SimpleDateFormat iso = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US);
+      iso.setTimeZone(TimeZone.getTimeZone("UTC"));
+      point.put("recordedAt", iso.format(new java.util.Date(location.getTime())));
+      point.put("provider", location.getProvider() == null ? "fused" : location.getProvider());
+      boolean mocked = Build.VERSION.SDK_INT >= 31 ? location.isMock() : location.isFromMockProvider();
+      point.put("isMocked", mocked);
+      Intent battery = registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+      if (battery != null) {
+        int level = battery.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
+        int scale = battery.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
+        if (level >= 0 && scale > 0) point.put("batteryPct", Math.round(level * 100f / scale));
+        point.put("isCharging", battery.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) != 0);
+      }
+      queue.enqueue(sessionId, point.getString("idempotencyKey"), point.toString());
+      lastSample = location;
+      lastSampleAt = now;
+      if (!mocked && location.hasAccuracy() && location.getAccuracy() <= 100 && !"active".equals(store.get("state"))) {
+        store.put("state", "active");
+        getSystemService(NotificationManager.class).notify(NOTIFICATION_ID, notification("Tracking active"));
+      }
+    } catch (Exception error) {
+      store.put("state", "gps_unavailable");
+    }
   }
-  private void flush() { executor.execute(() -> { try { ArrayList<EncryptedOutboxDb.Row> rows = queue.read(100); if (rows.isEmpty()) return; JSONArray points = new JSONArray(); for (EncryptedOutboxDb.Row row : rows) points.put(new JSONObject(row.json)); JSONObject body = new JSONObject(); body.put("tripId", store.get("tripId")); body.put("sessionId", store.get("sessionId")); body.put("points", points); JSONObject response = post("/api/mobile/v1/tracking/batches", body, store.get("accessToken")); if (response == null) return; ArrayList<String> remove = new ArrayList<>(); JSONArray accepted = response.optJSONObject("data").optJSONArray("acceptedIdempotencyKeys"); JSONArray existing = response.optJSONObject("data").optJSONArray("existingIdempotencyKeys"); if (accepted != null) for (int i=0;i<accepted.length();i++) remove.add(accepted.getString(i)); if (existing != null) for (int i=0;i<existing.length();i++) remove.add(existing.getString(i)); queue.delete(remove); } catch (Exception ignored) { } }); }
-  private JSONObject post(String path, JSONObject body, String token) throws Exception { for (int attempt = 0; attempt < 2; attempt++) { HttpURLConnection connection = (HttpURLConnection) new URL(store.get("apiBaseUrl") + path).openConnection(); connection.setConnectTimeout(15000); connection.setReadTimeout(20000); connection.setRequestMethod("POST"); connection.setRequestProperty("Authorization", "Bearer " + token); connection.setRequestProperty("Content-Type", "application/json"); connection.setDoOutput(true); try (OutputStream output = connection.getOutputStream()) { output.write(body.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8)); } int code = connection.getResponseCode(); if (code == 401 && attempt == 0) { token = refreshAccessToken(); if (!token.isEmpty()) continue; } if (code != 200) return null; try (BufferedReader reader = new BufferedReader(new java.io.InputStreamReader(connection.getInputStream()))) { StringBuilder text = new StringBuilder(); String line; while ((line=reader.readLine()) != null) text.append(line); return new JSONObject(text.toString()); } } return null; }
-  private String refreshAccessToken() { try { HttpURLConnection connection = (HttpURLConnection) new URL(store.get("apiBaseUrl") + "/api/mobile/v1/auth/refresh").openConnection(); connection.setConnectTimeout(15000); connection.setReadTimeout(20000); connection.setRequestMethod("POST"); connection.setRequestProperty("Content-Type", "application/json"); connection.setDoOutput(true); JSONObject body = new JSONObject(); body.put("refreshToken", store.get("refreshToken")); try (OutputStream output = connection.getOutputStream()) { output.write(body.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8)); } if (connection.getResponseCode() != 200) return ""; try (BufferedReader reader = new BufferedReader(new java.io.InputStreamReader(connection.getInputStream()))) { StringBuilder text = new StringBuilder(); String line; while ((line=reader.readLine()) != null) text.append(line); JSONObject data = new JSONObject(text.toString()).optJSONObject("data"); if (data == null) return ""; store.put("accessToken", data.optString("accessToken")); store.put("refreshToken", data.optString("refreshToken")); return data.optString("accessToken"); } } catch (Exception ignored) { return ""; } }
-  private void stopTracking(String reason) { try { locationClient.removeLocationUpdates(callback); store.put("state", "ended"); executor.execute(() -> { try { JSONObject body = new JSONObject(); body.put("sessionId", store.get("sessionId")); body.put("reason", reason == null ? "driver_stop" : reason); post("/api/mobile/v1/tracking/stop", body, store.get("accessToken")); } catch (Exception ignored) {} }); } finally { stopForeground(STOP_FOREGROUND_REMOVE); stopSelf(); } }
-  private Notification notification() { Intent open = new Intent(this, MainActivity.class); PendingIntent pending = PendingIntent.getActivity(this, 0, open, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE); return new NotificationCompat.Builder(this, "driver_tracking").setSmallIcon(android.R.drawable.ic_menu_mylocation).setContentTitle("Jaya Logistics tracking active").setContentText("Your trip location is being shared while this trip is active.").setContentIntent(pending).setOngoing(true).setCategory(NotificationCompat.CATEGORY_SERVICE).build(); }
-  private void createChannel() { if (Build.VERSION.SDK_INT >= 26) { NotificationChannel channel = new NotificationChannel("driver_tracking", "Driver trip tracking", NotificationManager.IMPORTANCE_LOW); getSystemService(NotificationManager.class).createNotificationChannel(channel); } }
+
+  private void flush() {
+    String currentSession = sessionId;
+    if (currentSession.isEmpty() || store == null) return;
+    try {
+      ArrayList<EncryptedOutboxDb.Row> rows = queue.read(currentSession, 100);
+      JSONArray points = new JSONArray();
+      for (EncryptedOutboxDb.Row row : rows) points.put(new JSONObject(row.json));
+      JSONObject body = new JSONObject();
+      body.put("tripId", store.get("tripId"));
+      body.put("sessionId", currentSession);
+      body.put("points", points);
+      LocationManager manager = getSystemService(LocationManager.class);
+      JSONObject health = new JSONObject();
+      health.put("locationReady", manager != null && LocationManagerCompat.isLocationEnabled(manager)
+        && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED);
+      health.put("samplingMode", samplingMode);
+      health.put("queuedPoints", queue.count(currentSession));
+      body.put("health", health);
+      JSONObject response = postBatch(body);
+      if (response == null) return;
+      ArrayList<String> acknowledged = new ArrayList<>();
+      for (String key : new String[]{"acceptedIdempotencyKeys", "existingIdempotencyKeys", "rejectedIdempotencyKeys"}) {
+        JSONArray ids = response.optJSONArray(key);
+        if (ids != null) for (int i = 0; i < ids.length(); i++) acknowledged.add(ids.getString(i));
+      }
+      queue.delete(acknowledged);
+      if (!rows.isEmpty()) store.put("lastUploadAt", Long.toString(System.currentTimeMillis()));
+      new android.os.Handler(getMainLooper()).post(() -> {
+        if (!currentSession.equals(sessionId)) return;
+        if (response.optBoolean("trackingEnded")) {
+          locationClient.removeLocationUpdates(callback);
+          sampling = false;
+          store.put("state", "ending");
+          if (rows.size() < 100) finishTracking();
+        } else {
+          requestLocations();
+        }
+      });
+    } catch (Exception ignored) {
+      // Keep unacknowledged points for the next scheduled attempt.
+    }
+  }
+
+  private JSONObject postBatch(JSONObject body) throws Exception {
+    HttpURLConnection connection = (HttpURLConnection) new URL(store.get("apiBaseUrl") + "/api/mobile/v1/tracking/batches").openConnection();
+    try {
+      connection.setConnectTimeout(15000);
+      connection.setReadTimeout(20000);
+      connection.setInstanceFollowRedirects(false);
+      connection.setRequestMethod("POST");
+      connection.setRequestProperty("X-Driver-Tracking-Token", store.get("trackingToken"));
+      connection.setRequestProperty("Content-Type", "application/json");
+      connection.setDoOutput(true);
+      try (OutputStream output = connection.getOutputStream()) {
+        output.write(body.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+      }
+      int status = connection.getResponseCode();
+      if (status == 401) {
+        store.put("state", "gps_unavailable");
+        return null;
+      }
+      if (status == 409) {
+        new android.os.Handler(getMainLooper()).post(this::finishTracking);
+        return null;
+      }
+      if (status != 200) return null;
+      try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
+        StringBuilder text = new StringBuilder();
+        String line;
+        while ((line = reader.readLine()) != null) text.append(line);
+        return new JSONObject(text.toString()).optJSONObject("data");
+      }
+    } finally {
+      connection.disconnect();
+    }
+  }
+
+  private void finishTracking() {
+    sessionId = "";
+    store.put("trackingToken", "");
+    store.put("state", "ended");
+    stopForeground(STOP_FOREGROUND_REMOVE);
+    stopSelf();
+  }
+
+  private Notification notification(String title) {
+    Intent open = new Intent(this, MainActivity.class);
+    PendingIntent pending = PendingIntent.getActivity(this, 0, open, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+    return new NotificationCompat.Builder(this, CHANNEL)
+      .setSmallIcon(android.R.drawable.ic_menu_mylocation).setContentTitle(title)
+      .setContentText("Jaya Logistics trip location").setContentIntent(pending).setOngoing(true)
+      .setCategory(NotificationCompat.CATEGORY_SERVICE).build();
+  }
+
   @Nullable @Override public IBinder onBind(Intent intent) { return null; }
-  @Override public void onDestroy() { if (locationClient != null) locationClient.removeLocationUpdates(callback); if (executor != null) executor.shutdown(); super.onDestroy(); }
+
+  @Override public void onDestroy() {
+    if (callback != null) locationClient.removeLocationUpdates(callback);
+    if (executor != null) executor.shutdownNow();
+    super.onDestroy();
+  }
 }

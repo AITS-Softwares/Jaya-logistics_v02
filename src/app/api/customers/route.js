@@ -14,20 +14,16 @@ export const runtime = "nodejs";
 export async function GET(req) {
   await dbConnect();
 
-  const { user, error, status } = await validateMasterDataRequest(req, "view", "Customers", { allowLookup: true });
+  const optionsOnly = new URL(req.url).searchParams.get("lookup") === "options";
+  const { user, error, status } = await validateMasterDataRequest(req, "view", "Customers", { allowLookup: true, optionsOnly });
   if (error)
     return NextResponse.json({ success: false, message: error }, { status });
 
   try {
-    // ✅ OPTION 1: Remove population if BankHead model doesn't exist
-    const customers = await Customer.find({
-      companyId: user.companyId,
-    })
-    .populate("assignedAgents", "name email")
-    // .populate("glAccount", "accountName accountCode"); // ❌ Comment this out if BankHead missing
-
-    // ✅ OPTION 2: Or populate without selecting specific fields
-    // .populate("glAccount");
+    const query = Customer.find({ companyId: user.companyId });
+    const customers = optionsOnly
+      ? await query.select("customerName customerCode contactPersonName")
+      : await query.populate("assignedAgents", "name email");
 
     return NextResponse.json({ success: true, data: customers }, { status: 200 });
   } catch (err) {

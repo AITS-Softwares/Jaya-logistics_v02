@@ -7,6 +7,7 @@ export const DRIVER_TRIP_STATES = [
 export const DRIVER_ACTIONS = {
   ACKNOWLEDGE: { eventType: "trip_acknowledged" },
   START_TRIP: { from: ["assigned"], to: "started", eventType: "trip_started" },
+  START_DELIVERY: { from: ["assigned", "started", "at_pickup"], to: "in_transit", eventType: "delivery_started" },
   AT_PICKUP: { from: ["started", "in_transit"], to: "at_pickup", eventType: "pickup_arrived" },
   DEPART: { from: ["started", "at_pickup", "at_stop"], to: "in_transit", eventType: "in_transit" },
   ARRIVE_STOP: { from: ["in_transit"], to: "at_stop", eventType: "stop_arrived" },
@@ -50,28 +51,43 @@ export function driverActionNamesForState(state) {
     .map(([action]) => action);
 }
 
+export function nextDriverDrop(stops = []) {
+  return stops.find((stop) => stop.type === "drop" && stop.status !== "completed");
+}
+
+export function effectiveDriverTripState(trip) {
+  const drops = (trip.routeSnapshot?.stops || []).filter((stop) => stop.type === "drop");
+  return trip.state === "delivered" && drops.length > 1 && drops.some((stop) => stop.status !== "completed") ? "at_stop" : trip.state;
+}
+
 export function driverSafeTripDto(trip) {
   const plain = typeof trip?.toObject === "function" ? trip.toObject() : (trip || {});
+  const stops = plain.routeSnapshot?.stops || [];
+  const nextDrop = nextDriverDrop(stops);
+  const state = effectiveDriverTripState(plain);
   return {
     id: String(plain._id || plain.id || ""),
     loadingReference: plain.loadingReference || "",
     lrNumbers: plain.lrNumbers || [],
-    state: plain.state,
+    state,
     vehicle: plain.vehicle || {},
-    stops: (plain.routeSnapshot?.stops || []).map((stop) => ({
+    stops: stops.map((stop) => ({
       sequence: stop.sequence,
       type: stop.type,
       label: stop.label,
       address: stop.address,
       city: stop.city || "",
       pinCode: stop.pinCode || "",
+      contactPhone: stop.contactPhone || "",
       status: stop.status || "pending",
     })),
-    nextStopIndex: plain.nextStopIndex || 0,
+    nextStopIndex: stops.indexOf(nextDrop),
     startedAt: plain.startedAt || null,
     completedAt: plain.completedAt || null,
     issueStatus: plain.issueStatus || null,
+    nextDropHasArrivalArea: Boolean(nextDrop?.geofence?.radiusM),
+    deliveryStartedAt: plain.deliveryStartedAt || null,
     version: plain.version || 0,
-    allowedActions: driverActionNamesForState(plain.state),
+    allowedActions: driverActionNamesForState(state),
   };
 }

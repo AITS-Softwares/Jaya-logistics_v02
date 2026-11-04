@@ -3387,7 +3387,7 @@ import { saveNumberedDocument } from '@/lib/saveNumberedDocument';
 
 // src/app/api/vehicle-negotiation/route.js
 
-import {vnnPurchaseType} from '@/lib/vnnPart3.mjs';
+import {INVALID_VNN_FIXED_RATE, parseVnnFixedRate, vnnPurchaseType} from '@/lib/vnnPart3.mjs';
 import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from "next/server";
 import { identifierFormatError } from "@/lib/identifierFormats";
@@ -3498,7 +3498,28 @@ async function validateUser(req, requiredAction = null) {
 /* ========================================
    GET /api/vehicle-negotiation - Requires 'view' permission
 ======================================== */
+async function withSavedSupplierNames(negotiation, user) {
+  const entries = [...(negotiation.vendors || []), negotiation.approval].filter((entry) => entry && !entry.vendorName?.trim());
+  const codes = [...new Set(entries.map((entry) => entry.vendorCode).filter(Boolean))];
+  const ids = [...new Set(entries.map((entry) => entry.vendorId).filter((id) => mongoose.Types.ObjectId.isValid(id)))];
+  if (!codes.length && !ids.length) return negotiation;
+
+  const suppliers = await Supplier.find(companyScopeFilter(user, { $or: [
+    ...(codes.length ? [{ supplierCode: { $in: codes } }] : []),
+    ...(ids.length ? [{ _id: { $in: ids } }] : []),
+  ] })).select("supplierCode supplierName").lean();
+  const byId = new Map(suppliers.map((supplier) => [String(supplier._id), supplier.supplierName]));
+  const byCode = new Map(suppliers.map((supplier) => [supplier.supplierCode, supplier.supplierName]));
+  const fill = (entry) => {
+    if (!entry || entry.vendorName?.trim()) return entry;
+    const name = byId.get(String(entry.vendorId)) || byCode.get(entry.vendorCode);
+    return name ? { ...entry, vendorName: name } : entry;
+  };
+  return { ...negotiation, vendors: (negotiation.vendors || []).map(fill), approval: fill(negotiation.approval) };
+}
+
 async function withLinkedOrderStatuses(negotiation, user) {
+  negotiation = await withSavedSupplierNames(negotiation, user);
   const orders = negotiation.orders || [];
   const panelIds = [...new Set(orders.map((row) => row.orderPanelId).filter((value) => mongoose.Types.ObjectId.isValid(value)))];
   const orderNos = [...new Set(orders.map((row) => row.orderNo).filter(Boolean))];
@@ -3824,6 +3845,8 @@ async function branchHandlerPOST(req) {
     const body = await req.json();
     const formatError = identifierFormatError(body);
     if (formatError) return NextResponse.json({ success: false, message: formatError }, { status: 400 });
+    const finalFix = parseVnnFixedRate(body.approval?.finalFix);
+    if (finalFix === null) return NextResponse.json({ success: false, message: INVALID_VNN_FIXED_RATE }, { status: 422 });
     const blockedRow = await validateOpenOrderRows(user, body.orders || body.orderRows || []);
     if (blockedRow) return NextResponse.json({ success: false, message: blockedRow }, { status: 409 });
 
@@ -3951,7 +3974,7 @@ async function branchHandlerPOST(req) {
         vendorStatus: body.approval?.vendorStatus || 'Active',
         rateType: body.approval?.rateType || 'Per MT',
         finalPerMT: Number(body.approval?.finalPerMT) || 0,
-        finalFix: Number(body.approval?.finalFix) || 0,
+        finalFix,
         // Vehicle placement is completed only after Part 3 approval through
         // the dedicated Vehicle Negotiation Placement permission.
         vehicleNo: '',
@@ -4156,6 +4179,9 @@ async function branchHandlerPUT(req) {
       }, { status: 409 });
     }
 
+    const finalFix = parseVnnFixedRate(body.approval?.finalFix);
+    if (hasEditPermission && finalFix === null) return NextResponse.json({ success: false, message: INVALID_VNN_FIXED_RATE }, { status: 422 });
+
     // ─── UPDATE HEADER FIELDS (requires 'edit' permission) ───
     if (body.header && hasEditPermission) {
       vehicleNegotiation.branch = body.header.branch && isValidObjectId(body.header.branch)
@@ -4332,7 +4358,7 @@ async function branchHandlerPUT(req) {
         vehicleNegotiation.approval.finalPerMT = Number(body.approval.finalPerMT);
       }
       if (hasEditPermission && body.approval.finalFix !== undefined) {
-        vehicleNegotiation.approval.finalFix = Number(body.approval.finalFix);
+        vehicleNegotiation.approval.finalFix = finalFix;
       }
       if (hasEditPermission && body.approval.paymentTerms !== undefined) {
         vehicleNegotiation.approval.paymentTerms = body.approval.paymentTerms;
@@ -4595,7 +4621,11 @@ async function branchHandlerPATCH(req) {
       if (vendorName) vehicleNegotiation.approval.vendorName = vendorName;
       if (vendorCode) vehicleNegotiation.approval.vendorCode = vendorCode;
       if (finalPerMT !== undefined) vehicleNegotiation.approval.finalPerMT = Number(finalPerMT);
-      if (finalFix !== undefined) vehicleNegotiation.approval.finalFix = Number(finalFix);
+      if (finalFix !== undefined) {
+        const fixedRate = parseVnnFixedRate(finalFix);
+        if (fixedRate === null) return NextResponse.json({ success: false, message: INVALID_VNN_FIXED_RATE }, { status: 422 });
+        vehicleNegotiation.approval.finalFix = fixedRate;
+      }
       if (memoStatus) vehicleNegotiation.approval.memoStatus = memoStatus;
 
       await vehicleNegotiation.save();
