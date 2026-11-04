@@ -1,39 +1,27 @@
 import { NextResponse } from 'next/server';
 import connectDb from '@/lib/db';
 import PurchaseType from './schema';
-import { getTokenFromHeader, verifyJWT } from '@/lib/auth';
 import { validateMasterDataRequest } from '@/lib/masterDataPermission';
 
-async function validateUser(req, action = 'view') {
-  return validateMasterDataRequest(req, action, "Purchase Types", { allowLookup: action === "view" });
-  const token = getTokenFromHeader(req);
-
-  if (!token) {
-    return { error: 'Token missing', status: 401 };
-  }
-
-  const user = await verifyJWT(token);
-
-  if (!user) {
-    return { error: 'Invalid token', status: 401 };
-  }
-
-  return { user };
+async function validateUser(req, action) {
+  return validateMasterDataRequest(req, action, "Purchase Types");
 }
 
 /* GET */
 export async function GET(req) {
   await connectDb();
 
-  const { user, error, status } = await validateUser(req, 'view');
+  const optionsOnly = new URL(req.url).searchParams.get('lookup') === 'options';
+  const { user, error, status } = await validateMasterDataRequest(req, 'view', 'Purchase Types', { allowLookup: true, optionsOnly });
 
   if (error) {
     return NextResponse.json({ success: false, message: error }, { status });
   }
 
-  const data = await PurchaseType.find({
+  const query = PurchaseType.find({
     companyId: user.companyId,
   }).sort({ name: 1 });
+  const data = optionsOnly ? await query.select('name') : await query;
 
   return NextResponse.json({ success: true, data });
 }

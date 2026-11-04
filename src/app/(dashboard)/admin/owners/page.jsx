@@ -607,9 +607,9 @@ export default function OwnerPage() {
 
           {/* Adhar Card Section */}
           <DocumentUploadSection
-            label="Adhar Card Number"
+            label="Aadhaar Card Number"
             value={formData.adharCardNumber}
-            placeholder="Enter Adhar Card Number"
+            placeholder="Enter Aadhaar Card Number"
             onChange={(e) => setFormData(prev => ({ ...prev, adharCardNumber: e.target.value }))}
             files={adharCardFiles}
             onFileSelect={handleFileSelect}

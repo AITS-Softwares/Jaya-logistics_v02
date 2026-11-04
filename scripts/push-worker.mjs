@@ -2,6 +2,7 @@ import nextEnv from '@next/env';
 import { MongoClient } from 'mongodb';
 import { configureWebPush, deliverNextNotification } from '../src/lib/pushDelivery.mjs';
 import { queueBillingReminders } from '../src/lib/billingReminders.mjs';
+import { scanTripOperationalAlerts } from '../src/lib/driverOperationalAlerts.mjs';
 
 nextEnv.loadEnvConfig(process.cwd(), false);
 const pushEnabled = Boolean(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY && process.env.VAPID_SUBJECT);
@@ -21,7 +22,25 @@ try {
   console.log('Jaya ERP push worker started.');
   if (!pushEnabled) console.log('Web Push is not configured; billing inbox reminders remain enabled.');
   let nextBillingScan = 0;
+  let nextTrackingScan = 0;
   do {
+    if (Date.now() >= nextTrackingScan) {
+      try {
+        const configs = await db.collection('drivermobileconfigs').find({}, { projection: { companyId: 1, enabled: 1 } }).toArray();
+        const globalEnabled = process.env.DRIVER_MOBILE_ENABLED === 'true';
+        const companies = globalEnabled
+          ? { $nin: configs.filter(config => !config.enabled).map(config => config.companyId) }
+          : { $in: configs.filter(config => config.enabled).map(config => config.companyId) };
+        const cursor = db.collection('drivertrips').find({ companyId: companies, state: { $in: ['assigned', 'started', 'at_pickup', 'in_transit', 'at_stop', 'delivered'] } });
+        let trips = [];
+        for await (const trip of cursor) {
+          trips.push(trip);
+          if (trips.length >= 100) { await scanTripOperationalAlerts(db, trips); trips = []; }
+        }
+        await scanTripOperationalAlerts(db, trips);
+      } catch { console.error('Driver tracking alert scan failed; will retry.'); }
+      nextTrackingScan = Date.now() + 60000;
+    }
     if (Date.now() >= nextBillingScan) {
       try { const result = await queueBillingReminders(db); if (result.queued) console.log(`Queued ${result.queued} client billing reminders.`); }
       catch { console.error('Billing reminder scan failed; will retry.'); }

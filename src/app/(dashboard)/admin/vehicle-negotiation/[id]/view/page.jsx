@@ -57,7 +57,7 @@ export default function VehicleNegotiationViewPage() {
   if (!record && !error) return <div className="p-8 text-sm text-slate-500">Loading Vehicle Negotiation…</div>;
   const statusBadge = record ? getVnnStatusBadge(record) : null;
   return <div className="min-h-screen bg-slate-50 p-6"><div className="mx-auto max-w-6xl">
-    <button onClick={() => router.back()} className="mb-4 text-sm font-semibold text-indigo-600">← Back to list</button>
+    <button onClick={() => router.push('/admin/vehicle-negotiation')} className="mb-4 text-sm font-semibold text-indigo-600">← Back to list</button>
     {error && <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
     {record && <>
       <section className="rounded-xl border border-slate-200 bg-white p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div><h1 className="text-xl font-extrabold text-slate-900">Vehicle Negotiation: {record.vnnNo}</h1><p className="mt-1 text-sm text-slate-500">Read-only transaction details</p></div><span className={`rounded-full px-3 py-1 text-xs font-bold ${statusBadge.className}`}>{statusBadge.label}</span></div>

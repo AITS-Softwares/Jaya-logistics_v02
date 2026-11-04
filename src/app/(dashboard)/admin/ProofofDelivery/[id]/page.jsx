@@ -1850,7 +1850,7 @@ export default function EditPOD() {
   const fetchSuppliers = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/suppliers', {
+      const res = await fetch('/api/suppliers?lookup=delivery', {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();

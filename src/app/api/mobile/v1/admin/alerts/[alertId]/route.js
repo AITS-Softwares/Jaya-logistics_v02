@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import MobileOperationalAlert from "@/models/MobileOperationalAlert";
+import DriverTrip from "@/models/DriverTrip";
 import { isDriverMobileEnabled, mobileUnavailableResponse } from "@/lib/driverMobileAuth";
 import { requireDriverMobileStaff } from "@/lib/driverMobileStaff";
 
@@ -19,7 +20,7 @@ async function branchHandlerPATCH(req, { params }) {
     if (action === "resolve" && !cleanNote) return NextResponse.json({ success: false, code: "RESOLUTION_NOTE_REQUIRED", message: "A resolution note is required." }, { status: 400 });
     await dbConnect();
     const alert = await MobileOperationalAlert.findOne({ _id: alertId, companyId: staff.user.companyId });
-    if (!alert) return NextResponse.json({ success: false, code: "NOT_FOUND", message: "Alert not found." }, { status: 404 });
+    if (!alert || !(await DriverTrip.exists({ _id: alert.tripId, companyId: staff.user.companyId }))) return NextResponse.json({ success: false, code: "NOT_FOUND", message: "Alert not found." }, { status: 404 });
     const now = new Date();
     if (action === "acknowledge") { alert.state = "acknowledged"; alert.acknowledgedAt = now; alert.acknowledgedBy = staff.user.id; }
     else { alert.state = "resolved"; alert.resolvedAt = now; alert.resolvedBy = staff.user.id; alert.resolutionNote = cleanNote; }

@@ -11,6 +11,12 @@ const trackingSessionSchema = new mongoose.Schema({
   endedAt: { type: Date, default: null },
   lastSequence: { type: Number, default: 0 },
   lastRecordedAt: { type: Date, default: null },
+  deviceHealth: {
+    reportedAt: Date,
+    queuedPoints: Number,
+    locationReady: Boolean,
+    samplingMode: String,
+  },
 }, { timestamps: true });
 
 trackingSessionSchema.index({ companyId: 1, tripId: 1, state: 1 });

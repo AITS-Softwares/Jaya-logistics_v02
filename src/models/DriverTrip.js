@@ -8,6 +8,8 @@ const stopSchema = new mongoose.Schema({
   address: { type: String, default: "" },
   city: { type: String, default: "" },
   pinCode: { type: String, default: "" },
+  contactPhone: { type: String, default: "" },
+  geofence: { latitude: Number, longitude: Number, radiusM: Number },
   status: { type: String, enum: ["pending", "arrived", "completed"], default: "pending" },
 }, { _id: false });
 
@@ -38,6 +40,13 @@ const driverTripSchema = new mongoose.Schema({
   nextStopIndex: { type: Number, default: 0 },
   issueStatus: { type: String, default: null },
   startedAt: { type: Date, default: null },
+  deliveryStartedAt: { type: Date, default: null },
+  deliveryLegStartedAt: { type: Date, default: null },
+  actualPickup: {
+    latitude: Number,
+    longitude: Number,
+    recordedAt: Date,
+  },
   completedAt: { type: Date, default: null },
   cancelledAt: { type: Date, default: null },
   cancelReason: { type: String, default: "", maxlength: 300 },

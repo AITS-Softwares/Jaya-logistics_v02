@@ -19,13 +19,23 @@ async function validateUser(req, action = 'view') {
 // GET /api/suppliers
 export async function GET(req) {
   await dbConnect();
-  const { user, error, status, access } = await validateUser(req, 'view');
+  const params = new URL(req.url).searchParams;
+  const optionsOnly = params.get('lookup') === 'delivery';
+  const { user, error, status, access } = optionsOnly
+    ? await validateMasterDataRequest(req, 'view', 'Suppliers', { allowLookup: true, optionsOnly })
+    : await validateUser(req, 'view');
   if (error) return NextResponse.json({ success: false, message: error }, { status });
 
   try {
-    const management=new URL(req.url).searchParams.get('management')==='true' && access!=='lookup';
-    const approvalStatus = new URL(req.url).searchParams.get('approvalStatus');
+    const management = !optionsOnly && params.get('management') === 'true' && access !== 'lookup';
+    const approvalStatus = params.get('approvalStatus');
     const filter = {companyId:user.companyId,...(!management ? supplierSelectionFilter() : approvalStatus ? {approvalStatus} : {})};
+    if (optionsOnly) {
+      if (params.get('supplierCode')) filter.supplierCode = params.get('supplierCode');
+      const suppliers = await Supplier.find(filter).setOptions({ includeUnapprovedMasters: true })
+        .select('supplierCode supplierName dueDays emailId email contactEmail');
+      return NextResponse.json({ success: true, data: suppliers });
+    }
     const suppliers = await Supplier.find(filter).setOptions({includeUnapprovedMasters:true})
       .select(!management ? '-pendingChange -lastRejectedProposal -approvalLog -reservedSupplierCode' : '')
       .populate("glAccount", "accountName accountCode")

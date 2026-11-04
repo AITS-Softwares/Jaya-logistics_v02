@@ -1,29 +1,13 @@
 import dbConnect from "@/lib/db";
 import Group from "@/models/groupModels";
 import { NextResponse } from "next/server";
-import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import { validateMasterDataRequest } from '@/lib/masterDataPermission';
 
 /**
  * ✅ Validate JWT & Return User
  */
 async function authenticate(req, action = 'view') {
-  return validateMasterDataRequest(req, action, "Groups");
-  const token = getTokenFromHeader(req);
-  if (!token) {
-    return { error: "Token missing", status: 401 };
-  }
-
-  try {
-    const user = await verifyJWT(token);
-    if (!user) {
-      return { error: "Invalid token", status: 401 };
-    }
-    return { user };
-  } catch (err) {
-    console.error("Auth Error:", err.message);
-    return { error: "Authentication failed", status: 401 };
-  }
+  return validateMasterDataRequest(req, action, "Groups", { allowLookup: action === "view" });
 }
 
 /* =========================================

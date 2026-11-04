@@ -2,6 +2,10 @@ package com.jayalogistics.driver;
 
 import android.Manifest;
 import android.content.Intent;
+import android.location.LocationManager;
+import android.content.IntentFilter;
+import android.net.ConnectivityManager;
+import android.os.BatteryManager;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.Settings;
@@ -13,6 +17,7 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 import com.getcapacitor.annotation.Permission;
 import com.getcapacitor.annotation.PermissionCallback;
 import androidx.core.content.ContextCompat;
+import androidx.core.location.LocationManagerCompat;
 
 @CapacitorPlugin(name = "DriverTracking", permissions = {
   @Permission(alias = "location", strings = { Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION }),
@@ -67,6 +72,28 @@ public class DriverTrackingPlugin extends Plugin {
   }
 
   @PluginMethod
+  public void loadPendingTripActions(PluginCall call) {
+    String driverId = call.getString("driverId", "");
+    if (!driverId.matches("[a-fA-F0-9]{24}")) { call.reject("Invalid driver ID"); return; }
+    try {
+      JSObject result = new JSObject();
+      result.put("payload", new SecureTrackingStore(getContext()).get("tripActions_" + driverId));
+      call.resolve(result);
+    } catch (Exception error) { call.reject("Could not read offline trip actions", error); }
+  }
+
+  @PluginMethod
+  public void savePendingTripActions(PluginCall call) {
+    String driverId = call.getString("driverId", "");
+    String payload = call.getString("payload", "");
+    if (!driverId.matches("[a-fA-F0-9]{24}") || payload.length() > 64_000) { call.reject("Invalid offline trip actions"); return; }
+    try {
+      new SecureTrackingStore(getContext()).put("tripActions_" + driverId, payload);
+      call.resolve();
+    } catch (Exception error) { call.reject("Could not save offline trip actions", error); }
+  }
+
+  @PluginMethod
   public void permissions(PluginCall call) {
     JSObject result = new JSObject();
     result.put("location", getPermissionState("location").toString());
@@ -98,6 +125,7 @@ public class DriverTrackingPlugin extends Plugin {
     boolean ready = getPermissionState("location") == com.getcapacitor.PermissionState.GRANTED;
     boolean backgroundLocationGranted = Build.VERSION.SDK_INT < 29 || getPermissionState("backgroundLocation") == com.getcapacitor.PermissionState.GRANTED;
     result.put("ready", ready);
+    result.put("locationEnabled", isLocationEnabled());
     result.put("backgroundLocationRequired", Build.VERSION.SDK_INT >= 29 && !backgroundLocationGranted);
     result.put("backgroundLocationGranted", backgroundLocationGranted);
     if (!ready) result.put("message", "Precise location is required before tracking can start.");
@@ -113,33 +141,80 @@ public class DriverTrackingPlugin extends Plugin {
     call.resolve();
   }
 
+  private boolean isLocationEnabled() {
+    LocationManager manager = getContext().getSystemService(LocationManager.class);
+    return manager != null && LocationManagerCompat.isLocationEnabled(manager);
+  }
+
   @PluginMethod
   public void start(PluginCall call) {
+    if (!isLocationEnabled()) { call.reject("LOCATION_DISABLED", "Turn on Location in Android settings to enable tracking."); return; }
     if (getPermissionState("location") != com.getcapacitor.PermissionState.GRANTED) { call.reject("LOCATION_PERMISSION_REQUIRED", "Grant precise location before starting tracking."); return; }
     String tripId = call.getString("tripId", ""); String sessionId = call.getString("sessionId", "");
-    String apiBaseUrl = call.getString("apiBaseUrl", ""); String accessToken = call.getString("accessToken", ""); String refreshToken = call.getString("refreshToken", "");
-    if (tripId.isEmpty() || sessionId.isEmpty() || apiBaseUrl.isEmpty() || accessToken.isEmpty() || refreshToken.isEmpty()) { call.reject("TRACKING_CONFIG_REQUIRED", "Tracking configuration is incomplete."); return; }
+    String apiBaseUrl = call.getString("apiBaseUrl", ""); String trackingToken = call.getString("trackingToken", "");
+    if (tripId.isEmpty() || sessionId.isEmpty() || apiBaseUrl.isEmpty() || trackingToken.isEmpty()) { call.reject("TRACKING_CONFIG_REQUIRED", "Tracking configuration is incomplete."); return; }
+    try {
+      SecureTrackingStore store = new SecureTrackingStore(getContext());
+      if (!store.get("trackingToken").isEmpty() && !sessionId.equals(store.get("sessionId"))) {
+        call.reject("The previous trip is finishing its GPS sync. Wait a moment, then restore tracking.");
+        return;
+      }
+    } catch (Exception error) { call.reject("Could not read the tracking session", error); return; }
     Intent intent = new Intent(getContext(), DriverTrackingService.class);
     intent.setAction(DriverTrackingService.ACTION_START);
     intent.putExtra("tripId", tripId); intent.putExtra("sessionId", sessionId); intent.putExtra("apiBaseUrl", apiBaseUrl);
-    intent.putExtra("accessToken", accessToken); intent.putExtra("refreshToken", refreshToken);
+    intent.putExtra("trackingToken", trackingToken);
     intent.putExtra("intervalSec", call.getObject("policy", new JSObject()).getInteger("movingIntervalSec", 30));
+    intent.putExtra("slowIntervalSec", call.getObject("policy", new JSObject()).getInteger("slowIntervalSec", 60));
+    intent.putExtra("stationaryIntervalSec", call.getObject("policy", new JSObject()).getInteger("stationaryIntervalSec", 300));
+    intent.putExtra("overnightIntervalSec", call.getObject("policy", new JSObject()).getInteger("overnightIntervalSec", 900));
     intent.putExtra("minDistanceM", call.getObject("policy", new JSObject()).getInteger("minDistanceM", 100));
     ContextCompat.startForegroundService(getContext(), intent);
-    JSObject result = new JSObject(); result.put("started", true); call.resolve(result);
+    JSObject result = new JSObject(); result.put("started", true); result.put("serverControlled", true); call.resolve(result);
+  }
+
+  @PluginMethod
+  public void resumeSavedTracking(PluginCall call) {
+    try {
+      SecureTrackingStore store = new SecureTrackingStore(getContext());
+      if (!store.get("trackingToken").isEmpty() && isLocationEnabled()
+          && getPermissionState("location") == com.getcapacitor.PermissionState.GRANTED) {
+        Intent intent = new Intent(getContext(), DriverTrackingService.class);
+        intent.setAction(DriverTrackingService.ACTION_RESUME);
+        ContextCompat.startForegroundService(getContext(), intent);
+      }
+      call.resolve();
+    } catch (Exception error) { call.reject("Could not restore tracking", error); }
   }
 
   @PluginMethod
   public void stop(PluginCall call) {
-    Intent intent = new Intent(getContext(), DriverTrackingService.class); intent.setAction(DriverTrackingService.ACTION_STOP); intent.putExtra("reason", call.getString("reason", "driver_stop"));
-    getContext().startService(intent); JSObject result = new JSObject(); result.put("stopped", true); call.resolve(result);
+    JSObject result = new JSObject(); result.put("serverControlled", true); call.resolve(result);
   }
 
   @PluginMethod
   public void health(PluginCall call) {
     try {
       SecureTrackingStore store = new SecureTrackingStore(getContext()); EncryptedOutboxDb queue = new EncryptedOutboxDb(getContext());
-      JSObject result = new JSObject(); result.put("state", store.get("state")); result.put("sessionId", store.get("sessionId")); result.put("queuedPoints", queue.count()); result.put("available", true); call.resolve(result);
+      JSObject result = new JSObject();
+      result.put("state", store.get("state"));
+      result.put("sessionId", store.get("sessionId"));
+      result.put("tripId", store.get("tripId"));
+      result.put("queuedPoints", queue.count(store.get("sessionId")));
+      result.put("lastUploadAt", store.get("lastUploadAt"));
+      result.put("locationEnabled", isLocationEnabled());
+      result.put("preciseLocationGranted", getPermissionState("location") == com.getcapacitor.PermissionState.GRANTED);
+      ConnectivityManager connectivity = getContext().getSystemService(ConnectivityManager.class);
+      result.put("connected", connectivity != null && connectivity.getActiveNetwork() != null);
+      Intent battery = getContext().registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+      if (battery != null) {
+        int level = battery.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
+        int scale = battery.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
+        if (level >= 0 && scale > 0) result.put("batteryPct", Math.round(level * 100f / scale));
+        result.put("charging", battery.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) != 0);
+      }
+      result.put("available", true);
+      call.resolve(result);
     } catch (Exception error) { call.reject("TRACKING_HEALTH_FAILED", error.getMessage(), error); }
   }
 }

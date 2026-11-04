@@ -644,7 +644,7 @@ export default function CustomerManagement() {
     const payload = {
       ...payloadWithoutCode,
       assignedAgents: cd.assignedAgents.map(id => ({ _id: id })),
-      glAccount: cd.glAccount?._id || null,
+      glAccount: cd.glAccount?._id || cd.glAccount || null,
       slaPolicyId: cd.slaPolicyId?._id || cd.slaPolicyId || null,
     };
 

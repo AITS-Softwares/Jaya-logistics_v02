@@ -321,27 +321,27 @@ const dateText = (iso) => { const [y, m, d] = String(iso || "").split("-"); retu
 // vehicle: { lat, lng, label? } | null (live location, added later)
 // route: the answer from /api/tracking/route ({ distanceKm, durationMinutes, polyline, plan }) | null
 // fallback: shown when there is no browser key
-export default function TrackingMap({ stops = [], vehicle = null, driverStart = null, route = null, status = "", fallback = null }) {
+export default function TrackingMap({ stops = [], vehicle = null, driverStart = null, trail = null, route = null, routeLabel = "", connectStops = true, status = "", fallback = null }) {
     const boxRef = useRef(null);
     const mapRef = useRef(null);
     const overlaysRef = useRef([]);
     const fitRef = useRef(null);
     const [ready, setReady] = useState(false);
     const [error, setError] = useState("");
-    const hasLocated = stops.some((s) => s.geo && typeof s.geo.lat === "number");
+    const hasLocated = Boolean(vehicle || driverStart || trail?.length) || stops.some((s) => s.geo && typeof s.geo.lat === "number");
 
     // Create the map only once there is something to show. Opening the page (or selecting a loading that
     // has no located stops) no longer loads a map, and each map load is a billable Maps JavaScript request.
     useEffect(() => {
         if (!BROWSER_KEY || !hasLocated || mapRef.current) return;
         let alive = true;
-        const first = stops.find((s) => s.geo && typeof s.geo.lat === "number");
+        const first = vehicle || driverStart || trail?.[0] || stops.find((s) => s.geo && typeof s.geo.lat === "number")?.geo;
         loadMaps()
             .then(async (maps) => {
                 const { Map } = await maps.importLibrary("maps");
                 if (!alive || !boxRef.current || mapRef.current) return;
                 // Start on the first stop so the map never flashes the whole of India before fitting the route
-                mapRef.current = new Map(boxRef.current, { center: { lat: first.geo.lat, lng: first.geo.lng }, zoom: 8, streetViewControl: false, mapTypeControl: false, fullscreenControl: true, clickableIcons: false });
+                mapRef.current = new Map(boxRef.current, { center: { lat: first.lat, lng: first.lng }, zoom: 8, streetViewControl: false, mapTypeControl: false, fullscreenControl: true, clickableIcons: false });
                 setReady(true);
             })
             .catch((err) => {
@@ -426,7 +426,7 @@ export default function TrackingMap({ stops = [], vehicle = null, driverStart = 
         if (roadPath.length > 1) {
             overlaysRef.current.push(new maps.Polyline({ map, path: roadPath, strokeColor: "#2563eb", strokeOpacity: 0.85, strokeWeight: 5, zIndex: 1 }));
             roadPath.forEach((p) => bounds.extend(p));
-        } else if (path.length > 1) {
+        } else if (connectStops && path.length > 1) {
             const line = new maps.Polyline({
                 map, path, strokeOpacity: 0, geodesic: true,
                 icons: [{ icon: { path: "M 0,-1 0,1", strokeOpacity: 0.7, strokeColor: "#64748b", scale: 3 }, offset: "0", repeat: "14px" }],
@@ -435,11 +435,23 @@ export default function TrackingMap({ stops = [], vehicle = null, driverStart = 
         }
 
         if (driverStart) {
+            const pickupTime = driverStart.recordedAt ? new Date(driverStart.recordedAt).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }) : "";
             const marker = new maps.Marker({
-                map, position: driverStart, title: "Driver Start", label: "S", zIndex: 998,
+                map, position: { lat: driverStart.lat, lng: driverStart.lng },
+                title: pickupTime ? `Actual pickup · ${pickupTime} IST` : "Actual pickup",
+                icon: pinIcon(maps, { kind: "pickup", text: "P" }), zIndex: 998,
             });
             overlaysRef.current.push(marker);
             bounds.extend(driverStart);
+        }
+
+        if (trail?.length) {
+            trail.forEach((point) => bounds.extend(point));
+            if (trail.length === 1) {
+                overlaysRef.current.push(new maps.Marker({ map, position: trail[0], title: "Historical GPS point" }));
+            } else {
+                overlaysRef.current.push(new maps.Polyline({ map, path: trail, strokeColor: "#7e22ce", strokeOpacity: 0.85, strokeWeight: 4, zIndex: 2 }));
+            }
         }
 
         if (vehicle && typeof vehicle.lat === "number") {
@@ -461,7 +473,7 @@ export default function TrackingMap({ stops = [], vehicle = null, driverStart = 
         };
         fitRef.current = fit;
         fit();
-    }, [ready, stops, vehicle, driverStart, route]);
+    }, [ready, stops, vehicle, driverStart, route, connectStops, trail]);
 
     if (!BROWSER_KEY) return fallback;
 
@@ -480,21 +492,23 @@ export default function TrackingMap({ stops = [], vehicle = null, driverStart = 
                 {!hasLocated && <div className="absolute inset-0 flex items-center justify-center text-sm text-slate-500">{stops.length ? "Locating stops…" : "Select a loading to see its route"}</div>}
             </div>
             <div className="flex flex-wrap gap-4 border-t border-slate-200 px-4 py-2 text-xs text-slate-600">
-                <span><b className="text-green-600">●</b> Pickup (P)</span>
+                {(driverStart || stops.some((stop) => stop.type === "pickup")) && <span><b className="text-green-600">●</b> {driverStart ? "Actual pickup (P)" : "Pickup (P)"}</span>}
                 <span><b className="text-red-600">●</b> Drop (1, 2, 3… in delivery order)</span>
                 <span><b className="text-slate-700">●</b> Several stops at one place (all numbers shown)</span>
                 <span>Dashed ring = approximate (town level)</span>
-                {driverStart && <span><b>S</b> Driver Start</span>}
                 {vehicle && <span><b className="text-blue-600">●</b> Vehicle</span>}
-                <span>{route?.polyline ? "Blue line = driving route in stop order." : "Dashed line joins stops in order; it is not the road route."}</span>
+                {routeLabel && <span className="font-semibold">{routeLabel}</span>}
+                {route?.polyline ? <span>Blue line = estimated driving route.</span> : connectStops && stops.filter((stop) => stop.geo).length > 1 && <span>Dashed line connects planned stops.</span>}
             </div>
             {route && (
                 <div className="grid gap-px border-t border-slate-200 bg-slate-200 text-sm sm:grid-cols-4">
                     {[
-                        ["Route distance", `${route.distanceKm} km`],
+                        [route.driverOrigin ? "Distance from recorded GPS" : "Route distance", `${route.distanceKm} km`],
                         ["Driving time (truck est.)", hoursText(route.plan.drivingHours)],
-                        ["Expected days", `${route.plan.expectedDays} day${route.plan.expectedDays === 1 ? "" : "s"}`],
-                        ["Expected delivery date", dateText(route.plan.expectedDate)],
+                        ...(route.driverOrigin ? [] : [
+                            ["Expected days", `${route.plan.expectedDays} day${route.plan.expectedDays === 1 ? "" : "s"}`],
+                            ["Expected delivery date", dateText(route.plan.expectedDate)],
+                        ]),
                     ].map(([label, value]) => (
                         <div key={label} className="bg-yellow-50 px-4 py-2.5">
                             <div className="text-[11px] font-bold uppercase tracking-wide text-slate-500">{label}</div>

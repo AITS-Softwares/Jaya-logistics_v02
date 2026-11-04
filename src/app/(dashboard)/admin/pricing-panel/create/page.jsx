@@ -2002,6 +2002,7 @@
 import PriceListDropdown from '@/components/PriceListDropdown';
 import { useMemo, useState, useEffect, useRef, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import BackToList from "@/components/BackToList";
 
 /* =========================
   CONSTANTS
@@ -3733,6 +3734,7 @@ export default function PricingPanelPage() {
       <div className="sticky top-0 z-40 border-b bg-white/80 backdrop-blur">
         <div className="mx-auto max-w-full px-4 py-3 flex items-center justify-between">
           <div>
+            <div className="mb-3 print:hidden"><BackToList href="/admin/pricing-panel" /></div>
             <div className="text-lg font-extrabold text-slate-900">
               Pricing Panel
             </div>

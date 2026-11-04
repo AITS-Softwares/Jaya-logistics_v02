@@ -3195,6 +3195,7 @@
 import { useMemo, useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { usePermission } from "../../hooks/usePermission";
+import { advanceForFixedBalance, LPT_1000_BALANCE_ONLY } from "@/lib/purchasePaymentTerms.mjs";
 
 /** =========================
  * CONSTANTS
@@ -3208,6 +3209,7 @@ const PAYMENT_TERMS_OPTIONS = [
   "90 % Advance",
   "Rs.10,000/- Balance Only",
   "Rs. 5000/- Balance Only",
+  LPT_1000_BALANCE_ONLY,
   "Full Payment after Delivery",
   "Custom / Manual"
 ];
@@ -3238,8 +3240,8 @@ function dateInputValue(value, fallback = "") {
 function advanceForPaymentTerm(paymentTerms, purchaseAmount) {
   const amount = num(purchaseAmount);
   if (paymentTerms === "90 % Advance") return amount * 0.9;
-  if (paymentTerms === "Rs.10,000/- Balance Only") return Math.max(0, amount - 10000);
-  if (paymentTerms === "Rs. 5000/- Balance Only") return Math.max(0, amount - 5000);
+  const fixedBalanceAdvance = advanceForFixedBalance(paymentTerms, amount);
+  if (fixedBalanceAdvance !== undefined) return fixedBalanceAdvance;
   if (paymentTerms === "Full Payment after Delivery") return 0;
   return amount * 0.8;
 }

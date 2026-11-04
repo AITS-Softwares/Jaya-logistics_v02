@@ -1007,7 +1007,7 @@ export default function ItemManagement() {
   const fetchCustomers = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.get("/api/customers", { headers: { Authorization: `Bearer ${token}` } });
+      const res = await axios.get("/api/customers?lookup=options", { headers: { Authorization: `Bearer ${token}` } });
       if (res.data.success) setCustomers(res.data.data || []);
     } catch (error) {
       console.error("Error fetching customers:", error);

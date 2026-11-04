@@ -1,4 +1,4 @@
-import {vnnPurchaseType} from '@/lib/vnnPart3.mjs';
+import {INVALID_VNN_FIXED_RATE, parseVnnFixedRate, vnnPurchaseType} from '@/lib/vnnPart3.mjs';
 import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from 'next/server';
 import mongoose from 'mongoose';
@@ -38,11 +38,13 @@ async function branchHandlerPATCH(req, { params }) {
     return NextResponse.json({ success: false, message: 'Commercial Part 3 fields are locked after final VNN approval.' }, { status: 409 });
   }
   const data = body.approval || {};
+  const finalFix = parseVnnFixedRate(data.finalFix);
+  if (finalFix === null) return NextResponse.json({ success: false, message: INVALID_VNN_FIXED_RATE }, { status: 422 });
   for (const key of ['vendorName', 'vendorId', 'vendorCode', 'vendorStatus', 'rateType', 'paymentTerms', 'commercialRemarks']) {
     if (data[key] !== undefined) record.approval[key] = data[key];
   }
   if (data.finalPerMT !== undefined) record.approval.finalPerMT = Number(data.finalPerMT) || 0;
-  if (data.finalFix !== undefined) record.approval.finalFix = Number(data.finalFix) || 0;
+  if (data.finalFix !== undefined) record.approval.finalFix = finalFix;
   if (data.advance !== undefined) record.approval.advance = Number(data.advance) || 0;
   record.approval.purchaseType=vnnPurchaseType(record.vendors,record.approval);
   record.workflow.audit = record.workflow.audit || [];

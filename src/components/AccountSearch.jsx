@@ -28,7 +28,7 @@ const fetchAccounts = async () => {
       return;
     }
 
-    const res = await axios.get("/api/bank-head", {
+    const res = await axios.get("/api/bank-head?lookup=options", {
       headers: {
         Authorization: `Bearer ${token}`, // ✅ Add token in header
       },
@@ -43,7 +43,7 @@ const fetchAccounts = async () => {
         accountHead: acc.accountHead,
       }));
 
-      setOptions([...accounts, CREATE_NEW_OPTION]); // ✅ Add "Create New" option
+      setOptions(res.data.canCreateAccount ? [...accounts, CREATE_NEW_OPTION] : accounts);
     } else {
       setError(res.data.message || "Failed to load accounts");
     }
@@ -73,6 +73,13 @@ const fetchAccounts = async () => {
     }
   };
 
+  const selectedId = typeof value === "string" ? value : value?._id;
+  const selectedOption = options.find(option => option.value === selectedId) ||
+    (value?.accountName ? {
+      value: selectedId,
+      label: `${value.accountCode} - ${value.accountName}`,
+    } : null);
+
   return (
     <div className="mb-4">
       <div className="flex justify-between items-center mb-1">
@@ -85,17 +92,7 @@ const fetchAccounts = async () => {
       <Select
         options={options}
         isLoading={loading}
-        value={
-          value
-            ? {
-                value: value._id,
-                label: `${value.accountCode} - ${value.accountName}`,
-                accountCode: value.accountCode,
-                accountName: value.accountName,
-                accountHead: value.accountHead,
-              }
-            : null
-        }
+        value={selectedOption}
         onChange={handleChange}
         onInputChange={setInputValue}
         placeholder="Search or select GL Account"

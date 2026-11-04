@@ -1202,7 +1202,7 @@ export default function ApprovePOD() {
         // Try to get supplier email from vendors API using vendor code
         if (vendorCode) {
           try {
-            const vendorsRes = await fetch(`/api/suppliers?supplierCode=${vendorCode}`, {
+            const vendorsRes = await fetch(`/api/suppliers?lookup=delivery&supplierCode=${encodeURIComponent(vendorCode)}`, {
               headers: { Authorization: `Bearer ${token}` },
             });
             const vendorsData = await vendorsRes.json();

@@ -3378,7 +3378,7 @@ export default function RateMasterManagePage() {
   const fetchCustomers = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/customers', {
+      const res = await fetch('/api/customers?lookup=options', {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();

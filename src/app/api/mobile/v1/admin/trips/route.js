@@ -24,7 +24,7 @@ async function branchHandlerGET(req) {
   if (state === "active") query.state = { $in: ACTIVE_STATES };
   else if (state) query.state = state;
   const trips = await DriverTrip.find(query).sort({ updatedAt: -1 }).limit(100).lean();
-  return NextResponse.json({ success: true, data: trips.map(driverSafeTripDto) });
+  return NextResponse.json({ success: true, data: trips.map((trip) => ({ ...driverSafeTripDto(trip), loadingId: String(trip.loadingId) })) });
 }
 
 async function branchHandlerPOST(req) {

@@ -3,6 +3,7 @@ import BankHead from "@/models/BankHead";
 import { NextResponse } from "next/server";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import { validateMasterDataRequest } from "@/lib/masterDataPermission";
+import { canUseMasterPermission } from "@/lib/masterPermissionRegistry";
 
 async function authenticate(req) {
   const token = getTokenFromHeader(req);
@@ -19,14 +20,21 @@ async function authenticate(req) {
 
 // ✅ GET all Bank Heads
 export async function GET(req) {
-  const access = await validateMasterDataRequest(req, 'view', 'General Ledger', { allowLookup: true });
+  const optionsOnly = new URL(req.url).searchParams.get('lookup') === 'options';
+  const access = await validateMasterDataRequest(req, 'view', 'General Ledger', { allowLookup: true, optionsOnly });
   if (access.error) return NextResponse.json({ success: false, message: access.error }, { status: access.status });
   await dbConnect();
-  const { user, error, status } = await authenticate(req);
-  if (error) return NextResponse.json({ success: false, message: error }, { status });
+  const { user } = access;
 
   try {
-    const bankHeads = await BankHead.find({ companyId: user.companyId }).sort({ createdAt: -1 });
+    const query = BankHead.find({ companyId: user.companyId }).sort({ createdAt: -1 });
+    if (optionsOnly) {
+      const data = await query.select('accountCode accountName accountHead');
+      const canCreateAccount = canUseMasterPermission(user, 'General Ledger', 'view') &&
+        canUseMasterPermission(user, 'General Ledger', 'create');
+      return NextResponse.json({ success: true, data, canCreateAccount });
+    }
+    const bankHeads = await query;
     return NextResponse.json({ success: true, data: bankHeads }, { status: 200 });
   } catch (err) {
     return NextResponse.json({ success: false, message: err.message }, { status: 500 });
