@@ -3192,6 +3192,7 @@
 
 "use client";
 
+import { destinationLabel } from '@/lib/destination.mjs';
 import { useMemo, useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { usePermission } from "../../hooks/usePermission";
@@ -3788,7 +3789,7 @@ export default function EditPurchasePanel() {
           from: row.from || "",
           fromName: row.fromName || row.from || "",
           fromState: row.fromState || "",
-          to: row.to || "",
+          to: row.to || "", locationRemark: row?.locationRemark || '',
           toName: row.toName || row.to || "",
           locationRate: row.locationRate?.toString() || "",
           priceList: row.priceList || "",
@@ -4407,7 +4408,7 @@ export default function EditPurchasePanel() {
             from: order.fromName || order.from || "",
             fromName: order.fromName || order.from || "",
             fromState: fromState,
-            to: order.toName || order.to || "",
+            to: order.toName || order.to || "", locationRemark: order?.locationRemark || '',
             toName: order.toName || order.to || "",
             locationRate: locationRate,
             priceList: priceList,
@@ -5305,9 +5306,9 @@ export default function EditPurchasePanel() {
                           />
                         </td>
                         <td className="border border-yellow-300 px-2 py-2">
-                          <input
+                          <input readOnly={!!String(row.locationRemark || '').trim()}
                             type="text"
-                            value={row.to || ""}
+                            value={destinationLabel(row, row.to || "")}
                             onChange={(e) => updateOrderRow(row._id, 'to', e.target.value)}
                             className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-emerald-500"
                             placeholder="To"

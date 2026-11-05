@@ -1344,6 +1344,7 @@
 
 "use client";
 
+import { destinationLabel } from '@/lib/destination.mjs';
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import LRInvoiceUpload from "@/components/LRInvoiceUpload";
@@ -1724,7 +1725,7 @@ export default function ApproveConsignmentNote() {
         vendorName: note.header?.vendorName || "",
         from: note.header?.from || "",
         fromState: note.header?.fromState || "",
-        to: note.header?.to || "",
+        to: note.header?.to || "", locationRemark: note.header?.locationRemark || '',
         taluka: note.header?.taluka || "",
         district: note.header?.district || "",
         state: note.header?.state || "",
@@ -2489,7 +2490,7 @@ export default function ApproveConsignmentNote() {
             <Input col="col-span-12 md:col-span-2" label="Vendor Code" value={header.vendorCode} readOnly={true} />
             <Input col="col-span-12 md:col-span-2" label="Vendor Name" value={header.vendorName} readOnly={true} />
             <Input col="col-span-12 md:col-span-2" label="From" value={header.from} readOnly={true} />
-            <Input col="col-span-12 md:col-span-2" label="To" value={header.to} readOnly={true} />
+            <Input col="col-span-12 md:col-span-2" label="To" value={destinationLabel(header, header.to)} readOnly={true} />
             <Input col="col-span-12 md:col-span-1" label="Taluka" value={header.taluka} readOnly={true} />
             <Input col="col-span-12 md:col-span-1" label="District" value={header.district} readOnly={true} />
             <Input col="col-span-12 md:col-span-1" label="State" value={header.state} readOnly={true} />

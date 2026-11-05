@@ -1,5 +1,7 @@
 'use client';
 
+import ApprovedLoadedSlipUpload from "@/components/ApprovedLoadedSlipUpload";
+import LoadingTrackingSummary from "@/components/LoadingTrackingSummary";
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import TransactionReadOnlyDetails from '@/components/TransactionReadOnlyDetails';
@@ -31,6 +33,7 @@ export default function LoadingInfoViewPage() {
   if (!record) return <div className="p-8 text-sm text-slate-500">Loading Loading Info…</div>;
   return <div className="space-y-4">
     <TransactionReadOnlyDetails title={`Loading Info: ${record.vehicleArrivalNo || ''}`} subtitle="Read-only transaction details" data={record} onBack={() => router.back()}/>
+    <div className="mx-auto max-w-7xl"><LoadingTrackingSummary loadingId={id} /></div>
     {canManageOrderRows && record.orderRows?.some((row) => row.orderPanelId && row.orderRowId) && <section className="mx-auto max-w-7xl rounded-xl border border-slate-200 bg-white p-5">
       <h2 className="mb-3 font-bold text-slate-900">Order row status</h2>
       <div className="space-y-2">{record.orderRows.filter((row) => row.orderPanelId && row.orderRowId).map((row) => {
@@ -42,5 +45,6 @@ export default function LoadingInfoViewPage() {
         </div>;
       })}</div>
     </section>}
+    <div className="mx-auto max-w-7xl"><ApprovedLoadedSlipUpload loadingId={id} /></div>
   </div>;
 }

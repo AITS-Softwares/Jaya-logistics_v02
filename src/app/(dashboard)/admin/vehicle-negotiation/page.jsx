@@ -2,6 +2,9 @@
 
 "use client";
 
+import { FiClock, FiTruck } from 'react-icons/fi';
+import { destinationLabel } from '@/lib/destination.mjs';
+import AwaitingVnnOrders from '@/components/AwaitingVnnOrders';
 import VnnOrderView from '@/components/VnnOrderView';
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
@@ -12,6 +15,7 @@ import PendingToCreateTable from "@/components/PendingToCreateTable";
 
 export default function VehicleNegotiationList() {
   const router = useRouter();
+  const [activeTab, setActiveTab] = useState('negotiations');
   const { canView, canCreate, canEdit, canDelete, canApprove, loading: permissionLoading } = usePermission();
   const [orderView,setOrderView]=useState(null);
   const closeOrderView=useCallback(()=>setOrderView(null),[]);
@@ -266,7 +270,7 @@ export default function VehicleNegotiationList() {
           {canCreate(MODULE_NAME) && (
             <button
               onClick={handleCreateNew}
-              className="rounded-xl bg-yellow-600 px-6 py-2.5 text-sm font-bold text-white hover:bg-yellow-700 transition flex items-center gap-2"
+              className="rounded-xl bg-yellow-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm transition duration-150 hover:bg-yellow-700 hover:shadow-md active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500 focus-visible:ring-offset-2 motion-reduce:transform-none flex items-center gap-2"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -277,8 +281,20 @@ export default function VehicleNegotiationList() {
         </div>
       </div>
 
+      <div className="mx-4 mt-5 sm:mx-6">
+        <div className="inline-flex max-w-full gap-1 overflow-x-auto rounded-2xl border border-slate-200/80 bg-slate-100/80 p-1.5" role="tablist" aria-label="Vehicle negotiation lists" onKeyDown={event => {
+          if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+          event.preventDefault();
+          const next = event.key === 'Home' ? 'negotiations' : event.key === 'End' ? 'awaiting' : activeTab === 'negotiations' ? 'awaiting' : 'negotiations';
+          setActiveTab(next);
+          document.getElementById(next === 'awaiting' ? 'awaiting-orders-tab' : 'negotiations-tab')?.focus();
+        }}>
+          {[{ key: 'negotiations', id: 'negotiations-tab', panel: 'negotiations-panel', label: 'Vehicle Negotiations', Icon: FiTruck }, { key: 'awaiting', id: 'awaiting-orders-tab', panel: 'awaiting-orders-panel', label: 'Awaiting Order Approval', Icon: FiClock }].map(({ key, id, panel, label, Icon }) => <button key={key} id={id} type="button" role="tab" aria-selected={activeTab === key} aria-controls={panel} tabIndex={activeTab === key ? 0 : -1} onClick={() => setActiveTab(key)} className={`inline-flex shrink-0 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-semibold transition duration-150 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500 focus-visible:ring-offset-2 motion-reduce:transform-none ${activeTab === key ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200/60' : 'text-slate-500 hover:bg-white/60 hover:text-slate-800'}`}><Icon size={15} className={activeTab === key ? 'text-amber-600' : 'text-slate-400'} />{label}{activeTab === key && <span className="ml-1 h-1.5 w-1.5 rounded-full bg-amber-500" />}</button>)}
+        </div>
+      </div>
+      {activeTab === 'awaiting' && <AwaitingVnnOrders />}
       {/* Main Content */}
-      <div className="mx-auto max-w-full p-6">
+      <div id="negotiations-panel" role="tabpanel" aria-labelledby="negotiations-tab" hidden={activeTab !== "negotiations"} className="mx-auto max-w-full p-6">
         {error && (
           <div className="mb-6 rounded-xl bg-red-50 border border-red-200 p-4 text-red-700">
             {error}
@@ -420,7 +436,7 @@ export default function VehicleNegotiationList() {
                         <div className="text-sm">
                           <span>{item.from || '-'}</span>
                           <span className="mx-1 text-slate-400">→</span>
-                          <span>{item.to || '-'}</span>
+                          <span>{destinationLabel(item, item.to || '-')}</span>
                         </div>
                       </td>
                       <td className="px-4 py-3 font-medium">{item.totalWeight} MT</td>

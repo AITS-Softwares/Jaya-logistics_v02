@@ -28,7 +28,7 @@ assert.match(loadingPhotoError({ ...complete, votUploads: {} }, 2), /3 VOT/);
 assert.match(loadingPhotoError({ ...complete, vlUploads: {} }, 2), /5 VL/);
 assert.equal(loadingPhotoError({}, 1, true), null);
 assert.match(loadingSubmissionError({}, 1, true), /Empty Vehicle Slip/);
-assert.match(loadingSubmissionError({ loadedVehicleSlips: [' '] }, 2, true), /Loaded Vehicle Slip/);
+assert.equal(loadingSubmissionError({ loadedVehicleSlips: [' '] }, 2, true), null);
 assert.equal(loadingSubmissionError({ ...complete, vehicleSlips: ['/empty.pdf'] }, 1), null);
 assert.equal(loadingSubmissionError({ ...complete, loadedVehicleSlips: ['/loaded.pdf'] }, 2), null);
 

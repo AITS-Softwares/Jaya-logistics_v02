@@ -2871,6 +2871,7 @@
 
 "use client";
 
+import { destinationLabel } from '@/lib/destination.mjs';
 import { useMemo, useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { advanceForFixedBalance, LPT_1000_BALANCE_ONLY } from "@/lib/purchasePaymentTerms.mjs";
@@ -3768,7 +3769,7 @@ export default function CreatePurchasePanel() {
             from: order.fromName || order.from || "",
             fromName: order.fromName || order.from || "",
             fromState: fromState,
-            to: order.toName || order.to || "",
+            to: order.toName || order.to || "", locationRemark: order?.locationRemark || '',
             toName: order.toName || order.to || "",
             // locationRate: locationRate,
             // priceList: priceList,
@@ -4666,7 +4667,7 @@ export default function CreatePurchasePanel() {
                       <td className="border border-yellow-300 px-2 py-2">
                         <input
                           type="text"
-                          value={row.to || ""}
+                          value={destinationLabel(row, row.to || "")}
                           readOnly
                           className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm"
                           placeholder="To"

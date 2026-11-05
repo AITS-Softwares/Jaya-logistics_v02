@@ -684,7 +684,7 @@ pricingPanelSchema.pre('save', function(next) {
     state: order.stateName || '-',
     district: order.districtName || '-',
     from: order.fromName || '-',
-    to: order.toName || '-',
+    to: order.toName || '-', locationRemark: order?.locationRemark || '',
     weight: order.weight || 0,
     pricing: 'Pending',
     approval: this.rateApproval.approvalStatus || 'Pending',

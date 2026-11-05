@@ -5164,6 +5164,8 @@
 
 "use client";
 
+import { destinationLabel } from '@/lib/destination.mjs';
+import LoadingTrackingSummary from "@/components/LoadingTrackingSummary";
 import LoadingStageGuide from '@/components/LoadingStageGuide';
 import { normalizeAmountInput } from '@/lib/amountInput.mjs';
 import { useMemo, useState, useEffect, useRef } from "react";
@@ -6814,6 +6816,7 @@ export default function CreateLoadingInfoPanel() {
             fromState: order.fromState || '',
             to: order.to || '',
             toName: order.toName || order.to || '',
+            locationRemark: order.locationRemark || "",
             weight: order.weight?.toString() || '',
             collectionCharges: order.collectionCharges?.toString() || '',
             cancellationCharges: order.cancellationCharges || 'Nil',
@@ -7018,14 +7021,6 @@ export default function CreateLoadingInfoPanel() {
     setHeader((prev) => ({ ...prev, billingType: value }));
   };
 
-  const handleActivateTracking = () => {
-    if (!gpsTracking.driverMobileNumber) {
-      alert("Please enter driver mobile number first");
-      return;
-    }
-    setGpsTracking(prev => ({ ...prev, isTrackingActive: true }));
-    alert(`✅ Tracking activated for mobile: ${gpsTracking.driverMobileNumber}`);
-  };
 
   const calculateTotalWeight = () => {
     return orderRows.reduce((sum, row) => sum + num(row.weight), 0);
@@ -7481,6 +7476,7 @@ export default function CreateLoadingInfoPanel() {
           fromState: order.fromState || '',
           to: order.to || order.toName,
           toName: order.toName || order.to,
+          locationRemark: order.locationRemark || "",
           weight: num(order.weight),
           collectionCharges: num(order.collectionCharges) || 0,
           cancellationCharges: order.cancellationCharges || 'Nil',
@@ -8361,9 +8357,9 @@ export default function CreateLoadingInfoPanel() {
                       <td className="border border-yellow-300 px-2 py-2">
                         <input
                           type="text"
-                          value={row.toName || row.to || ""}
+                          value={destinationLabel(row, row.toName || row.to || "")}
                           onChange={(e) => updateOrderRow(row._id, 'toName', e.target.value)}
-                          readOnly={!!selectedVehicleNegotiation}
+                          readOnly={(!!selectedVehicleNegotiation) || !!String(row.locationRemark || '').trim()}
                           className={`w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-emerald-500 ${selectedVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
                             }`}
                           placeholder="To"
@@ -9571,41 +9567,7 @@ export default function CreateLoadingInfoPanel() {
           <Card title="Vehicle GPS Tracking & Driver Photo">
             <div className="grid grid-cols-12 gap-4">
               <div className="col-span-12 md:col-span-6">
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-200 h-full">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
-                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                    </div>
-                    <h3 className="text-sm font-bold text-slate-800">Live Vehicle Tracking</h3>
-                  </div>
-                  <p className="text-xs text-slate-600 mb-3">Track vehicle location in real-time via API integration</p>
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="text"
-                      placeholder="Driver Mobile Number"
-                      value={gpsTracking.driverMobileNumber}
-                      onChange={(e) => setGpsTracking({ ...gpsTracking, driverMobileNumber: e.target.value })}
-                      className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500"
-                    />
-                    <button
-                      onClick={handleActivateTracking}
-                      className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700 whitespace-nowrap"
-                    >
-                      {gpsTracking.isTrackingActive ? 'Tracking Active' : 'Activate Tracking'}
-                    </button>
-                  </div>
-                  <div className="mt-3 text-xs text-slate-500">
-                    <span className="font-bold">API Status:</span> {gpsTracking.isTrackingActive ? 'Active' : 'Ready'}
-                    {gpsTracking.isTrackingActive && (
-                      <span className="ml-3 text-green-600">
-                        ✓ Tracking active for: {gpsTracking.driverMobileNumber}
-                      </span>
-                    )}
-                  </div>
-                </div>
+                <LoadingTrackingSummary />
               </div>
 
               <div className="col-span-12 md:col-span-6">
@@ -9873,12 +9835,12 @@ export default function CreateLoadingInfoPanel() {
 
         {/* Loaded Vehicle Slip Upload - Bottom section */}
         <div className="mt-4">
-          <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-200">
-            <label className="text-xs font-bold text-indigo-700">Loaded Vehicle Slip (required for Part 2 submission)</label>
+          <div className="bg-white p-4 rounded-xl border-2 border-dashed border-slate-300">
+            <label className="text-xs font-bold text-slate-600">Loaded Vehicle Slip (optional)</label>
             <p className="text-xs text-slate-400 mb-1">Upload loaded vehicle slip after loading (Image/PDF)</p>
             <button
               onClick={handleLoadedVehicleSlipSelect}
-              className="w-full rounded-lg bg-indigo-100 px-3 py-2 text-xs font-bold text-indigo-700 border border-indigo-300 hover:bg-indigo-200 transition flex items-center justify-center gap-2"
+              className="w-full rounded-lg bg-indigo-100 px-3 py-2 text-xs font-bold text-slate-600 border border-indigo-300 hover:bg-indigo-200 transition flex items-center justify-center gap-2"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />

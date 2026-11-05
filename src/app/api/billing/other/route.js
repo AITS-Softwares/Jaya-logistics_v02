@@ -177,7 +177,7 @@ async function branchHandlerPOST(req) {
         lrNo: note.lrNo,
         vehicleNo: note.header?.vehicleNo || 'N/A',
         from: note.header?.from || 'N/A',
-        to: note.header?.to || 'N/A',
+        to: note.header?.to || 'N/A', locationRemark: note.header?.locationRemark || '',
         partyName: note.header?.partyName || 'N/A',
         billingType: billingType || "Other Charges",
         amount: amount

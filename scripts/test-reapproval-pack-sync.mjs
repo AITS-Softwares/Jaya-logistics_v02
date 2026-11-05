@@ -6,7 +6,7 @@ import { withLrCargoWeight } from '../src/lib/lrWeight.mjs';
 const emptyPacks = () => Object.fromEntries(PACK_TYPES.map((type) => [type, []]));
 const pack = (id, drop, weight) => ({ _id: id, plantRowId: drop, productName: id, actualWt: weight, totalPkgs: 10 });
 const order = {
-  _id: 'order-1', orderPanelNo: 'OP-1', plantRows: [{ _id: 'drop-1', toName: 'City A' }, { _id: 'drop-2', toName: 'City B' }],
+  _id: 'order-1', orderPanelNo: 'OP-1', plantRows: [{ _id: 'drop-1', toName: 'City A', locationRemark: 'North gate' }, { _id: 'drop-2', toName: 'City B' }],
   packData: { ...emptyPacks(), PALLETIZATION: [pack('pack-1', 'drop-1', 15), pack('pack-2', 'drop-2', 20)] },
 };
 const loading = { orderRows: [{ orderRowId: 'drop-1' }], packData: emptyPacks() };
@@ -76,7 +76,9 @@ assert.equal(loadingDoc.packData.PALLETIZATION[0].actualWt, 99);
 assert.equal(lrDoc.packData.PALLETIZATION[0].actualWt, 99);
 assert.equal(loadingDoc.orderRows[0].weight, 10, 'Plant-row sync must continue working');
 assert.equal(lrDoc.header.to, 'City A');
-assert.deepEqual(lrDoc.consignmentBreakdown, [{ orderNo: 'OP-1', from: '', to: 'City A', weight: 99, unit: 'MT' }], 'LR breakdown must use the reapproved LR cargo weight rather than planned drop weight');
+assert.equal(lrDoc.header.locationRemark, 'North gate');
+assert.equal(loadingDoc.orderRows[0].locationRemark, 'North gate');
+assert.deepEqual(lrDoc.consignmentBreakdown, [{ orderNo: 'OP-1', from: '', to: 'City A', locationRemark: 'North gate', weight: 99, unit: 'MT' }], 'LR breakdown must use the reapproved LR cargo weight rather than planned drop weight');
 assert.equal(loadingDoc.reapprovalState, 'pendingReapproval');
 assert.equal(lrDoc.reapprovalState, 'pendingReapproval');
 // A later commercial-only amendment must preserve downstream cargo edits.

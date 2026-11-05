@@ -3799,6 +3799,7 @@
 // }
 
 
+import { destinationLabel } from '@/lib/destination.mjs';
 import { useMemo, useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import LRInvoiceUpload from "@/components/LRInvoiceUpload";
@@ -4708,12 +4709,12 @@ export default function CreateConsignmentNote() {
     const selectedOrder = allOrders.find((order) => normText(order.orderNo || order.orderPanelNo) === normText(header.orderNo));
     if (selectedOrder) {
       setSelectedRowId(String(row._id));
-      setHeader((p) => ({ ...p, plantCode: row.plantCodeValue || row.plantCode || p.plantCode, plantName: row.plantName || p.plantName, from: row.fromName || row.from || p.from, fromState: row.fromState || '', to: row.toName || row.to || p.to, taluka: row.talukaName || row.taluka || '', district: row.districtName || row.district || '', state: row.stateName || row.state || '' }));
+      setHeader((p) => ({ ...p, plantCode: row.plantCodeValue || row.plantCode || p.plantCode, plantName: row.plantName || p.plantName, from: row.fromName || row.from || p.from, fromState: row.fromState || '', to: row.toName || row.to || p.to, locationRemark: row?.locationRemark || '', taluka: row.talukaName || row.taluka || '', district: row.districtName || row.district || '', state: row.stateName || row.state || '' }));
       handleSelectOrder(selectedOrder, { silent: true, selectedRowId: String(row._id), selectedRow: row });
       return;
     }
     setSelectedRowId(String(row._id));
-    setHeader((p) => ({ ...p, plantCode: row.plantCodeValue || row.plantCode || p.plantCode, plantName: row.plantName || p.plantName, from: row.fromName || row.from || p.from, fromState: row.fromState || '', to: row.toName || row.to || p.to, taluka: row.talukaName || row.taluka || '', district: row.districtName || row.district || '', state: row.stateName || row.state || '' }));
+    setHeader((p) => ({ ...p, plantCode: row.plantCodeValue || row.plantCode || p.plantCode, plantName: row.plantName || p.plantName, from: row.fromName || row.from || p.from, fromState: row.fromState || '', to: row.toName || row.to || p.to, locationRemark: row?.locationRemark || '', taluka: row.talukaName || row.taluka || '', district: row.districtName || row.district || '', state: row.stateName || row.state || '' }));
   };
   // Real row data for the listed orders (the table list only has a summary row)
   useEffect(() => {
@@ -4996,7 +4997,7 @@ export default function CreateConsignmentNote() {
         orderRowId: selectedRowId || '',
         consignmentBreakdown: (() => {
           const r = orderRows.find((x) => String(x._id) === selectedRowId);
-          return r ? [{ orderNo: header.orderNo, from: r.fromName || r.from || header.from, to: r.toName || r.to || header.to, weight: Number(r.weight) || 0, unit: header.unit || 'MT' }] : undefined;
+          return r ? [{ orderNo: header.orderNo, from: r.fromName || r.from || header.from, to: r.toName || r.to || header.to, locationRemark: r?.locationRemark || '', weight: Number(r.weight) || 0, unit: header.unit || 'MT' }] : undefined;
         })(),
         header: {
           ...header,
@@ -5210,7 +5211,7 @@ export default function CreateConsignmentNote() {
                             Party: {order.partyName || order.customerName || 'N/A'}
                           </div>
                           <div className="text-xs text-slate-400">
-                            From: {order.from || 'N/A'} → To: {order.to || 'N/A'}
+                            From: {order.from || 'N/A'} → To: {destinationLabel(order, order.to || 'N/A')}
                           </div>
                           {order.subCompanyName && (
                             <div className="text-xs text-blue-600 mt-0.5">
@@ -5330,7 +5331,7 @@ export default function CreateConsignmentNote() {
                           <input type="radio" name="order-row" checked={chosen} disabled={Boolean(lr) || fetchingOrder} onChange={() => chooseOrderRow(row)} />
                         </td>
                         <td className="border border-yellow-300 px-2 py-2">{row.fromName || row.from}</td>
-                        <td className="border border-yellow-300 px-2 py-2">{row.toName || row.to}</td>
+                        <td className="border border-yellow-300 px-2 py-2">{destinationLabel(row, row.toName || row.to)}</td>
                         <td className="border border-yellow-300 px-2 py-2">{row.locationRemark || '—'}</td>
                         <td className="border border-yellow-300 px-2 py-2">{row.talukaName || row.taluka}</td>
                         <td className="border border-yellow-300 px-2 py-2">{row.districtName || row.district}</td>
@@ -5514,7 +5515,7 @@ export default function CreateConsignmentNote() {
               <label className="text-xs font-bold text-slate-600">To</label>
               <input
                 type="text"
-                value={header.to}
+                value={destinationLabel(header, header.to)}
                 readOnly
                 className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm outline-none cursor-not-allowed"
               />
@@ -6028,7 +6029,7 @@ export default function CreateConsignmentNote() {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-slate-600">From - To:</span>
-                      <span className="font-bold text-blue-800">{header.from || 'N/A'} → {header.to || 'N/A'}</span>
+                      <span className="font-bold text-blue-800">{header.from || 'N/A'} → {destinationLabel(header, header.to || 'N/A')}</span>
                     </div>
                     {header.subCompanyName && (
                       <div className="flex justify-between">

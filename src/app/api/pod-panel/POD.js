@@ -240,6 +240,7 @@ const orderSchema = new mongoose.Schema({
   fromName: { type: String, default: '' },
   to: { type: String, default: '' },
   toName: { type: String, default: '' },
+  locationRemark: { type: String, default: "" },
   locationRate: { type: String, default: '' },
   weight: { type: Number, default: 0 },
   localStatus: { type: String, enum: ['local', 'not-local', 'unknown'], default: 'unknown' },

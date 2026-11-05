@@ -838,6 +838,7 @@
 
 "use client";
 
+import { destinationLabel } from '@/lib/destination.mjs';
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { usePermission } from "../hooks/usePermission";
@@ -1249,7 +1250,7 @@ export default function PODPanelList() {
                       <td className="border border-slate-200 px-4 py-3 text-slate-600">{item.state}</td>
                       <td className="border border-slate-200 px-4 py-3 text-slate-600">{item.district}</td>
                       <td className="border border-slate-200 px-4 py-3 text-slate-600">{item.from}</td>
-                      <td className="border border-slate-200 px-4 py-3 text-slate-600">{item.to}</td>
+                      <td className="border border-slate-200 px-4 py-3 text-slate-600">{destinationLabel(item, item.to)}</td>
                       <td className="border border-slate-200 px-4 py-3 text-slate-600 text-right">{item.weight}</td>
                       <td className="border border-slate-200 px-4 py-3">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${item.unloading === 'Completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>

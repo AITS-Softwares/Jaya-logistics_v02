@@ -510,6 +510,7 @@ const loadingPanelSchema = new mongoose.Schema({
     fromState: { type: String, default: '' },
     to: String,
     toName: String,
+    locationRemark: { type: String, default: "" },
     weight: Number,
     collectionCharges: Number,
     cancellationCharges: String,
@@ -616,6 +617,8 @@ const loadingPanelSchema = new mongoose.Schema({
   
   // Loaded Vehicle Slip
   loadedVehicleSlips: [String],
+  loadedSlipUploads: [{ filePath: String, originalName: String, uploadedAt: Date, uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: "CompanyUser" }, uploadedByName: String }],
+
   
   // VL Photo Details (Height, Width, Nose for each photo)
   vlPhotoDetails: {

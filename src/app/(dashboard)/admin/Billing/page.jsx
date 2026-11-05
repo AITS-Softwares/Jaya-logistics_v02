@@ -4632,6 +4632,7 @@
 
 "use client";
 
+import { destinationLabel } from '@/lib/destination.mjs';
 import { Fragment, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { usePermission } from "../hooks/usePermission";
@@ -6097,7 +6098,7 @@ function ProductWiseBillingComponent({ branches, clients, plants, loadingBranche
                   <td className="px-3 py-2 border font-medium text-emerald-700">{item.lrNo || "-"}</td>
                   <td className="px-3 py-2 border">{item.vehicleNo || "-"}</td>
                   <td className="px-3 py-2 border">{item.from || "-"}</td>
-                  <td className="px-3 py-2 border">{item.to || "-"}</td>
+                  <td className="px-3 py-2 border">{destinationLabel(item, item.to || "-")}</td>
                   <td className="px-3 py-2 border">{item.plantCode || "-"}</td>
                   <td className="px-3 py-2 border">{item.productName || "-"}</td>
                   <td className="px-3 py-2 border text-right">{Number(item.quantity ?? item.weight ?? 0).toFixed(2)}</td>
@@ -6823,7 +6824,7 @@ function DetentionBillingComponent({ branches, clients, loadingBranches, loading
                   <td className="px-3 py-2 border font-medium text-emerald-700">{item.lrNo || "-"}</td>
                   <td className="px-3 py-2 border">{item.vehicleNo || "-"}</td>
                   <td className="px-3 py-2 border">{item.from || "-"}</td>
-                  <td className="px-3 py-2 border">{item.to || "-"}</td>
+                  <td className="px-3 py-2 border">{destinationLabel(item, item.to || "-")}</td>
                   <td className="px-3 py-2 border">{item.detentionType || filters.detention || "-"}</td>
                   <td className="px-3 py-2 border text-right">₹ {item.amount?.toFixed(2) || "0.00"}</td>
                 </tr>
@@ -7109,7 +7110,7 @@ function CancellationBillingComponent({ branches, clients, loadingBranches, load
                   <td className="px-3 py-2 border font-medium text-emerald-700">{item.lrNo || "-"}</td>
                   <td className="px-3 py-2 border">{item.vehicleNo || "-"}</td>
                   <td className="px-3 py-2 border">{item.from || "-"}</td>
-                  <td className="px-3 py-2 border">{item.to || "-"}</td>
+                  <td className="px-3 py-2 border">{destinationLabel(item, item.to || "-")}</td>
                   <td className="px-3 py-2 border">{item.cancellationType || filters.cancellation || "-"}</td>
                   <td className="px-3 py-2 border text-right">₹ {item.amount?.toFixed(2) || "0.00"}</td>
                 </tr>
@@ -7398,7 +7399,7 @@ function OtherBillingComponent({ branches, clients, loadingBranches, loadingClie
                   <td className="px-3 py-2 border font-medium text-emerald-700">{item.lrNo || "-"}</td>
                   <td className="px-3 py-2 border">{item.vehicleNo || "-"}</td>
                   <td className="px-3 py-2 border">{item.from || "-"}</td>
-                  <td className="px-3 py-2 border">{item.to || "-"}</td>
+                  <td className="px-3 py-2 border">{destinationLabel(item, item.to || "-")}</td>
                   <td className="px-3 py-2 border">{item.billingType || filters.type || "-"}</td>
                   <td className="px-3 py-2 border text-right">₹ {item.amount?.toFixed(2) || "0.00"}</td>
                 </tr>

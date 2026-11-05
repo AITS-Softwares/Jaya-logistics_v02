@@ -1,5 +1,6 @@
 "use client";
 
+import { destinationLabel } from '@/lib/destination.mjs';
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { usePermission } from "../../hooks/usePermission";
@@ -460,7 +461,7 @@ export default function EditBalancePayment() {
           stateName: row.stateName || row.state || "",
           fromState: row.fromState || "",
           fromName: row.fromName || row.from || "",
-          toName: row.toName || row.to || "",
+          toName: row.toName || row.to || "", locationRemark: row?.locationRemark || '',
           localStatus: row.localStatus || "unknown",
           localStatusLabel: row.localStatusLabel || "Unknown",
         }))
@@ -577,7 +578,7 @@ export default function EditBalancePayment() {
             district: order.district || "",
             from: order.from || "",
             fromName: order.fromName || order.from || "",
-            to: order.to || "",
+            to: order.to || "", locationRemark: order?.locationRemark || '',
             toName: order.toName || order.to || "",
             locationRate: order.locationRate || "",
             priceList: order.priceList || "",
@@ -900,7 +901,7 @@ export default function EditBalancePayment() {
                       </td>
                       <td className={td}><input type="text" value={row.district || ""} readOnly className={roCell} /></td>
                       <td className={td}><input type="text" value={row.from || ""} readOnly className={roCell} /></td>
-                      <td className={td}><input type="text" value={row.to || ""} readOnly className={roCell} /></td>
+                      <td className={td}><input type="text" value={destinationLabel(row, row.to || "")} readOnly className={roCell} /></td>
                       <td className={td}><input type="number" value={row.weight ?? ""} readOnly className={numCell} /></td>
                       <td className={`${td} text-center`}>
                         <button onClick={() => removeOrderRow(row._id)} className="text-red-600 hover:text-red-800">✕</button>

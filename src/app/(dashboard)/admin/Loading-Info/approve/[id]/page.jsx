@@ -1752,6 +1752,9 @@
 
 "use client";
 
+import { destinationLabel } from '@/lib/destination.mjs';
+import ApprovedLoadedSlipUpload from "@/components/ApprovedLoadedSlipUpload";
+import LoadingTrackingSummary from "@/components/LoadingTrackingSummary";
 import LoadingStageGuide from '@/components/LoadingStageGuide';
 import { normalizeAmountInput } from '@/lib/amountInput.mjs';
 import { editableLoadingPart } from '@/lib/loadingApprovalWorkflow.mjs';
@@ -2127,7 +2130,7 @@ function OrdersTable({ rows }) {
                 <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.orderType || '-'}</td>
                 <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.pinCode || '-'}</td>
                 <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.fromName || row.from || '-'}</td>
-                <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.toName || row.to || '-'}</td>
+                <td className="border border-yellow-300 px-2 py-2 text-slate-700">{destinationLabel(row, row.toName || row.to || '-')}</td>
                 <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.talukaName || row.taluka || '-'}</td>
                 <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.districtName || row.district || '-'}</td>
                 <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.stateName || row.state || '-'}</td>
@@ -3475,40 +3478,10 @@ export default function ApproveLoadingPanel() {
           </Card>
         </div>
 
-        {/* Vehicle GPS Tracking - EDITABLE */}
-        <div className="mt-4">
-          <Card title="Vehicle GPS Tracking - Editable">
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-200">
-              <div className="grid grid-cols-12 gap-4">
-                <div className="col-span-12 md:col-span-4">
-                  <EditableInput
-                    label="Driver Mobile Number"
-                    value={gpsTracking.driverMobileNumber}
-                    onChange={(v) => setGpsTracking({ ...gpsTracking, driverMobileNumber: v })}
-                  />
-                </div>
-                <div className="col-span-12 md:col-span-4">
-                  <div className="flex items-center gap-2 mt-6">
-                    <input
-                      type="checkbox"
-                      checked={gpsTracking.isTrackingActive}
-                      onChange={(e) => setGpsTracking({ ...gpsTracking, isTrackingActive: e.target.checked })}
-                      className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <label className="text-sm font-medium text-slate-700">Tracking Active</label>
-                  </div>
-                </div>
-                <div className="col-span-12 md:col-span-4">
-                  <div className="text-xs text-slate-500 mt-6">
-                    API Status: {gpsTracking.isTrackingActive ? 'Active' : 'Ready'}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </Card>
-        </div>
-
         </fieldset>
+
+        <div className="mt-4"><Card title="Vehicle GPS Tracking"><LoadingTrackingSummary loadingId={panelId} /></Card></div>
+
 
         {/* Documents & Consignment Note Card */}
         <div className="mt-4">
@@ -3550,11 +3523,12 @@ export default function ApproveLoadingPanel() {
           </Card>
         </div>
 
+        <ApprovedLoadedSlipUpload loadingId={panelId}>
         <fieldset disabled={stagedLoading && (!stageReady || currentPart !== 2)} className="min-w-0 border-0 p-0 m-0">
         {/* Loaded Vehicle Slip - Bottom section */}
         <div className="mt-4">
-          <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-200">
-            <label className="text-xs font-bold text-indigo-700">Loaded Vehicle Slip</label>
+          <div className="bg-white p-4 rounded-xl border-2 border-dashed border-slate-300">
+            <label className="text-xs font-bold text-slate-600">Loaded Vehicle Slip (optional)</label>
             <p className="text-xs text-slate-400 mb-1">Uploaded loaded vehicle slip after loading (Image/PDF)</p>
             {existingFiles.loadedVehicleSlips && existingFiles.loadedVehicleSlips.length > 0 ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mt-2">
@@ -3563,13 +3537,14 @@ export default function ApproveLoadingPanel() {
                 ))}
               </div>
             ) : (
-              <div className="mt-1 w-full rounded-lg border border-indigo-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">
+              <div className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">
                 No loaded vehicle slip uploaded
               </div>
             )}
           </div>
         </div>
       </fieldset>
+        </ApprovedLoadedSlipUpload>
 </div>
     </div>
   );

@@ -1438,6 +1438,7 @@
 
 "use client";
 
+import { destinationLabel } from '@/lib/destination.mjs';
 import { usePermission } from '../../hooks/usePermission';
 import { useMemo, useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
@@ -1820,7 +1821,7 @@ export default function EditAdvancePayment() {
           district: row.district || "",
           from: row.from || "",
           fromName: row.fromName || row.from || "",
-          to: row.to || "",
+          to: row.to || "", locationRemark: row?.locationRemark || '',
           toName: row.toName || row.to || "",
           // locationRate: row.locationRate?.toString() || "",
           // priceList: row.priceList || "",
@@ -2503,7 +2504,7 @@ export default function EditAdvancePayment() {
                         <input type="text" value={row.from || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="From" />
                       </td>
                       <td className="border border-yellow-300 px-2 py-2">
-                        <input type="text" value={row.to || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="To" />
+                        <input type="text" value={destinationLabel(row, row.to || "")} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="To" />
                       </td>
                       {/* <td className="border border-yellow-300 px-2 py-2">
                         <input type="text" value={row.locationRate || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Location Rate" />

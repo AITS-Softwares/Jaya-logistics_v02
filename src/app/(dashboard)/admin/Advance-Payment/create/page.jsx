@@ -1532,6 +1532,7 @@
 
 "use client";
 
+import { destinationLabel } from '@/lib/destination.mjs';
 import { useMemo, useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -2294,7 +2295,7 @@ export default function CreateAdvancePayment() {
         district: row.district || "",
         from: row.from || "",
         fromName: row.fromName || row.from || "",
-        to: row.to || "",
+        to: row.to || "", locationRemark: row?.locationRemark || '',
         toName: row.toName || row.to || "",
         // locationRate: row.locationRate?.toString() || "",
         // priceList: row.priceList || "",
@@ -2842,7 +2843,7 @@ export default function CreateAdvancePayment() {
                       </td>
                       <td className="border border-yellow-300 px-2 py-2"><input type="text" value={row.district || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="District" /></td>
                       <td className="border border-yellow-300 px-2 py-2"><input type="text" value={row.from || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="From" /></td>
-                      <td className="border border-yellow-300 px-2 py-2"><input type="text" value={row.to || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="To" /></td>
+                      <td className="border border-yellow-300 px-2 py-2"><input type="text" value={destinationLabel(row, row.to || "")} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="To" /></td>
                       {/* <td className="border border-yellow-300 px-2 py-2"><input type="text" value={row.locationRate || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Location Rate" /></td> */}
                       {/* <td className="border border-yellow-300 px-2 py-2"><input type="text" value={row.priceList || ""} readOnly className="w-full rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="Price List" /></td> */}
                       <td className="border border-yellow-300 px-2 py-2"><input type="number" value={row.weight || ""} readOnly className="w-20 rounded-lg border border-slate-200 bg-gray-100 px-2 py-1.5 text-sm cursor-not-allowed" placeholder="0" /></td>

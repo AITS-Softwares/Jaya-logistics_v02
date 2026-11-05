@@ -1,3 +1,4 @@
+import { destinationLabel } from '@/lib/destination.mjs';
 // src/lib/lrPrintTemplate.js
 //
 // ONE print layout for the Consignment Note (LR). Used by the Consignment Note page and the
@@ -337,7 +338,7 @@ export function buildLRHtml(note, businessInfo, loadingInfoNoArg = "") {
               <span class="info-label">From:</span>
               <span class="info-value"><strong>${header.from || 'DIGHODE'}</strong></span>
               <span class="info-label">To:</span>
-              <span class="info-value"><strong>${header.to || 'DHULE'}</strong></span>
+              <span class="info-value"><strong>${String(destinationLabel(header, '')).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')}</strong></span>
             </div>
 
             <!-- LC Status & LR Type -->

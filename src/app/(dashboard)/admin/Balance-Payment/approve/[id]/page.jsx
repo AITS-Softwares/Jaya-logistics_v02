@@ -1,5 +1,6 @@
 "use client";
 
+import { destinationLabel } from '@/lib/destination.mjs';
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { usePermission } from "../../../hooks/usePermission";
@@ -643,7 +644,7 @@ export default function ApproveBalancePayment() {
                       </td>
                       <td className={td}><input type="text" value={row.district || ""} readOnly className={roCell} /></td>
                       <td className={td}><input type="text" value={row.from || ""} readOnly className={roCell} /></td>
-                      <td className={td}><input type="text" value={row.to || ""} readOnly className={roCell} /></td>
+                      <td className={td}><input type="text" value={destinationLabel(row, row.to || "")} readOnly className={roCell} /></td>
                       <td className={td}><input type="number" value={row.weight ?? ""} readOnly className={numCell} /></td>
                     </tr>
                   );

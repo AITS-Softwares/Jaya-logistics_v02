@@ -26,7 +26,7 @@ export function loadingMatchesDrop(loading, order, row) {
 // Explicit response mapping; adding internal schema fields never exposes them automatically.
 export function customerOrderView(order, loadings = [], negotiations = []) {
   const rows = (order.plantRows || []).map(row => ({
-    id: id(row._id), plant: row.plantName || '', from: row.fromName || '', to: row.toName || '',
+    id: id(row._id), plant: row.plantName || '', from: row.fromName || '', to: row.toName || '', locationRemark: row?.locationRemark || '',
     weight: Number(row.weight) || 0, plantCode: row.plantCodeValue || '', orderType: row.orderType || '',
     destination: { taluka: row.talukaName || '', district: row.districtName || '', state: row.stateName || '', country: row.countryName || '', pinCode: row.pinCode || '' },
     status: order.panelStatus === 'Cancelled' ? 'Cancelled' : (['Open', 'Hold', 'Cancelled'].includes(row.status) ? row.status : 'Open'),

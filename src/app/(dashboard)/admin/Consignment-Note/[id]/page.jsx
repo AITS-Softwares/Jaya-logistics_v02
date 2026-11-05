@@ -2598,6 +2598,7 @@
 
 "use client";
 
+import { destinationLabel } from '@/lib/destination.mjs';
 import { useMemo, useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import LRInvoiceUpload from "@/components/LRInvoiceUpload";
@@ -3153,7 +3154,7 @@ export default function EditConsignmentNote() {
         vendorName: note.header?.vendorName || "",
         from: note.header?.from || "",
         fromState: note.header?.fromState || "",
-        to: note.header?.to || "",
+        to: note.header?.to || "", locationRemark: note.header?.locationRemark || '',
         taluka: note.header?.taluka || "",
         district: note.header?.district || "",
         state: note.header?.state || "",
@@ -3981,7 +3982,7 @@ export default function EditConsignmentNote() {
                           Party: {order.partyName || order.customerName || 'N/A'}
                         </div>
                         <div className="text-xs text-slate-400">
-                          From: {order.from || 'N/A'} → To: {order.to || 'N/A'}
+                          From: {order.from || 'N/A'} → To: {destinationLabel(order, order.to || 'N/A')}
                         </div>
                         {order.subCompanyName && (
                           <div className="text-xs text-blue-600 mt-0.5">
@@ -4251,7 +4252,7 @@ export default function EditConsignmentNote() {
               <label className="text-xs font-bold text-slate-600">To</label>
               <input
                 type="text"
-                value={header.to}
+                value={destinationLabel(header, header.to)}
                 readOnly
                 className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm outline-none cursor-not-allowed"
               />
@@ -5319,7 +5320,7 @@ export default function EditConsignmentNote() {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-slate-600">From - To:</span>
-                      <span className="font-bold text-blue-800">{header.from || 'N/A'} → {header.to || 'N/A'}</span>
+                      <span className="font-bold text-blue-800">{header.from || 'N/A'} → {destinationLabel(header, header.to || 'N/A')}</span>
                     </div>
                     {header.subCompanyName && (
                       <div className="flex justify-between">

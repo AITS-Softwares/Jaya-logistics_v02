@@ -164,7 +164,7 @@ async function branchHandlerPOST(req) {
         lrNo: note.lrNo,
         vehicleNo: note.header?.vehicleNo || 'N/A',
         from: note.header?.from || 'N/A',
-        to: note.header?.to || 'N/A',
+        to: note.header?.to || 'N/A', locationRemark: note.header?.locationRemark || '',
         partyName: note.header?.partyName || 'N/A',
         cancellationType: cancellation || "Order Cancellation",
         amount: 500 // Fixed cancellation fee
@@ -230,7 +230,7 @@ async function branchHandlerPOST(req) {
         lrNo: order.orderPanelNo,
         vehicleNo: 'N/A',
         from: row.fromName || 'N/A',
-        to: row.toName || 'N/A',
+        to: row.toName || 'N/A', locationRemark: row?.locationRemark || '',
         partyName: order.partyName || order.customerName || 'N/A',
         cancellationType: cancellation || 'Order Cancellation',
         amount,

@@ -868,6 +868,7 @@
 // }
 "use client";
 
+import { destinationLabel } from '@/lib/destination.mjs';
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { usePermission } from "../hooks/usePermission";
@@ -1294,7 +1295,7 @@ export default function ConsignmentNoteList() {
                         <div className="text-sm">
                           <span>{item.from}</span>
                           <span className="mx-1 text-slate-400">→</span>
-                          <span>{item.to}</span>
+                          <span>{destinationLabel(item, item.to)}</span>
                         </div>
                       </td>
                       <td className="px-4 py-3">{item.vehicleNo}</td>

@@ -1165,6 +1165,7 @@
 
 "use client";
 
+import { destinationLabel } from '@/lib/destination.mjs';
 import { useMemo, useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { usePermission } from "../../../hooks/usePermission";
@@ -1290,7 +1291,7 @@ function OrdersTable({ rows }) {
                 <td className="border border-yellow-300 px-2 py-2 text-center">{renderLocalStatus(row)}</td>
                 <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.country || '-'}</td>
                 <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.from || '-'}</td>
-                <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.to || '-'}</td>
+                <td className="border border-yellow-300 px-2 py-2 text-slate-700">{destinationLabel(row, row.to || '-')}</td>
                 {/* <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.locationRate || '-'}</td> */}
                 {/* <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.priceList || '-'}</td> */}
                 <td className="border border-yellow-300 px-2 py-2 text-slate-700 text-right">{row.weight || '0'}</td>

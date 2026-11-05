@@ -2193,6 +2193,7 @@
 
   "use client";
 
+import { destinationLabel } from '@/lib/destination.mjs';
 import PriceListDropdown from '@/components/PriceListDropdown';
 import { useMemo, useState, useEffect, useRef, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
@@ -3430,12 +3431,12 @@ function OrdersTable({
 
                 <td className="border border-yellow-300 px-1 py-1">
                   <input
-                    value={row.toName || ""}
+                    value={destinationLabel(row, row.toName || "")}
                     onChange={(e) => onChange(row._id, 'toName', e.target.value)}
                     className={`w-full min-w-[80px] rounded border border-slate-200 px-1 py-1 text-xs outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-200 ${isFromVehicleNegotiation ? 'bg-slate-50 cursor-not-allowed' : 'bg-white'
                       }`}
                     placeholder="To"
-                    readOnly={isFromVehicleNegotiation}
+                    readOnly={(isFromVehicleNegotiation) || !!String(row.locationRemark || '').trim()}
                   />
                 </td>
 

@@ -1261,7 +1261,7 @@ vehicleNegotiationSchema.pre('save', function(next) {
     orderType: order.orderType,
     pinCode: order.pinCode || '-',
     from: order.fromName || '-',
-    to: order.toName || '-',
+    to: order.toName || '-', locationRemark: order?.locationRemark || '',
     taluka: order.talukaName || order.taluka || '-',
     district: order.districtName || '-',
     state: order.stateName || '-',

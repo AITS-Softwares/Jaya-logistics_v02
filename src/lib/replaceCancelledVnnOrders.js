@@ -61,7 +61,7 @@ export async function replaceCancelledVnnOrders(user, recordId, body) {
       record.workflow.part1LockedAt = at; record.workflow.part1LockedBy = user.id;
       record.workflow.amendmentCount = (record.workflow.amendmentCount || 0) + 1;
       record.workflow.cancelledOrderReplacementOnly = true;
-      record.workflow.cancelledOrderReplacementRows = plan.removed.map(row => ({ orderNo: row.orderNo, orderRowId: row.orderRowId, plantName: row.plantName, toName: row.toName }));
+      record.workflow.cancelledOrderReplacementRows = plan.removed.map(row => ({ orderNo: row.orderNo, orderRowId: row.orderRowId, plantName: row.plantName, toName: row.toName, locationRemark: row?.locationRemark || '' }));
       record.workflow.lastAmendmentReason = reason; record.workflow.lastAmendedAt = at; record.workflow.lastAmendedBy = user.id;
       record.workflow.audit ||= [];
       record.workflow.audit.push({ action: 'cancelled-orders-replaced', reason, by: user.id, at });
