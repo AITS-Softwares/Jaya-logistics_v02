@@ -1,4 +1,5 @@
 import { reconcileOrderCancellations } from '@/lib/reconcileOrderCancellations';
+import { orderReadView } from '@/lib/orderReadView.mjs';
 import { panelApprovalStatus } from '@/lib/reapprovalPresentation.mjs';
 // // app/api/order-panel/route.js
 // import { NextResponse } from "next/server";
@@ -2237,6 +2238,12 @@ const branchHandlerGET = withAuth(async (req, context, user) => {
         customerName: orderPanel.customerName || 'N/A',
         partyName: orderPanel.partyName || orderPanel.customerName || 'N/A',
         totalWeight: orderPanel.totalWeight || 0,
+        totalAmount: orderPanel.totalAmount ?? null,
+        cancellationChargeMode: orderPanel.cancellationChargeMode || 'flat',
+        createdAt: orderPanel.createdAt || null,
+        updatedAt: orderPanel.updatedAt || null,
+        approvedAt: orderPanel.approvedAt || null,
+        reapprovalState: orderPanel.reapprovalState || 'none',
         panelStatus: orderPanel.panelStatus || 'Draft',
         canManageStatus: ['create', 'edit', 'approve'].some((action) => hasPermission(user, 'Order Panel', action)),
         isDraft: !!orderPanel.isDraft,
@@ -2263,7 +2270,7 @@ const branchHandlerGET = withAuth(async (req, context, user) => {
 
       return NextResponse.json({
         success: true,
-        data: formattedOrder
+        data: url.searchParams.get('view') === 'readOnly' ? orderReadView(formattedOrder) : formattedOrder
       }, { status: 200 });
     }
 

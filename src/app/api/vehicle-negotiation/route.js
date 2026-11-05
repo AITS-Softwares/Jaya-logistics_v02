@@ -3744,7 +3744,7 @@ async function branchHandlerGET(req) {
               orderType: order.orderType || '',
               pinCode: order.pinCode || '',
               from: order.fromName || '',
-              to: order.toName || '',
+              to: order.toName || '', locationRemark: order?.locationRemark || '',
               taluka: order.talukaName || order.taluka || '',
               district: order.districtName || '',
               state: order.stateName || '',
@@ -3834,6 +3834,15 @@ async function branchHandlerGET(req) {
 /* ========================================
    POST /api/vehicle-negotiation - Requires 'create' permission
 ======================================== */
+async function unapprovedVnnOrder(user, rows = [], panels = []) {
+  const names = [...new Set([...rows.map(row => row.orderNo || row.orderPanelNo), ...panels.map(panel => panel.orderPanelNo)].filter(Boolean))];
+  const ids = [...new Set([...rows.map(row => row.orderPanelId), ...panels.map(panel => panel._id || panel.orderPanelId)].filter(id => mongoose.isValidObjectId(id)))];
+  if (!names.length && !ids.length) return null;
+  const orders = await OrderPanel.find(companyScopeFilter(user, { $or: [{ orderPanelNo: { $in: names } }, { _id: { $in: ids } }] })).select('orderPanelNo panelStatus isDraft').lean();
+  const blocked = orders.find(order => order.isDraft || !['Approved', 'Partially on hold'].includes(order.panelStatus));
+  return blocked ? `Order ${blocked.orderPanelNo} must be approved before creating or adding it to a Vehicle Negotiation.` : null;
+}
+
 async function branchHandlerPOST(req) {
   try {
     await connectDb();
@@ -3847,6 +3856,9 @@ async function branchHandlerPOST(req) {
     if (formatError) return NextResponse.json({ success: false, message: formatError }, { status: 400 });
     const finalFix = parseVnnFixedRate(body.approval?.finalFix);
     if (finalFix === null) return NextResponse.json({ success: false, message: INVALID_VNN_FIXED_RATE }, { status: 422 });
+    const unapproved = await unapprovedVnnOrder(user, body.orders || body.orderRows || [], body.selectedOrderPanels || []);
+    if (unapproved) return NextResponse.json({ success: false, message: unapproved }, { status: 409 });
+
     const blockedRow = await validateOpenOrderRows(user, body.orders || body.orderRows || []);
     if (blockedRow) return NextResponse.json({ success: false, message: blockedRow }, { status: 409 });
 
@@ -3874,6 +3886,7 @@ async function branchHandlerPOST(req) {
       fromState: order.fromState || '',
       to: order.to && isValidObjectId(order.to) ? order.to : null,
       toName: order.toName || '',
+      locationRemark: order.locationRemark || "",
       taluka: order.taluka || '',
       talukaName: order.talukaName || '',
       country: order.country || '',
@@ -4218,6 +4231,13 @@ async function branchHandlerPUT(req) {
     }
 
     // ─── UPDATE SELECTED ORDER PANELS (requires 'edit' permission) ───
+    if (hasEditPermission && (body.selectedOrderPanels || body.orders)) {
+      const previous = new Set((vehicleNegotiation.orders || []).map(order => `${order.orderPanelId || ''}:${order.orderRowId || ''}`));
+      const added = (body.orders || []).filter(order => !previous.has(`${order.orderPanelId || ''}:${order.orderRowId || ''}`));
+      const unapproved = await unapprovedVnnOrder(user, added, body.selectedOrderPanels || []);
+      if (unapproved) return NextResponse.json({ success: false, message: unapproved }, { status: 409 });
+    }
+
     if (body.selectedOrderPanels && hasEditPermission) {
       vehicleNegotiation.selectedOrderPanels = uniqueVnnOrderPanels(body.selectedOrderPanels).map(panel => ({
         _id: panel._id || '',
@@ -4257,6 +4277,7 @@ async function branchHandlerPUT(req) {
         fromState: order.fromState || '',
         to: order.to && isValidObjectId(order.to) ? order.to : null,
         toName: order.toName || '',
+        locationRemark: order.locationRemark || "",
         taluka: order.taluka || '',
         talukaName: order.talukaName || '',
         country: order.country || '',

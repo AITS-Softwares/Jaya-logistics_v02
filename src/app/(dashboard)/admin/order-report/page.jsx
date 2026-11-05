@@ -1,5 +1,6 @@
 "use client";
 
+import { destinationLabel } from '@/lib/destination.mjs';
 import { useState, useEffect, useMemo } from "react";
 
 export default function OrderPanelTable() {
@@ -56,7 +57,7 @@ const transformedOrders = useMemo(() => {
         orderType: row.orderType || 'Sales',
         pinCode: row.pinCode || 'N/A',
         from: row.fromName || row.from || 'N/A',  // Fixed: try fromName first
-        to: row.toName || row.to || 'N/A',        // Fixed: try toName first
+        to: row.toName || row.to || 'N/A', locationRemark: row?.locationRemark || '',        // Fixed: try toName first
         district: row.districtName || row.district || 'N/A',  // Fixed: try districtName first
         state: row.stateName || row.state || 'N/A',  // Fixed: try stateName first
         weight: row.weight || 0,
@@ -323,7 +324,7 @@ const transformedOrders = useMemo(() => {
                       <td className="px-3 py-2 text-slate-600">{order.orderType}</td>
                       <td className="px-3 py-2 text-slate-600">{order.pinCode}</td>
                       <td className="px-3 py-2 text-slate-600">{order.from}</td>
-                      <td className="px-3 py-2 text-slate-600">{order.to}</td>
+                      <td className="px-3 py-2 text-slate-600">{destinationLabel(order, order.to)}</td>
                       <td className="px-3 py-2 text-slate-600">{order.district}</td>
                       <td className="px-3 py-2 text-slate-600">{order.state}</td>
                       <td className="px-3 py-2 font-medium text-slate-900">{order.weight}</td>

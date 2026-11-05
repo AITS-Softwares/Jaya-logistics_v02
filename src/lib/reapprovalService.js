@@ -73,7 +73,7 @@ function mirroredProjection(type, doc) {
   if (type === 'loading') return {
     vehicleNo: doc.vehicleInfo?.vehicleNo, vehicleOwnerName: doc.vehicleInfo?.vehicleOwnerName,
     driverName: doc.vehicleInfo?.driverName, driverMobileNo: doc.vehicleInfo?.driverMobileNo,
-    orderRows: (doc.orderRows || []).map((row) => ({ id: row.orderRowId, orderNo: row.orderNo, partyName: row.partyName, plantCodeValue: row.plantCodeValue, plantName: row.plantName, orderType: row.orderType, pinCode: row.pinCode, fromName: row.fromName, fromState: row.fromState, toName: row.toName, weight: row.weight })),
+    orderRows: (doc.orderRows || []).map((row) => ({ id: row.orderRowId, orderNo: row.orderNo, partyName: row.partyName, plantCodeValue: row.plantCodeValue, plantName: row.plantName, orderType: row.orderType, pinCode: row.pinCode, fromName: row.fromName, fromState: row.fromState, toName: row.toName, locationRemark: row.locationRemark, weight: row.weight })),
   };
   if (type === 'pricing') return {
     branch: doc.branch, branchName: doc.branchName, branchCode: doc.branchCode,
@@ -487,6 +487,7 @@ function applyMirroredFields(type, source, child) {
         from: sourceRow.fromName || sourceRow.from,
         fromState: sourceRow.fromState,
         to: sourceRow.toName || sourceRow.to,
+        locationRemark: sourceRow.locationRemark || "",
         taluka: sourceRow.talukaName || sourceRow.taluka,
         district: sourceRow.districtName || sourceRow.district,
         state: sourceRow.stateName || sourceRow.state,
@@ -503,7 +504,7 @@ function applyMirroredFields(type, source, child) {
       child.consignmentBreakdown = [{
         orderNo: sourceRow.orderNo || header.orderNo || '',
         from: sourceRow.fromName || sourceRow.from || '',
-        to: sourceRow.toName || sourceRow.to || '',
+        to: sourceRow.toName || sourceRow.to || '', locationRemark: sourceRow?.locationRemark || '',
         weight: Number(sourceRow.weight) || 0,
         unit: 'MT',
       }];
@@ -531,12 +532,12 @@ function applyMirroredFields(type, source, child) {
     if (candidates.length !== 1) return { matched: 0, ambiguous: true };
     const row = candidates[0];
     const header = child.header?.toObject?.() || child.header || {};
-    for (const [from, to] of Object.entries({ orderNo: 'orderNo', partyName: 'partyName', orderType: 'orderType', plantCodeValue: 'plantCode', plantName: 'plantName', fromName: 'from', fromState: 'fromState', toName: 'to', talukaName: 'taluka', districtName: 'district', stateName: 'state' })) {
+    for (const [from, to] of Object.entries({ orderNo: 'orderNo', partyName: 'partyName', orderType: 'orderType', plantCodeValue: 'plantCode', plantName: 'plantName', fromName: 'from', fromState: 'fromState', toName: 'to', locationRemark: 'locationRemark', talukaName: 'taluka', districtName: 'district', stateName: 'state' })) {
       if (row[from] !== undefined) header[to] = row[from];
     }
     child.header = header;
     if (Number.isFinite(Number(row.weight)) && Number(row.weight) > 0) {
-      child.consignmentBreakdown = [{ orderNo: row.orderNo || '', from: row.fromName || '', to: row.toName || '', weight: Number(row.weight), unit: 'MT' }];
+      child.consignmentBreakdown = [{ orderNo: row.orderNo || '', from: row.fromName || '', to: row.toName || '', locationRemark: row?.locationRemark || '', weight: Number(row.weight), unit: 'MT' }];
     }
     return { matched: 1, ambiguous: false };
   }

@@ -1695,7 +1695,7 @@ async function branchHandlerGET(req) {
         if (order.isDraft || (order.panelStatus || 'Draft') === 'Draft') return [];
         const openRows = (order.plantRows || []).filter((row) => (row.status || 'Open') === 'Open' && !row.statusRequest?.action);
         return order.plantRows?.length
-          ? openRows.map((row) => ({ originalRowId: row._id, orderNo: order.orderPanelNo, to: row.toName || row.to || "", weight: row.weight || "", partyName: resolvePartyName(order, row) }))
+          ? openRows.map((row) => ({ originalRowId: row._id, orderNo: order.orderPanelNo, to: row.toName || row.to || "", locationRemark: row?.locationRemark || '', weight: row.weight || "", partyName: resolvePartyName(order, row) }))
           : [{ orderNo: order.orderPanelNo, to: "N/A", partyName: resolvePartyName(order) }];
       });
       const seen = new Set();
@@ -1711,7 +1711,7 @@ async function branchHandlerGET(req) {
         seen.add(no);
         pendingRows.push({
           orderNo: row.orderNo,
-          to: row.to,
+          to: row.to, locationRemark: row?.locationRemark || '',
           date: "",
           weight: row.weight || "",
           vnnNo: source.vnnNo || "",
@@ -1873,14 +1873,14 @@ async function branchHandlerGET(req) {
         const sourceBreakdown = (matchingRows.length === 1 ? matchingRows : []).map((row) => ({
           orderNo: row.orderNo || note.header?.orderNo || 'N/A',
           from: row.fromName || row.from || note.header?.from || 'N/A',
-          to: row.toName || row.to || note.header?.to || 'N/A',
+          to: row.toName || row.to || note.header?.to || 'N/A', locationRemark: row?.locationRemark || '',
           weight: Number(row.weight) || 0,
           unit: row.unit || note.header?.unit || 'MT'
         }));
         const fallbackBreakdown = [{
           orderNo: note.header?.orderNo || 'N/A',
           from: note.header?.from || 'N/A',
-          to: note.header?.to || 'N/A',
+          to: note.header?.to || 'N/A', locationRemark: note.header?.locationRemark || '',
           weight: note.totalWeight || 0,
           unit: note.header?.unit || 'MT'
         }];
@@ -2008,7 +2008,7 @@ async function branchHandlerPOST(req) {
       plantCode: body.header?.plantCode,
       plantName: body.header?.plantName,
       from: body.header?.from,
-      to: body.header?.to,
+      to: body.header?.to, locationRemark: body.header?.locationRemark || '',
     }]);
     if (blockedRow) return NextResponse.json({ success: false, message: blockedRow }, { status: 409 });
 
@@ -2137,7 +2137,7 @@ async function branchHandlerPOST(req) {
       .map((row) => ({
         orderNo: row.orderNo || body.header?.orderNo || '',
         from: row.fromName || row.from || body.header?.from || '',
-        to: row.toName || row.to || body.header?.to || '',
+        to: row.toName || row.to || body.header?.to || '', locationRemark: row?.locationRemark || '',
         weight: Number(row.weight) || 0,
         unit: row.unit || body.header?.unit || 'MT'
       }))
@@ -2176,7 +2176,7 @@ async function branchHandlerPOST(req) {
         vendorName: body.header?.vendorName || '',
         from: body.header?.from || '',
         fromState: body.header?.fromState || '',
-        to: body.header?.to || '',
+        to: body.header?.to || '', locationRemark: body.header?.locationRemark || '',
         taluka: body.header?.taluka || '',
         district: body.header?.district || '',
         state: body.header?.state || '',

@@ -572,6 +572,7 @@
 
 "use client";
 
+import { destinationLabel } from '@/lib/destination.mjs';
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, Check, MapPin, Radio, Search, Truck } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -1214,6 +1215,7 @@ function buildSelected(loading, lrList = []) {
       district: lrHeader.district || row.districtName || row.district,
       from: lrHeader.from || row.fromName || row.from,
       to: toNames || lrHeader.to,
+      locationRemark: rows.length ? [...new Set(rows.map(row => destinationLabel(row, "")).filter(Boolean))].join(", ") : lrHeader.locationRemark || "",
       vehicleNo: loading?.vehicleInfo?.vehicleNo || lrHeader.vehicleNo,
     },
   };
@@ -1283,12 +1285,12 @@ function trackingPlantCode(row, lrCode) {
 function makeTrackingValues(selected, routeInfo, trip, liveError) {
   const header = selected?.header || {}, ewaybill = selected?.ewaybill || {};
   const startDate = header.lrDate || selected?.createdAt || "";
-  const orderCells = [header.orderNo, header.partyName, header.plantCode, header.orderType, header.pinCode || selected?.consignee?.pinCode, header.state, header.district, header.from, header.to, `${selected?.totalWeight || 0} ${header.unit || "MT"}`];
+  const orderCells = [header.orderNo, header.partyName, header.plantCode, header.orderType, header.pinCode || selected?.consignee?.pinCode, header.state, header.district, header.from, destinationLabel(header), `${selected?.totalWeight || 0} ${header.unit || "MT"}`];
   const rowsSource = selected?._rows?.length ? selected._rows : [];
   const orderTableRows = rowsSource.length
     ? rowsSource.map((r) => [
       r.orderNo, r.partyName, r.trackingPlantCode, r.orderType, r.pinCode,
-      r.stateName || r.state, r.districtName || r.district, r.fromName || r.from, r.toName || r.to,
+      r.stateName || r.state, r.districtName || r.district, r.fromName || r.from, destinationLabel(r),
       `${r.weight || 0} ${header.unit || "MT"}`,
     ])
     : [orderCells];
@@ -1307,7 +1309,7 @@ function makeTrackingValues(selected, routeInfo, trip, liveError) {
     ? cancelled || trip.tripState === "completed" ? phase : `${phase} · ${gpsStatus}`
     : liveError ? "Tracking unavailable" : "Awaiting live location";
   const values = { purchaseNo: selected?.vnnNo || header.orderNo, pricingSerialNo: selected?.loadingInfoNo, autoAssign: header.vehicleNo ? "Assigned" : "Not Assigned", branch: selected?.subCompanyName || selected?.subCompanyCode, delivery: selected?.deliveryType || "Normal", date: formatDate(startDate), billingType: selected?.billingType || selected?.lcStatus || header.lcStatus || dash, multiOrder: header.orderNo, loadingPoints: String(selected?.noOfLoadingPoints || 1), droppingPoints: String(selected?.noOfDroppingPoint || 1), orderCells, orderTableRows, startDate: formatDate(trip?.startedAt || startDate), deliveryDays: dash, totalDays: dash, expectedDays: delivered ? "0 days" : pendingRoute ? `${pendingRoute.plan.expectedDays} day${pendingRoute.plan.expectedDays === 1 ? "" : "s"}` : dash, expectedDate: pendingRoute ? formatDate(pendingRoute.plan.expectedDate) : dash, ewaybillExtension: ewaybill.ewaybillNo ? "Required" : "Not Required", ewaybillExpiry: formatDate(ewaybill.expiryDate), totalKmPending: delivered ? "0 km" : pendingRoute ? `${pendingRoute.distanceKm} km` : dash, lastLocation: point ? `${point.latitude.toFixed(5)}, ${point.longitude.toFixed(5)} · ${relativeTime(point.recordedAt)}` : dash, transitStatus, remarks: selected?.remarks || header.remarks };
-  return { ...values, panelHeaders: ["Date", "Order", "Party Name", "Plant Code", "Order Type", "Pin Code", "From", "To", "District", "State", "Weight", "Start Date", "Delivery Days", "Total Days", "E-wayBill Expiry - Date", "Total Km - Pending", "Last Location", "Expected Days for Delivery", "E-waybill - Extension", "Tracking Status"], panelValues: [values.date, header.orderNo, header.partyName, header.plantCode, header.orderType, header.pinCode || selected?.consignee?.pinCode, header.from, header.to, header.district, header.state, `${selected?.totalWeight || 0} ${header.unit || "MT"}`, values.startDate, values.deliveryDays, values.totalDays, values.ewaybillExpiry, values.totalKmPending, values.lastLocation, values.expectedDays, values.ewaybillExtension, values.transitStatus] };
+  return { ...values, panelHeaders: ["Date", "Order", "Party Name", "Plant Code", "Order Type", "Pin Code", "From", "To", "District", "State", "Weight", "Start Date", "Delivery Days", "Total Days", "E-wayBill Expiry - Date", "Total Km - Pending", "Last Location", "Expected Days for Delivery", "E-waybill - Extension", "Tracking Status"], panelValues: [values.date, header.orderNo, header.partyName, header.plantCode, header.orderType, header.pinCode || selected?.consignee?.pinCode, header.from, destinationLabel(header), header.district, header.state, `${selected?.totalWeight || 0} ${header.unit || "MT"}`, values.startDate, values.deliveryDays, values.totalDays, values.ewaybillExpiry, values.totalKmPending, values.lastLocation, values.expectedDays, values.ewaybillExtension, values.transitStatus] };
 }
 
 const CHIP_TONES = {
@@ -1478,7 +1480,7 @@ function SummaryBar({ selected, tracking }) {
           <p className="truncate text-sm text-slate-600">{valueOf(header.partyName)} • {selected?._lrNos?.length ? `LR ${selected._lrNos.join(", ")}` : "LR not created yet"}</p>
         </div>
         <div className="flex flex-wrap items-center gap-x-8 gap-y-2 text-sm">
-          <div><p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Route</p><p className="font-semibold text-slate-900">{valueOf(header.from)} → {valueOf(header.to)}</p></div>
+          <div><p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Route</p><p className="font-semibold text-slate-900">{valueOf(header.from)} → {valueOf(destinationLabel(header))}</p></div>
           <div><p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Vehicle</p><p className="font-semibold text-slate-900">{valueOf(header.vehicleNo)}</p></div>
           <div><p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Weight</p><p className="font-semibold text-slate-900">{`${selected?.totalWeight || 0} ${header.unit || "MT"}`}</p></div>
         </div>

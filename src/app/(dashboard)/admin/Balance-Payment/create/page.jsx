@@ -1898,6 +1898,7 @@
 
 "use client";
 
+import { destinationLabel } from '@/lib/destination.mjs';
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -2349,7 +2350,7 @@ export default function CreateBalancePayment() {
             district: order.district || "",
             from: order.from || "",
             fromName: order.fromName || order.from || "",
-            to: order.to || "",
+            to: order.to || "", locationRemark: order?.locationRemark || '',
             toName: order.toName || order.to || "",
             locationRate: order.locationRate || "",
             priceList: order.priceList || "",
@@ -2601,7 +2602,7 @@ export default function CreateBalancePayment() {
                       </td>
                       <td className={td}><input type="text" value={row.district} readOnly className={roCell} /></td>
                       <td className={td}><input type="text" value={row.from} readOnly className={roCell} /></td>
-                      <td className={td}><input type="text" value={row.to} readOnly className={roCell} /></td>
+                      <td className={td}><input type="text" value={destinationLabel(row, row.to)} readOnly className={roCell} /></td>
                       <td className={td}><input type="number" value={row.weight} readOnly className={numCell} /></td>
                       <td className={`${td} text-center`}>
                         <button onClick={() => removeOrderRow(row._id)} className="text-red-600 hover:text-red-800">✕</button>

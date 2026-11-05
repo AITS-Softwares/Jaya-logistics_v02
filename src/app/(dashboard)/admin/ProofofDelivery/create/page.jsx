@@ -1460,6 +1460,7 @@
 
 "use client";
 
+import { destinationLabel } from '@/lib/destination.mjs';
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {podAdvanceMessage} from '@/lib/podAdvancePresentation.mjs';
@@ -2133,7 +2134,7 @@ export default function CreatePOD() {
             district: row.district,
             from: row.from || fromLocation,
             fromName: row.fromName || row.from,
-            to: row.to || toLocation,
+            to: row.to || toLocation, locationRemark: row?.locationRemark || '',
             toName: row.toName || row.to,
             locationRate: row.locationRate,
             weight: row.weight,
@@ -2724,7 +2725,7 @@ ${companyMsg}${subCompanyMsg}${vehicleMsg}${routeMsg}${lrMsg}
                       </td>
                       <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.district || '-'}</td>
                       <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.from || '-'}</td>
-                      <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.to || '-'}</td>
+                      <td className="border border-yellow-300 px-2 py-2 text-slate-700">{destinationLabel(order, order.to || '-')}</td>
                       <td className="border border-yellow-300 px-2 py-2 text-slate-700 text-right">{order.weight || 0}</td>
                     </tr>
                   );

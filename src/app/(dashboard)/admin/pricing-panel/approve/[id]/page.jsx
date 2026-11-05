@@ -815,6 +815,7 @@
 
 "use client";
 
+import { destinationLabel } from '@/lib/destination.mjs';
 import { useMemo, useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { usePermission } from "../../../hooks/usePermission";
@@ -985,7 +986,7 @@ function OrdersTable({ rows }) {
                   <td className="border border-yellow-300 px-1 py-0.5 text-slate-700 text-xs whitespace-nowrap">{row.orderType || '-'}</td>
                   <td className="border border-yellow-300 px-1 py-0.5 text-slate-700 text-xs whitespace-nowrap">{row.pinCode || '-'}</td>
                   <td className="border border-yellow-300 px-1 py-0.5 text-slate-700 text-xs whitespace-nowrap">{row.fromName || row.from || '-'}</td>
-                  <td className="border border-yellow-300 px-1 py-0.5 text-slate-700 text-xs whitespace-nowrap">{row.toName || row.to || '-'}</td>
+                  <td className="border border-yellow-300 px-1 py-0.5 text-slate-700 text-xs whitespace-nowrap">{destinationLabel(row, row.toName || row.to || '-')}</td>
                   <td className="border border-yellow-300 px-1 py-0.5 text-slate-700 text-xs whitespace-nowrap">{row.stateName || row.state || '-'}</td>
                   <td className="border border-yellow-300 px-1 py-0.5 text-slate-700 text-xs whitespace-nowrap">{row.districtName || row.district || '-'}</td>
                   <td className="border border-yellow-300 px-1 py-0.5 text-slate-700 text-xs whitespace-nowrap">{row.talukaName || row.taluka || '-'}</td>

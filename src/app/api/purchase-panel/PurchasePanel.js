@@ -377,6 +377,7 @@ const purchasePanelSchema = new mongoose.Schema({
     fromState: { type: String, default: '' },
     to: { type: String },
     toName: { type: String },
+    locationRemark: { type: String, default: "" },
     locationRate: { type: String, default: '' },
     priceList: { type: String, default: '' },
     weight: { type: Number, default: 0 },

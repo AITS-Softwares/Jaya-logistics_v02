@@ -965,6 +965,7 @@
 
 "use client";
 
+import { destinationLabel } from '@/lib/destination.mjs';
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { usePermission } from "../../../hooks/usePermission";
@@ -1601,7 +1602,7 @@ export default function ApprovePOD() {
                       </td>
                       <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.district || '-'}</td>
                       <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.from || '-'}</td>
-                      <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.to || '-'}</td>
+                      <td className="border border-yellow-300 px-2 py-2 text-slate-700">{destinationLabel(order, order.to || '-')}</td>
                       <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.locationRate || '-'}</td>
                       <td className="border border-yellow-300 px-2 py-2 text-slate-700 text-right">{order.weight || 0}</td>
                     </tr>

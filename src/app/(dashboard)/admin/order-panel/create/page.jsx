@@ -9356,6 +9356,7 @@
 
 "use client";
 
+import { destinationLabel } from '@/lib/destination.mjs';
 import React, { useMemo, useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { validateOrderWeights } from "@/lib/orderWeightValidation.mjs";
@@ -11794,8 +11795,8 @@ function PlantGridTable({
                           toRefs.current[r._id] = el;
                         }}
                         type="text"
-                        value={r.toName || ""}
-                        readOnly={hasCities}
+                        value={destinationLabel(r, r.toName || "")}
+                        readOnly={(hasCities) || !!String(r.locationRemark || '').trim()}
                         onChange={(e) => {
                           if (!hasCities) {
                             onChange(r._id, 'toName', e.target.value);

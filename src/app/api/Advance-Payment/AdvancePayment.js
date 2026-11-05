@@ -353,6 +353,7 @@ const advancePaymentSchema = new mongoose.Schema({
     fromName: { type: String, default: '' },
     to: { type: String, default: '' },
     toName: { type: String, default: '' },
+    locationRemark: { type: String, default: "" },
     locationRate: { type: String, default: '' },
     priceList: { type: String, default: '' },
     weight: { type: Number, default: 0 },

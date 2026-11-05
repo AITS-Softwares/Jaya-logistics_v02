@@ -788,6 +788,7 @@
 
 "use client";
 
+import { destinationLabel } from '@/lib/destination.mjs';
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { usePermission } from "../hooks/usePermission";
@@ -1231,7 +1232,7 @@ export default function BalancePaymentList() {
                       <td className="px-3 py-3 text-slate-800">{item.vendorName || '-'}</td>
                       <td className="px-3 py-3 text-slate-600">{item.vendorCode || '-'}</td>
                       <td className="px-3 py-3 text-slate-600">{item.from || '-'}</td>
-                      <td className="px-3 py-3 text-slate-600">{item.to || '-'}</td>
+                      <td className="px-3 py-3 text-slate-600">{destinationLabel(item, item.to || '-')}</td>
                       <td className="px-3 py-3 text-right text-slate-600">{item.weight || 0}</td>
                       <td className="px-3 py-3 text-right font-bold text-emerald-700">{formatCurrency(item.amount)}</td>
                       <td className="px-3 py-3 text-right text-blue-600">{formatCurrency(item.advance)}</td>

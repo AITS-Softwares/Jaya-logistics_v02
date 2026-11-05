@@ -1,5 +1,6 @@
 "use client";
 
+import { destinationLabel } from '@/lib/destination.mjs';
 import { useState, useEffect } from "react";
 import PanelReportOverview from '../reports/PanelReportOverview';
 import reportStyles from '../reports/panel-reports.module.css';
@@ -318,7 +319,7 @@ export default function PricingPanelReport() {
                       <td className="border border-yellow-300 px-3 py-2">{row.state}</td>
                       <td className="border border-yellow-300 px-3 py-2">{row.district}</td>
                       <td className="border border-yellow-300 px-3 py-2">{row.from}</td>
-                      <td className="border border-yellow-300 px-3 py-2">{row.to}</td>
+                      <td className="border border-yellow-300 px-3 py-2">{destinationLabel(row, row.to)}</td>
                       <td className="border border-yellow-300 px-3 py-2 text-right font-medium">{row.weight}</td>
                       <td className="border border-yellow-300 px-3 py-2 text-center">
                         <span className={`inline-flex px-2 py-1 rounded-full text-xs font-bold ${getPricingBadgeColor(row.pricing)}`}>

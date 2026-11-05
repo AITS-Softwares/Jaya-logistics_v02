@@ -1,5 +1,6 @@
 "use client";
 
+import { destinationLabel } from '@/lib/destination.mjs';
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePermission } from "../../hooks/usePermission";
@@ -202,7 +203,7 @@ export default function BillingReportsPage() {
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{formatDate(row.date)}</td>
                     <td className="whitespace-nowrap px-4 py-3 font-semibold text-emerald-800">{row.lrNo || "—"}</td>
                     <td className="max-w-[220px] truncate px-4 py-3 font-medium text-slate-800" title={row.partyName}>{row.partyName || "—"}</td>
-                    <td className="px-4 py-3 text-slate-600"><span className="block">{row.orderNo || "—"}</span><span className="text-xs text-slate-400">{row.from || "—"} → {row.to || "—"}</span></td>
+                    <td className="px-4 py-3 text-slate-600"><span className="block">{row.orderNo || "—"}</span><span className="text-xs text-slate-400">{row.from || "—"} → {destinationLabel(row, row.to || "—")}</span></td>
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">{row.vehicleNo || "—"}</td>
                     <td className="px-4 py-3 text-right tabular-nums">{summary.tracksQuantity ? `${formatQty(row.totalQty)} ${row.unit}` : "—"}</td>
                     <td className="px-4 py-3 text-right font-semibold tabular-nums">{summary.tracksQuantity ? `${formatQty(row.billedQty)} ${row.unit}` : "—"}</td>

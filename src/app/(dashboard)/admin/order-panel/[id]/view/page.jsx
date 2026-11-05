@@ -11,11 +11,14 @@ export default function OrderPanelViewPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    const controller = new AbortController();
+    setOrder(null); setError('');
     const load = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`/api/order-panel?id=${id}`, {
+        const response = await fetch(`/api/order-panel?id=${id}&view=readOnly`, {
           headers: { Authorization: `Bearer ${token}` },
+          signal: controller.signal, cache: 'no-store',
         });
         const data = await response.json();
 
@@ -23,13 +26,14 @@ export default function OrderPanelViewPage() {
           throw new Error(data.message || 'Unable to load order details.');
         }
 
-        setOrder(data.data);
+        if (!controller.signal.aborted) setOrder(data.data);
       } catch (loadError) {
-        setError(loadError.message);
+        if (!controller.signal.aborted) setError(loadError.message);
       }
     };
 
     if (id) load();
+    return () => controller.abort();
   }, [id]);
 
   if (!order && !error) {

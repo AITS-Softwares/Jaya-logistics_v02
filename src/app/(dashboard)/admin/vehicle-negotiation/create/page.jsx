@@ -1,5 +1,6 @@
 "use client";
 
+import { destinationLabel } from '@/lib/destination.mjs';
 import {INVALID_VNN_FIXED_RATE, parseVnnFixedRate, vnnPurchaseType} from '@/lib/vnnPart3.mjs';
 import { useMemo, useRef, useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
@@ -2597,9 +2598,9 @@ export default function VehicleNegotiationPanel() {
                     </td>
                     <td className="border border-yellow-300 px-2 py-2">
                       <input
-                        value={row.toName || ""}
+                        value={destinationLabel(row, row.toName || "")}
                         onChange={(e) => onChange(row._id, 'toName', e.target.value)}
-                        readOnly={isReadOnly}
+                        readOnly={(isReadOnly) || !!String(row.locationRemark || '').trim()}
                         className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
                         placeholder="To"
                       />

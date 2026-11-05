@@ -1733,6 +1733,7 @@ async function branchHandlerPOST(req) {
       fromState: row.fromState || '',
       to: row.to || '',
       toName: row.toName || row.to || '',
+      locationRemark: row.locationRemark || "",
       weight: num(row.weight),
       collectionCharges: num(row.collectionCharges) || 0,
       cancellationCharges: row.cancellationCharges || 'Nil',
@@ -2183,6 +2184,7 @@ async function branchHandlerPUT(req) {
     const formatError = identifierFormatError(body);
     if (formatError) return NextResponse.json({ success: false, message: formatError }, { status: 400 });
     const { id, saveMode, ...incomingData } = body;
+    delete incomingData.loadedSlipUploads;
     let updateData = incomingData;
 
     if (!id || !isValidObjectId(id)) {
@@ -2326,6 +2328,7 @@ async function branchHandlerPUT(req) {
         fromState: row.fromState || '',
         to: row.to || '',
         toName: row.toName || row.to || '',
+        locationRemark: row.locationRemark || "",
         weight: num(row.weight),
         collectionCharges: num(row.collectionCharges) || 0,
         cancellationCharges: row.cancellationCharges || 'Nil',

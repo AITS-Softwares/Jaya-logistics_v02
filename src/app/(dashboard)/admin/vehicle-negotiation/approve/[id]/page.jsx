@@ -3102,6 +3102,7 @@
 
 "use client";
 
+import { destinationLabel } from '@/lib/destination.mjs';
 import {vnnPurchaseType} from '@/lib/vnnPart3.mjs';
 import { useMemo, useRef, useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
@@ -3666,7 +3667,7 @@ function OrdersTable({ rows }) {
               <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.orderType || '-'}</td>
               <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.pinCode || '-'}</td>
               <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.fromName || row.from || '-'}</td>
-              <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.toName || row.to || '-'}</td>
+              <td className="border border-yellow-300 px-2 py-2 text-slate-700">{destinationLabel(row, row.toName || row.to || '-')}</td>
               <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.locationRemark || '-'}</td>
               <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.talukaName || row.taluka || '-'}</td>
               <td className="border border-yellow-300 px-2 py-2 text-slate-700">{row.districtName || row.district || '-'}</td>

@@ -1459,6 +1459,7 @@
 
 "use client";
 
+import { destinationLabel } from '@/lib/destination.mjs';
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import {podAdvanceMessage} from '@/lib/podAdvancePresentation.mjs';
@@ -2096,7 +2097,7 @@ export default function EditPOD() {
             stateName: order.stateName || order.state,
             fromState: order.fromState || '',
             fromName: order.fromName || order.from,
-            toName: order.toName || order.to,
+            toName: order.toName || order.to, locationRemark: order?.locationRemark || '',
             localStatus: order.localStatus || 'unknown',
             localStatusLabel: order.localStatusLabel || 'Unknown'
           }));
@@ -2213,7 +2214,7 @@ export default function EditPOD() {
             district: row.district,
             from: row.from,
             fromName: row.fromName || row.from,
-            to: row.to,
+            to: row.to, locationRemark: row?.locationRemark || '',
             toName: row.toName || row.to,
             locationRate: row.locationRate,
             weight: row.weight,
@@ -2833,7 +2834,7 @@ export default function EditPOD() {
                       </td>
                       <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.district || '-'}</td>
                       <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.from || '-'}</td>
-                      <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.to || '-'}</td>
+                      <td className="border border-yellow-300 px-2 py-2 text-slate-700">{destinationLabel(order, order.to || '-')}</td>
                       <td className="border border-yellow-300 px-2 py-2 text-slate-700">{order.locationRate || '-'}</td>
                       <td className="border border-yellow-300 px-2 py-2 text-slate-700 text-right">{order.weight || 0}</td>
                     </tr>

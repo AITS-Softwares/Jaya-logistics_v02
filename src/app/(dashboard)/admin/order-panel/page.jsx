@@ -2358,6 +2358,7 @@
 
 "use client";
 
+import { destinationLabel } from '@/lib/destination.mjs';
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { usePermission } from "../hooks/usePermission";
@@ -2979,7 +2980,7 @@ export default function OrderPanelList() {
                           <div className="text-sm">
                             <span className="font-medium">{order.from}</span>
                             <span className="mx-1 text-slate-400">→</span>
-                            <span className="font-medium">{order.to}</span>
+                            <span className="font-medium">{destinationLabel(order, order.to)}</span>
                           </div>
                         </td>
                         <td className="px-4 py-3 font-medium">{order.weight} MT</td>

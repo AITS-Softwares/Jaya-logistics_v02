@@ -1,5 +1,6 @@
 "use client";
 
+import { destinationLabel } from '@/lib/destination.mjs';
 import { useState, useEffect, useMemo } from "react";
 import PanelReportOverview from '../reports/PanelReportOverview';
 import reportStyles from '../reports/panel-reports.module.css';
@@ -306,7 +307,7 @@ export default function OrderPanelTable() {
                         <td className="border border-yellow-300 px-3 py-2 text-slate-600">{order.orderType}</td>
                         <td className="border border-yellow-300 px-3 py-2 text-slate-600">{order.pinCode}</td>
                         <td className="border border-yellow-300 px-3 py-2 text-slate-600">{order.from}</td>
-                        <td className="border border-yellow-300 px-3 py-2 text-slate-600">{order.to}</td>
+                        <td className="border border-yellow-300 px-3 py-2 text-slate-600">{destinationLabel(order, order.to)}</td>
                         <td className="border border-yellow-300 px-3 py-2 text-slate-600">{order.district}</td>
                         <td className="border border-yellow-300 px-3 py-2 text-slate-600">{order.state}</td>
                         <td className="border border-yellow-300 px-3 py-2 font-medium text-slate-900">{order.weight}</td>

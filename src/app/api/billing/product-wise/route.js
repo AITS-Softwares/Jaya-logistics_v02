@@ -417,7 +417,7 @@ async function branchHandlerPOST(req) {
           lrNo: note.lrNo || 'N/A',
           vehicleNo: note.header?.vehicleNo || 'N/A',
           from: note.header?.from || 'N/A',
-          to: note.header?.to || 'N/A',
+          to: note.header?.to || 'N/A', locationRemark: note.header?.locationRemark || '',
           city: orderRow?.cityName || orderRow?.city || '',
           district: orderRow?.districtName || orderRow?.district || note.header?.district || '',
           state: orderRow?.stateName || orderRow?.state || note.header?.state || '',

@@ -111,7 +111,7 @@ async function branchHandlerGET(req) {
         customerId: String(note.customerId || note.consignor?.customerId || ''),
         orderNo: note.header?.orderNo || "",
         from: note.header?.from || "",
-        to: note.header?.to || "",
+        to: note.header?.to || "", locationRemark: note.header?.locationRemark || '',
         vehicleNo: note.header?.vehicleNo || "",
         unit: note.header?.unit || "MT",
         totalQty,

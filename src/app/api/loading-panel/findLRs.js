@@ -69,7 +69,7 @@ function rowsCoveredBy(note, rows, panel, claimed) {
     // Legacy single LR for the whole Loading Info (no row id, no breakdown).
     if (!note.orderRowId && !breakdown && note.loadingInfoNo && note.loadingInfoNo === panel.vehicleArrivalNo) return [...rows];
 
-    const items = breakdown || [{ orderNo: note.header?.orderNo, to: note.header?.to, weight: 0 }];
+    const items = breakdown || [{ orderNo: note.header?.orderNo, to: note.header?.to, locationRemark: note.header?.locationRemark || '', weight: 0 }];
     const matches = (r) => items.some((b) => {
         const orderNo = b.orderNo || note.header?.orderNo;
         const to = b.to || note.header?.to;
@@ -149,7 +149,7 @@ export async function getLRCompletion(user, panel, projection = "-companyId -cre
     for (const { row, notes } of state.values()) {
         const d = describe(notes);
         rowsOut.push({
-            rowId: String(row._id), orderNo: row.orderNo || "", to: row.toName || row.to || "",
+            rowId: String(row._id), orderNo: row.orderNo || "", to: row.toName || row.to || "", locationRemark: row?.locationRemark || '',
             weight: Number(row.weight) || 0, label: rowLabel(row),
             state: d.state, reason: d.reason, lr: d.lr,
         });

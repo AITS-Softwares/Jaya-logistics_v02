@@ -18,8 +18,5 @@ export function loadingSubmissionError(record, part, photosOptional = false) {
   if (part !== 2 && !hasSlip(record.vehicleSlips)) {
     return 'Upload an Empty Vehicle Slip before submitting Part 1.';
   }
-  if (part !== 1 && !hasSlip(record.loadedVehicleSlips)) {
-    return 'Upload a Loaded Vehicle Slip before submitting Part 2.';
-  }
   return loadingPhotoError(record, part, photosOptional);
 }

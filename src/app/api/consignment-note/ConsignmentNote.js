@@ -390,6 +390,7 @@ const consignmentNoteSchema = new mongoose.Schema({
     from: { type: String, default: '' },
     fromState: { type: String, default: '' },
     to: { type: String, default: '' },
+    locationRemark: { type: String, default: '' },
     taluka: { type: String, default: '' },
     district: { type: String, default: '' },
     state: { type: String, default: '' },
@@ -430,6 +431,7 @@ const consignmentNoteSchema = new mongoose.Schema({
     orderNo: { type: String, default: '' },
     from: { type: String, default: '' },
     to: { type: String, default: '' },
+    locationRemark: { type: String, default: '' },
     weight: { type: Number, default: 0 },
     unit: { type: String, default: 'MT' }
   }],
