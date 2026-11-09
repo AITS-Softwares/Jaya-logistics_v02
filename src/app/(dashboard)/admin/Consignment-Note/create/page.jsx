@@ -3803,6 +3803,7 @@ import { destinationLabel } from '@/lib/destination.mjs';
 import { useMemo, useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import LRInvoiceUpload from "@/components/LRInvoiceUpload";
+import LRProductPackingTables from "@/components/LRProductPackingTables";
 import LRPreviewModal, { makePreviewNote } from "@/components/LRPreviewModal";
 
 
@@ -5998,8 +5999,7 @@ export default function CreateConsignmentNote() {
           </div>
         </div>
 
-        {/* ===== Product Details - All 4 Pack Types ===== */}
-        {/* (PALLETIZATION, UNIFORM, LOOSE CARGO, NON-UNIFORM tables remain the same) */}
+        <LRProductPackingTables palletizationRows={palletizationRows} uniformRows={uniformRows} looseCargoRows={looseCargoRows} nonUniformRows={nonUniformRows} />
 
         {/* ===== Summary Card ===== */}
         <div className="mt-4">

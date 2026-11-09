@@ -4,7 +4,7 @@ import AwaitingOrderView, { orderDate, orderWeight } from '@/components/Awaiting
 import { FiArrowRight, FiCheckCircle, FiClock, FiEye, FiRefreshCw, FiSearch, FiX } from 'react-icons/fi';
 import { destinationLabel } from '@/lib/destination.mjs';
 
-export default function AwaitingVnnOrders() {
+export default function AwaitingVnnOrders({ endpoint = '/api/vehicle-negotiation/awaiting-orders', previewEndpoint, description = 'Review upcoming orders before approval. Negotiation creation becomes available once approved.' }) {
   const [selectedId, setSelectedId] = useState(null);
   const closeView = useCallback(() => setSelectedId(null), []);
   const [orders, setOrders] = useState([]);
@@ -19,7 +19,7 @@ export default function AwaitingVnnOrders() {
       if (pending || document.hidden) return;
       pending = true; setBusy(true);
       try {
-        const response = await fetch('/api/vehicle-negotiation/awaiting-orders', { headers: { Authorization: `Bearer ${localStorage.getItem('token') || ''}` }, cache: 'no-store', signal: controller.signal });
+        const response = await fetch(endpoint, { headers: { Authorization: `Bearer ${localStorage.getItem('token') || ''}` }, cache: 'no-store', signal: controller.signal });
         const body = await response.json();
         if (!response.ok || !body.success) throw new Error(body.message || 'Unable to load submitted orders.');
         if (!controller.signal.aborted) { setOrders(body.data || []); setError(''); }
@@ -29,16 +29,16 @@ export default function AwaitingVnnOrders() {
     load(); const timer = setInterval(load, 30000);
     document.addEventListener('visibilitychange', load);
     return () => { controller.abort(); clearInterval(timer); document.removeEventListener('visibilitychange', load); };
-  }, [refresh]);
+  }, [refresh, endpoint]);
   const term = search.trim().toLowerCase();
   const filtered = orders.filter(order => [order.orderNo, order.customer, order.branch, ...(order.rows || []).flatMap(row => [row.fromName, destinationLabel(row), row.plantName])].join(' ').toLowerCase().includes(term));
   const selected = orders.find(order => order.id === selectedId);
   const control = 'inline-flex items-center justify-center gap-2 rounded-xl border px-3.5 py-2.5 text-xs font-semibold transition duration-150 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 motion-reduce:transform-none';
   return <section id="awaiting-orders-panel" role="tabpanel" aria-labelledby="awaiting-orders-tab" className="mx-4 my-5 space-y-4 sm:mx-6">
-    {selected && <AwaitingOrderView order={selected} onClose={closeView} />}
+    {selected && <AwaitingOrderView previewEndpoint={previewEndpoint} order={selected} onClose={closeView} />}
     <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex items-start gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-600 ring-1 ring-inset ring-amber-100"><FiClock size={19} /></span><div><div className="flex flex-wrap items-center gap-2"><h2 className="text-base font-bold tracking-tight text-slate-900">Awaiting Order Approval</h2><span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-bold text-slate-600">{orders.length}</span></div><p className="mt-1 text-xs leading-5 text-slate-500">Review upcoming orders before approval. Negotiation creation becomes available once approved.</p></div></div>
+        <div className="flex items-start gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-600 ring-1 ring-inset ring-amber-100"><FiClock size={19} /></span><div><div className="flex flex-wrap items-center gap-2"><h2 className="text-base font-bold tracking-tight text-slate-900">Awaiting Order Approval</h2><span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-bold text-slate-600">{orders.length}</span></div><p className="mt-1 text-xs leading-5 text-slate-500">{description}</p></div></div>
         <button type="button" disabled={busy} onClick={() => setRefresh(value => value + 1)} className={`${control} border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 hover:shadow-sm`}><FiRefreshCw size={14} className={busy ? 'animate-spin motion-reduce:animate-none' : ''} />{busy ? 'Refreshing' : 'Refresh'}</button>
       </div>
       <div className="relative mt-5 max-w-xl"><FiSearch size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" /><input aria-label="Search awaiting orders" placeholder="Search by order, customer, branch or location…" value={search} onChange={event => setSearch(event.target.value)} className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2.5 pl-10 pr-10 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-yellow-500 focus:bg-white focus:ring-2 focus:ring-yellow-100" />{search && <button type="button" onClick={() => setSearch('')} aria-label="Clear search" className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-200 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500"><FiX size={14} /></button>}</div>

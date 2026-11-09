@@ -630,6 +630,7 @@ const MODULES_CONFIG = {
   'Rate Target (Vehicle Negotiation)': { icon: '🎯', permissions: ['view', 'edit'] },
   'Vehicle Negotiation Placement': { icon: '🚛', permissions: ['view', 'edit'] },
   // Sales Modules - All have approve permission
+  'PDI Panel': { icon: '📦', permissions: ['view', 'edit'] },
   'Order Panel': { icon: '📋', permissions: ['view', 'create', 'edit', 'delete', 'approve', 'reject'] },
   'Vehicle Negotiation': { icon: '🚚', permissions: ['view', 'create', 'edit', 'delete', 'approve'] },
   'Pricing Panel': { icon: '💰', permissions: ['view', 'create', 'edit', 'delete', 'approve'] },
@@ -637,7 +638,7 @@ const MODULES_CONFIG = {
   'Loading Info': { icon: '📦', permissions: ['view', 'create', 'edit', 'delete', 'approve'] },
   'Purchase Panel': { icon: '🛒', permissions: ['view', 'create', 'edit', 'delete', 'approve'] },
   'Consignment Note': { icon: '📄', permissions: ['view', 'create', 'edit', 'delete', 'approve'] },
-  'Tracking Plan': { icon: '📍', permissions: ['view'] },
+  'Tracking Plan': { icon: '📍', permissions: ['view', 'edit'] },
   'Advance Payment': { icon: '💳', permissions: ['view', 'create', 'edit', 'delete', 'approve'] },
   'Proof Of Delivery': { icon: '✅', permissions: ['view', 'create', 'edit', 'delete', 'approve'] },
   'Balance-Payment': { icon: '⚖️', permissions: ['view', 'create', 'edit', 'delete', 'approve'] },

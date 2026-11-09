@@ -2107,7 +2107,7 @@ export default function Layout({ children }) {
   useEffect(() => {
     if (!session?.isGroupAdmin || session?.activeOperatingCompany || pathname === "/admin/group-overview") return;
     const transactionPrefixes = [
-      "/admin/order-panel", "/admin/vehicle-negotiation", "/admin/rate-target-vehicle-negotiation",
+      "/admin/order-panel", "/admin/pdi-panel", "/admin/vehicle-negotiation", "/admin/rate-target-vehicle-negotiation",
       "/admin/pricing-panel", "/admin/Loading-Info", "/admin/Purchase-Panel",
       "/admin/Consignment-Note", "/admin/Advance-Payment", "/admin/ProofofDelivery", "/admin/Balance-Payment",
     ];
@@ -2475,6 +2475,7 @@ export default function Layout({ children }) {
                     onClick={closeSidebar}
                     isActive={isActive("/admin/order-panel")}
                   />
+                  {canView("PDI Panel") && <Item href="/admin/pdi-panel" icon={<HiClipboardList />} label="PDI Panel" onClick={closeSidebar} isActive={isActive("/admin/pdi-panel")} />}
                   <Item
                     href="/admin/vehicle-negotiation"
                     icon={<HiTruck />}
@@ -3193,7 +3194,7 @@ export default function Layout({ children }) {
               // This is a field-level permission inside an existing VNN record,
               // not a standalone transaction page.
               if (
-                ['Vehicle Negotiation Placement', 'Master Data', 'Rate Master', 'Pricing Panel - Part 2 Approval'].includes(moduleName) ||
+                ['Driver Mobile Settings', 'Vehicle Negotiation Placement', 'Master Data', 'Rate Master', 'Pricing Panel - Part 2 Approval'].includes(moduleName) ||
                 MASTER_PERMISSION_REGISTRY.some((resource) => resource.key === moduleName)
               ) return null;
 

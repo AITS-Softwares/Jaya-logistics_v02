@@ -1,3 +1,4 @@
+import { recordPaymentSettlement } from '../src/lib/paymentConfirmationRules.mjs';
 import { unwrapBranchHandlers } from './route-business-source.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -9,7 +10,9 @@ let payment;
 let bankCalls = 0;
 let authorized = true;
 const deps = {
+  recordPaymentSettlement, maybeSendPaymentConfirmation: async () => null,
   NextResponse: { json: (body, options = {}) => ({ ...body, httpStatus: options.status || 200 }) },
+  hasPermission: () => true,
   connectDb: async () => {}, validateUser: async (_req, action) => { assert.equal(action, 'approve'); return authorized ? { user: { companyId: 'company' } } : { error: 'Permission denied', status: 403 }; },
   isValidObjectId: () => true, companyScopeFilter: (_user, query) => query,
   AdvancePayment: { findOne: async () => payment }, BalancePayment: { findOne: async () => payment },

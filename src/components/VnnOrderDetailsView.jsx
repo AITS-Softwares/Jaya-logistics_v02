@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { FiEye, FiRefreshCw, FiX } from 'react-icons/fi';
 import VnnOrderDetailsContent, { OrderStatus } from '@/components/VnnOrderDetailsContent';
 
-export default function VnnOrderDetailsView({ query, orderNo, subtitle, earlyReview = false, onClose }) {
+export default function VnnOrderDetailsView({ query, orderNo, subtitle, earlyReview = false, endpoint = '/api/vehicle-negotiation/order-view', onClose }) {
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
   const [retry, setRetry] = useState(0);
@@ -28,14 +28,14 @@ export default function VnnOrderDetailsView({ query, orderNo, subtitle, earlyRev
     const controller = new AbortController(); setResult(null); setError('');
     (async () => {
       try {
-        const response = await fetch(`/api/vehicle-negotiation/order-view?${query}`, { headers: { Authorization: `Bearer ${localStorage.getItem('token') || ''}` }, signal: controller.signal, cache: 'no-store' });
+        const response = await fetch(`${endpoint}?${query}`, { headers: { Authorization: `Bearer ${localStorage.getItem('token') || ''}` }, signal: controller.signal, cache: 'no-store' });
         const body = await response.json();
         if (!response.ok || !body.success) throw new Error(body.message || 'Unable to load order details.');
         if (!controller.signal.aborted) setResult(body);
       } catch (err) { if (!controller.signal.aborted) setError(err.message); }
     })();
     return () => controller.abort();
-  }, [query, retry]);
+  }, [query, retry, endpoint]);
   const button = 'inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500 focus-visible:ring-offset-2';
   return <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/50 p-3 backdrop-blur-sm sm:p-5" onClick={event => { if (event.target === event.currentTarget) onClose(); }}>
     <section ref={dialog} role="dialog" aria-modal="true" aria-labelledby="full-order-title" className="flex max-h-[92dvh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-slate-50 shadow-2xl">

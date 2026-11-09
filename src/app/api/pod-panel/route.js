@@ -301,7 +301,7 @@ function buildVendorFinancial(input = {}, previous = {}, { advance } = {}) {
   };
 }
 
-function buildStatusSection(input = {}, previous = {}, { canApprove }) {
+function buildStatusSection(input = {}, previous = {}, { canApprove, canSetEmailRequest = false }) {
   const pick = (key, fallback = "") => (input[key] !== undefined ? str(input[key]) : str(previous[key], fallback));
   let podStatus = previous.podStatus || "Pending";
   if (canApprove && input.podStatus !== undefined) {
@@ -312,13 +312,15 @@ function buildStatusSection(input = {}, previous = {}, { canApprove }) {
     podStatus,
     dueDate: pick("dueDate"),
     paymentDate: pick("paymentDate"),
+    ackMailRequested: canSetEmailRequest && typeof input.ackMailRequested === "boolean" ? input.ackMailRequested : previous.ackMailRequested === true,
     // Server-controlled: only the /acknowledgement route can set these
     acknowledgementMail: !!previous.acknowledgementMail,
     ackMailSentAt: previous.ackMailSentAt || null,
     ackMailSentBy: previous.ackMailSentBy || "",
     ackMailTo: previous.ackMailTo || "",
     ackMailCount: previous.ackMailCount || 0,
-    note: pick("note"),
+    ackMailSendingUntil: previous.ackMailSendingUntil || null,
+    ackMailAttemptId: previous.ackMailAttemptId || "",
     note: pick("note"),
   };
 }
@@ -654,7 +656,7 @@ async function branchHandlerPOST(req) {
       podStatusSection: buildStatusSection(
         body.podStatusSection,
         {},
-        { canApprove }
+        { canApprove, canSetEmailRequest: true }
       ),
 
       remarks: str(body.remarks),
@@ -875,7 +877,7 @@ async function branchHandlerPUT(req) {
 
     // Edit-only users cannot flip the approval status held in podStatusSection
     if (body.podStatusSection) {
-      pod.podStatusSection = buildStatusSection(body.podStatusSection, snapshot.podStatusSection || {}, { canApprove });
+      pod.podStatusSection = buildStatusSection(body.podStatusSection, snapshot.podStatusSection || {}, { canApprove, canSetEmailRequest: canEdit && body.approvalStatus !== "Approved" });
     }
 
     if (body.remarks !== undefined) pod.remarks = str(body.remarks);

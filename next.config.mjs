@@ -13,7 +13,7 @@
 const nextConfig = {
   images: { unoptimized: true },
   async headers() {
-    return [{ source: '/sw.js', headers: [{ key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' }] }];
+    return [{ source: '/downloads/jaya-driver.apk', headers: [{ key: 'Content-Type', value: 'application/vnd.android.package-archive' }, { key: 'Content-Disposition', value: 'attachment; filename="jaya-driver.apk"' }, { key: 'Cache-Control', value: 'no-store' }] }, { source: '/sw.js', headers: [{ key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' }] }];
   },
 };
 

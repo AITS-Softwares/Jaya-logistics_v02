@@ -1757,6 +1757,7 @@ export default function CreatePOD() {
     podStatus: "",
     dueDate: "",
     paymentDate: "",
+    ackMailRequested: false,
     acknowledgementMail: false,
     note: ""
   });
@@ -3082,13 +3083,13 @@ ${companyMsg}${subCompanyMsg}${vehicleMsg}${routeMsg}${lrMsg}
               <label className="text-xs font-bold text-slate-600 flex items-center gap-2">
                 <input
                   type="checkbox"
-                  checked={podStatusSection.acknowledgementMail}
-                  onChange={(e) => setPodStatusSection({ ...podStatusSection, acknowledgementMail: e.target.checked })}
+                  checked={podStatusSection.ackMailRequested}
+                  onChange={(e) => setPodStatusSection({ ...podStatusSection, ackMailRequested: e.target.checked })}
                   className="rounded border-slate-300"
                 />
-                Acknowledgement Mail Sent
+                Send acknowledgement email after approval
               </label>
-              <p className="text-xs text-slate-500 mt-1">Shot a Mail on the Registered Vendor mail ID</p>
+              <p className="text-xs text-slate-500 mt-1">Email is sent only after approval when this option is selected. Preview and resend are available on the Approval page.</p>
             </div>
 
             <div className="col-span-12">

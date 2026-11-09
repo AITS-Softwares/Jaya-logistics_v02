@@ -1020,6 +1020,7 @@ export default function ApprovePOD() {
   const [saving, setSaving] = useState(false);
   const [sendingEmail, setSendingEmail] = useState(false);
   const [showAckPreview, setShowAckPreview] = useState(false);
+  const [approveFromPreview, setApproveFromPreview] = useState(false);
   const [loadingPreview, setLoadingPreview] = useState(false);
   const [ackPreview, setAckPreview] = useState(null);
   const [podData, setPodData] = useState(null);
@@ -1073,6 +1074,7 @@ export default function ApprovePOD() {
     podStatus: "Pending",
     dueDate: "",
     paymentDate: "",
+    ackMailRequested: false,
     acknowledgementMail: false,
     note: ""
   });
@@ -1236,6 +1238,7 @@ export default function ApprovePOD() {
             podStatus: pod.podStatusSection.podStatus || "",
             dueDate: pod.podStatusSection.dueDate || "",
             paymentDate: pod.podStatusSection.paymentDate || "",
+            ackMailRequested: pod.podStatusSection.ackMailRequested === true,
             acknowledgementMail: pod.podStatusSection.acknowledgementMail || false,
             note: pod.podStatusSection.note || ""
           });
@@ -1259,16 +1262,20 @@ export default function ApprovePOD() {
   // Send Email Function
   const ackHeaders = () => ({ Authorization: `Bearer ${localStorage.getItem('token')}` });
 
-  const openAckPreview = async () => {
+  const openAckPreview = async (forApproval = false) => {
     setLoadingPreview(true);
     try {
-      const res = await fetch(`/api/pod-panel/${podId}/acknowledgement`, { headers: ackHeaders() });
+      const res = await fetch(`/api/pod-panel/${podId}/acknowledgement`, forApproval ? {
+        method: 'POST', headers: { ...ackHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'preview', podStatusSection }),
+      } : { headers: ackHeaders() });
       const data = await res.json();
-      if (!data.success) { alert(data.message || 'Failed to load email preview'); return; }
+      if (!res.ok || !data.success) { alert(data.message || 'Failed to load email preview'); return; }
       setAckPreview(data.data);
+      setApproveFromPreview(forApproval);
       setShowAckPreview(true);
     } catch (error) {
-      alert(`❌ Error loading email preview: ${error.message}`);
+      alert(`Error loading email preview: ${error.message}`);
     } finally {
       setLoadingPreview(false);
     }
@@ -1277,7 +1284,7 @@ export default function ApprovePOD() {
   const sendEmailToSupplier = async () => {
     setSendingEmail(true);
     try {
-      const res = await fetch(`/api/pod-panel/${podId}/acknowledgement`, { method: 'POST', headers: ackHeaders() });
+      const res = await fetch(`/api/pod-panel/${podId}/acknowledgement`, { method: 'POST', headers: { ...ackHeaders(), 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'send', resend: ackPreview?.alreadySent === true }) });
       const data = await res.json();
       if (data.success) {
         alert(`✅ ${data.message}`);
@@ -1295,7 +1302,8 @@ export default function ApprovePOD() {
   };
 
   // Handle Approval Submit
-  const handleApprove = async () => {
+  const handleApprove = async (fromPreview = false) => {
+    if (saving || sendingEmail) return;
     if (!canApprove) {
       alert("You do not have permission to approve Proof of Delivery.");
       return;
@@ -1310,6 +1318,11 @@ export default function ApprovePOD() {
       lrEntries.some((l) => (l.podReceived || "Pending") === "Pending")
     ) {
       alert("Please set POD Received for every LR before approving.");
+      return;
+    }
+
+    if (!fromPreview && podStatusSection.ackMailRequested && !podStatusSection.acknowledgementMail && podStatusSection.podStatus !== 'Pending') {
+      await openAckPreview(true);
       return;
     }
 
@@ -1340,13 +1353,14 @@ export default function ApprovePOD() {
 
       const data = await res.json();
 
-      if (data.success) {
+      if (res.ok && data.success) {
         let acknowledgementMessage = "";
-        if (!podStatusSection.acknowledgementMail && podStatusSection.podStatus !== 'Pending') {
+        if (podStatusSection.ackMailRequested && !podStatusSection.acknowledgementMail && podStatusSection.podStatus !== 'Pending') {
           try {
             const ackRes = await fetch(`/api/pod-panel/${podId}/acknowledgement`, {
               method: 'POST',
-              headers: ackHeaders(),
+              headers: { ...ackHeaders(), 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'send' }),
             });
             const ackData = await ackRes.json();
             if (!ackRes.ok || !ackData.success) {
@@ -1358,7 +1372,12 @@ export default function ApprovePOD() {
         }
         alert(`✅ POD ${podStatusSection.podStatus === 'Received' ? 'Approved' : 'Updated'} successfully!`);
         if (acknowledgementMessage) alert(acknowledgementMessage.trim());
-        router.push('/admin/ProofofDelivery');
+        if (podStatusSection.ackMailRequested && podStatusSection.podStatus !== 'Pending') {
+          await fetchPODData();
+          await openAckPreview(false);
+        } else {
+          router.push('/admin/ProofofDelivery');
+        }
       } else {
         alert(data.message || 'Failed to update approval');
       }
@@ -1435,8 +1454,8 @@ export default function ApprovePOD() {
 
           <div className="flex items-center gap-3">
             <button
-              onClick={handleApprove}
-              disabled={saving || permLoading || !canApprove}
+              onClick={() => handleApprove()}
+              disabled={saving || loadingPreview || sendingEmail || permLoading || !canApprove}
               title={!canApprove ? "You need Approve permission" : undefined}
               className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${(saving || permLoading || !canApprove) ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'
                 }`}
@@ -1821,20 +1840,20 @@ export default function ApprovePOD() {
 
             <div className="col-span-12 md:col-span-5">
               <label className="text-xs font-bold text-slate-600 flex items-center gap-2 mb-1">
-                <input type="checkbox" checked={!!podStatusSection.acknowledgementMail} readOnly disabled
+                <input type="checkbox" checked={!!podStatusSection.ackMailRequested} readOnly disabled
                   className="rounded border-slate-300 w-4 h-4" />
-                Acknowledgement Mail Sent
+                Send acknowledgement email after approval
               </label>
               <div className="flex gap-2 items-center">
-                <p className="text-xs text-slate-500 flex-1">Preview and send to the registered vendor mail ID</p>
+                <p className="text-xs text-slate-500 flex-1">{podStatusSection.ackMailRequested ? 'Email requested on Create/Edit. Sent only after approval.' : 'Email not requested. Enable it on the Edit page to send.'}</p>
                 <button
-                  onClick={openAckPreview}
-                  disabled={loadingPreview || !canApprove}
+                  onClick={() => openAckPreview(podData?.approvalStatus !== 'Approved')}
+                  disabled={loadingPreview || saving || sendingEmail || !canApprove || (!podStatusSection.ackMailRequested && !podStatusSection.acknowledgementMail)}
                   title={!canApprove ? "You need Approve permission" : undefined}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${loadingPreview || !canApprove
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${loadingPreview || saving || sendingEmail || !canApprove || (!podStatusSection.ackMailRequested && !podStatusSection.acknowledgementMail)
                     ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
                 >
-                  {loadingPreview ? 'Loading...' : (podStatusSection.acknowledgementMail ? 'Preview / Resend' : 'Preview & Send')}
+                  {loadingPreview ? 'Loading...' : (podStatusSection.acknowledgementMail ? 'Preview / Resend' : 'Preview Email')}
                 </button>
               </div>
               {podStatusSection.acknowledgementMail && (
@@ -1924,26 +1943,27 @@ export default function ApprovePOD() {
                 <p className="text-xs text-slate-600"><b>From:</b> {ackPreview.from || '— no active Email Master —'}</p>
                 <p className="text-xs text-slate-600"><b>Subject:</b> {ackPreview.subject}</p>
               </div>
-              <button onClick={() => setShowAckPreview(false)} className="text-xl leading-none text-slate-500 hover:text-slate-800">×</button>
+              <button disabled={saving || sendingEmail} onClick={() => setShowAckPreview(false)} className="text-xl leading-none text-slate-500 hover:text-slate-800">×</button>
             </div>
             <div className="flex-1 overflow-auto bg-slate-100 p-3">
               <iframe title="Email preview" sandbox="" srcDoc={ackPreview.html} className="h-[60vh] w-full rounded-lg border border-slate-200 bg-white" />
             </div>
             <div className="border-t border-slate-200 px-5 py-3">
-              {ackPreview.blockedReason && (
-                <p className="mb-2 rounded-lg border border-yellow-200 bg-yellow-50 p-2 text-xs text-yellow-800">⚠️ {ackPreview.blockedReason}</p>
+              {(approveFromPreview ? ackPreview.setupIssue : ackPreview.blockedReason) && (
+                <p className="mb-2 rounded-lg border border-yellow-200 bg-yellow-50 p-2 text-xs text-yellow-800">⚠️ {approveFromPreview ? ackPreview.setupIssue : ackPreview.blockedReason}</p>
               )}
               {ackPreview.alreadySent && (
                 <p className="mb-2 text-xs text-green-700">Already sent{ackPreview.sentAt ? ` on ${new Date(ackPreview.sentAt).toLocaleString()}` : ''}{ackPreview.sentBy ? ` by ${ackPreview.sentBy}` : ''}. Sending again will email the supplier a second time.</p>
               )}
+              {approveFromPreview && <p className="mb-3 text-xs text-slate-600">Confirming saves POD approval first, then attempts the requested email. If email fails, approval stays saved and you can retry here.</p>}
               <div className="flex justify-end gap-2">
-                <button onClick={() => setShowAckPreview(false)} className="rounded-lg border border-slate-300 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">Close</button>
+                <button disabled={saving || sendingEmail} onClick={() => setShowAckPreview(false)} className="rounded-lg border border-slate-300 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">Close</button>
                 <button
-                  onClick={sendEmailToSupplier}
-                  disabled={sendingEmail || !ackPreview.canSend}
-                  className={`rounded-lg px-4 py-2 text-xs font-semibold text-white ${sendingEmail || !ackPreview.canSend ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
+                  onClick={() => approveFromPreview ? handleApprove(true) : sendEmailToSupplier()}
+                  disabled={saving || sendingEmail || !canApprove || (approveFromPreview ? !ackPreview.requested : !ackPreview.canSend)}
+                  className={`rounded-lg px-4 py-2 text-xs font-semibold text-white ${saving || sendingEmail || !canApprove || (approveFromPreview ? !ackPreview.requested : !ackPreview.canSend) ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
                 >
-                  {sendingEmail ? 'Sending...' : (ackPreview.alreadySent ? 'Resend Email' : 'Send Email')}
+                  {saving ? 'Approving / Sending...' : sendingEmail ? 'Sending...' : approveFromPreview ? (ackPreview.canApproveAndSend ? 'Approve & Send Email' : 'Approve (email needs attention)') : (ackPreview.alreadySent ? 'Resend Email' : 'Send Email')}
                 </button>
               </div>
             </div>

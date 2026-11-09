@@ -1,3 +1,5 @@
+import { destinationLabel } from '../src/lib/destination.mjs';
+import { recordPaymentSettlement } from '../src/lib/paymentConfirmationRules.mjs';
 import { unwrapBranchHandlers } from './route-business-source.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -12,6 +14,7 @@ let notifications = 0;
 let saved = 0;
 const statuses = ['Pending', 'Approved', 'Rejected', 'Paid', 'Completed'];
 const deps = {
+  recordPaymentSettlement, maybeSendPaymentConfirmation: async () => null,
   NextResponse: { json: (body, options = {}) => ({ ...body, httpStatus: options.status || 200 }) },
   connectDb: async () => {}, validateUser: async () => ({ user: { id: 'user', companyId: 'company' } }),
   hasPermission: (_user, action) => grants.has(action), isValidObjectId: () => true, companyScopeFilter: (_user, query) => query,
@@ -102,7 +105,7 @@ const tableCode = page.slice(page.indexOf('\nfunction OrdersTable'), page.indexO
 const swc = await require('next/dist/build/swc').loadBindings();
 const compiled = await swc.transform(tableCode, { filename: 'orders.jsx', jsc: { parser: { syntax: 'ecmascript', jsx: true }, transform: { react: { runtime: 'classic' } }, target: 'es2022' }, module: { type: 'commonjs' } });
 const React = require('react');
-const Table = new Function('React', `${compiled.code}\nreturn OrdersTable;`)(React);
+const Table = new Function('React', 'destinationLabel', `${compiled.code}\nreturn OrdersTable;`)(React, destinationLabel);
 const html = require('react-dom/server').renderToStaticMarkup(React.createElement(Table, { rows: [{ _id: 'row', collectionCharges: '120', cancellationCharges: 'Nil', loadingCharges: '300', otherCharges: '45' }] }));
 assert.equal((html.match(/<th(?:\s|>)/g) || []).length, 16);
 assert.equal((html.match(/<td(?:\s|>)/g) || []).length, 16);
@@ -115,9 +118,9 @@ let lockReason = '';
 const values = [false, false, '', null, 'ADV-1', 'Company', {}, {}, [], {}, 35000, null,
   { advance: 25000 }, { items: [], totalAddition: 200 }, { items: [], totalDeduction: 500 },
   { finalAmount: 23850, paymentStatus: 'Pending' }, 'Pending', 'Review', 850];
-const Screen = new Function('React', 'useState', 'useEffect', 'useRouter', 'useParams', 'usePermission', `${screenCompiled.code}\nreturn ApproveAdvancePayment;`)(
+const Screen = new Function('React', 'useState', 'useEffect', 'useRouter', 'useParams', 'usePermission', 'destinationLabel', 'PaymentConfirmationPanel', `${screenCompiled.code}\nreturn ApproveAdvancePayment;`)(
   React, (initial) => { const index = hookIndex++; return [index === 2 ? lockReason : index < values.length ? values[index] : initial, () => {}]; },
-  () => {}, () => ({ push() {} }), () => ({ id: 'payment' }), () => ({ hasPermission: () => true, loading: false }),
+  () => {}, () => ({ push() {} }), () => ({ id: 'payment' }), () => ({ hasPermission: () => true, loading: false }), destinationLabel, () => null,
 );
 let screenHtml = require('react-dom/server').renderToStaticMarkup(React.createElement(Screen));
 assert(screenHtml.includes('₹23,850'));

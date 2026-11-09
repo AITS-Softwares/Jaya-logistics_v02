@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
+import DriverAppQr from '@/components/DriverAppQr';
 import { invalidSessionStatus, sessionDestination } from '@/lib/sessionRestore.mjs';
 import { FiEye, FiEyeOff, FiMail, FiLock, FiChevronRight, FiLoader, FiShield, FiUser, FiBriefcase, FiGlobe, FiBox, FiSettings, FiLayers } from 'react-icons/fi';
 import { toast, ToastContainer } from 'react-toastify';
@@ -289,9 +290,10 @@ export default function LoginPage() {
             <div className="signin-card-footer"><FiShield aria-hidden="true" /><span>Jaya Group · Enterprise Resource Hub</span></div>
           </div>
           <p className="signin-access-note">Authorized access only</p>
+
         </section>
       </div>
-      <footer className="signin-footer"><span>Moving business forward. Together.</span><span>© {new Date().getFullYear()} Jaya Group</span></footer>
+      <footer className="signin-footer"><span>Moving business forward. Together.</span><div className="signin-footer-tools"><DriverAppQr /><span>© {new Date().getFullYear()} Jaya Group</span></div></footer>
     </main>
   );
 }

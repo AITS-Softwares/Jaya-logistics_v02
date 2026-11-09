@@ -1,4 +1,5 @@
 'use client';
+import PdiSummary from '@/components/PdiSummary';
 
 import { FiArrowRight, FiBox, FiClock, FiMapPin, FiPackage } from 'react-icons/fi';
 import { destinationLabel } from '@/lib/destination.mjs';
@@ -37,7 +38,7 @@ export default function VnnOrderDetailsContent({ order, linkedRowIds = [] }) {
   const routeById = new Map(routes.map((row, index) => [String(row._id), { row, index }]));
   const packs = Object.entries(order.packData || {}).filter(([, rows]) => Array.isArray(rows)).map(([type, rows]) => [type, rows.filter(row => row.productName?.trim() || row.skuSize?.trim() || ['totalPkgs', 'nos', 'noOfPallets', 'actualWt', 'packWeight'].some(key => Number(row[key]) > 0))]).filter(([, rows]) => rows.length);
   const linked = new Set(linkedRowIds);
-  return <div className="space-y-5">
+  return <div className="space-y-5"><PdiSummary orderId={order._id} />
     <Section title="Order overview" subtitle="Customer and shipment requirements" Icon={FiPackage}>
       <dl className="grid grid-cols-2 gap-x-6 gap-y-5 p-5 md:grid-cols-4"><Value label="Order number" value={order.orderPanelNo} /><Value label="Order date" value={date(order.date)} /><Value label="Branch" value={[order.branchName, order.branchCode].filter(Boolean).join(' · ')} /><Value label="Company" value={order.subCompanyName || order.subCompanyCode} /><Value label="Customer" value={order.customerName || order.partyName} /><Value label="Customer code" value={order.customerCode} /><Value label="Party" value={order.partyName || order.customerName} /><Value label="Delivery" value={order.delivery} /><Value label="Total route weight" value={`${number(order.totalWeight ?? routes.reduce((sum, row) => sum + Number(row.weight || 0), 0))} MT`} /><Value label="Route count" value={routes.length} /><Value label="Drop allocation" value={order.allocationEnabled ? 'Enabled — per cargo row' : 'Not enabled'} /><Value label="Loading photos" value={order.loadingInfoPhotosOptional ? 'Optional' : 'Required'} /></dl>
     </Section>
