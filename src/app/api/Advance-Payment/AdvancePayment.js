@@ -252,6 +252,7 @@
 
 // export default AdvancePayment;
 
+import { paymentSettlementSchema, paymentEmailSchema } from '@/lib/paymentConfirmationSchema';
 import branchScopePlugin from '@/lib/branchScopePlugin';
 import mongoose from 'mongoose';
 import softDeletePlugin from '@/lib/softDelete';
@@ -263,6 +264,8 @@ function num(value) {
 }
 
 const advancePaymentSchema = new mongoose.Schema({
+  paymentSettlement: { type: paymentSettlementSchema, default: undefined },
+  paymentEmail: { type: paymentEmailSchema, default: () => ({}) },
   // Auto-generated payment number
   paymentNo: {
     type: String,

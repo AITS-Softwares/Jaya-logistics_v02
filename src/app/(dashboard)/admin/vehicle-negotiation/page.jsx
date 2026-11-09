@@ -1,6 +1,7 @@
 
 
 "use client";
+import VnnPdiCell from '@/components/VnnPdiCell';
 
 import { FiClock, FiTruck } from 'react-icons/fi';
 import { destinationLabel } from '@/lib/destination.mjs';
@@ -386,6 +387,7 @@ export default function VehicleNegotiationList() {
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Date</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">VNN No</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Orders</th>
+                  <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">PDI</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Party Name</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Supplier</th>
                   <th className="px-4 py-3 text-left text-xs font-extrabold text-slate-900 uppercase tracking-wider">Vehicle No</th>
@@ -399,7 +401,7 @@ export default function VehicleNegotiationList() {
               <tbody className="divide-y divide-slate-200">
                 {loading ? (
                   <tr>
-                    <td colSpan="11" className="px-4 py-12 text-center">
+                    <td colSpan="12" className="px-4 py-12 text-center">
                       <div className="flex items-center justify-center">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500"></div>
                       </div>
@@ -423,6 +425,9 @@ export default function VehicleNegotiationList() {
                             </div>;
                           })}
                         </div>
+                      </td>
+                      <td className="px-4 py-3 align-top">
+                        <VnnPdiCell orders={item.orders} />
                       </td>
                       <td className="px-4 py-3">
                         <div className="font-medium text-slate-800">{item.partyName}</div>
@@ -509,7 +514,7 @@ export default function VehicleNegotiationList() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="11" className="px-4 py-12 text-center text-slate-500">
+                    <td colSpan="12" className="px-4 py-12 text-center text-slate-500">
                       <div className="flex flex-col items-center">
                         <svg className="w-16 h-16 text-slate-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7h12m0 0v8m0-8l-8 8-4-4-6 6" />

@@ -51,6 +51,7 @@ const ROLE_OPTIONS = {
   ],
    "Sales":[
       "Order Panel",
+ "PDI Panel",
       "Vehicle Negotiation", 
       "Rate Target (Vehicle Negotiation)",
       "Pricing Panel", 
@@ -81,6 +82,7 @@ const ROLE_OPTIONS = {
   // ── Sales Manager ──────────────────────────────────
   "Sales Manager": [
  "Order Panel",
+ "PDI Panel",
       "Vehicle Negotiation", 
       "Rate Target (Vehicle Negotiation)",
       "Pricing Panel", 
@@ -169,7 +171,7 @@ const PERMISSIONS = [
 ];
 
 // Delete is deliberately omitted for every non-admin user and module.
-const permissionsForModule = (moduleName) => moduleName === "Tracking Plan" ? ["view"] : PERMISSIONS;
+const permissionsForModule = (moduleName) => moduleName === "Tracking Plan" ? ["view", "edit"] : PERMISSIONS;
 
 const PERM_ICONS = {
   create: "✦", view: "👁", edit: "✎", view_financial_rates: "₹", delete: "⌫",
@@ -255,7 +257,7 @@ function CompanyUsersPage() {
     (form.roles || []).forEach(role =>
       (ROLE_OPTIONS[role] || []).forEach(m => { if (!seen.has(m)) { seen.add(m); list.push(m); } })
     );
-    Object.keys(form.modules || {}).forEach(m => { if (!seen.has(m)) { seen.add(m); list.push(m); } });
+    Object.keys(form.modules || {}).filter(m => m !== "Driver Mobile Settings").forEach(m => { if (!seen.has(m)) { seen.add(m); list.push(m); } });
     return list;
   }, [form.roles, form.modules]);
 

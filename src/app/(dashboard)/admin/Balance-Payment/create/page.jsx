@@ -1898,6 +1898,7 @@
 
 "use client";
 
+import { PaymentEmailPreference } from '@/components/PaymentConfirmationPanel';
 import { destinationLabel } from '@/lib/destination.mjs';
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -2209,6 +2210,8 @@ function SummaryCards({ figures, breakdown, finalAmount, isPartial, unpaid }) {
 /* ---------- Page ---------- */
 
 export default function CreateBalancePayment() {
+  const [paymentEmailRequested, setPaymentEmailRequested] = useState(false);
+
   const router = useRouter();
   const searchParams = useSearchParams();
   const pendingPodNo = searchParams.get("podNo") || searchParams.get("sourceNo");
@@ -2408,6 +2411,7 @@ export default function CreateBalancePayment() {
       const token = localStorage.getItem("token");
       // The server re-derives every amount from the POD, Purchase Panel and paid advances; only Final Amount is taken from here.
       const payload = {
+        paymentEmailRequested,
         saveMode,
         companyName: companyInfo.companyName || "",
         companyCode: companyInfo.companyCode || "",
@@ -2455,6 +2459,7 @@ export default function CreateBalancePayment() {
       });
       const data = await res.json();
       if (data.success) {
+        if (data.paymentEmail && ['failed', 'blocked', 'busy'].includes(data.paymentEmail.state)) alert(`Payment saved. ${data.paymentEmail.message}`);
         setBalancePaymentNo(data.data?.balancePaymentNo || "");
         alert(isDraftSave
           ? `✅ Balance Payment saved as a draft.\nPayment No: ${data.data.balancePaymentNo}\nOpen it from the list to continue.`
@@ -2695,6 +2700,8 @@ export default function CreateBalancePayment() {
           </div>
         </Card>
       </div>
-    </div>
+
+      <div className="px-4 pb-6"><PaymentEmailPreference checked={paymentEmailRequested} onChange={setPaymentEmailRequested} disabled={saving} /></div>
+</div>
   );
 }

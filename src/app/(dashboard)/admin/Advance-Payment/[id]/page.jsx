@@ -1438,6 +1438,7 @@
 
 "use client";
 
+import PaymentConfirmationPanel from '@/components/PaymentConfirmationPanel';
 import { destinationLabel } from '@/lib/destination.mjs';
 import { usePermission } from '../../hooks/usePermission';
 import { useMemo, useState, useEffect, useRef } from "react";
@@ -3032,7 +3033,9 @@ export default function EditAdvancePayment() {
           </Card>
         </div>
       </div>
-    </div>
+
+      <div className="px-4 pb-6"><PaymentConfirmationPanel kind="advance" paymentId={paymentId} editable /></div>
+</div>
   );
 }
 

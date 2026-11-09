@@ -1,48 +1,24 @@
 import { NextResponse } from "next/server";
 import { verifyToken, hasAnyPermission } from "@/lib/auth";
 
-// Company accounts and ERP administrators already have access. Other staff
-// require an existing Tracking Plan view/edit permission, preserving the ERP's
-// current RBAC model instead of introducing a second staff identity system.
+// Tracking Plan owns both vehicle tracking and every Driver Mobile staff panel.
+// View is read-only; Edit controls driver/device management and mobile settings.
 export function requireDriverMobileStaff(req, action = "view") {
   try {
     const user = verifyToken(req);
     if (!user) throw new Error("Unauthorized");
-    const permitted = user.type === "company" || user.roles?.includes("Admin") || hasAnyPermission(user, "Tracking Plan", action === "edit" ? ["edit", "create", "approve"] : ["view", "edit", "create", "approve"]);
-    if (!permitted) {
-      return { error: NextResponse.json({ success: false, code: "FORBIDDEN", message: "Tracking Plan permission is required." }, { status: 403 }) };
-    }
+    const permitted = user.type === "company" || user.roles?.includes("Admin") || hasAnyPermission(user, "Tracking Plan", action === "edit" ? ["edit"] : ["view", "edit"]);
+    if (!permitted) return { error: NextResponse.json({ success: false, code: "FORBIDDEN", message: `Tracking Plan ${action} permission is required.` }, { status: 403 }) };
     return { user };
   } catch {
     return { error: NextResponse.json({ success: false, code: "UNAUTHORIZED", message: "A valid staff token is required." }, { status: 401 }) };
   }
 }
 
+// Keep route imports stable; all staff endpoints now share the same permission.
 export function requireDriverMobileSettingsStaff(req, action = "view") {
-  try {
-    const user = verifyToken(req);
-    if (!user) throw new Error("Unauthorized");
-    const permitted = user.type === "company" || user.roles?.includes("Admin") || hasAnyPermission(user, "Driver Mobile Settings", action === "edit" ? ["edit"] : ["view", "edit"]);
-    if (!permitted) return { error: NextResponse.json({ success: false, code: "FORBIDDEN", message: "Driver Mobile Settings permission is required." }, { status: 403 }) };
-    return { user };
-  } catch {
-    return { error: NextResponse.json({ success: false, code: "UNAUTHORIZED", message: "A valid staff token is required." }, { status: 401 }) };
-  }
+  return requireDriverMobileStaff(req, action);
 }
-
-// The access master is visible to either transport operations staff or the
-// delegated mobile-settings administrator. Mutations remain protected by the
-// stricter Driver Mobile Settings edit permission in its dedicated route.
 export function requireDriverAccessMasterStaff(req) {
-  try {
-    const user = verifyToken(req);
-    if (!user) throw new Error("Unauthorized");
-    const permitted = user.type === "company" || user.roles?.includes("Admin")
-      || hasAnyPermission(user, "Tracking Plan", ["view", "edit", "create", "approve"])
-      || hasAnyPermission(user, "Driver Mobile Settings", ["view", "edit"]);
-    if (!permitted) return { error: NextResponse.json({ success: false, code: "FORBIDDEN", message: "Driver Mobile Settings or Tracking Plan permission is required." }, { status: 403 }) };
-    return { user };
-  } catch {
-    return { error: NextResponse.json({ success: false, code: "UNAUTHORIZED", message: "A valid staff token is required." }, { status: 401 }) };
-  }
+  return requireDriverMobileStaff(req, "view");
 }

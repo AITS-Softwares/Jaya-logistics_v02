@@ -1,5 +1,6 @@
 "use client";
 
+import PaymentConfirmationPanel from '@/components/PaymentConfirmationPanel';
 import { destinationLabel } from '@/lib/destination.mjs';
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
@@ -434,6 +435,7 @@ export default function ApproveBalancePayment() {
       });
       const data = await res.json();
       if (data.success) {
+        if (data.paymentEmail && ['failed', 'blocked', 'busy'].includes(data.paymentEmail.state)) alert(`Payment saved. ${data.paymentEmail.message}`);
         alert(`✅ Balance Payment ${paymentStatus === "Approved" ? "Approved" : paymentStatus === "Rejected" ? "Rejected" : "Updated"} successfully!\nPayment No: ${balancePaymentNo}\nStatus: ${paymentStatus}`);
         router.push("/admin/Balance-Payment");
       } else {
@@ -703,7 +705,9 @@ export default function ApproveBalancePayment() {
           </div>
         </Card>
       </div>
-    </div>
+
+      <div className="px-4 pb-6"><PaymentConfirmationPanel kind="balance" paymentId={paymentId} /></div>
+</div>
   );
 }
 

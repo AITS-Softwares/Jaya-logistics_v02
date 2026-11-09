@@ -893,6 +893,8 @@
 //   }
 // }
 
+import { recordPaymentSettlement } from '@/lib/paymentConfirmationRules.mjs';
+import { maybeSendPaymentConfirmation } from '@/lib/paymentConfirmationService';
 import { withBranchAccess } from '@/lib/branchAccess';
 import { isIciciQueueApiSkipped, generateLocalPaymentQueue } from '@/lib/paymentQueueConfig.mjs';
 import { NextResponse } from "next/server";
@@ -1110,11 +1112,14 @@ async function branchHandlerGET(req) {
    POST /api/balance-payment - Requires 'create' permission
 ======================================== */
 async function branchHandlerPOST(req) {
+  let paymentEmailResult = null;
+  const paymentReply = (payload, options) => NextResponse.json({ ...payload, ...(paymentEmailResult ? { paymentEmail: paymentEmailResult } : {}) }, options);
+
   try {
     await connectDb();
     const { user, error, status } = await validateUser(req, 'create');
     if (error) {
-      return NextResponse.json({
+      return paymentReply({
         success: false,
         message: error,
         code: status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN'
@@ -1123,7 +1128,7 @@ async function branchHandlerPOST(req) {
 
     const body = await req.json();
     const formatError = identifierFormatError(body);
-    if (formatError) return NextResponse.json({ success: false, message: formatError }, { status: 400 });
+    if (formatError) return paymentReply({ success: false, message: formatError }, { status: 400 });
     const isDraftSave = body.saveMode === 'draft';
 
     console.log("📝 Creating Balance Payment with body:", body);
@@ -1138,19 +1143,19 @@ async function branchHandlerPOST(req) {
     // Money is derived on the server from POD + queued/settled advances. Browser amounts are ignored.
     // (Uses only this user's company scope, so no POD / Advance Payment permission is required.)
     const derived = await deriveBalanceForPod(user, body.podNo);
-    if (derived.error) return NextResponse.json({ success: false, message: derived.error }, { status: derived.status });
+    if (derived.error) return paymentReply({ success: false, message: derived.error }, { status: derived.status });
     const existingPayment = await BalancePayment.findOne(companyScopeFilter(user, { podNo: derived.pod.podNo }))
       .select("balancePaymentNo")
       .lean();
     if (existingPayment) {
-      return NextResponse.json({
+      return paymentReply({
         success: false,
         message: `A Balance Payment (${existingPayment.balancePaymentNo}) already exists for POD ${derived.pod.podNo}. Open that payment to continue editing its draft.`,
       }, { status: 409 });
     }
     const f = derived.fields;
     if (f.finalBalance < 0) {
-      return NextResponse.json({ success: false, message: "POD final balance is negative - nothing is payable." }, { status: 400 });
+      return paymentReply({ success: false, message: "POD final balance is negative - nothing is payable." }, { status: 400 });
     }
     const { amount, advance, totalAddition, totalDeduction, poAddition, poDeduction, podDeduction, finalBalance } = f;
     const balance = amount - advance + totalAddition - totalDeduction;
@@ -1159,14 +1164,15 @@ async function branchHandlerPOST(req) {
     let finalAmount = finalBalance;
     if (body.finalAmount !== undefined && body.finalAmount !== "") {
       const amtErr = assertValidAmounts({ finalAmount: body.finalAmount });
-      if (amtErr) return NextResponse.json({ success: false, message: amtErr }, { status: 400 });
+      if (amtErr) return paymentReply({ success: false, message: amtErr }, { status: 400 });
       if (num(body.finalAmount) > finalBalance + 0.005) {
-        return NextResponse.json({ success: false, message: `Final amount cannot exceed the POD final balance (${finalBalance}).` }, { status: 400 });
+        return paymentReply({ success: false, message: `Final amount cannot exceed the POD final balance (${finalBalance}).` }, { status: 400 });
       }
       finalAmount = num(body.finalAmount);
     }
 
     const payment = new BalancePayment({
+      paymentEmail: { requested: body.paymentEmailRequested === true },
       balancePaymentNo: 'pending-number',
 
       // ✅ COMPANY INFORMATION
@@ -1244,6 +1250,7 @@ async function branchHandlerPOST(req) {
 
     // Allocate and save in one transaction. If validation or persistence fails,
     // the counter increment rolls back with the payment insert.
+    recordPaymentSettlement('balance', payment, user, hasPermission(user, 'approve'));
     const session = await mongoose.startSession();
     try {
       await session.withTransaction(async () => {
@@ -1259,6 +1266,8 @@ async function branchHandlerPOST(req) {
       await session.endSession();
     }
 
+    paymentEmailResult = await maybeSendPaymentConfirmation('balance', payment, user);
+
     console.log("✅ Balance Payment saved:", payment.balancePaymentNo);
 
     if (!isDraftSave && payment.paymentStatus === 'Pending') {
@@ -1271,7 +1280,7 @@ async function branchHandlerPOST(req) {
       });
     }
 
-    return NextResponse.json({
+    return paymentReply({
       success: true,
       message: "Balance Payment created successfully",
       data: {
@@ -1286,9 +1295,9 @@ async function branchHandlerPOST(req) {
   } catch (error) {
     console.error("POST Error:", error);
     if (error.code === 11000) {
-      return NextResponse.json({ success: false, message: "Payment number already exists" }, { status: 400 });
+      return paymentReply({ success: false, message: "Payment number already exists" }, { status: 400 });
     }
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+    return paymentReply({ success: false, message: error.message }, { status: error.status || 500 });
   }
 }
 
@@ -1296,11 +1305,14 @@ async function branchHandlerPOST(req) {
    PUT /api/balance-payment - Requires 'edit' permission
 ======================================== */
 async function branchHandlerPUT(req) {
+  let paymentEmailResult = null;
+  const paymentReply = (payload, options) => NextResponse.json({ ...payload, ...(paymentEmailResult ? { paymentEmail: paymentEmailResult } : {}) }, options);
+
   try {
     await connectDb();
     const { user, error, status } = await validateUser(req, 'edit');
     if (error) {
-      return NextResponse.json({
+      return paymentReply({
         success: false,
         message: error,
         code: status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN'
@@ -1309,34 +1321,36 @@ async function branchHandlerPUT(req) {
 
     const body = await req.json();
     const formatError = identifierFormatError(body);
-    if (formatError) return NextResponse.json({ success: false, message: formatError }, { status: 400 });
+    if (formatError) return paymentReply({ success: false, message: formatError }, { status: 400 });
     const { id } = body;
 
     if (!id || !isValidObjectId(id)) {
-      return NextResponse.json({ success: false, message: "Invalid ID" }, { status: 400 });
+      return paymentReply({ success: false, message: "Invalid ID" }, { status: 400 });
     }
 
     const payment = await BalancePayment.findOne(companyScopeFilter(user, { _id: id }));
-    if (!payment) return NextResponse.json({ success: false, message: "Not found" }, { status: 404 });
+    if (payment && typeof body.paymentEmailRequested === 'boolean' && hasPermission(user, 'edit')) { payment.paymentEmail ||= {}; payment.paymentEmail.requested = body.paymentEmailRequested; }
+
+    if (!payment) return paymentReply({ success: false, message: "Not found" }, { status: 404 });
     if (payment.bankIntegration?.provider === 'ICICI_CIB' && payment.queueGenerated) {
-      return NextResponse.json({ success: false, message: 'A payment submitted to ICICI cannot be edited. Reconcile or resolve it through the bank status workflow.' }, { status: 409 });
+      return paymentReply({ success: false, message: 'A payment submitted to ICICI cannot be edited. Reconcile or resolve it through the bank status workflow.' }, { status: 409 });
     }
     const saveMode = body.saveMode;
     const wasDraft = !!payment.isDraft || payment.paymentStatus === 'Draft';
     if (saveMode && !['draft', 'submit'].includes(saveMode)) {
-      return NextResponse.json({ success: false, message: "Invalid saveMode" }, { status: 400 });
+      return paymentReply({ success: false, message: "Invalid saveMode" }, { status: 400 });
     }
     if (saveMode === 'submit' && !hasPermission(user, 'create')) {
-      return NextResponse.json({ success: false, message: "Permission denied: create action required to submit a Balance Payment draft." }, { status: 403 });
+      return paymentReply({ success: false, message: "Permission denied: create action required to submit a Balance Payment draft." }, { status: 403 });
     }
     if ((saveMode === 'draft' || saveMode === 'submit') && !wasDraft) {
-      return NextResponse.json({ success: false, message: "Only a draft can be saved as draft or submitted" }, { status: 400 });
+      return paymentReply({ success: false, message: "Only a draft can be saved as draft or submitted" }, { status: 400 });
     }
     if (!saveMode && wasDraft) {
-      return NextResponse.json({ success: false, message: "Submit this draft for approval first" }, { status: 400 });
+      return paymentReply({ success: false, message: "Submit this draft for approval first" }, { status: 400 });
     }
     if (payment.queueGenerated) {
-      return NextResponse.json({ success: false, message: "Cannot update payment after queue generation." }, { status: 409 });
+      return paymentReply({ success: false, message: "Cannot update payment after queue generation." }, { status: 409 });
     }
     if (saveMode === 'submit') {
       payment.isDraft = false;
@@ -1400,9 +1414,9 @@ async function branchHandlerPUT(req) {
     const podRef = body.podNo || payment.podNo;
     if (podRef && !SETTLED_BALANCE_STATUSES.includes(payment.paymentStatus)) {
       const derived = await deriveBalanceForPod(user, podRef);
-      if (derived.error) return NextResponse.json({ success: false, message: derived.error }, { status: derived.status });
+      if (derived.error) return paymentReply({ success: false, message: derived.error }, { status: derived.status });
       if (derived.fields.finalBalance < 0) {
-        return NextResponse.json({ success: false, message: "POD final balance is negative - nothing is payable." }, { status: 400 });
+        return paymentReply({ success: false, message: "POD final balance is negative - nothing is payable." }, { status: 400 });
       }
       Object.assign(payment, derived.fields);
       payment.balance = num(payment.amount) - num(payment.advance) + num(payment.totalAddition) - num(payment.totalDeduction);
@@ -1414,9 +1428,9 @@ async function branchHandlerPUT(req) {
     payment.bankIfsc = body.bankIfsc || payment.bankIfsc;
     if (body.finalAmount !== undefined && body.finalAmount !== "") {
       const amtErr = assertValidAmounts({ finalAmount: body.finalAmount });
-      if (amtErr && saveMode !== 'draft') return NextResponse.json({ success: false, message: amtErr }, { status: 400 });
+      if (amtErr && saveMode !== 'draft') return paymentReply({ success: false, message: amtErr }, { status: 400 });
       if (saveMode !== 'draft' && payableLimit !== null && num(body.finalAmount) > payableLimit + 0.005) {
-        return NextResponse.json({ success: false, message: `Final amount cannot exceed the POD final balance (${payableLimit}).` }, { status: 400 });
+        return paymentReply({ success: false, message: `Final amount cannot exceed the POD final balance (${payableLimit}).` }, { status: 400 });
       }
       payment.finalAmount = num(body.finalAmount);
     } else if (payableLimit !== null && payment.finalAmount > payableLimit) {
@@ -1432,10 +1446,10 @@ async function branchHandlerPUT(req) {
     // Status can only be changed by an approver - an edit-only user cannot approve/reject through this route
     if (body.paymentStatus && body.paymentStatus !== payment.paymentStatus) {
       if (!hasPermission(user, 'approve')) {
-        return NextResponse.json({ success: false, message: "Permission denied: changing the payment status requires the approve permission." }, { status: 403 });
+        return paymentReply({ success: false, message: "Permission denied: changing the payment status requires the approve permission." }, { status: 403 });
       }
       if (!BALANCE_STATUSES.includes(body.paymentStatus)) {
-        return NextResponse.json({ success: false, message: `Invalid status. Allowed: ${BALANCE_STATUSES.join(", ")}` }, { status: 400 });
+        return paymentReply({ success: false, message: `Invalid status. Allowed: ${BALANCE_STATUSES.join(", ")}` }, { status: 400 });
       }
       payment.paymentStatus = body.paymentStatus;
     }
@@ -1444,7 +1458,9 @@ async function branchHandlerPUT(req) {
       payment.isDraft = true;
       payment.paymentStatus = 'Draft';
     }
+    recordPaymentSettlement('balance', payment, user, hasPermission(user, 'approve'));
     await payment.save({ validateBeforeSave: saveMode !== 'draft' });
+    paymentEmailResult = await maybeSendPaymentConfirmation('balance', payment, user);
 
     if (saveMode === 'submit' && wasDraft && payment.paymentStatus === 'Pending') {
       await notifyModuleApprovers({
@@ -1456,7 +1472,7 @@ async function branchHandlerPUT(req) {
       });
     }
 
-    return NextResponse.json({
+    return paymentReply({
       success: true,
       message: "Balance Payment updated successfully",
       data: {
@@ -1469,7 +1485,7 @@ async function branchHandlerPUT(req) {
 
   } catch (error) {
     console.error("PUT Error:", error);
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+    return paymentReply({ success: false, message: error.message }, { status: error.status || 500 });
   }
 }
 
@@ -1517,11 +1533,14 @@ async function branchHandlerDELETE(req) {
    Handles: approve, reject, complete, queue with remarks
 ======================================== */
 async function branchHandlerPATCH(req) {
+  let paymentEmailResult = null;
+  const paymentReply = (payload, options) => NextResponse.json({ ...payload, ...(paymentEmailResult ? { paymentEmail: paymentEmailResult } : {}) }, options);
+
   try {
     await connectDb();
     const { user, error, status } = await validateUser(req, 'approve');
     if (error) {
-      return NextResponse.json({
+      return paymentReply({
         success: false,
         message: error,
         code: status === 401 ? 'UNAUTHORIZED' : 'FORBIDDEN'
@@ -1533,37 +1552,39 @@ async function branchHandlerPATCH(req) {
     const action = url.searchParams.get("action");
 
     if (!id || !isValidObjectId(id)) {
-      return NextResponse.json({ success: false, message: "Invalid ID" }, { status: 400 });
+      return paymentReply({ success: false, message: "Invalid ID" }, { status: 400 });
     }
 
     const payment = await BalancePayment.findOne(companyScopeFilter(user, { _id: id }));
-    if (!payment) return NextResponse.json({ success: false, message: "Not found" }, { status: 404 });
+    if (!payment) return paymentReply({ success: false, message: "Not found" }, { status: 404 });
 
     if (payment.isDraft) {
-      return NextResponse.json({ success: false, message: "Open and save this draft before changing its approval status." }, { status: 400 });
+      return paymentReply({ success: false, message: "Open and save this draft before changing its approval status." }, { status: 400 });
     }
 
     // Quick approval sends an empty object; tolerate clients that omit it.
     const body = await req.json().catch(() => ({}));
 
     if (body.paymentStatus && !BALANCE_STATUSES.includes(body.paymentStatus)) {
-      return NextResponse.json({ success: false, message: `Invalid status. Allowed: ${BALANCE_STATUSES.join(", ")}` }, { status: 400 });
+      return paymentReply({ success: false, message: `Invalid status. Allowed: ${BALANCE_STATUSES.join(", ")}` }, { status: 400 });
     }
 
     // Handle different actions with remarks support
     if (action === 'approve') {
-      if (payment.bankIntegration?.provider === 'ICICI_CIB') return NextResponse.json({ success: false, message: 'This payment must be authorized in ICICI CIB. ERP approval cannot approve a bank transaction.' }, { status: 409 });
+      if (payment.bankIntegration?.provider === 'ICICI_CIB') return paymentReply({ success: false, message: 'This payment must be authorized in ICICI CIB. ERP approval cannot approve a bank transaction.' }, { status: 409 });
       payment.paymentStatus = body.paymentStatus || 'Approved';
 
       if (body.remarks !== undefined) {
         payment.remarks = body.remarks;
       }
 
+      recordPaymentSettlement('balance', payment, user, hasPermission(user, 'approve'));
       await payment.save();
+      paymentEmailResult = await maybeSendPaymentConfirmation('balance', payment, user);
 
       await notifyModuleDecision({ user, record: payment, module: 'Balance-Payment', reference: payment.balancePaymentNo,
         action: payment.paymentStatus === 'Approved' ? 'approve' : ['Paid', 'Completed'].includes(payment.paymentStatus) ? 'complete' : payment.paymentStatus === 'Rejected' ? 'reject' : '', url: `/admin/Balance-Payment/${payment._id}` });
-      return NextResponse.json({
+      return paymentReply({
         success: true,
         message: "Balance Payment approved successfully",
         data: {
@@ -1576,17 +1597,19 @@ async function branchHandlerPATCH(req) {
     }
 
     if (action === 'reject') {
-      if (payment.bankIntegration?.provider === 'ICICI_CIB') return NextResponse.json({ success: false, message: 'Reject this payment in ICICI CIB, then refresh its bank status in the ERP.' }, { status: 409 });
+      if (payment.bankIntegration?.provider === 'ICICI_CIB') return paymentReply({ success: false, message: 'Reject this payment in ICICI CIB, then refresh its bank status in the ERP.' }, { status: 409 });
       payment.paymentStatus = body.paymentStatus || 'Rejected';
 
       if (body.remarks !== undefined) {
         payment.remarks = body.remarks;
       }
 
+      recordPaymentSettlement('balance', payment, user, hasPermission(user, 'approve'));
       await payment.save();
+      paymentEmailResult = await maybeSendPaymentConfirmation('balance', payment, user);
 
       await notifyModuleDecision({ user, record: payment, module: 'Balance-Payment', reference: payment.balancePaymentNo, action: 'reject', url: `/admin/Balance-Payment/${payment._id}` });
-      return NextResponse.json({
+      return paymentReply({
         success: true,
         message: "Balance Payment rejected successfully",
         data: {
@@ -1599,17 +1622,19 @@ async function branchHandlerPATCH(req) {
     }
 
     if (action === 'complete') {
-      if (payment.bankIntegration?.provider === 'ICICI_CIB') return NextResponse.json({ success: false, message: 'ICICI transaction status is bank-controlled. Use status inquiry to refresh it.' }, { status: 409 });
+      if (payment.bankIntegration?.provider === 'ICICI_CIB') return paymentReply({ success: false, message: 'ICICI transaction status is bank-controlled. Use status inquiry to refresh it.' }, { status: 409 });
       payment.paymentStatus = body.paymentStatus || 'Completed';
 
       if (body.remarks !== undefined) {
         payment.remarks = body.remarks;
       }
 
+      recordPaymentSettlement('balance', payment, user, hasPermission(user, 'approve'));
       await payment.save();
+      paymentEmailResult = await maybeSendPaymentConfirmation('balance', payment, user);
 
       await notifyModuleDecision({ user, record: payment, module: 'Balance-Payment', reference: payment.balancePaymentNo, action: 'complete', url: `/admin/Balance-Payment/${payment._id}` });
-      return NextResponse.json({
+      return paymentReply({
         success: true,
         message: "Balance Payment completed successfully",
         data: {
@@ -1622,17 +1647,19 @@ async function branchHandlerPATCH(req) {
     }
 
     if (action === 'queue') {
-      if (payment.bankIntegration?.provider === 'ICICI_CIB') return NextResponse.json({ success: false, message: 'ICICI transaction status is bank-controlled. Use status inquiry to refresh it.' }, { status: 409 });
-      if (payment.paymentStatus !== 'Approved') return NextResponse.json({ success: false, message: 'Approve this Balance Payment before queuing it.' }, { status: 409 });
+      if (payment.bankIntegration?.provider === 'ICICI_CIB') return paymentReply({ success: false, message: 'ICICI transaction status is bank-controlled. Use status inquiry to refresh it.' }, { status: 409 });
+      if (payment.paymentStatus !== 'Approved') return paymentReply({ success: false, message: 'Approve this Balance Payment before queuing it.' }, { status: 409 });
       payment.paymentStatus = body.paymentStatus || 'Queued';
 
       if (body.remarks !== undefined) {
         payment.remarks = body.remarks;
       }
 
+      recordPaymentSettlement('balance', payment, user, hasPermission(user, 'approve'));
       await payment.save();
+      paymentEmailResult = await maybeSendPaymentConfirmation('balance', payment, user);
 
-      return NextResponse.json({
+      return paymentReply({
         success: true,
         message: "Balance Payment queued successfully",
         data: {
@@ -1646,24 +1673,26 @@ async function branchHandlerPATCH(req) {
 
     if (action === 'generate-queue') {
       if (payment.queueGenerated) {
-        return NextResponse.json({ success: false, message: "Payment queue has already been generated." }, { status: 409 });
+        return paymentReply({ success: false, message: "Payment queue has already been generated." }, { status: 409 });
       }
       if (payment.paymentStatus !== 'Approved') {
-        return NextResponse.json({ success: false, message: 'Approve this Balance Payment before generating its queue.' }, { status: 409 });
+        return paymentReply({ success: false, message: 'Approve this Balance Payment before generating its queue.' }, { status: 409 });
       }
       if (payment.paymentStatus === 'Rejected' || payment.paymentStatus === 'Completed' || payment.paymentStatus === 'Paid') {
-        return NextResponse.json({ success: false, message: `Cannot generate a queue for a ${payment.paymentStatus} payment.` }, { status: 400 });
+        return paymentReply({ success: false, message: `Cannot generate a queue for a ${payment.paymentStatus} payment.` }, { status: 400 });
       }
 
       // Temporary API skip; normal ICICI submission below is preserved.
       if (isIciciQueueApiSkipped()) {
         let data;
         try { data = generateLocalPaymentQueue('balance', payment, user); }
-        catch (error) { return NextResponse.json({ success: false, message: error.message }, { status: error.status || 400 }); }
+        catch (error) { return paymentReply({ success: false, message: error.message }, { status: error.status || 400 }); }
+        recordPaymentSettlement('balance', payment, user, hasPermission(user, 'approve'));
         await payment.save();
-        return NextResponse.json({ success: true, message: 'Payment queue generated successfully.', data });
+        paymentEmailResult = await maybeSendPaymentConfirmation('balance', payment, user);
+        return paymentReply({ success: true, message: 'Payment queue generated successfully.', data });
       }
-      if (payment.bankIntegration?.provider === 'ERP_QUEUE') return NextResponse.json({ success: false, message: 'This payment already has a generated queue. It will not be submitted again when bank API calling resumes.' }, { status: 409 });
+      if (payment.bankIntegration?.provider === 'ERP_QUEUE') return paymentReply({ success: false, message: 'This payment already has a generated queue. It will not be submitted again when bank API calling resumes.' }, { status: 409 });
 
       const uniqueId = payment.bankIntegration?.uniqueId || stableIciciUniqueId('balance', payment._id);
       const supplierCode = payment.vendorCode || payment.bankVendorCode;
@@ -1678,18 +1707,20 @@ async function branchHandlerPATCH(req) {
       try {
         result = await submitCibPayment({ kind: 'balance', payment: bankPayment, uniqueId });
       } catch (bankError) {
-        if (bankError.code === 'ICICI_PAYMENT_VALIDATION') return NextResponse.json({ success: false, message: bankError.message, code: bankError.code }, { status: 400 });
+        if (bankError.code === 'ICICI_PAYMENT_VALIDATION') return paymentReply({ success: false, message: bankError.message, code: bankError.code }, { status: 400 });
         if (/configuration is incomplete|not enabled|restricted to the documented sandbox|must be RTG|OAEP_HASH/i.test(bankError.message)) {
-          return NextResponse.json({ success: false, message: bankError.message, code: 'ICICI_UAT_NOT_CONFIGURED' }, { status: 503 });
+          return paymentReply({ success: false, message: bankError.message, code: 'ICICI_UAT_NOT_CONFIGURED' }, { status: 503 });
         }
-        if (bankError.code !== 'ICICI_UNCERTAIN') return NextResponse.json({ success: false, message: 'Could not prepare the ICICI request. Check the server certificate configuration.' }, { status: 500 });
+        if (bankError.code !== 'ICICI_UNCERTAIN') return paymentReply({ success: false, message: 'Could not prepare the ICICI request. Check the server certificate configuration.' }, { status: 500 });
         payment.bankIntegration = { ...(payment.bankIntegration?.toObject?.() || payment.bankIntegration || {}), provider: 'ICICI_CIB', uniqueId, transactionType: bankError.transactionType || '', bankStatus: 'UNCERTAIN', submittedAt: new Date(), lastError: String(bankError.message || 'ICICI response was not received').slice(0, 500) };
         payment.bankIntegration.events = [...(payment.bankIntegration.events || []), { event: 'SUBMISSION_UNCERTAIN', bankStatus: 'UNCERTAIN', message: payment.bankIntegration.lastError, at: new Date() }].slice(-50);
         payment.queueGenerated = true;
         payment.queueDate = new Date();
         payment.paymentStatus = 'Queued';
+        recordPaymentSettlement('balance', payment, user, hasPermission(user, 'approve'));
         await payment.save();
-        return NextResponse.json({ success: false, uncertain: true, message: 'ICICI response was not conclusive. Check bank status before any retry.', data: { uniqueId, bankStatus: 'UNCERTAIN' } }, { status: 502 });
+        paymentEmailResult = await maybeSendPaymentConfirmation('balance', payment, user);
+        return paymentReply({ success: false, uncertain: true, message: 'ICICI response was not conclusive. Check bank status before any retry.', data: { uniqueId, bankStatus: 'UNCERTAIN' } }, { status: 502 });
       }
       let bankStatus = !result.accepted && !result.rejected ? 'UNCERTAIN' : normalizeCibStatus(result.status);
       if (bankStatus === 'SUCCESS' && result.transactionType === 'RGS') bankStatus = 'PENDING FOR PROCESSING';
@@ -1698,8 +1729,10 @@ async function branchHandlerPATCH(req) {
       payment.queueDate = payment.queueGenerated ? new Date() : payment.queueDate;
       if (result.utr) payment.transactionId = result.utr;
       payment.paymentStatus = bankStatus === 'SUCCESS' && result.transactionType !== 'RGS' ? 'Completed' : bankStatus === 'FAILURE' ? 'Rejected' : 'Queued';
+      recordPaymentSettlement('balance', payment, user, hasPermission(user, 'approve'));
       await payment.save();
-      return NextResponse.json({
+      paymentEmailResult = await maybeSendPaymentConfirmation('balance', payment, user);
+      return paymentReply({
         success: result.accepted,
         uncertain: bankStatus === 'UNCERTAIN',
         message: result.message || (bankStatus === 'UNCERTAIN' ? 'ICICI did not return a conclusive status. Check bank status before retrying.' : bankStatus === 'PENDING FOR APPROVAL' ? 'Submitted to ICICI and waiting for authorization in CIB.' : result.accepted ? 'Payment submitted to ICICI.' : 'ICICI did not accept the payment.'),
@@ -1708,9 +1741,10 @@ async function branchHandlerPATCH(req) {
     }
 
     if (action === 'check-status') {
-      if (payment.bankIntegration?.provider === 'ERP_QUEUE') return NextResponse.json({ success: false, message: 'No bank submission exists for this generated queue.' }, { status: 409 });
+      if (isIciciQueueApiSkipped()) return paymentReply({ success: false, message: 'ICICI API calls are disabled while ICICI_CIB_SKIP_QUEUE_API=true. Use manual payment confirmation for local queues.' }, { status: 409 });
+      if (payment.bankIntegration?.provider === 'ERP_QUEUE') return paymentReply({ success: false, message: 'No bank submission exists for this generated queue.' }, { status: 409 });
       const uniqueId = payment.bankIntegration?.uniqueId;
-      if (!uniqueId) return NextResponse.json({ success: false, message: 'No ICICI transaction ID exists for this payment.' }, { status: 400 });
+      if (!uniqueId) return paymentReply({ success: false, message: 'No ICICI transaction ID exists for this payment.' }, { status: 400 });
       const result = await inquireCibPayment({ uniqueId });
       const transactionNotFound = normalizeCibStatus(result.status) === 'UNKNOWN' && /transaction not found|invalid inquiry req id.*unique id/i.test(result.message || '');
       const retryAllowed = transactionNotFound && payment.bankIntegration.submittedAt && Date.now() - new Date(payment.bankIntegration.submittedAt).getTime() >= 2 * 60 * 60 * 1000;
@@ -1718,12 +1752,14 @@ async function branchHandlerPATCH(req) {
       let bankMessage = result.message;
       let bankRequestId = result.requestId;
       let bankUtr = result.utr;
-      if (payment.bankIntegration.transactionType === 'RGS' && bankStatus === 'SUCCESS' && (bankUtr || payment.bankIntegration.utrNumber)) {
-        const neftResult = await inquireCibNeftPayment({ utrNumber: bankUtr || payment.bankIntegration.utrNumber });
-        bankStatus = neftResult.status;
-        bankMessage = neftResult.message;
-        bankRequestId = neftResult.requestId || bankRequestId;
-        bankUtr = neftResult.utr || bankUtr;
+      if (payment.bankIntegration.transactionType === 'RGS' && bankStatus === 'SUCCESS') {
+        const utr = bankUtr || payment.bankIntegration.utrNumber;
+        if (!utr) { bankStatus = 'PENDING FOR PROCESSING'; bankMessage = 'Awaiting UTR and final bank credit confirmation.'; }
+        else {
+          const neftResult = await inquireCibNeftPayment({ utrNumber: utr });
+          bankStatus = neftResult.status; bankMessage = neftResult.message;
+          bankRequestId = neftResult.requestId || bankRequestId; bankUtr = neftResult.utr || bankUtr;
+        }
       }
       payment.bankIntegration.bankStatus = bankStatus;
       payment.bankIntegration.requestId = bankRequestId || payment.bankIntegration.requestId;
@@ -1733,19 +1769,23 @@ async function branchHandlerPATCH(req) {
       payment.bankIntegration.checkedAt = new Date();
       payment.bankIntegration.lastError = '';
       payment.bankIntegration.events = [...(payment.bankIntegration.events || []), { event: payment.bankIntegration.transactionType === 'RGS' && bankStatus !== normalizeCibStatus(result.status) ? 'NEFT_INCREMENTAL_STATUS' : 'STATUS_INQUIRY', bankStatus, message: bankMessage, requestId: bankRequestId, utrNumber: bankUtr, at: new Date() }].slice(-50);
+      if (bankUtr) payment.transactionId = bankUtr;
       if (bankStatus === 'SUCCESS') payment.paymentStatus = 'Completed';
       else if (bankStatus === 'FAILURE' || bankStatus === 'REVERSED') payment.paymentStatus = 'Rejected';
       if (retryAllowed) {
         payment.queueGenerated = false;
         payment.paymentStatus = 'Pending';
       }
+      if (!['SUCCESS', 'FAILURE', 'REVERSED'].includes(bankStatus) && !retryAllowed && ['Paid', 'Completed'].includes(payment.paymentStatus)) payment.paymentStatus = 'Queued';
+      recordPaymentSettlement('balance', payment, user, hasPermission(user, 'approve'));
       await payment.save();
-      return NextResponse.json({ success: true, data: { balancePaymentNo: payment.balancePaymentNo, bankStatus, retryAllowed: !!retryAllowed, queueGenerated: payment.queueGenerated, uniqueId, requestId: payment.bankIntegration.requestId, utrNumber: payment.bankIntegration.utrNumber, checkedAt: payment.bankIntegration.checkedAt } });
+      paymentEmailResult = await maybeSendPaymentConfirmation('balance', payment, user);
+      return paymentReply({ success: true, data: { balancePaymentNo: payment.balancePaymentNo, bankStatus, retryAllowed: !!retryAllowed, queueGenerated: payment.queueGenerated, uniqueId, requestId: payment.bankIntegration.requestId, utrNumber: payment.bankIntegration.utrNumber, checkedAt: payment.bankIntegration.checkedAt } });
     }
 
     // Update status only (for general updates)
     if (action === 'update-status') {
-      if (payment.bankIntegration?.provider === 'ICICI_CIB') return NextResponse.json({ success: false, message: 'ICICI transaction status is bank-controlled. Use status inquiry to refresh it.' }, { status: 409 });
+      if (payment.bankIntegration?.provider === 'ICICI_CIB') return paymentReply({ success: false, message: 'ICICI transaction status is bank-controlled. Use status inquiry to refresh it.' }, { status: 409 });
       if (body.paymentStatus) {
         payment.paymentStatus = body.paymentStatus;
       }
@@ -1754,9 +1794,11 @@ async function branchHandlerPATCH(req) {
         payment.remarks = body.remarks;
       }
 
+      recordPaymentSettlement('balance', payment, user, hasPermission(user, 'approve'));
       await payment.save();
+      paymentEmailResult = await maybeSendPaymentConfirmation('balance', payment, user);
 
-      return NextResponse.json({
+      return paymentReply({
         success: true,
         message: `Balance Payment status updated to ${payment.paymentStatus}`,
         data: {
@@ -1768,14 +1810,14 @@ async function branchHandlerPATCH(req) {
       }, { status: 200 });
     }
 
-    return NextResponse.json({
+    return paymentReply({
       success: false,
       message: "Invalid action. Allowed: approve, reject, complete, queue, generate-queue, update-status"
     }, { status: 400 });
 
   } catch (error) {
     console.error("PATCH Error:", error);
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+    return paymentReply({ success: false, message: error.message }, { status: error.status || 500 });
   }
 }
 

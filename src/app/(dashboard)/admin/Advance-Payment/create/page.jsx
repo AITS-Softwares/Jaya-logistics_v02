@@ -1532,6 +1532,7 @@
 
 "use client";
 
+import { PaymentEmailPreference } from '@/components/PaymentConfirmationPanel';
 import { destinationLabel } from '@/lib/destination.mjs';
 import { useMemo, useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -2081,6 +2082,8 @@ function MemoImage({ filePath, alt, purchaseId, paymentId }) {
   return <img src={src} alt={alt} className="w-full h-full min-h-[200px] object-contain" />;
 }
 export default function CreateAdvancePayment() {
+  const [paymentEmailRequested, setPaymentEmailRequested] = useState(false);
+
   const router = useRouter();
   const searchParams = useSearchParams();
   const purchaseNoFromUrl = searchParams.get('purchaseNo') || searchParams.get('sourceNo');
@@ -2524,6 +2527,7 @@ export default function CreateAdvancePayment() {
     try {
       const token = localStorage.getItem('token');
       const payload = {
+        paymentEmailRequested,
         saveMode,
         purchaseNo: header.purchaseNo,
         pricingSerialNo: header.pricingSerialNo,
@@ -3079,7 +3083,9 @@ export default function CreateAdvancePayment() {
           </Card>
         </div>
       </div>
-    </div>
+
+      <div className="px-4 pb-6"><PaymentEmailPreference checked={paymentEmailRequested} onChange={setPaymentEmailRequested} disabled={saving} /></div>
+</div>
   );
 }
 

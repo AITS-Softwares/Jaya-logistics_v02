@@ -119,6 +119,7 @@
 
 // export default BalancePayment;
 
+import { paymentSettlementSchema, paymentEmailSchema } from '@/lib/paymentConfirmationSchema';
 import branchScopePlugin from '@/lib/branchScopePlugin';
 import mongoose from 'mongoose';
 import softDeletePlugin from '@/lib/softDelete';
@@ -151,6 +152,8 @@ const orderRowSchema = new mongoose.Schema({
 
 // Main Balance Payment Schema - UPDATED with Company Info
 const balancePaymentSchema = new mongoose.Schema({
+  paymentSettlement: { type: paymentSettlementSchema, default: undefined },
+  paymentEmail: { type: paymentEmailSchema, default: () => ({}) },
   // Auto-generated number
   balancePaymentNo: {
     type: String,

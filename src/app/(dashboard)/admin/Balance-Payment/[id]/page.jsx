@@ -1,5 +1,6 @@
 "use client";
 
+import PaymentConfirmationPanel from '@/components/PaymentConfirmationPanel';
 import { destinationLabel } from '@/lib/destination.mjs';
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
@@ -711,6 +712,7 @@ export default function EditBalancePayment() {
       });
       const data = await res.json();
       if (data.success) {
+        if (data.paymentEmail && ['failed', 'blocked', 'busy'].includes(data.paymentEmail.state)) alert(`Payment saved. ${data.paymentEmail.message}`);
         if (isDraftSave) {
           setIsDraft(true);
           alert(`✅ Balance Payment draft saved!\nPayment No: ${data.data?.balancePaymentNo || balancePaymentNo}`);
@@ -1016,7 +1018,9 @@ export default function EditBalancePayment() {
           </div>
         </Card>
       </div>
-    </div>
+
+      <div className="px-4 pb-6"><PaymentConfirmationPanel kind="balance" paymentId={paymentId} editable /></div>
+</div>
   );
 }
 // "use client";

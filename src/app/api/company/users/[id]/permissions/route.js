@@ -8,6 +8,7 @@ import { MASTER_PERMISSION_ACTIONS, MASTER_PERMISSION_KEYS } from "@/lib/masterP
 // ── PERMISSION DEFINITIONS ──
 const MODULE_PERMISSIONS = {
   // Sales Modules
+  "PDI Panel": ['view', 'edit'],
   "Order Panel": ['view', 'create', 'edit', 'delete', 'approve', 'reject'],
   "Vehicle Negotiation": ['view', 'create', 'edit', 'delete', 'approve'],
   "Vehicle Negotiation Placement": ['view', 'edit'],
@@ -17,8 +18,7 @@ const MODULE_PERMISSIONS = {
   "Loading Info": ['view', 'create', 'edit', 'delete', 'approve'],
   "Purchase Panel": ['view', 'create', 'edit', 'delete', 'approve'],
   "Consignment Note": ['view', 'create', 'edit', 'delete', 'approve'],
-  "Tracking Plan": ['view'],
-  "Driver Mobile Settings": ['view', 'edit'],
+  "Tracking Plan": ['view', 'edit'],
   "Advance Payment": ['view', 'create', 'edit', 'delete', 'approve'],
   "Proof Of Delivery": ['view', 'create', 'edit', 'delete', 'approve'],
   "Balance-Payment": ['view', 'create', 'edit', 'delete', 'approve'],

@@ -345,13 +345,14 @@ const podSchema = new mongoose.Schema({
     podStatus: { type: String, enum: ['Clear & Ok', 'Deductions', 'Pending', 'Received', 'Partial', 'Rejected', 'Completed', ''], default: 'Pending' },
     dueDate: { type: String, default: '' },
     paymentDate: { type: String, default: '' },
-    acknowledgementMail: { type: Boolean, default: false },
-    note: { type: String, default: '' },
+    ackMailRequested: { type: Boolean, default: false },
     acknowledgementMail: { type: Boolean, default: false },
     ackMailSentAt: { type: Date, default: null },
     ackMailSentBy: { type: String, default: '' },
     ackMailTo: { type: String, default: '' },
     ackMailCount: { type: Number, default: 0 },
+    ackMailSendingUntil: { type: Date, default: null },
+    ackMailAttemptId: { type: String, default: '' },
     note: { type: String, default: '' }
   },
 
