@@ -41,7 +41,7 @@ export default function LoadingTrackingSummary({ loadingId }) {
     return () => { controller.abort(); clearInterval(timer); document.removeEventListener("visibilitychange", load); };
   }, [loadingId, permissionLoading, allowed, refresh]);
 
-  const data = result?.loadingId === loadingId ? result.data : null;
+  const data = loadingId && result?.loadingId === loadingId ? result.data : null;
   const trips = data?.trips || [];
   const trip = trips.find((item) => !["completed", "cancelled"].includes(item.tripState)) || trips[0];
   const state = trip?.session?.status;
