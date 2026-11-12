@@ -4633,6 +4633,7 @@
 "use client";
 
 import { destinationLabel } from '@/lib/destination.mjs';
+import { groupYaraBillingRows } from '@/lib/yaraBillingRows.mjs';
 import { Fragment, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { usePermission } from "../hooks/usePermission";
@@ -4886,7 +4887,7 @@ function generateYaraProductWisePDFHTML(reportData, currentDate, billNumber) {
   const issuer = reportData.issuer || {};
   const client = reportData.clientSnapshot || {};
   const filters = reportData.filters || {};
-  const data = Array.isArray(reportData.data) ? reportData.data : [];
+  const data = groupYaraBillingRows(Array.isArray(reportData.data) ? reportData.data : []);
   const formatMoney = (value) => (Number(value) || 0).toFixed(3);
   const formatQty = (value) => (Number(value) || 0).toFixed(2);
   const formatDate = (value) => {
@@ -4928,7 +4929,7 @@ function generateYaraProductWisePDFHTML(reportData, currentDate, billNumber) {
       serial += 1;
       return `<tr>
         <td>${serial}</td><td>${escapeHtml(item.invoiceNo || item.lrNo || "—")}</td><td>${formatDate(item.date)}</td>
-        <td>${escapeHtml(item.consigneeName || "—")}</td><td>${escapeHtml(item.to || item.city || "—")}</td>
+        <td>${escapeHtml(item.consigneeName || "—")}</td><td>${escapeHtml(destinationLabel(item, item.city || "—"))}</td>
         <td>${escapeHtml(item.district || "—")}</td><td>${escapeHtml(item.state || "—")}</td>
         <td class="number">${formatQty(item.quantity ?? item.weight)}</td><td class="number">${formatQty(item.billQuantity ?? item.weight)}</td>
         <td>${escapeHtml(item.unit || "MT")}</td><td class="number">${formatMoney(item.rate)}</td><td class="number">${formatMoney(item.amount)}</td>

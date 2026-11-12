@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db.js";
 import Customer from "@/models/CustomerModel";
+import { customerNameQuery } from '@/lib/customerNameUniqueness.mjs';
 
 // ✅ Import BankHead model if you need it for population
 // If you don't have BankHead model, comment out the population
@@ -59,6 +60,11 @@ export async function POST(req) {
       }
     }
 
+    body.customerName = body.customerName.trim();
+    if (await Customer.exists(customerNameQuery(user.companyId, body.customerName))) {
+      return NextResponse.json({ success: false, message: "Customer name already exists in this company." }, { status: 409 });
+    }
+
     // Auto-generate customer code
     const lastCustomer = await Customer.findOne({ 
       companyId: user.companyId 
@@ -97,6 +103,12 @@ export async function POST(req) {
     return NextResponse.json({ success: true, data: populated, frappeSync }, { status: 201 });
 
   } catch (error) {
+    if (error.code === 11000 && error.keyPattern?.customerName) {
+      return NextResponse.json(
+        { success: false, message: "Customer name already exists in this company." },
+        { status: 409 }
+      );
+    }
     console.error("POST /customers error:", error);
     
     if (error.code === 11000) {

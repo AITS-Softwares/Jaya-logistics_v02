@@ -1,3 +1,4 @@
+import { duplicateMasterName } from '@/lib/masterNameUniqueness.mjs';
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import Item from "@/models/ItemModels";
@@ -46,6 +47,12 @@ async function validateUser(req, action = 'view') {
     if (!user || !isAuthorized(user)) return { error: "Unauthorized", status: 403 };
     return { user };
   } catch (err) {
+    if (err.code === 11000 && err.keyPattern?.itemName) {
+      return NextResponse.json(
+        { success: false, message: "Item name already exists in this company." },
+        { status: 409 }
+      );
+    }
     console.error("JWT Verification Failed:", err.message);
     return { error: "Invalid token", status: 401 };
   }
@@ -70,6 +77,12 @@ export async function GET(req, { params }) {
 
     return NextResponse.json({ success: true, data: item }, { status: 200 });
   } catch (err) {
+    if (err.code === 11000 && err.keyPattern?.itemName) {
+      return NextResponse.json(
+        { success: false, message: "Item name already exists in this company." },
+        { status: 409 }
+      );
+    }
     console.error("GET /item/:id error:", err);
     return NextResponse.json({ success: false, message: "Failed to fetch item" }, { status: 500 });
   }
@@ -100,6 +113,10 @@ export async function PUT(req, { params }) {
       return NextResponse.json({ success: false, message: "Select a valid customer from Customer Management" }, { status: 400 });
     }
 
+    if (data.itemName !== undefined && await duplicateMasterName(Item, user.companyId, 'itemName', data.itemName, id)) {
+      return NextResponse.json({ success: false, message: "Item name already exists in this company." }, { status: 409 });
+    }
+
     const updatedItem = await Item.findOneAndUpdate(
       { _id: id, companyId: user.companyId },
       { ...data, customerId: customer._id, customerName: customer.customerName, customerCode: customer.customerCode || "" },
@@ -115,6 +132,12 @@ export async function PUT(req, { params }) {
     await updatedItem.save();
     return NextResponse.json({ success: true, data: updatedItem, frappeSync }, { status: 200 });
   } catch (err) {
+    if (err.code === 11000 && err.keyPattern?.itemName) {
+      return NextResponse.json(
+        { success: false, message: "Item name already exists in this company." },
+        { status: 409 }
+      );
+    }
     console.error("PUT /item/:id error:", err);
     return NextResponse.json({ success: false, message: "Failed to update item" }, { status: 500 });
   }
@@ -139,6 +162,12 @@ export async function DELETE(req, { params }) {
 
     return NextResponse.json({ success: true, message: "Item deleted successfully", deletedId: id }, { status: 200 });
   } catch (err) {
+    if (err.code === 11000 && err.keyPattern?.itemName) {
+      return NextResponse.json(
+        { success: false, message: "Item name already exists in this company." },
+        { status: 409 }
+      );
+    }
     console.error("DELETE /item/:id error:", err);
     return NextResponse.json({ success: false, message: "Failed to delete item" }, { status: 500 });
   }

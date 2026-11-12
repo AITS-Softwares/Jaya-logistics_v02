@@ -1765,6 +1765,7 @@ export default function CreatePOD() {
   // ==================== REMARKS ====================
   const [remarks, setRemarks] = useState("");
   const [vehicleUnloadedDate, setVehicleUnloadedDate] = useState("");
+  const [vehicleUnloadedTime, setVehicleUnloadedTime] = useState("");
   const [unloadRemarks, setUnloadRemarks] = useState("");
 
   const orderColumns = [
@@ -1958,6 +1959,7 @@ export default function CreatePOD() {
         console.log('📦 Pack Data:', lrData.packData);
 
         if (lrData.vehicleUnloadedDate) setVehicleUnloadedDate(lrData.vehicleUnloadedDate);
+        if (lrData.vehicleUnloadedTime) setVehicleUnloadedTime(lrData.vehicleUnloadedTime);
         if (lrData.remarks) setUnloadRemarks(lrData.remarks);
 
         setProducts(prev => prev.filter(p => p.lrRefId !== lrId));
@@ -2432,6 +2434,7 @@ ${companyMsg}${subCompanyMsg}${vehicleMsg}${routeMsg}${lrMsg}
         podStatusSection,
         remarks,
         vehicleUnloadedDate,
+        vehicleUnloadedTime,
         unloadRemarks,
         purchaseNo: header.purchaseNo,
         pricingSerialNo: header.pricingSerialNo,
@@ -3120,6 +3123,11 @@ ${companyMsg}${subCompanyMsg}${vehicleMsg}${routeMsg}${lrMsg}
                 <div className="text-xs text-slate-400 mt-1">Date when vehicle was unloaded</div>
               </div>
 
+              <div className="col-span-12 md:col-span-4">
+                <label className="text-xs font-bold text-slate-600">Vehicle Unloaded Time (IST)</label>
+                <input type="time" value={vehicleUnloadedTime} onChange={(e) => setVehicleUnloadedTime(e.target.value)}
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm bg-white" />
+              </div>
               <div className="col-span-12 md:col-span-8">
                 <label className="text-xs font-bold text-slate-600">Remarks / Notes</label>
                 <textarea

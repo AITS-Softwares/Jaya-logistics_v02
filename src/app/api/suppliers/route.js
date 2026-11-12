@@ -1,3 +1,4 @@
+import { duplicateMasterName } from '@/lib/masterNameUniqueness.mjs';
 import {supplierSelectionFilter} from '@/lib/supplierSelection.mjs';
 import {masterApprovalAccess,withMasterSubmitterNames} from '@/lib/masterApprovalAccess';
 import {createPendingMaster,submitMasterChange,approvalManagementRecord} from '@/lib/masterApprovalService';
@@ -43,6 +44,12 @@ export async function GET(req) {
 
     return NextResponse.json({ success: true, data: management ? await withMasterSubmitterNames(suppliers.map(approvalManagementRecord)) : suppliers }, { status: 200 });
   } catch (err) {
+    if (err.code === 11000 && err.keyPattern?.supplierName) {
+      return NextResponse.json(
+        { success: false, message: "Supplier name already exists in this company." },
+        { status: 409 }
+      );
+    }
     console.error("GET /suppliers error:", err);
     return NextResponse.json({ success: false, message: "Failed to fetch suppliers" }, { status: 500 });
   }
@@ -80,6 +87,10 @@ export async function POST(req) {
       return NextResponse.json({ success: false, message: "Supplier Code already exists" }, { status: 400 });
     }
 
+    if (body.supplierName !== undefined && await duplicateMasterName(Supplier, user.companyId, 'supplierName', body.supplierName)) {
+      return NextResponse.json({ success: false, message: "Supplier name already exists in this company." }, { status: 409 });
+    }
+
     const fields = pickPaths(body,[...SUPPLIER_SENSITIVE,...SUPPLIER_IMMEDIATE]);
     const candidate = new Supplier({companyId:user.companyId,createdBy:user.id});
     for(const [path,value] of Object.entries(fields)) candidate.set(path,value);
@@ -92,6 +103,12 @@ export async function POST(req) {
     return NextResponse.json({ success: true, data: populated, frappeSync }, { status: 201 });
 
   } catch (err) {
+    if (err.code === 11000 && err.keyPattern?.supplierName) {
+      return NextResponse.json(
+        { success: false, message: "Supplier name already exists in this company." },
+        { status: 409 }
+      );
+    }
     console.error("POST /suppliers error:", err);
     if (err.code === 11000) {
       const field = Object.keys(err.keyValue)[0];
@@ -132,12 +149,22 @@ export async function PUT(req, { params }) {
     if (!/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(pan)) {
       return NextResponse.json({ success: false, message: "Valid PAN is required. Example: ABCDE1234F" }, { status: 400 });
     }
+    if (body.supplierName !== undefined && await duplicateMasterName(Supplier, user.companyId, 'supplierName', body.supplierName, id)) {
+      return NextResponse.json({ success: false, message: "Supplier name already exists in this company." }, { status: 409 });
+    }
+
     const updatedSupplier = await submitMasterChange({Model:Supplier,record:existingSupplier,input:{...body,dueDays:Number(dueDays),pan},user,kind:'supplier'});
     await notifyMasterSubmission(user,updatedSupplier,'supplier');
 
     return NextResponse.json({ success: true, data: updatedSupplier }, { status: 200 });
 
   } catch (err) {
+    if (err.code === 11000 && err.keyPattern?.supplierName) {
+      return NextResponse.json(
+        { success: false, message: "Supplier name already exists in this company." },
+        { status: 409 }
+      );
+    }
     console.error("PUT /suppliers error:", err);
     if (err.code === 11000) {
       const field = Object.keys(err.keyValue)[0];
@@ -169,6 +196,12 @@ export async function DELETE(req, { params }) {
     return NextResponse.json({ success: true, message: "Supplier deleted successfully" }, { status: 200 });
 
   } catch (err) {
+    if (err.code === 11000 && err.keyPattern?.supplierName) {
+      return NextResponse.json(
+        { success: false, message: "Supplier name already exists in this company." },
+        { status: 409 }
+      );
+    }
     console.error("DELETE /suppliers error:", err);
     return NextResponse.json({ success: false, message: "Failed to delete supplier" }, { status: 500 });
   }

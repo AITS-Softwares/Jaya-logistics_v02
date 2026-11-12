@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import Customer from "@/models/CustomerModel";
+import { customerNameQuery } from '@/lib/customerNameUniqueness.mjs';
 import { identifierFormatError } from "@/lib/identifierFormats";
 import { validateMasterDataRequest } from "@/lib/masterDataPermission";
 import { syncCustomer } from "@/lib/frappe-customer.mjs";
@@ -22,6 +23,12 @@ export async function GET(req, { params }) {
 
     return NextResponse.json({ success: true, data: customer }, { status: 200 });
   } catch (error) {
+    if (error.code === 11000 && error.keyPattern?.customerName) {
+      return NextResponse.json(
+        { success: false, message: "Customer name already exists in this company." },
+        { status: 409 }
+      );
+    }
     console.error("GET /api/customers/:id error:", error);
     return NextResponse.json({ success: false, message: "Failed to fetch customer" }, { status: 500 });
   }
@@ -41,6 +48,16 @@ export async function PUT(req, { params }) {
     const body = await req.json();
     const formatError = identifierFormatError(body);
     if (formatError) return NextResponse.json({ success: false, message: formatError }, { status: 400 });
+
+    if (body.customerName !== undefined) {
+      if (typeof body.customerName !== 'string' || !body.customerName.trim()) {
+        return NextResponse.json({ success: false, message: "Customer Name is required" }, { status: 400 });
+      }
+      body.customerName = body.customerName.trim();
+      if (await Customer.exists(customerNameQuery(user.companyId, body.customerName, id))) {
+        return NextResponse.json({ success: false, message: "Customer name already exists in this company." }, { status: 409 });
+      }
+    }
 
     // ✅ FIX: assignedAgents ko ObjectId array me convert karo
     if (Array.isArray(body.assignedAgents)) {
@@ -66,6 +83,12 @@ export async function PUT(req, { params }) {
     await updated.save();
     return NextResponse.json({ success: true, data: updated, frappeSync }, { status: 200 });
   } catch (error) {
+    if (error.code === 11000 && error.keyPattern?.customerName) {
+      return NextResponse.json(
+        { success: false, message: "Customer name already exists in this company." },
+        { status: 409 }
+      );
+    }
     console.error("PUT /customers/[id] error:", error);
     return NextResponse.json({ success: false, message: "Failed to update customer" }, { status: 500 });
   }
@@ -89,6 +112,12 @@ export async function DELETE(req, { params }) {
 
     return NextResponse.json({ success: true, message: "Customer deleted successfully" }, { status: 200 });
   } catch (error) {
+    if (error.code === 11000 && error.keyPattern?.customerName) {
+      return NextResponse.json(
+        { success: false, message: "Customer name already exists in this company." },
+        { status: 409 }
+      );
+    }
     console.error("DELETE /customers/[id] error:", error);
     return NextResponse.json({ success: false, message: "Failed to delete customer" }, { status: 500 });
   }

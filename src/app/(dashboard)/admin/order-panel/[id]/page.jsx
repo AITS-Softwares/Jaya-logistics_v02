@@ -10133,8 +10133,10 @@ function PlantGridTable({
                     onChange={(e) => onChange(r._id, 'locationRemark', e.target.value)}
                     maxLength={200}
                     className="w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
-                    placeholder="Exact area / landmark (optional)"
+                    placeholder="Destination missing from pincode list"
+                      title="Enter the destination here if it is missing from the pincode list."
                   />
+                  <p className="mt-1 text-xs text-slate-500">Enter the destination here if it is missing from the pincode list.</p>
                 </td>
 
                 <td className="border border-yellow-300 px-2 py-2 text-center">
@@ -10610,7 +10612,7 @@ function PackTypeTable({
 
                   {cols.map((c) => {
                     if (c.isRoute) {
-                      return <td key={c.key} className="border border-yellow-300 px-2 py-2"><select value={r.plantRowId || ''} onChange={(e) => handleChange(r._id, c.key, e.target.value || null)} className="w-full min-w-40 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm"><option value="">Select drop</option>{plantRows.map((route, index) => <option key={route._id} value={route._id}>Drop {index + 1} · {route.toName || route.cityName || route.city || route.districtName || route.district || 'Destination'}</option>)}</select></td>;
+                      return <td key={c.key} className="border border-yellow-300 px-2 py-2"><select value={r.plantRowId || ''} onChange={(e) => handleChange(r._id, c.key, e.target.value || null)} className="w-full min-w-40 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm"><option value="">Select drop</option>{plantRows.map((route, index) => <option key={route._id} value={route._id}>Drop {index + 1} · {destinationLabel(route, route.cityName || route.city || route.districtName || route.district || 'Destination')}</option>)}</select></td>;
                     }
                     if (c.key === "wtUom") {
                       return (

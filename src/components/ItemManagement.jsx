@@ -893,6 +893,7 @@
 
 "use client";
 
+import useDuplicateMasterName from '@/components/useDuplicateMasterName';
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Papa from "papaparse";
@@ -970,6 +971,7 @@ export default function ItemManagement() {
   const [frappeSyncProgress, setFrappeSyncProgress] = useState(null);
   const [step,      setStep]      = useState(1);
   const [id,        setId]        = useState({ ...INITIAL });
+  const nameCheck = useDuplicateMasterName("item", id.itemName, id._id);
   const [errs,      setErrs]      = useState({});
   
   // State for subgroups based on selected category
@@ -1103,6 +1105,7 @@ export default function ItemManagement() {
 
   // ── Navigation ──
   const goNext = () => {
+    if (nameCheck.blocked) { toast.error(nameCheck.message); return; }
     const v = VALIDATORS[step];
     if (v) {
       const e = v(id);
@@ -1116,6 +1119,7 @@ export default function ItemManagement() {
 
   // ── Submit ──
   const handleSubmit = async () => {
+    if (nameCheck.blocked) { toast.error(nameCheck.message); return; }
     const allE = VALIDATORS[1](id);
     if (Object.keys(allE).length) { setErrs(allE); toast.error("Fix required fields"); return; }
 
@@ -1367,6 +1371,7 @@ export default function ItemManagement() {
               <Lbl text="Item Name" />
               <input className={fi("itemName")} name="itemName" value={id.itemName || ""} onChange={handleChange} placeholder="e.g. Steel Rod 10mm" />
               <Err k="itemName" />
+              {nameCheck.message && <p role="status" aria-live="polite" className={`mt-1 text-xs ${nameCheck.status === "duplicate" ? "text-red-600" : "text-slate-500"}`}>{nameCheck.message}</p>}
             </div>
           </div>
 
@@ -1995,7 +2000,7 @@ export default function ItemManagement() {
             return (
               <React.Fragment key={s.id}>
                 <div className="flex flex-col items-center shrink-0">
-                  <button type="button" onClick={() => done && setStep(s.id)}
+                  <button type="button" onClick={() => done && s.id <= step && setStep(s.id)}
                     className={`w-9 h-9 rounded-full flex items-center justify-center border-2 transition-all
                       ${done   ? "bg-emerald-500 border-emerald-500 text-white cursor-pointer hover:bg-emerald-600"
                         : active ? "bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-200"
@@ -2041,12 +2046,12 @@ export default function ItemManagement() {
           <span className="text-xs font-bold text-gray-300 font-mono">{step} / {STEPS.length}</span>
 
           {step < STEPS.length ? (
-            <button type="button" onClick={goNext}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 text-white font-semibold text-sm hover:bg-indigo-700 transition-all shadow-sm shadow-indigo-200">
+            <button type="button" onClick={goNext} disabled={nameCheck.blocked}
+              className="disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 text-white font-semibold text-sm hover:bg-indigo-700 transition-all shadow-sm shadow-indigo-200">
               Next <FaChevronRight className="text-xs" />
             </button>
           ) : (
-            <button type="button" onClick={handleSubmit} disabled={submitting}
+            <button type="button" onClick={handleSubmit} disabled={submitting || nameCheck.blocked}
               className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 text-white font-semibold text-sm hover:bg-emerald-700 transition-all shadow-sm shadow-emerald-200 disabled:opacity-60 disabled:cursor-not-allowed">
               {submitting
                 ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Saving…</>

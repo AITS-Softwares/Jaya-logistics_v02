@@ -5,6 +5,7 @@
 import LoadingPanel from "@/app/api/loading-panel/LoadingPanel";
 import PurchasePanel from "@/app/api/purchase-panel/PurchasePanel";
 import DetentionRule from "@/app/api/detention-rules/DetentionRule";
+import { detentionRuleFilter } from '@/lib/detentionRuleScope.mjs';
 import { calculateDetention, selectDetentionRule } from "@/lib/detentionCalculation";
 import { companyScopeFilter } from "@/lib/companyScope";
 
@@ -35,7 +36,7 @@ async function synchronizePurchaseDetention(user, loadingInfo, outDate, outTime)
     const inDate = loadingInfo.arrivalDetails?.date;
     const inTime = loadingInfo.arrivalDetails?.time || '';
     const localStatus = purchase.orderRows?.[0]?.localStatus || 'unknown';
-    const rules = await DetentionRule.find(companyScopeFilter(user, {
+    const rules = await DetentionRule.find(detentionRuleFilter(user, {
         active: true, effectiveFrom: { $lte: new Date() }
     })).sort({ priority: 1, effectiveFrom: -1 }).lean();
     const rule = selectDetentionRule(rules, localStatus, inTime);

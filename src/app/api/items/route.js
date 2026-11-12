@@ -1,3 +1,4 @@
+import { duplicateMasterName } from '@/lib/masterNameUniqueness.mjs';
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import Item from "@/models/ItemModels";
@@ -44,6 +45,12 @@ async function validateUser(req, action = 'view') {
     if (!user || !isAuthorized(user)) return { error: "Unauthorized", status: 403 };
     return { user };
   } catch (err) {
+    if (err.code === 11000 && err.keyPattern?.itemName) {
+      return NextResponse.json(
+        { success: false, message: "Item name already exists in this company." },
+        { status: 409 }
+      );
+    }
     console.error("JWT Verification Failed:", err.message);
     return { error: "Invalid token", status: 401 };
   }
@@ -84,6 +91,12 @@ export async function GET(req) {
 
     return NextResponse.json({ success: true, data: items }, { status: 200 });
   } catch (err) {
+    if (err.code === 11000 && err.keyPattern?.itemName) {
+      return NextResponse.json(
+        { success: false, message: "Item name already exists in this company." },
+        { status: 409 }
+      );
+    }
     console.error("GET /item error:", err);
     return NextResponse.json(
       { success: false, message: "Failed to fetch items" },
@@ -111,6 +124,10 @@ export async function POST(req) {
       if (!data[field]) {
         return NextResponse.json({ success: false, message: `${field} is required` }, { status: 400 });
       }
+    }
+
+    if (data.itemName !== undefined && await duplicateMasterName(Item, user.companyId, 'itemName', data.itemName)) {
+      return NextResponse.json({ success: false, message: "Item name already exists in this company." }, { status: 409 });
     }
 
     const customer = await Customer.findOne({ _id: data.customerId, companyId: user.companyId }).select('customerName customerCode');
@@ -145,6 +162,12 @@ export async function POST(req) {
     );
     return NextResponse.json({ success: true, data: item, frappeSync }, { status: 201 });
   } catch (err) {
+    if (err.code === 11000 && err.keyPattern?.itemName) {
+      return NextResponse.json(
+        { success: false, message: "Item name already exists in this company." },
+        { status: 409 }
+      );
+    }
     console.error("POST /item error:", err);
     return NextResponse.json({ success: false, message: "Failed to create item" }, { status: 500 });
   }

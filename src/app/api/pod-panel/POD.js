@@ -361,6 +361,7 @@ const podSchema = new mongoose.Schema({
 
   // Vehicle Unloaded & Remarks card
   vehicleUnloadedDate: { type: String, default: '' },
+  vehicleUnloadedTime: { type: String, default: '', validate: { validator: value => !value || /^([01]\d|2[0-3]):[0-5]\d$/.test(value), message: 'Enter a valid unloading time (HH:mm).' } },
   unloadRemarks: { type: String, default: '' },
 
   // Calculated Totals

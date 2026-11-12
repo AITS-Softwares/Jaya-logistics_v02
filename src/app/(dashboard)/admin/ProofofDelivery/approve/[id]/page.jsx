@@ -1081,6 +1081,7 @@ export default function ApprovePOD() {
 
   const [remarks, setRemarks] = useState("");
   const [vehicleUnloadedDate, setVehicleUnloadedDate] = useState("");
+  const [vehicleUnloadedTime, setVehicleUnloadedTime] = useState("");
   const [unloadRemarks, setUnloadRemarks] = useState("");
 
   // Product Columns
@@ -1249,6 +1250,7 @@ export default function ApprovePOD() {
           setRemarks(pod.remarks);
         }
         setVehicleUnloadedDate(pod.vehicleUnloadedDate || "");
+        setVehicleUnloadedTime(pod.vehicleUnloadedTime || "");
         setUnloadRemarks(pod.unloadRemarks || "");
       }
     } catch (error) {
@@ -1893,6 +1895,11 @@ export default function ApprovePOD() {
                   readOnly
                   className="mt-1 w-full rounded-xl border border-slate-200 bg-gray-100 px-3 py-2 text-sm cursor-not-allowed"
                 />
+              </div>
+              <div className="col-span-12 md:col-span-4">
+                <label className="text-xs font-bold text-slate-600">Vehicle Unloaded Time (IST)</label>
+                <input type="time" value={vehicleUnloadedTime} readOnly
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm bg-gray-100" />
               </div>
               <div className="col-span-12 md:col-span-8">
                 <label className="text-xs font-bold text-slate-600">Remarks / Notes</label>

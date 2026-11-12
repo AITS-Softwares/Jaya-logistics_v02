@@ -25,7 +25,7 @@ const ItemSchema = new mongoose.Schema(
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "CompanyUser" },
 
     itemCode: { type: String, required: true },
-    itemName: { type: String },
+    itemName: { type: String, required: true, trim: true },
     customerId: { type: mongoose.Schema.Types.ObjectId, ref: "Customer", required: [true, "Customer is required"] },
     customerName: { type: String, required: true, trim: true },
     customerCode: { type: String, trim: true, default: "" },
@@ -94,6 +94,11 @@ const ItemSchema = new mongoose.Schema(
 );
 
 // ✅ Useful indexes for POS search performance
+ItemSchema.index(
+  { companyId: 1, itemName: 1 },
+  { unique: true, name: "unique_item_name_per_company", collation: { locale: "en", strength: 2 } }
+);
+
 ItemSchema.index({ companyId: 1, posEnabled: 1, active: 1 });
 ItemSchema.index({ companyId: 1, "posConfig.barcode": 1 });
 

@@ -343,6 +343,11 @@ SupplierSchema.index({ supplierCode: 1 });
 
 
 SupplierSchema.post("save", function (error, doc, next) {
+  if (error.code === 11000 && error.keyPattern?.supplierName) {
+    return next(Object.assign(new Error("Supplier name already exists in this company."), {
+      code: 11000, status: 409, keyPattern: error.keyPattern,
+    }));
+  }
   if (error.name === "MongoServerError" && error.code === 11000) {
     const field = Object.keys(error.keyPattern)[0];
     next(new Error(`${field} already exists`));
@@ -350,6 +355,11 @@ SupplierSchema.post("save", function (error, doc, next) {
     next(error);
   }
 });
+
+SupplierSchema.index(
+  { companyId: 1, supplierName: 1 },
+  { unique: true, name: "unique_supplier_name_per_company", collation: { locale: "en", strength: 2 } }
+);
 
 addMasterApprovalFields(SupplierSchema);
 SupplierSchema.add({reservedSupplierCode:{type:String,trim:true,uppercase:true}});
