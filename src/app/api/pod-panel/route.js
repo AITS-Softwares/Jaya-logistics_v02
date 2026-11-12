@@ -661,6 +661,7 @@ async function branchHandlerPOST(req) {
 
       remarks: str(body.remarks),
       vehicleUnloadedDate: str(body.vehicleUnloadedDate),
+      vehicleUnloadedTime: str(body.vehicleUnloadedTime),
       unloadRemarks: str(body.unloadRemarks),
 
       podStatus: requestedPodStatus,
@@ -882,6 +883,7 @@ async function branchHandlerPUT(req) {
 
     if (body.remarks !== undefined) pod.remarks = str(body.remarks);
     if (body.vehicleUnloadedDate !== undefined) pod.vehicleUnloadedDate = str(body.vehicleUnloadedDate);
+    if (body.vehicleUnloadedTime !== undefined) pod.vehicleUnloadedTime = str(body.vehicleUnloadedTime);
     if (body.unloadRemarks !== undefined) pod.unloadRemarks = str(body.unloadRemarks);
 
     if (canApprove) {

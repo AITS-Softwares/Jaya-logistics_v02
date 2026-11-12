@@ -1,5 +1,6 @@
 "use client";
 
+import useDuplicateMasterName from '@/components/useDuplicateMasterName';
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import {
@@ -475,6 +476,7 @@ export default function CustomerManagement() {
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
   const [cd, setCd] = useState({ ...EMPTY });
+  const nameCheck = useDuplicateMasterName("customer", cd.customerName, cd._id);
   const [errs, setErrs] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [syncingFrappe, setSyncingFrappe] = useState(false);
@@ -597,6 +599,7 @@ export default function CustomerManagement() {
   };
 
   const goNext = () => {
+    if (nameCheck.blocked) { toast.error(nameCheck.message); return; }
     const v = VALIDATORS[step];
     if (v) {
       const e = v(cd);
@@ -615,6 +618,7 @@ export default function CustomerManagement() {
   const reset = () => { setCd({ ...EMPTY }); setStep(1); setErrs({}); setView("list"); };
 
   const handleSubmit = async () => {
+    if (nameCheck.blocked) { toast.error(nameCheck.message); return; }
     if (cd._id && !canEdit) {
       toast.error("No permission to edit");
       return;
@@ -829,6 +833,7 @@ export default function CustomerManagement() {
                 {label("Customer Name", true)}
                 <input className={fi("customerName")} name="customerName" value={cd.customerName || ""} onChange={handleChange} placeholder="e.g. Acme Corporation" />
                 <Err k="customerName" />
+                {nameCheck.message && <p role="status" aria-live="polite" className={`mt-1 text-xs ${nameCheck.status === "duplicate" ? "text-red-600" : "text-slate-500"}`}>{nameCheck.message}</p>}
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1089,7 +1094,7 @@ export default function CustomerManagement() {
             return (
               <React.Fragment key={s.id}>
                 <div className="flex flex-col items-center">
-                  <button onClick={() => done && setStep(s.id)} className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold border-2 ${done ? "bg-emerald-500 border-emerald-500 text-white" : active ? "bg-indigo-600 border-indigo-600 text-white" : "bg-white border-gray-200 text-gray-300"}`}>
+                  <button onClick={() => done && s.id <= step && setStep(s.id)} className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold border-2 ${done ? "bg-emerald-500 border-emerald-500 text-white" : active ? "bg-indigo-600 border-indigo-600 text-white" : "bg-white border-gray-200 text-gray-300"}`}>
                     {done ? <FaCheck className="text-xs" /> : <Icon className="text-xs" />}
                   </button>
                   <span className={`text-[9px] font-bold mt-1.5 hidden sm:block ${done ? "text-emerald-500" : active ? "text-indigo-600" : "text-gray-300"}`}>{s.label}</span>
@@ -1111,9 +1116,9 @@ export default function CustomerManagement() {
         <div className="flex justify-between">
           <button onClick={step > 1 ? goPrev : reset} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gray-100 text-gray-600 font-semibold text-sm"><FaChevronLeft /> {step > 1 ? "Previous" : "Cancel"}</button>
           {step < STEPS.length ? (
-            <button onClick={goNext} className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 text-white font-semibold text-sm">Next <FaChevronRight /></button>
+            <button onClick={goNext} disabled={nameCheck.blocked} className="disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 text-white font-semibold text-sm">Next <FaChevronRight /></button>
           ) : (
-            <button onClick={handleSubmit} disabled={submitting} className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 text-white font-semibold text-sm hover:bg-emerald-700">
+            <button onClick={handleSubmit} disabled={submitting || nameCheck.blocked} className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 text-white font-semibold text-sm hover:bg-emerald-700">
               {submitting ? "Saving..." : (cd._id ? "Update Customer" : "Create Customer")}
             </button>
           )}

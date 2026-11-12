@@ -1422,6 +1422,7 @@ import PurchasePanel from "../purchase-panel/PurchasePanel";
 import OrderPanel from "../order-panel/OrderPanel";
 import VehicleNegotiation from "../vehicle-negotiation/VehicleNegotiation";
 import DetentionRule from "../detention-rules/DetentionRule";
+import { detentionRuleFilter } from '@/lib/detentionRuleScope.mjs';
 import { calculateDetention, selectDetentionRule } from "@/lib/detentionCalculation";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import { getNextLRNumber } from "./ConsignmentCounter";
@@ -1583,7 +1584,7 @@ async function synchronizePurchaseDetention(user, loadingInfo, outDate, outTime)
   const inDate = loadingInfo.arrivalDetails?.date;
   const inTime = loadingInfo.arrivalDetails?.time || '';
   const localStatus = purchase.orderRows?.[0]?.localStatus || 'unknown';
-  const rules = await DetentionRule.find(companyScopeFilter(user, {
+  const rules = await DetentionRule.find(detentionRuleFilter(user, {
     active: true, effectiveFrom: { $lte: new Date() }
   })).sort({ priority: 1, effectiveFrom: -1 }).lean();
   const rule = selectDetentionRule(rules, localStatus, inTime);

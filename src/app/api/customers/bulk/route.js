@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db.js";
 import Customer from "@/models/CustomerModel";
+import { customerNameQuery } from '@/lib/customerNameUniqueness.mjs';
 import BankHead from "@/models/BankHead";
 import { validateMasterDataRequest } from "@/lib/masterDataPermission";
 import { validateIdentifierFormats } from "@/lib/identifierFormats";
@@ -103,6 +104,12 @@ export async function POST(req) {
           { mobileNumber: row.mobileNumber },
         ],
       });
+
+      if (await Customer.exists(customerNameQuery(companyId, row.customerName, existingCustomer?._id))) {
+        skippedCount++;
+        results.push({ row: i + 1, success: false, errors: ["Customer name already exists in this company."] });
+        continue;
+      }
 
       const customerData = {
         companyId,

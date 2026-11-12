@@ -86,7 +86,7 @@ export function calculateDetention({ inDate, inTime, outDate, outTime, localStat
 
 export function selectDetentionRule(rules, localStatus, arrivalTime) {
   const movementType = localStatus === 'local' ? 'LOCAL' : 'OUTSTATION';
-  const matching = rules.filter((rule) => rule.active && rule.movementType === movementType);
+  const matching = rules.filter((rule) => rule.active && (rule.detentionType || 'LOADING') === 'LOADING' && rule.movementType === movementType);
   if (movementType === 'LOCAL') return matching.find((rule) => rule.ruleType === 'LOCAL_CALENDAR');
   const cutoff = matching.find((rule) => rule.ruleType === 'OUTSTATION_NEXT_DAY_CUTOFF')?.cutoffTime || '16:00';
   // Exactly the cutoff is intentionally treated as after the cutoff.

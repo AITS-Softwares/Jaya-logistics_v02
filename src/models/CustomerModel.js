@@ -199,11 +199,21 @@ const customerSchema = new mongoose.Schema({
   documents: { type: documentSchema, default: { gstCertificate: null, panCard: null, iecCertificate: null, otherDocuments: [] } }
 }, { timestamps: true, collection: "customers" });
 
+customerSchema.index(
+  { companyId: 1, customerName: 1 },
+  { unique: true, name: "unique_customer_name_per_company", collation: { locale: "en", strength: 2 } }
+);
+
 customerSchema.index({ companyId: 1, customerCode: 1 }, { unique: true, sparse: true });
 
 customerSchema.index({ mobileNumber: 1 });
 
 customerSchema.post("save", function (error, doc, next) {
+  if (error.code === 11000 && error.keyPattern?.customerName) {
+    return next(Object.assign(new Error("Customer name already exists in this company."), {
+      code: 11000, status: 409, keyPattern: error.keyPattern,
+    }));
+  }
   if (error.name === "MongoServerError" && error.code === 11000) {
     if (error.keyPattern?.companyId && error.keyPattern?.customerCode) {
       next(new Error(`Customer code "${error.keyValue?.customerCode}" already exists`));

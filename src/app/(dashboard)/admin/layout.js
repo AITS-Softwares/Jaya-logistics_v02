@@ -2434,6 +2434,13 @@ export default function Layout({ children }) {
                   isActive={isActive("/admin/rate-master/create")}
                 />
                 <Item
+                  href="/admin/Detention-Rule-Master"
+                  icon={<HiCog />}
+                  label="Detention Rule Master"
+                  onClick={closeSidebar}
+                  isActive={isActive("/admin/Detention-Rule-Master")}
+                />
+                <Item
                   href="/admin/UOM"
                   icon={<HiCurrencyRupee />}
                   label="UOM"
@@ -2536,13 +2543,6 @@ export default function Layout({ children }) {
                       isActive={pathname.startsWith("/admin/Driver-Mobile")}
                     />
                   )}
-                  <Item
-                    href="/admin/Detention-Rule-Master"
-                    icon={<HiCog />}
-                    label="Detention Rule Master"
-                    onClick={closeSidebar}
-                    isActive={isActive("/admin/Detention-Rule-Master")}
-                  />
                   <Item
                     href="/admin/Advance-Payment"
                     icon={<HiCash />}

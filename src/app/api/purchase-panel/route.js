@@ -10,6 +10,7 @@ import ConsignmentNote from "../consignment-note/ConsignmentNote";
 import LoadingPanel from "../loading-panel/LoadingPanel";
 import { getLRCompletion, LR_COMPLETION_SELECT } from "../loading-panel/findLRs";
 import DetentionRule from "../detention-rules/DetentionRule";
+import { detentionRuleFilter } from '@/lib/detentionRuleScope.mjs';
 import { calculateDetention, selectDetentionRule } from "@/lib/detentionCalculation";
 import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
 import { getNextPurchaseNumber } from "./PurchaseCounter";
@@ -808,7 +809,7 @@ async function branchHandlerPOST(req) {
 
     // Covers the rare case where a Purchase is created after its LR already exists.
     if (loadingArrival.date && loadingArrival.time && loadingArrival.outDate && loadingArrival.outTime) {
-      const rules = await DetentionRule.find(companyScopeFilter(user, { active: true, effectiveFrom: { $lte: new Date() } })).sort({ priority: 1, effectiveFrom: -1 }).lean();
+      const rules = await DetentionRule.find(detentionRuleFilter(user, { active: true, effectiveFrom: { $lte: new Date() } })).sort({ priority: 1, effectiveFrom: -1 }).lean();
       const localStatus = processedOrderRows[0]?.localStatus || 'unknown';
       const rule = selectDetentionRule(rules, localStatus, loadingArrival.time);
       const result = calculateDetention({ inDate: loadingArrival.date, inTime: loadingArrival.time, outDate: loadingArrival.outDate, outTime: loadingArrival.outTime, localStatus, rule });

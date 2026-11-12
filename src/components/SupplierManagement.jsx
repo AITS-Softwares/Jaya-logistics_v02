@@ -1,6 +1,7 @@
 "use client";
 
 import MasterApprovalReview from '@/components/MasterApprovalReview';
+import useDuplicateMasterName from '@/components/useDuplicateMasterName';
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import {
@@ -504,6 +505,7 @@ export default function SupplierManagement() {
   const [syncingSupplierId, setSyncingSupplierId] = useState('');
   const [step, setStep] = useState(1);
   const [sd, setSd] = useState({ ...EMPTY });
+  const nameCheck = useDuplicateMasterName("supplier", sd.supplierName, sd._id);
   const [errs, setErrs] = useState({});
   const [viewOpen, setViewOpen] = useState(false);
   const [viewSupplier, setViewSupplier] = useState(null);
@@ -669,6 +671,7 @@ export default function SupplierManagement() {
   };
 
   const goNext = () => {
+    if (nameCheck.blocked) { toast.error(nameCheck.message); return; }
     const v = VALIDATORS[step];
     if (v) {
       const e = v(sd);
@@ -681,6 +684,7 @@ export default function SupplierManagement() {
   const goPrev = () => { setErrs({}); setStep(s => s - 1); };
 
   const handleSubmit = async () => {
+    if (nameCheck.blocked) { toast.error(nameCheck.message); return; }
     let allE = {};
     for (let s = 1; s <= 6; s++) { const v = VALIDATORS[s]; if (v) allE = { ...allE, ...v(sd) }; }
     if (Object.keys(allE).length) { setErrs(allE); toast.error("Please fix errors before submitting"); return; }
@@ -835,6 +839,7 @@ export default function SupplierManagement() {
               <Lbl text="Supplier Name" req />
               <input className={fi("supplierName")} name="supplierName" value={sd.supplierName || ""} onChange={handleChange} placeholder="e.g. ABC Traders Pvt Ltd" />
               <Err k="supplierName" />
+              {nameCheck.message && <p role="status" aria-live="polite" className={`mt-1 text-xs ${nameCheck.status === "duplicate" ? "text-red-600" : "text-slate-500"}`}>{nameCheck.message}</p>}
             </div>
           </div>
 
@@ -1269,7 +1274,7 @@ export default function SupplierManagement() {
             return (
               <React.Fragment key={s.id}>
                 <div className="flex flex-col items-center shrink-0">
-                  <button type="button" onClick={() => done && setStep(s.id)}
+                  <button type="button" onClick={() => done && s.id <= step && setStep(s.id)}
                     className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all
                       ${done ? "bg-emerald-500 border-emerald-500 text-white cursor-pointer hover:bg-emerald-600"
                         : active ? "bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-200"
@@ -1313,12 +1318,12 @@ export default function SupplierManagement() {
           <span className="text-xs font-bold text-gray-300 font-mono">{step} / {STEPS.length}</span>
 
           {step < STEPS.length ? (
-            <button type="button" onClick={goNext}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 text-white font-semibold text-sm hover:bg-indigo-700 transition-all shadow-sm shadow-indigo-200">
+            <button type="button" onClick={goNext} disabled={nameCheck.blocked}
+              className="disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 text-white font-semibold text-sm hover:bg-indigo-700 transition-all shadow-sm shadow-indigo-200">
               Next <FaChevronRight className="text-xs" />
             </button>
           ) : (
-            <button type="button" onClick={handleSubmit} disabled={submitting}
+            <button type="button" onClick={handleSubmit} disabled={submitting || nameCheck.blocked}
               className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 text-white font-semibold text-sm hover:bg-emerald-700 transition-all shadow-sm shadow-emerald-200 disabled:opacity-60 disabled:cursor-not-allowed">
               {submitting
                 ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Saving…</>
