@@ -10447,8 +10447,6 @@ export default function CreateOrderPanel() {
         if (refs && refs[firstKey]) {
           setTimeout(() => refs[firstKey].focus(), 50);
         }
-      } else {
-        addRow();
       }
     }
   };

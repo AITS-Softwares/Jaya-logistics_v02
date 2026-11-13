@@ -8,8 +8,7 @@ export function PaymentEmailPreference({ checked, onChange, disabled = false }) 
 
 export default function PaymentConfirmationPanel({ kind, paymentId, editable = false }) {
   const [data, setData] = useState(null), [error, setError] = useState(''), [message, setMessage] = useState('');
-  const [busy, setBusy] = useState(false), [preview, setPreview] = useState(false), [reference, setReference] = useState('');
-  const [confirmManual, setConfirmManual] = useState(false);
+  const [busy, setBusy] = useState(false), [preview, setPreview] = useState(false);
   const previous = useRef(null), dialog = useRef(null), close = useRef(null), requestSequence = useRef(0), busyRef = useRef(false);
   busyRef.current = busy;
   const endpoint = `/api/${kind === 'advance' ? 'Advance-Payment' : 'balance-payment'}/${paymentId}/confirmation`;
@@ -51,7 +50,6 @@ export default function PaymentConfirmationPanel({ kind, paymentId, editable = f
       if (!response.ok || !body.success) throw new Error(body.message || 'Action failed.');
       setMessage([body.message, body.paymentEmail?.message].filter(Boolean).join(' '));
       await refresh();
-      if (payload.action === 'confirm-paid') { setReference(''); setConfirmManual(false); }
     } catch (err) { setError(err.message); }
     finally { setBusy(false); }
   };
@@ -66,7 +64,6 @@ export default function PaymentConfirmationPanel({ kind, paymentId, editable = f
         <div className="flex flex-wrap items-center gap-3"><span className={`rounded-full px-3 py-1 text-xs font-semibold ${data.settled ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>{data.status || 'Pending'}</span>{data.reference && <span className="text-xs text-slate-600">Reference: <strong>{data.reference}</strong></span>}<button type="button" disabled={busy} onClick={async () => { try { await refresh(); setPreview(true); } catch (err) { setError(err.message); } }} className={button}><FiMail size={13} />{data.sentAt ? 'Preview / Resend' : 'Preview & Send'}</button></div>
         {data.blockedReason && <p className="flex items-start gap-2 rounded-xl bg-amber-50 px-3 py-2.5 text-xs leading-5 text-amber-800"><FiClock size={14} className="mt-0.5 shrink-0" />{data.blockedReason}</p>}
         {data.lastError && <p className="text-xs text-red-700">{data.lastError}</p>}
-        {data.manualAllowed && data.canApprove && data.canConfirm && <div className="rounded-xl border border-slate-200 p-4"><h3 className="text-xs font-bold text-slate-800">Confirm manual payment</h3><p className="mt-1 text-xs leading-5 text-slate-500">Only confirm after the payment has actually been made. Enter its transaction / UTR reference. This records payment; it does not initiate a bank transfer.</p><div className="mt-3 flex flex-wrap gap-2"><input aria-label="Actual paid transaction or UTR reference" value={reference} onChange={event => { setReference(event.target.value); setConfirmManual(false); }} maxLength={100} placeholder="Transaction / UTR reference" disabled={busy} className="min-w-0 flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-yellow-500" /><button type="button" disabled={busy || !reference.trim()} onClick={() => setConfirmManual({ amount: data.amount, reference: reference.trim() })} className={button}>Confirm Paid</button></div>{confirmManual && <div className="mt-3 rounded-lg bg-amber-50 p-3 text-xs text-amber-900"><p>Confirm that <strong>₹{Number(confirmManual.amount || 0).toLocaleString('en-IN')}</strong> has been paid with reference <strong>{confirmManual.reference}</strong>.</p><div className="mt-3 flex gap-2"><button type="button" disabled={busy} onClick={() => mutate('PATCH', { action: 'confirm-paid', reference: confirmManual.reference, expectedAmount: confirmManual.amount })} className={button}>{busy ? 'Confirming…' : 'Yes, payment has been made'}</button><button type="button" disabled={busy} onClick={() => setConfirmManual(false)} className={button}>Cancel</button></div></div>}</div>}
         {data.sentAt && <p className="flex items-center gap-2 text-xs text-emerald-700"><FiCheckCircle size={14} />Sent to {data.sentTo} · {new Date(data.sentAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} IST{data.sentBy ? ` · ${data.sentBy}` : ''}</p>}
         {data.history.length > 0 && <details className="rounded-xl border border-slate-100 p-3"><summary className="cursor-pointer text-xs font-semibold text-slate-600">Send history ({data.history.length})</summary><ul className="mt-3 space-y-2 text-xs text-slate-500">{data.history.map((item, index) => <li key={item._id || index}>{new Date(item.sentAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} IST · {item.sentTo} · {item.sentBy || 'Accounts'}{item.resend ? ' · Resent' : ''}</li>)}</ul></details>}
       </>}

@@ -4,10 +4,12 @@ import connectDb from '@/lib/db';
 import Customer from '@/models/CustomerModel';
 import Supplier from '@/models/SupplierModels';
 import Item from '@/models/ItemModels';
+import Plant from '@/app/api/plants/schema';
 import { validateMasterDataRequest } from '@/lib/masterDataPermission';
 import { duplicateMasterName } from '@/lib/masterNameUniqueness.mjs';
 
 const resources = {
+  plant: [Plant, 'Plants', 'name'],
   customer: [Customer, 'Customers', 'customerName'],
   supplier: [Supplier, 'Suppliers', 'supplierName'],
   item: [Item, 'Items', 'itemName'],
