@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import connectDb from "@/lib/db";
 import Plant from "./schema";
+import { masterNameQuery } from '@/lib/masterNameUniqueness.mjs';
 import OrderPanel from "@/app/api/order-panel/OrderPanel";
 import { companyScopeFilter } from "@/lib/companyScope";
 import mongoose from "mongoose";
@@ -108,10 +109,16 @@ export async function POST(req) {
   if (error) return NextResponse.json({ success: false, message: error }, { status });
 
   try {
-    const { name, code } = await req.json();
+    const body = await req.json();
+    const name = typeof body.name === 'string' ? body.name.trim() : '';
+    const code = typeof body.code === 'string' ? body.code.trim() : '';
 
     if (!name || !code) {
       return NextResponse.json({ success: false, message: "Plant name and code are required" }, { status: 400 });
+    }
+
+    if (await Plant.findOne(masterNameQuery(user.companyId, 'name', name))) {
+      return NextResponse.json({ success: false, message: 'Plant name already exists in this company.' }, { status: 409 });
     }
 
     // ✅ Prevent duplicate plant code in the same company
@@ -140,6 +147,39 @@ export async function POST(req) {
   }
 }
 
+export async function PUT(req) {
+  await connectDb();
+  const { user, error, status } = await validateUser(req, 'edit');
+  if (error) return NextResponse.json({ success: false, message: error }, { status });
+
+  try {
+    const id = new URL(req.url).searchParams.get('id');
+    if (!id || !mongoose.isValidObjectId(id)) {
+      return NextResponse.json({ success: false, message: 'Valid Plant ID is required' }, { status: 400 });
+    }
+    const body = await req.json();
+    const name = typeof body.name === 'string' ? body.name.trim() : '';
+    const code = typeof body.code === 'string' ? body.code.trim() : '';
+    if (!name || !code) {
+      return NextResponse.json({ success: false, message: 'Plant name and code are required' }, { status: 400 });
+    }
+    const plant = await Plant.findOne({ _id: id, companyId: user.companyId });
+    if (!plant) return NextResponse.json({ success: false, message: 'Plant not found' }, { status: 404 });
+    if (await Plant.findOne(masterNameQuery(user.companyId, 'name', name, id))) {
+      return NextResponse.json({ success: false, message: 'Plant name already exists in this company.' }, { status: 409 });
+    }
+    const duplicate = await Plant.findOne({ companyId: user.companyId, code, _id: { $ne: id } });
+    if (duplicate) return NextResponse.json({ success: false, message: 'Plant code already exists' }, { status: 409 });
+    plant.name = name;
+    plant.code = code;
+    await plant.save();
+    return NextResponse.json({ success: true, data: plant });
+  } catch (error) {
+    console.error('PUT /plants error:', error);
+    return NextResponse.json({ success: false, message: 'Failed to update plant' }, { status: 500 });
+  }
+}
+
 /* ========================================
    DELETE /api/plants?id=123
 ======================================== */
@@ -147,6 +187,9 @@ export async function DELETE(req) {
   await connectDb();
   const { user, error, status } = await validateUser(req, 'delete');
   if (error) return NextResponse.json({ success: false, message: error }, { status });
+  if (user.type !== 'company' && !user.roles?.includes('Admin')) {
+    return NextResponse.json({ success: false, message: 'Only administrators can delete plants.' }, { status: 403 });
+  }
 
   try {
     const url = new URL(req.url);
