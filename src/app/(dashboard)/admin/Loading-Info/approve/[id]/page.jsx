@@ -1752,6 +1752,7 @@
 
 "use client";
 
+import { LoadingEwaybillDocuments } from "@/components/EwaybillDocuments";
 import { destinationLabel } from '@/lib/destination.mjs';
 import ApprovedLoadedSlipUpload from "@/components/ApprovedLoadedSlipUpload";
 import LoadingTrackingSummary from "@/components/LoadingTrackingSummary";
@@ -3496,14 +3497,7 @@ export default function ApproveLoadingPanel() {
               <div className="col-span-12 md:col-span-4">
                 <div className="bg-white p-4 rounded-xl border border-slate-200">
                   <h3 className="text-sm font-bold text-slate-800 mb-2">E-waybill</h3>
-                  <button
-                    disabled={stagedLoading && (!stageReady || currentPart !== 2)}
-                    onClick={() => window.open(`/api/loading-panel/${panelId}/generate-ewaybill`, '_blank')}
-                    className="w-full rounded-lg bg-green-600 px-4 py-2 text-xs font-bold text-white hover:bg-green-700"
-                  >
-                    Generate E-waybill
-                  </button>
-                  <p className="text-xs text-slate-500 mt-2">Generate E-waybill for this shipment</p>
+                  <LoadingEwaybillDocuments panelId={panelId} printDisabled={(stagedLoading && (!stageReady || currentPart !== 2)) && stageRecord?.loadingWorkflow?.part2Status !== 'Approved'} />
                 </div>
               </div>
               <div className="col-span-12 md:col-span-4">

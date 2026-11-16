@@ -248,7 +248,11 @@ const ewaybillSchema = new mongoose.Schema({
   },
   ewaybillNo: { type: String, default: '' },
   expiryDate: { type: String, default: '' },
-  containerNo: { type: String, default: '' }
+  containerNo: { type: String, default: '' },
+  file: { fileName: String, storageName: String, mimeType: String, fileSize: Number },
+  source: String,
+  apiState: String,
+  verifiedAt: Date
 }, { _id: false });
 
 // Pack Data Schema for different pack types

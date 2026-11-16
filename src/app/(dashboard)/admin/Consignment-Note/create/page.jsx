@@ -3799,6 +3799,7 @@
 // }
 
 
+import EwaybillDocuments from "@/components/EwaybillDocuments";
 import { destinationLabel } from '@/lib/destination.mjs';
 import { useMemo, useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -4087,8 +4088,6 @@ export default function CreateConsignmentNote() {
     expiryDate: "",
     containerNo: "",
   });
-  const ewbGenerated = ewaybill.status === "To Be Generated" && Boolean(ewaybill.ewaybillNo);
-  const openEwayPortal = () => window.open("https://ewaybillgst.gov.in", "_blank", "noopener,noreferrer");
   const [ewbScan, setEwbScan] = useState("idle"); // idle | scanning | found | notfound | unavailable
 
   const handleInvoiceFile = async (f) => {
@@ -4958,7 +4957,11 @@ export default function CreateConsignmentNote() {
   /** =========================
    * HANDLE SAVE - INCLUDING SUB-COMPANY
    ========================= */
-  const handleSave = async (saveMode = 'submit') => {
+  const [createdNoteId, setCreatedNoteId] = useState(null);
+  const createdNoteIdRef = useRef(null);
+  const saveInFlight = useRef(false);
+  const handleSave = async (saveMode = 'submit', { stayOnPage = false } = {}) => {
+    if (saveInFlight.current) throw new Error('LR save is already in progress.');
     const isDraftSave = saveMode === 'draft';
     if (!isDraftSave && !header.partyName) {
       alert("Please enter party name");
@@ -4984,6 +4987,7 @@ export default function CreateConsignmentNote() {
     if (!isDraftSave && ewaybill.status === "To Be Generated" && ewbDigits && !/^\d{12}$/.test(ewbDigits)) {
       alert("E-waybill number must be 12 digits"); return;
     }
+    saveInFlight.current = true;
     setSaving(true);
 
     try {
@@ -4994,6 +4998,7 @@ export default function CreateConsignmentNote() {
 
       const payload = {
         saveMode,
+        ...(createdNoteIdRef.current ? { id: createdNoteIdRef.current } : {}),
         loadingInfoNo: new URLSearchParams(window.location.search).get('loadingInfoNo') || '',
         orderRowId: selectedRowId || '',
         consignmentBreakdown: (() => {
@@ -5035,7 +5040,7 @@ export default function CreateConsignmentNote() {
       console.log("Saving consignment note with sub-company:", payload);
 
       const res = await fetch('/api/consignment-note', {
-        method: 'POST',
+        method: createdNoteIdRef.current ? 'PUT' : 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
@@ -5056,6 +5061,13 @@ export default function CreateConsignmentNote() {
         throw new Error(data.message || `Failed to save consignment note: ${res.status}`);
       }
 
+      if (!data.success) throw new Error(data.message || 'Unable to save LR.');
+      const savedId = data.data?._id || createdNoteIdRef.current;
+      if (!savedId) throw new Error('LR saved without a record ID. Refresh the list before trying again.');
+      createdNoteIdRef.current = savedId;
+      setCreatedNoteId(savedId);
+      if (stayOnPage) return savedId;
+
       const subCompanyMsg = header.subCompanyName ? `\n🏢 Sub-Company: ${header.subCompanyName}` : '';
       alert(isDraftSave
         ? `✅ Consignment Note saved as a draft.\nLR No: ${data.data?.lrNo || header.lrNo}${subCompanyMsg}\nOpen it from the list to continue.`
@@ -5065,8 +5077,10 @@ export default function CreateConsignmentNote() {
 
     } catch (error) {
       console.error('Error saving consignment note:', error);
+      if (stayOnPage) throw error;
       alert(`❌ Error: ${error.message}`);
     } finally {
+      saveInFlight.current = false;
       setSaving(false);
     }
   };
@@ -5742,23 +5756,8 @@ export default function CreateConsignmentNote() {
                   {ewbScan === "unavailable" && "The invoice could not be read automatically. Please choose the e-waybill option yourself."}
                 </div>
               )}
-              {ewaybill.status === "To Be Generated" && (
-                <div className="col-span-12 flex flex-wrap items-center gap-3 rounded-xl border border-green-200 bg-green-50 px-3 py-2">
-                  <button
-                    type="button"
-                    onClick={openEwayPortal}
-                    className="rounded-lg bg-green-600 px-4 py-2 text-xs font-bold text-white hover:bg-green-700"
-                  >
-                    Generate E-waybill
-                  </button>
-                  <span className="text-xs text-slate-600">
-                    {ewbGenerated
-                      ? "✓ Generated. Number saved with this LR."
-                      : "Generate it on the e-way bill portal, then enter the number and expiry here."}
-                  </span>
-                </div>
-              )}
             </div>
+          <EwaybillDocuments noteId={createdNoteId} ensureSaved={() => handleSave('draft', { stayOnPage: true })} formStatus={ewaybill.status} formNumber={ewaybill.ewaybillNo} readOnly={saving} onUpdated={details => setEwaybill(previous => ({ ...previous, ...details }))} />
           </Card>
         </div>
 

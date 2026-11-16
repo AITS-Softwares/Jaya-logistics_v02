@@ -107,10 +107,10 @@ export default function PendingToCreateTable({ enabled, canCreate = false, endpo
           </div>
         </div>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="max-h-[400px] overflow-auto">
           <table className="w-full text-sm compact-list-table">
             <caption className="sr-only">{title}</caption>
-            <thead className="border-b border-yellow-500 bg-yellow-400">
+            <thead className="sticky top-0 z-10 border-b border-yellow-500 bg-yellow-400">
               {headers ? (
                 <tr>{headers.map((header) => <th key={header} className={`px-4 py-3 ${header === "Actions" ? "text-right" : "text-left"}`}>{header}</th>)}</tr>
               ) : (

@@ -2440,12 +2440,17 @@ async function branchHandlerPUT(req) {
       if (file !== undefined) note.invoice.file = cleanInvoiceFile(file);
     }
 
-    // Update ewaybill
+    // Document storage and API provenance are owned by the protected e-way bill endpoint.
     if (body.ewaybill) {
-      note.ewaybill = {
-        ...note.ewaybill,
-        ...body.ewaybill
-      };
+      if (body.ewaybill.ewaybillNo !== undefined && String(body.ewaybill.ewaybillNo).replace(/\s/g, '') !== String(note.ewaybill?.ewaybillNo || '').replace(/\s/g, '')) {
+        note.set('ewaybill.file', undefined);
+        note.set('ewaybill.verifiedAt', undefined);
+        note.set('ewaybill.source', 'manual');
+        // Keep any uncertain generation marker until it is reconciled through Fetch.
+      }
+      for (const key of ['status', 'ewaybillNo', 'expiryDate', 'containerNo']) {
+        if (body.ewaybill[key] !== undefined) note.set(`ewaybill.${key}`, body.ewaybill[key]);
+      }
     }
 
     // Update pack data
