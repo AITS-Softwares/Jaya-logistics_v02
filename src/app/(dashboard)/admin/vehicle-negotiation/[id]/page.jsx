@@ -5837,6 +5837,7 @@ import { useRouter, useParams } from "next/navigation";
 import mongoose from 'mongoose';
 import TransactionFormKeyboardNavigation, { TransactionKeyboardTable, useKeyboardDropdown } from "@/components/TransactionFormKeyboardNavigation";
 import { usePermission } from "../../hooks/usePermission";
+import { isVnnCorrectionOpen } from '@/lib/vnn-correction.mjs';
 import { LPT_1000_BALANCE_ONLY } from "@/lib/purchasePaymentTerms.mjs";
 
 /* =======================
@@ -7306,8 +7307,9 @@ export default function EditVehicleNegotiation() {
   const resolvedPurchaseType=vnnPurchaseType(vendors,approval);
 
 
-  const isPart1Locked = Boolean(workflow.part1Locked);
-  const isPart3Finalized = approval.part3Status === 'Approved';
+  const correctionOpen = isVnnCorrectionOpen({reapprovalState:vnnReviewState,workflow});
+  const isPart1Locked = Boolean(workflow.part1Locked) && !correctionOpen;
+  const isPart3Finalized = approval.part3Status === 'Approved' && !correctionOpen;
   const canEditVnn = canEdit('Vehicle Negotiation');
   const canEditPart3 = canEditVnn && !isPart1Locked && !isPart3Finalized;
   const canEditPlacement = canEdit('Vehicle Negotiation Placement') && isPart1Locked && isPart3Finalized;
@@ -8598,7 +8600,7 @@ export default function EditVehicleNegotiation() {
               </button>}
               {!isPart1Locked && canEditVnn ? (
                 <button onClick={() => handleWorkflowAction('lock-part1')} disabled={saving} className="rounded-xl bg-indigo-600 px-5 py-2 text-sm font-bold text-white hover:bg-indigo-700 disabled:bg-slate-400">
-                  Submit for Approval
+                  {correctionOpen ? 'Submit VNN for Reapproval' : 'Submit VNN for Approval'}
                 </button>
               ) : (isPart1Locked && canEditVnn && (
                 <button onClick={() => handleWorkflowAction('amend-part1')} disabled={saving || (workflow.cancelledOrderReplacementOnly && !retryingCancelledReplacement)} className="rounded-xl bg-amber-600 px-5 py-2 text-sm font-bold text-white hover:bg-amber-700 disabled:bg-slate-400">
@@ -8925,8 +8927,8 @@ export default function EditVehicleNegotiation() {
             </div>
           </Card>}
 
-          {/* PART 3: VEHICLE APPROVAL - independent of Part 1 */}
-          <Card title="Vehicle - Approval - Part - 3">
+          {/* PART 3: VNN commercial details; approved together with Part 1 */}
+          <Card title="Vehicle Negotiation - Panel - Part -3">
             <div className="mb-4"><label className="text-xs font-bold text-slate-600">Part 3 Remarks</label><textarea value={approval.commercialRemarks || ''} onChange={event=>setApproval(previous=>({...previous,commercialRemarks:event.target.value}))} readOnly={!canEditPart3} rows={3} className="mt-1 w-full rounded-xl border border-slate-200 bg-white p-3 text-sm read-only:bg-slate-50" /></div>
             {!canEditPart3 && !canEditPlacement && (
               <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-700">

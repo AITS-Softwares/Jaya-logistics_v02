@@ -1,3 +1,5 @@
+import * as vnnCorrection from '../src/lib/vnn-correction.mjs';
+import * as vnnPart3 from '../src/lib/vnnPart3.mjs';
 import fs from 'node:fs';
 import { createRequire } from 'node:module';
 import * as loading from '../src/lib/loadingApprovalWorkflow.mjs';
@@ -109,7 +111,7 @@ export function makeHarness() {
   function compile(file, names, extra = {}) {
     let source = fs.readFileSync(file, 'utf8');
     const ast = parser.parse(source, { sourceType: 'module', plugins: ['jsx'] });
-    const deps = { ...env, ...extra };
+    const deps = { ...env, ...vnnCorrection, ...vnnPart3, ...extra };
     for (const node of ast.program.body.filter(node => node.type === 'ImportDeclaration')) for (const spec of node.specifiers) if (!(spec.local.name in deps)) deps[spec.local.name] = (...args) => { throw new Error(`Unconfigured test dependency: ${spec.local.name}`); };
     source = source.replace(/^import .*;\r?\n/gm, '').replace(/^export (default )?/gm, '');
     return new Function(...Object.keys(deps), `${source}\nreturn { ${names.join(', ')} };`)(...Object.values(deps));

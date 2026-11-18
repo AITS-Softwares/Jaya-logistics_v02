@@ -4,6 +4,7 @@ const suites = [
   'test-panel-user-workflows.mjs',
   'test-cancellation-user-workflows.mjs',
   'test-reapproval-multi-user-chain.mjs',
+  'test-purchase-reapproval.mjs',
   'test-workflow-notifications.mjs',
   'test-order-cancellation-flow.mjs',
   'test-automatic-cancellation-reconciliation.mjs',

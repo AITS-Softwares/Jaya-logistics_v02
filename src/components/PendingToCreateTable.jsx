@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { destinationLabel } from "@/lib/destination.mjs";
 
 export default function PendingToCreateTable({ enabled, canCreate = false, endpoint, createHref, createParam = "sourceId", createNoField, title = "Pending to Create", displayMode = "default" }) {
   const router = useRouter();
@@ -78,7 +79,7 @@ export default function PendingToCreateTable({ enabled, canCreate = false, endpo
     const orderText = orders.join(", ") || "—";
     const date = formatDate(value(row, "date", "createdAt"));
     switch (displayMode) {
-      case "vehicle-negotiation": return [index + 1, date, value(row, "orderNo"), value(row, "partyName", "customerName"), value(row, "branchName", "branch"), value(row, "to"), weight ? `${weight} MT` : "—", button];
+      case "vehicle-negotiation": return [index + 1, date, value(row, "orderNo"), value(row, "partyName", "customerName"), value(row, "branchName", "branch"), destinationLabel(row), weight ? `${weight} MT` : "—", button];
       case "pricing": return [index + 1, date, value(row, "vnnNo"), value(row, "customerName", "partyName"), routeFor(row), weight ? `${weight} MT` : "—", chips, button];
       case "loading-info": return [index + 1, date, "Pending", value(row, "vnnNo"), chips, value(row, "branchName", "branch"), value(row, "vehicleNo"), value(row, "driverMobileNo", "driverNo", "driverName"), weight ? `${weight} MT` : "—", "—", "—", "—", "—", button];
       case "purchase": return [index + 1, date, value(row, "vehicleArrivalNo"), value(row, "vehicleNegotiationNo", "vnnNo"), <div className="flex max-w-72 flex-wrap gap-1">{(row.orderRows || []).map((item, orderIndex) => <span key={`${item.orderNo}-${orderIndex}`} className="rounded-lg bg-purple-50 px-2 py-1 text-xs font-semibold text-purple-800">{item.orderNo || "—"}</span>)}</div>, value(row, "branchName", "branch"), value(row, "vehicleNo", "vehicleInfo.vehicleNo"), value(row, "driverNo", "vehicleInfo.driverMobileNo"), weight ? `${weight} MT` : "—", button];

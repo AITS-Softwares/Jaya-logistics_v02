@@ -3878,12 +3878,13 @@ export default function EditPurchasePanel() {
         });
       }
 
-      const purchaseIsDraft = !!purchase.isDraft || purchase.panelStatus === "Draft";
+      const correctionOpen = purchase.reapprovalState === "unlocked" && !purchase.upstreamPending?.length;
+      const purchaseIsDraft = !!purchase.isDraft || purchase.panelStatus === "Draft" || correctionOpen;
       setIsDraft(purchaseIsDraft);
-      setIsLocked(!purchaseIsDraft && (
+      setIsLocked(Boolean(purchase.upstreamPending?.length) || ["blockedByUpstream", "syncFailed", "pendingApproval", "pendingReapproval"].includes(purchase.reapprovalState) || (!correctionOpen && !purchaseIsDraft && (
         ["Approved", "Completed"].includes(purchase.panelStatus) ||
         purchase.approval?.status === "Approved"
-      ));
+      )));
 
       // Set arrival details
       if (purchase.arrivalDetails) {
@@ -4893,7 +4894,7 @@ export default function EditPurchasePanel() {
       <div className="mx-auto max-w-full p-4">
         {isLocked && (
           <div className="mb-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-800">
-            READ ONLY - this purchase is Approved/Completed and can no longer be edited.
+            This purchase is locked. Approved purchases require a correction unlock; upstream review and submitted corrections must be completed before editing.
           </div>
         )}
         {/* Disables every input, select, textarea and button inside once approved */}

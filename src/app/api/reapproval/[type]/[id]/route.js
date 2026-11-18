@@ -14,7 +14,7 @@ import { notifyModulePermissionUsers } from '@/lib/workflowNotifications';
 import { findDetachedLoadingOrderMarkers, findDetachedVnnOrderMarkers, findLatestApprovedVnnForLoading, reconcileDetachedLoadingOrderMarkers, reconcileDetachedVnnOrderMarkers, recordApprovedRevision, summarizeApprovedChanges, withApprovedVnnLocationRemarks } from '@/lib/reapprovalService';
 
 const MODULES = {
-  order: 'Order Panel', vnn: 'Vehicle Negotiation', pricing: 'Pricing Panel', loading: 'Loading Info', lr: 'Consignment Note',
+  order: 'Order Panel', vnn: 'Vehicle Negotiation', pricing: 'Pricing Panel', loading: 'Loading Info', lr: 'Consignment Note', purchase: 'Purchase Panel',
 };
 const userIsAdmin = (user) => user?.type === 'company' || user?.roles?.includes('Admin');
 const plain = (doc) => doc?.toObject ? doc.toObject({ depopulate: true }) : doc;
@@ -22,13 +22,17 @@ const recordNumber = (type, doc) => doc?.[TYPES[type]?.no] || doc?.lrNo || Strin
 const normalized = (value) => String(value || '').trim().toLowerCase();
 
 function rolloutBlockers(rootType, graph) {
-  const supported = new Set(['order', 'vnn', 'pricing', 'loading', 'lr']);
+  const supported = new Set(['order', 'vnn', 'pricing', 'loading', 'lr', 'purchase']);
   const blockers = graph.filter((item) => item.depth > 0 && !supported.has(item.type))
     .map((item) => `${item.label} ${item.no} depends on a panel that is not included in this reapproval rollout.`);
   const vnns = graph.filter((item) => item.type === 'vnn').map((item) => item.record);
   const loadings = graph.filter((item) => item.type === 'loading').map((item) => item.record);
   if (rootType === 'order') {
     for (const loading of loadings) if (!vnns.some((vnn) => normalized(vnn.vnnNo) === normalized(loading.vehicleNegotiationNo))) blockers.push(`Loading Info ${loading.vehicleArrivalNo} is not linked through Vehicle Negotiation, so this rollout cannot safely synchronize it.`);
+  }
+  const loadingsByNo = new Set(loadings.map((record) => normalized(record.vehicleArrivalNo)));
+  for (const item of graph.filter((item) => item.type === 'purchase' && item.depth > 0)) {
+    if (!loadingsByNo.has(normalized(item.record.loadingInfoNo))) blockers.push(`Purchase ${item.no} needs a linked Loading Info in this correction chain before it can be synchronized.`);
   }
   return [...new Set(blockers)];
 }
@@ -188,7 +192,7 @@ async function branchHandlerGET(req, { params }) {
   const computedChanges = root.approvedSnapshot ? summarizeApprovedChanges(type, root.approvedSnapshot, reviewRecord) : (root.pendingChanges || []);
   const computedFields = new Set(computedChanges.map((change) => change.field));
   const extraChanges = (root.pendingChanges || []).filter((change) =>
-    change.field === 'Rate review required' || (!root.approvedSnapshot && !computedFields.has(change.field))
+    ['Rate review required', 'Purchase review required'].includes(change.field) || (!root.approvedSnapshot && !computedFields.has(change.field))
   );
   const changesToReview = [...computedChanges, ...extraChanges].filter((change) =>
     !/^Report Rows(?:\[| ·|$)/i.test(change.field)
@@ -260,7 +264,7 @@ async function branchHandlerPOST(req, { params }) {
     root.unlockRequest = action === 'requestUnlock' ? { status: 'pending', reason, by: user.id, name: user.name || '', at } : { ...root.unlockRequest, status: 'rejected', decisionReason: reason, reviewedBy: user.id, reviewedAt: at };
     root.reapprovalHistory.push({ action, reason, actorId: user.id, actorName: user.name || '', at });
     await root.save();
-    await notifyModulePermissionUsers({ user, module: type === 'pricing' && action === 'requestUnlock' ? 'Pricing Panel - Part 2 Approval' : MODULES[type], action: action === 'requestUnlock' ? 'approve' : 'edit', type: action === 'requestUnlock' ? 'correction-unlock-request' : 'correction-unlock-rejected', reference: recordNumber(type, root), url: `/admin/${type === 'vnn' ? 'vehicle-negotiation' : type === 'pricing' ? 'pricing-panel' : type === 'loading' ? 'Loading-Info' : type === 'lr' ? 'Consignment-Note' : 'order-panel'}/${id}/view`, message: `${action === 'requestUnlock' ? 'Unlock requested' : 'Unlock request rejected'} for ${entry.label} ${recordNumber(type, root)}. Reason: ${reason}` });
+    await notifyModulePermissionUsers({ user, module: type === 'pricing' && action === 'requestUnlock' ? 'Pricing Panel - Part 2 Approval' : MODULES[type], action: action === 'requestUnlock' ? 'approve' : 'edit', type: action === 'requestUnlock' ? 'correction-unlock-request' : 'correction-unlock-rejected', reference: recordNumber(type, root), url: `/admin/${type === 'vnn' ? 'vehicle-negotiation' : type === 'pricing' ? 'pricing-panel' : type === 'loading' ? 'Loading-Info' : type === 'lr' ? 'Consignment-Note' : type === 'purchase' ? 'Purchase-Panel' : 'order-panel'}/${id}${type === 'purchase' ? '' : '/view'}`, message: `${action === 'requestUnlock' ? 'Unlock requested' : 'Unlock request rejected'} for ${entry.label} ${recordNumber(type, root)}. Reason: ${reason}` });
     return NextResponse.json({ success: true, action, message: action === 'requestUnlock' ? 'Unlock request sent to approvers and admins.' : 'Unlock request rejected.' });
   }
   if (!canUnlockForCorrection(user, type)) return NextResponse.json({ success: false, message: 'Approve permission for this panel is required to unlock or cancel an unlock.' }, { status: 403 });
@@ -286,7 +290,7 @@ async function branchHandlerPOST(req, { params }) {
       const number = recordNumber(type, root);
       if (root.cancellation?.state === 'cancelled') throw Object.assign(new Error('This record contains cancelled orders. Normal corrections are blocked pending cancellation review.'), { status: 409 });
       const status = root.panelStatus || root.header?.status || root.status;
-      if (!['Approved', 'Completed'].includes(status)) throw Object.assign(new Error(`Only an approved or completed ${entry.label} can be unlocked.`), { status: 409 });
+      if (action === 'unlock' && !['Approved', 'Completed'].includes(status)) throw Object.assign(new Error(`Only an approved or completed ${entry.label} can be unlocked.`), { status: 409 });
 
       if (action === 'unlock') {
         if (root.upstreamPending?.length || ['pendingReapproval', 'blockedByUpstream', 'syncFailed'].includes(root.reapprovalState)) throw Object.assign(new Error('Finish the existing upstream review before unlocking this record.'), { status: 409 });
@@ -312,6 +316,7 @@ async function branchHandlerPOST(req, { params }) {
           root.approval.part3Status = 'Pending';
         }
         if (root.unlockRequest?.status === 'pending') root.unlockRequest = { ...root.unlockRequest, status: 'approved', reviewedBy: user.id, reviewedAt: new Date() };
+        if (type === 'purchase') { root.isDraft = true; root.panelStatus = 'Draft'; root.approval.status = 'Pending'; }
         if (type === 'loading') root.loadingWorkflow = { version: 2, currentPart: 1, part1Status: 'Draft', part2Status: 'Locked' };
         root.unlockedBy = mongoose.isValidObjectId(user.id) ? user.id : null;
         root.unlockedAt = new Date();
@@ -320,7 +325,7 @@ async function branchHandlerPOST(req, { params }) {
         root.reapprovalHistory.push({ action: 'unlocked', actorId: root.unlockedBy, actorName: user.name || '', reason: root.unlockReason, at: new Date(), batchId });
         await root.save({ session });
 
-      for (const item of reapprovalAffectedGraph(type, graph).filter((candidate) => candidate.depth > 0 && ['vnn', 'pricing', 'loading', 'lr'].includes(candidate.type))) {
+      for (const item of reapprovalAffectedGraph(type, graph).filter((candidate) => candidate.depth > 0 && ['vnn', 'pricing', 'loading', 'lr', 'purchase'].includes(candidate.type))) {
           const Model = TYPES[item.type].Model;
           const priorState = item.record.reapprovalState === 'blockedByUpstream' ? (item.record.pendingStateBeforeBlock || 'none') : (item.record.reapprovalState || 'none');
           const marker = { panel: type, recordId: String(root._id), recordNo: number, revision: root.approvedRevision || 0, batchId, previousState: priorState };
@@ -353,7 +358,7 @@ async function branchHandlerPOST(req, { params }) {
         await root.save({ session });
 
         if (batchId) {
-          for (const childType of ['vnn', 'pricing', 'loading', 'lr']) {
+          for (const childType of ['vnn', 'pricing', 'loading', 'lr', 'purchase']) {
             const Model = TYPES[childType].Model;
             const children = await Model.find({ companyId: user.companyId, upstreamPending: { $elemMatch: { batchId } } }).setOptions({ includeDeleted: false }).session(session);
             for (const child of children) {
@@ -384,7 +389,7 @@ async function branchHandlerPOST(req, { params }) {
       user, module: MODULES[type], action: 'edit', type: 'record-unlocked-for-correction',
       message: `${entry.label} ${result.recordNo} was unlocked for correction. Reason: ${String(body.reason).trim()}`,
       pushTitle: `${entry.label} unlocked for correction`, pushBody: `${result.recordNo} is ready for an authorized edit.`,
-      url: `/admin/${type === 'vnn' ? 'vehicle-negotiation' : type === 'pricing' ? 'pricing-panel' : type === 'loading' ? 'Loading-Info' : type === 'lr' ? 'Consignment-Note' : 'order-panel'}/${id}`,
+      url: `/admin/${type === 'vnn' ? 'vehicle-negotiation' : type === 'pricing' ? 'pricing-panel' : type === 'loading' ? 'Loading-Info' : type === 'lr' ? 'Consignment-Note' : type === 'purchase' ? 'Purchase-Panel' : 'order-panel'}/${id}`,
     });
     for (const item of notifications) {
       const module = MODULES[item.type];
@@ -393,7 +398,7 @@ async function branchHandlerPOST(req, { params }) {
         user, module, action: 'edit', type: 'upstream-correction-unlocked',
         message: `${item.panel} ${item.no} is blocked while ${entry.label} ${result.recordNo} is under correction.`,
         pushTitle: 'Upstream correction in progress', pushBody: `${entry.label} ${result.recordNo} was unlocked for correction.`,
-        url: `/admin/${item.type === 'vnn' ? 'vehicle-negotiation' : item.type === 'pricing' ? 'pricing-panel' : item.type === 'loading' ? 'Loading-Info' : item.type === 'lr' ? 'Consignment-Note' : 'order-panel'}/${item.id}`,
+        url: `/admin/${item.type === 'vnn' ? 'vehicle-negotiation' : item.type === 'pricing' ? 'pricing-panel' : item.type === 'loading' ? 'Loading-Info' : item.type === 'lr' ? 'Consignment-Note' : item.type === 'purchase' ? 'Purchase-Panel' : 'order-panel'}/${item.id}`,
       });
     }
   }

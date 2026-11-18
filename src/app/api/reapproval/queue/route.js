@@ -1,3 +1,4 @@
+import PurchasePanel from '@/app/api/purchase-panel/PurchasePanel';
 import { hasPriorApproval, panelApprovalStatus, reviewDisplayState, upstreamDisplayState } from '@/lib/reapprovalPresentation.mjs';
 import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from 'next/server';
@@ -16,6 +17,7 @@ const entries = [
   { type: 'pricing', module: 'Pricing Panel', Model: PricingPanel, no: 'pricingSerialNo', path: 'pricing-panel', viewPath: (id) => `/admin/pricing-panel/${id}/view` },
   { type: 'loading', module: 'Loading Info', Model: LoadingPanel, no: 'vehicleArrivalNo', path: 'Loading-Info', viewPath: (id) => `/admin/Loading-Info/${id}/view` },
   { type: 'lr', module: 'Consignment Note', Model: ConsignmentNote, no: 'lrNo', path: 'Consignment-Note', viewPath: () => '/admin/Consignment-Note' },
+  { type: 'purchase', module: 'Purchase Panel', Model: PurchasePanel, no: 'purchaseNo', path: 'Purchase-Panel', viewPath: (id) => `/admin/Purchase-Panel/${id}` },
 ];
 
 async function branchHandlerGET(req) {
@@ -51,7 +53,7 @@ async function branchHandlerGET(req) {
     const taskFilter = { companyId: user.companyId, $or: [filter, { 'unlockRequest.status': 'pending' }, { 'cancellation.state': 'review' }, ...(entry.type === 'pricing' ? [{ 'orders.cancellationChargeRequired': true }] : [])] };
     const searchedFilter = search ? { $and: [taskFilter, { $or: [entry.no, 'branchName', 'partyName'].map(field => ({ [field]: { $regex: escapedSearch, $options: 'i' } })) }] } : taskFilter;
     const docs = await entry.Model.find(searchedFilter)
-      .select(`${entry.no} vnnNo vehicleNegotiationNo vehicleNegotiationRef orders orderRows unlockRequest cancellation pendingStateBeforeBlock panelStatus status isDraft header.status approval.part3Status rateApproval.approvalStatus rateApproval.workflowPhase rateApproval.approvedRevision reapprovalState loadingWorkflow sourceDependencies approvedSnapshot approvedRevision reapprovalSyncError upstreamPending reapprovalHistory.action updatedAt`)
+      .select(`${entry.no} vnnNo vehicleNegotiationNo vehicleNegotiationRef orders orderRows unlockRequest cancellation pendingStateBeforeBlock panelStatus status isDraft header.status approval.part3Status approval.status rateApproval.approvalStatus rateApproval.workflowPhase rateApproval.approvedRevision reapprovalState loadingWorkflow sourceDependencies approvedSnapshot approvedRevision reapprovalSyncError upstreamPending reapprovalHistory.action updatedAt`)
       .sort({ updatedAt: -1 }).limit(50).lean();
     for (const doc of docs) {
       if (doc.unlockRequest?.status === 'pending') doc.reapprovalState = 'unlockRequested';
@@ -199,7 +201,7 @@ async function branchHandlerGET(req) {
     // Active tasks belong to their edit/approval users. Keep downstream waiting
     // and sync-status entries visible so the rest of the workflow stays in view.
     let path = null;
-    if (displayReapprovalState === 'unlockRequested' && canApprove) path = `/admin/${entry.path}/${doc._id}/view`;
+    if (displayReapprovalState === 'unlockRequested' && canApprove) path = entry.viewPath(String(doc._id));
     else if (displayReapprovalState === 'cancellationReview' && (canEdit || canApprove)) path = `/admin/${entry.path}/${doc._id}/view`;
     else if (displayReapprovalState === 'cancellationCharges' && (doc.cancellation?.chargeReview?.status === 'pending' ? canApprove : canEdit)) path = `/admin/${entry.path}/${doc._id}`;
     else if (isLatestVnnSyncRequired && canApprove) path = `/admin/${entry.path}/approve/${doc._id}`;

@@ -1434,6 +1434,8 @@ import { handleModuleDelete } from '@/lib/deletion/handler';
 import { notifyModuleApprovers, notifyModuleDecision } from '@/lib/workflowNotifications';
 import { assertSourcesCurrent, captureSourceDependencies, recordApprovedRevision } from '@/lib/reapprovalService';
 import { getLrCargoWeight, withLrCargoWeight } from '@/lib/lrWeight.mjs';
+import { statutorySnapshot } from '@/lib/ewaybill-validation.mjs';
+import { lrRowConflict, isOrderRowDuplicate } from '@/lib/lr-row-conflict.mjs';
 
 async function includeConsigneeGst(note, user) {
   if (!note || note.consignee?.gstNumber || !note.consignee?.customerId) return note;
@@ -1988,6 +1990,7 @@ async function resolveLoadingInfoNo(user, body) {
    POST /api/consignment-note - Requires 'create' permission
 ======================================== */
 async function branchHandlerPOST(req) {
+  let requestUser;
   try {
     await connectDb();
     const { user, error, status } = await validateUser(req, 'create');
@@ -1999,6 +2002,7 @@ async function branchHandlerPOST(req) {
       }, { status });
     }
 
+    requestUser = user;
     const body = await req.json();
     const formatError = identifierFormatError(body);
     if (formatError) return NextResponse.json({ success: false, message: formatError }, { status: 400 });
@@ -2019,13 +2023,10 @@ async function branchHandlerPOST(req) {
     let lrNo;
 
     const orderRowId = String(body.orderRowId || '').trim();
-    if (orderRowId && !isDraftSave) {
-      const rowTaken = await ConsignmentNote.findOne(companyScopeFilter(user, { orderRowId, isDraft: { $ne: true } })).select('lrNo').lean();
+    if (orderRowId) {
+      const rowTaken = await ConsignmentNote.findOne(companyScopeFilter(user, { orderRowId })).select('_id lrNo isDraft header.status').lean();
       if (rowTaken) {
-        return NextResponse.json({
-          success: false,
-          message: `This order row already has consignment note ${rowTaken.lrNo}`
-        }, { status: 400 });
+        return NextResponse.json(lrRowConflict(rowTaken), { status: 409 });
       }
     }
     // Check if loadingInfoNo is already used (if provided)
@@ -2198,12 +2199,15 @@ async function branchHandlerPOST(req) {
         subCompanyCode: subCompanyCode
       },
       consignor: {
+        address1: body.consignor?.address1, address2: body.consignor?.address2, city: body.consignor?.city, pinCode: body.consignor?.pinCode, stateCode: body.consignor?.stateCode, state: body.consignor?.state,
         name: body.consignor?.name || '',
         address: body.consignor?.address || '',
         customerId: body.consignor?.customerId || '',
+        gstNumber: body.consignor?.gstNumber || '',
         selectedAddressTitle: body.consignor?.selectedAddressTitle || ''
       },
       consignee: {
+        address1: body.consignee?.address1, address2: body.consignee?.address2, city: body.consignee?.city, pinCode: body.consignee?.pinCode, stateCode: body.consignee?.stateCode, state: body.consignee?.state,
         name: body.consignee?.name || '',
         address: body.consignee?.address || '',
         customerId: body.consignee?.customerId || '',
@@ -2215,7 +2219,9 @@ async function branchHandlerPOST(req) {
         boeInvoiceNo: body.invoice?.boeInvoiceNo || '',
         boeInvoiceDate: body.invoice?.boeInvoiceDate || '',
         invoiceValue: body.invoice?.invoiceValue || '',
-        file: cleanInvoiceFile(body.invoice?.file)
+        file: cleanInvoiceFile(body.invoice?.file),
+        ewaybillData: body.invoice?.ewaybillData || null,
+        extraction: body.invoice?.extraction?.sourceFilePath === body.invoice?.file?.filePath ? body.invoice.extraction : null
       },
       ewaybill: {
         status: body.ewaybill?.status || '',
@@ -2271,6 +2277,16 @@ async function branchHandlerPOST(req) {
     console.error("❌ POST /consignment-note error:", error);
 
     if (error.code === 11000) {
+      if (isOrderRowDuplicate(error)) {
+        // Handle races as well as existing drafts. Never reveal a record outside
+        // the current operating-company/branch visibility.
+        let existing;
+        if (requestUser && error.keyValue?.orderRowId) {
+          try { existing = await ConsignmentNote.findOne(companyScopeFilter(requestUser, {orderRowId:String(error.keyValue.orderRowId)})).select('_id lrNo isDraft header.status').lean(); }
+          catch { /* Return the safe generic conflict if lookup is unavailable. */ }
+        }
+        return NextResponse.json(existing ? lrRowConflict(existing) : {success:false,code:'ORDER_ROW_LR_EXISTS',message:'An LR already reserves this order row. Open the existing LR from the list, or ask an administrator to locate it.'}, {status:409});
+      }
       return NextResponse.json({
         success: false,
         message: "LR number already exists"
@@ -2335,6 +2351,20 @@ async function branchHandlerPUT(req) {
       }, { status: 404 });
     }
 
+    const staleEwaybillProcessing = note.ewaybill?.apiState === 'processing' && note.ewaybill.processingStartedAt && Date.now() - new Date(note.ewaybill.processingStartedAt).getTime() >= 120_000;
+    if (note.ewaybill?.apiState === 'processing' && !staleEwaybillProcessing) return NextResponse.json({ success: false, message: 'An e-way bill request is processing. Wait before editing this LR.' }, { status: 409 });
+    if (['complete', 'uncertain'].includes(note.ewaybill?.apiState) || staleEwaybillProcessing) {
+      const before = statutorySnapshot(note);
+      const candidate = { ...note.toObject(), ...body, header: { ...note.header?.toObject?.() || note.header, ...body.header },
+        consignor: { ...note.consignor?.toObject?.() || note.consignor, ...body.consignor },
+        consignee: { ...note.consignee?.toObject?.() || note.consignee, ...body.consignee },
+        invoice: { ...note.invoice?.toObject?.() || note.invoice, ...body.invoice }, subCompanyId: body.subCompanyId || note.subCompanyId };
+      if (JSON.stringify(before) !== JSON.stringify(statutorySnapshot(candidate))) return NextResponse.json({ success: false, message: 'Invoice, parties, company, goods and vehicle are locked by the e-way bill result. Reconcile the statutory record before changing them.' }, { status: 409 });
+      if (note.ewaybill.apiState === 'complete' && body.ewaybill?.ewaybillNo !== undefined && String(body.ewaybill.ewaybillNo).replace(/\s/g, '') !== String(note.ewaybill.ewaybillNo).replace(/\s/g, '')) return NextResponse.json({ success: false, message: 'A verified e-way bill number cannot be replaced through LR editing.' }, { status: 409 });
+      if (note.ewaybill.apiState === 'complete' && body.ewaybill?.expiryDate !== undefined && body.ewaybill.expiryDate !== note.ewaybill.expiryDate) return NextResponse.json({ success: false, message: 'Verified e-way bill validity is maintained through Fetch, not manual LR editing.' }, { status: 409 });
+    }
+    // Refuse a stale editor save if preparation/generation or another editor changed the LR.
+    note.$where = { updatedAt: note.updatedAt, 'ewaybill.apiState': note.ewaybill?.apiState ?? { $exists: false } };
     if (note.upstreamPending?.length || note.reapprovalState === 'blockedByUpstream') {
       return NextResponse.json({ success: false, message: 'This LR is waiting for upstream corrections to be reviewed first.' }, { status: 409 });
     }
@@ -2388,9 +2418,9 @@ async function branchHandlerPUT(req) {
     }
 
     // ✅ Update sub-company
-    note.subCompanyId = user.activeOperatingCompanyId;
-    note.subCompanyName = user.activeOperatingCompanyName || '';
-    note.subCompanyCode = user.activeOperatingCompanyCode || '';
+    note.subCompanyId = note.subCompanyId || user.activeOperatingCompanyId;
+    note.subCompanyName = note.subCompanyName || user.activeOperatingCompanyName || '';
+    note.subCompanyCode = note.subCompanyCode || user.activeOperatingCompanyCode || '';
 
     // Update reference fields
     if (body.vnnNo !== undefined) note.vnnNo = body.vnnNo;
@@ -2411,9 +2441,9 @@ async function branchHandlerPUT(req) {
       note.header = {
         ...note.header,
         ...editableHeader,
-        subCompanyId: user.activeOperatingCompanyId,
-        subCompanyName: user.activeOperatingCompanyName || '',
-        subCompanyCode: user.activeOperatingCompanyCode || ''
+        subCompanyId: note.subCompanyId,
+        subCompanyName: note.subCompanyName,
+        subCompanyCode: note.subCompanyCode
       };
     }
 
@@ -2438,6 +2468,7 @@ async function branchHandlerPUT(req) {
       const { file, ...rest } = body.invoice;
       note.invoice = { ...(note.invoice?.toObject?.() ?? note.invoice), ...rest };
       if (file !== undefined) note.invoice.file = cleanInvoiceFile(file);
+      if (note.invoice.extraction?.sourceFilePath !== note.invoice.file?.filePath) note.invoice.extraction = null;
     }
 
     // Document storage and API provenance are owned by the protected e-way bill endpoint.

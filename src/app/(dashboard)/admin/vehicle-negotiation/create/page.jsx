@@ -1,5 +1,6 @@
 "use client";
 
+import { normalizeVnnOrderPanel, vnnCompanyId } from '@/lib/vnn-order-company.mjs';
 import { destinationLabel } from '@/lib/destination.mjs';
 import {INVALID_VNN_FIXED_RATE, parseVnnFixedRate, vnnPurchaseType} from '@/lib/vnnPart3.mjs';
 import { useMemo, useRef, useState, useEffect, useCallback } from "react";
@@ -248,7 +249,7 @@ function useOrderPanelSearch() {
           ['Approved', 'Partially on hold'].includes(panel.panelStatus) &&
           !usedOrderPanelIds.has(panel.orderPanelNo)
         );
-        setOrderPanels(availablePanels);
+        setOrderPanels(availablePanels.map(normalizeVnnOrderPanel));
       } else {
         setOrderPanels([]);
         setError(data.message || 'No order panels found');
@@ -278,7 +279,7 @@ function useOrderPanelSearch() {
       const data = await res.json();
 
       if (data.success && data.data) {
-        return data.data;
+        return normalizeVnnOrderPanel(data.data);
       }
       setError(data.message || 'Order panel not found');
       return null;
@@ -981,7 +982,7 @@ function MultiSelectOrderPanelDropdown({
 
       const selectedIds = selectedPanels.map(p => p._id);
 
-      const firstSelectedSubCompanyId = selectedPanels.length > 0 ? selectedPanels[0].subCompanyId : null;
+      const firstSelectedSubCompanyId = selectedPanels.length > 0 ? vnnCompanyId(selectedPanels[0].subCompanyId) : null;
 
       let filtered = orderPanelSearch.orderPanels.filter(
         panel => !selectedIds.includes(panel._id) && !selectedOrderNos.has(normalizeOrderNo(panel.orderPanelNo))
@@ -989,7 +990,7 @@ function MultiSelectOrderPanelDropdown({
 
       if (firstSelectedSubCompanyId) {
         filtered = filtered.filter(panel =>
-          panel.subCompanyId === firstSelectedSubCompanyId
+          vnnCompanyId(panel.subCompanyId) === firstSelectedSubCompanyId
         );
       }
 
@@ -1001,14 +1002,14 @@ function MultiSelectOrderPanelDropdown({
     setSearchQuery(query);
 
     const selectedIds = selectedPanels.map(p => p._id);
-    const firstSelectedSubCompanyId = selectedPanels.length > 0 ? selectedPanels[0].subCompanyId : null;
+    const firstSelectedSubCompanyId = selectedPanels.length > 0 ? vnnCompanyId(selectedPanels[0].subCompanyId) : null;
 
     if (!query.trim()) {
       let filtered = allPanels.filter(panel => !selectedIds.includes(panel._id) && !selectedOrderNos.has(normalizeOrderNo(panel.orderPanelNo)));
 
       if (firstSelectedSubCompanyId) {
         filtered = filtered.filter(panel =>
-          panel.subCompanyId === firstSelectedSubCompanyId
+          vnnCompanyId(panel.subCompanyId) === firstSelectedSubCompanyId
         );
       }
 
@@ -1026,7 +1027,7 @@ function MultiSelectOrderPanelDropdown({
 
       if (firstSelectedSubCompanyId) {
         filtered = filtered.filter(panel =>
-          panel.subCompanyId === firstSelectedSubCompanyId
+          vnnCompanyId(panel.subCompanyId) === firstSelectedSubCompanyId
         );
       }
 
@@ -1051,8 +1052,8 @@ function MultiSelectOrderPanelDropdown({
 
     selectionInProgressRef.current = true;
     if (selectedPanels.length > 0) {
-      const firstPanelSubCompanyId = selectedPanels[0].subCompanyId;
-      if (panel.subCompanyId !== firstPanelSubCompanyId) {
+      const firstPanelSubCompanyId = vnnCompanyId(selectedPanels[0].subCompanyId);
+      if (vnnCompanyId(panel.subCompanyId) !== firstPanelSubCompanyId) {
         alert(`⚠️ You can only select orders from the same sub-company.\nCurrent: ${selectedPanels[0].subCompanyName || 'None'}\nSelected: ${panel.subCompanyName || 'None'}`);
         selectionInProgressRef.current = false;
         return;
@@ -1101,7 +1102,7 @@ function MultiSelectOrderPanelDropdown({
     await orderPanelSearch.searchOrderPanels();
 
     const selectedIds = selectedPanels.map(p => p._id);
-    const firstSelectedSubCompanyId = selectedPanels.length > 0 ? selectedPanels[0].subCompanyId : null;
+    const firstSelectedSubCompanyId = selectedPanels.length > 0 ? vnnCompanyId(selectedPanels[0].subCompanyId) : null;
 
     let filtered = orderPanelSearch.orderPanels.filter(
       panel => !selectedIds.includes(panel._id) && !selectedOrderNos.has(normalizeOrderNo(panel.orderPanelNo))
@@ -1109,7 +1110,7 @@ function MultiSelectOrderPanelDropdown({
 
     if (firstSelectedSubCompanyId) {
       filtered = filtered.filter(panel =>
-        panel.subCompanyId === firstSelectedSubCompanyId
+        vnnCompanyId(panel.subCompanyId) === firstSelectedSubCompanyId
       );
     }
 
@@ -1473,6 +1474,7 @@ export default function VehicleNegotiationPanel() {
   const orderPanelSearch = useOrderPanelSearch();
 
   const handleOrderPanelSelect = useCallback(async (fullPanel, removePanelId = null) => {
+    fullPanel = normalizeVnnOrderPanel(fullPanel);
     if (removePanelId) {
       const panelToRemove = selectedOrderPanels.find(p => p._id === removePanelId);
 
@@ -1526,8 +1528,8 @@ export default function VehicleNegotiationPanel() {
       }
 
       if (selectedOrderPanels.length > 0) {
-        const currentSubCompanyId = selectedOrderPanels[0].subCompanyId;
-        const newSubCompanyId = fullPanel.subCompanyId;
+        const currentSubCompanyId = vnnCompanyId(selectedOrderPanels[0].subCompanyId);
+        const newSubCompanyId = vnnCompanyId(fullPanel.subCompanyId);
 
         if (currentSubCompanyId && newSubCompanyId && currentSubCompanyId !== newSubCompanyId) {
           alert(`⚠️ You can only select orders from the same sub-company.\nCurrent: ${selectedOrderPanels[0].subCompanyName || 'None'}\nSelected: ${fullPanel.subCompanyName || 'None'}`);
@@ -1732,7 +1734,7 @@ export default function VehicleNegotiationPanel() {
           const data = await res.json();
 
           if (data.success && data.data) {
-            const panel = data.data;
+            const panel = normalizeVnnOrderPanel(data.data);
 
             const formattedPanel = {
               _id: panel._id,

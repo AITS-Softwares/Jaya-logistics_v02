@@ -3799,11 +3799,13 @@
 // }
 
 
-import EwaybillDocuments from "@/components/EwaybillDocuments";
+import EwaybillMissingFields from "@/components/EwaybillMissingFields";
+import { resolveParty, addressPartyFields } from "@/lib/ewaybill-data.mjs";
 import { destinationLabel } from '@/lib/destination.mjs';
 import { useMemo, useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import LRInvoiceUpload from "@/components/LRInvoiceUpload";
+import InvoiceDateInput from "@/components/InvoiceDateInput";
 import LRProductPackingTables from "@/components/LRProductPackingTables";
 import LRPreviewModal, { makePreviewNote } from "@/components/LRPreviewModal";
 
@@ -4071,6 +4073,9 @@ export default function CreateConsignmentNote() {
   /** =========================
    * INVOICE/BOE STATE
    ========================= */
+  useEffect(() => { setConsignor(p => resolveParty(p, customers)); }, [customers, consignor.customerId, consignor.name, consignor.address, consignor.selectedAddressTitle]);
+  useEffect(() => { setConsignee(p => resolveParty(p, customers)); }, [customers, consignee.customerId, consignee.name, consignee.address, consignee.selectedAddressTitle]);
+
   const [invoice, setInvoice] = useState({
     boeInvoice: "As Per Invoice",
     boeInvoiceNo: "",
@@ -4090,8 +4095,20 @@ export default function CreateConsignmentNote() {
   });
   const [ewbScan, setEwbScan] = useState("idle"); // idle | scanning | found | notfound | unavailable
 
+  const invoiceScanRef = useRef(0);
+  const [invoiceExtractionMessage, setInvoiceExtractionMessage] = useState("");
   const handleInvoiceFile = async (f) => {
-    setInvoice((p) => ({ ...p, file: f }));
+    const scan = ++invoiceScanRef.current;
+    setInvoice(p => {
+      const next = { ...p, file: f, extraction: null, ewaybillData: p.file?.filePath === f?.filePath ? p.ewaybillData : null };
+      if (p.file?.filePath !== f?.filePath && p.extraction?.invoice) {
+        for (const key of ["boeInvoiceNo", "boeInvoiceDate", "invoiceValue"]) {
+          if (p[key] === p.extraction.invoice[key]) next[key] = "";
+        }
+      }
+      return next;
+    });
+    setInvoiceExtractionMessage("");
     if (!f) { setEwbScan("idle"); return; }
     setEwbScan("scanning");
     try {
@@ -4101,15 +4118,27 @@ export default function CreateConsignmentNote() {
         body: JSON.stringify({ filePath: f.filePath }),
       });
       const d = await res.json();
+      if (scan !== invoiceScanRef.current) return;
+      setInvoiceExtractionMessage(d.message || (d.warnings || []).join(" "));
       if (!res.ok || !d.success || d.ocr !== "ok") { setEwbScan("unavailable"); return; }
+      setInvoice(p => ({ ...p, ...(p.boeInvoice !== "As Per Invoice" ? {} : d.invoice), extraction: d.extraction }));
       if (d.found) {
-        setEwaybill((p) => ({ ...p, status: "Provided by Customer", ewaybillNo: d.ewaybillNo, expiryDate: d.expiryDate || p.expiryDate }));
+        setEwaybill(p => {
+          if (p.ewaybillNo && p.ewaybillNo !== d.ewaybillNo) {
+            return p;
+          }
+          return { ...p, status: "Provided by Customer", ewaybillNo: d.ewaybillNo, expiryDate: d.expiryDate || p.expiryDate };
+        });
         setEwbScan("found");
+        setInvoiceExtractionMessage(previous => `Invoice details extracted. E-way bill ${d.ewaybillNo} appears on this invoice; check it against any existing LR number. ${previous}`);
       } else {
-        setEwaybill((p) => (p.ewaybillNo ? p : { ...p, status: "To Be Generated" }));
+        // Default a new, unclassified LR; never replace an existing number or manual choice.
+        setEwaybill(p => p.ewaybillNo || p.status ? p : { ...p, status: "To Be Generated" });
         setEwbScan("notfound");
       }
-    } catch { setEwbScan("unavailable"); }
+    } catch {
+      if (scan === invoiceScanRef.current) { setEwbScan("unavailable"); setInvoiceExtractionMessage("Automatic extraction failed. You can enter invoice details manually."); }
+    }
   };
   /** =========================
    * PRODUCT ROWS FOR EACH PACK TYPE
@@ -4365,6 +4394,7 @@ export default function CreateConsignmentNote() {
           const addressText = `${addr.address1 || ''} ${addr.address2 || ''} ${addr.city || ''} ${addr.state || ''} ${addr.pin || ''}`.trim();
           if (addressText) {
             addresses.push({
+              ...addressPartyFields(addr),
               title: addr.title || `Billing Address ${idx + 1}`,
               address: addressText,
               type: 'billing',
@@ -4381,6 +4411,7 @@ export default function CreateConsignmentNote() {
           const addressText = `${addr.address1 || ''} ${addr.address2 || ''} ${addr.city || ''} ${addr.state || ''} ${addr.pin || ''}`.trim();
           if (addressText) {
             addresses.push({
+              ...addressPartyFields(addr),
               title: addr.title || `Shipping Address ${idx + 1}`,
               address: addressText,
               type: 'shipping',
@@ -4812,9 +4843,11 @@ export default function CreateConsignmentNote() {
     const addresses = extractAddressesFromCustomer(customer);
 
     setConsignor({
+      ...addressPartyFields(addresses[0]),
       name: customer.customerName,
       address: addresses.length > 0 ? addresses[0].address : '',
       customerId: customer._id,
+      gstNumber: addresses[0]?.gstNumber || '',
       selectedAddressTitle: addresses.length > 0 ? addresses[0].title : ''
     });
 
@@ -4844,7 +4877,9 @@ export default function CreateConsignmentNote() {
   const handleSelectConsignorAddress = (addressObj) => {
     setConsignor(prev => ({
       ...prev,
+      ...addressPartyFields(addressObj),
       address: addressObj.address,
+      gstNumber: addressObj.gstNumber || '',
       selectedAddressTitle: addressObj.title
     }));
     setShowConsignorAddressDropdown(false);
@@ -4873,6 +4908,7 @@ export default function CreateConsignmentNote() {
     const addresses = extractAddressesFromCustomer(customer);
 
     setConsignee({
+      ...addressPartyFields(addresses[0]),
       name: customer.customerName,
       address: addresses.length > 0 ? addresses[0].address : '',
       customerId: customer._id,
@@ -4906,6 +4942,7 @@ export default function CreateConsignmentNote() {
   const handleSelectConsigneeAddress = (addressObj) => {
     setConsignee(prev => ({
       ...prev,
+      ...addressPartyFields(addressObj),
       address: addressObj.address,
       gstNumber: addressObj.gstNumber || '',
       selectedAddressTitle: addressObj.title
@@ -4957,10 +4994,11 @@ export default function CreateConsignmentNote() {
   /** =========================
    * HANDLE SAVE - INCLUDING SUB-COMPANY
    ========================= */
-  const [createdNoteId, setCreatedNoteId] = useState(null);
+  const [existingLrConflict, setExistingLrConflict] = useState(null);
   const createdNoteIdRef = useRef(null);
   const saveInFlight = useRef(false);
-  const handleSave = async (saveMode = 'submit', { stayOnPage = false } = {}) => {
+  const handleSave = async (saveMode = 'draft') => {
+    if (ewbScan === "scanning") { alert("Please wait for invoice extraction to finish before saving."); return; }
     if (saveInFlight.current) throw new Error('LR save is already in progress.');
     const isDraftSave = saveMode === 'draft';
     if (!isDraftSave && !header.partyName) {
@@ -5058,6 +5096,7 @@ export default function CreateConsignmentNote() {
       const data = await res.json();
 
       if (!res.ok) {
+        if (data.code === 'ORDER_ROW_LR_EXISTS') setExistingLrConflict(data.existingNote || null);
         throw new Error(data.message || `Failed to save consignment note: ${res.status}`);
       }
 
@@ -5065,19 +5104,21 @@ export default function CreateConsignmentNote() {
       const savedId = data.data?._id || createdNoteIdRef.current;
       if (!savedId) throw new Error('LR saved without a record ID. Refresh the list before trying again.');
       createdNoteIdRef.current = savedId;
-      setCreatedNoteId(savedId);
-      if (stayOnPage) return savedId;
+      setExistingLrConflict(null);
+      if (isDraftSave) {
+        router.push('/admin/Consignment-Note');
+        return savedId;
+      }
 
       const subCompanyMsg = header.subCompanyName ? `\n🏢 Sub-Company: ${header.subCompanyName}` : '';
       alert(isDraftSave
-        ? `✅ Consignment Note saved as a draft.\nLR No: ${data.data?.lrNo || header.lrNo}${subCompanyMsg}\nOpen it from the list to continue.`
+        ? `✅ Consignment Note saved as a draft.\nLR No: ${data.data?.lrNo || header.lrNo}${subCompanyMsg}\nOpening the saved LR to continue.`
         : `✅ Consignment Note saved successfully!\nLR No: ${data.data?.lrNo || header.lrNo}${subCompanyMsg}`);
 
       router.push('/admin/Consignment-Note');
 
     } catch (error) {
       console.error('Error saving consignment note:', error);
-      if (stayOnPage) throw error;
       alert(`❌ Error: ${error.message}`);
     } finally {
       saveInFlight.current = false;
@@ -5144,7 +5185,7 @@ export default function CreateConsignmentNote() {
           </div>
 
           <div className="flex items-center gap-3">
-            <button onClick={() => handleSave('draft')} disabled={saving} className="rounded-xl border border-amber-300 bg-amber-50 px-5 py-2 text-sm font-bold text-amber-800 hover:bg-amber-100 disabled:opacity-60">Save as Draft</button>
+            <button type="button" onClick={() => handleSave('draft')} disabled={saving || fetchingOrder} className="rounded-xl border border-amber-300 bg-amber-50 px-5 py-2 text-sm font-bold text-amber-800 hover:bg-amber-100 disabled:opacity-60">Save as Draft</button>
             <button
               type="button"
               disabled={fetchingOrder}
@@ -5158,7 +5199,7 @@ export default function CreateConsignmentNote() {
               👁 Preview LR
             </button>
             <button
-              onClick={() => handleSave('submit')}
+              onClick={() => handleSave('draft')}
               disabled={saving || fetchingOrder}
               className={`rounded-xl px-5 py-2 text-sm font-bold text-white transition ${saving || fetchingOrder
                 ? 'bg-gray-400 cursor-not-allowed'
@@ -5181,6 +5222,10 @@ export default function CreateConsignmentNote() {
 
       {/* ===== Main Content ===== */}
       <div className="mx-auto max-w-full p-4">
+        {existingLrConflict && <div role="alert" className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          <p>{existingLrConflict.isDraft ? 'Draft LR' : 'LR'} <strong>{existingLrConflict.lrNo}</strong> already exists for this order row. Continue in that record. Values entered here have not been saved.</p>
+          <button type="button" onClick={() => router.push(`/admin/Consignment-Note/${existingLrConflict.id}`)} className="rounded-xl bg-purple-600 px-4 py-2 font-bold text-white hover:bg-purple-700">Open existing {existingLrConflict.isDraft ? 'draft' : 'LR'}</button>
+        </div>}
         {/* ===== Order Selection ===== */}
         <Card title="Select Order">
           <div className="grid grid-cols-12 gap-4">
@@ -5644,6 +5689,7 @@ export default function CreateConsignmentNote() {
                 <label className="text-xs font-bold text-slate-600">BOE / INV</label>
                 <select
                   value={invoice.boeInvoice}
+                  disabled={ewbScan === "scanning"}
                   onChange={(e) => setInvoice({ ...invoice, boeInvoice: e.target.value })}
                   className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200"
                 >
@@ -5658,6 +5704,7 @@ export default function CreateConsignmentNote() {
                 <input
                   type="text"
                   value={invoice.boeInvoiceNo}
+                  disabled={ewbScan === "scanning"}
                   onChange={(e) => setInvoice({ ...invoice, boeInvoiceNo: e.target.value })}
                   className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200"
                   placeholder="DC20004623"
@@ -5666,10 +5713,10 @@ export default function CreateConsignmentNote() {
 
               <div className="col-span-12 md:col-span-3">
                 <label className="text-xs font-bold text-slate-600">BOE / Invoice Date</label>
-                <input
-                  type="date"
+                <InvoiceDateInput
                   value={invoice.boeInvoiceDate}
-                  onChange={(e) => setInvoice({ ...invoice, boeInvoiceDate: e.target.value })}
+                  disabled={ewbScan === "scanning"}
+                  onChange={value => setInvoice(previous => ({ ...previous, boeInvoiceDate: value }))}
                   className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200"
                 />
               </div>
@@ -5679,6 +5726,7 @@ export default function CreateConsignmentNote() {
                 <input
                   type="text"
                   value={invoice.invoiceValue}
+                  disabled={ewbScan === "scanning"}
                   onChange={(e) => setInvoice({ ...invoice, invoiceValue: e.target.value })}
                   className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200"
                   placeholder="1589233"
@@ -5688,6 +5736,9 @@ export default function CreateConsignmentNote() {
               <div className="col-span-12 md:col-span-6">
                 <LRInvoiceUpload
                   file={invoice.file}
+                  extraction={invoice.extraction}
+                  extracting={ewbScan === "scanning"}
+                  extractionMessage={invoiceExtractionMessage}
                   onChange={handleInvoiceFile}
                 />
               </div>
@@ -5750,14 +5801,15 @@ export default function CreateConsignmentNote() {
               </div>
               {ewbScan !== "idle" && (
                 <div className={`col-span-12 rounded-xl px-3 py-2 text-xs ${ewbScan === "found" ? "bg-green-50 text-green-700" : "bg-slate-50 text-slate-600"}`}>
-                  {ewbScan === "scanning" && "Reading the invoice for an e-waybill number…"}
+                  {ewbScan === "scanning" && "Reading invoice number, date, value and e-way bill…"}
                   {ewbScan === "found" && "✓ E-waybill number found on the invoice and filled in. Please check it."}
-                  {ewbScan === "notfound" && "No e-waybill found on the invoice, so it is set to To Be Generated."}
+                  {ewbScan === "notfound" && "No e-way bill number was detected. Unselected LRs default to To Be Generated; check for an existing bill before generating."}
                   {ewbScan === "unavailable" && "The invoice could not be read automatically. Please choose the e-waybill option yourself."}
                 </div>
               )}
             </div>
-          <EwaybillDocuments noteId={createdNoteId} ensureSaved={() => handleSave('draft', { stayOnPage: true })} formStatus={ewaybill.status} formNumber={ewaybill.ewaybillNo} readOnly={saving} onUpdated={details => setEwaybill(previous => ({ ...previous, ...details }))} />
+          <EwaybillMissingFields invoice={invoice} onChange={setInvoice} consignor={consignor} consignee={consignee} header={header} status={ewaybill.status} readOnly={saving || ewbScan === "scanning"} />
+          <p className="mt-4 rounded-xl border border-purple-100 bg-purple-50 px-4 py-3 text-xs text-purple-800">Save the LR as a draft first. Preview ERPNext request, Generate, Fetch &amp; Verify and View PDF are available on the saved LR’s Edit page.</p>
           </Card>
         </div>
 

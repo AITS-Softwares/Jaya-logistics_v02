@@ -4,6 +4,7 @@ const panelTypes={
   'pricing-panel':'pricing',
   'Loading-Info':'loading',
   'Consignment-Note':'lr',
+  'Purchase-Panel':'purchase',
 };
 export function reapprovalRecordForPath(pathname) {
   if(typeof pathname!=='string')return null;

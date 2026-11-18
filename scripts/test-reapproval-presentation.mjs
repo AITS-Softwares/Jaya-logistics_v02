@@ -10,6 +10,7 @@ const cases = [
   ['pricing', { panelStatus: 'Submitted', rateApproval: { workflowPhase: 'part1', approvalStatus: 'Approved' } }],
   ['loading', { panelStatus: 'Submitted', loadingWorkflow: newLoadingWorkflow(true) }],
   ['lr', { header: { status: 'Pending' } }],
+  ['purchase', { panelStatus: 'Submitted', approval: { status: 'Pending' } }],
 ];
 for (const [type, record] of cases) {
   assert.equal(hasPriorApproval(record), false);
@@ -59,4 +60,4 @@ for (const [type, record] of cases) {
   assert.equal(result.record.hasReviewableChanges, false);
   assert.deepEqual(result.record.pendingChanges, []);
 }
-console.log('PASS: all five panels distinguish first approval, correction, drafts, upstream waiting, stale decisions, and actual prior approvals.');
+console.log('PASS: all six panels distinguish first approval, correction, drafts, upstream waiting, stale decisions, and actual prior approvals.');

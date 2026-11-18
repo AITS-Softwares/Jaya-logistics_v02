@@ -1,3 +1,5 @@
+import { syncPurchaseFromLoading } from '@/lib/purchaseReapproval.mjs';
+import PurchasePanel from '@/app/api/purchase-panel/PurchasePanel';
 import { hasLoadingCorrectionContext, needsLoadingVnnComparison } from '@/lib/loadingVnnSync.mjs';
 import { newLoadingWorkflow } from '@/lib/loadingApprovalWorkflow.mjs';
 import mongoose from 'mongoose';
@@ -13,14 +15,16 @@ import { companyScopeFilter } from '@/lib/companyScope';
 import { withLrCargoWeight } from '@/lib/lrWeight.mjs';
 
 const SOURCES = {
+  purchase: { Model: PurchasePanel, label: 'Purchase Panel', number: 'purchaseNo' },
   order: { Model: OrderPanel, label: 'Order Panel', number: 'orderPanelNo' },
   vnn: { Model: VehicleNegotiation, label: 'Vehicle Negotiation', number: 'vnnNo' },
   pricing: { Model: PricingPanel, label: 'Pricing Panel', number: 'pricingSerialNo' },
   loading: { Model: LoadingPanel, label: 'Loading Info', number: 'vehicleArrivalNo' },
   lr: { Model: ConsignmentNote, label: 'Consignment Note', number: 'lrNo' },
 };
-const SOURCE_MODELS = { order: OrderPanel, vnn: VehicleNegotiation, pricing: PricingPanel, loading: LoadingPanel, lr: ConsignmentNote };
+const SOURCE_MODELS = { purchase: PurchasePanel, order: OrderPanel, vnn: VehicleNegotiation, pricing: PricingPanel, loading: LoadingPanel, lr: ConsignmentNote };
 const TARGETS = {
+  purchase: { Model: PurchasePanel, module: 'Purchase Panel', path: 'Purchase-Panel', number: 'purchaseNo' },
   vnn: { Model: VehicleNegotiation, module: 'Vehicle Negotiation', path: 'vehicle-negotiation', number: 'vnnNo' },
   pricing: { Model: PricingPanel, module: 'Pricing Panel', path: 'pricing-panel', number: 'pricingSerialNo' },
   loading: { Model: LoadingPanel, module: 'Loading Info', path: 'Loading-Info', number: 'vehicleArrivalNo' },
@@ -41,6 +45,7 @@ const approvedRevisionFor = (type, record) => type === 'pricing'
   : Number(record?.approvedRevision) || 0;
 
 function mirroredProjection(type, doc) {
+  if (type === 'purchase') return { header: doc.header, billing: doc.billing, orderRows: doc.orderRows, purchaseDetails: doc.purchaseDetails, purchaseAmountFromVNN: doc.purchaseAmountFromVNN, loadingExpenses: doc.loadingExpenses, warehouseExpenses: doc.warehouseExpenses, additions: doc.additions, deductions: doc.deductions };
   if (type === 'order') return {
     branchName: doc.branchName, partyName: doc.partyName, customerName: doc.customerName,
     packData: packProjection(doc), activePack: doc.activePack,
@@ -48,6 +53,7 @@ function mirroredProjection(type, doc) {
   };
   if (type === 'vnn') return {
     orderSourceRevisions: orderSourceRevisions(doc),
+    commercialTerms: { vendorCode: doc.approval?.vendorCode, purchaseType: doc.approval?.purchaseType, rateType: doc.approval?.rateType, finalPerMT: doc.approval?.finalPerMT, finalFix: doc.approval?.finalFix, paymentTerms: doc.approval?.paymentTerms, advance: doc.approval?.advance },
     branch: doc.branch, branchName: doc.branchName, branchCode: doc.branchCode,
     date: doc.date, customerName: doc.customerName, partyName: doc.partyName,
     customerId: doc.customerId, delivery: doc.delivery, subCompanyId: doc.subCompanyId,
@@ -71,6 +77,7 @@ function mirroredProjection(type, doc) {
     })),
   };
   if (type === 'loading') return {
+    sourceDependencies: doc.sourceDependencies, loadedWeighment: doc.loadedWeighment, arrivalDetails: doc.arrivalDetails,
     vehicleNo: doc.vehicleInfo?.vehicleNo, vehicleOwnerName: doc.vehicleInfo?.vehicleOwnerName,
     driverName: doc.vehicleInfo?.driverName, driverMobileNo: doc.vehicleInfo?.driverMobileNo,
     orderRows: (doc.orderRows || []).map((row) => ({ id: row.orderRowId, orderNo: row.orderNo, partyName: row.partyName, plantCodeValue: row.plantCodeValue, plantName: row.plantName, orderType: row.orderType, pinCode: row.pinCode, fromName: row.fromName, fromState: row.fromState, toName: row.toName, locationRemark: row.locationRemark, weight: row.weight })),
@@ -126,6 +133,10 @@ async function findDirectChildren(type, doc, session) {
       ] }).session(session),
     ]);
     return [...pricings.map((record) => ({ type: 'pricing', record })), ...loadings.map((record) => ({ type: 'loading', record })), ...lrs.map((record) => ({ type: 'lr', record }))];
+  }
+  if (type === 'loading') {
+    const purchases = await PurchasePanel.find({ companyId, loadingInfoNo: doc.vehicleArrivalNo }).session(session);
+    return purchases.map((record) => ({ type: 'purchase', record }));
   }
   return [];
 }
@@ -209,13 +220,16 @@ function syncPricingFromVnn(vnn, priorVnn, pricing) {
 }
 
 /** Capture explicit source IDs/row IDs for new records; don't infer fuzzy matches later. */
-export async function captureSourceDependencies(type, doc, companyId) {
+export async function captureSourceDependencies(type, doc, companyId, { save = true } = {}) {
   const dependencies = [];
   const add = (panel, source) => {
     if (!source?._id) return;
     dependencies.push({ panel, recordId: String(source._id), recordNo: source.orderPanelNo || source.vnnNo || source.vehicleArrivalNo || source.lrNo || '', rowId: '', revision: Number(source.approvedRevision) || 0 });
   };
-  if (type === 'vnn') {
+  if (type === 'purchase') {
+    if (doc.loadingInfoNo) add('loading', await LoadingPanel.findOne({companyId, vehicleArrivalNo: doc.loadingInfoNo}).lean());
+    if (doc.vnnNo) add('vnn', await VehicleNegotiation.findOne({companyId, vnnNo: doc.vnnNo}).lean());
+  } else if (type === 'vnn') {
     const orderIds = [...new Set((doc.orders || []).map((row) => String(row.orderPanelId || '')).filter(Boolean))];
     const orderNos = [...new Set((doc.orders || []).map((row) => row.orderNo).filter(Boolean))];
     const sources = await OrderPanel.find({ companyId, $or: [...(orderIds.length ? [{ _id: { $in: orderIds.filter(mongoose.isValidObjectId) } }] : []), ...(orderNos.length ? [{ orderPanelNo: { $in: orderNos } }] : [])] }).select('_id orderPanelNo approvedRevision').lean();
@@ -255,7 +269,7 @@ export async function captureSourceDependencies(type, doc, companyId) {
     }
   }
   doc.sourceDependencies = dependencies;
-  await doc.save();
+  if (save) await doc.save();
   return dependencies;
 }
 
@@ -527,6 +541,7 @@ function applyMirroredFields(type, source, child) {
     if (source.approval?.vendorName) child.vehicleInfo = { ...(child.vehicleInfo?.toObject?.() || child.vehicleInfo || {}), vehicleOwnerName: source.approval.vendorName };
     return { matched, ambiguous: (child.orderRows || []).length > matched };
   }
+  if (type === 'loading' && child.purchaseNo) return syncPurchaseFromLoading(source, child);
   if (type === 'loading') {
     const candidates = (source.orderRows || []).filter((row) => !child.orderRowId || same(row.orderRowId, child.orderRowId));
     if (candidates.length !== 1) return { matched: 0, ambiguous: true };
@@ -812,6 +827,14 @@ export async function recordApprovedRevision(type, recordId, user) {
           if (!remainingBlocks.length) child.pendingStateBeforeBlock = '';
           child.pendingChanges = summarizeApprovedChanges(childType, beforeChild, child);
           if (childType === 'pricing' && mapResult.needsRateReview) child.pendingChanges.push({ field: 'Rate review required', oldValue: 'Current saved rate', newValue: 'Review rate and total after route or weight change' });
+          if (childType === 'purchase') {
+            child.approvedSnapshot ||= beforeChild;
+            if (!remainingBlocks.length) child.reapprovalState = 'unlocked';
+            child.isDraft = true;
+            child.panelStatus = 'Draft';
+            child.approval = { ...(child.approval?.toObject?.() || child.approval || {}), status: 'Pending' };
+            child.pendingChanges.push({field: 'Purchase review required', oldValue: 'Previously approved purchase terms', newValue: 'Review rates, amount, advance, charges and deductions against the corrected upstream records'});
+          }
           if (childType === 'pricing') {
             child.approvedSnapshot ||= beforeChild;
             if (!remainingBlocks.length) child.reapprovalState = 'unlocked';
@@ -835,13 +858,13 @@ export async function recordApprovedRevision(type, recordId, user) {
             action: mapResult.ambiguous ? 'syncNeedsReview' : 'downstreamSynced', actorId: user.id, actorName: user.name || '', revision,
             before: beforeChild, after: storedSnapshot(child), details: { sourcePanel: type, sourceRecordId: String(doc._id), sourceRevision: revision, matchedRows: mapResult.matched },
           }], { session });
-          noticeList.push({ childType, action: childType === 'pricing' ? 'edit' : 'approve', id: String(child._id), no: String(child.vnnNo || child.pricingSerialNo || child.vehicleArrivalNo || child.lrNo || '') });
+          noticeList.push({ childType, action: ['pricing', 'purchase'].includes(childType) ? 'edit' : 'approve', id: String(child._id), no: String(child.vnnNo || child.pricingSerialNo || child.vehicleArrivalNo || child.lrNo || child.purchaseNo || '') });
         }
       } else if (wasReapproval && !changed) {
         const unlockBatch = [...(doc.reapprovalHistory || [])].reverse().find((entry) => entry.action === 'unlocked')?.batchId;
         const batchesToResolve = new Set([...resolvedUpstreamBatchIds, ...(unlockBatch ? [String(unlockBatch)] : [])]);
         if (batchesToResolve.size) {
-          for (const childType of ['vnn', 'pricing', 'loading', 'lr']) {
+          for (const childType of ['vnn', 'pricing', 'loading', 'lr', 'purchase']) {
             const Model = TARGETS[childType].Model;
             const children = await Model.find({ companyId: doc.companyId, upstreamPending: { $elemMatch: { batchId: { $in: [...batchesToResolve] } } } }).session(session);
             for (const child of children) {

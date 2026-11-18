@@ -21,11 +21,11 @@ const review = new Function('normalizedObject', 'same', 'mongoose', 'OrderPanel'
   JSON.stringify, (a, b) => String(a ?? '').trim() === String(b ?? '').trim(),
   { isValidObjectId: () => true }, { find: () => ({ select: () => ({ lean: async () => panels }) }) }, (_user, query) => query,
 );
-const enrich = new Function('OrderPanel', 'mongoose', 'companyScopeFilter', 'applyApprovedVnnLocationRemarks', `${helperCode}\nreturn withLinkedOrderStatuses;`)(
+const enrich = new Function('OrderPanel', 'mongoose', 'companyScopeFilter', 'applyApprovedVnnLocationRemarks', 'withSavedSupplierNames', `${helperCode}\nreturn withLinkedOrderStatuses;`)(
   { find: () => ({ lean: async () => panels }) },
   { Types: { ObjectId: { isValid: () => true } } },
   (_user, query) => query,
-  review.applyApprovedVnnLocationRemarks,
+  review.applyApprovedVnnLocationRemarks, async (record) => record,
 );
 const negotiation = { orders: [{ orderPanelId: 'order-1', orderRowId: 'drop-1', orderNo: 'OP-1', locationRemark: '' }] };
 panels = [{ _id: 'order-1', orderPanelNo: 'OP-1', panelStatus: 'Approved', reapprovalState: 'none', plantRows: [{ _id: 'drop-1', locationRemark: 'Approved gate' }, { _id: 'drop-2', locationRemark: 'Wrong drop' }] }];

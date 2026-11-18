@@ -1,3 +1,4 @@
+import reapprovalPlugin from '@/lib/reapprovalPlugin';
 
 // import mongoose from 'mongoose';
 
@@ -598,6 +599,7 @@ purchasePanelSchema.pre('save', function (next) {
 
 purchasePanelSchema.plugin(branchScopePlugin, { model: 'PurchasePanel' });
 purchasePanelSchema.plugin(softDeletePlugin);
+purchasePanelSchema.plugin(reapprovalPlugin);
 const PurchasePanel = mongoose.models.PurchasePanel ||
   mongoose.model('PurchasePanel', purchasePanelSchema);
 

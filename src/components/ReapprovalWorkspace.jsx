@@ -53,7 +53,7 @@ function queueBadge(record) {
   return labels[record.reapprovalState] || record.reapprovalState;
 }
 
-const panelNames = { order: 'Order Panel', vnn: 'Vehicle Negotiation', pricing: 'Pricing Panel', loading: 'Loading Info', lr: 'Consignment Note' };
+const panelNames = { order: 'Order Panel', vnn: 'Vehicle Negotiation', pricing: 'Pricing Panel', loading: 'Loading Info', lr: 'Consignment Note', purchase: 'Purchase Panel' };
 
 function upstreamBlockMessage(marker, recordType) {
   const sourcePanel = panelNames[marker.panel] || 'Upstream panel';

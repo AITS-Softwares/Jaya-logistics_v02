@@ -19,6 +19,7 @@ export function panelApprovalStatus(type, record) {
     if (['part1', 'part2'].includes(approval?.workflowPhase) && ['Approved', 'Completed'].includes(approval?.approvalStatus)) return 'Pending';
     return approval?.approvalStatus || lifecycle || 'Pending';
   }
+  if (type === 'purchase') return record?.approval?.status || lifecycle || 'Pending';
   if (type === 'lr') return record?.header?.status || lifecycle || 'Draft';
   return lifecycle || record?.header?.status || 'Draft';
 }

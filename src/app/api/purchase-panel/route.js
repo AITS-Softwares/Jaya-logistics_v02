@@ -1,3 +1,4 @@
+import { assertSourcesCurrent, captureSourceDependencies, recordApprovedRevision } from '@/lib/reapprovalService';
 import { saveNumberedDocument } from '@/lib/saveNumberedDocument';
 // app/api/purchase-panel/route.js
 import { withBranchAccess } from '@/lib/branchAccess';
@@ -99,7 +100,7 @@ function isPurchaseDraft(purchase) {
 }
 
 function isPurchaseApproved(purchase) {
-  return purchase?.approval?.status === 'Approved';
+  return purchase?.approval?.status === 'Approved' && (!purchase.reapprovalState || purchase.reapprovalState === 'none') && !purchase.upstreamPending?.length;
 }
 
 async function validateUserForPurchaseLookup(req, forKey) {
@@ -544,7 +545,7 @@ async function branchHandlerGET(req) {
     return NextResponse.json({
       success: false,
       message: error.message || "Failed to fetch purchases"
-    }, { status: 500 });
+    }, { status: error.status || 500 });
   }
 }
 
@@ -816,6 +817,7 @@ async function branchHandlerPOST(req) {
       if (result) Object.assign(purchase.arrivalDetails, result);
     }
 
+    await captureSourceDependencies('purchase', purchase, user.companyId, { save: false });
     purchase = await saveNumberedDocument(purchase, session => getNextPurchaseNumber(user.companyId, user.activeOperatingCompanyId, user.activeOperatingCompanyCode, session), ["purchaseNo", "header.purchaseNo"], { validateBeforeSave: !isDraftSave });
     if (!isDraftSave && purchase.approval?.status === 'Pending') {
       await notifyModuleApprovers({ user, module: 'Purchase Panel', panelLabel: 'Purchase Panel',
@@ -856,7 +858,7 @@ async function branchHandlerPOST(req) {
     return NextResponse.json({
       success: false,
       message: error.message || "Failed to create purchase"
-    }, { status: 500 });
+    }, { status: error.status || 500 });
   }
 }
 
@@ -875,7 +877,6 @@ async function branchHandlerPUT(req) {
       }, { status });
     }
     const canEdit = hasPermission(user, 'edit');
-    const canCreate = hasPermission(user, 'create');
     if (!canEdit) {
       return NextResponse.json({
         success: false,
@@ -913,12 +914,11 @@ async function branchHandlerPUT(req) {
     }
 
     const saveMode = body.saveMode;
-    const wasDraft = isPurchaseDraft(purchase);
+    const correctionOpen = purchase.reapprovalState === 'unlocked' && !purchase.upstreamPending?.length;
+    if (purchase.upstreamPending?.length || ['blockedByUpstream', 'syncFailed', 'pendingApproval', 'pendingReapproval'].includes(purchase.reapprovalState)) return NextResponse.json({success:false,message:'Finish the upstream review or the current Purchase approval before editing this record.'},{status:409});
+    const wasDraft = isPurchaseDraft(purchase) || correctionOpen;
     if (saveMode && !['draft', 'submit'].includes(saveMode)) {
       return NextResponse.json({ success: false, message: "Invalid saveMode" }, { status: 400 });
-    }
-    if (saveMode === 'submit' && !canCreate) {
-      return NextResponse.json({ success: false, message: "Permission denied: create action required to submit a Purchase Panel draft.", code: 'FORBIDDEN' }, { status: 403 });
     }
     if ((saveMode === 'draft' || saveMode === 'submit') && !wasDraft) {
       return NextResponse.json({ success: false, message: "Only a draft can be saved as draft or submitted" }, { status: 400 });
@@ -930,16 +930,16 @@ async function branchHandlerPUT(req) {
     if (saveMode === 'submit' && canEdit) {
       purchase.isDraft = false;
       purchase.panelStatus = 'Submitted';
-      purchase.approval = { ...purchase.approval?.toObject?.(), status: 'Pending' };
+      purchase.approval = { ...(purchase.approval?.toObject?.() || purchase.approval || {}), status: 'Pending' };
     }
 
     // Approval decisions are handled through the approval workflow, never the
     // regular edit form. A submitted draft must enter that workflow as Pending.
 
     // Once approved/completed the purchase is locked. Only the MEMO file may still change.
-    const purchaseLocked =
+    const purchaseLocked = !correctionOpen && (
       ['Approved', 'Completed'].includes(purchase.panelStatus) ||
-      purchase.approval?.status === 'Approved';
+      purchase.approval?.status === 'Approved');
     if (purchaseLocked) {
       const blockedKeys = Object.keys(body).filter((k) => !['id', 'memoFile'].includes(k));
       if (blockedKeys.length) {
@@ -1147,6 +1147,13 @@ async function branchHandlerPUT(req) {
       purchase.isDraft = true;
       purchase.panelStatus = 'Draft';
     }
+    if (correctionOpen) {
+      purchase.approval.status = 'Pending';
+      purchase.isDraft = saveMode !== 'submit';
+      purchase.panelStatus = saveMode === 'submit' ? 'Submitted' : 'Draft';
+      purchase.reapprovalState = saveMode === 'submit' ? 'pendingApproval' : 'unlocked';
+    }
+    await captureSourceDependencies('purchase', purchase, user.companyId, { save: false });
     await purchase.save({ validateBeforeSave: saveMode !== 'draft' });
     if (saveMode === 'submit') {
       await notifyModuleApprovers({
@@ -1173,7 +1180,7 @@ async function branchHandlerPUT(req) {
     return NextResponse.json({
       success: false,
       message: error.message || "Failed to update purchase"
-    }, { status: 500 });
+    }, { status: error.status || 500 });
   }
 }
 
@@ -1222,7 +1229,7 @@ async function branchHandlerDELETE(req) {
     return NextResponse.json({
       success: false,
       message: error.message || "Failed to delete purchase"
-    }, { status: 500 });
+    }, { status: error.status || 500 });
   }
 }
 
@@ -1265,6 +1272,11 @@ async function branchHandlerPATCH(req) {
       }, { status: 404 });
     }
 
+    if (purchase.upstreamPending?.length || ['blockedByUpstream', 'unlocked', 'syncFailed'].includes(purchase.reapprovalState)) return NextResponse.json({success:false,message:'Purchase approval is blocked until upstream review is complete and corrections are submitted.'},{status:409});
+    await assertSourcesCurrent(purchase, user.companyId);
+    await captureSourceDependencies('purchase', purchase, user.companyId, { save: false });
+    await assertSourcesCurrent(purchase, user.companyId);
+
     if (purchase.isDraft) {
       return NextResponse.json({ success: false, message: "Open and save this draft before changing its approval status." }, { status: 400 });
     }
@@ -1294,7 +1306,9 @@ async function branchHandlerPATCH(req) {
     // Update panel status
     purchase.panelStatus = statusMap[action];
 
+    if (action === 'reject' && purchase.reapprovalState && purchase.reapprovalState !== 'none') { purchase.reapprovalState = 'unlocked'; purchase.isDraft = true; purchase.panelStatus = 'Draft'; }
     await purchase.save();
+    if (action === 'approve' || action === 'complete') await recordApprovedRevision('purchase', purchase._id, user);
 
     await notifyModuleDecision({ user, record: purchase, module: 'Purchase Panel', reference: purchase.purchaseNo, action, url: `/admin/Purchase-Panel/${purchase._id}` });
     if (action === 'approve' || action === 'complete') {
@@ -1326,7 +1340,7 @@ async function branchHandlerPATCH(req) {
     return NextResponse.json({
       success: false,
       message: error.message || "Failed to update purchase status"
-    }, { status: 500 });
+    }, { status: error.status || 500 });
   }
 }
 
