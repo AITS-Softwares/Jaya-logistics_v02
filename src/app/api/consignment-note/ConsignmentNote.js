@@ -223,6 +223,12 @@ const addressSchema = new mongoose.Schema({
   address: { type: String, default: '' },
   customerId: { type: String, default: '' },
   gstNumber: { type: String, default: '' },
+  address1: String,
+  address2: String,
+  city: String,
+  pinCode: String,
+  stateCode: String,
+  state: String,
   selectedAddressTitle: { type: String, default: '' }
 }, { _id: false });
 
@@ -237,6 +243,8 @@ const invoiceSchema = new mongoose.Schema({
   boeInvoiceDate: { type: String, default: '' },
   invoiceValue: { type: String, default: '' },
   file: { fileName: String, filePath: String, mimeType: String, fileSize: Number },
+  extraction: { type: mongoose.Schema.Types.Mixed, default: null },
+  ewaybillData: { type: mongoose.Schema.Types.Mixed, default: null },
 }, { _id: false });
 
 // E-waybill Schema
@@ -248,7 +256,16 @@ const ewaybillSchema = new mongoose.Schema({
   },
   ewaybillNo: { type: String, default: '' },
   expiryDate: { type: String, default: '' },
-  containerNo: { type: String, default: '' }
+  containerNo: { type: String, default: '' },
+  file: { fileName: String, storageName: String, mimeType: String, fileSize: Number },
+  source: String,
+  apiState: String,
+  processingStartedAt: Date,
+  distance: Number,
+  requestName: String,
+  preparedVersion: String,
+  previewToken: String,
+  verifiedAt: Date
 }, { _id: false });
 
 // Pack Data Schema for different pack types

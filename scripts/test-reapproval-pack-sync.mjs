@@ -60,7 +60,7 @@ const model = (docs) => ({
 });
 const deps = {
   mongoose: { isValidObjectId: () => true, startSession: async () => ({ withTransaction: async (fn) => fn(), endSession: async () => {} }) },
-  OrderPanel: model([orderDoc]), VehicleNegotiation: model([vnn]), PricingPanel: model([]), LoadingPanel: model([loadingDoc]), ConsignmentNote: model([lrDoc]),
+  PurchasePanel: model([]), OrderPanel: model([orderDoc]), VehicleNegotiation: model([vnn]), PricingPanel: model([]), LoadingPanel: model([loadingDoc]), ConsignmentNote: model([lrDoc]),
   ReapprovalAudit: { create: async () => {} }, notifyModulePermissionUsers: async () => {}, orderSourceRevisions, packProjection, syncPacksFromOrders, withLrCargoWeight,
 };
 const source = fs.readFileSync(new URL('../src/lib/reapprovalService.js', import.meta.url), 'utf8').replace(/^import .*;\r?\n/gm, '').replace(/^export /gm, '');

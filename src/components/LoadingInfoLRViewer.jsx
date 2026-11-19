@@ -56,7 +56,7 @@ function printApprovalMessage(part) {
 }
 
 /** "3 LRs expected · 2 created · 2 approved · 1 invoice uploaded" + progress bar. */
-function SummaryBar({ data, onRefresh, showPrint, printDisabled, pendingApprovalPart }) {
+export function SummaryBar({ data, onRefresh, showPrint, printDisabled, pendingApprovalPart }) {
     const c = data.counts || { expected: 0, created: 0, approved: 0, invoiceUploaded: 0 };
     const ready = data.ready || 0;
     const pct = c.expected ? Math.round((ready / c.expected) * 100) : 0;
@@ -114,7 +114,7 @@ function SummaryBar({ data, onRefresh, showPrint, printDisabled, pendingApproval
 }
 
 /** One order row: what it is, its LR / invoice state, and its action buttons. */
-function RowCard({ row, index, mode, locked, approvalsBlocked, children }) {
+export function RowCard({ row, index, mode, locked, approvalsBlocked, children }) {
     const lr = row.lr;
     const ready = row.state === "ready";
     return (

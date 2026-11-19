@@ -9,6 +9,7 @@ const panels = [
   ['pricing', 'Pricing Panel', 'PricingPanel', 'pricingSerialNo'],
   ['loading', 'Loading Info', 'LoadingPanel', 'vehicleArrivalNo'],
   ['lr', 'Consignment Note', 'ConsignmentNote', 'lrNo'],
+  ['purchase', 'Purchase Panel', 'PurchasePanel', 'purchaseNo'],
 ];
 const states = ['unlocked', 'pendingApproval', 'pendingReapproval', 'blockedByUpstream', 'syncFailed'];
 let user;
@@ -68,9 +69,9 @@ asUser({ 'Order Panel': { selected: false, permissions: { edit: true, approve: t
 assert.deepEqual((await getQueue({})).records, []);
 user = { type: 'company', companyId: 'company' };
 result = await getQueue({});
-assert.equal(result.records.length, 25);
-assert.equal(result.records.filter((record) => record.reapprovalState === 'blockedByUpstream').length, 5);
-assert.equal(result.records.filter((record) => record.reapprovalState === 'syncFailed').length, 5);
+assert.equal(result.records.length, 30);
+assert.equal(result.records.filter((record) => record.reapprovalState === 'blockedByUpstream').length, 6);
+assert.equal(result.records.filter((record) => record.reapprovalState === 'syncFailed').length, 6);
 assert(result.records.filter(record => record.reapprovalState === 'syncFailed').every(record => record.actionable));
 assert(result.records.filter(record => record.reapprovalState === 'blockedByUpstream').every(record => !record.actionable));
 

@@ -29,7 +29,7 @@ function DocIcon({ className }) {
  * props: file = invoice.file ({fileName,filePath,mimeType,fileSize} | null)
  *        onChange(fileObjectOrNull) -> store it in the page's invoice state
  */
-export default function LRInvoiceUpload({ file, onChange, readOnly = false }) {
+export default function LRInvoiceUpload({ file, onChange, readOnly = false, extraction, extracting = false, extractionMessage = "" }) {
     const inputRef = useRef(null);
     const [busy, setBusy] = useState(false);
     const [drag, setDrag] = useState(false);
@@ -93,7 +93,10 @@ export default function LRInvoiceUpload({ file, onChange, readOnly = false }) {
                 {readOnly ? "Invoice" : "Upload Invoice"}
             </h3>
 
-            <input ref={inputRef} type="file" accept=".pdf,.png,.jpg,.jpeg" onChange={onInput} className="hidden" />
+            <input ref={inputRef} type="file" accept=".pdf,.png,.jpg,.jpeg" onChange={onInput} className="hidden" disabled={readOnly || busy || extracting} />
+            <div role="status" className="mb-2 text-xs text-slate-700">
+                {extracting ? "Reading invoice details locally…" : extractionMessage || (extraction ? "Invoice details extracted. Check the filled fields before saving." : "Text PDFs can fill invoice number, date and value automatically. Scans and images need manual entry.")}
+            </div>
 
             {hasFile ? (
                 <div className="overflow-hidden rounded-xl border-2 border-green-300 bg-white shadow-sm">
@@ -114,7 +117,11 @@ export default function LRInvoiceUpload({ file, onChange, readOnly = false }) {
                                 className="rounded-lg bg-blue-600 px-2.5 py-1 text-xs font-bold text-white hover:bg-blue-700">View</button>
                             {!readOnly && (
                                 <>
-                                    <button type="button" onClick={pick} disabled={busy}
+                                    <button type="button" onClick={() => onChange(file)} disabled={busy || extracting}
+                                        className="rounded-lg bg-emerald-600 px-2.5 py-1 text-xs font-bold text-white disabled:opacity-50">
+                                        {extracting ? "Reading…" : "Read details"}
+                                    </button>
+                                    <button type="button" onClick={pick} disabled={busy || extracting}
                                         className="rounded-lg bg-slate-600 px-2.5 py-1 text-xs font-bold text-white hover:bg-slate-700 disabled:opacity-50">
                                         {busy ? "Uploading…" : "Replace"}
                                     </button>

@@ -3403,6 +3403,7 @@ import { activeOperatingCompanyId, companyScopeFilter } from "@/lib/companyScope
 import { validateOpenOrderRows } from '@/lib/orderRowStatus';
 import { handleModuleDelete } from '@/lib/deletion/handler';
 import mongoose from 'mongoose';
+import { isVnnCorrectionOpen, openVnnCorrectionParts } from '@/lib/vnn-correction.mjs';
 import { getFinalVnnStatus, getVnnListStatus, isVnnReadyForDownstream, withVnnDisplayData } from '@/lib/vehicleNegotiationWorkflow';
 import { notifyModuleApprovers, notifyModuleCreateUsers, notifyModuleDecision } from '@/lib/workflowNotifications';
 import { applyApprovedVnnLocationRemarks, assertSourcesCurrent, captureSourceDependencies, recordApprovedRevision, withApprovedVnnLocationRemarks } from '@/lib/reapprovalService';
@@ -3605,6 +3606,7 @@ async function branchHandlerGET(req) {
           partyName: panel.partyName || panel.customerName || panel.plantRows?.[0]?.partyName || '',
           branchName: panel.branchName || '',
           to: panel.plantRows?.[0]?.toName || panel.plantRows?.[0]?.to || '',
+          locationRemark: panel.plantRows?.[0]?.locationRemark || '',
           weight: (panel.plantRows || []).reduce((sum, row) => sum + (Number(row.weight) || 0), 0),
         }));
         return NextResponse.json({ success: true, data: { rows } });
@@ -4173,6 +4175,8 @@ async function branchHandlerPUT(req) {
     }
 
     const wasReadyForDownstream = isVnnReadyForDownstream(vehicleNegotiation);
+    const correctionOpen = isVnnCorrectionOpen(vehicleNegotiation);
+    if (correctionOpen && isGeneralEdit) openVnnCorrectionParts(vehicleNegotiation);
 
     if (vehicleNegotiation.workflow?.cancelledOrderReplacementOnly && isGeneralEdit) {
       return NextResponse.json({ success: false, message: 'Only cancelled order replacements can be changed in this amendment. Use the dedicated replacement action; other edits require the admin correction workflow.' }, { status: 409 });

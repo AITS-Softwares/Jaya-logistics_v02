@@ -294,7 +294,7 @@ import { withBranchAccess } from '@/lib/branchAccess';
 import { NextResponse } from "next/server";
 import connectDb from "@/lib/db";
 import mongoose from 'mongoose';
-import { getTokenFromHeader, verifyJWT } from "@/lib/auth";
+import { getTokenFromHeader, verifyJWT, hasPermission } from "@/lib/auth";
 import OrderPanel from "../../order-panel/OrderPanel";
 import LoadingPanel from "../../loading-panel/LoadingPanel";
 import ConsignmentNote from "../../consignment-note/ConsignmentNote";
@@ -316,11 +316,7 @@ function formatDate(date) {
 }
 
 function isAuthorized(user) {
-  return (
-    user?.type === "company" ||
-    user?.role === "Admin" ||
-    user?.permissions?.includes("reports")
-  );
+  return hasPermission(user, 'order-full-report', 'view');
 }
 
 async function validateUser(req) {

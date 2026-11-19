@@ -4,6 +4,7 @@ const approvalModules = {
   pricing: 'Pricing Panel - Part 2 Approval',
   loading: 'Loading Info',
   lr: 'Consignment Note',
+  purchase: 'Purchase Panel',
 };
 
 export function canUnlockForCorrection(user, type) {

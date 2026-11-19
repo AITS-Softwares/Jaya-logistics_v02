@@ -5146,6 +5146,7 @@
 
 "use client";
 
+import { LoadingEwaybillDocuments } from "@/components/EwaybillDocuments";
 import { destinationLabel } from '@/lib/destination.mjs';
 import ApprovedLoadedSlipUpload from "@/components/ApprovedLoadedSlipUpload";
 import LoadingTrackingSummary from "@/components/LoadingTrackingSummary";
@@ -10302,9 +10303,7 @@ export default function EditLoadingInfoPanel() {
               <div className="col-span-12 md:col-span-4">
                 <div className="bg-white p-4 rounded-xl border border-slate-200">
                   <h3 className="text-sm font-bold text-slate-800 mb-2">E-waybill</h3>
-                  <button disabled={part2ReadOnly} className="w-full rounded-lg bg-green-600 px-4 py-2 text-xs font-bold text-white hover:bg-green-700">
-                    Generate E-waybill
-                  </button>
+                  <LoadingEwaybillDocuments panelId={panelId} printDisabled={(part2ReadOnly) && stageRecord?.loadingWorkflow?.part2Status !== 'Approved'} />
                 </div>
               </div>
               <div className="col-span-12 md:col-span-4">

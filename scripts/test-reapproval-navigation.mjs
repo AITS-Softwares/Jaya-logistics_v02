@@ -14,7 +14,7 @@ const swc=require('next/dist/build/swc');
 const compiled=await swc.transform(source,{filename:'ReapprovalWorkspace.jsx',jsc:{parser:{syntax:'ecmascript',jsx:true},transform:{react:{runtime:'automatic'}}},module:{type:'commonjs'}});
 let pathname='/admin/order-panel/'+id;
 const mod={exports:{}};
-new Function('require','module','exports',compiled.code)(name=>name==='next/navigation'?{usePathname:()=>pathname}:name.includes('reapprovalRoute')?{reapprovalRecordForPath}:name.includes('reapprovalPresentation')?{}:require(name),mod,mod.exports);
+new Function('require','module','exports',compiled.code)(name=>name==='@/components/CancellationChargesPanel'?{default:()=>null}:name==='next/navigation'?{usePathname:()=>pathname}:name.includes('reapprovalRoute')?{reapprovalRecordForPath}:name.includes('reapprovalPresentation')?{}:require(name),mod,mod.exports);
 const Workspace=mod.exports.default;
 const order=Workspace({placement:'content'});
 pathname='/admin/rate-master/create';assert.equal(Workspace({placement:'content'}),null);
@@ -35,3 +35,7 @@ pending[1]({ok:true,json:async()=>({success:true,record:{type:'vnn'}})});await s
 pending[0]({ok:true,json:async()=>({success:true,record:{type:'order'}})});await first;
 assert.deepEqual(updates,[{success:true,record:{type:'vnn'}}]);
 console.log('PASS: unrelated pages cannot render approval content, navigation remounts record state, and delayed old responses cannot overwrite a newer record.');
+
+assert.deepEqual(reapprovalRecordForPath('/admin/Purchase-Panel/'+id), {type:'purchase', id});
+assert.deepEqual(reapprovalRecordForPath('/admin/Purchase-Panel/approve/'+id), {type:'purchase', id});
+assert.equal(reapprovalRecordForPath('/admin/Advance-Payment/'+id), null);

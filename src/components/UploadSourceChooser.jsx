@@ -168,11 +168,19 @@ export default function UploadSourceChooser() {
 
   return (
     <dialog ref={dialog} onCancel={event => { event.preventDefault(); close(); }} aria-labelledby="upload-source-title"
-      className="m-auto w-[calc(100%-2rem)] max-w-md rounded-2xl bg-white p-5 text-slate-900 shadow-xl backdrop:bg-black/60">
-      <div className="flex items-center justify-between gap-3">
-        <h2 id="upload-source-title" className="text-lg font-bold">Add attachment</h2>
-        <button type="button" onClick={close} aria-label="Close upload chooser" className="rounded px-2 py-1 text-slate-600">×</button>
+      className="fixed inset-0 m-auto max-h-[90dvh] w-[calc(100%_-_2rem)] max-w-lg overflow-y-auto rounded-2xl border border-slate-200 bg-white p-0 text-slate-900 shadow-2xl backdrop:bg-slate-950/50 backdrop:backdrop-blur-sm">
+      <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
+        <div className="flex items-center gap-3">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-6 w-6"><path strokeLinecap="round" strokeLinejoin="round" d="m8 12 6-6a3 3 0 0 1 4 4l-8 8a5 5 0 0 1-7-7l8-8" /></svg>
+          </span>
+          <div><h2 id="upload-source-title" className="text-lg font-bold tracking-tight">Add attachment</h2><p className="mt-1 text-sm text-slate-500">Choose a file or take a photo.</p></div>
+        </div>
+        <button type="button" onClick={close} aria-label="Close upload chooser" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5" aria-hidden="true"><path strokeLinecap="round" d="m6 6 12 12M18 6 6 18" /></svg>
+        </button>
       </div>
+      <div className="px-6 py-5">
       {mode === "opening" && <p role="status" className="mt-3 text-sm">Opening camera…</p>}
       {mode === "camera" && (
         <div className="mt-3">
@@ -192,11 +200,19 @@ export default function UploadSourceChooser() {
           </div>
         </div>
       )}
-      <div className="mt-4 flex flex-wrap gap-2">
-        <button type="button" onClick={chooseFile} className="rounded-lg bg-sky-50 px-3 py-2 font-semibold text-sky-800">Upload file</button>
-        {mode === "choose" && <button type="button" onClick={() => openCamera()} className="rounded-lg bg-emerald-50 px-3 py-2 font-semibold text-emerald-800">Take photo</button>}
+      <div className={`grid gap-3 ${mode === "choose" ? "sm:grid-cols-2" : "mt-4"}`}>
+        <button type="button" onClick={chooseFile} className="group flex min-h-32 flex-col items-start gap-3 rounded-xl border border-indigo-200 bg-indigo-50/40 p-4 text-left transition hover:border-indigo-400 hover:bg-indigo-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2">
+          <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-white text-indigo-600 shadow-sm" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-6 w-6"><path strokeLinecap="round" strokeLinejoin="round" d="M12 16V4m-4 4 4-4 4 4M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4" /></svg></span>
+          <span><span className="block text-sm font-semibold text-slate-900">Upload file</span><span className="mt-1 block text-xs leading-relaxed text-slate-500">Browse files on your device</span></span>
+        </button>
+        {mode === "choose" && <button type="button" onClick={() => openCamera()} className="group flex min-h-32 flex-col items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50/40 p-4 text-left transition hover:border-emerald-400 hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2">
+          <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-white text-emerald-600 shadow-sm" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-6 w-6"><path strokeLinecap="round" strokeLinejoin="round" d="M8 6l1.5-2h5L16 6h4v14H4V6h4Z" /><circle cx="12" cy="12" r="3.5" /></svg></span>
+          <span><span className="block text-sm font-semibold text-slate-900">Take photo</span><span className="mt-1 block text-xs leading-relaxed text-slate-500">Use your device camera</span></span>
+        </button>}
       </div>
-      {message && <p role="alert" className="mt-2 text-sm text-red-700">{message}</p>}
+      {message && <p role="alert" className="mt-4 rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-700">{message}</p>}
+      </div>
+      <div className="flex justify-end border-t border-slate-100 bg-slate-50/70 px-6 py-3"><button type="button" onClick={close} className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">Cancel</button></div>
     </dialog>
   );
 }

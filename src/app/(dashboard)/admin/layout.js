@@ -2150,6 +2150,7 @@ export default function Layout({ children }) {
   // derive those URLs from the display name: Linux production hosts are
   // case-sensitive, unlike local Windows development.
   const moduleRouteOverrides = {
+    'order-full-report': '/admin/reports/order-full-report',
     'Purchase Panel': '/admin/Purchase-Panel',
     'Consignment Note': '/admin/Consignment-Note',
     'Tracking Plan': '/admin/Tracking-Plan',

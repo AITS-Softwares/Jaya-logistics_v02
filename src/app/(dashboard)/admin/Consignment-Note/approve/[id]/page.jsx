@@ -1344,6 +1344,7 @@
 
 "use client";
 
+import EwaybillDocuments from "@/components/EwaybillDocuments";
 import { destinationLabel } from '@/lib/destination.mjs';
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
@@ -2608,7 +2609,8 @@ export default function ApproveConsignmentNote() {
             <Input col="col-span-12 md:col-span-4" label="Expiry Date" value={ewaybill.expiryDate} readOnly={true} />
             <Input col="col-span-12 md:col-span-4" label="Container No" value={ewaybill.containerNo} readOnly={true} />
           </div>
-        </Card>
+        <EwaybillDocuments noteId={noteId} readOnly />
+          </Card>
 
         {/* ===== PRODUCT DETAILS - ALL PACK TYPES (READ ONLY) ===== */}
         <Card title="Product Details - Read Only">
