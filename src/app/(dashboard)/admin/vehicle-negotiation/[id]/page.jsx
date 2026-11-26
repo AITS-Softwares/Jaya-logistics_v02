@@ -6193,7 +6193,7 @@ function TableSearchableDropdown({
         setSearchQuery(getDisplayValue(item));
       } else {
         setSelectedItem(null);
-        setSearchQuery("");
+        setSearchQuery(displayField === 'supplierName' ? selectedId : "");
       }
     } else {
       setSelectedItem(null);
