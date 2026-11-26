@@ -1,3 +1,4 @@
+import { assertVnnOrdersAvailable } from '@/lib/vnnOrderExclusivity';
 import { reconcileOrderCancellations } from '@/lib/reconcileOrderCancellations';
 import { saveNumberedDocument } from '@/lib/saveNumberedDocument';
 
@@ -3505,10 +3506,10 @@ async function withSavedSupplierNames(negotiation, user) {
   const ids = [...new Set(entries.map((entry) => entry.vendorId).filter((id) => mongoose.Types.ObjectId.isValid(id)))];
   if (!codes.length && !ids.length) return negotiation;
 
-  const suppliers = await Supplier.find(companyScopeFilter(user, { $or: [
+  const suppliers = await Supplier.find({ companyId: user.companyId, $or: [
     ...(codes.length ? [{ supplierCode: { $in: codes } }] : []),
     ...(ids.length ? [{ _id: { $in: ids } }] : []),
-  ] })).select("supplierCode supplierName").lean();
+  ] }).setOptions({ includeUnapprovedMasters: true }).select("supplierCode supplierName").lean();
   const byId = new Map(suppliers.map((supplier) => [String(supplier._id), supplier.supplierName]));
   const byCode = new Map(suppliers.map((supplier) => [supplier.supplierCode, supplier.supplierName]));
   const fill = (entry) => {
@@ -3718,7 +3719,7 @@ async function branchHandlerGET(req) {
       const supplierCodes = [...new Set(vehicleNegotiations.map((vn) => vn.approval?.vendorCode).filter(Boolean))];
       const supplierPanByCode = new Map();
       if (supplierCodes.length) {
-        const suppliers = await Supplier.find(companyScopeFilter(user, { supplierCode: { $in: supplierCodes } }))
+        const suppliers = await Supplier.find({ companyId: user.companyId, supplierCode: { $in: supplierCodes } }).setOptions({ includeUnapprovedMasters: true })
           .select("supplierCode pan")
           .lean();
         suppliers.forEach((supplier) => supplierPanByCode.set(supplier.supplierCode, supplier.pan || ""));
@@ -3812,6 +3813,7 @@ async function branchHandlerGET(req) {
       .sort({ createdAt: -1 })
       .lean();
 
+    vehicleNegotiations = await Promise.all(vehicleNegotiations.map(record => withSavedSupplierNames(record, user)));
     vehicleNegotiations = vehicleNegotiations.map(withVnnDisplayData);
     if (eligibleFor === 'pricing' || eligibleFor === 'loading') {
       vehicleNegotiations = vehicleNegotiations.filter((vn) => vn.panelStatus !== 'Draft' && vn.panelStatus !== 'Cancelled' && vn.isReadyForDownstream);
@@ -4014,7 +4016,10 @@ async function branchHandlerPOST(req) {
       panelStatus: body.lockPart1 === true ? 'Submitted' : 'Draft'
     });
 
-    newVehicleNegotiation = await saveNumberedDocument(newVehicleNegotiation, session => getNextVehicleNegotiationNumber(user.companyId, user.activeOperatingCompanyId, user.activeOperatingCompanyCode, session), ["vnnNo"]);
+    newVehicleNegotiation = await saveNumberedDocument(newVehicleNegotiation, async session => {
+      await assertVnnOrdersAvailable(user, newVehicleNegotiation, session);
+      return getNextVehicleNegotiationNumber(user.companyId, user.activeOperatingCompanyId, user.activeOperatingCompanyCode, session);
+    }, ["vnnNo"]);
     await captureSourceDependencies('vnn', newVehicleNegotiation, user.companyId);
 
     if (body.lockPart1 === true) {
@@ -4047,7 +4052,7 @@ async function branchHandlerPOST(req) {
     return NextResponse.json({
       success: false,
       message: error.message || "Failed to create vehicle negotiation"
-    }, { status: 500 });
+    }, { status: error.status || 500 });
   }
 }
 
@@ -4425,8 +4430,15 @@ async function branchHandlerPUT(req) {
       vehicleNegotiation.workflow.audit.push({ action: 'vnn-submitted-for-combined-approval', by: user.id || null, at: new Date() });
     }
 
-    // Save the updated vehicle negotiation
-    await vehicleNegotiation.save();
+    // Check links and save atomically so concurrent edits cannot reuse an order.
+    if (body.orders || body.selectedOrderPanels) {
+      await mongoose.connection.transaction(async session => {
+        await assertVnnOrdersAvailable(user, vehicleNegotiation, session);
+        await vehicleNegotiation.save({ session });
+      });
+    } else {
+      await vehicleNegotiation.save();
+    }
 
     if (!wasReadyForDownstream && isVnnReadyForDownstream(vehicleNegotiation)) {
       await Promise.all([
@@ -4467,7 +4479,7 @@ async function branchHandlerPUT(req) {
     return NextResponse.json({
       success: false,
       message: error.message || "Failed to update vehicle negotiation"
-    }, { status: 500 });
+    }, { status: error.status || 500 });
   }
 }
 
